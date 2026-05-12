@@ -1,0 +1,167 @@
+architecture:
+  services:
+    - name: frontend
+      path: services/frontend
+      language: typescript
+      frameworks:
+        - next.js
+        - react
+        - tailwindcss
+
+      patterns:
+        component-composition:
+          description: "Build complex UIs from small, reusable components. Props down, events up."
+          rules:
+            - "Components receive data via props, never fetch directly"
+            - "State lifted to nearest common ancestor"
+            - "Use composition over inheritance"
+        server-components:
+          description: "Next.js RSC for data fetching. Client components only for interactivity."
+          rules:
+            - "Default to server components"
+            - "Add 'use client' only when needed (hooks, browser APIs)"
+            - "Fetch data in server components, pass to client"
+
+      quality_gate:
+        code:
+          - name: eslint
+            config: services/frontend/.eslintrc.json
+          - name: typescript
+            config: services/frontend/tsconfig.json
+        tests:
+          e2e:
+            path: tests/e2e
+            framework: playwright
+            config: tests/playwright.config.ts
+          integration:
+            path: tests/integration
+            framework: playwright
+            config: tests/playwright.config.ts
+          unit:
+            path: services/frontend/__tests__
+            framework: jest
+            config: services/frontend/jest.config.js
+
+      dependencies:
+        - backend
+        - mcp-service
+
+    - name: backend
+      path: services/backend
+      language: go
+      frameworks:
+        - fiber
+        - zerolog
+
+      patterns:
+        hexagonal-architecture:
+          description: "Ports and adapters. Core domain isolated from external concerns via interfaces."
+          rules:
+            - "Domain defines ports (interfaces) in internal/domain/ports"
+            - "Adapters implement ports in internal/adapters"
+            - "Application layer in internal/application orchestrates use cases"
+            - "No direct dependencies on frameworks in domain"
+        error-handling:
+          description: "Structured errors with context. Never swallow errors."
+          rules:
+            - "Use custom error types from internal/pkg/errors"
+            - "Wrap errors with context: errors.Wrap(err, 'context')"
+            - "Log at boundaries, propagate everywhere else"
+
+      quality_gate:
+        code:
+          - name: golangci-lint
+            config: services/backend/.golangci.yml
+          - name: go-vet
+            command: "go vet ./..."
+        tests:
+          e2e:
+            path: tests/e2e
+            framework: playwright
+            config: tests/playwright.config.ts
+          integration:
+            path: tests/integration
+            framework: playwright
+            config: tests/playwright.config.ts
+          unit:
+            path: services/backend
+            framework: go-test
+            pattern: "*_test.go"
+
+      dependencies: []
+
+    - name: mcp-service
+      path: services/mcp-service
+      language: go
+      frameworks:
+        - fiber
+        - zerolog
+        - mcp-sdk
+
+      patterns:
+        hexagonal-architecture:
+          description: "Same as backend - ports and adapters pattern."
+          rules:
+            - "Domain defines ports (interfaces) in internal/domain/ports"
+            - "Adapters implement ports in internal/adapters"
+            - "MCP handlers are adapters, not domain logic"
+
+      quality_gate:
+        code:
+          - name: golangci-lint
+            config: services/mcp-service/.golangci.yml
+        tests:
+          e2e:
+            path: tests/e2e
+            framework: playwright
+            helpers:
+              - name: McpClient
+                description: "Test helper that wraps the MCP server connection; provides callTool() to invoke MCP tools (e.g. edit_document) in tests"
+          integration:
+            path: tests/integration
+            framework: playwright
+            helpers:
+              - name: McpClient
+                description: "Test helper that wraps the MCP server connection; provides callTool() to invoke MCP tools (e.g. edit_document) in tests"
+          unit:
+            path: services/mcp-service
+            framework: go-test
+            pattern: "*_test.go"
+
+      dependencies:
+        - backend
+
+documentation:
+  prd:
+    - path: docs/prd.md
+      description: "Main Product Requirements Document"
+    - path: docs/brief.md
+      description: "Project brief and overview"
+    - path: docs/prd/requirements.md
+      description: "Detailed requirements specification"
+    - path: docs/prd/goals-and-background-context.md
+      description: "Goals and background context"
+    - path: docs/prd/epic-list.md
+      description: "List of all epics"
+
+  architecture:
+    - path: docs/architecture.md
+      description: "Main architecture document"
+    - path: docs/frontend-architecture.md
+      description: "Frontend architecture details"
+    - path: docs/architecture/tech-stack.md
+      description: "Technology stack specification"
+    - path: docs/architecture/coding-standards.md
+      description: "Coding standards and conventions"
+    - path: docs/architecture/source-tree.md
+      description: "Source code structure"
+    - path: docs/architecture/bdd-guidelines.md
+      description: "BDD scenario writing guidelines"
+
+  epics:
+    path: docs/epics/jsons
+    description: "Epic YAML files with user stories"
+
+  stories:
+    path: docs/stories
+    description: "Generated story files"

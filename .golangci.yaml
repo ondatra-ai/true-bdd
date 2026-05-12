@@ -1,0 +1,176 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - arangolint
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    # - containedctx  # TODO: Fix context.Context in struct fields
+    # - contextcheck  # TODO: Fix non-inherited context usage
+    - copyloopvar
+    - cyclop
+    - decorder
+    # - depguard
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - embeddedstructfieldcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    # - exhaustruct
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gochecksumtype
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosmopolitan
+    - govet
+    - grouper
+    - iface
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - intrange
+
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    # - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    # - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - varnamelen
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - wsl_v5
+    - zerologlint
+  # Disable specific linters.
+  settings:
+    cyclop:
+      max-complexity: 10
+    funlen:
+      lines: 80
+      statements: 40
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+    forbidigo:
+      forbid:
+        - pattern: '^fmt\.(Print(f|ln)?)$'
+          msg: 'use slog for logging'
+        # Allow fmt.Errorf for error wrapping (required by wrapcheck linter)
+        # but forbid it for simple error creation without %w
+        - pattern: '^fmt\.Errorf\([^,)]*\)$'
+          msg: 'use errors.New for simple errors, or fmt.Errorf with %w for wrapping'
+    wrapcheck:
+      # Don't require wrapping for errors from internal packages
+      # Our internal/pkg/errors package provides properly wrapped errors
+      ignorePackageGlobs:
+        - "bdd-cli/src/internal/*"
+        - "*/internal/*"
+      ignoreSigRegexps:
+        - 'bdd-cli/src/internal/pkg/errors\.Err.*'
+    tagliatelle:
+      # For internal domain models and application code
+      case:
+        rules:
+          json: snake  # Internal JSON APIs use snake_case
+          yaml: snake  # All YAML configs use snake_case
+          # Note: GitHub API structures (in adapters/github and models/thread.go)
+          # are excluded below to match GitHub's camelCase API contract
+
+  exclusions:
+    generated: lax
+    warn-unused: true
+    rules:
+      # GitHub API structures must use camelCase to match GitHub's API contract
+      - path: src/internal/adapters/github/.*\.go
+        linters:
+          - tagliatelle
+      - path: src/internal/domain/models/thread\.go
+        linters:
+          - tagliatelle
+      # Don't require wrapping for internal package returns
+      # Our internal/pkg/errors package provides properly wrapped errors
+      - path: (src/internal/.*|src/claudecode/.*|src/adapters/.*)\.go
+        linters:
+          - wrapcheck
+        text: "bdd-cli/src/internal/pkg/errors"
+      # Allow dynamic errors in test files for test fixtures
+      - path: _test\.go
+        linters:
+          - err113
+      # Allow fmt.Print in console package - it wraps fmt for terminal UI output
+      - path: src/internal/pkg/console/.*\.go
+        linters:
+          - forbidigo

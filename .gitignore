@@ -1,0 +1,16 @@
+# Binaries
+/bdd-cli
+*.exe
+*.test
+*.out
+
+# Build / test artefacts
+/tmp/
+/dist/
+coverage.txt
+coverage.out
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

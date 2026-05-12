@@ -1,0 +1,21 @@
+epic:
+  id: 99
+  name: "BDD Test Epic"
+  status: "PLANNED"
+  goal: "Provide a synthetic epic that the bdd-cli BDD harness can drive end-to-end without colliding with any real product feature."
+  context: "Used only by scripts/bdd-cli/tests/bdd/fixtures/us-create-happy-path. Describes a hypothetical document-summary feature so prompts have plausible material to reason about."
+
+stories:
+  - id: "99.1"
+    title: "Document Summary On Demand"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a Google Doc when I ask"
+    so_that: "I do not have to download the document or copy paste large sections of it into a separate REST endpoint just to get a quick gist"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation."
+      - id: AC-2
+        description: "When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first."
+      - id: AC-3
+        description: "When the document is too long to summarize confidently, I receive a message telling me Claude only read part of it."
