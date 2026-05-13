@@ -1,0 +1,226 @@
+story:
+  id: "3.1"
+  title: "MCP Server Implementation"
+  status: "Draft"
+  as_a: "Developer/Maintainer"
+  i_want: "to implement MCP protocol server"
+  so_that: "Claude can communicate with the service"
+  acceptance_criteria:
+    - id: AC-1
+      description: "WebSocket server implemented"
+    - id: AC-2
+      description: "HTTP endpoint for MCP available"
+    - id: AC-3
+      description: "Message parsing and validation"
+    - id: AC-4
+      description: "Response formatting to MCP standard"
+    - id: AC-5
+      description: "Connection management handled"
+    - id: AC-6
+      description: "Concurrent connection support"
+
+tasks:
+  - name: "Set up WebSocket server infrastructure"
+    acceptance_criteria: ["AC-1", "AC-5", "AC-6"]
+    subtasks:
+      - "Configure WebSocket endpoint `/mcp` with protocol upgrade"
+      - "Implement connection lifecycle management (connect, disconnect, error handling)"
+      - "Add concurrent connection support with goroutines"
+      - "Implement connection state tracking"
+
+  - name: "Implement HTTP endpoint for MCP protocol"
+    acceptance_criteria: ["AC-2"]
+    subtasks:
+      - "Create HTTP handler that upgrades to WebSocket protocol"
+      - "Add proper CORS handling for Claude client connections"
+      - "Configure endpoint routing in main server"
+
+  - name: "Build MCP message processing system"
+    acceptance_criteria: ["AC-3", "AC-4"]
+    subtasks:
+      - "Implement message parsing for incoming MCP requests"
+      - "Add message validation against MCP protocol standards"
+      - "Create response formatting to MCP standard format"
+      - "Handle message correlation IDs for request/response tracking"
+
+  - name: "Integrate with existing backend infrastructure"
+    acceptance_criteria: ["AC-1", "AC-2", "AC-5", "AC-6"]
+    subtasks:
+      - "Connect to OAuth Manager for token validation"
+      - "Integrate with Cache Manager for session management"
+      - "Add structured logging for all MCP operations"
+      - "Configure environment variables for MCP server settings"
+
+dev_notes:
+  previous_story_insights: "No previous stories exist - this is the first story in the project."
+
+  technology_stack:
+    source: "architecture/tech-stack.md#Backend Stack"
+    language: "Go 1.21 for backend services"
+    framework: "Fiber 2.x for HTTP routing (`services/backend/cmd/main.go`)"
+    mcp_integration: "Mark3Labs MCP-Go library (latest) for Model Context Protocol tools"
+    logging: "zerolog 1.x for structured JSON logs (output to stdout for Railway)"
+    config: "viper 1.x for environment/config management (reads Railway env vars)"
+
+  architecture:
+    source: "architecture.md#Backend Components"
+    description: "The MCP Protocol Handler is a key backend component with these responsibilities:"
+    responsibilities:
+      - "Handle MCP protocol communication with Claude AI"
+      - "WebSocket endpoint for bidirectional communication"
+      - "Tool registration and discovery"
+      - "Request/response message handling"
+    dependencies:
+      - "Network layer"
+      - "Command Processor"
+    technology_stack: "Go stdlib net/http, gorilla/websocket for WebSocket support"
+
+  file_structure:
+    source: "architecture.md#Source Tree"
+    description: "MCP service as separate service alongside frontend and backend:"
+    files:
+      - file: "services/frontend/"
+        description: "Next.js App Router frontend"
+      - file: "services/backend/"
+        description: "Go API for user management"
+      - file: "services/mcp-service/"
+        description: "MCP Service - Mark3Labs Implementation (NEW - this story)"
+      - file: "services/mcp-service/cmd/main.go"
+        description: "MCP server entry point with Mark3Labs library"
+      - file: "services/mcp-service/internal/server/mcp.go"
+        description: "Mark3Labs MCP server setup and configuration"
+      - file: "services/mcp-service/internal/server/tools.go"
+        description: "Tool registration with schema validation"
+      - file: "services/mcp-service/internal/server/handlers.go"
+        description: "Strongly-typed tool handlers"
+      - file: "services/mcp-service/internal/server/middleware.go"
+        description: "Recovery and capability middleware"
+      - file: "services/mcp-service/internal/operations/processor.go"
+        description: "Operation processor with parameter validation"
+      - file: "services/mcp-service/internal/operations/validator.go"
+        description: "Parameter validation with enum/pattern support"
+      - file: "services/mcp-service/internal/docs/service.go"
+        description: "Document service"
+      - file: "services/mcp-service/internal/docs/client.go"
+        description: "Google Docs client"
+      - file: "services/mcp-service/internal/docs/converter.go"
+        description: "Markdown converter"
+      - file: "services/mcp-service/internal/auth/oauth.go"
+        description: "Google OAuth for service accounts"
+      - file: "services/mcp-service/internal/auth/tokens.go"
+        description: "Token validation with backend"
+
+  mcp_integration:
+    source: "architecture.md#Tech Stack"
+    mcp_protocol_library: "Mark3Labs MCP-Go (latest) for streamlined Model Context Protocol implementation"
+    features: "Type-safe, stdio transport, LLM-optimized design"
+    integration_point: "Embedded in backend service"
+
+  configuration:
+    source: "architecture/coding-standards.md#Environment Variables"
+    description: "Required environment variables for MCP server:"
+    environment_variables:
+      MCP_PORT: "8081                    # MCP WebSocket server port"
+      ENVIRONMENT: "development          # Current environment"
+      LOG_LEVEL: "info                   # Logging level"
+      LOG_FORMAT: "json                  # Structured logging format"
+
+  connection_management:
+    source: "architecture.md#Core Workflows"
+    description: "From the MCP protocol workflow diagram:"
+    requirements:
+      - "Handle tool calls from Claude AI"
+      - "Parse and validate incoming commands"
+      - "Integrate with OAuth Manager for token validation"
+      - "Connect to Redis Cache for session management"
+      - "Process requests and return formatted responses"
+
+  error_handling_standards:
+    source: "architecture/coding-standards.md#Error Handling Security"
+    requirements:
+      - "Use structured error responses with codes and messages"
+      - "Log internal errors but return generic messages to clients"
+      - "Implement proper error propagation with context preservation"
+      - "Follow security practices for error exposure"
+
+  testing_requirements:
+    source: "architecture/coding-standards.md#Testing Standards"
+    unit_tests: "Test WebSocket connection handling, message parsing, and response formatting"
+    integration_tests: "Test MCP protocol compliance with mock Claude client"
+    coverage_requirement: "85% for business logic, 80% overall"
+    test_location: "Alongside implementation files (`*_test.go`)"
+    framework: "Go standard testing package with testify for assertions"
+
+  logging_standards:
+    source: "architecture/coding-standards.md#Structured Logging"
+    description: "Required structured logging format for MCP operations:"
+    code_example: |
+      ```go
+      logger.Info("mcp operation started",
+          "operation", "websocket_connect",
+          "client_id", clientID,
+          "timestamp", time.Now(),
+      )
+      ```
+
+  performance_requirements:
+    source: "architecture/coding-standards.md#Performance Standards"
+    connection_establishment: "< 1 second"
+    message_processing: "< 100ms per message"
+    concurrent_connection_support: "10+ connections"
+    memory_usage: "< 128MB"
+
+testing:
+  test_file_location: "Alongside implementation files (`*_test.go`)"
+  test_standards: "Go standard testing package with testify for assertions"
+  testing_frameworks: "gomock for interface mocking"
+  specific_requirements:
+    - "Unit tests for WebSocket connection lifecycle"
+    - "Integration tests for MCP protocol compliance"
+    - "Mock Claude client interactions"
+    - "Test concurrent connection handling"
+    - "Validate message parsing and response formatting"
+
+change_log:
+  - date: "2025-09-23"
+    version: "1.0"
+    description: "Initial story creation"
+    author: "Bob (Scrum Master)"
+
+dev_agent_record:
+  description: "*This section will be populated by the development agent during implementation*"
+
+  agent_model_used: "*To be filled by dev agent*"
+  debug_log_references: "*To be filled by dev agent*"
+  completion_notes_list: "*To be filled by dev agent*"
+  file_list: "*To be filled by dev agent*"
+
+qa_results:
+  review_date: "2025-09-24"
+  reviewed_by: "Quinn (Test Architect)"
+
+  quality_assessment_summary: "Story 3.1 provides excellent technical foundation and comprehensive implementation guidance. The story demonstrates strong architectural alignment and clear development context. However, several security and testability considerations should be addressed before production deployment."
+
+  strengths:
+    - "Comprehensive technical context with proper source documentation"
+    - "Clear task breakdown with acceptance criteria mapping"
+    - "Well-defined file structure following coding standards"
+    - "Thorough integration points with existing backend infrastructure"
+    - "Strong testing framework specification"
+
+  areas_for_improvement:
+    - "Client authentication mechanism needs explicit definition"
+    - "WebSocket security measures require specification"
+    - "Load testing scenarios needed for concurrent connections"
+    - "Tool registration interface should be considered for future extensibility"
+
+  risk_level: "Medium"
+  risk_reason: "Core functionality is well-planned, but security considerations need attention"
+
+  testability_score: "8/10"
+  testability_notes: "Good test coverage planned, missing load testing scenarios"
+
+  implementation_readiness: "9/10"
+  implementation_readiness_notes: "Very well prepared for development with minor security gaps"
+
+  gate_status: "CONCERNS → docs/qa/gates/3.1-mcp-server-implementation.yaml"

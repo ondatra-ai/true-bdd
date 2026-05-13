@@ -1,0 +1,27 @@
+# BDD Terms Vocabulary
+# Defines allowed and forbidden terms for acceptance criteria and BDD scenarios.
+# Referenced by bdd-guidelines.md and validation checklist prompts.
+
+roles:
+  - name: Claude User
+    definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
+    primary_use_case: "Document editing through conversational AI interface"
+    characteristics:
+      - "Non-technical users focused on content creation and editing"
+      - "Values seamless integration between Claude AI and Google Docs"
+      - "Expects reliable, fast document operations with clear error messaging"
+
+  - name: Developer/Maintainer
+    definition: "Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system"
+    primary_use_case: "System development, deployment, and operational support"
+    characteristics:
+      - "Technical expertise in Go, Railway CLI, MCP protocol, and Google APIs"
+      - "Focused on system reliability, security, and performance"
+
+actions:
+  - name: "ask Claude"
+    means: "write a prompt in Claude chat"
+  - name: "navigates to <page>"
+    means: "opens or browses to a specific page in the web app"
+
+forbidden_actions: []

@@ -1,0 +1,167 @@
+story:
+  id: "3.1"
+  title: "MCP Server Implementation"
+  as_a: "Developer/Maintainer"
+  i_want: "to implement MCP protocol server"
+  so_that: "Claude can communicate with the service"
+  status: "DRAFT"
+  acceptance_criteria:
+    - id: AC-1
+      description: "WebSocket server implemented"
+    - id: AC-2
+      description: "HTTP endpoint for MCP available"
+    - id: AC-3
+      description: "Message parsing and validation"
+    - id: AC-4
+      description: "Response formatting to MCP standard"
+    - id: AC-5
+      description: "Connection management handled"
+    - id: AC-6
+      description: "Concurrent connection support"
+
+tasks:
+  - name: "Set up WebSocket server infrastructure"
+    acceptance_criteria: ["AC-1", "AC-5", "AC-6"]
+    subtasks:
+      - "Configure WebSocket endpoint `/mcp` with protocol upgrade"
+      - "Implement connection lifecycle management (connect, disconnect, error handling)"
+      - "Add concurrent connection support with goroutines"
+      - "Implement connection state tracking"
+    status: "pending"
+
+  - name: "Implement HTTP endpoint for MCP protocol"
+    acceptance_criteria: ["AC-2"]
+    subtasks:
+      - "Create HTTP handler that upgrades to WebSocket protocol"
+      - "Add proper CORS handling for Claude client connections"
+      - "Configure endpoint routing in main server"
+    status: "pending"
+
+  - name: "Build MCP message processing system"
+    acceptance_criteria: ["AC-3", "AC-4"]
+    subtasks:
+      - "Implement message parsing for incoming MCP requests"
+      - "Add message validation against MCP protocol standards"
+      - "Create response formatting to MCP standard format"
+      - "Handle message correlation IDs for request/response tracking"
+    status: "pending"
+
+  - name: "Integrate with existing backend infrastructure"
+    acceptance_criteria: ["AC-1", "AC-2", "AC-5", "AC-6"]
+    subtasks:
+      - "Connect to OAuth Manager for token validation"
+      - "Integrate with Cache Manager for session management"
+      - "Add structured logging for all MCP operations"
+      - "Configure environment variables for MCP server settings"
+    status: "pending"
+
+dev_notes:
+  previous_story_insights: "No previous stories exist - this is the first story in the project"
+
+  technology_stack:
+    language: "Go 1.21"
+    framework: "Fiber 2.x"
+    mcp_integration: "Mark3Labs MCP-Go library (latest)"
+    logging: "zerolog 1.x"
+    config: "viper 1.x"
+
+  architecture:
+    component: "MCP Protocol Handler"
+    responsibilities:
+      - "Handle MCP protocol communication with Claude AI"
+      - "WebSocket endpoint for bidirectional communication"
+      - "Tool registration and discovery"
+      - "Request/response message handling"
+    dependencies:
+      - "Network layer"
+      - "Command Processor"
+    tech_stack:
+      - "Go stdlib net/http"
+      - "gorilla/websocket"
+
+  file_structure:
+    files:
+      - "services/mcp-service/cmd/main.go # MCP server entry point with Mark3Labs library"
+      - "services/mcp-service/internal/server/mcp.go # Mark3Labs MCP server setup and configuration"
+      - "services/mcp-service/internal/server/tools.go # Tool registration with schema validation"
+      - "services/mcp-service/internal/server/handlers.go # Strongly-typed tool handlers"
+      - "services/mcp-service/internal/server/middleware.go # Recovery and capability middleware"
+      - "services/mcp-service/internal/operations/processor.go # Operation processor with parameter validation"
+      - "services/mcp-service/internal/operations/validator.go # Parameter validation with enum/pattern support"
+      - "services/mcp-service/internal/docs/service.go # Document service"
+      - "services/mcp-service/internal/docs/client.go # Google Docs client"
+      - "services/mcp-service/internal/docs/converter.go # Markdown converter"
+      - "services/mcp-service/internal/auth/oauth.go # Google OAuth for service accounts"
+      - "services/mcp-service/internal/auth/tokens.go # Token validation with backend"
+
+  configuration:
+    environment_variables:
+      MCP_PORT: "8081"
+      ENVIRONMENT: "development"
+      LOG_LEVEL: "info"
+      LOG_FORMAT: "json"
+
+  performance_requirements:
+    connection_establishment: "< 1 second"
+    message_processing: "< 100ms per message"
+    concurrent_connections: "10+ connections"
+    memory_usage: "< 128MB"
+
+testing:
+  test_location: "Alongside implementation files (*_test.go)"
+  frameworks:
+    - "Go standard testing package"
+    - "testify for assertions"
+    - "gomock for interface mocking"
+  requirements:
+    - "Unit tests for WebSocket connection lifecycle"
+    - "Integration tests for MCP protocol compliance"
+    - "Mock Claude client interactions"
+    - "Test concurrent connection handling"
+    - "Validate message parsing and response formatting"
+  coverage:
+    business_logic: "85%"
+    overall: "80%"
+
+change_log:
+  - date: "2025-09-23"
+    version: "1.0"
+    description: "Initial story creation"
+    author: "Bob (Scrum Master)"
+
+qa_results:
+  review_date: "2025-09-24"
+  reviewed_by: "Quinn (Test Architect)"
+
+  assessment:
+    summary: "Story 3.1 provides excellent technical foundation and comprehensive implementation guidance. The story demonstrates strong architectural alignment and clear development context. However, several security and testability considerations should be addressed before production deployment."
+
+    strengths:
+      - "Comprehensive technical context with proper source documentation"
+      - "Clear task breakdown with acceptance criteria mapping"
+      - "Well-defined file structure following coding standards"
+      - "Thorough integration points with existing backend infrastructure"
+      - "Strong testing framework specification"
+
+    improvements:
+      - "Client authentication mechanism needs explicit definition"
+      - "WebSocket security measures require specification"
+      - "Load testing scenarios needed for concurrent connections"
+      - "Tool registration interface should be considered for future extensibility"
+
+    risk_level: "Medium"
+    risk_reason: "Core functionality is well-planned, but security considerations need attention"
+    testability_score: 8
+    testability_max: 10
+    testability_notes: "Good test coverage planned, missing load testing scenarios"
+    implementation_readiness: 9
+    implementation_readiness_max: 10
+
+  gate_status: "CONCERNS"
+  gate_reference: "docs/qa/gates/3.1-mcp-server-implementation.yaml"
+
+dev_agent_record:
+  agent_model_used: null
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
