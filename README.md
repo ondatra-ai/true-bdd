@@ -2,9 +2,10 @@
 
 An aspirational **Spec-as-Source** CLI: Gherkin-style behavioural specs
 plus a system-architecture description are the source of truth, and code
-is a regeneratable build artifact. Today the tool operates one level
-down — **Spec-Anchored** — driving Claude-mediated checklists over user
-stories.
+is a regeneratable artifact whose *observable behaviour* — not its
+byte-for-byte shape — survives a rebuild. Today the tool operates one
+level down — **Spec-Anchored** — driving Claude-mediated checklists over
+user stories.
 
 ## Table of contents
 
@@ -31,9 +32,12 @@ Piskala 2026) splits spec-driven development into three patterns:
 | **Spec-Anchored** | Code, but spec is a living contract. CI validates code against spec. | Hand-edited; spec updates via review. | GitHub Spec Kit, Kiro, BMAD, OpenSpec, current Tessl, LeanSpec, Augment Intent. |
 | **Spec-as-Source** | Spec. Code is derived. | Forbidden — edit the spec, regenerate the code. | Tessl (historically, via `tessl build`), **TrueBDD** (aspirational). |
 
-The test that distinguishes them: *Can you delete all the code and
-regenerate it identically from the spec?* For Spec-as-Source the answer
-is **yes by design**.
+The test that distinguishes them: *Can you delete all the code,
+regenerate from the spec, and have the new build pass every behavioural
+assertion the spec carries?* For Spec-as-Source the answer is **yes by
+design**. The regenerated code is free to differ in structure, naming,
+even in which auxiliary endpoints exist — what survives a rebuild is
+the **behaviour**, not the bytes.
 
 ## Vision
 
@@ -48,18 +52,27 @@ Spec-as-Source flips that contract. To make it work, the spec system
 has to carry enough information for an AI to reconstruct the code:
 
 - **Behavioural spec** — Gherkin (or a Gherkin-shaped DSL) describing
-  user-visible behaviour, *not* code structure. Each scenario maps
-  deterministically to an executable test.
+  user-visible behaviour, *not* code structure. Every scenario becomes
+  an executable test that any regenerated build must pass.
 - **Architectural spec** — services, data models, transport protocols
   (REST / GraphQL / etc.), endpoints, and the persistent contract
   (what survives a rebuild). Docker Compose YAML is a natural fit for
   the service shape.
 - **Regeneration loop** — the AI is allowed to invent absent endpoints
-  and code paths to satisfy the spec; what it *cannot* invent are the
-  persistent contracts (data models, exposed endpoints) declared by
-  the architecture.
+  and internal code paths to satisfy the spec, so two rebuilds from
+  the same spec will not produce byte-identical code. What it *cannot*
+  invent are the persistent contracts (data models, exposed endpoints)
+  declared by the architecture — those are pinned across rebuilds.
 - **BDD tests as oracle** — derived from the behavioural spec, they
-  decide whether a regenerated build is acceptable.
+  are the *definition* of a correct rebuild. If every scenario passes,
+  the rebuild is acceptable, regardless of how the code differs from
+  the previous build.
+
+The contract Spec-as-Source promises, then, is **behaviour preservation
+under regeneration** — not byte-identical regeneration. The behavioural
+spec defines observable outputs; the architectural spec pins the
+persistent contracts; the implementation in between is free to drift
+between rebuilds, as long as both contracts are honoured.
 
 `bdd-cli` is the substrate this vision is being built on. The `us`
 subcommand suite manages the spec lifecycle; the `build` subcommands
@@ -143,8 +156,10 @@ shipped a true Spec-as-Source mode (`tessl build`, retired Jan 2026).
 
 TrueBDD's bet is that **Gherkin-grade behavioural specs + an
 explicit architectural contract** are enough to make Spec-as-Source
-tractable again — without giving up determinism by relying on free-form
-prose specs.
+tractable again — pinning observable behaviour and persistent
+contracts tight enough that the regenerated code's shape can vary
+freely between rebuilds without the system's observable behaviour
+drifting.
 
 ## References
 
