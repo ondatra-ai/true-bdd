@@ -19,8 +19,3 @@ type GenerateResult struct {
 func (r *GenerateResult) HasQuestions() bool {
 	return len(r.Questions) > 0
 }
-
-// HasFixPrompt returns true if this result contains a fix prompt.
-func (r *GenerateResult) HasFixPrompt() bool {
-	return r.FixPrompt != ""
-}

@@ -1,0 +1,27 @@
+# Seed registry for the `us-apply-rewalk-converges` BDD fixture.
+#
+# Engineered so that `us apply 99.3 --fix` must apply TWO fixes during
+# walk #1 (one per AC), and walk #2 then verifies a clean fixpoint:
+#
+#   - AC-1's "present?" prompt FAILS because no entry references
+#     lineage id 99.3-001. F: adds a new entry.
+#   - AC-2's "present?" prompt FAILS because no entry references
+#     lineage id 99.3-002. F: adds a new entry.
+#
+# After walk #1, `anyFixApplied=true` → the engine re-walks. Walk #2
+# finds AC-1 and AC-2 both present, no duplicates, all prompts pass,
+# zero fixes applied → fixpoint reached → canonical commit.
+#
+# This is the simplest possible deterministic exercise of the
+# re-walk-to-fixpoint plumbing. It avoids the
+# duplicate-collapse F: path (which can take multiple Claude
+# iterations to converge) and the cross-AC invalidation case (which
+# depends on Claude's interpretation of "duplicate by behavior").
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-05-14"
+  description: "Empty seed for us-apply re-walk converges fixture"
+
+scenarios: {}

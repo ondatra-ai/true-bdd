@@ -31,6 +31,12 @@ type FixApplier struct {
 	systemLoader *template.TemplateLoader[FixApplierData]
 	userLoader   *template.TemplateLoader[FixApplierData]
 	tmpDir       string
+	// useEditMode toggles the Claude tool-permission set used by
+	// Apply. Default false → ThinkMode (Edit disallowed) for handlers
+	// that emit FILE_START/FILE_END markers. Set true via
+	// UseEditMode() for handlers that mutate the scratch file in
+	// place via the Edit tool (us apply's F: prompts).
+	useEditMode bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -54,6 +60,14 @@ func NewFixApplierWithPaths(
 		systemLoader: template.NewTemplateLoader[FixApplierData](systemPath),
 		userLoader:   template.NewTemplateLoader[FixApplierData](userPath),
 	}
+}
+
+// UseEditMode configures this applier to allow the Edit and
+// MultiEdit tools against the scratch path on each Apply call.
+// Required for the us-apply F: handlers, whose prompts instruct
+// Claude to edit the scratch registry directly.
+func (a *FixApplier) UseEditMode() {
+	a.useEditMode = true
 }
 
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
@@ -96,7 +110,7 @@ func (a *FixApplier) Apply(
 	a.savePromptFile(subjectID, iteration, "system", systemPrompt)
 	a.savePromptFile(subjectID, iteration, "user", userPrompt)
 
-	mode := a.modeFactory.GetThinkMode()
+	mode := a.selectMode()
 
 	response, err := a.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, "", mode)
 	if err != nil {
@@ -121,6 +135,17 @@ func (a *FixApplier) Apply(
 	slog.Info("Fix applied successfully", "subjectID", subjectID)
 
 	return content, nil
+}
+
+// selectMode returns the Claude execution mode for this Apply call —
+// EditMode (Edit/MultiEdit allowed on scratch) when the applier was
+// configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
+func (a *FixApplier) selectMode() ai.ExecutionMode {
+	if a.useEditMode {
+		return a.modeFactory.GetEditMode()
+	}
+
+	return a.modeFactory.GetThinkMode()
 }
 
 // savePromptFile saves a prompt file for debugging.

@@ -1,0 +1,66 @@
+# Per-fixture override of `bdd-cli/checklists/us-apply.yaml`.
+#
+# Real checklist has two prompts ("present?" + "duplicate?"). This
+# fixture's job is to exercise the new fixpoint re-walk loop, not the
+# duplicate-detection prompt. The "duplicate?" prompt is fragile under
+# Claude's interpretation (it can falsely flag duplicates on a single
+# entry, sending the F: handler into a no-op cycle), so we drop it for
+# this fixture and keep only the "present?" prompt. That's enough to
+# trigger a fix on each missing AC during walk #1, satisfy the
+# fixpoint loop's `anyFixApplied=true` condition, and verify
+# convergence in walk #2.
+#
+# The runner overlays this file over the real repo's
+# `bdd-cli/checklists/us-apply.yaml` (see PR #144's runner refactor).
+
+version: "1.0"
+last_updated: "2026-05-14"
+
+config:
+  max_apply_attempts: 5
+
+sections:
+  - id: merge
+    name: "Scenario Merge"
+    description: "Each AC from the story must be present in the registry."
+    validation_prompts:
+      - Q: |
+          Does this acceptance criterion already appear as a scenario in the
+          registry?
+
+          The registry is the requirements YAML referenced by the subject
+          (the scratch copy for this run). An AC "appears" when there is an
+          entry under `scenarios:` whose `user_stories[]` list contains the
+          subject's story path AND the subject's lineage scenario id.
+
+          Pass when at least one such entry exists.
+          Fail otherwise.
+
+          Context: emit one line.
+            - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
+            - "AC <ac id> (lineage <lineage id>): not present"
+        rationale: "Every refined-story AC must be reflected as a tracked scenario in the registry."
+        docs:
+          - terms
+        F: |
+          Add this AC as a new scenario in the registry.
+
+          Use the Edit tool against the registry file referenced by the
+          subject. Steps:
+            1. Pick the next free id following existing numbering — `INT-NNN`
+               for integration-layer ACs, `E2E-NNN` for e2e-layer ACs. If
+               unsure, prefer `E2E-NNN`. Do not reuse an existing id.
+            2. Insert a new entry under `scenarios:` with:
+                  description: <short summary derived from the AC description>
+                  service: ""
+                  last_updated: "<today, YYYY-MM-DD>"
+                  user_stories:
+                    - story: <story file path from subject>
+                      scenario_id: <lineage id from subject>
+                      merge_date: "<today, YYYY-MM-DD>"
+                  merged_steps:
+                    given: <verbatim from the AC's steps.given>
+                    when:  <verbatim from the AC's steps.when>
+                    then:  <verbatim from the AC's steps.then>
+            3. Preserve existing file ordering and indentation. Do not
+               touch any other entry.
