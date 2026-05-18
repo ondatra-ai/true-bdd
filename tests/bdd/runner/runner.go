@@ -30,6 +30,49 @@ const (
 // has no executable invocation in it.
 var ErrEmptyCmdFile = errors.New("cmd file is empty")
 
+// ErrRepoRootNotFound is returned when findRepoRoot walks above cwd
+// without finding a .git directory.
+var ErrRepoRootNotFound = errors.New(
+	"BDD runner: repo root (with .git) not found above cwd",
+)
+
+// repoLayer lists subtrees the runner pre-copies from the real repo
+// into each fixture's tmpdir BEFORE overlaying input/. These are the
+// live engine ingredients (checklists, prompt templates, engine
+// config). Anything outside this list must be provided by the fixture
+// itself under input/.
+func repoLayer() []string {
+	return []string{
+		"bdd-cli",
+		"templates",
+	}
+}
+
+// findRepoRoot walks up from cwd until it finds a directory containing
+// a `.git` entry. `.git` is used (not `go.mod`) because the bdd-cli
+// module lives at scripts/bdd-cli/, so go.mod-based detection would
+// stop one level below the repo root.
+func findRepoRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("getwd: %w", err)
+	}
+
+	for {
+		_, statErr := os.Stat(filepath.Join(dir, ".git"))
+		if statErr == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", ErrRepoRootNotFound
+		}
+
+		dir = parent
+	}
+}
+
 // FileChange describes one file's diff between the fixture's input/ and
 // the post-run state of the tmpdir.
 type FileChange struct {
@@ -170,21 +213,23 @@ func readStdoutRegexes(path string) ([]*regexp.Regexp, error) {
 	return regexes, nil
 }
 
-// Execute runs the fixture: copies input/ into a fresh tmpdir, execs
-// binPath with cmd args inside it, captures output and the file diff.
-// The tmpdir is preserved on the result so the caller can clean it up
-// (or keep it for inspection on failure).
+// Execute runs the fixture. Three-step prep:
+//  1. Pre-populate the tmpdir from the repo allowlist (repoLayer).
+//     These are the live engine ingredients (checklists, templates,
+//     config) — pulled from the real repo so a checklist edit
+//     propagates to every fixture automatically.
+//  2. Overlay the fixture's input/ on top. Files in input/ win, so
+//     per-fixture overrides remain possible.
+//  3. Snapshot the post-prep state for the diff (so the judge only
+//     sees what the run itself did, not the prep).
+//
+// Then execs binPath in the tmpdir. The tmpdir is preserved on the
+// result so the caller can clean it up (or keep it for inspection on
+// failure).
 func Execute(ctx context.Context, fixture *Fixture, binPath string) (*RunResult, error) {
-	tmpDir, err := os.MkdirTemp("", "bdd-cli-"+fixture.Name+"-")
+	tmpDir, before, err := prepareRunDir(fixture)
 	if err != nil {
-		return nil, fmt.Errorf("mkdir tmp: %w", err)
-	}
-
-	inputDir := filepath.Join(fixture.Dir, "input")
-
-	err = copyTree(inputDir, tmpDir)
-	if err != nil {
-		return &RunResult{TmpDir: tmpDir}, fmt.Errorf("copy input tree: %w", err)
+		return &RunResult{TmpDir: tmpDir}, err
 	}
 
 	args := strings.Fields(fixture.Cmd)
@@ -206,21 +251,21 @@ func Execute(ctx context.Context, fixture *Fixture, binPath string) (*RunResult,
 
 	exitCode := cmd.ProcessState.ExitCode()
 
-	diff, diffErr := computeDiff(inputDir, tmpDir)
-	if diffErr != nil {
+	after, snapErr := snapshotTree(tmpDir)
+	if snapErr != nil {
 		return &RunResult{
 			ExitCode: exitCode,
 			Stdout:   stdout.String(),
 			Stderr:   stderr.String(),
 			TmpDir:   tmpDir,
-		}, fmt.Errorf("compute diff: %w", diffErr)
+		}, fmt.Errorf("snapshot post-run: %w", snapErr)
 	}
 
 	res := &RunResult{
 		ExitCode: exitCode,
 		Stdout:   stdout.String(),
 		Stderr:   stderr.String(),
-		Diff:     diff,
+		Diff:     computeDiffFromSnapshots(before, after),
 		TmpDir:   tmpDir,
 	}
 
@@ -232,6 +277,40 @@ func Execute(ctx context.Context, fixture *Fixture, binPath string) (*RunResult,
 	}
 
 	return res, nil
+}
+
+// prepareRunDir creates the tmpdir, pre-populates it from the repo
+// allowlist, overlays the fixture's input/, and snapshots the result
+// as the "before-run" state for diffing.
+func prepareRunDir(fixture *Fixture) (string, map[string][]byte, error) {
+	tmpDir, err := os.MkdirTemp("", "bdd-cli-"+fixture.Name+"-")
+	if err != nil {
+		return "", nil, fmt.Errorf("mkdir tmp: %w", err)
+	}
+
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return tmpDir, nil, fmt.Errorf("find repo root: %w", err)
+	}
+
+	for _, sub := range repoLayer() {
+		err = copyTree(filepath.Join(repoRoot, sub), filepath.Join(tmpDir, sub))
+		if err != nil {
+			return tmpDir, nil, fmt.Errorf("pre-populate %s: %w", sub, err)
+		}
+	}
+
+	err = copyTree(filepath.Join(fixture.Dir, "input"), tmpDir)
+	if err != nil {
+		return tmpDir, nil, fmt.Errorf("overlay input tree: %w", err)
+	}
+
+	before, err := snapshotTree(tmpDir)
+	if err != nil {
+		return tmpDir, nil, fmt.Errorf("snapshot pre-run: %w", err)
+	}
+
+	return tmpDir, before, nil
 }
 
 func envWithoutClaudeCode(env []string) []string {
@@ -306,17 +385,12 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-func computeDiff(inputDir, afterDir string) ([]FileChange, error) {
-	before, err := snapshotTree(inputDir)
-	if err != nil {
-		return nil, fmt.Errorf("snapshot input: %w", err)
-	}
-
-	after, err := snapshotTree(afterDir)
-	if err != nil {
-		return nil, fmt.Errorf("snapshot after: %w", err)
-	}
-
+// computeDiffFromSnapshots compares two filesystem snapshots
+// (path → content) and returns the list of created/modified/deleted
+// entries. Callers are responsible for taking the snapshots — this
+// lets Execute() snapshot the tmpdir at the right moments (after
+// prep, after run) without an extra round of file IO.
+func computeDiffFromSnapshots(before, after map[string][]byte) []FileChange {
 	var changes []FileChange
 
 	for path, beforeBytes := range before {
@@ -346,7 +420,7 @@ func computeDiff(inputDir, afterDir string) ([]FileChange, error) {
 
 	sort.Slice(changes, func(i, j int) bool { return changes[i].Path < changes[j].Path })
 
-	return changes, nil
+	return changes
 }
 
 func snapshotTree(root string) (map[string][]byte, error) {

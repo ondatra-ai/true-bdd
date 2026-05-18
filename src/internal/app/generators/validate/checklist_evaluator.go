@@ -83,85 +83,24 @@ func NewChecklistEvaluatorWithPaths(
 	}
 }
 
-// Evaluate evaluates all prompts against the given subject.
-func (e *ChecklistEvaluator) Evaluate(
+// EvaluateOne evaluates a single prompt against the subject and returns
+// the full ValidationResult. This is the per-cell primitive the engine
+// `query` closure calls — returning the result (not just pass/fail) so
+// the cell's `genFix` closure can read it via shared closure state.
+//
+// promptIndex must be 1-based to match the tmp-file naming convention.
+func (e *ChecklistEvaluator) EvaluateOne(
 	ctx context.Context,
 	subject any,
-	subjectID, subjectTitle string,
-	prompts []checklist.PromptWithContext,
+	subjectID string,
+	promptCtx checklist.PromptWithContext,
 	tmpDir string,
-) (*checklist.ChecklistReport, error) {
-	return e.evaluatePrompts(ctx, subject, subjectID, subjectTitle, prompts, tmpDir, false)
-}
-
-// EvaluateUntilFailure evaluates prompts sequentially and stops at the first FAIL status.
-// This is used for the iterative fix workflow where we want to fix one issue at a time.
-func (e *ChecklistEvaluator) EvaluateUntilFailure(
-	ctx context.Context,
-	subject any,
-	subjectID, subjectTitle string,
-	prompts []checklist.PromptWithContext,
-	tmpDir string,
-) (*checklist.ChecklistReport, error) {
-	return e.evaluatePrompts(ctx, subject, subjectID, subjectTitle, prompts, tmpDir, true)
-}
-
-// evaluatePrompts is the shared implementation for Evaluate and EvaluateUntilFailure.
-func (e *ChecklistEvaluator) evaluatePrompts(
-	ctx context.Context,
-	subject any,
-	subjectID, subjectTitle string,
-	prompts []checklist.PromptWithContext,
-	tmpDir string,
-	stopOnFailure bool,
-) (*checklist.ChecklistReport, error) {
+	promptIndex int,
+) (checklist.ValidationResult, error) {
 	e.tmpDir = tmpDir
 	e.subjectID = subjectID
 
-	report := &checklist.ChecklistReport{
-		SubjectID:    subjectID,
-		SubjectTitle: subjectTitle,
-		Results:      make([]checklist.ValidationResult, 0, len(prompts)),
-	}
-
-	for promptIndex, promptCtx := range prompts {
-		slog.Info("Evaluating prompt",
-			"index", promptIndex+1,
-			"total", len(prompts),
-			"section", promptCtx.GetFullSectionPath(),
-		)
-
-		result, err := e.evaluatePrompt(ctx, subject, subjectID, promptCtx, promptIndex+1)
-		if err != nil {
-			slog.Error("Failed to evaluate prompt", "error", err)
-			// Continue with other prompts, mark this one as failed
-			result = checklist.ValidationResult{
-				SectionPath:  promptCtx.GetFullSectionPath(),
-				Question:     promptCtx.Prompt.Question,
-				ActualAnswer: "ERROR: " + err.Error(),
-				Status:       checklist.StatusFail,
-				Rationale:    promptCtx.Prompt.Rationale,
-				PromptIndex:  promptIndex + 1,
-				Docs:         promptCtx.GetEffectiveDocs(),
-			}
-		}
-
-		report.Results = append(report.Results, result)
-
-		// Stop at first failure if requested
-		if stopOnFailure && result.Status == checklist.StatusFail {
-			slog.Info("Stopping evaluation at first failure",
-				"section", promptCtx.GetFullSectionPath(),
-				"promptIndex", promptIndex+1,
-			)
-
-			break
-		}
-	}
-
-	report.CalculateSummary()
-
-	return report, nil
+	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx, promptIndex)
 }
 
 // evaluatePrompt evaluates a single prompt against the subject.

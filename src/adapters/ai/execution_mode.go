@@ -36,3 +36,27 @@ func (f *ModeFactory) GetThinkMode() ExecutionMode {
 		},
 	}
 }
+
+// GetEditMode returns a mode that additionally allows Edit and
+// MultiEdit against the configured tmp glob, so callers whose F:
+// handlers mutate the scratch registry in place (e.g. us apply) can
+// actually run their prompts. ThinkMode disallows Edit globally,
+// which is correct for handlers that emit FILE_START/FILE_END
+// markers (us create / us refine), but wrong for us apply.
+func (f *ModeFactory) GetEditMode() ExecutionMode {
+	tmpGlob := f.config.GetString("paths.tmp_glob")
+
+	return ExecutionMode{
+		[]string{
+			"Read(**)",
+			"Write(" + tmpGlob + ")",
+			"Edit(" + tmpGlob + ")",
+			"MultiEdit(" + tmpGlob + ")",
+			"Glob(**)",
+			"Grep(**)",
+		},
+		[]string{
+			"Bash",
+		},
+	}
+}

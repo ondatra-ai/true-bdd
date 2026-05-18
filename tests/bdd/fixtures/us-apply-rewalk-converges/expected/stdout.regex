@@ -1,0 +1,18 @@
+# Banners we expect from a converging `us apply --fix` with re-walk semantics.
+#
+# Each non-blank, non-`#` line is compiled as a Go regexp and asserted to
+# match somewhere in the captured stdout (see runner/checks.go).
+
+# Both ACs are walked
+AC 1/2:
+AC 2/2:
+
+# A re-walk fires because at least one fix was applied during walk #1.
+# `2/` matches the second-attempt banner regardless of the cap value (5
+# in the fixture's checklist).
+RE-WALK 2/
+
+# Final convergence: a clean walk with zero fixes applied lands the
+# canonical commit.
+ALL CHECKS PASSED!
+APPLY COMPLETE

@@ -1,0 +1,29 @@
+story:
+    id: "99.3"
+    title: BDD fixture — us apply re-walk converges
+    as_a: Claude User
+    i_want: a synthetic story that exercises the us-apply re-walk loop
+    so_that: the BDD harness can assert the new --fix re-walk-to-fixpoint behavior end-to-end
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+                - the server accepts JSON-RPC over HTTP POST at /mcp
+            - when:
+                - the Claude User posts a valid JSON-RPC initialize request to /mcp
+            - then:
+                - the server returns HTTP 200
+                - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - id: AC-2
+          description: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User sends an HTTP GET request to /mcp
+            - then:
+                - the server returns HTTP 405 Method Not Allowed
+                - and: the response indicates the method is not allowed for this endpoint
