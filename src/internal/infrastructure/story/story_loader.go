@@ -71,13 +71,10 @@ func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
 		return nil, fmt.Errorf("parse story YAML failed: %w", pkgerrors.ErrParseStoryYAMLFailed(storyFile, err))
 	}
 
-	storyDoc.EnsureScenariosPopulated()
-
 	slog.Debug(
 		"Story document loaded successfully",
 		"story_number", storyNumber,
 		"file", storyFile,
-		"scenario_count", len(storyDoc.Scenarios.TestScenarios),
 	)
 
 	return &storyDoc, nil
