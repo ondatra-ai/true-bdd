@@ -1,0 +1,43 @@
+cmd: --help
+input: input
+
+expected:
+  exit_code: 0
+
+  # Root help banner: short description, usage line, both subcommand groups, help flag.
+  stdout_regex:
+    - "BDD CLI tool"
+    - "Usage:"
+    - 'bdd-cli \[command\]'
+    - "Available Commands:"
+    - '\bbuild\b'
+    - '\bus\b'
+    - "-h, --help"
+
+  judge: |
+    # Expectations for `bdd-cli --help`
+
+    The command prints Cobra's default help banner for the root command
+    and exits 0. It is a pure read-only invocation — nothing on disk
+    should change.
+
+    ## What MUST be true after the run
+
+    1. Outside of `tmp/`, the file diff is empty. No files under
+       `bdd-cli/`, `scripts/`, `docs/`, or any other top-level
+       directory should be created, modified, or deleted.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts (logging output,
+      per-prompt request/response files) and MUST be ignored — they
+      are not part of the user-facing behavior of `--help`.
+
+    ## What MUST NOT happen
+
+    - Any created/modified/deleted file whose path does not start
+      with `tmp/`.
+
+    If every file change in the diff is inside `tmp/` (or the diff is
+    empty), reply `PASS`. Otherwise reply `FAIL: <one-sentence reason>`
+    naming the first stray non-`tmp/` file change.
