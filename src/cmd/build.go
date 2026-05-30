@@ -11,8 +11,9 @@ import (
 
 	"bdd-cli/src/internal/app/bootstrap"
 	"bdd-cli/src/internal/app/commands"
-	"bdd-cli/src/internal/pkg/console"
 )
+
+const defaultArchitectureFile = "bdd-cli/architecture.yaml"
 
 func NewBuildCommand(container *bootstrap.Container) *cobra.Command {
 	buildCmd := &cobra.Command{
@@ -79,15 +80,55 @@ Example:
 	return cmd
 }
 
-func newBuildCodeCmd(_ *bootstrap.Container) *cobra.Command {
-	return &cobra.Command{
+func newBuildCodeCmd(container *bootstrap.Container) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "code",
-		Short: "Build code (not yet implemented)",
-		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			console.Println("build code: not yet implemented")
+		Short: "Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
+		Long: `Walk every (service, layer) pair declared in bdd-cli/architecture.yaml,
+discover currently-failing tests through their framework runner, and walk each
+failure against the build-code checklist. With --fix, every failed cell drives a
+Claude-mediated turn that Writes or Edits production source under services/* so
+the failing test passes; test files and docs/requirements.yaml are never
+touched. The CLI exits non-zero if any test is still failing after the walk.
+
+Example:
+  bdd-cli build code
+  bdd-cli build code --fix
+  bdd-cli build code --architecture bdd-cli/architecture.yaml`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx, stop := signal.NotifyContext(context.Background(),
+				os.Interrupt, syscall.SIGTERM)
+			defer stop()
+
+			architectureFile, _ := cmd.Flags().GetString("architecture")
+			fix, _ := cmd.Flags().GetBool("fix")
+
+			err := commands.RunBuildCode(ctx, commands.BuildCodeDeps{
+				ArchitectureLoader:          container.ArchitectureLoader,
+				TestRunnerDispatcher:        container.TestRunnerDispatcher,
+				ChecklistLoader:             container.ChecklistLoader,
+				BuildCodeEvaluator:          container.BuildCodeEvaluator,
+				BuildCodeFixPromptGenerator: container.BuildCodeFixPromptGenerator,
+				BuildCodeFixApplier:         container.BuildCodeFixApplier,
+				UserInputCollector:          container.UserInputCollector,
+				TableRenderer:               container.TableRenderer,
+				RunDir:                      container.RunDir,
+			}, architectureFile, fix)
+
+			stop()
+
+			if err != nil {
+				return fmt.Errorf("build code: %w", err)
+			}
 
 			return nil
 		},
 	}
+
+	cmd.Flags().String("architecture", defaultArchitectureFile,
+		"Path to the architecture.yaml file driving the test scope")
+	cmd.Flags().Bool("fix", false, fixFlagDescription)
+
+	return cmd
 }

@@ -41,6 +41,13 @@ func TestBDDFixtures(t *testing.T) {
 		t.Fatalf("init judge: %v", err)
 	}
 
+	sessionRoot, err := runner.NewSessionRoot()
+	if err != nil {
+		t.Fatalf("create session root: %v", err)
+	}
+
+	t.Logf("BDD session root: %s", sessionRoot)
+
 	fixtures, err := discoverFixtures()
 	if err != nil {
 		t.Fatalf("discover fixtures: %v", err)
@@ -52,7 +59,7 @@ func TestBDDFixtures(t *testing.T) {
 
 	for _, dir := range fixtures {
 		t.Run(filepath.Base(dir), func(t *testing.T) {
-			runFixture(t, dir, binPath, judge)
+			runFixture(t, dir, binPath, sessionRoot, judge)
 		})
 	}
 }
@@ -100,7 +107,7 @@ func discoverFixtures() ([]string, error) {
 	return dirs, nil
 }
 
-func runFixture(t *testing.T, dir, binPath string, judge runner.Judge) {
+func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Judge) {
 	t.Helper()
 
 	fixture, err := runner.LoadFixture(dir)
@@ -113,7 +120,7 @@ func runFixture(t *testing.T, dir, binPath string, judge runner.Judge) {
 
 	t.Logf("running %q (%s) — this can take several minutes", fixture.Cmd, fixture.Name)
 
-	res, err := runner.Execute(runCtx, fixture, binPath)
+	res, err := runner.Execute(runCtx, fixture, binPath, sessionRoot)
 	if err != nil {
 		dumpRun(t, res)
 		t.Fatalf("execute: %v", err)
@@ -125,7 +132,8 @@ func runFixture(t *testing.T, dir, binPath string, judge runner.Judge) {
 	verdict := runner.Evaluate(judgeCtx, fixture, res, judge)
 
 	if verdict.Pass() {
-		t.Logf("PASS %s (exit=%d, %d file change(s))", fixture.Name, res.ExitCode, len(res.Diff))
+		t.Logf("PASS %s (exit=%d, %d file change(s)) — dir: %s",
+			fixture.Name, res.ExitCode, len(res.Diff), res.TmpDir)
 
 		return
 	}

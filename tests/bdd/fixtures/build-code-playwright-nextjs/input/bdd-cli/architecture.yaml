@@ -1,0 +1,27 @@
+architecture:
+  services:
+    - name: frontend
+      path: services/frontend
+      language: typescript
+      frameworks:
+        - next.js
+        - react
+
+      patterns:
+        component-composition:
+          description: "Default React composition for Next.js App Router."
+          rules:
+            - "Use server components by default."
+            - "Add 'use client' only when needed (hooks, browser APIs)."
+
+      quality_gate:
+        code:
+          - name: typescript
+            config: services/frontend/tsconfig.json
+        tests:
+          integration:
+            path: tests/integration
+            framework: playwright
+            config: tests/playwright.config.ts
+
+      dependencies: []

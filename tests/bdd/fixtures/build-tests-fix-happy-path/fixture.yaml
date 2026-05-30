@@ -1,0 +1,58 @@
+cmd: build tests --fix
+input: input
+
+answers: |
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+
+expected:
+  exit_code: 0
+
+  judge: |
+    # Expectations for `bdd-cli build tests --fix`
+
+    The seed registry (`input/docs/requirements.yaml`) has one scenario:
+    `INT-900`. The `build tests` command's contract is: every scenario in
+    `docs/requirements.yaml` must have a corresponding executable test in
+    the codebase, and when a test is missing, `build tests --fix`
+    produces it. This fixture is the happy path for the fix loop: the
+    walk finds no test for `INT-900`, the fix-generator + fix-applier
+    write one, the re-walk converges, the CLI exits 0.
+
+    ## What MUST be true after the run
+
+    1. The diff contains at least one **created** file at a path under
+       `tests/`, `services/backend/`, or `services/frontend/`.
+    2. The contents of that created file reference the scenario id
+       `INT-900` either as a string literal or as a comment.
+    3. The created file looks like an executable test — i.e. its content
+       contains at least one of:
+       - `func Test`              (Go test)
+       - `test(`, `describe(`     (JS/TS test framework)
+       - `it(`                     (BDD-style test)
+
+    ## What MUST NOT happen
+
+    - The seed `docs/requirements.yaml` MUST NOT be modified by the run.
+    - No file is created outside `tests/`, `services/backend/`,
+      `services/frontend/`, or the per-run `tmp/` scratch directory.
+
+    ## Tolerances
+
+    - The specific test framework (Go, Jest, Playwright, etc.) and the
+      exact file path are up to the `build tests` implementation —
+      judged against the scenario's `service` field
+      (`service: "mcp-service"`), the natural location is somewhere
+      under `tests/` or `services/backend/`.
+    - Files inside `tmp/` are scratch artifacts — ignore them.
+
+    Reply `PASS` if all the MUST-be-true rules hold AND all the
+    MUST-NOT-happen rules hold. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.

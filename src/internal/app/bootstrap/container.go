@@ -5,6 +5,7 @@ import (
 	"bdd-cli/src/internal/app/generators/validate"
 	"bdd-cli/src/internal/app/runner"
 	"bdd-cli/src/internal/domain/ports"
+	"bdd-cli/src/internal/infrastructure/architecture"
 	"bdd-cli/src/internal/infrastructure/checklist"
 	"bdd-cli/src/internal/infrastructure/config"
 	"bdd-cli/src/internal/infrastructure/epic"
@@ -12,6 +13,7 @@ import (
 	"bdd-cli/src/internal/infrastructure/input"
 	"bdd-cli/src/internal/infrastructure/registry"
 	"bdd-cli/src/internal/infrastructure/story"
+	"bdd-cli/src/internal/infrastructure/testrunner"
 	pkgerrors "bdd-cli/src/internal/pkg/errors"
 )
 
@@ -91,6 +93,16 @@ type Container struct {
 	BuildTestsEvaluator          *validate.ChecklistEvaluator
 	BuildTestsFixPromptGenerator *validate.FixPromptGenerator
 	BuildTestsFixApplier         *validate.FixApplier
+	// Build-code triple drives `build code`. Templates live under
+	// templates.prompts.build_code_* and the fix-applier runs in
+	// EditMode so Claude can Write/Edit production source files under
+	// services/* in place. The dispatcher routes test discovery and
+	// per-test reruns to one of the framework-specific runners.
+	ArchitectureLoader          *architecture.Loader
+	TestRunnerDispatcher        *testrunner.Dispatcher
+	BuildCodeEvaluator          *validate.ChecklistEvaluator
+	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
+	BuildCodeFixApplier         *validate.FixApplier
 }
 
 // NewContainer builds the Container.
@@ -132,6 +144,18 @@ func NewContainer() (*Container, error) {
 	})
 	buildTestsTrip.fixApplier.UseEditMode()
 
+	buildCodeTrip := newScenarioTriple(claudeClient, cfg, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.build_code_checklist_system",
+		checklist:          "templates.prompts.build_code_checklist",
+		fixGeneratorSystem: "templates.prompts.build_code_fix_generator_system",
+		fixGenerator:       "templates.prompts.build_code_fix_generator",
+		fixApplierSystem:   "templates.prompts.build_code_fix_applier_system",
+		fixApplier:         "templates.prompts.build_code_fix_applier",
+	})
+	buildCodeTrip.fixApplier.UseEditMode()
+
+	testRunnerDispatcher := newTestRunnerDispatcher()
+
 	return &Container{
 		Config:                       cfg,
 		RunDir:                       runDir,
@@ -152,5 +176,22 @@ func NewContainer() (*Container, error) {
 		BuildTestsEvaluator:          buildTestsTrip.evaluator,
 		BuildTestsFixPromptGenerator: buildTestsTrip.fixGenerator,
 		BuildTestsFixApplier:         buildTestsTrip.fixApplier,
+		ArchitectureLoader:           architecture.NewLoader(cfg),
+		TestRunnerDispatcher:         testRunnerDispatcher,
+		BuildCodeEvaluator:           buildCodeTrip.evaluator,
+		BuildCodeFixPromptGenerator:  buildCodeTrip.fixGenerator,
+		BuildCodeFixApplier:          buildCodeTrip.fixApplier,
 	}, nil
+}
+
+// newTestRunnerDispatcher wires the three framework-specific runners
+// behind the testrunner.Dispatcher used by `build code`. Each runner is
+// stateless and constructed once; the dispatcher routes by the
+// `framework:` field declared in architecture.yaml.
+func newTestRunnerDispatcher() *testrunner.Dispatcher {
+	return testrunner.NewDispatcher(map[string]testrunner.Runner{
+		testrunner.FrameworkGoTest:     testrunner.NewGoTestRunner(),
+		testrunner.FrameworkPlaywright: testrunner.NewPlaywrightRunner(),
+		testrunner.FrameworkJest:       testrunner.NewJestRunner(),
+	})
 }
