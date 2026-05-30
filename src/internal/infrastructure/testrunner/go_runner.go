@@ -72,9 +72,11 @@ func (r *GoTestRunner) Discover(
 	return failures, nil
 }
 
-// RunOne re-executes a single failing Go test by its TestName id. For
-// build-failure synthetic entries (TestName suffix `::<build>`) it
-// instead re-runs the whole package and looks for any remaining failure.
+// RunOne re-executes a single failing Go test by its TestName id, in
+// the same module root Discover used (threaded through as `-C
+// failingTest.RunnerConfig.Path`). For build-failure synthetic entries
+// (TestName suffix `::<build>`) it instead re-runs the whole package
+// and looks for any remaining failure.
 func (r *GoTestRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -84,7 +86,7 @@ func (r *GoTestRunner) RunOne(
 		return false, "", err
 	}
 
-	args := buildGoRunOneArgs(pkg, test)
+	args := buildGoRunOneArgs(failingTest.RunnerConfig.Path, pkg, test)
 
 	stdout, stderr, runErr := r.exec(ctx, args...)
 	if runErr != nil && stdout.Len() == 0 {
@@ -127,16 +129,20 @@ func (r *GoTestRunner) exec(
 }
 
 // buildGoRunOneArgs assembles the `go test` invocation for re-running a
-// single test. Build-failure synthetic entries use no `-run` filter so
-// the package's compile is the verdict.
-func buildGoRunOneArgs(pkg, test string) []string {
+// single test. The dir is threaded through as `-C <dir>` to match the
+// module/cwd used by Discover — in a multi-module repo (each service
+// with its own go.mod), running from the wrong root would silently fail
+// to resolve the package and the fix loop would never converge.
+// Build-failure synthetic entries use no `-run` filter so the package's
+// compile is the verdict.
+func buildGoRunOneArgs(dir, pkg, test string) []string {
 	if test == goBuildFailureMarker {
-		return []string{"-json", "-count=1", pkg}
+		return []string{"-C", dir, "-json", "-count=1", pkg}
 	}
 
 	runFilter := buildGoRunFilter(test)
 
-	return []string{"-json", "-count=1", "-run", runFilter, pkg}
+	return []string{"-C", dir, "-json", "-count=1", "-run", runFilter, pkg}
 }
 
 // buildGoRunFilter assembles the `-run` regex for one (possibly nested)
