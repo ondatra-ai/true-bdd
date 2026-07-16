@@ -87,7 +87,7 @@ func (a *FixApplier) Apply(
 		"iteration", iteration,
 	)
 
-	resultPath := fmt.Sprintf("%s/apply-%s-iter%d-result.yaml", tmpDir, subjectID, iteration)
+	resultPath := fmt.Sprintf("%s/apply-%s-iter%d-result.yaml", tmpDir, sanitizeID(subjectID), iteration)
 
 	promptData := FixApplierData{
 		Subject:    subject,
@@ -154,7 +154,7 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 		return
 	}
 
-	filePath := fmt.Sprintf("%s/apply-%s-iter%d-%s.txt", a.tmpDir, storyID, iteration, suffix)
+	filePath := fmt.Sprintf("%s/apply-%s-iter%d-%s.txt", a.tmpDir, sanitizeID(storyID), iteration, suffix)
 
 	err := os.WriteFile(filePath, []byte(content), fixApplierFilePermissions)
 	if err != nil {
