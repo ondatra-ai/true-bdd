@@ -92,7 +92,7 @@ func (g *FixPromptGenerator) Generate(
 
 	g.logGenerationStart(params, promptIndex, iteration)
 
-	resultPath := fmt.Sprintf("%s/%02d-%s-fix-prompts.md", params.TmpDir, promptIndex, params.SubjectID)
+	resultPath := fmt.Sprintf("%s/%02d-%s-fix-prompts.md", params.TmpDir, promptIndex, sanitizeID(params.SubjectID))
 	promptData := g.buildPromptData(params, resultPath, iteration)
 
 	response, err := g.executeAIGeneration(ctx, params, promptData, promptIndex, iteration)
@@ -221,7 +221,7 @@ func (g *FixPromptGenerator) savePromptFile(tmpDir, storyID string, promptIndex 
 	}
 
 	// Follow naming convention: XX-<storyID>-<suffix>.txt
-	filePath := fmt.Sprintf("%s/%02d-%s-%s.txt", tmpDir, promptIndex, storyID, suffix)
+	filePath := fmt.Sprintf("%s/%02d-%s-%s.txt", tmpDir, promptIndex, sanitizeID(storyID), suffix)
 
 	err := os.WriteFile(filePath, []byte(content), fixPromptFilePermissions)
 	if err != nil {

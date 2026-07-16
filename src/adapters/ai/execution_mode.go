@@ -33,6 +33,12 @@ func (f *ModeFactory) GetThinkMode() ExecutionMode {
 			"Bash",
 			"Edit(**)",
 			"MultiEdit(**)",
+			// Sub-agent tools. Every prompt here is a single-turn
+			// `claude -p` call; delegating to a sub-agent and awaiting it
+			// ends the turn with no output (the parent cannot resume),
+			// which silently yields an empty fix prompt. Force inline work.
+			"Agent",
+			"Task",
 		},
 	}
 }
@@ -57,6 +63,10 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 		},
 		[]string{
 			"Bash",
+			// See GetThinkMode: sub-agent delegation breaks single-turn
+			// `claude -p` calls, so keep it disallowed here too.
+			"Agent",
+			"Task",
 		},
 	}
 }
