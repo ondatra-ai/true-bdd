@@ -45,11 +45,11 @@ func repoLayer() []string {
 }
 
 // NewSessionRoot creates a fresh per-test-invocation directory under
-// `<repoRoot>/scripts/tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/`. Each fixture
+// `<repoRoot>/tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/`. Each fixture
 // in the same `go test` run will get its own subdirectory beneath this
 // path (see prepareRunDir), so all fixtures from one invocation are
-// grouped together. The repo's existing `tmp/` .gitignore rule covers
-// this tree, so it is never accidentally committed.
+// grouped together. The repo's `/tmp/` .gitignore rule covers this
+// tree, so it is never accidentally committed.
 func NewSessionRoot() (string, error) {
 	repoRoot, err := findRepoRoot()
 	if err != nil {
@@ -57,7 +57,7 @@ func NewSessionRoot() (string, error) {
 	}
 
 	stamp := time.Now().Format("2006-01-02_15-04-05")
-	root := filepath.Join(repoRoot, "scripts", "tmp", "test_run", stamp)
+	root := filepath.Join(repoRoot, "tmp", "test_run", stamp)
 
 	err = os.MkdirAll(root, dirPerm)
 	if err != nil {
@@ -123,7 +123,7 @@ type RunResult struct {
 	Stdout   string
 	Stderr   string
 	Diff     []FileChange
-	TmpDir   string // predictable per-fixture path under scripts/tmp/test_run/<session>/; preserved after every run
+	TmpDir   string // predictable per-fixture path under tmp/test_run/<session>/; preserved after every run
 }
 
 // LoadFixture parses a fixture folder.

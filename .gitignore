@@ -7,6 +7,9 @@
 # Build / test artefacts
 /tmp/
 /dist/
+
+# Conversation history captured by .claude/hooks/history.py
+/docs/history/
 coverage.txt
 coverage.out
 
