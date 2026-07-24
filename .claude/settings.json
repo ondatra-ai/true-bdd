@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.py prompt-submit",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.py prompt-submit && (${CLAUDE_PROJECT_DIR}/.claude/hooks/context.py sweep </dev/null >/dev/null 2>&1 &)",
             "timeout": 15
           }
         ]

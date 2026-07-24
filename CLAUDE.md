@@ -116,7 +116,8 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
 - `tests/bdd/` — the fixture harness: `bdd_test.go`, `runner/`, `fixtures/<scenario>/`.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
-- `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` deletes it so the next prompt opens a fresh file.
+- `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` deletes it so the next prompt opens a fresh file. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
+- `docs/context/` — conversational context ledgers (git-tracked): `requirements.md` (incl. corrections), `decisions.md`, `facts.md`, `follow-ups.md`. Appended by the context archivist (see Context below) — the durable knowledge channel for what is said in conversation but never lands in a commit. **Not** the BDD requirements registry: product scenarios live in a host project's `docs/requirements.yaml` (or a fixture's input tree); these ledgers hold engine-development knowledge only.
 - `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk.
 
 ## Architecture Principles
@@ -225,6 +226,12 @@ type DataCache struct { /* caching complexity */ }
 ## Shell Usage
 
 **Do not use `cd` to change the working directory.** Always run commands from the repository root using absolute paths or `-C <path>` flags. This keeps paths predictable across turns and prevents the working directory from drifting into nested subdirectories.
+
+## Context
+
+Durable conversational knowledge — requirements, decisions, corrections, facts, follow-ups that never land in commits — lives in the `docs/context/` ledgers, extracted from task transcripts by the context archivist: [requirements](docs/context/requirements.md) · [decisions](docs/context/decisions.md) · [facts](docs/context/facts.md) · [follow-ups](docs/context/follow-ups.md). Check the relevant ledger before working in an area it covers.
+
+**Context archivist:** `.claude/hooks/context.py sweep` distills task transcripts into the `docs/context/` ledgers — after EVERY response, not just at task boundaries. The Stop hook chains it behind `history.py` (backgrounded, so the turn never waits): each sweep finalizes any finished history files, then incrementally processes the ACTIVE file's newest chunk — a byte offset in `docs/history/context-processed/<file>.offset` tracks what's been distilled, and growth under ~300 bytes is skipped; `/new-task` triggers the finalizing sweep after rolling the state file over. Per chunk, ONE `codex exec -s read-only --ephemeral` call (schema-forced JSON via `--output-schema` + `-o`; prompt in `.claude/hooks/context-prompt.md` — the no-code tuning knob) extracts requirement / decision / correction / fact / follow_up items that pass three admission tests (a future session would act differently; not recoverable from code, git history, CLAUDE.md, or an existing ledger; human-confirmed or empirically verified) — all-empty is the expected result for routine turns. An item may carry a `supersedes` substring naming the older ledger bullet it contradicts — the script strikes the old line through (`~~…~~ _(superseded DATE)_`, never deleted) and appends the new one; consecutive chunks of one task append into a single dated section. The script (the only writer of `docs/context/`) files corrections into `requirements.md` with a `[correction]` prefix and writes the raw reply as the done-marker to `docs/history/context-processed/<file>.json` — markers/offsets advance only on success, so failed codex runs retry next sweep; an flock on `docs/history/context-sweep.lock` prevents double-appends; sweeps no-op under `GITHUB_ACTIONS` / `CLAUDE_HISTORY_ROLE` so CI runs and headless `claude -p` workers never burn codex calls; log at `docs/history/context-sweep.log`. The archivist never edits CLAUDE.md.
 
 ## Notes
 
