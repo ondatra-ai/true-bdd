@@ -170,7 +170,9 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	mode := g.modeFactory.GetThinkMode()
 
-	response, err := g.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, "", mode)
+	model := g.config.GetString("engine.model")
+
+	response, err := g.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
