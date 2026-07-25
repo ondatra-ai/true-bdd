@@ -112,7 +112,9 @@ func (a *FixApplier) Apply(
 
 	mode := a.selectMode()
 
-	response, err := a.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, "", mode)
+	model := a.config.GetString("engine.model")
+
+	response, err := a.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
