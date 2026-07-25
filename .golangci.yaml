@@ -135,10 +135,10 @@ linters:
     wrapcheck:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
-      ignorePackageGlobs:
+      ignore-package-globs:
         - "bdd-cli/src/internal/*"
         - "*/internal/*"
-      ignoreSigRegexps:
+      ignore-sig-regexps:
         - 'bdd-cli/src/internal/pkg/errors\.Err.*'
     tagliatelle:
       # For internal domain models and application code
