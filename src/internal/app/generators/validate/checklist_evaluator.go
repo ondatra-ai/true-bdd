@@ -149,7 +149,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	// Use think mode - allows Read, Glob, Grep tools for accessing reference docs
 	mode := e.modeFactory.GetThinkMode()
 
-	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, "", mode)
+	model := e.config.GetString("engine.model")
+
+	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
