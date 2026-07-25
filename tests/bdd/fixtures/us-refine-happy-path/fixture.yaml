@@ -1,0 +1,59 @@
+cmd: us refine 96.1
+input: input
+
+expected:
+  exit_code: 0
+
+  stdout_regex:
+    - "ALL CHECKS PASSED!"
+    - "Story saved to:"
+    - "REFINE COMPLETE"
+
+  judge: |
+    # Expectations for `us refine 96.1` (happy path)
+
+    The story seed at `docs/stories/96.1-document-summary-refined.yaml`
+    is designed to pass every prompt of the us-refine checklist without
+    any fix: 4 rule-based ACs with full Given/When/Then steps, exact
+    messages and numeric thresholds, two happy-path and two
+    error-scenario ACs.
+
+    Expected behavior: the walk converges on the first pass and the CLI
+    rewrites the story file in place.
+
+    ## What MUST be true after the run
+
+    1. The only file created or modified outside `tmp/` is
+       `docs/stories/96.1-document-summary-refined.yaml` (the CLI may
+       rewrite it on convergence), OR no file at all is modified if the
+       CLI wrote byte-identical content.
+    2. If the story file was rewritten, it is valid YAML with a
+       top-level `story:` key, `id` is `"96.1"`, and it still contains
+       exactly 4 acceptance criteria whose SUBSTANCE matches the input:
+         - AC about a summary of 150 words or fewer for a shared doc
+         - AC about the 'This document is not shared with your account'
+           message
+         - AC about the 'The summary timed out - please try again'
+           message within/after 30 seconds
+         - AC about summarizing only the first 10000 words
+       Each AC keeps a `description` and Given/When/Then `steps`.
+    3. The `as_a`, `i_want`, and `so_that` clauses keep their meaning
+       (Claude User; short summary of a shared Google Doc on request;
+       deciding whether the document needs attention without reading it
+       in full).
+
+    ## What MUST NOT happen
+
+    - No AC is dropped or added.
+    - No edits to `true-bdd/`, `docs/prd.md`, `docs/architecture*`, or
+      any file other than the story file.
+
+    ## Tolerances
+
+    - YAML formatting, quoting, key order, and light rewording that
+      preserves each AC's exact messages and numbers are acceptable.
+    - Files inside `tmp/` are scratch artifacts - ignore them.
+
+    If all of the above hold, reply `PASS`. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.

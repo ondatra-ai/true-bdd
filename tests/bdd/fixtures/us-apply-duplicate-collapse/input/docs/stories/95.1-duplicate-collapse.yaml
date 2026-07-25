@@ -1,0 +1,27 @@
+# Story seed for the `us-apply-duplicate-collapse` BDD fixture.
+#
+# One AC only. The seeded registry already contains TWO entries that
+# both reference this AC's lineage id (95.1-001), so the walk against
+# the SHIPPED us-apply checklist (no per-fixture override) goes:
+# "present?" passes, "duplicate?" fails, the F: collapses the two
+# entries into one, and the re-walk confirms the fixpoint.
+
+story:
+    id: "95.1"
+    title: BDD fixture - us apply duplicate collapse
+    as_a: Claude User
+    i_want: a synthetic story whose only AC is duplicated in the seeded registry
+    so_that: the BDD harness can assert the duplicate-collapse fix path of us apply end-to-end
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+                - the server accepts JSON-RPC over HTTP POST at /mcp
+            - when:
+                - the Claude User posts a valid JSON-RPC initialize request to /mcp
+            - then:
+                - the server returns HTTP 200
+                - and: the response body is a well-formed JSON-RPC envelope referencing the request id

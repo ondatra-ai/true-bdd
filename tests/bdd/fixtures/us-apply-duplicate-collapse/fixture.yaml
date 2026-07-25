@@ -1,0 +1,80 @@
+cmd: us apply 95.1 --fix
+input: input
+
+answers: |
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+
+expected:
+  exit_code: 0
+
+  stdout_regex:
+    # The single AC is walked.
+    - 'AC 1/1:'
+
+    # A re-walk fires because the duplicate-collapse fix was applied
+    # during walk #1. `2/` matches regardless of the cap value (5 in
+    # the shipped checklist).
+    - 'RE-WALK 2/'
+
+    # Final convergence: clean walk, canonical commit.
+    - "ALL CHECKS PASSED!"
+    - "APPLY COMPLETE"
+
+  judge: |
+    # Expectations for `us apply 95.1 --fix` (duplicate collapse)
+
+    The fixture seeds `docs/requirements.yaml` with THREE scenarios:
+    E2E-900 and E2E-901 both reference lineage id `95.1-001` of story
+    `docs/stories/95.1-duplicate-collapse.yaml` (deliberate
+    duplicates), and E2E-950 is unrelated.
+
+    Expected behavior with the SHIPPED us-apply checklist:
+
+    1. **Walk #1** - the "present?" prompt passes (the AC is
+       referenced), the "duplicate?" prompt fails (two entries), and
+       its F: collapses the duplicates into a single entry.
+    2. **Walk #2** - the re-walk finds the AC present exactly once, no
+       duplicates, zero fixes applied -> fixpoint -> canonical commit.
+
+    ## What MUST be true after the run
+
+    1. `docs/requirements.yaml` contains **exactly one** scenario whose
+       `user_stories[]` references `scenario_id` `95.1-001`.
+    2. That surviving entry still records the story path
+       `docs/stories/95.1-duplicate-collapse.yaml` and its
+       `merged_steps` include the union of the two seeded entries'
+       steps (at minimum: HTTP 200 in then, the initialize POST in
+       when; deduplication is fine).
+    3. The unrelated scenario (lineage `90.1-001`, home-page welcome
+       banner) is still present and unmodified in substance.
+    4. No files outside `docs/requirements.yaml` and the per-run `tmp/`
+       directory are created or modified. The story file is unchanged.
+
+    ## What MUST NOT happen
+
+    - The string `Hit max apply attempts` MUST NOT appear in stdout
+      (the collapse must not loop without converging).
+    - The final registry MUST NOT contain both E2E-900 and E2E-901 as
+      separate entries referencing `95.1-001`.
+    - The final registry MUST NOT be byte-identical to the seed (the
+      collapse really happened).
+
+    ## Tolerances
+
+    - Which duplicate survives, its exact id, description wording, and
+      scenario ordering are up to the F: handler.
+    - Files inside `tmp/` are scratch artifacts - ignore them.
+
+    Reply `PASS` if all the MUST-be-true rules hold AND all the
+    MUST-NOT-happen rules hold. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.

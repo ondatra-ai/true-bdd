@@ -51,3 +51,9 @@ _transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.m
 - Use the implemented checklist-branch coverage report's uncovered targets to drive incremental BDD fixture additions; this chunk records the collector, report, and baseline implementation but no fixture additions (implementation recorded and fixture work still outstanding 2026-07-25T15:34:39Z).
 - ~~Finish the in-progress Codex verification of the bootstrap collector and coverage baseline, triage its findings, and apply only fixes relevant to the bootstrap goal; implementation and the pre-implementation critique completed, but the final audit had not finished (critique completion verified 2026-07-25T15:09:06Z; still outstanding 2026-07-25T15:34:39Z).~~ _(superseded 2026-07-25)_
 - The Codex verification of the bootstrap collector and coverage baseline completed, its relevant findings were fixed and verified, so no final-audit follow-up remains (verified 2026-07-25T16:05:05Z).
+
+## 2026-07-25 — The task was implementing expanded BDD fixtures, with a later model experiment deferred until that work finishes.
+
+_transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.md_
+
+- After the current BDD fixture implementation finishes, try running the tests with Sonnet (requested 2026-07-25T19:21:44Z; not yet addressed in this transcript chunk).

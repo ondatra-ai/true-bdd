@@ -1,0 +1,47 @@
+# Story seed for the `us-refine-validation-fails` BDD fixture.
+#
+# Designed to FAIL six us-refine prompts in one non-fix walk (the
+# walker records every failure and keeps going; the run ends NotFixed
+# with exit code 0 and no story write):
+#
+#   - AC count: only 2 ACs (below the 3-7 range).
+#   - implementation-not-behavior: AC-1 describes internal storage
+#     updates instead of observable behavior.
+#   - error scenarios: neither AC is an error scenario (need >= 2).
+#   - measurable criteria: neither AC has a measurable criterion
+#     (need >= 50%).
+#   - binary outcome: AC-2 is subjective ("feel pleasant", "read
+#     smoothly").
+#   - test convertibility: AC-2 has no objective oracle, so at most
+#     1 of 2 ACs is convertible (< 80%).
+#
+# Both descriptions keep must/should, one sentence, no Gherkin, and
+# both ACs have full Given/When/Then steps, so the format prompts and
+# vague-word prompts are NOT the designed failures here.
+
+story:
+    id: "96.3"
+    title: Summary Service Internals
+    as_a: Claude User
+    i_want: my summary requests to be remembered by the summary service
+    so_that: I can revisit my summaries later
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: The summary service must update its internal storage when a summary is requested.
+          steps:
+            - given:
+                - the summary service is running
+            - when:
+                - a summary request arrives
+            - then:
+                - the internal storage reflects the request
+        - id: AC-2
+          description: The summary should feel pleasant and read smoothly to the Claude User.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - the summary reads smoothly and feels pleasant

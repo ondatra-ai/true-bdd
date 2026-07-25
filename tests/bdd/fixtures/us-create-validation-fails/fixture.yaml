@@ -1,0 +1,52 @@
+cmd: us create 98.1
+input: input
+
+expected:
+  exit_code: 0
+
+  stdout_regex:
+    - "Validation failed. Use --fix flag to enter interactive fix mode."
+    - "CREATE COMPLETE"
+
+  judge: |
+    # Expectations for `us create 98.1` (validation fails, no fix)
+
+    The synthetic epic at `docs/epics/jsons/epic-98-bdd-defects.yaml`
+    holds a deliberately malformed story 98.1: a verbose (>50 words)
+    statement, an undefined role ("Data Scientist"), an i_want clause
+    that prescribes a technical solution full of implementation terms
+    (WebSocket, Redis cache, REST endpoint, microservice, database,
+    JWT), and a so_that clause that is a system-behavior restatement of
+    i_want.
+
+    Expected behavior: the non-fix walk evaluates every us-create
+    prompt, records the failures, prints the report and "Validation
+    failed. Use --fix flag to enter interactive fix mode.", and exits 0
+    WITHOUT writing any story file.
+
+    ## What MUST be true after the run
+
+    1. NO file outside `tmp/` is created or modified. In particular,
+       nothing is created under `docs/stories/` and the epic file is
+       unchanged.
+    2. Stdout contains the checklist report with multiple FAIL rows
+       (at least 4) and an Overall status that is not PASS.
+    3. Stdout contains "Validation failed. Use --fix flag to enter
+       interactive fix mode."
+
+    ## What MUST NOT happen
+
+    - No "ALL CHECKS PASSED!" banner.
+    - No "Story saved to:" line.
+    - No interactive fix prompts (the command ran without --fix).
+
+    ## Tolerances
+
+    - The exact set of failing prompts may vary at the margin with
+      judge interpretation; require at least 4 FAIL rows, not a
+      specific set.
+    - Files inside `tmp/` are scratch artifacts - ignore them.
+
+    If all of the above hold, reply `PASS`. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.
