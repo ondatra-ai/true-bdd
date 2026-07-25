@@ -18,3 +18,9 @@ _transcript: 20260725-082510-cc6a7058-let-s-researc-h-architecture-of-openspec.m
 - OpenSpec’s core runtime call is `openspec instructions <artifact> --change <name> --json`, which compiles project context and rules, a schema-defined template and instruction, dependencies, workflow state, and the resolved output path into a per-step instruction packet; artifact dependencies form a YAML-defined DAG and completion is inferred from files or task checkboxes (verified by source review 2026-07-25T08:28:04Z).
 - OpenSpec replaced managed instruction blocks in root `CLAUDE.md` or `AGENTS.md` files with on-demand skills; its Claude Code commands use `allowed-tools: Bash(openspec:*)` to pre-approve CLI calls rather than restrict all other tools (verified by source review 2026-07-25T08:28:04Z).
 - OpenSpec’s `validate` command performs deterministic structural validation and does not provide semantic LLM-based judging comparable to true-bdd’s checklist judge (verified by source review 2026-07-25T08:28:04Z).
+
+## 2026-07-25 — The task reconciled independent source-level checklist branch inventories and began designing measurable BDD coverage from the verified branch model.
+
+_transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.md_
+
+- Claude Code's declared Write/Edit path restrictions did not enforce a write sandbox: retained build-tests and build-code run logs showed writes outside the configured `./tmp/**` scope, so those declarations cannot be relied on to prevent out-of-scope edits (observed 2026-07-25T13:32:16Z).
