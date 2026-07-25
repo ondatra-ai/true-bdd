@@ -1,5 +1,5 @@
 ---
-description: Start a new task — history rolls over on the next prompt; the closed task is archived to docs/context in the background
+description: Start a new task — the repo resets to a clean up-to-date main (docs/context appends survive), history rolls over on the next prompt, and the closed task is archived to docs/context in the background
 allowed-tools: Bash(*)
 ---
-!`"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/history.py" new-task && ("${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/context.py" sweep </dev/null >/dev/null 2>&1 &)`
+!`"${CLAUDE_PROJECT_DIR:-.}/.claude/commands/new-task.sh"`

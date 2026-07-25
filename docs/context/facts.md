@@ -9,3 +9,12 @@ newest at the bottom. A superseded entry is struck through, never deleted.
 _transcript: 20260724-172515-a34493d8-on-linkedin-ai-repo-there-s-new-feature.md_
 
 - GitHub branch protection on `main` requires the `gates` check with strict up-to-date enforcement; this was verified when each PR became blocked after `main` advanced and became mergeable only after updating and rerunning the check (verified 2026-07-25T06:06:34Z).
+
+## 2026-07-25 — The task researched OpenSpec’s architecture and how its CLI interoperates with agent harnesses such as Claude Code.
+
+_transcript: 20260725-082510-cc6a7058-let-s-researc-h-architecture-of-openspec.md_
+
+- OpenSpec uses a pull-style harness integration: it does not invoke an LLM; `openspec init` installs on-demand workflow skills and harness-specific slash commands, after which the harness agent drives a stateless CLI through shell calls and file reads/writes (verified by source review 2026-07-25T08:28:04Z).
+- OpenSpec’s core runtime call is `openspec instructions <artifact> --change <name> --json`, which compiles project context and rules, a schema-defined template and instruction, dependencies, workflow state, and the resolved output path into a per-step instruction packet; artifact dependencies form a YAML-defined DAG and completion is inferred from files or task checkboxes (verified by source review 2026-07-25T08:28:04Z).
+- OpenSpec replaced managed instruction blocks in root `CLAUDE.md` or `AGENTS.md` files with on-demand skills; its Claude Code commands use `allowed-tools: Bash(openspec:*)` to pre-approve CLI calls rather than restrict all other tools (verified by source review 2026-07-25T08:28:04Z).
+- OpenSpec’s `validate` command performs deterministic structural validation and does not provide semantic LLM-based judging comparable to true-bdd’s checklist judge (verified by source review 2026-07-25T08:28:04Z).

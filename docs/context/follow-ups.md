@@ -21,3 +21,10 @@ _transcript: 20260721-190544-9858af28-let-s-start-from-fixing-bdd-tests-let-s.md
 _transcript: 20260721-195954-481d7431-now-let-s-make-possible-to-set-model-thr.md_
 
 - Analyze whether different workflow states need different models; the requested Opus-configured BDD run was completed, but no comparative per-state model analysis was performed (run completion verified 2026-07-21T22:21:16Z; still unaddressed at task end 2026-07-22T06:55:12Z).
+
+## 2026-07-25 — The task committed context-ledger updates and opened a pull request, but the merge remained pending on the required CI gate.
+
+_transcript: 20260725-082150-3c6ab062-mmit-and-merge.md_
+
+- ~~Complete Peter's requested merge of the context-ledger changes; the transcript ended while the required `gates` check was still pending, before the merge completed (requested 2026-07-25T08:21:50Z; still pending 2026-07-25T08:23:11Z).~~ _(superseded 2026-07-25)_
+- The previously pending merge of the context-ledger changes completed after the required `gates` check passed, so no merge follow-up remains (verified 2026-07-25T08:23:34Z).
