@@ -13,3 +13,9 @@ conversations.
 _transcript: 20260721-190544-9858af28-let-s-start-from-fixing-bdd-tests-let-s.md_
 
 - [correction] Analyze the existing design before introducing model-selection code or stage abstractions; Peter required a full revert after `stage_model.go` was added without that analysis (2026-07-21T19:33:37Z).
+
+## 2026-07-24 — The task added CI-backed strict branch protection, merged all open PRs against current main, fixed lint-config verification, and cleaned up branches.
+
+_transcript: 20260724-172515-a34493d8-on-linkedin-ai-repo-there-s-new-feature.md_
+
+- Pull requests must be updated to the latest commit on `main` before they can be merged (requested 2026-07-24T20:57:27Z).
