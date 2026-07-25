@@ -1,7 +1,7 @@
 package claudecode
 
 import (
-	"bdd-cli/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
 )
 
 // SDKError represents the base interface for all SDK errors.

@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
 )
 
 // StoryVersionManager manages versioned copies of stories in tmp directory.

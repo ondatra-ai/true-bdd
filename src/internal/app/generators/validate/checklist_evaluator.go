@@ -9,20 +9,20 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/adapters/ai"
-	"bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/domain/ports"
-	"bdd-cli/src/internal/infrastructure/config"
-	"bdd-cli/src/internal/infrastructure/docs"
-	"bdd-cli/src/internal/infrastructure/template"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const (
 	filePermissions = 0o644 // File permissions for saved prompts
 )
 
-// getDocKeyToConfigPath returns the mapping of doc keys to bdd-cli.yaml config paths.
+// getDocKeyToConfigPath returns the mapping of doc keys to true-bdd.yaml config paths.
 func getDocKeyToConfigPath() map[string]string {
 	return map[string]string{
 		"architecture":          "documents.architecture",

@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	"bdd-cli/src/claudecode/internal/cli"
-	"bdd-cli/src/claudecode/internal/parser"
-	"bdd-cli/src/claudecode/internal/shared"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/cli"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/parser"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const (

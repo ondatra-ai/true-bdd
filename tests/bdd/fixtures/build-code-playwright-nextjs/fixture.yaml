@@ -28,10 +28,10 @@ expected:
     - "BUILD CODE COMPLETE"
 
   judge: |
-    # Expectations for `bdd-cli build code --fix`
+    # Expectations for `true-bdd build code --fix`
 
     The fixture seeds:
-    - One service `frontend` declared in `bdd-cli/architecture.yaml`
+    - One service `frontend` declared in `true-bdd/architecture.yaml`
       with integration tests via Playwright under `tests/integration`.
     - A `docker-compose.yaml` whose `frontend` service builds from
       `./services/frontend` — but the `services/frontend/` directory
@@ -72,14 +72,14 @@ expected:
 
     ## What MUST NOT happen
 
-    - No file under `tests/`, `docs/`, or `bdd-cli/` is modified.
+    - No file under `tests/`, `docs/`, or `true-bdd/` is modified.
     - `docker-compose.yaml` is NOT modified.
     - `tests/integration/frontend-home.spec.ts` is NOT modified
        (the spec is the contract).
 
     ## Tolerances (ignore these as noise)
 
-    - Anything under `tmp/` — bdd-cli per-run scratch artifacts.
+    - Anything under `tmp/` — true-bdd per-run scratch artifacts.
     - Anything under `node_modules/`, `.next/`, `test-results/`,
       `playwright-report/`, `.last-run.json`, browser caches —
       installer / framework side effects, not what `build code --fix`

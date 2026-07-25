@@ -1,6 +1,6 @@
 package ai
 
-import "bdd-cli/src/internal/infrastructure/config"
+import "github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 
 // ExecutionMode defines tool permissions for AI execution.
 type ExecutionMode struct {

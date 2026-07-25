@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"bdd-cli/src/claudecode/internal/shared"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const windowsOS = "windows"

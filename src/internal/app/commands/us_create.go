@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"bdd-cli/src/internal/domain/models/story"
-	"bdd-cli/src/internal/infrastructure/epic"
-	"bdd-cli/src/internal/infrastructure/fs"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/epic"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 // CreateDeps bundles what `us create` needs at the command boundary.

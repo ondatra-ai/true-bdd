@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bdd-cli/src/internal/app/bootstrap"
-	"bdd-cli/src/internal/app/commands"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/commands"
 )
 
 const (
@@ -76,8 +76,8 @@ func newUSCreateCmd(container *bootstrap.Container) *cobra.Command {
 checklist. The story is saved to docs/stories/ upon passing all checks.
 
 Example:
-  bdd-cli us create 4.1
-  bdd-cli us create 4.1 --fix`,
+  true-bdd us create 4.1
+  true-bdd us create 4.1 --fix`,
 		func(ctx context.Context, storyNumber string, fix bool) error {
 			return commands.RunCreate(ctx, commands.CreateDeps{
 				StoryCommonDeps: storyCommonFromContainer(container),
@@ -95,8 +95,8 @@ func newUSRefineCmd(container *bootstrap.Container) *cobra.Command {
 checklist. The story file is updated in place upon passing all checks.
 
 Example:
-  bdd-cli us refine 4.1
-  bdd-cli us refine 4.1 --fix`,
+  true-bdd us refine 4.1
+  true-bdd us refine 4.1 --fix`,
 		func(ctx context.Context, storyNumber string, fix bool) error {
 			return commands.RunRefine(ctx, commands.RefineDeps{
 				StoryCommonDeps: storyCommonFromContainer(container),
@@ -136,8 +136,8 @@ Stories that still use the deprecated scenarios.test_scenarios[] format are
 rejected — convert them to acceptance_criteria with embedded steps first.
 
 Example:
-  bdd-cli us apply 4.1
-  bdd-cli us apply 4.1 --fix`,
+  true-bdd us apply 4.1
+  true-bdd us apply 4.1 --fix`,
 		func(ctx context.Context, storyNumber string, fix bool) error {
 			return commands.RunApply(ctx, commands.ApplyDeps{
 				StoryScenarioParser:     container.StoryScenarioParser,

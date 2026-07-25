@@ -3,7 +3,7 @@ package subprocess
 import (
 	"os"
 
-	"bdd-cli/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
 )
 
 // NewTestTransportWithChannels creates a Transport with initialized channels for testing.

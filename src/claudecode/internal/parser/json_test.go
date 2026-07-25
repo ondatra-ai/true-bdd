@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"bdd-cli/src/claudecode/internal/parser"
-	"bdd-cli/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/parser"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
 )
 
 const (

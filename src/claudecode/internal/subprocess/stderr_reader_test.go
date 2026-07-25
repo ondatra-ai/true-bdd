@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"bdd-cli/src/claudecode/internal/subprocess"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/subprocess"
 )
 
 func TestReadStderr_NilStderr(t *testing.T) {

@@ -12,9 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-**TrueBDD / bdd-cli** — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
+**TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), and the BDD fixture test harness (`tests/bdd/`). A *host project* consuming the engine supplies its own `bdd-cli/` configuration directory (`bdd-cli.yaml`, `checklists/`, `architecture.yaml`, `terms.yaml`, schemas) — this repo does not carry one at its root; fixtures ship their own under `input/bdd-cli/` when a scenario needs it.
+This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, `architecture.yaml`, `terms.yaml`, schemas). The engine repo's own root `true-bdd/` is a harness seed — canonical config, checklists, and terms that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (it has no `architecture.yaml`; fixtures supply one under `input/true-bdd/` when a scenario needs it, and may override any seed file the same way).
 
 ## CLI Subcommands
 
@@ -33,13 +33,13 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 
 Every command accepts `--fix` for an interactive loop in which Claude proposes edits for each failed check and the user applies, refines, or exits.
 
-Checklist resolution is by convention via `paths.checklists_dir` in the host's `bdd-cli.yaml`: the loader hyphenates the full command path (`us apply` → `us-apply.yaml`, `build tests` → `build-tests.yaml`).
+Checklist resolution is by convention via `paths.checklists_dir` in the host's `true-bdd.yaml`: the loader hyphenates the full command path (`us apply` → `us-apply.yaml`, `build tests` → `build-tests.yaml`).
 
 ## Development Commands
 
 ```bash
 # Build (requires Go 1.25 and the `claude` CLI on $PATH)
-go build -o ./bdd-cli ./src
+mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 
 # Unit tests
 go test ./...
@@ -56,7 +56,7 @@ golangci-lint run
 The tool spawns `claude` as a subprocess. When invoking it from inside a Claude Code session, unset `CLAUDECODE` first so the child has a clean environment:
 
 ```bash
-env -u CLAUDECODE ./bdd-cli us create 4.1
+env -u CLAUDECODE ./bin/true-bdd us create 4.1
 ```
 
 `us refine` drives many sequential Claude calls and typically takes **about 5 minutes** end-to-end. Do not abort early; poll or wait rather than killing the process.
@@ -68,7 +68,7 @@ Fixtures live under `tests/bdd/fixtures/<scenario>/`. Each fixture is a folder c
 `fixture.yaml` declares what to run and what to assert:
 
 ```yaml
-# Required. Single-line invocation passed verbatim as arguments to bdd-cli.
+# Required. Single-line invocation passed verbatim as arguments to true-bdd.
 cmd: us apply 99.3 --fix
 
 # Required. Path (relative to the fixture's own dir) of the directory
@@ -91,7 +91,7 @@ expected:
     ...
 ```
 
-The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (`bdd-cli/` when present at the repo root, and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which by convention contains **only `docs/`** — designed scenario content (synthetic prd, architecture, epic, story, seeded requirements registry). Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config under `input/bdd-cli/`.
+The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic prd, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
 
 The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `src/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 
@@ -105,7 +105,7 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 
 ## Project Structure
 
-- `src/` — the Go module (`bdd-cli`). Entry point `src/main.go`; builds to `./bdd-cli`.
+- `src/` — the Go module (`github.com/ondatra-ai/true-bdd`). Entry point `src/main.go`; builds to `./bin/true-bdd` (gitignored).
   - `src/cmd/` — cobra command tree (`root.go`, `us.go`, `build.go`).
   - `src/claudecode/` — Claude Code subprocess SDK wrapper (client, transport, message parsing).
   - `src/adapters/ai/` — Claude client adapter and execution modes.
@@ -114,6 +114,7 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
   - `src/internal/infrastructure/` — loaders (config, epic, story, checklist, registry, architecture), template rendering, test runners (go test / jest / playwright), fs, console input.
   - `src/internal/pkg/` — `console` (terminal UI output), `errors`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
+- `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`, `terms.yaml`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
 - `tests/bdd/` — the fixture harness: `bdd_test.go`, `runner/`, `fixtures/<scenario>/`.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), main checked out and fast-forwarded to origin — except `docs/context/`, whose uncommitted archivist appends always survive the reset. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
@@ -125,7 +126,7 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 ### Quality Over Cost Principle
 **QUALITY IS PARAMOUNT - TIME, PRICE, AND TOKEN USAGE ARE LOWEST PRIORITY** 🎯
 
-When making decisions about bdd-cli implementation:
+When making decisions about true-bdd implementation:
 - ✅ **Prioritize output quality**: Always choose the approach that produces the best results
 - ✅ **Multi-stage generation is acceptable**: If it takes 3x tokens to get perfect output, do it
 - ✅ **Take time for quality**: Generation time is not a concern if results are better
@@ -235,6 +236,7 @@ Durable conversational knowledge — requirements, decisions, corrections, facts
 
 ## Notes
 
+- **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.
 - Environment variables should be stored in .env files (excluded from git)
 - Never update `.golangci.yaml` without my permission
 - **CRITICAL**: NEVER merge pull requests without explicit user command to merge

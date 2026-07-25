@@ -1,5 +1,5 @@
 # Binaries
-/bdd-cli
+/bin/
 *.exe
 *.test
 *.out

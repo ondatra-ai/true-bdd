@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 )
 
 // ErrNoServices signals that the architecture YAML has no

@@ -10,12 +10,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/adapters/ai"
-	"bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/domain/ports"
-	"bdd-cli/src/internal/infrastructure/config"
-	"bdd-cli/src/internal/infrastructure/template"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const fixPromptFilePermissions = 0o644

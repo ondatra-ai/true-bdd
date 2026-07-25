@@ -14,13 +14,13 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/app/engine"
-	"bdd-cli/src/internal/app/generators/validate"
-	checklistmodels "bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/domain/models/story"
-	"bdd-cli/src/internal/infrastructure/fs"
-	"bdd-cli/src/internal/pkg/console"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
+	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const (

@@ -1,6 +1,6 @@
 package models
 
-import "bdd-cli/src/internal/domain/models/story"
+import "github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
 
 type EpicDocument struct {
 	Epic            EpicInfo      `yaml:"epic"`

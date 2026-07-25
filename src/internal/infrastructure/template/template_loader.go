@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 
 	"github.com/Masterminds/sprig/v3"
 	"gopkg.in/yaml.v3"

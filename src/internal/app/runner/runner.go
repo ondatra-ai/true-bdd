@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
-	"bdd-cli/src/internal/app/engine"
-	"bdd-cli/src/internal/app/generators/validate"
-	checklistmodels "bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/infrastructure/checklist"
-	"bdd-cli/src/internal/pkg/console"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
+	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
 
 // renderedPrompt is the Q value the engine passes around. Pairs a

@@ -2,8 +2,8 @@ epic:
   id: 99
   name: "BDD Test Epic"
   status: "PLANNED"
-  goal: "Provide a synthetic epic that the bdd-cli BDD harness can drive end-to-end without colliding with any real product feature."
-  context: "Used only by scripts/bdd-cli/tests/bdd/fixtures/us-create-happy-path. Describes a hypothetical document-summary feature so prompts have plausible material to reason about."
+  goal: "Provide a synthetic epic that the true-bdd BDD harness can drive end-to-end without colliding with any real product feature."
+  context: "Used only by tests/bdd/fixtures/us-create-fix-happy-path. Describes a hypothetical document-summary feature so prompts have plausible material to reason about."
 
 stories:
   - id: "99.1"

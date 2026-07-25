@@ -23,7 +23,7 @@ func configureLogging() {
 	}
 
 	// Open log file for JSON output (all levels)
-	logFile, err := os.OpenFile("./tmp/bdd-cli.log.json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fileModeReadWrite)
+	logFile, err := os.OpenFile("./tmp/true-bdd.log.json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fileModeReadWrite)
 	if err != nil {
 		log.Println("Warning: failed to open log file:", err)
 		// Fallback to console only

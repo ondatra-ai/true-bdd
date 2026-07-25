@@ -1,4 +1,4 @@
-# Per-fixture override of `bdd-cli/checklists/us-apply.yaml`.
+# Per-fixture override of `true-bdd/checklists/us-apply.yaml`.
 #
 # Real checklist has two prompts ("present?" + "duplicate?"). This
 # fixture's job is to exercise the new fixpoint re-walk loop, not the
@@ -11,7 +11,7 @@
 # convergence in walk #2.
 #
 # The runner overlays this file over the real repo's
-# `bdd-cli/checklists/us-apply.yaml` (see PR #144's runner refactor).
+# `true-bdd/checklists/us-apply.yaml` (see PR #144's runner refactor).
 
 version: "1.0"
 last_updated: "2026-05-14"

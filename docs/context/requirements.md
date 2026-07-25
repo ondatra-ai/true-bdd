@@ -19,3 +19,9 @@ _transcript: 20260721-190544-9858af28-let-s-start-from-fixing-bdd-tests-let-s.md
 _transcript: 20260724-172515-a34493d8-on-linkedin-ai-repo-there-s-new-feature.md_
 
 - Pull requests must be updated to the latest commit on `main` before they can be merged (requested 2026-07-24T20:57:27Z).
+
+## 2026-07-25 — This task began the requested, research-led rename of `bdd-cli` to `true-bdd`, with Codex critiques required for both the plan and implementation.
+
+_transcript: 20260725-111029-40e36181-research-me-where-we-use-true-bdd-and-wh.md_
+
+- For the `bdd-cli` to `true-bdd` rename, first research the impact thoroughly, then create a plan, share the goal and plan with Codex for critique, implement the improved plan, ask Codex to identify implementation weaknesses, and apply the relevant review suggestions (requested 2026-07-25T11:18:13Z).

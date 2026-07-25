@@ -3,7 +3,7 @@ package claudecode
 import (
 	"context"
 
-	"bdd-cli/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
 )
 
 // Transport defines the interface for Claude Code CLI communication.

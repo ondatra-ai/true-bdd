@@ -9,9 +9,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/infrastructure/config"
-	"bdd-cli/src/internal/infrastructure/template"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const (

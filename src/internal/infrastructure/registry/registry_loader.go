@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/infrastructure/template"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
 )
 
 const stepModifierMappingFields = 2

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/pkg/console"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
 
 const separatorWidth = 60

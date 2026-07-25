@@ -15,7 +15,7 @@ expected:
   exit_code: 0
 
   judge: |
-    # Expectations for `bdd-cli build tests --fix`
+    # Expectations for `true-bdd build tests --fix`
 
     The seed registry (`input/docs/requirements.yaml`) has one scenario:
     `INT-900`. The `build tests` command's contract is: every scenario in

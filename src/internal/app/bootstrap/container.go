@@ -1,20 +1,20 @@
 package bootstrap
 
 import (
-	"bdd-cli/src/adapters/ai"
-	"bdd-cli/src/internal/app/generators/validate"
-	"bdd-cli/src/internal/app/runner"
-	"bdd-cli/src/internal/domain/ports"
-	"bdd-cli/src/internal/infrastructure/architecture"
-	"bdd-cli/src/internal/infrastructure/checklist"
-	"bdd-cli/src/internal/infrastructure/config"
-	"bdd-cli/src/internal/infrastructure/epic"
-	"bdd-cli/src/internal/infrastructure/fs"
-	"bdd-cli/src/internal/infrastructure/input"
-	"bdd-cli/src/internal/infrastructure/registry"
-	"bdd-cli/src/internal/infrastructure/story"
-	"bdd-cli/src/internal/infrastructure/testrunner"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/architecture"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/epic"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/registry"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/testrunner"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 // scenarioTriple bundles the (evaluator, fix-prompt-generator,
@@ -27,7 +27,7 @@ type scenarioTriple struct {
 	fixApplier   *validate.FixApplier
 }
 
-// scenarioTripleConfigKeys names the bdd-cli.yaml config paths for one
+// scenarioTripleConfigKeys names the true-bdd.yaml config paths for one
 // scenario-walking command's evaluator / fix-generator / fix-applier
 // templates.
 type scenarioTripleConfigKeys struct {

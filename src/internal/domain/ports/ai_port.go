@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"bdd-cli/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 )
 
 // AIPort defines the interface for AI communication

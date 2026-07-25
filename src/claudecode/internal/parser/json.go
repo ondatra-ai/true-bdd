@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"bdd-cli/src/claudecode/internal/shared"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 // ErrSkippedMessage is returned when a message has an unknown type and should be skipped.

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const fileModeDirectory = 0755 // Standard directory permission

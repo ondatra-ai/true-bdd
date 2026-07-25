@@ -37,7 +37,7 @@ expected:
     ## What MUST NOT happen
 
     - No files modified or created outside `docs/stories/`. In particular,
-      no edits to `bdd-cli/`, `docs/epics/`, `docs/architecture*`,
+      no edits to `true-bdd/`, `docs/epics/`, `docs/architecture*`,
       `docs/prd.md`, or `scripts/`.
     - The synthetic epic file must be unchanged.
 

@@ -101,7 +101,7 @@ const (
 )
 
 // FixLoopUI is the UI surface the engine's fix loop drives. Any
-// implementation is acceptable; the bdd-cli's UserInputCollector +
+// implementation is acceptable; the true-bdd's UserInputCollector +
 // console.Display* helpers satisfy this in production.
 type FixLoopUI interface {
 	AskQuestions(questions []ClarifyQuestion) map[string]string

@@ -3,7 +3,7 @@ package config
 import (
 	"log/slog"
 
-	"bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -14,7 +14,7 @@ type ViperConfig struct {
 func NewViperConfig() (*ViperConfig, error) {
 	viperInstance := viper.New()
 
-	viperInstance.SetConfigFile("./bdd-cli/bdd-cli.yaml")
+	viperInstance.SetConfigFile("./true-bdd/true-bdd.yaml")
 	viperInstance.SetConfigType("yaml")
 
 	err := viperInstance.ReadInConfig()
