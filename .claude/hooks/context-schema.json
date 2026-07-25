@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_summary", "requirement", "decision", "correction", "fact", "follow_up"],
+  "properties": {
+    "task_summary": { "type": "string" },
+    "requirement": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "supersedes"],
+        "properties": {
+          "text": { "type": "string" },
+          "supersedes": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "decision": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "supersedes"],
+        "properties": {
+          "text": { "type": "string" },
+          "supersedes": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "correction": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "supersedes"],
+        "properties": {
+          "text": { "type": "string" },
+          "supersedes": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "fact": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "supersedes"],
+        "properties": {
+          "text": { "type": "string" },
+          "supersedes": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "follow_up": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "supersedes"],
+        "properties": {
+          "text": { "type": "string" },
+          "supersedes": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

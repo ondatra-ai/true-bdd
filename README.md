@@ -76,7 +76,9 @@ between rebuilds, as long as both contracts are honoured.
 
 `bdd-cli` is the substrate this vision is being built on. The `us`
 subcommand suite manages the spec lifecycle; the `build` subcommands
-(currently stubs) are where regeneration will live.
+implement the regeneration loop — `build tests` derives executable
+tests from the registry, `build code` regenerates production code
+until those tests pass.
 
 ## Status
 
@@ -85,12 +87,14 @@ subcommand suite manages the spec lifecycle; the `build` subcommands
 | `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/stories/`. |
 | `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into a central `requirements.yaml` registry. |
-| `build tests` | **Stub** — will generate executable tests from the Gherkin scenarios in the registry. |
-| `build code` | **Stub** — will regenerate code from the registry plus the architectural spec. This is the Spec-as-Source step. |
+| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing test referencing the scenario id; the registry itself is never modified. |
+| `build code` | **Working** — walks every `(service, layer)` pair declared in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
 
-All `us` commands accept `--fix` for an interactive loop in which
-Claude proposes edits for each failed check and the user accepts,
-refines, or exits.
+Every command accepts `--fix` for an interactive loop in which
+Claude proposes edits for each failed check and the user applies,
+refines, or exits. `build tests` also takes `--requirements <path>`
+and `build code` takes `--architecture <path>` to override the
+default spec locations.
 
 ## Install
 
@@ -110,6 +114,8 @@ clean environment:
 env -u CLAUDECODE ./bdd-cli us create 4.1
 env -u CLAUDECODE ./bdd-cli us refine 4.1 --fix
 env -u CLAUDECODE ./bdd-cli us apply  4.1 --fix
+env -u CLAUDECODE ./bdd-cli build tests --fix
+env -u CLAUDECODE ./bdd-cli build code  --fix
 ```
 
 `us refine` issues many sequential Claude calls and typically takes
@@ -117,11 +123,27 @@ env -u CLAUDECODE ./bdd-cli us apply  4.1 --fix
 
 ## Configuration
 
-The host project supplies a `bdd-cli.yaml` that pins the engine type,
-filesystem paths, prompt-template paths, and the documents the
-checklists are allowed to cite (PRD, architecture, coding standards,
-glossary). See the worked example at
-[`tests/bdd/fixtures/us-create-happy-path/input/bdd-cli/bdd-cli.yaml`](tests/bdd/fixtures/us-create-happy-path/input/bdd-cli/bdd-cli.yaml).
+The host project supplies a `bdd-cli/` directory at its root:
+
+- `bdd-cli.yaml` — the engine type, filesystem paths (epics, stories,
+  checklists, tmp), per-command prompt-template paths, and a
+  `documents:` map naming the files a check may cite (PRD,
+  architecture docs, coding standards, BDD guidelines, terms
+  vocabulary). Each check in a checklist lists the document keys it
+  needs under `docs:`, and the engine embeds those files into the
+  prompt.
+- `checklists/` — one checklist per command, named by hyphenating the
+  command path (`us create` → `us-create.yaml`, `build tests` →
+  `build-tests.yaml`, …).
+- `architecture.yaml` — the architectural spec that scopes
+  `build code`: which `(service, layer)` pairs get walked.
+- `terms.yaml` — the domain vocabulary (user roles, allowed action
+  verbs, forbidden qualifiers) that checks cite via the `terms`
+  document key.
+- `*-schema.yaml` — Yamale schemas pinning the shape of the spec
+  artifacts (stories, epics, the requirements registry, checklists,
+  `architecture.yaml`); the host project validates them in its lint
+  step, outside the engine itself.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
@@ -138,13 +160,18 @@ go test -tags bdd ./tests/bdd/...
 
 Fixtures under `tests/bdd/fixtures/<scenario>/` are folders containing
 a `fixture.yaml` manifest and the referenced input directory tree
-(conventionally `input/`). The manifest declares `cmd`, `input`,
-optional `answers` (stdin for `--fix` runs), and an `expected:`
-sub-block with the assertion strategies (`exit_code`, `stdout_regex`,
-`judge`). The runner builds the CLI, copies the input tree into a
-tmpdir, executes `cmd`, and asks Claude to score the resulting diff
-against the `judge:` rubric. The whole suite skips if `claude` is not
-on `$PATH`.
+(conventionally `input/`, holding only designed `docs/` content). The
+manifest declares `cmd`, `input`, optional `answers` (stdin for
+`--fix` runs), optional `prep` (shell commands run in the tmpdir
+before the pre-run snapshot, e.g. `npm install`), optional `teardown`
+(best-effort cleanup run after the post-run snapshot, e.g. stopping a
+compose stack), and an `expected:` sub-block with the assertion
+strategies (`exit_code`, `stdout_regex`, `judge`). The runner builds
+the CLI, pre-populates a tmpdir with the live engine ingredients
+(checklists and prompt templates), overlays the fixture's input tree,
+snapshots, executes `cmd`, and asks Claude to score the resulting
+diff against the `judge:` rubric. The whole suite skips if `claude`
+is not on `$PATH`.
 
 ## How it compares
 

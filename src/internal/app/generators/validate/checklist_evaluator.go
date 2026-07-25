@@ -116,9 +116,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	// Build result file path for FILE_START/FILE_END pattern
 	sectionPath := promptCtx.GetFullSectionPath()
-	safeSectionPath := strings.ReplaceAll(sectionPath, "/", "-")
+	safeSectionPath := sanitizeID(sectionPath)
 	resultPath := fmt.Sprintf("%s/%02d-%s-checklist-%s-result.yaml",
-		e.tmpDir, promptIndex, e.subjectID, safeSectionPath)
+		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath)
 
 	// Load system prompt template (uses cached loader)
 	systemPrompt, err := e.systemLoader.LoadTemplate(ChecklistPromptData{})
@@ -149,7 +149,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	// Use think mode - allows Read, Glob, Grep tools for accessing reference docs
 	mode := e.modeFactory.GetThinkMode()
 
-	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, "", mode)
+	model := e.config.GetString("engine.model")
+
+	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
@@ -319,9 +321,10 @@ func (e *ChecklistEvaluator) savePromptFile(sectionPath string, promptIndex int,
 		return
 	}
 
-	// Replace slashes in section path with dashes for filename
-	safeSectionPath := strings.ReplaceAll(sectionPath, "/", "-")
-	filePath := fmt.Sprintf("%s/%02d-%s-checklist-%s-%s.txt", e.tmpDir, promptIndex, e.subjectID, safeSectionPath, suffix)
+	// Flatten section path and subject id into safe filename segments.
+	safeSectionPath := sanitizeID(sectionPath)
+	filePath := fmt.Sprintf("%s/%02d-%s-checklist-%s-%s.txt",
+		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath, suffix)
 
 	err := os.WriteFile(filePath, []byte(content), filePermissions)
 	if err != nil {

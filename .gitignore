@@ -7,6 +7,9 @@
 # Build / test artefacts
 /tmp/
 /dist/
+
+# Conversation history captured by .claude/hooks/history.py
+/docs/history/
 coverage.txt
 coverage.out
 
@@ -14,3 +17,6 @@ coverage.out
 .DS_Store
 .idea/
 .vscode/
+
+# Python bytecode (Claude hooks)
+__pycache__/

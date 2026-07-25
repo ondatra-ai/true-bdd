@@ -160,6 +160,12 @@ linters:
       - path: src/internal/domain/models/thread\.go
         linters:
           - tagliatelle
+      # Test-runner DTOs mirror third-party JSON wire formats
+      # (`go test -json` PascalCase, `jest --json` camelCase). The field
+      # casing is the wire contract, not ours.
+      - path: src/internal/infrastructure/testrunner/dto/.*\.go
+        linters:
+          - tagliatelle
       # Don't require wrapping for internal package returns
       # Our internal/pkg/errors package provides properly wrapped errors
       - path: (src/internal/.*|src/claudecode/.*|src/adapters/.*)\.go
