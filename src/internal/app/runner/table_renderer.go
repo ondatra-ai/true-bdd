@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"bdd-cli/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
 )
 
 const (

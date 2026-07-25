@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"bdd-cli/src/internal/app/engine"
-	"bdd-cli/src/internal/app/generators/validate"
-	"bdd-cli/src/internal/app/runner"
-	"bdd-cli/src/internal/infrastructure/checklist"
-	"bdd-cli/src/internal/infrastructure/fs"
-	"bdd-cli/src/internal/infrastructure/input"
-	"bdd-cli/src/internal/infrastructure/registry"
-	"bdd-cli/src/internal/pkg/console"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/registry"
+	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
 
 // ErrBuildTestsNotConverged is returned when the build-tests walk

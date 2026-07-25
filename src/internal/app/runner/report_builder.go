@@ -3,7 +3,7 @@ package runner
 import (
 	"sort"
 
-	checklistmodels "bdd-cli/src/internal/domain/models/checklist"
+	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
 )
 
 // reportBuilder accumulates per-cell ValidationResults into one

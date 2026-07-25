@@ -28,3 +28,10 @@ _transcript: 20260725-082150-3c6ab062-mmit-and-merge.md_
 
 - ~~Complete Peter's requested merge of the context-ledger changes; the transcript ended while the required `gates` check was still pending, before the merge completed (requested 2026-07-25T08:21:50Z; still pending 2026-07-25T08:23:11Z).~~ _(superseded 2026-07-25)_
 - The previously pending merge of the context-ledger changes completed after the required `gates` check passed, so no merge follow-up remains (verified 2026-07-25T08:23:34Z).
+
+## 2026-07-25 — This task began the requested, research-led rename of `bdd-cli` to `true-bdd`, with Codex critiques required for both the plan and implementation.
+
+_transcript: 20260725-111029-40e36181-research-me-where-we-use-true-bdd-and-wh.md_
+
+- ~~Complete the requested rename from `bdd-cli` to `true-bdd`; this transcript chunk ends before implementation or the required post-implementation review is recorded (requested 2026-07-25T11:18:13Z; outstanding as of 2026-07-25T11:31:56Z).~~ _(superseded 2026-07-25)_
+- The requested rename from `bdd-cli` to `true-bdd`, including the required post-implementation Codex review and resulting fixes, was completed, so no rename follow-up remains (verified 2026-07-25T11:51:17Z).

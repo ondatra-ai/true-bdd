@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"bdd-cli/src/internal/app/generators/validate"
-	"bdd-cli/src/internal/app/runner"
-	"bdd-cli/src/internal/domain/models/story"
-	"bdd-cli/src/internal/infrastructure/checklist"
-	"bdd-cli/src/internal/infrastructure/fs"
-	"bdd-cli/src/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 )
 
 // StoryCommonDeps is the field set both `us create` and `us refine`

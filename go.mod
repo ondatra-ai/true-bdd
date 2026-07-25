@@ -1,4 +1,4 @@
-module bdd-cli
+module github.com/ondatra-ai/true-bdd
 
 go 1.25.0
 

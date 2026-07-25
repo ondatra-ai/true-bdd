@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"bdd-cli/src/internal/infrastructure/testrunner/dto"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/testrunner/dto"
 )
 
 // playwrightTitleSeparator joins nested describe titles and the leaf

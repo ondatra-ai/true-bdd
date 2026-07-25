@@ -7,9 +7,9 @@ import (
 	"os"
 	"sync"
 
-	"bdd-cli/src/claudecode/internal/cli"
-	"bdd-cli/src/claudecode/internal/subprocess"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/cli"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/subprocess"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const defaultSessionID = "default"

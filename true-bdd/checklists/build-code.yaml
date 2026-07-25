@@ -1,0 +1,57 @@
+# Checklist for `true-bdd build code`.
+# Walk every currently-failing test discovered through architecture.yaml
+# and drive a Claude-mediated fix-loop that edits production code under
+# `services/*` until the test passes.
+#
+# Intentionally minimal (1 prompt) for V1 — the Go-side runner owns the
+# pass/fail verdict; Claude's role on the validation side is to mirror
+# that boolean back into the answer field.
+
+version: "1.0"
+last_updated: "2026-05-28"
+
+config:
+  max_apply_attempts: 5
+
+sections:
+  - id: test-passes
+    name: "Test Passes"
+    description: "Every failing test must pass after the production fix."
+    validation_prompts:
+      - Q: |
+          Does this failing test now pass after the latest run?
+
+          The Go-side test runner has already re-executed the test and
+          stored its verdict on the subject as `LastRunPassed`. Mirror
+          that boolean into the answer:
+            - `LastRunPassed: true`  → answer `pass`
+            - `LastRunPassed: false` → answer `fail`
+
+          Do NOT execute the test yourself. The runner is authoritative.
+
+          Context: emit a single line confirming the boolean you read.
+            - "LastRunPassed=<true|false> for <test id>"
+        rationale: "A production-code fix is only valid when the targeted test passes; the runner is authoritative."
+        docs:
+          - architecture_yaml
+          - coding_standards
+          - source_tree
+        F: |
+          Fix the PRODUCTION code so that the failing test passes.
+
+          HARD LIMITS (the applier enforces these via its system prompt):
+            - You may only Write or Edit files under `services/*`.
+            - You MUST NOT modify any file under `tests/`, any file
+              matching `*_test.go`, anything under
+              `services/*/__tests__/`, or anything under `docs/`.
+            - You MUST NOT weaken, skip, or remove any test assertion.
+
+          Steps:
+            1. Read the failing test at the subject's `FilePath`.
+            2. Read the production source under
+               `services/<subject service>/` (and any source it
+               depends on) to understand the contract being asserted.
+            3. Identify the smallest production change that makes the
+               test pass without changing the test's intent.
+            4. Apply the change with Write (new file) or Edit (existing).
+            5. Confirm via the FILE_START / FILE_END block.

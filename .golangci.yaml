@@ -136,10 +136,10 @@ linters:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
       ignore-package-globs:
-        - "bdd-cli/src/internal/*"
+        - "github.com/ondatra-ai/true-bdd/src/internal/*"
         - "*/internal/*"
       ignore-sig-regexps:
-        - 'bdd-cli/src/internal/pkg/errors\.Err.*'
+        - 'github\.com/ondatra-ai/true-bdd/src/internal/pkg/errors\.Err.*'
     tagliatelle:
       # For internal domain models and application code
       case:
@@ -171,7 +171,7 @@ linters:
       - path: (src/internal/.*|src/claudecode/.*|src/adapters/.*)\.go
         linters:
           - wrapcheck
-        text: "bdd-cli/src/internal/pkg/errors"
+        text: 'github\.com/ondatra-ai/true-bdd/src/internal/pkg/errors'
       # Allow dynamic errors in test files for test fixtures
       - path: _test\.go
         linters:

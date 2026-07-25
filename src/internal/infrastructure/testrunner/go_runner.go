@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"bdd-cli/src/internal/infrastructure/testrunner/dto"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/testrunner/dto"
 )
 
 // goTestNameSeparator joins package + test in FailingTest.TestName so the

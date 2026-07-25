@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"bdd-cli/src/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
 )
 
 // Tests use small primitives so failures point at engine logic, not

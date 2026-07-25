@@ -3,7 +3,7 @@ package validate_test
 import (
 	"testing"
 
-	"bdd-cli/src/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 )
 
 func TestExtractFileContent(t *testing.T) {

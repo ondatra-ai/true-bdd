@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"bdd-cli/src/claudecode/internal/subprocess"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/subprocess"
 )
 
 const testLine = "test"

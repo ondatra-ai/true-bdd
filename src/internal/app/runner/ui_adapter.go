@@ -1,12 +1,12 @@
 package runner
 
 import (
-	"bdd-cli/src/internal/app/engine"
-	checklistmodels "bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
+	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 )
 
-// fixLoopUI adapts the bdd-cli's UserInputCollector + display helpers
+// fixLoopUI adapts the true-bdd's UserInputCollector + display helpers
 // into the engine's FixLoopUI interface. The engine drives the
 // clarify/apply/refine/exit loop and calls back through this adapter
 // for each user-facing step.

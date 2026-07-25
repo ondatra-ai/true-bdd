@@ -1,4 +1,4 @@
-// Package runner drives BDD-style end-to-end fixtures for bdd-cli:
+// Package runner drives BDD-style end-to-end fixtures for true-bdd:
 // each fixture is a folder with `fixture.yaml` (manifest) and the
 // referenced input directory; the runner overlays input into a tmpdir,
 // execs the binary there, and reports a structural diff plus a judge
@@ -39,7 +39,7 @@ var ErrRepoRootNotFound = errors.New(
 // provided by the fixture itself under its input directory.
 func repoLayer() []string {
 	return []string{
-		"bdd-cli",
+		"true-bdd",
 		"templates",
 	}
 }
@@ -68,9 +68,10 @@ func NewSessionRoot() (string, error) {
 }
 
 // findRepoRoot walks up from cwd until it finds a directory containing
-// a `.git` entry. `.git` is used (not `go.mod`) because the bdd-cli
-// module lives at scripts/bdd-cli/, so go.mod-based detection would
-// stop one level below the repo root.
+// a `.git` entry — the unambiguous repository marker. (Preferring
+// `.git` over `go.mod` is a holdover from the monorepo era when the
+// module lived below the repo root; today go.mod sits at the root
+// too, so either marker would work.)
 func findRepoRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {

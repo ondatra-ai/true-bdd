@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"bdd-cli/tests/bdd/runner"
+	"github.com/ondatra-ai/true-bdd/tests/bdd/runner"
 )
 
 const (
@@ -34,7 +34,7 @@ func TestBDDFixtures(t *testing.T) {
 		t.Skipf("`claude` CLI not on $PATH; skipping BDD suite: %v", err)
 	}
 
-	binPath := buildBddCLI(t)
+	binPath := buildTrueBDD(t)
 
 	judge, err := runner.NewClaudeJudge()
 	if err != nil {
@@ -64,15 +64,15 @@ func TestBDDFixtures(t *testing.T) {
 	}
 }
 
-func buildBddCLI(t *testing.T) string {
+func buildTrueBDD(t *testing.T) string {
 	t.Helper()
 
 	tmp := t.TempDir()
-	binPath := filepath.Join(tmp, "bdd-cli")
+	binPath := filepath.Join(tmp, "true-bdd")
 
 	// `go test` runs with cwd = the package dir (tests/bdd). Build the
-	// module by pointing -C up two levels to scripts/bdd-cli; the
-	// binary entry lives under ./src (post commit efa7318).
+	// module by pointing -C up two levels to the repo root; the
+	// binary entry lives under ./src.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -82,7 +82,7 @@ func buildBddCLI(t *testing.T) string {
 
 	err := cmd.Run()
 	if err != nil {
-		t.Fatalf("go build bdd-cli: %v", err)
+		t.Fatalf("go build true-bdd: %v", err)
 	}
 
 	return binPath

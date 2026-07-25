@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"bdd-cli/src/claudecode/internal/shared"
-	"bdd-cli/src/claudecode/internal/subprocess"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/subprocess"
 )
 
 const testSubtype = "test"

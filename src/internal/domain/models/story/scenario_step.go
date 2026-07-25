@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 // ModifierType represents the type of statement modifier.

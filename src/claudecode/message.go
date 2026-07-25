@@ -1,7 +1,7 @@
 package claudecode
 
 import (
-	"bdd-cli/src/claudecode/internal/shared"
+	"github.com/ondatra-ai/true-bdd/src/claudecode/internal/shared"
 )
 
 // Message represents any message type in the Claude Code protocol.

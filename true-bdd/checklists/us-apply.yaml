@@ -1,0 +1,97 @@
+# Checklist for `true-bdd us apply <story-id>`.
+# Walk every AC in the refined story and merge each one into the registry
+# (docs/requirements.yaml).
+#
+# Engine-test prompt set: intentionally minimal (2 prompts) to exercise the
+# many-scenarios × many-prompts walk and the per-cell fix loop. Will be
+# expanded with richer merge-correctness checks once the engine is proven.
+
+version: "1.0"
+last_updated: "2026-04-25"
+
+# Per-checklist engine knobs. Read by `us apply --fix` to bound the
+# outer re-walk loop: if any fix is applied during walk N, the engine
+# re-walks from AC 1 prompt 1; if N reaches max_apply_attempts without
+# a clean walk, the run aborts and the canonical registry is left
+# untouched.
+config:
+  max_apply_attempts: 5
+
+sections:
+  - id: merge
+    name: "Scenario Merge"
+    description: "Each AC from the story must be present, and only once, in the registry."
+    validation_prompts:
+      - Q: |
+          Does this acceptance criterion already appear as a scenario in the
+          registry?
+
+          The registry is the requirements YAML referenced by the subject
+          (the scratch copy for this run). An AC "appears" when there is an
+          entry under `scenarios:` whose `user_stories[]` list contains the
+          subject's story path AND the subject's lineage scenario id.
+
+          Pass when at least one such entry exists.
+          Fail otherwise.
+
+          Context: emit one line.
+            - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
+            - "AC <ac id> (lineage <lineage id>): not present"
+        rationale: "Every refined-story AC must be reflected as a tracked scenario in the registry."
+        docs:
+          - terms
+        F: |
+          Add this AC as a new scenario in the registry.
+
+          Use the Edit tool against the registry file referenced by the
+          subject. Steps:
+            1. Pick the next free id following existing numbering — `INT-NNN`
+               for integration-layer ACs, `E2E-NNN` for e2e-layer ACs. If
+               unsure, prefer `E2E-NNN`. Do not reuse an existing id.
+            2. Insert a new entry under `scenarios:` with:
+                  description: <short summary derived from the AC description>
+                  service: ""
+                  last_updated: "<today, YYYY-MM-DD>"
+                  user_stories:
+                    - story: <story file path from subject>
+                      scenario_id: <lineage id from subject>
+                      merge_date: "<today, YYYY-MM-DD>"
+                  merged_steps:
+                    given: <verbatim from the AC's steps.given>
+                    when:  <verbatim from the AC's steps.when>
+                    then:  <verbatim from the AC's steps.then>
+            3. Preserve existing file ordering and indentation. Do not
+               touch any other entry.
+
+      - Q: |
+          Does the registry contain duplicate entries for this acceptance
+          criterion?
+
+          Two entries are duplicates when both reference the subject's
+          lineage scenario id in their `user_stories[]` list, OR their
+          `merged_steps` describe the same observable behavior with the
+          same service.
+
+          Pass when exactly one entry references this AC.
+          Fail when two or more entries reference it.
+
+          Context: emit one line per matching entry, then a verdict.
+            - "match: <scenario id> — '<short description>'"
+            - "Verdict: unique / duplicate (<N> entries)"
+        rationale: "Each AC must map to a single registry entry; duplicates pollute the registry and break lineage."
+        docs:
+          - terms
+        F: |
+          Collapse the duplicate entries into a single one.
+
+          Use the Edit tool against the registry file referenced by the
+          subject. Steps:
+            1. Choose a winning entry (prefer the lower-numbered id; prefer
+               `INT-` over `E2E-` when both layers cover the same behavior
+               and an integration test exists).
+            2. Move every `user_stories[]` item from the losing entry into
+               the winner's `user_stories[]`, preserving order and
+               deduplicating by `(story, scenario_id)`.
+            3. Union the `merged_steps` so every step from both entries
+               appears in the winner, deduplicated.
+            4. Delete the losing entry. Do not renumber other ids.

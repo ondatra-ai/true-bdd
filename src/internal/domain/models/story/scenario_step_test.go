@@ -3,7 +3,7 @@ package story_test
 import (
 	"testing"
 
-	"bdd-cli/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
 
 	"gopkg.in/yaml.v3"
 )

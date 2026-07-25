@@ -1,0 +1,65 @@
+# Checklist for `true-bdd build tests`.
+# Walk every scenario in docs/requirements.yaml and confirm each one
+# has an executable test in the codebase. The fix loop asks Claude to
+# implement the missing test from the scenario's merged_steps.
+#
+# Intentionally minimal (1 prompt) to seed the build-tests engine.
+# Will be expanded with richer correctness checks once the engine is
+# wired and walking scenarios.
+
+version: "1.0"
+last_updated: "2026-05-13"
+
+sections:
+  - id: implementation
+    name: "Test Implementation"
+    description: "Every registry scenario must have a real executable test referencing it by id."
+    validation_prompts:
+      - Q: |
+          Does this registry scenario have a corresponding test in the
+          codebase?
+
+          A test "exists" for the subject scenario when at least one
+          file under the project's test trees references the scenario
+          id literally — typically inside a `test('<id>: ...')` name,
+          a tag, or a leading comment. Search these roots:
+            - `tests/integration/`
+            - `tests/e2e/`
+            - `services/backend/`
+            - `services/frontend/`
+
+          Pass when one or more such references are found.
+          Fail when no file references the id.
+
+          Context: emit one line per match, then a verdict.
+            - "match: <relative path>:<line>"
+            - "Verdict: implemented / missing"
+        rationale: "Every tracked scenario must map to an executable test; otherwise the registry drifts from reality."
+        docs:
+          - bdd_guidelines
+          - terms
+        F: |
+          Implement a test for this scenario.
+
+          Use the appropriate test tree based on the subject's level:
+            - `integration` → `tests/integration/<service>-*.spec.ts`
+              using Playwright's Request API (no browser).
+            - `e2e`         → `tests/e2e/<service>-*.spec.ts` using
+              Playwright's Browser/Page API.
+
+          Steps:
+            1. Pick the existing spec file most aligned with the
+               subject's `service`, or create a new spec following the
+               naming pattern above. Do not duplicate an existing test.
+            2. Add a single `test('<scenario id>: <short description>', ...)`
+               whose body translates the subject's `merged_steps` into
+               executable assertions:
+                 - `given`  → setup / preconditions
+                 - `when`   → the action being tested
+                 - `then`   → assertions
+               Use exact step text where reasonable; do not invent
+               behavior beyond what the steps describe.
+            3. The first line of the test name MUST start with the
+               scenario id followed by `: ` so the validation prompt
+               above can find it. Example: `INT-007: ...`.
+            4. Do not modify other tests. Do not edit the registry.

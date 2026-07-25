@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bdd-cli/src/internal/app/bootstrap"
-	"bdd-cli/src/internal/app/commands"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/commands"
 )
 
-const defaultArchitectureFile = "bdd-cli/architecture.yaml"
+const defaultArchitectureFile = "true-bdd/architecture.yaml"
 
 func NewBuildCommand(container *bootstrap.Container) *cobra.Command {
 	buildCmd := &cobra.Command{
@@ -40,9 +40,9 @@ the allowed roots; docs/requirements.yaml is never touched. The CLI exits
 non-zero if any scenario is still uncovered after the walk.
 
 Example:
-  bdd-cli build tests
-  bdd-cli build tests --fix
-  bdd-cli build tests --requirements docs/requirements.yaml`,
+  true-bdd build tests
+  true-bdd build tests --fix
+  true-bdd build tests --requirements docs/requirements.yaml`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(context.Background(),
@@ -84,7 +84,7 @@ func newBuildCodeCmd(container *bootstrap.Container) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "code",
 		Short: "Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
-		Long: `Walk every (service, layer) pair declared in bdd-cli/architecture.yaml,
+		Long: `Walk every (service, layer) pair declared in true-bdd/architecture.yaml,
 discover currently-failing tests through their framework runner, and walk each
 failure against the build-code checklist. With --fix, every failed cell drives a
 Claude-mediated turn that Writes or Edits production source under services/* so
@@ -92,9 +92,9 @@ the failing test passes; test files and docs/requirements.yaml are never
 touched. The CLI exits non-zero if any test is still failing after the walk.
 
 Example:
-  bdd-cli build code
-  bdd-cli build code --fix
-  bdd-cli build code --architecture bdd-cli/architecture.yaml`,
+  true-bdd build code
+  true-bdd build code --fix
+  true-bdd build code --architecture true-bdd/architecture.yaml`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(context.Background(),

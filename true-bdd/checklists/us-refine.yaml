@@ -1,0 +1,345 @@
+# Checklist for `true-bdd us refine <story-id>`.
+# Team discusses and adds details (INVEST, acceptance criteria, anti-patterns, splitting).
+#
+# Sources:
+# - Bill Wake INVEST: https://agilealliance.org/glossary/invest/
+# - Mike Cohn SPIDR: https://www.mountaingoatsoftware.com/blog/five-simple-but-powerful-ways-to-split-user-stories
+# - Fibonacci Estimation: https://www.mountaingoatsoftware.com/blog/why-the-fibonacci-sequence-works-well-for-estimating
+
+version: "1.0"
+last_updated: "2026-04-18"
+
+sections:
+  - id: acceptance_criteria
+    name: "Acceptance Criteria Quality"
+    description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
+    source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
+    validation_prompts:
+      - Q: |
+          Count the total number of acceptance criteria in the story.
+
+          Pass when the count is between 3 and 7 inclusive.
+          Fail when the count is outside that range.
+
+          Context: emit a single line stating the count.
+            - "Total ACs: <N>"
+        rationale: "<3: underspecified. >7: likely an epic that should be split."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, decide whether its description field follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps field, not the description)
+
+          Pass when every AC's description follows the rule-based format.
+          Fail when one or more AC descriptions violate it.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: <violation> — <quoted offending phrase>"
+              (e.g. "AC-2: missing must/should — 'Claude responds...'"
+               or "AC-3: contains GWT — 'Given a user has shared...'")
+        rationale: "AC descriptions must be one-sentence rule statements with must/should keywords; Gherkin steps belong in the steps field."
+        docs:
+          - prd
+          - terms
+          - bdd_guidelines
+        F: |
+          Rewrite each AC description as a one-line rule-based statement.
+
+          Template: "[Subject] must/should [behavior] when [condition]"
+
+          Keyword selection (per bdd-guidelines.md):
+          - "must": core functionality, data integrity, security — failure = story not done
+          - "should": UX, error messaging, non-critical — story can ship without in edge cases
+
+          Rules from bdd-guidelines.md:
+          - One sentence, under 200 characters
+          - Always include "must" or "should" — no ambiguous "can", "will", "may"
+          - Capture both the behavior AND the condition/trigger
+          - No Given/When/Then keywords in description (move to steps field)
+          - No vague words (properly, correctly, appropriate)
+          - No implementation details
+
+          Output format (YAML list):
+          ```yaml
+          - original: "<the current AC description verbatim>"
+            issue: "Missing must/should / Exceeds one sentence / Contains GWT"
+            rewritten: "<one-line rule-based statement with must/should>"
+          ```
+
+      - Q: |
+          For every AC, decide whether its steps field follows the
+          Given/When/Then format. A violation is any of:
+          - steps field is missing or empty
+          - steps field does not have at least one Given step
+          - steps field does not have at least one When step
+          - steps field does not have at least one Then step
+
+          Pass when every AC has a steps field with all three GWT step types.
+          Fail when one or more ACs have a missing or malformed steps field.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: missing steps field"
+            - "<AC-id>: missing <given|when|then> step"
+            - "<AC-id>: <other malformation> — <short note>"
+        rationale: "Every AC must have testable Gherkin steps in Given/When/Then format."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+          - bdd_guidelines
+        F: |
+          Add or repair the steps field for each AC. Use the AC description
+          as the behavior to be tested.
+
+          Steps template:
+          ```yaml
+          steps:
+            - given:
+                - "<precondition using role from story>"
+            - when:
+                - "<role from story> <allowed action verb from terms reference> <object>"
+            - then:
+                - "<observable outcome with measurable criteria>"
+                - and: "<additional outcome if needed>"
+          ```
+
+          Rules from bdd-guidelines.md:
+          - Third person perspective using EXACT role from story's "as_a:" field
+          - Active voice ("Claude displays" not "is displayed")
+          - Observable outcome (what user sees/experiences)
+          - No vague words (properly, correctly, clear, appropriate)
+          - Each step under 120 characters
+
+          Output format (YAML list):
+          ```yaml
+          - ac_id: "<AC id>"
+            description: "<the AC description>"
+            steps:
+              - given: ["<precondition>"]
+              - when: ["<action>"]
+              - then: ["<observable outcome>"]
+          ```
+
+      - Q: |
+          For every AC, decide whether its description field contains a vague
+          word from the forbidden qualifiers list in the terms reference
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when no AC description contains forbidden qualifiers.
+          Fail when one or more AC descriptions contain them.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: contains '<word>'[, '<word2>'...]"
+        rationale: "Vague words in AC descriptions cannot be tested objectively."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+          - bdd_guidelines
+        F: |
+          Replace each vague word in the description with specific, measurable
+          criteria.
+
+          Use the forbidden qualifiers list from the terms reference document.
+          Replace each forbidden qualifier with specific, measurable criteria.
+
+      - Q: |
+          For every AC, decide whether its steps field contains a vague word
+          from the forbidden qualifiers list in the terms reference (properly,
+          correctly, appropriate, user-friendly, fast, etc.). Check Given,
+          When, and Then steps.
+
+          Pass when no AC's steps contain forbidden qualifiers.
+          Fail when one or more ACs have steps containing them.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+        rationale: "Vague words in AC steps cannot be tested objectively."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+          - bdd_guidelines
+        F: |
+          Replace each vague word in the steps with specific, measurable
+          criteria.
+
+          Use the forbidden qualifiers list from the terms reference document.
+          Replace each forbidden qualifier with concrete, observable criteria.
+
+      - Q: |
+          For every AC, decide whether its Given/When/Then steps use action
+          verbs from the forbidden_actions list in the terms reference
+          (true-bdd/terms.yaml).
+
+          Pass when no AC uses forbidden action verbs in its steps.
+          Fail when one or more ACs use forbidden action verbs.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: forbidden verb '<verb>' in <given|when|then>"
+              (e.g. "AC-2: forbidden verb 'parse' in then")
+        rationale: "Every step must use concrete, reproducible action verbs. Verbs in the forbidden_actions list do not specify the interaction mechanism and cannot be automated."
+        docs:
+          - prd
+          - terms
+          - bdd_guidelines
+        F: |
+          Rewrite each step that uses a forbidden action verb.
+
+          Use the terms reference document to select a concrete replacement verb
+          that specifies the interaction mechanism — not just the user's intent.
+
+      - Q: |
+          For every AC, decide whether it describes implementation (endpoint
+          created, database updated, schema migrated, etc.) instead of
+          observable behavior using an allowed action verb from the terms
+          reference.
+
+          Pass when every AC describes observable behavior.
+          Fail when one or more ACs describe implementation.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: implementation — '<quoted phrase>'"
+              (e.g. "AC-2: implementation — 'POST /docs endpoint returns 201'")
+        rationale: "ACs describe observable behavior, not technical implementation."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, decide whether it describes the happy path (the primary
+          success scenario where the system behaves as intended without errors).
+
+          Pass when at least one AC describes the happy path.
+          Fail when no AC describes the happy path.
+
+          Context: emit one line per AC, then a totals line.
+            - "<AC-id>: happy path — '<short summary>'"
+            - "<AC-id>: not happy path"
+            - "Total happy path ACs: <N> (need ≥1)"
+        rationale: "Every story needs a documented success path."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, decide whether it describes an error scenario (failure
+          cases such as permission denied, not found, validation error, timeout,
+          etc.).
+
+          Pass when at least 2 ACs describe error scenarios.
+          Fail when fewer than 2 ACs describe error scenarios.
+
+          Context: emit one line per AC, then a totals line.
+            - "<AC-id>: error scenario — '<short summary>'"
+            - "<AC-id>: not error scenario"
+            - "Total error scenario ACs: <N> (need ≥2)"
+        rationale: "Missing error handling leads to production issues."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, decide whether it includes specific measurable criteria
+          (status codes, exact messages, timeouts in ms, error codes, named
+          fields, etc.).
+
+          Pass when at least half (50%) of ACs include measurable criteria.
+          Fail when fewer than half do.
+
+          Context: emit one line per AC, then a totals line.
+            - "<AC-id>: measurable — '<criterion>'"
+            - "<AC-id>: not measurable"
+            - "Totals: <measurable_count>/<total> = <percentage>%"
+        rationale: "Measurable criteria enable automated testing."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, decide whether it has a binary pass/fail outcome —
+          i.e., a reviewer can decide pass or fail without subjective
+          judgement, with no ambiguity about what counts as "correct".
+
+          Pass when every AC has a binary outcome.
+          Fail when one or more ACs have subjective outcomes.
+
+          Context: emit one line per AC.
+            - "<AC-id>: binary"
+            - "<AC-id>: subjective — '<reason>'"
+              (e.g. "AC-2: subjective — 'response is helpful' has no objective threshold")
+        rationale: "Every AC must be objectively testable."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+
+      - Q: |
+          For every AC, attempt to draft a runnable test sketch that would
+          verify the AC.
+
+          READ true-bdd/architecture.yaml CAREFULLY. It is the single source
+          of truth for both:
+          - the test framework per service and per layer (e2e / integration / unit)
+          - the test helpers available per layer (e.g. McpClient, page fixtures)
+
+          Pick the framework whose service+layer best matches what the AC
+          tests, and use the helpers declared for that layer. Do NOT invent
+          helpers; use only what is declared in architecture.yaml. Do NOT
+          discover the framework from code, package manifests, or other docs.
+
+          An AC is convertible if you can write a concrete test sketch
+          with explicit inputs, actions, and assertions whose pass/fail
+          can be decided without human judgement.
+
+          An AC is NOT convertible if the assertion would require human
+          taste or interpretation (e.g. "response is helpful", "UX feels
+          right") or has no objective oracle.
+
+          Pass when at least 80% of ACs are convertible.
+          Fail when fewer than 80% are convertible.
+
+          Context: emit a discovery line FIRST, then one item per AC, then
+          a totals line.
+
+          First context line MUST state the framework AND helpers you picked,
+          each with its exact YAML path in true-bdd/architecture.yaml:
+            - "Discovered: framework <name> (architecture.yaml <yaml path>); helpers <names> (architecture.yaml <yaml path>)"
+
+          For convertible ACs, prefer a single-line form:
+            - "<AC-id>: convertible (framework: <name>) -- <one-line sketch using declared helpers>"
+
+          If the sketch needs setup that exceeds 200 chars, use a YAML
+          literal block:
+            - |
+                <AC-id>: convertible (framework: <name>)
+                <multi-line sketch using declared helpers>
+
+          For non-convertible ACs:
+            - "<AC-id>: not convertible -- '<short reason>'"
+
+          Final line:
+            - "Totals: <convertible_count>/<total> = <percentage>%"
+        rationale: "Drafting the actual test reveals hidden ambiguity and proves the AC is testable, not just claims to be."
+        docs:
+          - prd
+          - terms
+          - architecture_yaml
+          - bdd_guidelines

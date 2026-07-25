@@ -1,4 +1,4 @@
-# TrueBDD (bdd-cli)
+# TrueBDD
 
 An aspirational **Spec-as-Source** CLI: Gherkin-style behavioural specs
 plus a system-architecture description are the source of truth, and code
@@ -74,7 +74,7 @@ spec defines observable outputs; the architectural spec pins the
 persistent contracts; the implementation in between is free to drift
 between rebuilds, as long as both contracts are honoured.
 
-`bdd-cli` is the substrate this vision is being built on. The `us`
+`true-bdd` is the substrate this vision is being built on. The `us`
 subcommand suite manages the spec lifecycle; the `build` subcommands
 implement the regeneration loop — `build tests` derives executable
 tests from the registry, `build code` regenerates production code
@@ -101,7 +101,7 @@ default spec locations.
 Requires Go 1.25 and the `claude` CLI on `$PATH`.
 
 ```bash
-go build -o ./bdd-cli ./src
+mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 ```
 
 ## Usage
@@ -111,11 +111,11 @@ a Claude Code session, unset `CLAUDECODE` first so the child has a
 clean environment:
 
 ```bash
-env -u CLAUDECODE ./bdd-cli us create 4.1
-env -u CLAUDECODE ./bdd-cli us refine 4.1 --fix
-env -u CLAUDECODE ./bdd-cli us apply  4.1 --fix
-env -u CLAUDECODE ./bdd-cli build tests --fix
-env -u CLAUDECODE ./bdd-cli build code  --fix
+env -u CLAUDECODE ./bin/true-bdd us create 4.1
+env -u CLAUDECODE ./bin/true-bdd us refine 4.1 --fix
+env -u CLAUDECODE ./bin/true-bdd us apply  4.1 --fix
+env -u CLAUDECODE ./bin/true-bdd build tests --fix
+env -u CLAUDECODE ./bin/true-bdd build code  --fix
 ```
 
 `us refine` issues many sequential Claude calls and typically takes
@@ -123,9 +123,9 @@ env -u CLAUDECODE ./bdd-cli build code  --fix
 
 ## Configuration
 
-The host project supplies a `bdd-cli/` directory at its root:
+The host project supplies a `true-bdd/` directory at its root:
 
-- `bdd-cli.yaml` — the engine type, filesystem paths (epics, stories,
+- `true-bdd.yaml` — the engine type, filesystem paths (epics, stories,
   checklists, tmp), per-command prompt-template paths, and a
   `documents:` map naming the files a check may cite (PRD,
   architecture docs, coding standards, BDD guidelines, terms
@@ -160,7 +160,10 @@ go test -tags bdd ./tests/bdd/...
 
 Fixtures under `tests/bdd/fixtures/<scenario>/` are folders containing
 a `fixture.yaml` manifest and the referenced input directory tree
-(conventionally `input/`, holding only designed `docs/` content). The
+(conventionally `input/`, holding designed host-project content —
+`docs/` at minimum, plus project sources, a per-fixture `CLAUDE.md`,
+or engine-config overrides under `true-bdd/` when the scenario needs
+them). The
 manifest declares `cmd`, `input`, optional `answers` (stdin for
 `--fix` runs), optional `prep` (shell commands run in the tmpdir
 before the pre-run snapshot, e.g. `npm install`), optional `teardown`

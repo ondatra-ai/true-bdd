@@ -8,8 +8,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"bdd-cli/src/internal/domain/models/checklist"
-	"bdd-cli/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 )
 
 // ChecklistLoader loads per-command checklist YAMLs from a common directory.

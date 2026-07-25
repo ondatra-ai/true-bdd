@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"bdd-cli/src/internal/app/bootstrap"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
 	"github.com/spf13/cobra"
 )
 
@@ -15,8 +15,8 @@ func Execute() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "bdd-cli",
-		Short: "BDD CLI tool",
+		Use:   "true-bdd",
+		Short: "TrueBDD CLI",
 	}
 
 	rootCmd.AddCommand(NewUSCommand(container))

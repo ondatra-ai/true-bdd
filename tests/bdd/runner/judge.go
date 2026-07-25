@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"bdd-cli/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 )
 
 const (
@@ -34,7 +34,7 @@ type Judge interface {
 	Verdict(ctx context.Context, req JudgeRequest) (pass bool, reason string, err error)
 }
 
-// ClaudeJudge calls the existing bdd-cli Claude wrapper as a soft
+// ClaudeJudge calls the existing true-bdd Claude wrapper as a soft
 // check. It reuses ai.ClaudeClient so we don't pull in a new SDK and
 // don't introduce a new env var (the `claude` CLI handles auth).
 type ClaudeJudge struct {
@@ -88,7 +88,7 @@ func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (bool, stri
 func buildJudgeUserPrompt(req JudgeRequest) string {
 	var buf strings.Builder
 
-	fmt.Fprintf(&buf, "## Command\n\n```\nbdd-cli %s\n```\n\n", req.Cmd)
+	fmt.Fprintf(&buf, "## Command\n\n```\ntrue-bdd %s\n```\n\n", req.Cmd)
 	fmt.Fprintf(&buf, "## Specification\n\n%s\n\n", strings.TrimSpace(req.JudgeSpec))
 	buf.WriteString("## File diff\n\n")
 	writeDiffSummary(&buf, req.Diff)

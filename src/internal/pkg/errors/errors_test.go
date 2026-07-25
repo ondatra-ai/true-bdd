@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	claudecode "bdd-cli/src/claudecode"
-	pkgerrors "bdd-cli/src/internal/pkg/errors"
+	claudecode "github.com/ondatra-ai/true-bdd/src/claudecode"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 const aiPromptTimeout = 20 * time.Minute // Timeout for AI prompt execution

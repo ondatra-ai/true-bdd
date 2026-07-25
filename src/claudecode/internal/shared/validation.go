@@ -1,6 +1,6 @@
 package shared
 
-import "bdd-cli/src/internal/pkg/errors"
+import "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 
 const (
 	// DefaultMaxThinkingTokens is the default maximum number of thinking tokens.

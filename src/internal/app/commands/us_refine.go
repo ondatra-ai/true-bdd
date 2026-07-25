@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"bdd-cli/src/internal/domain/models/story"
-	"bdd-cli/src/internal/infrastructure/fs"
-	storyinfra "bdd-cli/src/internal/infrastructure/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
+	storyinfra "github.com/ondatra-ai/true-bdd/src/internal/infrastructure/story"
 )
 
 // RefineDeps bundles what `us refine` needs at the command boundary.
@@ -42,7 +42,7 @@ func loadStoryFromFile(
 		doc, err := loader.Load(storyNumber)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"story file not found — run `bdd-cli us create %s` first: %w",
+				"story file not found — run `true-bdd us create %s` first: %w",
 				storyNumber, err,
 			)
 		}

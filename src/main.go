@@ -1,6 +1,6 @@
 package main
 
-import "bdd-cli/src/cmd"
+import "github.com/ondatra-ai/true-bdd/src/cmd"
 
 func main() {
 	cmd.Execute()
