@@ -1,0 +1,72 @@
+# Seed registry for the `us-apply-duplicate-collapse` BDD fixture.
+#
+# Engineered so `us apply 95.1 --fix` walks its single AC through the
+# SHIPPED us-apply checklist and exercises the duplicate branch:
+#
+#   - "present?" PASSES: at least one entry references story
+#     docs/stories/95.1-duplicate-collapse.yaml with lineage 95.1-001.
+#   - "duplicate?" FAILS: E2E-900 and E2E-901 BOTH reference lineage
+#     95.1-001. The F: collapses them into a single entry (keep the
+#     lower id, union user_stories and merged_steps, delete the loser).
+#
+# After the collapse fix the walker restarts, both prompts pass, the
+# outer re-walk confirms the fixpoint, and the scratch registry is
+# committed over this file.
+#
+# E2E-950 is unrelated on purpose: it anchors the "leave every other
+# entry alone" assertion.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-07-25"
+  description: "Duplicate-entry seed for us-apply-duplicate-collapse fixture"
+
+scenarios:
+  E2E-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/stories/95.1-duplicate-collapse.yaml"
+        scenario_id: "95.1-001"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+  E2E-901:
+    description: "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
+    service: "mcp-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/stories/95.1-duplicate-collapse.yaml"
+        scenario_id: "95.1-001"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+        - "the server accepts JSON-RPC over HTTP POST at /mcp"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+        - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+  E2E-950:
+    description: "Unrelated scenario that must remain untouched"
+    service: "web-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/stories/90.1-unrelated.yaml"
+        scenario_id: "90.1-001"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User navigates to the home page"
+      then:
+        - "the home page renders a welcome banner"

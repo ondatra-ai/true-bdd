@@ -1,0 +1,77 @@
+cmd: us refine 96.2 --fix
+input: input
+
+# The fix loop consumes one line per prompt: "1" applies the proposed
+# fix, and any clarifying question swallows a line too. One designed
+# fix is expected; surplus lines are harmless (EOF exits cleanly).
+answers: |
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+  1
+
+expected:
+  exit_code: 0
+
+  stdout_regex:
+    - "ALL CHECKS PASSED!"
+    - "Story saved to:"
+    - "REFINE COMPLETE"
+
+  judge: |
+    # Expectations for `us refine 96.2 --fix` (description-format fix)
+
+    The story seed at
+    `docs/stories/96.2-document-summary-descriptions.yaml` carries one
+    designed defect: AC-1's description is a Gherkin Given/When/Then
+    sentence with no must/should keyword (violates the rule-based
+    description format).
+
+    The `--fix` flow must detect the failure, generate a fix, apply it
+    (the harness answers "1" to every prompt), re-validate, and
+    converge, writing the story file in place.
+
+    ## What MUST be true after the run
+
+    1. The only file created or modified outside `tmp/` is
+       `docs/stories/96.2-document-summary-descriptions.yaml`.
+    2. The final story file is valid YAML with a top-level `story:` key
+       and `id` `"96.2"`, still containing exactly 5 acceptance
+       criteria covering the same substance (150-word summary; unshared
+       document message; timeout message; first-10000-words notice;
+       section-heading outline).
+    3. AC-1's final description is a single rule-based sentence
+       containing "must" or "should" and NO Given/When/Then phrasing.
+    4. Every AC keeps (or gains) Given/When/Then steps.
+
+    ## What MUST NOT happen
+
+    - No AC dropped or added.
+    - No edits to `true-bdd/`, `docs/prd.md`, or `docs/architecture*`.
+    - The stdout MUST NOT contain "Hit max apply attempts".
+
+    ## Tolerances
+
+    - Light rewording elsewhere is acceptable as long as each AC's
+      exact messages and numeric thresholds survive.
+    - Files inside `tmp/` are scratch artifacts - ignore them.
+
+    If all of the above hold, reply `PASS`. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.

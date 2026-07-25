@@ -1,0 +1,36 @@
+# Epic seed for the `us-create-missing-clause` BDD fixture.
+#
+# Story 97.1 omits the as_a clause entirely and carries a so_that too
+# generic to inform any implementation decision, so a non-fix
+# `us create 97.1` walk records semantic failures on two us-create
+# prompts:
+#
+#   - story format: the as_a clause is missing.
+#   - meaningful WHY: "my work day goes better overall" rules nothing
+#     in and nothing out.
+#
+# The i_want clause is a clean user goal (no implementation terms) and
+# the statement is short, so the remaining what/format checks are not
+# designed failures. The run must end NotFixed: exit 0, report
+# printed, no story file written.
+
+epic:
+  id: 97
+  name: "BDD Missing Clause Epic"
+  status: "PLANNED"
+  goal: "Provide a story with a missing as_a clause and a generic so_that so the true-bdd BDD harness can exercise the us-create format and WHY failure branches."
+  context: "Used only by tests/bdd/fixtures/us-create-missing-clause. The as_a omission and the generic benefit clause are deliberate."
+
+stories:
+  - id: "97.1"
+    title: "Key Points On Demand"
+    i_want: "Claude to give me the key points of a shared Google Doc when I ask"
+    so_that: "my work day goes better overall"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude for the key points of a shared Google Doc, I receive a bulleted list in the conversation."
+      - id: AC-2
+        description: "When I ask for key points of a document I have not shared, I receive a message telling me to share it first."
+      - id: AC-3
+        description: "When the document has no body text, I receive a message saying there is nothing to list."

@@ -1,0 +1,51 @@
+cmd: us create 97.1
+input: input
+
+expected:
+  exit_code: 0
+
+  stdout_regex:
+    - "Validation failed. Use --fix flag to enter interactive fix mode."
+    - "CREATE COMPLETE"
+
+  judge: |
+    # Expectations for `us create 97.1` (missing as_a clause)
+
+    The synthetic epic at
+    `docs/epics/jsons/epic-97-bdd-missing-clause.yaml` holds story 97.1
+    with NO as_a clause and a so_that ("my work day goes better
+    overall") too generic to inform any implementation decision. The
+    i_want clause is a clean, short user goal.
+
+    Expected behavior: the non-fix walk records the failures - the
+    story-format check must fail on the missing as_a clause, and the
+    meaningful-WHY check must fail on the generic so_that - prints the
+    report and "Validation failed. Use --fix flag to enter interactive
+    fix mode.", and exits 0 WITHOUT writing any story file.
+
+    ## What MUST be true after the run
+
+    1. NO file outside `tmp/` is created or modified. In particular,
+       nothing is created under `docs/stories/` and the epic file is
+       unchanged.
+    2. Stdout contains the checklist report with at least one FAIL row
+       and an Overall status that is not PASS.
+    3. The story-format check (the prompt asking whether the story
+       follows "As a..., I want..., so that...") reports FAIL.
+    4. Stdout contains "Validation failed. Use --fix flag to enter
+       interactive fix mode."
+
+    ## What MUST NOT happen
+
+    - No "ALL CHECKS PASSED!" banner.
+    - No "Story saved to:" line.
+
+    ## Tolerances
+
+    - Additional FAIL rows (e.g. the role check failing on the empty
+      as_a) are expected and acceptable.
+    - Files inside `tmp/` are scratch artifacts - ignore them.
+
+    If all of the above hold, reply `PASS`. Otherwise reply
+    `FAIL: <one-sentence reason>` describing the first violation you
+    find.

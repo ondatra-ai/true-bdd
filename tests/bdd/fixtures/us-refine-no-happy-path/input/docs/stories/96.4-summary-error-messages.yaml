@@ -1,0 +1,49 @@
+# Story seed for the `us-refine-no-happy-path` BDD fixture.
+#
+# Designed to FAIL exactly one us-refine prompt: the happy-path check.
+# All three ACs are error scenarios (unshared document, timeout, empty
+# document), so no AC describes the primary success scenario. Every
+# other prompt is designed to PASS: 3 ACs (in range), rule-based must
+# descriptions, full Given/When/Then steps, no vague qualifiers or
+# forbidden verbs, observable behavior, >= 2 error scenarios, exact
+# messages everywhere (measurable), binary outcomes, sketches drawable
+# from the fixture's true-bdd/architecture.yaml.
+#
+# The non-fix run therefore ends NotFixed (exit 0, no story write).
+
+story:
+    id: "96.4"
+    title: Summary Error Messages
+    as_a: Claude User
+    i_want: an exact message from Claude whenever my summary request cannot be fulfilled
+    so_that: I know what to change before I ask again
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc exists that is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize that document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'
+        - id: AC-2
+          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+                - the summary backend does not respond within 30 seconds
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'The summary timed out - please try again'
+        - id: AC-3
+          description: Claude must display the message 'This document has no content to summarize' when the shared document contains no body text.
+          steps:
+            - given:
+                - a Google Doc with no body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'This document has no content to summarize'
