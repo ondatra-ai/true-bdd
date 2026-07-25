@@ -17,3 +17,6 @@ coverage.out
 .DS_Store
 .idea/
 .vscode/
+
+# Python bytecode (Claude hooks)
+__pycache__/
