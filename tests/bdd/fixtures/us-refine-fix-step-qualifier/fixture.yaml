@@ -1,6 +1,15 @@
 cmd: us refine 96.7 --fix
 input: input
 
+# Generate a single-prompt checklist from the live shipped
+# true-bdd/checklists/us-refine.yaml: the runner keeps only the prompt
+# whose Q text contains this snippet. No copied checklist to drift -
+# a shipped edit flows in automatically, and an unmatched snippet
+# fails the fixture at prep.
+checklist_prompts:
+  us-refine:
+    - "whether its steps field contains a vague word"
+
 # The fix loop consumes one line per prompt: "1" applies the proposed
 # fix, and any clarifying question swallows a line too. One designed
 # fix is expected; surplus lines are harmless (EOF exits cleanly).
@@ -37,8 +46,8 @@ expected:
   judge: |
     # Expectations for `us refine 96.7 --fix` (step-qualifier fix)
 
-    The fixture ships a SINGLE-PROMPT checklist override
-    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    The harness GENERATES a single-prompt checklist for this run
+    (`checklist_prompts` keeps only the shipped
     vague-word-in-steps prompt), so the walk evaluates exactly one
     check. The story seed at
     `docs/stories/96.7-document-summary-step-qualifier.yaml` carries

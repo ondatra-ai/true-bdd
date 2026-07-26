@@ -10,8 +10,9 @@
 #     -> fails the forbidden-verb prompt; its F replaces it with a
 #     concrete verb that names the interaction mechanism.
 #
-# The fixture also ships a single-prompt checklist override, so the
-# walk evaluates ONLY the check above. The story still keeps every
+# The fixture also declares checklist_prompts in its manifest, so the
+# harness generates a single-prompt checklist and the walk evaluates
+# ONLY the check above. The story still keeps every
 # other quality dimension healthy (it doubles as documentation):
 # 4 ACs, rule-based must descriptions, full Given/When/Then steps, no
 # vague qualifiers, two error scenarios (AC-2, AC-3), happy paths

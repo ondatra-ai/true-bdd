@@ -41,4 +41,5 @@ _transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.m
 
 _transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.md_
 
-- For checklist-branch BDD tests, derive the coverage universe from the entire shipped checklist, but have each coverage fixture override that checklist with only the single step it targets; implement the change with the same Codex consultation approach used for the original solution (requested 2026-07-25T21:43:32Z).
+- ~~For checklist-branch BDD tests, derive the coverage universe from the entire shipped checklist, but have each coverage fixture override that checklist with only the single step it targets; implement the change with the same Codex consultation approach used for the original solution (requested 2026-07-25T21:43:32Z).~~ _(superseded 2026-07-25)_
+- For checklist-branch BDD tests, continue deriving the coverage universe from the full shipped checklist and giving each fixture only its targeted step, but eliminate copied checklist prompt and rationale text: during fixture preparation, generate the one-step checklist from the live shipped checklist plus fixture-provided information; plan the change, have Codex critique the plan, incorporate relevant suggestions, implement it, then have Codex review the implementation and apply relevant findings (requested 2026-07-26T06:47:47Z).

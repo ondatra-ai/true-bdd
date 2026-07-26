@@ -116,6 +116,10 @@ type Fixture struct {
 	// TeardownCmds: optional `teardown:` shell commands run in tmpdir
 	// after the post-run snapshot. See FixtureManifest.Teardown.
 	TeardownCmds []string
+	// ChecklistPrompts: optional per-stem prompt selection applied to
+	// the tmpdir checklist during prep. See
+	// FixtureManifest.ChecklistPrompts.
+	ChecklistPrompts map[string][]string
 }
 
 // RunResult bundles everything we observed from one fixture run.
@@ -139,7 +143,7 @@ func LoadFixture(dir string) (*Fixture, error) {
 		stdinBytes = []byte(manifest.Answers)
 	}
 
-	return &Fixture{
+	fixture := &Fixture{
 		Name:             filepath.Base(dir),
 		Dir:              dir,
 		Cmd:              strings.TrimSpace(manifest.Cmd),
@@ -150,7 +154,15 @@ func LoadFixture(dir string) (*Fixture, error) {
 		Stdin:            stdinBytes,
 		PrepCmds:         manifest.Prep,
 		TeardownCmds:     manifest.Teardown,
-	}, nil
+		ChecklistPrompts: manifest.ChecklistPrompts,
+	}
+
+	err = validateChecklistFilters(fixture)
+	if err != nil {
+		return nil, err
+	}
+
+	return fixture, nil
 }
 
 // Execute runs the fixture. Four-step prep:
@@ -276,6 +288,11 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	err = copyTree(filepath.Join(fixture.Dir, fixture.InputPath), tmpDir)
 	if err != nil {
 		return tmpDir, fmt.Errorf("overlay input tree: %w", err)
+	}
+
+	err = applyChecklistFilters(fixture, tmpDir)
+	if err != nil {
+		return tmpDir, err
 	}
 
 	return tmpDir, nil

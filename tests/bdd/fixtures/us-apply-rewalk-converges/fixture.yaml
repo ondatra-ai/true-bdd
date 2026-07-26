@@ -1,6 +1,15 @@
 cmd: us apply 99.3 --fix
 input: input
 
+# Generate a single-prompt checklist from the live shipped
+# true-bdd/checklists/us-apply.yaml: the runner keeps only the prompt
+# whose Q text contains this snippet. No copied checklist to drift -
+# a shipped edit flows in automatically, and an unmatched snippet
+# fails the fixture at prep.
+checklist_prompts:
+  us-apply:
+    - "already appear as a scenario in the registry"
+
 answers: |
   1
   1
