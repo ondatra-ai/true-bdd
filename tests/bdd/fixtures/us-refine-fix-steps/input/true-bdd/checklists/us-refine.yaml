@@ -1,0 +1,76 @@
+# Per-fixture override of `true-bdd/checklists/us-refine.yaml`.
+#
+# SINGLE-PROMPT override: contains only shipped prompt q3
+# (Given/When/Then steps presence), copied VERBATIM (Q, rationale, docs, F). The coverage
+# collector matches run prompts to the shipped universe by EvalKey
+# (digest over Q + rationale + F + docs), so this run's lone prompt
+# still credits the shipped us-refine q3 branches while the walk
+# stays decoupled from the other 11 prompts' judge stability.
+#
+# If the shipped q3 (or a shipped `config:` block) changes, this
+# copy must be updated too — the override_sync test in
+# tests/bdd/coverage fails otherwise.
+
+version: '1.0'
+last_updated: '2026-04-18'
+sections:
+- id: acceptance_criteria
+  name: Acceptance Criteria Quality
+  description: Testable conditions that define 'done' (incorporates Ron Jeffries'
+    Confirmation)
+  source: https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/
+  validation_prompts:
+  - Q: |
+      For every AC, decide whether its steps field follows the
+      Given/When/Then format. A violation is any of:
+      - steps field is missing or empty
+      - steps field does not have at least one Given step
+      - steps field does not have at least one When step
+      - steps field does not have at least one Then step
+
+      Pass when every AC has a steps field with all three GWT step types.
+      Fail when one or more ACs have a missing or malformed steps field.
+
+      Context: emit one line per AC.
+        - "<AC-id>: ok"
+        - "<AC-id>: missing steps field"
+        - "<AC-id>: missing <given|when|then> step"
+        - "<AC-id>: <other malformation> — <short note>"
+    rationale: Every AC must have testable Gherkin steps in Given/When/Then format.
+    docs:
+    - prd
+    - terms
+    - architecture_yaml
+    - bdd_guidelines
+    F: |
+      Add or repair the steps field for each AC. Use the AC description
+      as the behavior to be tested.
+
+      Steps template:
+      ```yaml
+      steps:
+        - given:
+            - "<precondition using role from story>"
+        - when:
+            - "<role from story> <allowed action verb from terms reference> <object>"
+        - then:
+            - "<observable outcome with measurable criteria>"
+            - and: "<additional outcome if needed>"
+      ```
+
+      Rules from bdd-guidelines.md:
+      - Third person perspective using EXACT role from story's "as_a:" field
+      - Active voice ("Claude displays" not "is displayed")
+      - Observable outcome (what user sees/experiences)
+      - No vague words (properly, correctly, clear, appropriate)
+      - Each step under 120 characters
+
+      Output format (YAML list):
+      ```yaml
+      - ac_id: "<AC id>"
+        description: "<the AC description>"
+        steps:
+          - given: ["<precondition>"]
+          - when: ["<action>"]
+          - then: ["<observable outcome>"]
+      ```

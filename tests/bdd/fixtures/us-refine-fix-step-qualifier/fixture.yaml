@@ -37,7 +37,10 @@ expected:
   judge: |
     # Expectations for `us refine 96.7 --fix` (step-qualifier fix)
 
-    The story seed at
+    The fixture ships a SINGLE-PROMPT checklist override
+    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    vague-word-in-steps prompt), so the walk evaluates exactly one
+    check. The story seed at
     `docs/stories/96.7-document-summary-step-qualifier.yaml` carries
     one designed defect: AC-4's then step contains the vague
     qualifiers "quickly" and "user-friendly" (forbidden by the

@@ -37,6 +37,9 @@ expected:
   judge: |
     # Expectations for `us refine 96.8 --fix` (forbidden-verb fix)
 
+    The fixture ships a SINGLE-PROMPT checklist override
+    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    forbidden-verb prompt), so the walk evaluates exactly one check.
     The story seed at
     `docs/stories/96.8-document-summary-forbidden-verb.yaml` carries
     one designed defect: AC-1's then step uses the forbidden action

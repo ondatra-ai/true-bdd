@@ -42,8 +42,12 @@ expected:
   judge: |
     # Expectations for `us refine 96.5 --fix` (missing-steps fix)
 
-    The story seed at `docs/stories/96.5-document-summary-steps.yaml`
-    carries one designed defect: AC-2 has NO steps field (violates the
+    The fixture ships a SINGLE-PROMPT checklist override
+    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    Given/When/Then-steps prompt), so the walk evaluates exactly one
+    check. The story seed at
+    `docs/stories/96.5-document-summary-steps.yaml` carries one
+    designed defect: AC-2 has NO steps field (violates the
     Given/When/Then format prompt).
 
     The `--fix` flow must detect the failure, generate a fix, apply it

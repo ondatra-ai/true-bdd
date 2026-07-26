@@ -8,7 +8,9 @@
 #   - AC-2: steps field missing entirely -> fails the Given/When/Then
 #     format prompt (its F adds steps from the description).
 #
-# Everything else is designed to PASS both before and after the fix:
+# The fixture also ships a single-prompt checklist override, so the
+# walk evaluates ONLY the check above. The story still keeps every
+# other quality dimension healthy (it doubles as documentation):
 # 5 ACs, clean rule-based descriptions with must, clean steps, two
 # error scenarios (AC-2, AC-3), happy paths (AC-1, AC-4), measurable
 # criteria in every AC, binary outcomes, sketches drawable from the

@@ -37,7 +37,10 @@ expected:
   judge: |
     # Expectations for `us refine 96.6 --fix` (description-qualifier fix)
 
-    The story seed at
+    The fixture ships a SINGLE-PROMPT checklist override
+    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    vague-word-in-description prompt), so the walk evaluates exactly
+    one check. The story seed at
     `docs/stories/96.6-document-summary-desc-qualifier.yaml` carries
     one designed defect: AC-3's description contains the vague
     qualifier "properly" (forbidden by the fixture's

@@ -37,7 +37,10 @@ expected:
   judge: |
     # Expectations for `us refine 96.2 --fix` (description-format fix)
 
-    The story seed at
+    The fixture ships a SINGLE-PROMPT checklist override
+    (`true-bdd/checklists/us-refine.yaml` contains only the shipped
+    rule-based-description-format prompt), so the walk evaluates
+    exactly one check. The story seed at
     `docs/stories/96.2-document-summary-descriptions.yaml` carries one
     designed defect: AC-1's description is a Gherkin Given/When/Then
     sentence with no must/should keyword (violates the rule-based

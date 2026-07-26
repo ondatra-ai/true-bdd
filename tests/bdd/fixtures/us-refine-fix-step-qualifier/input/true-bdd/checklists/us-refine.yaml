@@ -1,0 +1,46 @@
+# Per-fixture override of `true-bdd/checklists/us-refine.yaml`.
+#
+# SINGLE-PROMPT override: contains only shipped prompt q5
+# (vague qualifiers in steps), copied VERBATIM (Q, rationale, docs, F). The coverage
+# collector matches run prompts to the shipped universe by EvalKey
+# (digest over Q + rationale + F + docs), so this run's lone prompt
+# still credits the shipped us-refine q5 branches while the walk
+# stays decoupled from the other 11 prompts' judge stability.
+#
+# If the shipped q5 (or a shipped `config:` block) changes, this
+# copy must be updated too — the override_sync test in
+# tests/bdd/coverage fails otherwise.
+
+version: '1.0'
+last_updated: '2026-04-18'
+sections:
+- id: acceptance_criteria
+  name: Acceptance Criteria Quality
+  description: Testable conditions that define 'done' (incorporates Ron Jeffries'
+    Confirmation)
+  source: https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/
+  validation_prompts:
+  - Q: |
+      For every AC, decide whether its steps field contains a vague word
+      from the forbidden qualifiers list in the terms reference (properly,
+      correctly, appropriate, user-friendly, fast, etc.). Check Given,
+      When, and Then steps.
+
+      Pass when no AC's steps contain forbidden qualifiers.
+      Fail when one or more ACs have steps containing them.
+
+      Context: emit one line per AC.
+        - "<AC-id>: ok"
+        - "<AC-id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+    rationale: Vague words in AC steps cannot be tested objectively.
+    docs:
+    - prd
+    - terms
+    - architecture_yaml
+    - bdd_guidelines
+    F: |
+      Replace each vague word in the steps with specific, measurable
+      criteria.
+
+      Use the forbidden qualifiers list from the terms reference document.
+      Replace each forbidden qualifier with concrete, observable criteria.

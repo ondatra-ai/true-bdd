@@ -56,4 +56,9 @@ _transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.m
 
 _transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.md_
 
-- After the current BDD fixture implementation finishes, try running the tests with Sonnet (requested 2026-07-25T19:21:44Z; not yet addressed in this transcript chunk).
+- ~~After the current BDD fixture implementation finishes, try running the tests with Sonnet (requested 2026-07-25T19:21:44Z; not yet addressed in this transcript chunk).~~ _(superseded 2026-07-25)_
+- ~~Finish the in-progress Sonnet BDD comparison and deliver the promised full comparison table; partial results were available, but the remaining fixtures were still running (originally requested 2026-07-25T19:21:44Z; outstanding 2026-07-25T20:53:01Z).~~ _(superseded 2026-07-25)_
+- Peter canceled the in-progress Sonnet BDD comparison and requested reverting its use, so the promised full Sonnet comparison table should not be resumed (requested 2026-07-25T21:00:49Z; revert confirmed 2026-07-25T21:02:25Z).
+- ~~Finish verifying the single-step checklist-override fixtures in isolation and in the full coverage union, then update the coverage baseline; the transcript ends while fixture execution is still in progress (outstanding 2026-07-25T22:04:25Z).~~ _(superseded 2026-07-25)_
+- ~~Complete the still-running final Codex verification of the single-step checklist-override implementation and results, triage any goal-relevant findings, and apply relevant fixes; fixture isolation, full-union coverage verification, and the baseline update are complete, but the final verification pass had not finished (verified 2026-07-25T22:29:18Z).~~ _(superseded 2026-07-25)_
+- The final Codex verification of the single-step checklist-override implementation completed and all reported findings were fixed and verified, so no final-verification follow-up remains (verified 2026-07-25T22:43:32Z).

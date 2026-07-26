@@ -212,12 +212,19 @@ func fHashOf(f string) string {
 // evalFieldsDigest digests every evaluator-relevant prompt field: Q,
 // rationale, F, and the effective docs list. Two prompts with equal
 // digests produce identical evaluator input (modulo whitespace reflow).
-func evalFieldsDigest(q, rationale, f string, docs []string) string {
+// Docs are length-prefixed so list shape is unambiguous: ["a","b"] must
+// not collide with ["a,b"] — production would load different documents.
+func evalFieldsDigest(question, rationale, fixTemplate string, docs []string) string {
+	docParts := make([]string, 0, len(docs))
+	for _, doc := range docs {
+		docParts = append(docParts, fmt.Sprintf("%d:%s", len(doc), doc))
+	}
+
 	parts := []string{
-		collapseWhitespace(q),
+		collapseWhitespace(question),
 		collapseWhitespace(rationale),
-		collapseWhitespace(f),
-		strings.Join(docs, ","),
+		collapseWhitespace(fixTemplate),
+		strings.Join(docParts, ","),
 	}
 
 	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))

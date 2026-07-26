@@ -36,3 +36,9 @@ _transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.m
 - Use a two-phase process for checklist-branch coverage: first have Claude and Codex independently inspect the codebase and reconcile the actual reachable branches, then design the coverage-measurement approach from that verified inventory (requested 2026-07-25T12:53:45Z).
 - [correction] Do not assume every Q has exactly pass/fail branches or every F has applied/converged branches; derive the coverage targets from verified code behavior because Peter challenged those categories as unverified (corrected 2026-07-25T12:53:45Z).
 - Build the checklist-branch coverage bootstrap collector, report, and baseline through a staged critique loop: create a goal-aligned plan, have Codex identify gaps, fill only goal-relevant gaps, implement, inspect the reporter’s covered and uncovered branches, then have Codex verify the implementation and results and fix only the remaining relevant gaps (requested 2026-07-25T14:46:26Z).
+
+## 2026-07-25 — The task began reworking checklist-branch BDD fixtures to use one-item checklist overrides while preserving coverage against the full shipped checklist.
+
+_transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.md_
+
+- For checklist-branch BDD tests, derive the coverage universe from the entire shipped checklist, but have each coverage fixture override that checklist with only the single step it targets; implement the change with the same Codex consultation approach used for the original solution (requested 2026-07-25T21:43:32Z).
