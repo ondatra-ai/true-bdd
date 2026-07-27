@@ -216,8 +216,13 @@ func TestDeclaredSelectionsResolveToPinnedPrompts(t *testing.T) {
 			continue
 		}
 
+		inputDir := selection.Input
+		if strings.TrimSpace(inputDir) == "" {
+			inputDir = "input"
+		}
+
 		override := filepath.Join(fixturesRootDir, fixture,
-			"input", "true-bdd", "checklists", want.Stem+".yaml")
+			inputDir, "true-bdd", "checklists", want.Stem+".yaml")
 
 		_, statErr := os.Stat(override)
 		if statErr == nil {

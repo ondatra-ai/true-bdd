@@ -3,6 +3,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -301,6 +302,10 @@ func parseSingleDocument(data []byte) (*yaml.Node, error) {
 	err = decoder.Decode(&extra)
 	if err == nil {
 		return nil, fmt.Errorf("%w: multiple documents", ErrUnsupportedYAML)
+	}
+
+	if !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("parsing trailing document: %w", err)
 	}
 
 	return &doc, nil
