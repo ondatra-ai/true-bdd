@@ -8,7 +8,7 @@ The fix applier MUST NOT touch:
 - Any file under `tests/`
 - Any file matching `*_test.go`
 - Any file under `services/*/__tests__/`
-- `docs/requirements.yaml` or anything else under `docs/`
+- `docs/scenarios.yaml` or anything else under `docs/`
 
 Do NOT propose changes that violate these limits.
 
@@ -105,7 +105,7 @@ or anything under `docs/`). The fix MUST:
 - Reference exact file paths and use exact code snippets the applier
   can copy verbatim.
 - Never modify the test itself.
-- Never modify `docs/requirements.yaml` or anything else under `docs/`.
+- Never modify `docs/scenarios.yaml` or anything else under `docs/`.
 
 === FILE_START: {{.ResultPath}} ===
 # Fix Prompt for Failing Test {{.SubjectID}}

@@ -95,7 +95,7 @@ The fix MUST:
 - Add a single `test('{{.Subject.ID}}: <short description>', ...)`
   whose body translates the subject's Given / When / Then into
   executable assertions.
-- Never modify `docs/requirements.yaml`.
+- Never modify `docs/scenarios.yaml`.
 - Never duplicate an existing test.
 
 === FILE_START: {{.ResultPath}} ===

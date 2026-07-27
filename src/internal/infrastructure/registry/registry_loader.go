@@ -38,7 +38,7 @@ type UserStoryRef struct {
 	MergeDate  string `yaml:"merge_date,omitempty"`
 }
 
-// RegistryScenario is one entry in `docs/requirements.yaml#/scenarios`
+// RegistryScenario is one entry in `docs/scenarios.yaml#/scenarios`
 // after lineage and Given/When/Then steps are materialized.
 type RegistryScenario struct {
 	ID          string
@@ -130,7 +130,7 @@ type rawScenario struct {
 	MergedSteps rawMergedSteps `yaml:"merged_steps"`
 }
 
-// rawRegistry mirrors the top-level shape of docs/requirements.yaml.
+// rawRegistry mirrors the top-level shape of docs/scenarios.yaml.
 type rawRegistry struct {
 	Scenarios map[string]rawScenario `yaml:"scenarios"`
 }

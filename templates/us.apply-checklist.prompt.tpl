@@ -4,7 +4,7 @@
 ## Purpose
 Evaluate whether one acceptance criterion from a refined story is
 correctly reflected in the requirements registry (the scratch copy of
-`docs/requirements.yaml` for this run).
+`docs/scenarios.yaml` for this run).
 
 ## Instructions
 1. Read the registry file at the path below.

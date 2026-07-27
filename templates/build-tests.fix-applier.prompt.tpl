@@ -32,7 +32,7 @@
    - `tests/e2e/`
    - `services/backend/`
    - `services/frontend/`
-4. You MUST NOT touch `docs/requirements.yaml` or any path outside the
+4. You MUST NOT touch `docs/scenarios.yaml` or any path outside the
    four roots above.
 5. The test you add MUST be named `test('{{.Subject.ID}}: <short
    description>', ...)` (or the equivalent in the chosen framework) so

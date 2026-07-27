@@ -78,7 +78,7 @@ func RunBuildTests(
 }
 
 // loadRegistryScenarios is the LoadItems factory for `build tests`.
-// Reads docs/requirements.yaml and returns one item per scenario,
+// Reads docs/scenarios.yaml and returns one item per scenario,
 // sorted by id for deterministic output.
 func loadRegistryScenarios(
 	deps BuildTestsDeps,

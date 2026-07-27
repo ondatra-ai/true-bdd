@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultRequirementsFile = "docs/requirements.yaml"
+	defaultRequirementsFile = "docs/scenarios.yaml"
 	fixFlagDescription      = "Enable interactive fix mode to resolve failed checks"
 )
 
@@ -73,7 +73,7 @@ func newUSCreateCmd(container *bootstrap.Container) *cobra.Command {
 		"create [story-number]",
 		"Create and validate a user story",
 		`Extract a story from its epic and validate it against the us-create
-checklist. The story is saved to docs/stories/ upon passing all checks.
+checklist. The story is saved to docs/prd/stories/ upon passing all checks.
 
 Example:
   true-bdd us create 4.1
@@ -91,7 +91,7 @@ func newUSRefineCmd(container *bootstrap.Container) *cobra.Command {
 	return buildStoryCmd(
 		"refine [story-number]",
 		"Refine a user story",
-		`Load a story from docs/stories/ and validate it against the us-refine
+		`Load a story from docs/prd/stories/ and validate it against the us-refine
 checklist. The story file is updated in place upon passing all checks.
 
 Example:
@@ -126,10 +126,10 @@ func newUSApplyCmd(container *bootstrap.Container) *cobra.Command {
 	return buildStoryCmd(
 		"apply [story-number]",
 		"Apply scenarios from a refined user story into the registry",
-		`Walk every acceptance criterion in docs/stories/<story-number>-*.yaml and
+		`Walk every acceptance criterion in docs/prd/stories/<story-number>-*.yaml and
 validate each one against the us-apply checklist. With --fix, every failed
 (AC, prompt) cell drives a Claude-mediated edit on a scratch copy of
-docs/requirements.yaml. The canonical registry file is replaced atomically
+docs/scenarios.yaml. The canonical registry file is replaced atomically
 only when every AC passes every prompt; otherwise it is left untouched.
 
 Stories that still use the deprecated scenarios.test_scenarios[] format are

@@ -2,7 +2,7 @@ engine:
   model: "claude-opus-4-8"
 
 epics:
-  path: "./docs/epics/jsons"
+  path: "./docs/prd/epics"
 
 templates:
   prompts:
@@ -34,13 +34,10 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
-  stories_dir: "docs/stories"
+  stories_dir: "docs/prd/stories"
   checklists_dir: "./true-bdd/checklists"
 
 documents:
-  coding_standards: "./docs/architecture/coding-standards.md"
-  source_tree: "./docs/architecture/source-tree.md"
-  prd: "./docs/prd.md"
-  architecture_yaml: "./true-bdd/architecture.yaml"
-  bdd_guidelines: "./docs/architecture/bdd-guidelines.md"
-  terms: "./true-bdd/terms.yaml"
+  prd: "./docs/prd/prd.yaml"
+  architecture_yaml: "./docs/architecture/architecture.yaml"
+  bdd_guidelines: "./docs/legacy/bdd-guidelines.md"

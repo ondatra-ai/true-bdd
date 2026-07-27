@@ -17,7 +17,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
 
-const scratchRegistryFilename = "requirements.yaml"
+const scratchRegistryFilename = "scenarios.yaml"
 
 // ApplyDeps bundles what `us apply` needs at the command boundary.
 type ApplyDeps struct {
