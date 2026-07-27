@@ -34,8 +34,6 @@ sections:
         rationale: "A production-code fix is only valid when the targeted test passes; the runner is authoritative."
         docs:
           - architecture_yaml
-          - coding_standards
-          - source_tree
         F: |
           Fix the PRODUCTION code so that the failing test passes.
 

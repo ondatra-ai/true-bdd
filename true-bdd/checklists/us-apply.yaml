@@ -1,6 +1,6 @@
 # Checklist for `true-bdd us apply <story-id>`.
 # Walk every AC in the refined story and merge each one into the registry
-# (docs/requirements.yaml).
+# (docs/scenarios.yaml).
 #
 # Engine-test prompt set: intentionally minimal (2 prompts) to exercise the
 # many-scenarios × many-prompts walk and the per-cell fix loop. Will be
@@ -38,8 +38,6 @@ sections:
             - "AC <ac id> (lineage <lineage id>): present in <matched scenario id>"
             - "AC <ac id> (lineage <lineage id>): not present"
         rationale: "Every refined-story AC must be reflected as a tracked scenario in the registry."
-        docs:
-          - terms
         F: |
           Add this AC as a new scenario in the registry.
 
@@ -79,8 +77,6 @@ sections:
             - "match: <scenario id> — '<short description>'"
             - "Verdict: unique / duplicate (<N> entries)"
         rationale: "Each AC must map to a single registry entry; duplicates pollute the registry and break lineage."
-        docs:
-          - terms
         F: |
           Collapse the duplicate entries into a single one.
 

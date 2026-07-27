@@ -1,0 +1,68 @@
+# Story seed for the `us-refine-fix-step-qualifier` BDD fixture.
+#
+# ONE deliberate defect (one defect per --fix fixture: the fix applier
+# rewrites the whole story, so any additional seeded defect would be
+# collaterally cleaned by the first fix and never earn its own
+# fail/fix chain):
+#
+#   - AC-4: the then step contains the forbidden qualifiers "quickly"
+#     and "user-friendly" (listed in the fixture's docs/architecture/architecture.yaml
+#     forbidden_qualifiers) -> fails the vague-word-in-steps prompt;
+#     its F replaces the qualifiers with measurable criteria.
+#
+# The fixture also declares checklist_prompts in its manifest, so the
+# harness generates a single-prompt checklist and the walk evaluates
+# ONLY the check above. The story still keeps every
+# other quality dimension healthy (it doubles as documentation):
+# 4 ACs, rule-based must descriptions, full Given/When/Then steps,
+# clean descriptions, two error scenarios (AC-2, AC-3), happy paths
+# (AC-1, AC-4), measurable criteria in every AC, binary outcomes,
+# sketches drawable from the fixture's docs/architecture/architecture.yaml.
+
+story:
+    id: "96.7"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+                - and: the summary names the document title
+        - id: AC-2
+          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc exists that is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize that document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'
+                - and: Claude does not display any content from the document
+        - id: AC-3
+          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+                - the summary backend does not respond within 30 seconds
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'The summary timed out - please try again'
+        - id: AC-4
+          description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+          steps:
+            - given:
+                - a Google Doc with more than 10000 words is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude quickly displays a user-friendly notice that only the first 10000 words were summarized

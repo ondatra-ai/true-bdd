@@ -17,9 +17,9 @@ expected:
   judge: |
     # Expectations for `true-bdd build tests --fix`
 
-    The seed registry (`input/docs/requirements.yaml`) has one scenario:
+    The seed registry (`input/docs/scenarios.yaml`) has one scenario:
     `INT-900`. The `build tests` command's contract is: every scenario in
-    `docs/requirements.yaml` must have a corresponding executable test in
+    `docs/scenarios.yaml` must have a corresponding executable test in
     the codebase, and when a test is missing, `build tests --fix`
     produces it. This fixture is the happy path for the fix loop: the
     walk finds no test for `INT-900`, the fix-generator + fix-applier
@@ -39,7 +39,7 @@ expected:
 
     ## What MUST NOT happen
 
-    - The seed `docs/requirements.yaml` MUST NOT be modified by the run.
+    - The seed `docs/scenarios.yaml` MUST NOT be modified by the run.
     - No file is created outside `tests/`, `services/backend/`,
       `services/frontend/`, or the per-run `tmp/` scratch directory.
 

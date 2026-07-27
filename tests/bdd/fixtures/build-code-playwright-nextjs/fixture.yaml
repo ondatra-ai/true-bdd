@@ -31,7 +31,7 @@ expected:
     # Expectations for `true-bdd build code --fix`
 
     The fixture seeds:
-    - One service `frontend` declared in `true-bdd/architecture.yaml`
+    - One service `frontend` declared in `docs/architecture/architecture.yaml`
       with integration tests via Playwright under `tests/integration`.
     - A `docker-compose.yaml` whose `frontend` service builds from
       `./services/frontend` — but the `services/frontend/` directory

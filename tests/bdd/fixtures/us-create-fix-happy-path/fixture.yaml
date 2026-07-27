@@ -29,7 +29,7 @@ expected:
   judge: |
     # Expectations for `us create 99.1 --fix`
 
-    The synthetic epic at `docs/epics/jsons/epic-99-bdd-test.yaml`
+    The synthetic epic at `docs/prd/epics/epic-99-bdd-test.yaml`
     deliberately contains an implementation term (`REST endpoint`) inside
     the story's `so_that` clause. The `--fix` flow should:
 
@@ -38,12 +38,12 @@ expected:
     3. Apply the fix (Claude rewrites the `so_that` to remove the
        implementation term)
     4. Re-validate; once all checks pass, write the final story to
-       `docs/stories/`
+       `docs/prd/stories/`
 
     ## What MUST be true after the run
 
-    1. **Exactly one new file** under `docs/stories/` with a name matching
-       `99.1-<slug>.yaml`. No other files in `docs/stories/`.
+    1. **Exactly one new file** under `docs/prd/stories/` with a name matching
+       `99.1-<slug>.yaml`. No other files in `docs/prd/stories/`.
     2. The new file is **valid YAML** with a top-level `story:` key.
     3. Inside `story:`, the field `id` (or `story_number` — whichever the
        CLI emits) is the string `"99.1"`.
@@ -74,9 +74,9 @@ expected:
 
     ## What MUST NOT happen
 
-    - No files modified or created outside `docs/stories/` and `tmp/`. In
-      particular, no edits to `true-bdd/`, `docs/epics/`, `docs/architecture*`,
-      `docs/prd.md`, or `scripts/`.
+    - No files modified or created outside `docs/prd/stories/` and `tmp/`. In
+      particular, no edits to `true-bdd/`, `docs/prd/epics/`, `docs/architecture*`,
+      `docs/prd/prd.yaml`, or `scripts/`.
     - The synthetic epic file must be unchanged.
 
     ## Tolerances
