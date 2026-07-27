@@ -1,6 +1,15 @@
 cmd: us refine 96.5 --fix
 input: input
 
+# Generate a single-prompt checklist from the live shipped
+# true-bdd/checklists/us-refine.yaml: the runner keeps only the prompt
+# whose Q text contains this snippet. No copied checklist to drift -
+# a shipped edit flows in automatically, and an unmatched snippet
+# fails the fixture at prep.
+checklist_prompts:
+  us-refine:
+    - "whether its steps field follows the Given/When/Then format"
+
 # The fix loop consumes one line per prompt: "1" applies the proposed
 # fix, and any clarifying question swallows a line too. One designed
 # fix is expected; surplus lines are harmless (EOF exits cleanly).
@@ -42,8 +51,12 @@ expected:
   judge: |
     # Expectations for `us refine 96.5 --fix` (missing-steps fix)
 
-    The story seed at `docs/stories/96.5-document-summary-steps.yaml`
-    carries one designed defect: AC-2 has NO steps field (violates the
+    The harness GENERATES a single-prompt checklist for this run
+    (`checklist_prompts` keeps only the shipped
+    Given/When/Then-steps prompt), so the walk evaluates exactly one
+    check. The story seed at
+    `docs/stories/96.5-document-summary-steps.yaml` carries one
+    designed defect: AC-2 has NO steps field (violates the
     Given/When/Then format prompt).
 
     The `--fix` flow must detect the failure, generate a fix, apply it

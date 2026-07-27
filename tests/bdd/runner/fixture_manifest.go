@@ -59,6 +59,23 @@ type FixtureManifest struct {
 	// logged to stderr but do NOT mask the primary run result. Optional.
 	Teardown []string `yaml:"teardown,omitempty"`
 
+	// ChecklistPrompts, when present, makes the runner GENERATE a
+	// filtered checklist inside the tmpdir during prep: for each
+	// `<stem>: [snippets...]` entry, the overlaid
+	// `true-bdd/checklists/<stem>.yaml` is rewritten to contain only
+	// the prompts whose Q text contains one of the snippets
+	// (whitespace-collapsed substring match). This lets a fixture walk
+	// a single shipped prompt WITHOUT checking in a copy of it — the
+	// filtered file is derived from the live shipped checklist, so a
+	// shipped edit flows into the fixture automatically.
+	//
+	// Rules (enforced at load/prep time): each stem must equal the
+	// hyphenated checklist stem of `cmd`; each snippet must match
+	// exactly one prompt; two snippets must not resolve to the same
+	// prompt; the fixture must not ALSO ship an input override for the
+	// same checklist file. Selection keeps source-document order.
+	ChecklistPrompts map[string][]string `yaml:"checklist_prompts,omitempty"`
+
 	// Expected is the bundle of assertion strategies applied after
 	// the CLI exits.
 	Expected Expected `yaml:"expected"`
@@ -109,12 +126,46 @@ func LoadFixtureManifest(path string) (*FixtureManifest, []*regexp.Regexp, error
 		return nil, nil, ErrJudgeSpecRequired
 	}
 
+	err = rejectEmptyFilterDeclaration(data, &manifest)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	regexes, err := compileStdoutRegexes(manifest.Expected.StdoutRegex)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return &manifest, regexes, nil
+}
+
+// rejectEmptyFilterDeclaration fails a manifest whose checklist_prompts
+// KEY is present but null/empty: a declared filter that selects nothing
+// would silently run the full checklist.
+func rejectEmptyFilterDeclaration(data []byte, manifest *FixtureManifest) error {
+	if len(manifest.ChecklistPrompts) > 0 {
+		return nil
+	}
+
+	var doc yaml.Node
+
+	err := yaml.Unmarshal(data, &doc)
+	if err != nil {
+		return fmt.Errorf("re-parsing fixture.yaml: %w", err)
+	}
+
+	if len(doc.Content) == 0 || doc.Content[0].Kind != yaml.MappingNode {
+		return nil
+	}
+
+	root := doc.Content[0]
+	for idx := 0; idx+1 < len(root.Content); idx += 2 {
+		if root.Content[idx].Value == "checklist_prompts" {
+			return ErrFilterDeclaredEmpty
+		}
+	}
+
+	return nil
 }
 
 func compileStdoutRegexes(patterns []string) ([]*regexp.Regexp, error) {

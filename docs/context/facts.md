@@ -24,3 +24,11 @@ _transcript: 20260725-082510-cc6a7058-let-s-researc-h-architecture-of-openspec.m
 _transcript: 20260725-120421-f9fa25d3-task-is-to-write-more-bdd-tests-the-idea.md_
 
 - Claude Code's declared Write/Edit path restrictions did not enforce a write sandbox: retained build-tests and build-code run logs showed writes outside the configured `./tmp/**` scope, so those declarations cannot be relied on to prevent out-of-scope edits (observed 2026-07-25T13:32:16Z).
+
+## 2026-07-25 — The task was comparing expanded BDD fixtures under Sonnet and Opus, with the Sonnet comparison still in progress.
+
+_transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.md_
+
+- ~~In the interim model comparison, Sonnet judged a previously Opus-convergent `us refine` fixture more strictly and less protocol-reliably, adding failures on binary-outcome and test-convertibility checks plus an empty verdict until the fix loop was exhausted; completed `us create` and `us apply` comparisons had matched Opus (observed 2026-07-25T20:53:01Z).~~ _(superseded 2026-07-25)_
+- During the Sonnet timing run, the fix generator truncated the timestamp partition in an artifact path it was required to echo; the resulting marker mismatch prevented fix-prompt extraction and caused the fixture to end NotFixed without writing the story (observed and root cause verified 2026-07-26T11:20:30Z).
+- The completed Sonnet timing comparison found no meaningful speed advantage over Opus and materially worse nondeterministic reliability, including non-converging collapse and fix-application loops; current evidence therefore favors retaining Opus as the engine model (observed 2026-07-26T11:49:43Z).

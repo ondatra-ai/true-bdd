@@ -8,7 +8,10 @@
 #   - AC-1: description is a Gherkin sentence with no must/should ->
 #     fails the rule-based-format prompt (its F rewrites descriptions).
 #
-# Everything else is designed to PASS both before and after the fix:
+# The fixture also declares checklist_prompts in its manifest, so the
+# harness generates a single-prompt checklist and the walk evaluates
+# ONLY the check above. The story still keeps every
+# other quality dimension healthy (it doubles as documentation):
 # 5 ACs, full Given/When/Then steps everywhere, clean descriptions and
 # steps, two error scenarios (AC-2, AC-3), happy paths (AC-1, AC-4),
 # measurable criteria in every AC, binary outcomes, sketches drawable
