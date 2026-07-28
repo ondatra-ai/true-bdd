@@ -13,7 +13,7 @@ executable test for one scenario from the requirements registry.
 - Use Read, Glob, Grep to inspect existing files before writing.
 - Use Write to create a new file at one of the allowed roots.
 - Use Edit to mutate an existing file at one of the allowed roots.
-- Do NOT touch `docs/requirements.yaml`.
+- Do NOT touch `docs/scenarios.yaml`.
 - Do NOT write to any path outside the four allowed roots.
 
 **Allowed Roots:**

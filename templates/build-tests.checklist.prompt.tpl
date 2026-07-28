@@ -2,7 +2,7 @@
 # Test Coverage Validation
 
 ## Purpose
-Evaluate whether one scenario from `docs/requirements.yaml` is covered
+Evaluate whether one scenario from `docs/scenarios.yaml` is covered
 by an executable test in the codebase.
 
 ## Instructions

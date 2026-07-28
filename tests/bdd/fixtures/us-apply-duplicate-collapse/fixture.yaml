@@ -32,9 +32,9 @@ expected:
   judge: |
     # Expectations for `us apply 95.1 --fix` (duplicate collapse)
 
-    The fixture seeds `docs/requirements.yaml` with THREE scenarios:
+    The fixture seeds `docs/scenarios.yaml` with THREE scenarios:
     E2E-900 and E2E-901 both reference lineage id `95.1-001` of story
-    `docs/stories/95.1-duplicate-collapse.yaml` (deliberate
+    `docs/prd/stories/95.1-duplicate-collapse.yaml` (deliberate
     duplicates), and E2E-950 is unrelated.
 
     Expected behavior with the SHIPPED us-apply checklist:
@@ -47,16 +47,16 @@ expected:
 
     ## What MUST be true after the run
 
-    1. `docs/requirements.yaml` contains **exactly one** scenario whose
+    1. `docs/scenarios.yaml` contains **exactly one** scenario whose
        `user_stories[]` references `scenario_id` `95.1-001`.
     2. That surviving entry still records the story path
-       `docs/stories/95.1-duplicate-collapse.yaml` and its
+       `docs/prd/stories/95.1-duplicate-collapse.yaml` and its
        `merged_steps` include the union of the two seeded entries'
        steps (at minimum: HTTP 200 in then, the initialize POST in
        when; deduplication is fine).
     3. The unrelated scenario (lineage `90.1-001`, home-page welcome
        banner) is still present and unmodified in substance.
-    4. No files outside `docs/requirements.yaml` and the per-run `tmp/`
+    4. No files outside `docs/scenarios.yaml` and the per-run `tmp/`
        directory are created or modified. The story file is unchanged.
 
     ## What MUST NOT happen

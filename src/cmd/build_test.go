@@ -24,7 +24,7 @@ func TestBuildCodeArchitectureFlagDefault(t *testing.T) {
 		t.Fatalf("read --architecture flag: %v", err)
 	}
 
-	want := "true-bdd/architecture.yaml"
+	want := "docs/architecture/architecture.yaml"
 	if got != want {
 		t.Fatalf("default --architecture = %q, want %q", got, want)
 	}

@@ -30,7 +30,6 @@ sections:
         rationale: "Standard user story format ensures clarity and consistency."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -45,7 +44,6 @@ sections:
         rationale: "Must fit on 3x5 index card. Typically 20-50 words maximum."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
 
@@ -55,21 +53,21 @@ sections:
     description: "The user role - must be an actual human who interacts with the system"
     validation_prompts:
       - Q: |
-          Does the "as_a" clause use a role defined in the terms reference?
+          Does the "as_a" clause use a persona defined in the PRD?
 
-          Read the roles section in the terms reference. The role in the
-          story must exactly match one of the named roles.
+          Read the personas section in the PRD reference. The role in the
+          story must exactly match one of the named personas.
 
-          Pass when the role matches a defined role from the terms reference.
-          Fail when the role does not match any defined role.
+          Pass when the role matches a defined persona from the PRD.
+          Fail when the role does not match any defined persona.
 
           Context: emit a single line.
-            - "Role '<role>': matches '<terms role name>'"
+            - "Role '<role>': matches '<persona name>'"
             or
-            - "Role '<role>': not found in terms — defined roles are <list>"
-        rationale: "Only roles defined in the terms vocabulary are valid. This ensures human personas and consistent naming."
+            - "Role '<role>': not found in PRD — defined personas are <list>"
+        rationale: "Only personas defined in the PRD are valid. This ensures human personas and consistent naming."
         docs:
-          - terms
+          - prd
 
   - id: what
     name: "User Goal"
@@ -101,7 +99,6 @@ sections:
         rationale: "'Log in with Google account' (goal) vs 'OAuth 2.0 authentication' (solution)."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -126,7 +123,6 @@ sections:
         rationale: "User language, not technical language."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
   - id: why
@@ -153,7 +149,6 @@ sections:
         rationale: "'So that I save time' (benefit) vs 'so that data is stored' (system behavior)."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -170,7 +165,6 @@ sections:
         rationale: "'Reset password so password is reset' adds no value."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -192,7 +186,6 @@ sections:
         rationale: "If WHY doesn't inform HOW, it's not a meaningful benefit clause."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -217,5 +210,4 @@ sections:
         rationale: "so_that should describe user value, not technical implementation."
         docs:
           - prd
-          - terms
           - architecture_yaml

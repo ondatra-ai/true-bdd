@@ -6,4 +6,4 @@ Synthetic host project driven by TrueBDD's `build code --fix`.
   expected at `services/frontend/`.
 - Playwright tests under `tests/` are read-only. Make failing tests pass by
   creating or editing production source under `services/` only.
-- Never modify `tests/`, `docs/requirements.yaml`, or `true-bdd/`.
+- Never modify `tests/`, `docs/scenarios.yaml`, or `true-bdd/`.

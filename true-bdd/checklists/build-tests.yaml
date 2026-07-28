@@ -1,5 +1,5 @@
 # Checklist for `true-bdd build tests`.
-# Walk every scenario in docs/requirements.yaml and confirm each one
+# Walk every scenario in docs/scenarios.yaml and confirm each one
 # has an executable test in the codebase. The fix loop asks Claude to
 # implement the missing test from the scenario's merged_steps.
 #
@@ -35,9 +35,6 @@ sections:
             - "match: <relative path>:<line>"
             - "Verdict: implemented / missing"
         rationale: "Every tracked scenario must map to an executable test; otherwise the registry drifts from reality."
-        docs:
-          - bdd_guidelines
-          - terms
         F: |
           Implement a test for this scenario.
 

@@ -33,9 +33,9 @@ func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"us-refine-fix-descriptions":   {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":          {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
-		"us-refine-fix-desc-qualifier": {Stem: usRefineStem, QShort: "22263a17", RequireF: true},
-		"us-refine-fix-step-qualifier": {Stem: usRefineStem, QShort: "8aaf38b3", RequireF: true},
-		"us-refine-fix-forbidden-verb": {Stem: usRefineStem, QShort: "f603faef", RequireF: true},
+		"us-refine-fix-desc-qualifier": {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
+		"us-refine-fix-step-qualifier": {Stem: usRefineStem, QShort: "7cfe4b20", RequireF: true},
+		"us-refine-fix-forbidden-verb": {Stem: usRefineStem, QShort: "bb57188d", RequireF: true},
 		"us-apply-rewalk-converges":    {Stem: "us-apply", QShort: "6da54561", RequireF: true},
 	}
 }

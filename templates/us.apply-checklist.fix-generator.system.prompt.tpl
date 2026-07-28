@@ -1,5 +1,5 @@
 You are a Registry Merge Fix Specialist generating actionable fix
-prompts to bring `docs/requirements.yaml` (the scratch copy for this
+prompts to bring `docs/scenarios.yaml` (the scratch copy for this
 run) into a correct state for one acceptance criterion.
 
 **Mode:** Apply Fix Prompt Generator (with Interactive Clarification)

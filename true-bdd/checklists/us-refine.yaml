@@ -26,7 +26,6 @@ sections:
         rationale: "<3: underspecified. >7: likely an epic that should be split."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -48,18 +47,16 @@ sections:
         rationale: "AC descriptions must be one-sentence rule statements with must/should keywords; Gherkin steps belong in the steps field."
         docs:
           - prd
-          - terms
-          - bdd_guidelines
         F: |
           Rewrite each AC description as a one-line rule-based statement.
 
           Template: "[Subject] must/should [behavior] when [condition]"
 
-          Keyword selection (per bdd-guidelines.md):
+          Keyword selection:
           - "must": core functionality, data integrity, security — failure = story not done
           - "should": UX, error messaging, non-critical — story can ship without in edge cases
 
-          Rules from bdd-guidelines.md:
+          Rules:
           - One sentence, under 200 characters
           - Always include "must" or "should" — no ambiguous "can", "will", "may"
           - Capture both the behavior AND the condition/trigger
@@ -93,9 +90,7 @@ sections:
         rationale: "Every AC must have testable Gherkin steps in Given/When/Then format."
         docs:
           - prd
-          - terms
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Add or repair the steps field for each AC. Use the AC description
           as the behavior to be tested.
@@ -106,13 +101,13 @@ sections:
             - given:
                 - "<precondition using role from story>"
             - when:
-                - "<role from story> <allowed action verb from terms reference> <object>"
+                - "<role from story> <allowed action verb from the architecture vocabulary> <object>"
             - then:
                 - "<observable outcome with measurable criteria>"
                 - and: "<additional outcome if needed>"
           ```
 
-          Rules from bdd-guidelines.md:
+          Rules:
           - Third person perspective using EXACT role from story's "as_a:" field
           - Active voice ("Claude displays" not "is displayed")
           - Observable outcome (what user sees/experiences)
@@ -131,7 +126,7 @@ sections:
 
       - Q: |
           For every AC, decide whether its description field contains a vague
-          word from the forbidden qualifiers list in the terms reference
+          word from the forbidden_qualifiers list in the architecture reference
           (properly, correctly, appropriate, user-friendly, fast, etc.).
 
           Pass when no AC description contains forbidden qualifiers.
@@ -143,21 +138,20 @@ sections:
         rationale: "Vague words in AC descriptions cannot be tested objectively."
         docs:
           - prd
-          - terms
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Replace each vague word in the description with specific, measurable
           criteria.
 
-          Use the forbidden qualifiers list from the terms reference document.
-          Replace each forbidden qualifier with specific, measurable criteria.
+          Use the forbidden_qualifiers list from the architecture reference
+          (docs/architecture/architecture.yaml). Replace each forbidden
+          qualifier with specific, measurable criteria.
 
       - Q: |
           For every AC, decide whether its steps field contains a vague word
-          from the forbidden qualifiers list in the terms reference (properly,
-          correctly, appropriate, user-friendly, fast, etc.). Check Given,
-          When, and Then steps.
+          from the forbidden_qualifiers list in the architecture reference
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+          Check Given, When, and Then steps.
 
           Pass when no AC's steps contain forbidden qualifiers.
           Fail when one or more ACs have steps containing them.
@@ -168,20 +162,19 @@ sections:
         rationale: "Vague words in AC steps cannot be tested objectively."
         docs:
           - prd
-          - terms
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Replace each vague word in the steps with specific, measurable
           criteria.
 
-          Use the forbidden qualifiers list from the terms reference document.
-          Replace each forbidden qualifier with concrete, observable criteria.
+          Use the forbidden_qualifiers list from the architecture reference
+          (docs/architecture/architecture.yaml). Replace each forbidden
+          qualifier with concrete, observable criteria.
 
       - Q: |
           For every AC, decide whether its Given/When/Then steps use action
-          verbs from the forbidden_actions list in the terms reference
-          (true-bdd/terms.yaml).
+          verbs from the forbidden_actions list in the architecture reference
+          (docs/architecture/architecture.yaml).
 
           Pass when no AC uses forbidden action verbs in its steps.
           Fail when one or more ACs use forbidden action verbs.
@@ -193,19 +186,19 @@ sections:
         rationale: "Every step must use concrete, reproducible action verbs. Verbs in the forbidden_actions list do not specify the interaction mechanism and cannot be automated."
         docs:
           - prd
-          - terms
-          - bdd_guidelines
+          - architecture_yaml
         F: |
           Rewrite each step that uses a forbidden action verb.
 
-          Use the terms reference document to select a concrete replacement verb
-          that specifies the interaction mechanism — not just the user's intent.
+          Use the vocabulary in the architecture reference to select a concrete
+          replacement verb that specifies the interaction mechanism — not just
+          the user's intent.
 
       - Q: |
           For every AC, decide whether it describes implementation (endpoint
           created, database updated, schema migrated, etc.) instead of
-          observable behavior using an allowed action verb from the terms
-          reference.
+          observable behavior using an allowed action verb from the
+          vocabulary in the architecture reference.
 
           Pass when every AC describes observable behavior.
           Fail when one or more ACs describe implementation.
@@ -217,7 +210,6 @@ sections:
         rationale: "ACs describe observable behavior, not technical implementation."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -234,7 +226,6 @@ sections:
         rationale: "Every story needs a documented success path."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -252,7 +243,6 @@ sections:
         rationale: "Missing error handling leads to production issues."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -270,7 +260,6 @@ sections:
         rationale: "Measurable criteria enable automated testing."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
@@ -288,15 +277,14 @@ sections:
         rationale: "Every AC must be objectively testable."
         docs:
           - prd
-          - terms
           - architecture_yaml
 
       - Q: |
           For every AC, attempt to draft a runnable test sketch that would
           verify the AC.
 
-          READ true-bdd/architecture.yaml CAREFULLY. It is the single source
-          of truth for both:
+          READ docs/architecture/architecture.yaml CAREFULLY. It is the single
+          source of truth for both:
           - the test framework per service and per layer (e2e / integration / unit)
           - the test helpers available per layer (e.g. McpClient, page fixtures)
 
@@ -320,7 +308,7 @@ sections:
           a totals line.
 
           First context line MUST state the framework AND helpers you picked,
-          each with its exact YAML path in true-bdd/architecture.yaml:
+          each with its exact YAML path in docs/architecture/architecture.yaml:
             - "Discovered: framework <name> (architecture.yaml <yaml path>); helpers <names> (architecture.yaml <yaml path>)"
 
           For convertible ACs, prefer a single-line form:
@@ -340,6 +328,4 @@ sections:
         rationale: "Drafting the actual test reveals hidden ambiguity and proves the AC is testable, not just claims to be."
         docs:
           - prd
-          - terms
           - architecture_yaml
-          - bdd_guidelines

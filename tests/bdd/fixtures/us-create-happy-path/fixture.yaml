@@ -8,14 +8,14 @@ expected:
     # Expectations for `us create 99.1`
 
     The command extracts story `99.1` from the synthetic epic at
-    `docs/epics/jsons/epic-99-bdd-test.yaml` and writes a refined story
-    file to `docs/stories/`.
+    `docs/prd/epics/epic-99-bdd-test.yaml` and writes a refined story
+    file to `docs/prd/stories/`.
 
     ## What MUST be true after the run
 
-    1. **Exactly one new file** under `docs/stories/` with a name matching
+    1. **Exactly one new file** under `docs/prd/stories/` with a name matching
        the pattern `99.1-<slug>.yaml` where `<slug>` is a non-empty
-       kebab-case string. No other files in `docs/stories/` should be
+       kebab-case string. No other files in `docs/prd/stories/` should be
        created or modified.
     2. The new file is **valid YAML** with a top-level `story:` key.
     3. Inside `story:`, the field `id` (or `story_number` — whichever the
@@ -36,9 +36,9 @@ expected:
 
     ## What MUST NOT happen
 
-    - No files modified or created outside `docs/stories/`. In particular,
-      no edits to `true-bdd/`, `docs/epics/`, `docs/architecture*`,
-      `docs/prd.md`, or `scripts/`.
+    - No files modified or created outside `docs/prd/stories/`. In particular,
+      no edits to `true-bdd/`, `docs/prd/epics/`, `docs/architecture*`,
+      `docs/prd/prd.yaml`, or `scripts/`.
     - The synthetic epic file must be unchanged.
 
     ## Tolerances

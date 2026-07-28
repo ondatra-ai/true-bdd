@@ -12,7 +12,7 @@ expected:
     # Expectations for `us refine 96.3` (validation fails, no fix)
 
     The story seed at
-    `docs/stories/96.3-summary-service-internals.yaml` is deliberately
+    `docs/prd/stories/96.3-summary-service-internals.yaml` is deliberately
     defective: it has only 2 acceptance criteria, AC-1 describes
     internal implementation (storage updates) rather than observable
     behavior, there are no error-scenario ACs, no measurable criteria,
@@ -27,7 +27,7 @@ expected:
     ## What MUST be true after the run
 
     1. NO file outside `tmp/` is created or modified. In particular
-       `docs/stories/96.3-summary-service-internals.yaml` is unchanged.
+       `docs/prd/stories/96.3-summary-service-internals.yaml` is unchanged.
     2. Stdout contains the checklist report with at least one FAIL row
        and an Overall status that is not PASS.
     3. Stdout contains "Validation failed. Use --fix flag to enter

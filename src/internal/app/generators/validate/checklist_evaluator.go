@@ -25,15 +25,8 @@ const (
 // getDocKeyToConfigPath returns the mapping of doc keys to true-bdd.yaml config paths.
 func getDocKeyToConfigPath() map[string]string {
 	return map[string]string{
-		"architecture":          "documents.architecture",
-		"frontend_architecture": "documents.frontend_architecture",
-		"coding_standards":      "documents.coding_standards",
-		"source_tree":           "documents.source_tree",
-		"tech_stack":            "documents.tech_stack",
-		"prd":                   "documents.prd",
-		"terms":                 "documents.terms",
-		"architecture_yaml":     "documents.architecture_yaml",
-		"bdd_guidelines":        "documents.bdd_guidelines",
+		"prd":               "documents.prd",
+		"architecture_yaml": "documents.architecture_yaml",
 	}
 }
 

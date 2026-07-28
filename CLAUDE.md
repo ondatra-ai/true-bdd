@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, `architecture.yaml`, `terms.yaml`, schemas). The engine repo's own root `true-bdd/` is a harness seed — canonical config, checklists, and terms that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (it has no `architecture.yaml`; fixtures supply one under `input/true-bdd/` when a scenario needs it, and may override any seed file the same way).
+This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
 
 ## CLI Subcommands
 
@@ -23,8 +23,8 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 `us` supergroup:
 
 - `us create <id>` — extract a story from its epic and run the `us-create` checklist.
-- `us refine <id>` — load a story from `docs/stories/` and run the `us-refine` checklist.
-- `us apply <id>` — walk every AC in a refined story, validate against `us-apply`, and merge scenarios into the central `docs/requirements.yaml` registry.
+- `us refine <id>` — load a story from `docs/prd/stories/` and run the `us-refine` checklist.
+- `us apply <id>` — walk every AC in a refined story, validate against `us-apply`, and merge scenarios into the central `docs/scenarios.yaml` registry.
 
 `build` supergroup — Spec-as-Source regeneration steps:
 
@@ -114,11 +114,11 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
   - `src/internal/infrastructure/` — loaders (config, epic, story, checklist, registry, architecture), template rendering, test runners (go test / jest / playwright), fs, console input.
   - `src/internal/pkg/` — `console` (terminal UI output), `errors`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
-- `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`, `terms.yaml`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
+- `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
 - `tests/bdd/` — the fixture harness: `bdd_test.go`, `runner/`, `fixtures/<scenario>/`.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), main checked out and fast-forwarded to origin — except `docs/context/`, whose uncommitted archivist appends always survive the reset. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
-- `docs/context/` — conversational context ledgers (git-tracked): `requirements.md` (incl. corrections), `decisions.md`, `facts.md`, `follow-ups.md`. Appended by the context archivist (see Context below) — the durable knowledge channel for what is said in conversation but never lands in a commit. **Not** the BDD requirements registry: product scenarios live in a host project's `docs/requirements.yaml` (or a fixture's input tree); these ledgers hold engine-development knowledge only.
+- `docs/context/` — conversational context ledgers (git-tracked): `requirements.md` (incl. corrections), `decisions.md`, `facts.md`, `follow-ups.md`. Appended by the context archivist (see Context below) — the durable knowledge channel for what is said in conversation but never lands in a commit. **Not** the BDD scenario registry: product scenarios live in a host project's `docs/scenarios.yaml` (or a fixture's input tree); these ledgers hold engine-development knowledge only.
 - `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk.
 
 ## Architecture Principles

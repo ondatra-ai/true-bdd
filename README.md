@@ -84,9 +84,9 @@ until those tests pass.
 
 | Subcommand | State |
 |---|---|
-| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/stories/`. |
+| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/prd/stories/`. |
 | `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
-| `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into a central `requirements.yaml` registry. |
+| `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing test referencing the scenario id; the registry itself is never modified. |
 | `build code` | **Working** — walks every `(service, layer)` pair declared in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
 
@@ -127,23 +127,32 @@ The host project supplies a `true-bdd/` directory at its root:
 
 - `true-bdd.yaml` — the engine type, filesystem paths (epics, stories,
   checklists, tmp), per-command prompt-template paths, and a
-  `documents:` map naming the files a check may cite (PRD,
-  architecture docs, coding standards, BDD guidelines, terms
-  vocabulary). Each check in a checklist lists the document keys it
-  needs under `docs:`, and the engine embeds those files into the
-  prompt.
+  `documents:` map naming the files a check may cite (`prd`,
+  `architecture_yaml`). Each check in a checklist lists the document
+  keys it needs under `docs:`, and the engine points the prompt at
+  those files.
 - `checklists/` — one checklist per command, named by hyphenating the
   command path (`us create` → `us-create.yaml`, `build tests` →
   `build-tests.yaml`, …).
-- `architecture.yaml` — the architectural spec that scopes
-  `build code`: which `(service, layer)` pairs get walked.
-- `terms.yaml` — the domain vocabulary (user roles, allowed action
-  verbs, forbidden qualifiers) that checks cite via the `terms`
-  document key.
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
-  artifacts (stories, epics, the requirements registry, checklists,
+  artifacts (stories, epics, the scenario registry, checklists,
   `architecture.yaml`); the host project validates them in its lint
   step, outside the engine itself.
+
+The host project's documents live under `docs/`:
+
+- `docs/architecture/architecture.yaml` — the architectural spec that
+  scopes `build code` (which `(service, layer)` pairs get walked) and
+  carries the BDD `vocabulary:` (allowed action verbs, forbidden
+  action verbs, forbidden qualifiers) cited by the `us refine` checks.
+- `docs/prd/prd.yaml` — the PRD, including the `personas:` that
+  `us create` validates story roles against.
+- `docs/prd/epics/*.yaml` — epic files that `us create` extracts
+  stories from.
+- `docs/prd/stories/*.yaml` — the stories `us create` writes and
+  `us refine` / `us apply` read.
+- `docs/scenarios.yaml` — the scenario registry `us apply` merges into
+  and `build tests` walks.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
