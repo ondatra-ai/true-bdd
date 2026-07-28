@@ -27,7 +27,6 @@ func getDocKeyToConfigPath() map[string]string {
 	return map[string]string{
 		"prd":               "documents.prd",
 		"architecture_yaml": "documents.architecture_yaml",
-		"bdd_guidelines":    "documents.bdd_guidelines",
 	}
 }
 

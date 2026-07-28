@@ -47,17 +47,16 @@ sections:
         rationale: "AC descriptions must be one-sentence rule statements with must/should keywords; Gherkin steps belong in the steps field."
         docs:
           - prd
-          - bdd_guidelines
         F: |
           Rewrite each AC description as a one-line rule-based statement.
 
           Template: "[Subject] must/should [behavior] when [condition]"
 
-          Keyword selection (per bdd-guidelines.md):
+          Keyword selection:
           - "must": core functionality, data integrity, security — failure = story not done
           - "should": UX, error messaging, non-critical — story can ship without in edge cases
 
-          Rules from bdd-guidelines.md:
+          Rules:
           - One sentence, under 200 characters
           - Always include "must" or "should" — no ambiguous "can", "will", "may"
           - Capture both the behavior AND the condition/trigger
@@ -92,7 +91,6 @@ sections:
         docs:
           - prd
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Add or repair the steps field for each AC. Use the AC description
           as the behavior to be tested.
@@ -109,7 +107,7 @@ sections:
                 - and: "<additional outcome if needed>"
           ```
 
-          Rules from bdd-guidelines.md:
+          Rules:
           - Third person perspective using EXACT role from story's "as_a:" field
           - Active voice ("Claude displays" not "is displayed")
           - Observable outcome (what user sees/experiences)
@@ -141,7 +139,6 @@ sections:
         docs:
           - prd
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Replace each vague word in the description with specific, measurable
           criteria.
@@ -166,7 +163,6 @@ sections:
         docs:
           - prd
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Replace each vague word in the steps with specific, measurable
           criteria.
@@ -191,7 +187,6 @@ sections:
         docs:
           - prd
           - architecture_yaml
-          - bdd_guidelines
         F: |
           Rewrite each step that uses a forbidden action verb.
 
@@ -334,4 +329,3 @@ sections:
         docs:
           - prd
           - architecture_yaml
-          - bdd_guidelines

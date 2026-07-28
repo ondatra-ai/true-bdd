@@ -128,9 +128,9 @@ The host project supplies a `true-bdd/` directory at its root:
 - `true-bdd.yaml` — the engine type, filesystem paths (epics, stories,
   checklists, tmp), per-command prompt-template paths, and a
   `documents:` map naming the files a check may cite (`prd`,
-  `architecture_yaml`, `bdd_guidelines`). Each check in a checklist
-  lists the document keys it needs under `docs:`, and the engine
-  points the prompt at those files.
+  `architecture_yaml`). Each check in a checklist lists the document
+  keys it needs under `docs:`, and the engine points the prompt at
+  those files.
 - `checklists/` — one checklist per command, named by hyphenating the
   command path (`us create` → `us-create.yaml`, `build tests` →
   `build-tests.yaml`, …).
@@ -153,8 +153,6 @@ The host project's documents live under `docs/`:
   `us refine` / `us apply` read.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into
   and `build tests` walks.
-- `docs/legacy/bdd-guidelines.md` — legacy BDD guidelines still cited
-  by the `bdd_guidelines` document key.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).

@@ -40,4 +40,3 @@ paths:
 documents:
   prd: "./docs/prd/prd.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
-  bdd_guidelines: "./docs/legacy/bdd-guidelines.md"
