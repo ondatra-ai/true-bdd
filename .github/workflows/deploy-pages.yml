@@ -1,0 +1,45 @@
+name: Deploy doc universe to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/doc-universe.html
+      - .github/workflows/deploy-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp docs/doc-universe.html _site/index.html
+          cp docs/doc-universe.html _site/doc-universe.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
