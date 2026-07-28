@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrueBDD — Document Universe</title>
+<style>
+@font-face{font-family:"Poppins";font-style:normal;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,d09GMgABAAAAAB48AAwAAAAAP3AAAB3rAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGx4cLgZgAIFUCucw0gQLgzYAATYCJAOGaAQgBYNIB4QLGzgysyLYOAAgoRcVRcmglIL/OoHO4YDYon/oCJ3GDcUQDGXjdcttKBgsz0Cc7LHvI78zKxsFePEEjlumIySZbXmi34/Xs3tfgBQACw8ANgpVhI5K2lrWnQjZGhVhSuOJZf8dnt/m/9Gea6OnzAADEClJ4RLV2mAAV8Uc6qLauer/Jpvztf2WL3Iv/p+LetXuOxCnE+KkZeJ6OVprs9BmXipqslIDGU/vmMkJKg1O5J266+XjyPv/6sp/ssaBe+2zVZMqdZqCZMmwsw57E4dhfNKNiyaAHRGNw/ARE5AK4O91lu03LZGD5Bkn1ULRRKEuMypDHddXfb0vg/RXXtle1KLXB9ahYQksH8kOAFZX5VKyfKgDrLwBgIq4ojrXBos6RVFSFx1DbVC788wiUuZ67Z19l9qJU9qAb4JGgMz70mcogPUyZQq7dEWmA7EiAeYErhPR0CISU5/WBPCQKKiCcGqkdr4Ma34VBfSjmgA36aQ8gY8E2lf7wrbGW3T9kUAJ3gEObY1MXzlWqV68bTkA4GOAHu8NwAGRgAIGYIsIYUSMlA87w/dKzgNsEvT/PKLtSMf7ZR8cSESkI7IQOQgkgobgISYWUTnxOUnI8VItwtFizYkJiFREJpP6p2qm+XC+N7fNrYTXZn+bffndkP+46pLz9tum6NtrH/9mFIT5Uvqdmnxlx38Bm94Dm18CMLYA+Rccq2i/XVaEKOHCACWG75EU/j0SIXx2PNOng8DKvjnCz2gYCk+nssLkVk8LBRctJqDIJNCy8okBX22kiGuGzy9EOhNk4ryDESF34ww9pzE8wZQi6MzhA70+IMzgUu/GIoDAGBvnNF+g33lITYIMZEfnVF+M6BqimQVsn/+FrzdCmKaVmrikcbI5Stm3VYaLGLvMED28A1oq/lEx6bvmXB2CTFh30nA/ks/tzoK5j088h8R8O+YA+LJzk8Yt2jixCCjGbsMjOmULHnUi1Zl7F5Dq7Kt+LzOHIZThfXK6TEWwW75aSxhpLWfJIb4I+ZTY1WeY1wtA8SyDKHZ2ijaJNXmM9NUWq7ap3gQbuNzAkpvMNxQYuHLFchpZgqkbf9Y0LvGPDcZNu7nKtfyVqRSl0QXW7+XBSIfPl7nq8A08u88c2Ks8eTep1qGjYddgswdRvoUO1duswmdP4pO7XFX67H020R7cOyfAW08PwZYt7G5sd7ZUKJoR4kvZHnR0ct+teWLVs5J7D0G9RyEYqSfPbk9SsXmMPfAyMuRuIzhjXf3I0syHQCGuT+hiZI1H/EtuGuSdHwzjW9SM4pa3Nk2WK7bguycjseLojcATqVSNj7JKoJTAWcmR05+gTZHcRkBSgeIHutvATQicKuhR3ErNYi4OZNe7T9q2idjDP0V0+P3V4Bp8Hy94TF5jdcMCSD1CkxYPogxU+CKI/JtU4BIf4GDzh5O9ghoN9MmNwG5+PPS5RJz3SuebZB1NtFhsaian5owM3Pe7PQfFJNXjDAFw6F+GOPC3++GrMFu8o2MqoyleC0YdL+GRtSqBh2iDIfa7nezSpMAgZxs2jb9o7gn8cMRyw8S7eC/Simd+7xa+CMatBA5GtC2bQZG+P86Hz1eSgx5zSc3EUAI/lBIszHt78OcrGqUCFUrPt8SUurgFHSzE0Qt13tJw6ZUSzBl8bMk+0+HUS76Ck6c4SuBz+Y9KjPSqtvM+TG8rOM3nO9U8Rj7r0lAIv0eAjAyUe/cZGG/nTHvYtAoUHv3mcrqS9jAVh2FtydSUhdEsa3p7u2frrG5x88GzbB5+A53N09oG1SYWC7bgQ+Ve+fRpejm2Lb14ENPZzpf3Y6DfDDjczbxIYA2ylJHj4lhQQUkyN2fEIpTbXg44hILhE5Zx6QQoDmXq4kzTIusRyRIppi5APktXMj+zXsyOUJr4O+e7oekT8xSaJxu8hs6oXvB7ABtRrb/D1rkZTCjQg4bi4kmV7gZE3zueYUHzRngluRpDkJE9HvRsg2TJsu+w/s0ikqPWVMNW2h1tU1lcjzOfoSajx3fIQP3/OjMqB/flzEOycrtXvCnAHBTsC/UwlAIpuyAcAo3etIhx7npYFDddrueaVWdNNwsQXaGNU46u5h7qt5Fy5rkKUeYWCXkJRbc4du2ahZl3UsZ+DHB5P9JYg0nWa/NxcAmygZOFpRmSsuVrVkkniKHFI0APHLFcIzYKOnxAg4tSKbO9uUU4lF8u+oUOEVEqI0iVUq+uDheGGx3jgCNXlctcCeTAaqLHI+Ht4JwaWEvyehHdCMA30aXdSE8xTPDhOpxVV9tqITgkJXGzxTJy20yUBGHLQe+R1RJjLxyhJFgH+H/KmI6xx7FbJMeN28uq9OPGnKK6MDx6zwZCVuwtdW6poJgMIGmQ8kh5g+W6KS6nhzY0P+zGH1YMupk055Qhe5tP7rlxGGDzFrromdTFpqx7X8myoIT1NYtsxOmLS9/LGSjBNPZ8hbUb9QPXrstAZsQ39iefJip6UNtPVMnNbeAdIXUVi5J6iPMFVaCM6p/Vt6QnEzECbSAA4deY6n5W9SHK6k6I9CF4YDBUSCkF2FcEpXAVd2q7ABZ3RwJwC86UXejstBhdMPGuGPB8w0s0iutGy4fkC39jZDcEc6NceR9b5Iehw/vgowUdio6wyUHkE73HkOQ+odo/PtwZzqHMtm06ieKllk4aRNnOgImOQmuYY4BYnNb2uHLPtqP/vuTpyynhAzRKBnGVst54q3FMBQalRif7xx/q921y6Zk+qVwrqffeqJMNOqDbPHnq4STbF+LLQhMtPuOz5WWj0Z3VmVo6jn4RdXef53+Qk++0A3gVZQPzNWHx7uwrlNSS7SNgtZHF1wC0O8iqraangf3yXdNG5jKs190B3JThreFEcU9BdbrOLBOMcq7eWI3r4r0dwY38oDzja3v63xcAwPdV+LjLKHeyjHYkKuAvJrK+1KBzikU9k+aHTZYl1Yt5SDl9TM223m4nLV5tzueT5WEo1K3A/IRnnXczWKlmuX7ZyWT/X49zVAk2XzKb64cJNc8OISyurkjed+8eN3xzbMMnpSu/uZeIJ7bX400Ipq032PXGrdBoRJ0vNrWcG2ZwzGnggOgito/0P7na2z834yZElh3Zmwd+3n3GJBTX54Xgb032ChklshYE2uEHdMqTEmSY7bWviBXUF9hk5NP+z18dofjBdbozryeKGSO4ZfZGN9yKA18MzZtxPo9DvLkvO1vMet5YFojdsWTuLcW8W68pI7BtKu/8yup9qOtNRkeh80D15Vnc/upLyGtNRkfJwKrqmNGo8FGQvQNndNDZUWpIbY9tqdJ0Ia+ufsBZpM2hSTnalsaNOxAzxngc0c0Nu7Xgc87CAqgSjnfe/NvTx3PR0wdTCwrm3f4AFPp1Gi6XI2KxTqvxWnHF5s0h3z3v3jKjiZUVhzGyXp9M2jlWTqfRYAwFFn8YQLVev7gNJ5b4CUwXW6T2qRDv9eRjsUJjIY2uQRfIWXCkaenS1ZkZM+7QkKC127xv7elTy7RCWeh6G9ZJkPIYvigMzFjrl54868M0VQTmwu4W1KE9DWm17rkBgL0xV7En7zkUCbCPczgrnz25MrbCDtacRCvX4skco/abE7fa4rf6rSW6Nfg1uMkOW80J2+xJ20AVZfqu5+60i/o6YGJtR4JEkADM0ckwz/jo8uJIp2/Rr05Az2l9b8sWHrhwqXVUMepf2qNK9LIELBZGnFqX4Gfzb9iw/R3VAbSv/t4XLX7Qtd+pafaIW2gMCpdJZ0uymsP9yztqmrraq0WildX1ct4E0/lYC1j9y+tqBTWlBD25HDJ+EzkAOSR0ktVNlDSub46sayaKOSwmxCEJTDRbuiNDBXQECu5zKuVzsxdg9hiU/13/ib3Kvte3N/L9F66XYHFAOSHV5Jfo6oXoJqaEAvsgTdOKhnkm70UpmSoU6IUioUxQysE9azxxHVy3HyIq5R1hGw5UldA41RRKg1RAbmool9W1WrAneprDq+GGOQr3tfM6EZ+vUAlZIjnEE6j4YE5fUl9Laitc8T+guOwjk8wNRIW8kUgykykU3eOVkIMNQVVtJKm0laS4jIXsrXG3+XQmo7xvqXhROZUqZuFHJzRsJlUp4PMUQgpDBXHARzsgAkUIedf4DXkEyE1k1Eub+5b718Jv3OwvGnRrHQ0t3mide/gMT1LOF8lYLJGCzRQoREC46tH/9pqtj/83DmyMcyW6Ev53WwC80q2Pfwmg4Z0ub0VNb40nQlEVeXBpRS1BTPqATP6C2MAg2asJXMdEAfz3fHPVCa1hd7WKvK3WKiAcrH9ixxDkBptKVr7CrxAai/qrSpfkLUoXZyBJkvQmYu+OVZsCw173+x19e1ZtcgpyFkgtSH/ToNq8u3rLyhcv1u6SEnk4lAqLk+GK2cQcLbbk0xLwalNu6ab2P0Mr/wx1qJ/7OH4O+N0irygnkXV1OH5yaI6wpoSgwjNYSk0YZhPlf7iSGcqmj/6FyvAEPp22+4v9IO89x8AxS4X3fCOyat1JJ4nFb2AyWuRyRktDOZ/lJJ1ch6w63+CtHLA4BmrBwaGTOsthj8dy4KTG+zD0sNPcv6Kjs39Nl3/WD0Yst360//jJAnvf9T47eDhkR91+bH+Mg0MA+n7QSbQQ80ulDFh3zre31M0zRVl7zXEq25qdKqsdXS2mRNA2FIJxwlMS4CJhERhxDUNgbOg3u6/BZvM1vPLOH0OjP8X8BqbnkcsOmzDnM7ZgrHgLGLG+sNl9GeCnuL0CDz76SvnxVw/gUPcviJ8RYDVsiI6Br8OGqGgYIKOPWRzHbPsrWbYPeCX2Y6mVvMqGckarL9qZfL9YWn+VAe5qqb2JZgimw6EfVc1ksp32hu9vMtwffBgE1cs6V9wiV+ie7NLsF2FPXrZuUpWbbyIFvHEkyZis2FL2T4KnaFYnnMsO+oJsNotM/hcKgmfRXhzLzOhiPKPSIQomd8OEnbtYl0eXQwy6uaFEWNNXHW0M5kMkcun9EkR9iMmLN+QzFBwSxd5IkYC5Q/YbFtgybAc3h24qNUqJVKNU3oRv6MVt3VSptIsqbNPfAANDkUMro4a6bkN3IMDkhG4P9W+bv39+LxgNdW4hHSD1bcVvxYN1ls8sfQf/2f5P72eWz619h2Z3zPYC+dCj4X/hfx8P9x7VHdWB65Xcqmkz9DdH9gEkc086agZrnPdc4O7F+FGnj1WgvHHPOX3fOO6BfacCLxc2vlrYfm4VOIfyYD3g8YDuQWMFyKvn9QYEIsiFH1O1oFo041UEtrBNxFuufY+M1UqL0WhpEVZDpWL1MvQQ3wrG6qjgi3+r8eXiNj63T6vlLg+IROzK0nEVPAMvVKxakWVFV7+sCtpVv04x8Do+Q6Tae2X6OvnK6uWOZGP3UwiDF2gqzWZNlaAq29Cdol1RWansFPD69I4Zisn12MdxLTMt2lDldjZEgc8GN4xyIhIyKtm2fFl3qnS5q0LZIxD06fW8vh6+WtHJ5XapArkLjFKIrpX0gtKp2umWacgOoZzVhkYncTcOVQvqSyrx11QtOBkr0MHV+XbUzzH7p3VEOl+nVdnGK4ksZ6jWbzforf+5dIBPllSSKG4p30+UiBVstkQhIcIz8Ox7pnwSqPFuX+sqE6Fg1L2Cv1KrRHK6C5U7nb0DBnnxs/H7P3j5Cp6BL078eBiMPBw8jBmAh3G1JJoljdG9QMGsK/r8Uk5d2Rv9bhoTDJT8xqTyvMhgBl7ELhMI+/Q6cX8vX6lkrK+cTiftXy5QFlfKCku0DAZGIy1EoyWFxRqG2eLigy/+qSKwRAEBt7cAvqusCvwjA4yB1YrVB4jsT4FdSTiuasG0GI7XECBh6+HT9AnQYKmBJVweV5cDo2AVuB9bi6WrFgdy7mBxvCXZF366J8+mQGQ0QeQqZDlgR4QazrNiMT9lJs/eu/W2DNEbWUIQOwrZ4O5UafZ0rsBpkauF6lLIDq1rWbfaDphIFAwNGJClkFcP4fkJe0kA2TUH3um8j1x7D9kF8D+jziI7mnfT0+o4h2yFh1uH273X/dcBOflKcn9g2DvcfmXBlRTGHAANmZRbFPDO/XxJ7/7Bo4Pgku1ve9D+d+M/8nyAZUd/LUHlxThjzWShRsnjVqERLxGpUUoQa6UR8FxJuKTKBNrQD2ZCauLnG7qKy9MoheRYc4wzD1XyK/jSB2+HgZ6vbJ8MAA+pVeWZA1c2345PczG1C7Sasdu2K47Z+PSoBrxFzkianZ2F4T93zpvpBEHr30OeGH6TUx9rhIzNcwJbPJ7AVuWGOMAhTnw8PUN/k4Vas0KhNQkBxmK/yzyIMnES+c1KvYLOpVbUELkNTe1htnpykE5mMzlLrh19T3lOkFjBEYAPGM/Pxj+4waBev5mzf5pR/nw45+tJCnXy6/izLxm7PPV4ggmJpBAIKCS4sj6oOR32PGtSM7kR3ihy1vNxvGbZgeLeIxrK0weidyyFV8L++bff62CK9gCNIUhdaMjealDAqFkMjoxMOcpGsJMrcux6Lrlce+30y6GmJIZ6ErSKGAw6n45Gi+idX6AjALohJy3tXb+DZQR+fPuQxThQV2c8ZofV1h62cCgZOGxiwayWijba7aINq+VWC2Pj7H26cZXUylJWUSh1PB61vpLClDWp4qH6uz8VkFgykYglJSGhI/Xx/AaZAmTx0SoZBls8i8KZHWZs9L9HnByL1hKtxJHConNE4rmiwmEiWNtuvUg1zc6LLZo3c2C7+hBeP24G5e84SEQHg8FY8Y5NIHlWUpywxWAWi9EpEusV4P1mfUOFIqplxZIYKeuzmtzd2XB8Tuzp2NhTsTmg/a6+WQ8ybHUuDUlbVKIikXAqfTFJU12hSiF2FaA8JLKooGAdCRxo2TXlmnVN75rmzn2efd5fJCg8JZrPaVDMmZuesj4hXrvYki2glhfejcjKO7VUhAVpm+SUciQ7Q7kkK/lU+A1KVpGGwmbLafEm0rWUlImkxE9T82k5aWOJiSdTi7brwePhB426B52Ag0TBxouWEhpj8xI/Zqv7IIDiGgfXUZO+IBCArdb2lrYMMFoiJOPxQlrZSlFT5ttJSW9nlnVLy0BCN2+Ly5wJsvilagOaTDYUl2rIJLzGCBM9GqcmLyWcKyxcTyZ2itEwAWxFOi422S7aanvWRUYrWKrryd2jLws1BkOjrRiumTuM3/2i5zFmxUDlQBUwdpM5O8eMcMX9Df/G55WzsCBWadgWasDlXLR+TRjXZG7EiYnd9ZMCYsdHP5h++Gq+uXdzhGxTTzB0yxxsX36/H4zb+tSHnWvd46mKKaZ589H1GWO32DX7nbWd7gJweuhEZ4tOzGUmX+6WF850OPvXdXT2r+30377qvnrHD35bt6drKJHs3bNzp0i0E3uYp+7eA7bLDmO6BLvHPMzm3HcPW6sajmADYlpmerGJTVZrCMPV+L7XmZ/ylR3N1njfNuwHewAO2VkO2wxf92/qvX6uWmfLyl5DwRdBQNrUHegR1+GIcgwRx9leLZgff/5jSSpXxZQ0WBxWnzPa0Jr+I0YPLa3FqdNF5aW5XM7s52mFL8uEDAjKhfEA6o+mhBylXEFOfpmg8MOeVGnQZWO48bHaSm1qNZ6xi4Bu6KlKO4QGhVNxyFnAlLbxoC55WwZgW5S8cptyDvuHmUaYm9ogvx2wy5Bt6E6S+ly6mMJoPDrN3Jg6CaVDoe+3NgUMvw+7xdv7xBpl639Bhf1dfGmpNCMzg13chWIq0rJ9rRChp4CpSveWyYqxOgYDo5MWodHiomKvpkgvuiWg/5lZD/6vw/Xa9V/FgyEg8UOODO4lNuESELqUUg0ka+0zNlkpIm5QTqgPv4ocoO0sJomYB7+PClLQPcd6wOe/VtKgHuO7BFUw3muCn8PZirZDaAS5l9rbJ+t/NP345QJzn/dsD01pP2yxH6uttQ/o5m3KZdTTnj7zArmUAf9q4IKlUoZ/B34pYC+OppyI4GlVbHsPiVZM4zfRUYI2Bj9comQUE3gwnZ/vpQt7ygfSqdz/QZj2SvkQcI0qiKlVRvHA3sHNevNmDY0xgyd72XRcCZeU4ktKcHPD/3EzKfFmSvJIYtJIMli8bxiTcJP+TDx/cXUeu3Po/iAjvWDe4hpD0LTPleICRPV+1/efpjsne+pfqYBtqBxazd+9ZuDVkGv++Gpg888vBu9OHyvKK5NKyRT2l+m1JJTKkb66xQF8aHPI3xcCIlwO4uA6ZNW5Bm/btWCu26aQZCxalCFR2Dzsh9ua57t/MGvKEjdzb32ieJGXkpL3QvHJbfeFF4OUt3/jKUGGJSxD+QnXpQl7VfmKWfHzL2pXq/P36t/BT/tcB1y3DlCfAw5ZLNY1kbyDgpCsariFu5m0iKcrMvMXbHkruL62jckMsMeNsiddZnu865zw2FbA5lrNDLDHNTk9PDY0myuSGWCPzxdOz3wqlSK0jdjwt+QmFpgB9rgf2JO+cnq8tFHYXF8wA+xx7zg93pQYR9slC2/0wPURAMwAe9wwe9JJtkfIOeGBTcTmusYMsMcddHrss7x3j+IurFMFWMZ/KfP8KKmR2Y5JmrD0v23OkRlgjzvJnrTd6TEomQCN+YAZYI877/Q4Y7OxAwZrPdbU1q2lhy02RZdmByq5WOIXer0afEkO9tnyb488FxDEOWAMLT9nP9z8y7stgZhtHqrv8fdFTDQYy145QL8YF8CxwVHraJu3KVIg78cFx4b4NgsAv8ALwQn+zbnSGdoG/A37ZtTKn381E23f4CO1bSTInQkcG1LbLAR6R886/qh1ZEJl/3Z8Is0cbRSJx+8jlf1bmplGIBP46eAcDxwA1Iv9BHLttkwjn7ZHVPabeXlFMP9s+cis7N/xM+JW/i+98MD5yYhM+aKhNL5l1dmAOdV5c1wWBlgSzfuB8+60M/6LjYh4CvDNu+0BwPfbyLdmn8wOh5cLqUyl8CJpBr81Kq/7NFXylx4eaL/0fJdfoS3L97meZwpXzqiX3fUYI11R/5LrvJy81MMvVEb+xOq0Wv8VVTGjn+AaDpjtx4gDphB8NdH4NbDtJelyqDgFDWZf+G5yv8EFB9FqlSMadFbB13QFSxgQ9IacBkhHFMjvGGnnAUUQNnq3NLEqEbqdHhoJDhjCfRUW5QQtLAmoI1IbWv6NQfUqSYckjCcSuhO+dguLhc8jO3vb8czo62Z5I0vQa3E9KZ8VaU2EA3JHI5PKoutw+Bk2//9vEabgstCEdaYEIeWBP5g+TUyGSavMzNwEZYsbVHH5RVwF4vIZdCNBMDxuLLe0UF4KDHoVp6sVNW8DzIR3fzkKQxE3kmAzKTvPYLpOPnkLGgXwWS4u52T2tvroZMQg3k/iupm0Abl+RUyKOPclZkRPIr5n5fRN7npsqVFC+FdGomOfeQTN08BRiQULSv9veb1nTjoyQqQ3dStNT0k6AYDUcTlKDvPKvpcsTJKSHG7IjKO/R346MpKuUyxKUqIhAJA6oElKjcvkL0j5foYI3k7mezGpjo0yjoN8uJ+l1Uf4TFROSsNeaTblu6O6QbgUwmDj+EoRRo70USw1Vd9fOGAKA3xnq3naRC/HfEM4YK1aEU2Y4x38pXdcYTIdd4VbYLcrAo1NH8nrihJH44qWiSwseKrAS63k7tOCpoRTtQrMHQitXi1Wi9BoqhesLjdeSUBGxXs53set+dcIQ65GNbc2TYiwcHCIxHQElOgQkgwEkHRptRKF5vno12nTqAKsg3LfaCd2WjepxQh4uO+cI+iC3DUo4E2ATfBkaJVkF6RNaf1kgS93QXiUOu53Lq9Wwqq6CE0hXIRaD1tis2qwTstgM1oo3JcLnV/Dm/kdkIZFgIi/L/rfQKw54sw1z3wLLLTIYvESJEqSLEWqNOkyZFoiSzaEpXLkypMPCaVAoSLF0DCwSuCUwiMgIiErQ0FFQ8fAVI6FDcLBxcMnICQiJiElI6egpKKmoaWjZ2BkYmZhZWPn4ORSkUgwaKVV3rTbU6tttsEhZxxPFFjvSyvs8LNfbEo0WOt93/jJYWf95le/O+aCKRMuqlRlq2ofqDFp2l233HbHM7U+cs99l9T50Taf+tgn6r3wyjoebg2aNGp2lJefL6UkvZ+HgHbPdejSqdsyPa4b0CuoT7+XvjfsM5ddSQz43Ne+cNV/DAkZ9YZrxqxxzlveNpJYsNEPmROpeCyThXMfxLS9cuMyIBxt55VzSINZHG7kf0WGm4P4rFIS) format("woff2")}
+@font-face{font-family:"Poppins";font-style:normal;font-weight:700;font-display:swap;src:url(data:font/woff2;base64,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) format("woff2")}
+
+/* ============ S&F tokens (from claude.ai/design · S&F Design System) ============ */
+:root {
+  /* main — monochromatic ramp */
+  --white-999:#FFFFFF; --gray-100:#DEDFE4; --gray-600:#828388; --gray-999:#232429; --black-999:#040406;
+  /* spiral-dynamics stops — used here as the five document-category markers */
+  --c-story:#0173D7;   /* spiral-blue        · product docs   */
+  --c-reg:#00A896;     /* spiral-green       · registry       */
+  --c-arch:#F57600;    /* spiral-orange      · architecture   */
+  --c-code:#329BFF;    /* spiral-blue-light  · code artifacts */
+  --c-cfg:#828388;     /* gray-600           · engine config  */
+  /* semantic */
+  --text-primary:var(--black-999); --text-body:var(--gray-999); --text-muted:var(--gray-600);
+  --surface-page:var(--white-999); --surface-subtle:var(--gray-100);
+  --border-hairline:var(--gray-100); --border-strong:var(--black-999);
+  --border-on-dark:var(--gray-999);
+  --font-poppins:"Poppins","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ease-standard:cubic-bezier(.2,0,.2,1); --dur-fast:120ms;
+  --ls-label:.08em; --ls-button:.06em; --ls-tight:-0.02em;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--surface-page); }
+body {
+  margin: 0;
+  color: var(--text-body);
+  background: var(--surface-page);
+  font-family: var(--font-poppins);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+}
+.inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+.inner.wide { max-width: 1420px; }
+
+code {
+  font-family: inherit; font-weight: 500; font-size: .85em;
+  background: color-mix(in srgb, var(--gray-100) 45%, var(--white-999));
+  border: 1px solid var(--border-hairline);
+  padding: 0 5px; white-space: nowrap;
+}
+
+/* ============ hero — one blurred gradient field per page ============ */
+.hero { position: relative; overflow: hidden; padding: 100px 0 80px; border-bottom: 1px solid var(--border-hairline); }
+.hero .field {
+  position: absolute; top: -140px; right: -120px; width: 58%; height: 480px;
+  background:
+    radial-gradient(60% 70% at 68% 78%, #50E4D2 0%, rgba(80,228,210,0) 62%),
+    radial-gradient(55% 65% at 78% 42%, #329BFF 0%, rgba(50,155,255,0) 60%),
+    radial-gradient(50% 60% at 46% 32%, #B98CF5 0%, rgba(185,140,245,0) 62%),
+    radial-gradient(70% 80% at 20% 15%, #FFFFFF 0%, rgba(255,255,255,0) 70%);
+  filter: blur(80px);
+  opacity: .55;
+  pointer-events: none;
+}
+.hero .inner { position: relative; }
+.eyebrow {
+  margin: 0 0 30px; font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--text-muted);
+}
+h1 {
+  margin: 0 0 20px; font-size: clamp(36px, 4.6vw, 52px); font-weight: 700;
+  letter-spacing: var(--ls-tight); line-height: 1.2; color: var(--text-primary);
+  text-wrap: balance; max-width: 20ch;
+}
+h1 .grad {
+  background: linear-gradient(90deg, #0173D7 0%, #329BFF 55%, #00A896 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lede { margin: 0; max-width: 52ch; font-size: 20px; color: var(--text-body); }
+
+/* ============ bands & section headings ============ */
+.band { padding: 80px 0; }
+.band.inverse { background: var(--black-999); color: var(--gray-100); }
+.slabel {
+  margin: 0 0 20px; font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--text-muted);
+}
+.band.inverse .slabel { color: var(--gray-600); }
+h2 {
+  margin: 0 0 10px; font-size: 32px; font-weight: 700;
+  letter-spacing: var(--ls-tight); line-height: 1.2; color: var(--text-primary);
+  text-wrap: balance;
+}
+.band.inverse h2 { color: var(--white-999); }
+.sub { margin: 0 0 40px; max-width: 60ch; font-size: 16px; line-height: 1.4; color: var(--text-muted); }
+.band.inverse .sub { color: var(--gray-100); }
+
+/* ============ layout panel: tree + legend ============ */
+.tree-panel {
+  display: flex; gap: 60px; flex-wrap: wrap; align-items: flex-start;
+  border: 1px solid var(--border-hairline); padding: 40px;
+}
+.tree { flex: 1 1 480px; font-size: 14px; line-height: 1.5; min-width: 0; }
+.tree .trow { display: flex; justify-content: space-between; gap: 20px; padding: 2px 0; }
+.tree .trow .nm { white-space: nowrap; color: var(--text-body); }
+.tree .trow .cm { color: var(--text-muted); text-align: right; min-width: 0; }
+.tree .lvl { border-left: 1px solid var(--border-hairline); margin-left: 6px; padding-left: 20px; }
+.t-story { color: var(--c-story); font-weight: 700; }
+.t-reg   { color: var(--c-reg);   font-weight: 700; }
+.t-arch  { color: var(--c-arch);  font-weight: 700; }
+.t-code  { color: var(--c-code);  font-weight: 700; }
+.t-cfg   { color: var(--c-cfg);   font-weight: 700; }
+.legend { flex: 0 1 320px; display: grid; gap: 20px; align-content: start; }
+.legend > div { display: flex; gap: 12px; align-items: baseline; }
+.sw { display: inline-block; width: 10px; height: 10px; flex: none; background: var(--cat, var(--gray-600)); }
+.legend .sw { transform: translateY(.5px); }
+.legend .lab { display: block; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: var(--ls-button); }
+.legend small { color: var(--text-muted); display: block; font-size: 13px; line-height: 1.4; margin-top: 3px; }
+
+/* ============ diagram ============ */
+.diagram-scroll {
+  overflow-x: auto; padding-bottom: 10px;
+  margin-inline: calc(-1 * min(60px, max(0px, (100vw - 100%) / 2)));
+}
+.dgrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 170px .95fr .95fr 1.1fr 1.1fr .9fr;
+  gap: 56px 46px;
+  width: 1420px;
+  padding: 8px 8px 4px 40px; /* left inset gives same-side loops room to bulge */
+}
+#edge-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
+
+.card {
+  position: relative; z-index: 1;
+  min-width: 0;
+  background: var(--white-999);
+  border: 1px solid var(--border-hairline);
+  font-size: 11px; line-height: 1.5;
+  transition: opacity var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  align-self: start;
+}
+.card:focus-visible {
+  outline: 2px solid var(--border-strong);
+  outline-offset: 2px;
+  border-color: var(--border-strong);
+}
+.card.c-story { --cat: var(--c-story); }
+.card.c-reg   { --cat: var(--c-reg); }
+.card.c-arch  { --cat: var(--c-arch); }
+.card.c-code  { --cat: var(--c-code); }
+.card.c-cfg   { --cat: var(--c-cfg); }
+
+.card header {
+  padding: 8px 12px 7px;
+  border-bottom: 1px solid var(--border-hairline);
+  font-weight: 700; font-size: 11px; color: var(--text-primary);
+  display: flex; gap: 8px; align-items: center;
+}
+.card header .sw { width: 8px; height: 8px; }
+.card header .p { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.card header small {
+  color: var(--text-muted); font-weight: 700; font-size: 9px; flex: none;
+  letter-spacing: var(--ls-button); text-transform: uppercase;
+}
+.card .body { padding: 8px 12px 10px; }
+.row { padding: 1px 6px; margin: 0 -6px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .k { color: var(--text-body); font-weight: 700; }
+.row .v { color: var(--text-muted); }
+.row.hl { background: color-mix(in srgb, var(--cat) 9%, var(--white-999)); }
+.row.hl .k { color: var(--cat); }
+.ind1 { padding-left: 14px; }
+.ind2 { padding-left: 28px; }
+.ind3 { padding-left: 42px; }
+.card .note {
+  margin: 8px 12px 10px; padding-top: 7px; border-top: 1px solid var(--border-hairline);
+  font-size: 10.5px; line-height: 1.4; color: var(--text-muted);
+}
+.card .note code { font-size: .95em; padding: 0 3px; }
+.badge {
+  display: inline-block; margin-top: 2px;
+  border: 1px solid var(--cat); color: var(--cat);
+  padding: 0 6px; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-button);
+}
+
+/* wide architecture card */
+.card.wide .body { display: grid; grid-template-columns: 1fr 1.1fr; gap: 0 34px; }
+
+/* edges */
+.edge { fill: none; stroke-width: 1.4; transition: opacity var(--dur-fast) var(--ease-standard), stroke-width var(--dur-fast) var(--ease-standard); }
+.edge.flow { stroke-width: 2; }
+.edge.ref { stroke-width: 1.1; opacity: .45; }
+.edge.cfg { stroke-dasharray: 3 4; opacity: .55; }
+.edge.k-story { stroke: var(--c-story); }
+.edge.k-reg   { stroke: var(--c-reg); }
+.edge.k-arch  { stroke: var(--c-arch); }
+.edge.k-code  { stroke: var(--c-code); }
+.edge.k-cfg   { stroke: var(--c-cfg); }
+#edge-svg marker path { stroke: none; }
+.mk-story { fill: var(--c-story); } .mk-reg { fill: var(--c-reg); }
+.mk-arch { fill: var(--c-arch); }  .mk-code { fill: var(--c-code); }
+.mk-cfg { fill: var(--c-cfg); }
+
+.edge-label, .num-dot {
+  position: absolute; z-index: 2; transform: translate(-50%, -50%);
+  transition: opacity var(--dur-fast) var(--ease-standard);
+  pointer-events: none;
+  background: var(--white-999); border: 1px solid var(--lc, var(--border-hairline));
+  color: var(--text-primary); font-weight: 700;
+}
+.edge-label {
+  padding: 2px 6px; font-size: 9px; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: var(--ls-button);
+}
+.num-dot {
+  width: 16px; height: 16px; font-size: 9px;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+
+/* hover isolation — opacity moves only (55↔100 is the system's own idiom) */
+.dgrid.focused .card:not(.hot) { opacity: .3; }
+.dgrid.focused .edge:not(.hot) { opacity: .07; }
+.dgrid.focused .edge-label:not(.hot), .dgrid.focused .num-dot:not(.hot) { opacity: .07; }
+.dgrid.focused .edge.hot { stroke-width: 2.4; opacity: 1; }
+.dgrid.focused .card.hot { border-color: var(--border-strong); }
+.hint { font-size: 14px; color: var(--text-muted); margin: 20px 2px 0; }
+
+/* ============ tables ============ */
+.tbl-scroll { overflow-x: auto; border: 1px solid var(--border-hairline); }
+.band.inverse .tbl-scroll { border-color: var(--border-on-dark); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.4; min-width: 900px; }
+th {
+  text-align: left; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--text-muted);
+  padding: 14px 16px; border-bottom: 2px solid var(--border-strong);
+}
+td { padding: 12px 16px; border-bottom: 1px solid var(--border-hairline); vertical-align: top; color: var(--text-muted); }
+tr:last-child td { border-bottom: none; }
+td:first-child { white-space: nowrap; }
+td .cmd { font-weight: 700; color: var(--text-primary); font-size: 14px; }
+td .cl { font-size: 13px; color: var(--text-body); }
+td strong { color: var(--text-primary); font-weight: 700; }
+
+.band.inverse th { color: var(--gray-600); border-bottom-color: var(--white-999); }
+.band.inverse td { border-bottom-color: var(--border-on-dark); color: var(--gray-100); }
+.band.inverse td .cmd, .band.inverse td strong { color: var(--white-999); }
+.band.inverse td .cl { color: var(--gray-100); }
+.band.inverse code {
+  background: var(--gray-999); border-color: var(--gray-999); color: var(--gray-100);
+}
+
+#joins td.n { color: var(--text-muted); font-size: 12px; }
+#joins td.n .sw { width: 8px; height: 8px; margin-right: 8px; transform: translateY(-1px); }
+#joins .from, #joins .to { font-weight: 700; color: var(--text-primary); font-size: 13px; }
+#joins tr.hot td { background: color-mix(in srgb, var(--gray-100) 40%, var(--white-999)); }
+
+footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border-top: 1px solid var(--border-hairline); margin-top: 80px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .edge, .edge-label, .num-dot { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="field" aria-hidden="true"></div>
+  <div class="inner">
+    <p class="eyebrow">true-bdd — host-project reference</p>
+    <h1>The <span class="grad">document universe</span></h1>
+    <p class="lede">
+      A host project hands TrueBDD five YAML documents under <code>docs/</code> plus an engine
+      configuration directory. Five CLI commands walk them in order — each one reads some documents,
+      validates against a checklist, and writes exactly one thing. Every arrow below is a real
+      cross-reference you can grep for.
+    </p>
+  </div>
+</header>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">01—Layout</p>
+    <h2>What the host project contains</h2>
+    <p class="sub">The engine ships <code>true-bdd/</code> and <code>templates/</code>; the host authors everything under <code>docs/</code>, <code>src/</code>, and <code>tests/</code>.</p>
+    <div class="tree-panel">
+      <div class="tree">
+        <div class="trow"><span class="nm">host project root</span></div>
+        <div class="lvl">
+          <div class="trow"><span class="nm t-cfg">true-bdd/</span></div>
+          <div class="lvl">
+            <div class="trow"><span class="nm t-cfg">true-bdd.yaml</span><span class="cm">engine config — paths to everything else</span></div>
+            <div class="trow"><span class="nm t-cfg">checklists/*.yaml</span><span class="cm">one per command, resolved by name</span></div>
+          </div>
+          <div class="trow"><span class="nm t-cfg">templates/*.prompt.tpl</span><span class="cm">prompt templates (shipped by the engine repo)</span></div>
+          <div class="trow"><span class="nm">docs/</span></div>
+          <div class="lvl">
+            <div class="trow"><span class="nm">prd/</span></div>
+            <div class="lvl">
+              <div class="trow"><span class="nm t-story">prd.yaml</span><span class="cm">product ref + personas + BDD vocabulary</span></div>
+              <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
+              <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
+            </div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + dev/prod environments</span></div>
+            <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
+          </div>
+          <div class="trow"><span class="nm t-code">src/&lt;service&gt;/</span><span class="cm">production source — src/service1, src/service2, …</span></div>
+          <div class="trow"><span class="nm t-code">docker-compose.yaml</span><span class="cm">prod stack — path declared in architecture.yaml</span></div>
+          <div class="trow"><span class="nm t-code">docker-compose.dev.yaml</span><span class="cm">dev stack for local runs</span></div>
+          <div class="trow"><span class="nm t-code">tests/{integration,e2e}/</span><span class="cm">executable specs</span></div>
+        </div>
+      </div>
+      <div class="legend">
+        <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>prd (incl. the BDD vocabulary) — epic — story</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, dev/prod environment stacks</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring, not data flow</small></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner wide">
+    <p class="slabel">02—Map</p>
+    <h2>How the documents join</h2>
+    <p class="sub">The top row is the hierarchy spine — the prd contains epics, an epic seed becomes a story file
+    (<code>us create</code>), and the story's refined ACs — its scenarios — merge into the registry
+    (<code>us apply</code>). Labelled solid arrows carry data; thin faded arrows are reference joins; dashed
+    arrows are configuration wiring. Numbers index into the joins table below.</p>
+
+    <div class="diagram-scroll">
+      <div class="dgrid" id="dgrid">
+        <svg id="edge-svg" aria-hidden="true">
+          <defs>
+            <marker id="arr-story" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path class="mk-story" d="M0,0 L7,3.5 L0,7 Z"/></marker>
+            <marker id="arr-reg"   markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path class="mk-reg"   d="M0,0 L7,3.5 L0,7 Z"/></marker>
+            <marker id="arr-arch"  markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path class="mk-arch"  d="M0,0 L7,3.5 L0,7 Z"/></marker>
+            <marker id="arr-code"  markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path class="mk-code"  d="M0,0 L7,3.5 L0,7 Z"/></marker>
+            <marker id="arr-cfg"   markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path class="mk-cfg"   d="M0,0 L7,3.5 L0,7 Z"/></marker>
+          </defs>
+        </svg>
+
+        <!-- col 1 · engine config -->
+        <div class="card c-cfg" id="card-cfg" tabindex="0" style="grid-area:1/1">
+          <header><i class="sw"></i><span class="p">true-bdd/<wbr>true-bdd.yaml</span><small>config</small></header>
+          <div class="body">
+            <div class="row"><span class="k">engine:</span> <span class="v">model</span></div>
+            <div class="row hl" id="a-cfg-paths"><span class="k">epics.path · paths.*</span></div>
+            <div class="row ind1"><span class="v">stories_dir · checklists_dir · tmp</span></div>
+            <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
+            <div class="row ind1"><span class="v">prd · architecture_yaml</span></div>
+            <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
+          </div>
+        </div>
+
+        <div class="card c-cfg" id="card-cl" tabindex="0" style="grid-area:2/1">
+          <header><i class="sw"></i><span class="p">checklists/<wbr>&lt;command&gt;.yaml</span><small>×5</small></header>
+          <div class="body">
+            <div class="row"><span class="v">us-create · us-refine · us-apply</span></div>
+            <div class="row"><span class="v">build-tests · build-code</span></div>
+            <div class="row"><span class="k">sections[].validation_prompts[]:</span></div>
+            <div class="row ind1"><span class="k">Q:</span> <span class="v">pass/fail question</span></div>
+            <div class="row ind1 hl" id="a-cl-docs"><span class="k">docs:</span> <span class="v">[prd, architecture_yaml]</span></div>
+            <div class="row ind1"><span class="k">F:</span> <span class="v">fix prompt (--fix loop)</span></div>
+            <div class="row"><span class="k">config:</span> <span class="v">max_apply_attempts</span></div>
+          </div>
+          <div class="note">Found by hyphenating the command path: <code>us apply</code> → <code>us-apply.yaml</code>.</div>
+        </div>
+
+        <div class="card c-cfg" id="card-tpl" tabindex="0" style="grid-area:3/1">
+          <header><i class="sw"></i><span class="p">templates/<wbr>*.prompt.tpl</span><small>×24</small></header>
+          <div class="body">
+            <div class="row"><span class="v">&lt;command&gt;.&lt;role&gt;.prompt.tpl</span></div>
+            <div class="row"><span class="k">roles:</span> <span class="v">checklist · fix_generator ·</span></div>
+            <div class="row ind1"><span class="v">fix_applier (each + _system)</span></div>
+          </div>
+          <div class="note">Go <code>text/template</code> + sprig. Renders checklist prompt + subject + referenced docs into each Claude call.</div>
+        </div>
+
+        <!-- col 2 · prd — the hierarchy root -->
+        <div class="card c-story" id="card-prd" tabindex="0" style="grid-area:1/2/3/3; align-self:center">
+          <header><i class="sw"></i><span class="p">docs/prd/prd.yaml</span><small>prd</small></header>
+          <div class="body">
+            <div class="row"><span class="k">title · summary</span></div>
+            <div class="row hl" id="a-prd-personas"><span class="k">personas[]:</span></div>
+            <div class="row ind1"><span class="k">name:</span> <span class="v">"Claude User"</span></div>
+            <div class="row ind1"><span class="v">definition · primary_use_case</span></div>
+            <div class="row ind1"><span class="v">characteristics[]</span></div>
+            <div class="row hl" id="a-prd-vocab"><span class="k">vocabulary:</span> <span class="v">the allowed BDD language</span></div>
+            <div class="row ind1"><span class="k">actions[]:</span> <span class="v">"ask Claude" → means …</span></div>
+            <div class="row ind1"><span class="k">forbidden_qualifiers[]:</span> <span class="v">"properly", "fast", …</span></div>
+            <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
+          </div>
+          <div class="note">Embedded verbatim into prompts — the engine never parses it. Vocabulary's preferred home is here; keeping it in architecture.yaml also works (the engine fixtures do that today).</div>
+        </div>
+
+        <!-- col 3 · epic -->
+        <div class="card c-story" id="card-epic" tabindex="0" style="grid-area:1/3/3/4; align-self:center">
+          <header><i class="sw"></i><span class="p">docs/prd/epics/<wbr>epic-&lt;N&gt;-&lt;slug&gt;.yaml</span><small>epic</small></header>
+          <div class="body">
+            <div class="row"><span class="k">epic:</span> <span class="v">id · name · status · goal · context</span></div>
+            <div class="row hl" id="a-epic-stories"><span class="k">stories[]:</span> <span class="v">the seeds</span></div>
+            <div class="row ind1"><span class="k">id:</span> <span class="v">"99.1" · title · status</span></div>
+            <div class="row ind1"><span class="v">as_a · i_want · so_that</span></div>
+            <div class="row ind1"><span class="k">acceptance_criteria[]:</span> <span class="v">id + description</span></div>
+            <div class="row ind2"><span class="v">(seed only — no steps yet)</span></div>
+          </div>
+        </div>
+
+        <!-- col 4 · story -->
+        <div class="card c-story" id="card-story" tabindex="0" style="grid-area:1/4/3/5; align-self:center">
+          <header id="a-story-head"><i class="sw"></i><span class="p">docs/prd/stories/<wbr>&lt;id&gt;-&lt;slug&gt;.yaml</span><small>story</small></header>
+          <div class="body">
+            <div class="row"><span class="k">story:</span></div>
+            <div class="row ind1"><span class="k">id:</span> <span class="v">"95.1" · title · status</span></div>
+            <div class="row ind1 hl" id="a-story-asa"><span class="k">as_a:</span> <span class="v">"Claude User"</span></div>
+            <div class="row ind1"><span class="v">i_want · so_that</span></div>
+            <div class="row ind1 hl" id="a-story-ac"><span class="k">acceptance_criteria[]:</span> <span class="v">the scenarios, long form</span></div>
+            <div class="row ind2"><span class="k">id:</span> <span class="v">AC-1 … AC-n</span></div>
+            <div class="row ind2"><span class="k">description:</span> <span class="v">one must/should rule</span></div>
+            <div class="row ind2"><span class="k">steps[]:</span> <span class="v">given / when / then (+ and:)</span></div>
+          </div>
+          <div class="note">
+            <span class="badge">us refine</span>&nbsp; rewrites this file in place — adds Gherkin steps,
+            enforces AC count 3–7, must/should phrasing, vocabulary rules — until every checklist prompt passes.
+            The refined ACs <strong>are</strong> the story's scenarios — they live here until <code>us apply</code>
+            promotes them to the registry.
+          </div>
+        </div>
+
+        <!-- col 5 · registry -->
+        <div class="card c-reg" id="card-scn" tabindex="0" style="grid-area:1/5/3/6; align-self:center">
+          <header><i class="sw"></i><span class="p">docs/<wbr>scenarios.yaml</span><small>registry</small></header>
+          <div class="body">
+            <div class="row"><span class="k">metadata:</span> <span class="v">title · version · last_updated</span></div>
+            <div class="row"><span class="k">scenarios:</span></div>
+            <div class="row ind1 hl" id="a-scn-id"><span class="k">INT-NNN | E2E-NNN:</span></div>
+            <div class="row ind2"><span class="k">description</span></div>
+            <div class="row ind2 hl" id="a-scn-service"><span class="k">service:</span> <span class="v">"mcp-service"</span></div>
+            <div class="row ind2"><span class="k">user_stories[]:</span> <span class="v">lineage</span></div>
+            <div class="row ind3 hl" id="a-scn-us-story"><span class="k">story:</span> <span class="v">docs/prd/stories/95.1-….yaml</span></div>
+            <div class="row ind3 hl" id="a-scn-us-sid"><span class="k">scenario_id:</span> <span class="v">"95.1-001"</span></div>
+            <div class="row ind3"><span class="k">merge_date</span></div>
+            <div class="row ind2"><span class="k">merged_steps:</span> <span class="v">given / when / then</span></div>
+          </div>
+          <div class="note"><span class="badge">us apply</span>&nbsp; is the registry's only writer — the registry
+            lags the stories until each one is applied. One entry may merge several stories' ACs; duplicates
+            collapse to the lower id, unioning <code>user_stories</code> and steps.</div>
+        </div>
+
+        <!-- col 6 · code -->
+        <div class="card c-code" id="card-tests" tabindex="0" style="grid-area:1/6">
+          <header><i class="sw"></i><span class="p">tests/<wbr>{integration,e2e}/</span><small>specs</small></header>
+          <div class="body">
+            <div class="row hl" id="a-tests-ref"><span class="k">test('E2E-900: …')</span></div>
+            <div class="row ind1"><span class="v">scenario id referenced literally</span></div>
+            <div class="row"><span class="k">runners:</span> <span class="v">go test · jest · playwright</span></div>
+          </div>
+          <div class="note">Authored by <code>build tests --fix</code>; strictly read-only for <code>build code</code>.</div>
+        </div>
+
+        <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/6">
+          <header><i class="sw"></i><span class="p">src/&lt;service&gt;/</span><small>source</small></header>
+          <div class="body">
+            <div class="row"><span class="v">src/service1 · src/service2 · …</span></div>
+            <div class="row"><span class="v">production code per service</span></div>
+          </div>
+          <div class="note">Edited by <code>build code --fix</code> until every failing test passes.</div>
+        </div>
+
+        <!-- row 3 · architecture -->
+        <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/7">
+          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>services + environments</small></header>
+          <div class="body">
+            <div>
+              <div class="row hl" id="a-arch-env"><span class="k">environment:</span></div>
+              <div class="row ind1"><span class="k">dev:</span> <span class="v">compose: docker-compose.dev.yaml</span></div>
+              <div class="row ind1"><span class="k">prod:</span> <span class="v">compose: docker-compose.yaml</span></div>
+            </div>
+            <div>
+              <div class="row"><span class="k">services[]:</span></div>
+              <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· language · frameworks[]</span></div>
+              <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">src/&lt;name&gt;</span></div>
+              <div class="row ind1 hl" id="a-arch-qg"><span class="k">quality_gate.tests.{integration,e2e}:</span></div>
+              <div class="row ind2"><span class="v">path · framework · config · helpers[]</span></div>
+              <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[]</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- row 4 · environment stacks -->
+        <div class="card c-code" id="card-compose" tabindex="0" style="grid-area:4/2/5/4">
+          <header><i class="sw"></i><span class="p">docker-compose.yaml · docker-compose.dev.yaml</span><small>env stacks</small></header>
+          <div class="body">
+            <div class="row"><span class="v">one stack per environment — services, ports, volumes</span></div>
+          </div>
+          <div class="note">Paths declared in <code>architecture.yaml environment:</code>. The dev stack backs local test runs (e.g. a Playwright <code>webServer</code> bringing up <code>docker compose</code>).</div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Hover or focus a card to isolate its joins — hover a row in the joins table to light up that arrow.</p>
+  </div>
+</section>
+
+<section class="band inverse">
+  <div class="inner">
+    <p class="slabel">03—Commands</p>
+    <h2>Who reads what, who writes what</h2>
+    <p class="sub">The pipeline runs left to right through the map: each command consumes the previous
+    command's output. Every command validates its subject against its own checklist, and with
+    <code>--fix</code> drives a Claude-mediated loop until the walk is clean.</p>
+    <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
+      <table>
+        <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="cmd">us create &lt;id&gt;</span></td>
+            <td>the story seed in its <strong>epic</strong>; <strong>prd</strong> + <strong>architecture</strong> as prompt context</td>
+            <td><span class="cl">us-create.yaml</span></td>
+            <td>a new <strong>story file</strong> in <code>paths.stories_dir</code></td>
+          </tr>
+          <tr>
+            <td><span class="cmd">us refine &lt;id&gt;</span></td>
+            <td>the <strong>story</strong>; <strong>prd</strong> personas + vocabulary; <strong>architecture</strong> test layers (for sketches)</td>
+            <td><span class="cl">us-refine.yaml</span></td>
+            <td>the same <strong>story file, in place</strong> — ACs gain steps and rule-based descriptions</td>
+          </tr>
+          <tr>
+            <td><span class="cmd">us apply &lt;id&gt;</span></td>
+            <td>every <strong>AC</strong> of the refined story (lineage id <code>&lt;id&gt;-NNN</code> per AC position)</td>
+            <td><span class="cl">us-apply.yaml</span></td>
+            <td>merges into <strong>scenarios.yaml</strong> via a scratch copy; re-walks to a fixpoint (≤ <code>max_apply_attempts</code>), then commits it over the registry</td>
+          </tr>
+          <tr>
+            <td><span class="cmd">build tests</span></td>
+            <td>every <strong>registry scenario</strong>; greps test trees for the id</td>
+            <td><span class="cl">build-tests.yaml</span></td>
+            <td>with <code>--fix</code>: missing <strong>specs</strong> under <code>tests/</code> referencing the scenario id — the registry is never modified</td>
+          </tr>
+          <tr>
+            <td><span class="cmd">build code</span></td>
+            <td>every <strong>(service, layer)</strong> pair in architecture; discovers failing tests via each framework's runner (dev compose stack backs the run)</td>
+            <td><span class="cl">build-code.yaml</span></td>
+            <td>with <code>--fix</code>: <strong>production source</strong> under <code>src/</code> only — tests and registry are never touched</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">04—Joins</p>
+    <h2>Every cross-reference, with real values</h2>
+    <p class="sub">Example values come from the BDD fixtures. Numbers match the arrows on the map.</p>
+    <div class="tbl-scroll" tabindex="0" role="region" aria-label="Cross-reference joins">
+      <table id="joins">
+        <thead><tr><th>#</th><th>From</th><th>To</th><th>How it joins</th></tr></thead>
+        <tbody>
+          <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">prd.yaml</td><td class="to">epics/*.yaml</td>
+            <td>epics are the prd's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/prd/epics/</code>, declared by <code>epics.path</code></td></tr>
+          <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">epic stories[].id</td><td class="to">story file</td>
+            <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/prd/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
+          <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">prd personas[].name</td>
+            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the persona list</td></tr>
+          <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">prd vocabulary</td><td class="to">AC description + steps</td>
+            <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); vocabulary may also live in architecture.yaml</td></tr>
+          <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>5</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>
+            <td><strong>us apply</strong> bridges the gap between story and registry — it derives the lineage id <code>&lt;story-id&gt;-%03d</code> (AC-1 of story 95.1 → <code>"95.1-001"</code>) and merges the scenario in</td></tr>
+          <tr data-edge="6"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>6</td><td class="from">user_stories[].story</td><td class="to">story file path</td>
+            <td>each registry entry names its source stories: <code>docs/prd/stories/95.1-duplicate-collapse.yaml</code></td></tr>
+          <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
+            <td><code>service: "mcp-service"</code> must name a declared service</td></tr>
+          <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario id</td><td class="to">a spec file</td>
+            <td><strong>build tests</strong> passes only if some test references the id literally: <code>test('E2E-900: …')</code></td></tr>
+          <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">id prefix INT- / E2E-</td><td class="to">quality_gate.tests layer</td>
+            <td>INT → <code>tests.integration</code> (e.g. jest), E2E → <code>tests.e2e</code> (playwright) — picks the tree, framework, and runner</td></tr>
+          <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">src/&lt;name&gt;/</td>
+            <td><code>path: src/service1</code> tells <strong>build code</strong> where production source lives</td></tr>
+          <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>11</td><td class="from">environment.{dev,prod}</td><td class="to">docker-compose files</td>
+            <td>architecture.yaml declares the stack per environment: <code>dev → docker-compose.dev.yaml</code>, <code>prod → docker-compose.yaml</code></td></tr>
+          <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>12</td><td class="from">failing test</td><td class="to">production source</td>
+            <td><strong>build code --fix</strong> edits <code>src/</code> until the runner's <code>LastRunPassed</code> flips to true</td></tr>
+          <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
+            <td><code>docs: [prd, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
+          <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">command name</td><td class="to">checklist file</td>
+            <td><code>paths.checklists_dir</code> + hyphenation: <code>us apply</code> → <code>checklists/us-apply.yaml</code></td></tr>
+          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">prd · architecture · epics · stories dirs</td>
+            <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
+          <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
+            <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd</code> fixture documents — 2026-07-28 — set in the S&amp;F design system.</div>
+</footer>
+
+<script>
+(function () {
+  const grid = document.getElementById('dgrid');
+  const svg = document.getElementById('edge-svg');
+
+  // n: joins-table index · from/to: anchor element ids · sides: L R T B (+fraction)
+  // kind: color family · flow: command-carrying edge (gets a label chip)
+  const EDGES = [
+    // hierarchy spine: prd ─contains→ epic ─us create→ story ─us apply→ registry
+    { n: 1,  from: 'card-prd',       fs: 'R', ff: .5, to: 'card-epic',    ts: 'L', tf: .5, kind: 'story', cmd: 'contains' },
+    { n: 2,  from: 'a-epic-stories', fs: 'R',        to: 'a-story-head',   ts: 'L',        kind: 'story', cmd: 'us create' },
+    // reference joins (thin, faded) — personas under the spine, vocabulary over it
+    { n: 3,  from: 'card-story',     fs: 'B', ff: .12, to: 'card-prd',     ts: 'B', tf: .85, kind: 'story', ref: true },
+    { n: 4,  from: 'card-prd',       fs: 'T', ff: .85, to: 'card-story',   ts: 'T', tf: .12, kind: 'story', ref: true },
+    { n: 4,  from: 'card-story',     fs: 'T', ff: .34, to: 'card-story',   ts: 'T', tf: .66, kind: 'story', cmd: 'us refine' },
+    { n: 5,  from: 'a-story-ac',     fs: 'R',        to: 'a-scn-us-sid',   ts: 'L',        kind: 'reg',   cmd: 'us apply' },
+    { n: 6,  from: 'a-scn-us-story', fs: 'L',        to: 'a-story-head',   ts: 'R', tf: .5, kind: 'reg',  ref: true },
+    { n: 7,  from: 'a-scn-service',  fs: 'B', ff: .15, to: 'a-arch-name',  ts: 'T', tf: .45, kind: 'arch' },
+    { n: 8,  from: 'a-scn-id',       fs: 'R',        to: 'a-tests-ref',    ts: 'L',        kind: 'code',  cmd: 'build tests' },
+    { n: 9,  from: 'a-arch-qg',      fs: 'T', ff: .55, to: 'card-tests',   ts: 'B', tf: .55, kind: 'arch' },
+    { n: 10, from: 'a-arch-path',    fs: 'T', ff: .85, to: 'card-svc',     ts: 'B', tf: .5, kind: 'arch' },
+    { n: 11, from: 'a-arch-env',     fs: 'B', ff: .3,  to: 'card-compose', ts: 'T', tf: .5, kind: 'arch' },
+    { n: 12, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
+    { n: 13, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
+    { n: 14, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
+    { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-prd',       ts: 'L', tf: .55, kind: 'cfg' },
+    { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
+  ];
+  const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
+
+  const cardOf = id => document.getElementById(id).closest('.card');
+  const labels = [];
+
+  function anchor(el, side, f) {
+    const r = el.getBoundingClientRect(), g = grid.getBoundingClientRect();
+    const x = r.left - g.left, y = r.top - g.top;
+    if (side === 'L') return { x: x,          y: y + r.height * f, dx: -1, dy: 0 };
+    if (side === 'R') return { x: x + r.width, y: y + r.height * f, dx: 1,  dy: 0 };
+    if (side === 'T') return { x: x + r.width * f, y: y,            dx: 0,  dy: -1 };
+    return               { x: x + r.width * f, y: y + r.height,     dx: 0,  dy: 1 };
+  }
+
+  function draw() {
+    svg.querySelectorAll('path.edge').forEach(p => p.remove());
+    labels.forEach(l => l.remove());
+    labels.length = 0;
+
+    const g = grid.getBoundingClientRect();
+    const cardRects = [...grid.querySelectorAll('.card')].map(c => {
+      const r = c.getBoundingClientRect();
+      return { l: r.left - g.left, t: r.top - g.top, r: r.right - g.left, b: r.bottom - g.top };
+    });
+    const overlapArea = box => cardRects.reduce((s, c) => {
+      const ox = Math.min(box.r, c.r) - Math.max(box.l, c.l);
+      const oy = Math.min(box.b, c.b) - Math.max(box.t, c.t);
+      return s + (ox > 0 && oy > 0 ? ox * oy : 0);
+    }, 0);
+
+    for (const e of EDGES) {
+      const a = anchor(document.getElementById(e.from), e.fs, e.ff ?? .5);
+      const b = anchor(document.getElementById(e.to),   e.ts, e.tf ?? .5);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const bow = (e.fs === e.ts) ? Math.min(34, Math.max(26, dist * .2))  // same-side loop bulges outward
+                                  : Math.min(110, Math.max(26, dist * .38));
+      const c1x = a.x + a.dx * bow, c1y = a.y + a.dy * bow;
+      const c2x = b.x + b.dx * bow, c2y = b.y + b.dy * bow;
+
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', `M ${a.x} ${a.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${b.x} ${b.y}`);
+      p.setAttribute('class', `edge k-${e.kind}${e.cmd ? ' flow' : ''}${e.ref ? ' ref' : ''}${e.kind === 'cfg' ? ' cfg' : ''}`);
+      p.setAttribute('marker-end', `url(#arr-${e.kind})`);
+      p.dataset.n = e.n;
+      p.dataset.cards = cardOf(e.from).id + ' ' + cardOf(e.to).id;
+      svg.appendChild(p);
+
+      const lab = document.createElement('div');
+      lab.className = e.cmd ? 'edge-label' : 'num-dot';
+      lab.style.setProperty('--lc', COLOR[e.kind]);
+      lab.textContent = e.cmd || String(e.n);
+      lab.dataset.n = e.n;
+      lab.dataset.cards = p.dataset.cards;
+      grid.appendChild(lab);
+      labels.push(lab);
+
+      // slide the label along the path to the spot clearest of cards
+      const L = p.getTotalLength();
+      const w = lab.offsetWidth, h = lab.offsetHeight;
+      let best = null;
+      for (const t of [.5, .44, .56, .38, .62, .32, .68, .26, .74, .2, .8]) {
+        const pt = p.getPointAtLength(L * t);
+        const area = overlapArea({ l: pt.x - w / 2, r: pt.x + w / 2, t: pt.y - h / 2, b: pt.y + h / 2 });
+        if (!best || area < best.area) best = { pt, area };
+        if (area === 0) break;
+      }
+      lab.style.left = best.pt.x + 'px';
+      lab.style.top = best.pt.y + 'px';
+    }
+  }
+
+  function setFocus(test) {
+    const on = !!test;
+    grid.classList.toggle('focused', on);
+    const hotCards = new Set();
+    svg.querySelectorAll('path.edge').forEach(p => {
+      const hot = on && test(p);
+      p.classList.toggle('hot', hot);
+      if (hot) p.dataset.cards.split(' ').forEach(c => hotCards.add(c));
+    });
+    labels.forEach(l => l.classList.toggle('hot', on && test(l)));
+    grid.querySelectorAll('.card').forEach(c =>
+      c.classList.toggle('hot', on && hotCards.has(c.id)));
+  }
+
+  grid.querySelectorAll('.card').forEach(card => {
+    const by = el => el.dataset.cards.split(' ').includes(card.id);
+    card.addEventListener('mouseenter', () => setFocus(by));
+    card.addEventListener('mouseleave', () => setFocus(null));
+    card.addEventListener('focus', () => setFocus(by));
+    card.addEventListener('blur', () => setFocus(null));
+  });
+
+  document.querySelectorAll('#joins tr[data-edge]').forEach(tr => {
+    const by = el => el.dataset.n === tr.dataset.edge;
+    tr.addEventListener('mouseenter', () => { tr.classList.add('hot'); setFocus(by); });
+    tr.addEventListener('mouseleave', () => { tr.classList.remove('hot'); setFocus(null); });
+  });
+
+  new ResizeObserver(draw).observe(grid);
+  addEventListener('resize', draw);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+  draw();
+})();
+</script>
+</body>
+</html>

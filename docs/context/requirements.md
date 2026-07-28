@@ -44,3 +44,12 @@ _transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.m
 - ~~For checklist-branch BDD tests, derive the coverage universe from the entire shipped checklist, but have each coverage fixture override that checklist with only the single step it targets; implement the change with the same Codex consultation approach used for the original solution (requested 2026-07-25T21:43:32Z).~~ _(superseded 2026-07-25)_
 - For checklist-branch BDD tests, continue deriving the coverage universe from the full shipped checklist and giving each fixture only its targeted step, but eliminate copied checklist prompt and rationale text: during fixture preparation, generate the one-step checklist from the live shipped checklist plus fixture-provided information; plan the change, have Codex critique the plan, incorporate relevant suggestions, implement it, then have Codex review the implementation and apply relevant findings (requested 2026-07-26T06:47:47Z).
 - Remove `bdd_guidelines` completely from TrueBDD, including its configuration, checklist and document references, fixture stubs, and documentation mentions (requested 2026-07-28T06:41:47Z).
+
+## 2026-07-28 — The task corrected the intended host-project document/source map, validated its HTML visualization, and produced a Mermaid Markdown counterpart.
+
+_transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md_
+
+- [correction] Model host-project production code as service-specific directories under `src/` (for example, `src/service1`), not as `services/<name>/` (corrected 2026-07-28T15:20:28Z).
+- [correction] Structure `architecture.yaml` with `services:` and an `environment:` section split into `dev:` and `prod:`; it must declare the path to required `docker-compose.yaml` and, when present, optional `docker-compose.dev.yaml` (corrected 2026-07-28T15:20:28Z).
+- [correction] Treat `vocabulary` as the definition of allowed BDD language: actions map phrases to concrete meanings, forbidden qualifiers enumerate vague wording, and forbidden actions include replacements; prefer the PRD for forbidden-action/replacement material while allowing it in architecture (corrected 2026-07-28T15:20:28Z).
+- Populate the TrueBDD repository’s root `.mcp.json` with MCP server configurations copied from neighboring repositories (requested 2026-07-28T15:48:13Z).

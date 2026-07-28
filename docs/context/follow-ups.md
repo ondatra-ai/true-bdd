@@ -73,3 +73,10 @@ _transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.m
 - The clarified host-document restructuring, live BDD validation, coverage-baseline regeneration, full gates, and remaining commits were completed, so no restructuring follow-up remains (verified 2026-07-27T21:58:31Z).
 - ~~Finish the affected BDD fixture validation, rescan coverage, and regenerate the coverage baseline after removing `bdd_guidelines`; the rerun was still underway when this transcript chunk ended (requested 2026-07-28T06:41:47Z; outstanding 2026-07-28T06:43:49Z).~~ _(superseded 2026-07-25)_
 - The affected BDD fixture validation, coverage rescan, and coverage-baseline regeneration after removing `bdd_guidelines` were completed, so no follow-up remains (verified 2026-07-28T07:03:00Z).
+
+## 2026-07-28 — The task removed the Historian MCP entry and then requested a Playwright inspection of the latest HTML relationship visualization.
+
+_transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md_
+
+- ~~Open the most recently created HTML relationship visualization in Playwright and inspect how it looks; the transcript ends before this request is addressed (requested 2026-07-28T15:50:03Z).~~ _(superseded 2026-07-28)_
+- The requested Playwright inspection of the latest HTML relationship visualization was completed and reported, so no inspection follow-up remains (verified 2026-07-28T15:51:29Z).

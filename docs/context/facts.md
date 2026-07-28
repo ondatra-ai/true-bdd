@@ -35,3 +35,10 @@ _transcript: 20260725-185231-8244ea0b-now-i-want-you-to-implement-bdd-tests-to.m
 - The `us-refine-fix-step-qualifier` fixture can fail nondeterministically because the fix applier rewrites the whole story and may drop unrelated `and:` lines; a clean rerun showed that the failure was not caused by the document-layout migration (observed and rerun-verified 2026-07-27T21:58:31Z).
 - The original host project `awesome-claude-mcp` retains a substantive BDD scenario-writing guide at `docs/architecture/bdd-guidelines.md`; it was left behind when only `scripts/bdd-cli` was imported into TrueBDD, explaining why this repository’s fixtures contain placeholders instead (verified by source and lineage inspection 2026-07-28T06:41:31Z).
 - The `us-refine-happy-path` fixture can fail nondeterministically when its binary-outcome judge treats AC-4's requested summary length as subjective; the unchanged fixture passed cleanly on rerun (observed and rerun-verified 2026-07-28T07:03:00Z).
+
+## 2026-07-28 — The task corrected the intended host-project document/source map, validated its HTML visualization, and produced a Mermaid Markdown counterpart.
+
+_transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md_
+
+- GitHub Markdown sanitization prevents faithfully embedding an interactive HTML visualization because scripts, styles, and inline styling are stripped; fenced Mermaid diagrams are the supported Markdown-native alternative and were locally render-verified (researched and verified 2026-07-28T15:42:28Z).
+- The available Playwright browser could not open local `file:` URLs directly; serving the directory over localhost enabled the HTML inspection (observed 2026-07-28T15:51:29Z).
