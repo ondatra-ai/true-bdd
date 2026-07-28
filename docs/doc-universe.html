@@ -142,7 +142,11 @@ h2 {
   transition: opacity var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
   align-self: start;
 }
-.card:focus-visible { outline: none; border-color: var(--border-strong); }
+.card:focus-visible {
+  outline: 2px solid var(--border-strong);
+  outline-offset: 2px;
+  border-color: var(--border-strong);
+}
 .card.c-story { --cat: var(--c-story); }
 .card.c-reg   { --cat: var(--c-reg); }
 .card.c-arch  { --cat: var(--c-arch); }
@@ -509,7 +513,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <p class="sub">The pipeline runs left to right through the map: each command consumes the previous
     command's output. Every command validates its subject against its own checklist, and with
     <code>--fix</code> drives a Claude-mediated loop until the walk is clean.</p>
-    <div class="tbl-scroll">
+    <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
       <table>
         <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
         <tbody>
@@ -554,7 +558,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <p class="slabel">04—Joins</p>
     <h2>Every cross-reference, with real values</h2>
     <p class="sub">Example values come from the BDD fixtures. Numbers match the arrows on the map.</p>
-    <div class="tbl-scroll">
+    <div class="tbl-scroll" tabindex="0" role="region" aria-label="Cross-reference joins">
       <table id="joins">
         <thead><tr><th>#</th><th>From</th><th>To</th><th>How it joins</th></tr></thead>
         <tbody>

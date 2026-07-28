@@ -11,7 +11,7 @@ you can grep for.
 
 The documents form a strict containment chain, each level owning only its own detail:
 
-```
+```text
 prd  ⟷  epics  ⟷  user stories  ⟷  scenarios
 ```
 
@@ -35,7 +35,7 @@ story scenarios → registry by `us apply`.
 The engine ships `true-bdd/` and `templates/`; the host authors everything under `docs/`,
 `src/`, and `tests/`.
 
-```
+```text
 host project root
 ├── true-bdd/
 │   ├── true-bdd.yaml            engine config — paths to everything else
