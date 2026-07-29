@@ -4,10 +4,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"unicode/utf8"
 
 	storymodel "github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
 	"gopkg.in/yaml.v3"
 )
+
+// retainedRawCap bounds the story `raw` text RETAINED in the snapshot
+// (plan §1a). It applies ONLY to what is kept for the modal's Raw tab; the
+// scanner always reads and decodes the COMPLETE file, so validity/content
+// never flip on a truncated prefix. A file over the cap keeps a valid-UTF-8
+// prefix and sets raw_truncated.
+const retainedRawCap = 256 * 1024
 
 // lineageIDFormat mirrors the engine's us apply lineage id derivation
 // (`%s-%03d`, story_scenario_parser.go) so the scanner counts against the
@@ -39,103 +47,176 @@ type storyFile struct {
 type storyRowInput struct {
 	epicNumber int
 	position   int
-	declaredID string
+	declared   storymodel.Story
 	storiesDir string // absolute
 	storiesRel string // folder-relative, matches registry story paths
 	lineage    lineageIndex
 }
 
+// storyResolution is the structured result of resolving one epic story row
+// to its file(s): the created status, match count / source file, the parsed
+// file (valid only for created=one), the retained (possibly-truncated) raw
+// text, the extracted content, and the parse error (created=invalid).
+type storyResolution struct {
+	created      string
+	matchCount   int
+	sourceFile   string
+	file         storyFile
+	raw          string
+	rawTruncated bool
+	content      *Content
+	parseErr     string
+}
+
 // scanStoryRow resolves the story file for one epic row and computes its
-// created / applied / refined cells and identity flags (plan §3.4). The
-// epic-level duplicate_declared_id flag is applied by the caller.
+// created / applied / refined cells, identity flags, and the review-modal
+// content (plan §1/§1b). Every declared row also carries the epic-declared
+// content fallback so it is openable even when its file is missing,
+// ambiguous, or invalid. The epic-level duplicate_declared_id flag is
+// applied by the caller.
 func scanStoryRow(input storyRowInput) Story {
+	declared := input.declared
 	story := Story{
-		CreateID:   fmt.Sprintf("%d.%d", input.epicNumber, input.position),
-		EpicNumber: input.epicNumber,
-		Position:   input.position,
-		DeclaredID: input.declaredID,
-		Refined:    RefinedNotRecorded,
+		CreateID:        fmt.Sprintf("%d.%d", input.epicNumber, input.position),
+		EpicNumber:      input.epicNumber,
+		Position:        input.position,
+		DeclaredID:      declared.ID,
+		Refined:         RefinedNotRecorded,
+		DeclaredTitle:   declared.Title,
+		DeclaredStatus:  declared.Status,
+		DeclaredContent: declaredContent(declared),
 	}
 
-	created, file, ok := resolveStoryFile(input.storiesDir, input.declaredID)
-	story.Created = created
+	resolution := resolveStory(input.storiesDir, declared.ID)
+	story.Created = resolution.created
+	story.MatchCount = resolution.matchCount
+	story.SourceFile = resolution.sourceFile
+	story.Raw = resolution.raw
+	story.RawTruncated = resolution.rawTruncated
+	story.Error = resolution.parseErr
 
-	if !ok {
-		story.Applied = Applied{Status: AppliedUnknown, Reason: createdReason(created)}
+	if resolution.created != CreatedOne {
+		story.Applied = Applied{Status: AppliedUnknown, Reason: createdReason(resolution.created)}
 
 		return story
 	}
 
-	story.FileID = file.internalID
-	story.Flags = storyFlags(file, input.declaredID)
-	story.Applied = countApplied(file, input.storiesRel, input.lineage)
+	story.FileID = resolution.file.internalID
+	story.Content = resolution.content
+	story.Flags = storyFlags(resolution.file, declared.ID)
+	story.Applied = countApplied(resolution.file, input.storiesRel, input.lineage)
 
 	return story
 }
 
-// resolveStoryFile globs <storiesDir>/<declaredID>-*.yaml (mirroring the
-// StoryLoader) and parses the single match. It returns the created status,
-// the parsed file, and whether the file resolved to exactly one parseable
-// document.
-func resolveStoryFile(storiesDir, declaredID string) (string, storyFile, bool) {
+// resolveStory globs <storiesDir>/<declaredID>-*.yaml (mirroring the
+// StoryLoader), then reads and parses the single match — returning a
+// structured result (matches, source file, raw, content, error) instead of
+// discarding them, so the review modal can render the file verbatim (Raw
+// tab), the extracted content (Review tab), and honest ambiguity/parse
+// states.
+func resolveStory(storiesDir, declaredID string) storyResolution {
 	if declaredID == "" {
-		return CreatedMissing, storyFile{}, false
+		return storyResolution{created: CreatedMissing}
 	}
 
 	matches, err := filepath.Glob(filepath.Join(storiesDir, declaredID+"-*.yaml"))
 	if err != nil || len(matches) == 0 {
-		return CreatedMissing, storyFile{}, false
+		return storyResolution{created: CreatedMissing}
 	}
 
 	if len(matches) > 1 {
-		return CreatedAmbiguous, storyFile{}, false
+		return storyResolution{created: CreatedAmbiguous, matchCount: len(matches)}
 	}
 
-	file, err := parseStoryFile(matches[0])
+	resolution := storyResolution{matchCount: 1, sourceFile: filepath.Base(matches[0])}
+
+	data, err := os.ReadFile(matches[0]) //nolint:gosec // path is a globbed host story file
 	if err != nil {
-		return CreatedInvalid, storyFile{}, false
+		resolution.created = CreatedInvalid
+		resolution.parseErr = err.Error()
+
+		return resolution
 	}
 
-	return CreatedOne, file, true
+	// Retain a (possibly truncated) raw copy for the modal's Raw tab; decode
+	// the COMPLETE file regardless (plan §1a).
+	resolution.raw, resolution.rawTruncated = retainRaw(data)
+
+	file, content, err := parseStory(matches[0], data)
+	if err != nil {
+		resolution.created = CreatedInvalid
+		resolution.parseErr = err.Error()
+
+		return resolution
+	}
+
+	resolution.created = CreatedOne
+	resolution.file = file
+	resolution.content = content
+
+	return resolution
 }
 
-// parseStoryFile reads and decodes a story file into the fields the
-// scanner reasons about. Honest surface: the story identity and AC list
-// are taken from the REAL typed domain model (storymodel.StoryDocument),
-// whose ScenarioStep/StepStatement decoders reject malformed step shapes
-// (a scalar step like `- 42`, a bad `{and|but}` modifier). A story the
-// real model rejects fails here and is surfaced as created=invalid
-// (applied unknown(invalid)) — the same honest state resolveStoryFile
-// already gives a syntactically unparseable file — instead of a
-// misleading created=one with a counted lineage. A deprecated-format
-// story still decodes cleanly here (its ACs are well-formed) and keeps
-// its own apply-ineligibility (deprecated_format) via the legacy probe.
-func parseStoryFile(path string) (storyFile, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // path is a globbed host story file
-	if err != nil {
-		return storyFile{}, fmt.Errorf("read story file %s: %w", path, err)
+// retainRaw returns the story text retained for the modal Raw tab: the
+// whole file when within the cap, else a valid-UTF-8 prefix (cut on a rune
+// boundary) with truncated=true.
+func retainRaw(data []byte) (string, bool) {
+	if len(data) <= retainedRawCap {
+		return string(data), false
 	}
 
+	prefix := data[:retainedRawCap]
+	// Back off any trailing incomplete rune so the retained prefix is valid
+	// UTF-8 (a multibyte sequence split by the byte cap decodes as
+	// RuneError with size <= 1).
+	for len(prefix) > 0 {
+		last, size := utf8.DecodeLastRune(prefix)
+		if last == utf8.RuneError && size <= 1 {
+			prefix = prefix[:len(prefix)-1]
+
+			continue
+		}
+
+		break
+	}
+
+	return string(prefix), true
+}
+
+// parseStory reads and decodes a story file into the fields the scanner
+// reasons about PLUS its render-ready content. Honest surface: the story
+// identity, AC list, and content are taken from the REAL typed domain model
+// (storymodel.StoryDocument), whose ScenarioStep/StepStatement decoders
+// reject malformed step shapes (a scalar step like `- 42`, a bad
+// {and|but} modifier). A story the real model rejects fails here and is
+// surfaced as created=invalid (applied unknown(invalid)) instead of a
+// misleading created=one with a counted lineage. A deprecated-format story
+// still decodes cleanly here (its ACs are well-formed) and keeps its own
+// apply-ineligibility (deprecated_format) via the legacy probe.
+func parseStory(path string, data []byte) (storyFile, *Content, error) {
 	var legacy legacyStoryProbe
 
-	err = yaml.Unmarshal(data, &legacy)
+	err := yaml.Unmarshal(data, &legacy)
 	if err != nil {
-		return storyFile{}, fmt.Errorf("parse story file %s: %w", path, err)
+		return storyFile{}, nil, fmt.Errorf("parse story file %s: %w", path, err)
 	}
 
 	var typed storymodel.StoryDocument
 
 	err = yaml.Unmarshal(data, &typed)
 	if err != nil {
-		return storyFile{}, fmt.Errorf("validate story file %s against typed model: %w", path, err)
+		return storyFile{}, nil, fmt.Errorf("validate story file %s against typed model: %w", path, err)
 	}
 
-	return storyFile{
+	file := storyFile{
 		basename:   filepath.Base(path),
 		internalID: typed.Story.ID,
 		acCount:    len(typed.Story.AcceptanceCriteria),
 		deprecated: len(legacy.Scenarios.TestScenarios) > 0,
-	}, nil
+	}
+
+	return file, contentFromStory(typed.Story), nil
 }
 
 // storyFlags computes the per-row identity flags for a resolved story

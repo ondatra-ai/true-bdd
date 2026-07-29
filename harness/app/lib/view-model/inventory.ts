@@ -11,6 +11,7 @@
 
 import type {
   InventoryApplied,
+  InventoryContent,
   InventoryEpic,
   InventorySnapshot,
   InventoryStory,
@@ -68,6 +69,36 @@ export function documentChips(snapshot: InventorySnapshot | null): DocumentChip[
 /** True when the configured architecture path diverges from the default. */
 export function pathMismatch(snapshot: InventorySnapshot | null): boolean {
   return snapshot?.architecture_path_mismatch === true;
+}
+
+/**
+ * Maps a document/story/epic status to an S&F status TONE for its chip
+ * (colour lives only in chips): ok (green square), error (red), warn
+ * (yellow), or neutral (monochrome). Purely presentational; the tests key
+ * on `data-status`, never the colour.
+ */
+export type StatusTone = "ok" | "error" | "warn" | "neutral";
+
+export function statusTone(status: string): StatusTone {
+  switch (status) {
+    case "present":
+    case "one":
+    case "counted":
+    case "parseable":
+    case "connected":
+      return "ok";
+    case "invalid":
+    case "not_a_dir":
+    case "error":
+      return "error";
+    case "ambiguous":
+    case "unknown":
+    case "present_empty":
+    case "unreachable":
+      return "warn";
+    default:
+      return "neutral";
+  }
 }
 
 // ── Epics ──
@@ -218,4 +249,243 @@ export function storyDispatch(story: StoryRowView, action: StoryAction): StoryDi
     case "apply":
       return { command: "us-apply", story_id: story.declaredId };
   }
+}
+
+// ── Epic accordion sections (hierarchy rework, plan §3) ──
+
+export interface EpicSectionView {
+  file: string;
+  number: number;
+  /** Epic.Title, falling back to the filename when unparseable/empty. */
+  title: string;
+  status: string;
+  /** A toggle is rendered ONLY when a story panel exists (has rows). */
+  hasPanel: boolean;
+  /** Absence from the collapsed set = expanded (default); new epics expand. */
+  collapsed: boolean;
+  stories: { createId: string }[];
+}
+
+/**
+ * Epic sections in SCANNER ORDER (no re-sort) with the panel-existence rule
+ * and the collapsed-set behavior (absence = expanded; a new epic
+ * auto-expands). The UI keys on `(epic.file, position)`, so duplicate epic
+ * numbers never collide (plan §3).
+ */
+export function epicSections(snapshot: InventorySnapshot | null, collapsed?: Set<string>): EpicSectionView[] {
+  if (!snapshot) {
+    return [];
+  }
+
+  return (snapshot.epics ?? []).map((epic) => {
+    const stories = epic.stories ?? [];
+
+    return {
+      file: epic.file,
+      number: epic.number,
+      title: epic.title && epic.title.length > 0 ? epic.title : epic.file,
+      status: epic.status,
+      hasPanel: stories.length > 0,
+      collapsed: collapsed?.has(epic.file) ?? false,
+      stories: stories.map((story) => ({ createId: story.create_id })),
+    };
+  });
+}
+
+// ── Story review modal model (native <dialog>, plan §3) ──
+
+export type ModalSource = "file" | "declared" | "identity";
+
+export interface ModalStatement {
+  asA: string;
+  iWant: string;
+  soThat: string;
+}
+
+export interface ModalAc {
+  id: string;
+  description: string;
+  steps: { kind: string; text: string }[];
+}
+
+export interface ModalNotice {
+  reason: string;
+}
+
+export interface StoryModalView {
+  storyId: string;
+  title: string;
+  status: string;
+  source: ModalSource;
+  defaultTab: "review" | "raw";
+  errorMode: boolean;
+  review: {
+    enabled: boolean;
+    statement: ModalStatement | null;
+    acceptanceCriteria: ModalAc[];
+  };
+  raw: { available: boolean; text: string; truncated: boolean };
+  chips: { created: string; applied: { text: string; status: string }; refined: string };
+  notices: ModalNotice[];
+  changedOnDisk: boolean;
+}
+
+/**
+ * The render-ready story review modal (plan §3, README-testids). It resolves
+ * the file→declared→identity content fallback chain (so every declared row
+ * is openable), the invalid-story Raw+error mode with a declared-content
+ * Review fallback (Review is enabled IFF declared content exists), the
+ * lifecycle chips, the statement/AC/step normalization, and every
+ * availability/omission/freshness notice + the changed-on-disk signal.
+ */
+export function storyModalModel(
+  story: InventoryStory,
+  _epic: InventoryEpic,
+  flags?: { changedOnDisk?: boolean },
+): StoryModalView {
+  const reviewContent: InventoryContent | null = story.content ?? story.declared_content ?? null;
+  const source: ModalSource = story.content ? "file" : story.declared_content ? "declared" : "identity";
+  const errorMode = story.created === "invalid";
+
+  const rawText = story.raw ?? "";
+  const rawAvailable = rawText.length > 0 && story.raw_omitted !== true;
+
+  const status =
+    story.content?.status || story.declared_status || story.declared_content?.status || "unknown";
+  // Heading id/title fallback chain (finding 5a): file-content id/title →
+  // declared id/title → create identity / "unknown". data-story-id stays the
+  // create id (selector compatibility) — see StoryModal.
+  const storyId = story.content?.id || story.declared_id || story.create_id || "unknown";
+  const title = story.content?.title || story.declared_title || story.declared_content?.title || "unknown";
+
+  return {
+    storyId,
+    title,
+    status,
+    source,
+    defaultTab: errorMode ? "raw" : "review",
+    errorMode,
+    review: {
+      enabled: reviewContent !== null,
+      statement: reviewContent ? statementOf(reviewContent) : null,
+      acceptanceCriteria: reviewContent ? reviewContent.acceptance_criteria.map(modalAc) : [],
+    },
+    raw: { available: rawAvailable, text: rawText, truncated: story.raw_truncated === true },
+    chips: {
+      created: story.created,
+      applied: appliedChip(story.applied),
+      refined: refinedText(story.refined),
+    },
+    notices: modalNotices(story, errorMode, rawAvailable, flags?.changedOnDisk === true),
+    changedOnDisk: flags?.changedOnDisk === true,
+  };
+}
+
+function statementOf(content: InventoryContent): ModalStatement {
+  return {
+    asA: content.statement?.as_a ?? "",
+    iWant: content.statement?.i_want ?? "",
+    soThat: content.statement?.so_that ?? "",
+  };
+}
+
+function modalAc(ac: InventoryContent["acceptance_criteria"][number]): ModalAc {
+  return {
+    id: ac.id,
+    description: ac.description,
+    steps: (ac.steps ?? []).map((step) => ({ kind: step.kind, text: step.text })),
+  };
+}
+
+function appliedChip(applied: InventoryApplied): { text: string; status: string } {
+  const cell = appliedCell(applied);
+
+  return { text: cell.text, status: cell.status };
+}
+
+/**
+ * Every availability / omission / freshness notice the modal surfaces
+ * (README-testids data-reason vocabulary). Availability (not_created /
+ * ambiguous) reflects the created state; the omission notices reflect the
+ * degrade ladder; invalid_without_raw is the terminal invalid-and-no-raw
+ * state; changed_on_disk is the generation-change signal.
+ */
+function modalNotices(
+  story: InventoryStory,
+  errorMode: boolean,
+  rawAvailable: boolean,
+  changedOnDisk: boolean,
+): ModalNotice[] {
+  const notices: ModalNotice[] = [];
+
+  if (story.created === "missing") {
+    notices.push({ reason: "not_created" });
+  } else if (story.created === "ambiguous") {
+    notices.push({ reason: "ambiguous" });
+  }
+
+  if (errorMode && !rawAvailable) {
+    notices.push({ reason: "invalid_without_raw" });
+  } else if (story.raw_omitted && story.content_omitted) {
+    notices.push({ reason: "both_omitted" });
+  } else if (story.content_omitted) {
+    notices.push({ reason: "content_omitted" });
+  } else if (story.raw_omitted) {
+    notices.push({ reason: "raw_omitted" });
+  }
+
+  if (story.raw_truncated) {
+    notices.push({ reason: "raw_truncated" });
+  }
+
+  if (changedOnDisk) {
+    notices.push({ reason: "changed_on_disk" });
+  }
+
+  return notices;
+}
+
+// ── Inventory truncation banner (plan §1a/§3) ──
+
+/**
+ * Whether the degraded-snapshot banner shows: the promoted snapshot was
+ * truncated to fit the request budget, any story row lost its raw/content,
+ * or the whole snapshot is unavailable (limit_too_small).
+ */
+export function inventoryTruncated(snapshot: InventorySnapshot | null): boolean {
+  if (!snapshot) {
+    return false;
+  }
+
+  if (snapshot.snapshot_truncated === true || (snapshot.unavailable ?? "").length > 0) {
+    return true;
+  }
+
+  if ((snapshot.stories_omitted ?? 0) > 0) {
+    return true;
+  }
+
+  return (snapshot.epics ?? []).some((epic) =>
+    (epic.stories ?? []).some((story) => story.raw_omitted === true || story.content_omitted === true),
+  );
+}
+
+// ── Client-side inventory generation reconciliation (plan §2a) ──
+
+/**
+ * Whether the loaded inventory is behind the target generation (from the
+ * status poll) and must be refetched. Never true when the loaded generation
+ * already caught up or overshot a reordered/older status.
+ */
+export function inventoryStale(targetGeneration: number, loadedGeneration: number): boolean {
+  return targetGeneration > loadedGeneration;
+}
+
+/**
+ * Reconciles the loaded generation against an incoming inventory response's
+ * generation, never regressing: a reordered/older response keeps the loaded
+ * generation (plan §2a retry-until-match).
+ */
+export function reconcileInventoryGeneration(loaded: number, incoming: number): number {
+  return Math.max(loaded, incoming);
 }

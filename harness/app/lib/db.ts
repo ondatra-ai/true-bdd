@@ -183,6 +183,28 @@ function migrateRunColumns(db: Database.Database): void {
   }
 }
 
+// Additive columns on `sessions` (plan §1a / finding 1). Idempotent like the
+// run columns.
+//
+// - inventory_unavailable: the OUT-OF-BAND terminal cannot-fit reason (e.g.
+//   `limit_too_small`) the remote reports on its poll when the server's
+//   inventory limit is below the minimum viable request, so the state
+//   reaches the server even though no inventory upload can ever be accepted.
+const SESSION_COLUMNS: { name: string; ddl: string }[] = [
+  { name: "inventory_unavailable", ddl: "ALTER TABLE sessions ADD COLUMN inventory_unavailable TEXT" },
+];
+
+/** Applies the additive `sessions` columns, ignoring already-present ones. */
+function migrateSessionColumns(db: Database.Database): void {
+  for (const column of SESSION_COLUMNS) {
+    try {
+      db.exec(column.ddl);
+    } catch {
+      // Duplicate column — the migration already ran. Idempotent no-op.
+    }
+  }
+}
+
 /**
  * Opens (creating parent dirs), configures, and migrates a connection at
  * `dbPath`. Does NOT arm retention — that is the singleton's job, so
@@ -197,6 +219,7 @@ export function openDatabase(dbPath: string): Database.Database {
   opened.pragma("foreign_keys = ON");
   opened.exec(MIGRATIONS);
   migrateRunColumns(opened);
+  migrateSessionColumns(opened);
 
   return opened;
 }

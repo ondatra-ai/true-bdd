@@ -51,12 +51,18 @@ export class ProtocolEnv {
     this.api = api;
   }
 
-  /** Starts a fresh server (own DB + port) in a test-scoped dir. */
-  static async start(slug: string): Promise<ProtocolEnv> {
+  /**
+   * Starts a fresh server (own DB + port) in a test-scoped dir. Pass
+   * `serverEnv` to inject extra environment into the server process —
+   * the degraded-inventory P9 case sets a tiny MAX_INVENTORY_REQUEST_BYTES
+   * to exercise the remote's fit-to-budget path (plan §1a/§4.3).
+   */
+  static async start(slug: string, options: { serverEnv?: Record<string, string> } = {}): Promise<ProtocolEnv> {
     const dir = mkdirUnderSuiteRoot(slug);
     const server = new ServerController({
       dbPath: path.join(dir, "db", "harness.db"),
       logDir: path.join(dir, "server"),
+      env: options.serverEnv,
     });
     await server.start();
     const api = await HarnessApi.create(server.baseURL);

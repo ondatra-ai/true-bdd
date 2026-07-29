@@ -5,7 +5,6 @@ import Link from "next/link";
 import { postJson, usePoll } from "./lib/use-poll";
 import { inventoryFreshness } from "./lib/view-model/session";
 import type { SessionSummary } from "./lib/view-model/types";
-import { button, cell, h1, page, statusColor, table } from "./components/styles";
 
 /** Formats an inventory age (ms) as a compact `Ns` / `Nm` string. */
 function formatAge(ms: number | null): string {
@@ -35,44 +34,59 @@ export default function SessionsPage() {
   }
 
   return (
-    <main style={page}>
-      <h1 style={h1}>TrueBDD Harness — Sessions</h1>
-      {sessions.length === 0 ? <p style={{ color: "#888" }}>No connected remotes yet.</p> : null}
+    <main className="sf-session">
+      <div className="sf-header">
+        <h1 className="sf-title">TrueBDD Harness</h1>
+        <p className="sf-meta">
+          <span className="sf-meta-label">Connected remotes</span> {sessions.length}
+        </p>
+      </div>
+      <h2 className="sf-section-label">
+        <span className="num">01</span>—Sessions
+      </h2>
+      {sessions.length === 0 ? <p className="sf-empty">No connected remotes yet.</p> : null}
       {sessions.length > 0 ? (
         <div style={{ overflowX: "auto" }}>
-          <table style={table}>
+          <table className="sf-stories">
             <thead>
               <tr>
-                <th style={cell}>folder</th>
-                <th style={cell}>pid</th>
-                <th style={cell}>reachability</th>
-                <th style={cell}>active run</th>
-                <th style={cell}>inv. gen</th>
-                <th style={cell}>inv. age</th>
-                <th style={cell}>connection</th>
+                <th>folder</th>
+                <th>pid</th>
+                <th>reachability</th>
+                <th>active run</th>
+                <th>inv. gen</th>
+                <th>inv. age</th>
+                <th>connection</th>
               </tr>
             </thead>
             <tbody>
               {sessions.map((session) => (
                 <tr key={session.id} data-testid="session-row" data-session-id={session.id} data-folder={session.folder}>
-                  <td style={cell}>
+                  <td>
                     <Link href={`/sessions/${session.id}`} data-testid="session-folder">
                       {session.folder}
                     </Link>
                   </td>
-                  <td style={cell}>{session.pid}</td>
-                  <td style={{ ...cell, color: statusColor(session.reachability === "connected" ? "present" : "invalid") }}>
-                    <span data-testid="session-reachability">{session.reachability}</span>
+                  <td>{session.pid}</td>
+                  <td>
+                    <span
+                      className="sf-chip"
+                      data-tone={session.reachability === "connected" ? "ok" : "error"}
+                      data-testid="session-reachability"
+                    >
+                      <span className="sq" />
+                      {session.reachability}
+                    </span>
                   </td>
-                  <td style={cell}>
+                  <td>
                     {session.active_run_id ? (
                       <Link href={`/runs/${session.active_run_id}`}>active</Link>
                     ) : (
-                      <span style={{ color: "#888" }}>idle</span>
+                      <span className="sf-muted">idle</span>
                     )}
                   </td>
-                  <td style={cell}>{session.inventory_generation}</td>
-                  <td style={cell}>
+                  <td>{session.inventory_generation}</td>
+                  <td>
                     {(() => {
                       const freshness = inventoryFreshness(session);
 
@@ -83,8 +97,13 @@ export default function SessionsPage() {
                       );
                     })()}
                   </td>
-                  <td style={cell}>
-                    <button type="button" data-testid="test-connection" onClick={() => void testConnection(session.id)} style={button}>
+                  <td>
+                    <button
+                      type="button"
+                      data-testid="test-connection"
+                      onClick={() => void testConnection(session.id)}
+                      className="sf-btn sf-btn-sm"
+                    >
                       Test connection
                     </button>
                   </td>

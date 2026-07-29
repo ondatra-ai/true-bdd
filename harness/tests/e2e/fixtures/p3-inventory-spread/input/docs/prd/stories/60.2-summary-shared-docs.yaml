@@ -29,4 +29,4 @@ story:
                 - the Claude User asks Claude to summarize that document
             - then:
                 - Claude displays the message 'This document is not shared with your account'
-                - and: Claude does not display any content from the document
+                - but: Claude does not display any content from the document

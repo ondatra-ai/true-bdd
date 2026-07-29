@@ -1,8 +1,18 @@
 /**
- * P4 (plan §4.3) — inventory matrix: PARAMETERIZED independent
- * fixture trees, one per degradation class of plan §3.4's identity
- * model. Each case is its own test() over its own fixture, server,
- * and remote, so every class fails (and later passes) independently.
+ * P4 (plan §4.3) — inventory matrix: PARAMETERIZED independent fixture
+ * trees, one per degradation class of plan §3.4's identity model. Each
+ * case is its own test() over its own fixture, server, and remote.
+ *
+ * REWRITTEN for the epic→story hierarchy rework: the NINE hierarchy cases
+ * (epic-malformed … story-empty-internal-id) now resolve their epic/story
+ * rows THROUGH an `epic-section` wrapper, with story rows SCOPED to their
+ * section — collision-safe for the duplicate-epic-number case where the
+ * position-derived create id `7.1` exists in BOTH sections. A new
+ * noncanonical-filename browser case pins the header+flag/no-toggle/no-rows
+ * contract previously covered only by Go honesty tests. The SIX
+ * non-hierarchy cases (config-invalid, stories-not-a-dir, checklist-missing,
+ * checklist-invalid, registry-present-empty, architecture-path-mismatch)
+ * are UNCHANGED and stay green.
  *
  * The data-status / data-reason vocabularies asserted here are the
  * contract — see helpers/README-testids.md.
@@ -11,7 +21,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ProtocolEnv } from "./helpers/protocol-env";
-import { TID, epicRow, gotoSession, inventoryDoc, storyRow } from "./helpers/ui";
+import { TID, epicSection, gotoSession, inventoryDoc, storyRow, storyRowIn } from "./helpers/ui";
 
 let env: ProtocolEnv | undefined;
 
@@ -36,7 +46,8 @@ interface MatrixCase {
   assert: (page: Page) => Promise<void>;
 }
 
-const CASES: MatrixCase[] = [
+// ── SIX non-hierarchy cases — UNCHANGED (stay green) ──
+const NON_HIERARCHY_CASES: MatrixCase[] = [
   {
     fixture: "p4-config-invalid",
     title: "invalid true-bdd.yaml renders the config chip as invalid",
@@ -68,112 +79,6 @@ const CASES: MatrixCase[] = [
     },
   },
   {
-    fixture: "p4-epic-malformed",
-    title: "an unparseable epic renders its epic row as invalid",
-    assert: async (page) => {
-      const row = epicRow(page, "epic-70-broken.yaml");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row).toHaveAttribute("data-status", "invalid");
-    },
-  },
-  {
-    fixture: "p4-epic-duplicate-numbers",
-    title: "duplicate epic filename numbers flag BOTH epic rows",
-    assert: async (page) => {
-      const alpha = epicRow(page, "epic-07-alpha.yaml");
-      const beta = epicRow(page, "epic-07-beta.yaml");
-      await expect(alpha).toBeVisible(CHIP_TIMEOUT);
-      await expect(alpha.getByTestId(TID.epicFlagDuplicateNumber)).toBeVisible();
-      await expect(beta.getByTestId(TID.epicFlagDuplicateNumber)).toBeVisible();
-    },
-  },
-  {
-    fixture: "p4-epic-id-mismatch",
-    title: "epic filename↔document id mismatch is flagged; the identity tuple is exposed",
-    assert: async (page) => {
-      const epic = epicRow(page, "epic-42-identity-mismatch.yaml");
-      await expect(epic).toBeVisible(CHIP_TIMEOUT);
-      await expect(epic.getByTestId(TID.epicFlagIdMismatch)).toBeVisible();
-
-      // Create id is POSITION-derived from the FILENAME number (42.1);
-      // the tuple exposes the declared (77.5) and file-internal (88.9) ids.
-      const story = storyRow(page, "42.1");
-      await expect(story).toBeVisible();
-      await expect(story).toHaveAttribute("data-declared-id", "77.5");
-      await expect(story).toHaveAttribute("data-file-id", "88.9");
-      await expect(story.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
-    },
-  },
-  {
-    fixture: "p4-story-duplicate-ids",
-    title: "duplicate declared story ids flag BOTH position-derived rows",
-    assert: async (page) => {
-      const first = storyRow(page, "70.1");
-      const second = storyRow(page, "70.2");
-      await expect(first).toBeVisible(CHIP_TIMEOUT);
-      await expect(first.getByTestId(TID.storyFlagDuplicateDeclaredId)).toBeVisible();
-      await expect(second.getByTestId(TID.storyFlagDuplicateDeclaredId)).toBeVisible();
-    },
-  },
-  {
-    fixture: "p4-story-ambiguous-files",
-    title: "two files matching the story glob render created ambiguous",
-    assert: async (page) => {
-      const row = storyRow(page, "70.1");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "ambiguous");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "ambiguous");
-    },
-  },
-  {
-    fixture: "p4-story-malformed",
-    title: "an unparseable story renders created invalid, applied unknown",
-    assert: async (page) => {
-      const row = storyRow(page, "70.1");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "invalid");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "invalid");
-    },
-  },
-  {
-    fixture: "p4-story-deprecated-format",
-    title: "a legacy test_scenarios story is apply-ineligible (deprecated_format)",
-    assert: async (page) => {
-      const row = storyRow(page, "70.1");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
-      await expect(row.getByTestId(TID.storyFlagDeprecatedFormat)).toBeVisible();
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "deprecated_format");
-    },
-  },
-  {
-    fixture: "p4-story-no-acs",
-    title: "a zero-AC story is apply-ineligible (no_acceptance_criteria)",
-    assert: async (page) => {
-      const row = storyRow(page, "70.1");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
-      await expect(row.getByTestId(TID.storyFlagNoAcs)).toBeVisible();
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "no_acceptance_criteria");
-    },
-  },
-  {
-    fixture: "p4-story-empty-internal-id",
-    title: "an empty internal story id is flagged (empty_internal_id)",
-    assert: async (page) => {
-      const row = storyRow(page, "70.1");
-      await expect(row).toBeVisible(CHIP_TIMEOUT);
-      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
-      await expect(row.getByTestId(TID.storyFlagEmptyInternalId)).toBeVisible();
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
-      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "empty_internal_id");
-    },
-  },
-  {
     fixture: "p4-registry-present-empty",
     title: "an empty-map registry renders present_empty",
     assert: async (page) => {
@@ -189,6 +94,143 @@ const CASES: MatrixCase[] = [
     },
   },
 ];
+
+// ── NINE hierarchy cases — REWRITTEN to `epic-section` scoping (RED) ──
+const HIERARCHY_CASES: MatrixCase[] = [
+  {
+    fixture: "p4-epic-malformed",
+    title: "an unparseable epic renders an epic-section with an invalid row and NO toggle",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-broken.yaml");
+      await expect(section).toBeVisible(CHIP_TIMEOUT);
+      await expect(section.getByTestId(TID.epicRow)).toHaveAttribute("data-status", "invalid");
+      // An invalid epic has no story panel → no control that controls nothing.
+      await expect(section.getByTestId(TID.epicToggle)).toHaveCount(0);
+    },
+  },
+  {
+    fixture: "p4-epic-duplicate-numbers",
+    title: "duplicate epic filename numbers flag BOTH sections; scoped 7.1 rows stay resolvable",
+    assert: async (page) => {
+      const alpha = epicSection(page, "epic-07-alpha.yaml");
+      const beta = epicSection(page, "epic-07-beta.yaml");
+      await expect(alpha).toBeVisible(CHIP_TIMEOUT);
+      await expect(beta).toBeVisible();
+      await expect(alpha.getByTestId(TID.epicFlagDuplicateNumber)).toBeVisible();
+      await expect(beta.getByTestId(TID.epicFlagDuplicateNumber)).toBeVisible();
+      // The colliding create id 7.1 resolves uniquely WITHIN each section.
+      await expect(storyRowIn(alpha, "7.1")).toBeVisible();
+      await expect(storyRowIn(beta, "7.1")).toBeVisible();
+    },
+  },
+  {
+    fixture: "p4-epic-id-mismatch",
+    title: "epic filename↔document id mismatch is flagged; the scoped row exposes the identity tuple",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-42-identity-mismatch.yaml");
+      await expect(section).toBeVisible(CHIP_TIMEOUT);
+      await expect(section.getByTestId(TID.epicFlagIdMismatch)).toBeVisible();
+
+      // Create id is POSITION-derived from the FILENAME number (42.1);
+      // the tuple exposes the declared (77.5) and file-internal (88.9) ids.
+      const story = storyRowIn(section, "42.1");
+      await expect(story).toBeVisible();
+      await expect(story).toHaveAttribute("data-declared-id", "77.5");
+      await expect(story).toHaveAttribute("data-file-id", "88.9");
+      await expect(story.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
+    },
+  },
+  {
+    fixture: "p4-story-duplicate-ids",
+    title: "duplicate declared story ids flag BOTH position-derived rows in the section",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-duplicate-story-ids.yaml");
+      await expect(section).toBeVisible(CHIP_TIMEOUT);
+      await expect(storyRowIn(section, "70.1").getByTestId(TID.storyFlagDuplicateDeclaredId)).toBeVisible();
+      await expect(storyRowIn(section, "70.2").getByTestId(TID.storyFlagDuplicateDeclaredId)).toBeVisible();
+    },
+  },
+  {
+    fixture: "p4-story-ambiguous-files",
+    title: "two files matching the story glob render created ambiguous",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-inventory.yaml");
+      const row = storyRowIn(section, "70.1");
+      await expect(row).toBeVisible(CHIP_TIMEOUT);
+      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "ambiguous");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "ambiguous");
+    },
+  },
+  {
+    fixture: "p4-story-malformed",
+    title: "an unparseable story renders created invalid, applied unknown",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-inventory.yaml");
+      const row = storyRowIn(section, "70.1");
+      await expect(row).toBeVisible(CHIP_TIMEOUT);
+      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "invalid");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "invalid");
+    },
+  },
+  {
+    fixture: "p4-story-deprecated-format",
+    title: "a legacy test_scenarios story is apply-ineligible (deprecated_format)",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-inventory.yaml");
+      const row = storyRowIn(section, "70.1");
+      await expect(row).toBeVisible(CHIP_TIMEOUT);
+      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
+      await expect(row.getByTestId(TID.storyFlagDeprecatedFormat)).toBeVisible();
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "deprecated_format");
+    },
+  },
+  {
+    fixture: "p4-story-no-acs",
+    title: "a zero-AC story is apply-ineligible (no_acceptance_criteria)",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-inventory.yaml");
+      const row = storyRowIn(section, "70.1");
+      await expect(row).toBeVisible(CHIP_TIMEOUT);
+      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
+      await expect(row.getByTestId(TID.storyFlagNoAcs)).toBeVisible();
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "no_acceptance_criteria");
+    },
+  },
+  {
+    fixture: "p4-story-empty-internal-id",
+    title: "an empty internal story id is flagged (empty_internal_id)",
+    assert: async (page) => {
+      const section = epicSection(page, "epic-70-inventory.yaml");
+      const row = storyRowIn(section, "70.1");
+      await expect(row).toBeVisible(CHIP_TIMEOUT);
+      await expect(row.getByTestId(TID.storyCreated)).toHaveAttribute("data-status", "one");
+      await expect(row.getByTestId(TID.storyFlagEmptyInternalId)).toBeVisible();
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-status", "unknown");
+      await expect(row.getByTestId(TID.storyApplied)).toHaveAttribute("data-reason", "empty_internal_id");
+    },
+  },
+];
+
+// ── NEW hierarchy case: noncanonical epic filename (header + flag, no
+//    toggle, no rows) — previously untested in the browser (plan §4.3) ──
+const NONCANONICAL_CASE: MatrixCase = {
+  fixture: "p4-epic-noncanonical-filename",
+  title: "a noncanonical epic filename renders a header + flag with NO toggle and NO rows",
+  assert: async (page) => {
+    const section = epicSection(page, "epic-7-noncanon.yaml");
+    await expect(section).toBeVisible(CHIP_TIMEOUT);
+    await expect(section.getByTestId(TID.epicFlagNoncanonicalFilename)).toBeVisible();
+    // No Create-addressable stories ⇒ no toggle and no story rows.
+    await expect(section.getByTestId(TID.epicToggle)).toHaveCount(0);
+    await expect(storyRow(page, "7.1")).toHaveCount(0);
+  },
+};
+
+const CASES: MatrixCase[] = [...NON_HIERARCHY_CASES, ...HIERARCHY_CASES, NONCANONICAL_CASE];
 
 for (const matrixCase of CASES) {
   test(`P4 [${matrixCase.fixture}]: ${matrixCase.title}`, async ({ page }) => {

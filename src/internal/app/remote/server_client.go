@@ -99,6 +99,10 @@ func (c *ServerClient) postJSON(ctx context.Context, path string, body, out any)
 	}
 	defer func() { _ = response.Body.Close() }()
 
+	if response.StatusCode == http.StatusRequestEntityTooLarge {
+		return fmt.Errorf("%w: %s", errRequestTooLarge, path)
+	}
+
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		snippet, _ := io.ReadAll(io.LimitReader(response.Body, maxErrorBodyBytes))
 

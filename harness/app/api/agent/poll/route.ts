@@ -20,8 +20,12 @@ export async function POST(request: Request) {
   const body = parsed.body;
   const sessionId = String(body.session_id ?? "");
   const activeRunId = typeof body.active_run_id === "string" && body.active_run_id !== "" ? body.active_run_id : undefined;
+  const inventoryUnavailable =
+    typeof body.inventory_unavailable === "string" && body.inventory_unavailable !== ""
+      ? body.inventory_unavailable
+      : undefined;
 
-  const result = pollSession(db(), sessionId, activeRunId);
+  const result = pollSession(db(), sessionId, activeRunId, inventoryUnavailable);
   if (result === undefined) {
     return NextResponse.json({ error: "unknown session" }, { status: 404 });
   }

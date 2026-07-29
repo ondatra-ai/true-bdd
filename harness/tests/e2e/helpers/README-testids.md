@@ -114,15 +114,47 @@ Attribute conventions: dynamic state goes into `data-*` attributes
 | `action-build-tests`, `action-build-code` | Session-level `<button>`s; `disabled` per the rules above (P5). |
 | `action-create`, `action-refine`, `action-apply`, `fix-toggle` | Per-story-row action controls (AI specs). |
 | `inventory-doc-<key>` | Status chip; `data-status` ∈ `present`, `missing`, `invalid`, `not_a_dir`, `present_empty`, `ambiguous`, `unknown`. Keys: `config` (`true-bdd/true-bdd.yaml`), `prd`, `architecture`, `registry` (`docs/scenarios.yaml`), `stories-dir`, `epics-dir`, `checklist-<stem>` for stems `us-create`, `us-refine`, `us-apply`, `build-tests`, `build-code`. |
-| `epic-row` | Carries `data-epic-file` (basename), `data-epic-number` (integer parsed from the `epic-NN-*` filename, no leading zeros), `data-status` ∈ `parseable`, `invalid`. |
+| `inventory-truncated-banner` | Visible on the session page when the promoted snapshot was degraded to fit the request budget — `snapshot_truncated` is true or any omission count (`stories_omitted`, per-story `raw_omitted`/`content_omitted`) is positive (plan §1a). Names the degrade mode(s) reached. |
+| `epic-section` | Accordion wrapper around one epic's `epic-row` header plus its story-row panel. Carries `data-epic-file` (basename) and `data-epic-number`. UI/modal keying uses `(epic.file, position)`, NOT the create id — duplicate epic numbers declare colliding position-derived ids, so story-row lookups MUST be scoped to the section. Epics render DEFAULT-EXPANDED (collapse is a user action). |
+| `epic-toggle` | Expand/collapse control inside the section header; carries `aria-expanded` ∈ `true`, `false`. Rendered ONLY when a story panel exists — invalid epics (no rows) and noncanonical-filename epics (deliberately no rows) render the header + flags WITHOUT a toggle. Collapsing hides the story rows; re-expanding restores them. |
+| `epic-title` | Text = `Epic.Title` (the epic document's `name:`), falling back to the filename when unparseable. |
+| `epic-row` | Carries `data-epic-file` (basename), `data-epic-number` (integer parsed from the `epic-NN-*` filename, no leading zeros), `data-status` ∈ `parseable`, `invalid`. Lives inside its `epic-section`. |
 | `epic-flag-duplicate-number` | Inside every epic row sharing a filename number. |
 | `epic-flag-id-mismatch` | Inside an epic row whose document `epic.id` differs from the filename number. |
-| `epic-flag-noncanonical-filename` | Inside an epic row whose filename is not the canonical `epic-%02d-*` encoding `us create` resolves (finding 4). Such an epic carries NO Create-addressable story rows (its snapshot `stories` is empty). |
-| `story-row-<create-id>` | One per epic story row; `<create-id>` is the position-derived `<epic-filename-number>.<position>` (e.g. `42.1`). Carries `data-epic-number`, `data-position`, `data-declared-id` (epic-declared story id), `data-file-id` (story-file internal id, when resolvable). |
+| `epic-flag-noncanonical-filename` | Inside an epic row whose filename is not the canonical `epic-%02d-*` encoding `us create` resolves (finding 4). Such an epic carries NO Create-addressable story rows (its snapshot `stories` is empty), so its section has NO `epic-toggle`. |
+| `story-row-<create-id>` | One per epic story row; `<create-id>` is the position-derived `<epic-filename-number>.<position>` (e.g. `42.1`). Carries `data-epic-number`, `data-position`, `data-declared-id` (epic-declared story id), `data-file-id` (story-file internal id, when resolvable). Lives inside its `epic-section`'s story panel. |
+| `story-title` | ALWAYS a `<button>` for a declared story row — clicking opens the story review modal (plan §1b guarantees file content, epic-declared content, or an identity-only fallback exists). Ambiguous rows additionally carry `data-match-count` and show the count inline. |
 | `story-created` | Cell inside the story row; `data-status` ∈ `one`, `missing`, `ambiguous`, `invalid`. |
 | `story-applied` | Cell; countable → text exactly `x/y` with `data-status="counted"`, `data-applied`, `data-total`; not countable → text `unknown (<reason>)` with `data-status="unknown"`, `data-reason` ∈ `missing`, `ambiguous`, `invalid`, `deprecated_format`, `no_acceptance_criteria`, `empty_internal_id`, `registry_missing`, `registry_invalid`. Counting: registry entries whose `user_stories[]` reference the EXACT story path and the position-derived lineage id `<internal-id>-NNN` (`%03d`). A missing/unparseable registry taints an otherwise-eligible story `unknown(registry_missing|registry_invalid)` — a valid empty `scenarios: {}` stays counted `0/y` (finding 4). |
 | `story-refined` | Cell; text exactly `not recorded` in v1. |
 | `story-flag-duplicate-declared-id`, `story-flag-id-mismatch`, `story-flag-deprecated-format`, `story-flag-no-acs`, `story-flag-empty-internal-id` | Flag chips inside the story row, visible when the condition holds. |
+
+### Story review modal (`/sessions/<id>`, opened from `story-title`)
+
+Opened via a native `<dialog>` + `showModal()` — native modality gives
+focus containment, Escape-to-close, and a backdrop; there is no
+hand-written focus trap. Content freshness follows the last scan; on a
+generation change the open modal's story is re-derived by composite
+identity `(epic.file, position)`.
+
+| testid | Notes |
+|---|---|
+| `story-modal` | The `<dialog>`. Carries `data-story-id` (the position-derived create id). `aria-labelledby` points at `story-modal-title`. |
+| `story-modal-panel` | The single inner content panel. A click on the panel must NOT close the modal; a click on the backdrop (outside the panel) closes it. |
+| `story-modal-title` | The modal heading; accessible name = story id + title. |
+| `story-modal-close` | Labelled close button → closes the modal and restores focus to the opener (`story-title`). |
+| `story-modal-status` | Status chip; falls back to `declared_status`, then `unknown`. |
+| `story-modal-created` / `story-modal-applied` / `story-modal-refined` | Lifecycle chips mirroring the row's created / applied / refined cells. |
+| `story-modal-identity` | Identity line (declared id / file id). |
+| `story-modal-tablist` | `role="tablist"`; keyboard-navigable. |
+| `story-modal-tab-review` / `story-modal-tab-raw` | `role="tab"` with `aria-selected` ∈ `true`, `false`. Review is default. Review is enabled IFF declared content exists (file content or epic-declared content); otherwise `aria-disabled`. An invalid story opens on Raw. |
+| `story-modal-panel-review` / `story-modal-panel-raw` | `role="tabpanel"` for each tab. |
+| `story-modal-statement` | The as-a / i-want / so-that statement block (from file content, else epic-declared content). |
+| `story-modal-ac` | One per acceptance criterion; carries `data-ac-id` (the AC id); contains its description. |
+| `story-modal-step` | One per Gherkin step; carries `data-kind` ∈ `given`, `when`, `then`, `and`, `but`; its text is the exact step text. Source order preserved. |
+| `story-modal-raw` | The verbatim story file in a scrollable `<pre>` (Raw tab). `textContent` equals the file bytes exactly (a truncation/omission notice, when present, is a sibling `story-modal-notice`). |
+| `story-modal-error` | Parse-error banner shown when the story file is invalid (modal opens on Raw). |
+| `story-modal-notice` | Availability / omission / freshness notice; carries `data-reason` ∈ `not_created` (missing file), `ambiguous` (+ match count), `changed_on_disk`, `raw_truncated`, `raw_omitted`, `content_omitted`, `both_omitted`, `invalid_without_raw`. |
 
 ### Run view (`/runs/<id>`)
 

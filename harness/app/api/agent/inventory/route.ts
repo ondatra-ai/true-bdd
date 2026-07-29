@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { agentAllowed, forbidden } from "@/app/lib/origin";
 import { readJsonBody } from "@/app/lib/request-json";
-import { upsertInventory } from "@/app/lib/store";
+import { inventoryRequestLimitBytes, upsertInventory } from "@/app/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,7 +13,9 @@ export async function POST(request: Request) {
     return forbidden();
   }
 
-  const parsed = await readJsonBody(request);
+  // Reject an over-budget snapshot with a streamed 413 before it is
+  // materialized or parsed (plan §1a); the remote re-scans smaller.
+  const parsed = await readJsonBody(request, inventoryRequestLimitBytes());
   if (!parsed.ok) {
     return parsed.response;
   }

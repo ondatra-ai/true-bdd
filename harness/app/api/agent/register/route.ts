@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/app/lib/db";
 import { agentAllowed, forbidden } from "@/app/lib/origin";
 import { readJsonBody } from "@/app/lib/request-json";
-import { registerSession } from "@/app/lib/store";
+import { inventoryRequestLimitBytes, registerSession } from "@/app/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,5 +35,7 @@ export async function POST(request: Request) {
     version: typeof body.version === "string" ? body.version : "",
   });
 
-  return NextResponse.json(result);
+  // Advertise the server's inventory byte budget so the remote fits its
+  // snapshot to it and re-scans smaller on a 413 (plan §1a/§r3-1).
+  return NextResponse.json({ ...result, inventory_limit_bytes: inventoryRequestLimitBytes() });
 }

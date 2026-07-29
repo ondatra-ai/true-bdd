@@ -57,6 +57,13 @@ export interface ServerControllerOptions {
   port?: number;
   /** Readiness ceiling per start attempt. Default 30s. */
   readinessTimeoutMs?: number;
+  /**
+   * Extra environment entries merged into the server process env —
+   * additive, applied over process.env but under the fixed DB/PORT keys.
+   * The degraded-inventory P9 case sets a tiny MAX_INVENTORY_REQUEST_BYTES
+   * this way to force the remote's fit-to-budget path (plan §1a/§4.3).
+   */
+  env?: Record<string, string>;
 }
 
 export class ServerController {
@@ -68,6 +75,7 @@ export class ServerController {
   private portValue: number | undefined;
   private readonly portPinned: boolean;
   private readonly readinessTimeoutMs: number;
+  private readonly extraEnv: Record<string, string>;
   private child: ChildProcess | undefined;
   private startCount = 0;
 
@@ -77,6 +85,7 @@ export class ServerController {
     this.portValue = options.port;
     this.portPinned = options.port !== undefined;
     this.readinessTimeoutMs = options.readinessTimeoutMs ?? 30_000;
+    this.extraEnv = options.env ?? {};
     this.stdoutPath = path.join(this.logDir, "server.stdout.log");
     this.stderrPath = path.join(this.logDir, "server.stderr.log");
     fs.mkdirSync(this.logDir, { recursive: true });
@@ -198,6 +207,7 @@ export class ServerController {
       stdio: ["ignore", stdoutFd, stderrFd],
       env: {
         ...process.env,
+        ...this.extraEnv,
         TRUE_BDD_HARNESS_DB: this.dbPath,
         PORT: String(port),
         NODE_ENV: "production",

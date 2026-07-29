@@ -16,16 +16,27 @@ type RegisterRequest struct {
 	Version         string `json:"version"`
 }
 
-// RegisterResponse is the reply to a successful register.
+// RegisterResponse is the reply to a successful register. InventoryLimitBytes
+// is the server's effective inventory request byte budget (plan §1a /
+// §r3-1): the remote derives its snapshot-fit budget from it and re-scans
+// smaller on a 413. Zero (omitted) means the server did not negotiate a
+// limit and the remote scans unbounded.
 type RegisterResponse struct {
-	SessionID string `json:"session_id"`
-	ScanEpoch int    `json:"scan_epoch"`
+	SessionID           string `json:"session_id"`
+	ScanEpoch           int    `json:"scan_epoch"`
+	InventoryLimitBytes int    `json:"inventory_limit_bytes,omitempty"`
 }
 
-// PollRequest is the body of POST /api/agent/poll — the heartbeat.
+// PollRequest is the body of POST /api/agent/poll — the heartbeat. It also
+// carries the OUT-OF-BAND inventory-unavailable signal (plan §1a / finding
+// 1): when the server's negotiated inventory limit is below the minimum that
+// can carry even the floor request, no inventory upload can ever be
+// accepted, so the remote reports the terminal cannot-fit state here — on a
+// channel that is not size-gated — rather than 413-looping forever.
 type PollRequest struct {
-	SessionID   string `json:"session_id"`
-	ActiveRunID string `json:"active_run_id,omitempty"`
+	SessionID           string `json:"session_id"`
+	ActiveRunID         string `json:"active_run_id,omitempty"`
+	InventoryUnavailable string `json:"inventory_unavailable,omitempty"`
 }
 
 // PollResponse carries any dispatched run, a pending answer, and the

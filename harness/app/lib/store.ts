@@ -35,6 +35,27 @@ import { retentionConfig } from "./retention";
 /** A session flips unreachable after this long without an agent poll. */
 export const REACHABILITY_THRESHOLD_MS = 10_000;
 
+/** Default inventory-upload byte budget when unset (plan §1a). */
+export const DEFAULT_MAX_INVENTORY_REQUEST_BYTES = 4 * 1024 * 1024;
+
+/**
+ * The server's effective inventory request byte budget (plan §1a): the
+ * inventory route rejects an over-budget upload with 413, and the register
+ * response advertises it as `inventory_limit_bytes` so the remote fits its
+ * snapshot to it. Tunable via MAX_INVENTORY_REQUEST_BYTES (per-test servers
+ * set a tiny value to exercise the degrade path).
+ */
+export function inventoryRequestLimitBytes(): number {
+  const raw = process.env.MAX_INVENTORY_REQUEST_BYTES;
+  if (raw === undefined) {
+    return DEFAULT_MAX_INVENTORY_REQUEST_BYTES;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MAX_INVENTORY_REQUEST_BYTES;
+}
+
 /** Server-side answer size caps (plan §3.2/§3.3, mirroring the remote). */
 const MAX_CLARIFY_BYTES = 4096;
 const MAX_FREETEXT_BYTES = 64 * 1024;
@@ -65,6 +86,7 @@ interface SessionRow {
   last_poll_at: number;
   scan_epoch: number;
   want_inventory: number;
+  inventory_unavailable: string | null;
 }
 
 interface RunRow {
@@ -99,6 +121,13 @@ export interface SessionSummary {
   inventory_generation: number;
   /** Wall-clock ms of the last promoted inventory, null until one exists. */
   inventory_updated_at: number | null;
+  /**
+   * The OUT-OF-BAND terminal cannot-fit reason the remote reports on its poll
+   * (plan §1a / finding 1) — e.g. `limit_too_small` — surfaced so the session
+   * page can render it honestly even when no inventory snapshot exists. Null
+   * when the inventory can be uploaded normally.
+   */
+  inventory_unavailable: string | null;
 }
 
 /** The full remote-synthesized terminal envelope (plan §3.2 / finding 7). */
@@ -191,6 +220,7 @@ function summaryOf(db: Db, session: SessionRow): SessionSummary {
     active_run_id: activeRunId(db, session.id),
     inventory_generation: inventory.generation,
     inventory_updated_at: inventory.updated_at,
+    inventory_unavailable: session.inventory_unavailable ?? null,
   };
 }
 
@@ -269,10 +299,24 @@ export interface PollResult {
   scan_epoch: number;
 }
 
-export function pollSession(db: Db, sessionId: string, activeRun: string | undefined): PollResult | undefined {
+export function pollSession(
+  db: Db,
+  sessionId: string,
+  activeRun: string | undefined,
+  inventoryUnavailable?: string,
+): PollResult | undefined {
   const session = sessionRow(db, sessionId);
   if (!session) {
     return undefined;
+  }
+
+  // Record the OUT-OF-BAND terminal cannot-fit reason (plan §1a / finding 1)
+  // the remote reports when the server's inventory limit is below the minimum
+  // viable request: no inventory upload can ever be accepted, so the state
+  // reaches the server on the heartbeat instead. It is terminal, so it is
+  // only ever set, never cleared here.
+  if (typeof inventoryUnavailable === "string" && inventoryUnavailable.length > 0) {
+    db.prepare("UPDATE sessions SET inventory_unavailable = ? WHERE id = ?").run(inventoryUnavailable, sessionId);
   }
 
   // Deliver (and consume) a want_inventory request only to an IDLE remote:
@@ -1028,15 +1072,71 @@ export function sessionDetail(db: Db, id: string): SessionDetail | undefined {
   }
 
   const runs = db.prepare("SELECT * FROM runs WHERE session_id = ? ORDER BY created_at DESC").all(id) as RunRow[];
-  const inventory = db
-    .prepare("SELECT snapshot FROM inventory WHERE canonical_folder = ?")
-    .get(session.canonical_folder) as { snapshot: string } | undefined;
+  // Read generation AND snapshot from ONE consistent row (plan §2a): the
+  // detail view never pairs an N+1 generation with an N snapshot.
+  const promoted = sessionInventory(db, id);
 
   return {
     ...summaryOf(db, session),
+    inventory_generation: promoted?.generation ?? 0,
+    inventory_updated_at: promoted?.updated_at ?? null,
     runs: runs.map(runSummaryOf),
-    inventory: inventory ? JSON.parse(inventory.snapshot) : null,
+    inventory: promoted?.snapshot ?? null,
   };
+}
+
+// ── Browser: lightweight status view (plan §2 / §2a) ──
+//
+// The session page polls this at 1 Hz instead of re-shipping the full detail
+// (which carries the whole inventory snapshot) every second. It carries
+// reachability + active run + run history + the promoted generation, but NO
+// inventory snapshot — the client refetches the snapshot ONLY when the
+// generation changes.
+
+export interface SessionStatusView extends SessionSummary {
+  runs: RunSummary[];
+}
+
+export function sessionStatus(db: Db, id: string): SessionStatusView | undefined {
+  const session = sessionRow(db, id);
+  if (!session) {
+    return undefined;
+  }
+
+  const runs = db.prepare("SELECT * FROM runs WHERE session_id = ? ORDER BY created_at DESC").all(id) as RunRow[];
+
+  return { ...summaryOf(db, session), runs: runs.map(runSummaryOf) };
+}
+
+// ── Browser: atomic inventory read (plan §2a) ──
+
+export interface SessionInventoryRead {
+  generation: number;
+  updated_at: number | null;
+  snapshot: unknown;
+}
+
+/**
+ * Reads the promoted generation AND its snapshot from a SINGLE row (plan
+ * §2a): the generation returned is always the one the snapshot was promoted
+ * at — a newer generation number can never be paired with an older
+ * snapshot. Returns null until an inventory has been promoted.
+ */
+export function sessionInventory(db: Db, id: string): SessionInventoryRead | null {
+  const session = sessionRow(db, id);
+  if (!session) {
+    return null;
+  }
+
+  const row = db
+    .prepare("SELECT generation, updated_at, snapshot FROM inventory WHERE canonical_folder = ?")
+    .get(session.canonical_folder) as { generation: number; updated_at: number; snapshot: string } | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return { generation: row.generation, updated_at: row.updated_at, snapshot: JSON.parse(row.snapshot) };
 }
 
 // ── Browser: dispatch ──

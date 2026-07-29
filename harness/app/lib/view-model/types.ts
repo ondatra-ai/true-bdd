@@ -44,6 +44,12 @@ export interface SessionSummary {
   inventory_generation: number;
   /** Wall-clock ms of the last promoted inventory; null until one exists. */
   inventory_updated_at: number | null;
+  /**
+   * The OUT-OF-BAND terminal cannot-fit reason (e.g. `limit_too_small`) the
+   * remote reports on its poll when the server's inventory limit is below the
+   * minimum viable request (plan §1a / finding 1). Null/absent normally.
+   */
+  inventory_unavailable?: string | null;
 }
 
 /** The full remote-synthesized terminal envelope (plan §3.2 / finding 7). */
@@ -106,7 +112,7 @@ export interface RunDetail extends RunSummary {
   pending_prompt: PendingPrompt | null;
 }
 
-// ── Inventory snapshot (plan §3.4) ──
+// ── Inventory snapshot (plan §3.4 / §1 hierarchy + review-modal enrichment) ──
 
 export interface InventorySnapshot {
   documents: Record<string, string>;
@@ -115,12 +121,27 @@ export interface InventorySnapshot {
   configured_architecture_path?: string;
   canonical_architecture_path?: string;
   epics: InventoryEpic[];
+  /** True global counts, surviving epic-entry truncation (plan §1a). */
+  totals?: InventoryTotals;
+  /** The snapshot was degraded to fit the request budget (plan §1a). */
+  snapshot_truncated?: boolean;
+  /** Story rows dropped to fit the budget. */
+  stories_omitted?: number;
+  /** Session-level cannot-fit state, e.g. `limit_too_small` (plan §1a). */
+  unavailable?: string;
+}
+
+export interface InventoryTotals {
+  epics: number;
+  declared_stories: number;
 }
 
 export interface InventoryEpic {
   file: string;
   number: number;
   status: string;
+  /** The epic document's `name:`; empty when unparseable (plan §1). */
+  title?: string;
   doc_id: number;
   id_mismatch: boolean;
   duplicate_number: boolean;
@@ -134,6 +155,33 @@ export interface InventoryEpic {
   stories: InventoryStory[];
 }
 
+// ── Review-modal content (plan §1; extracted by the Go typed decoder) ──
+
+export interface InventoryStep {
+  kind: "given" | "when" | "then" | "and" | "but" | string;
+  text: string;
+}
+
+export interface InventoryContentAc {
+  id: string;
+  description: string;
+  steps: InventoryStep[];
+}
+
+export interface InventoryStatement {
+  as_a: string;
+  i_want: string;
+  so_that: string;
+}
+
+export interface InventoryContent {
+  id: string;
+  title: string;
+  status: string;
+  statement: InventoryStatement;
+  acceptance_criteria: InventoryContentAc[];
+}
+
 export interface InventoryStory {
   create_id: string;
   epic_number: number;
@@ -144,6 +192,26 @@ export interface InventoryStory {
   applied: InventoryApplied;
   refined: string;
   flags: InventoryStoryFlags;
+  /** Epic-declared title/status, available even when the file is absent. */
+  declared_title?: string;
+  declared_status?: string;
+  /** Number of `<declared-id>-*.yaml` matches (drives the ambiguous view). */
+  match_count?: number;
+  /** Resolved story-file basename (only when exactly one match). */
+  source_file?: string;
+  /** Stable parse/validation error text (invalid stories). */
+  error?: string;
+  /** Parsed file content (Review tab); null/absent when not created=one. */
+  content?: InventoryContent | null;
+  /** Epic-declared content fallback so every declared row is openable. */
+  declared_content?: InventoryContent | null;
+  /** Verbatim story file for the Raw tab (+ raw_truncated). */
+  raw?: string;
+  raw_truncated?: boolean;
+  /** Omission metadata from the request-budget degrade ladder (plan §1a). */
+  raw_omitted?: boolean;
+  content_omitted?: boolean;
+  omission_reason?: string;
 }
 
 export interface InventoryApplied {

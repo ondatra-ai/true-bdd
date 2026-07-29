@@ -141,21 +141,40 @@ const RefinedNotRecorded = "not_recorded"
 // shape is the binding contract documented in the package comment.
 // Documents is a key→status map so the UI renders each chip's data-status
 // directly; DocumentErrors carries the parse error for `invalid` chips.
+//
+// The size-discipline fields (plan §1a) describe how far the request-budget
+// degrade ladder was walked to make the SERIALIZED snapshot fit: Totals
+// always carries the true global counts (surviving epic-entry truncation);
+// SnapshotTruncated / StoriesOmitted / Unavailable name the mode(s) reached
+// and drive the visible inventory-truncated-banner.
 type Snapshot struct {
 	Documents                  map[string]string `json:"documents"`
 	DocumentErrors             map[string]string `json:"document_errors,omitempty"`
 	ArchitecturePathMismatch   bool              `json:"architecture_path_mismatch"`
-	ConfiguredArchitecturePath string            `json:"configured_architecture_path"`
-	CanonicalArchitecturePath  string            `json:"canonical_architecture_path"`
+	ConfiguredArchitecturePath string            `json:"configured_architecture_path,omitempty"`
+	CanonicalArchitecturePath  string            `json:"canonical_architecture_path,omitempty"`
 	Epics                      []Epic            `json:"epics"`
+	Totals                     Totals            `json:"totals"`
+	SnapshotTruncated          bool              `json:"snapshot_truncated,omitempty"`
+	StoriesOmitted             int               `json:"stories_omitted,omitempty"`
+	Unavailable                string            `json:"unavailable,omitempty"`
+}
+
+// Totals are the true global counts, computed over the full scan BEFORE any
+// degradation, so they survive epic-entry truncation down to the floor.
+type Totals struct {
+	Epics           int `json:"epics"`
+	DeclaredStories int `json:"declared_stories"`
 }
 
 // Epic is one epic row: its filename identity, document identity, and the
-// per-row identity divergences the UI flags.
+// per-row identity divergences the UI flags. Title is the epic document's
+// name: (empty when unparseable; the UI falls back to the filename).
 type Epic struct {
 	File                 string  `json:"file"`
 	Number               int     `json:"number"`
 	Status               string  `json:"status"`
+	Title                string  `json:"title,omitempty"`
 	DocID                int     `json:"doc_id"`
 	IDMismatch           bool    `json:"id_mismatch"`
 	DuplicateNumber      bool    `json:"duplicate_number"`
@@ -165,17 +184,33 @@ type Epic struct {
 }
 
 // Story is one epic story row with its full identity tuple, created /
-// applied / refined cells, and identity flags (plan §3.4).
+// applied / refined cells, identity flags, and the review-modal content
+// (plan §1/§1b). Declared* / DeclaredContent come from the epic declaration
+// and back the "every story openable" fallback; Content / Raw come from the
+// resolved story file; the omission fields record what the degrade ladder
+// dropped to fit the request budget (plan §1a).
 type Story struct {
-	CreateID   string     `json:"create_id"`
-	EpicNumber int        `json:"epic_number"`
-	Position   int        `json:"position"`
-	DeclaredID string     `json:"declared_id"`
-	FileID     string     `json:"file_id,omitempty"`
-	Created    string     `json:"created"`
-	Applied    Applied    `json:"applied"`
-	Refined    string     `json:"refined"`
-	Flags      StoryFlags `json:"flags"`
+	CreateID        string     `json:"create_id"`
+	EpicNumber      int        `json:"epic_number"`
+	Position        int        `json:"position"`
+	DeclaredID      string     `json:"declared_id"`
+	FileID          string     `json:"file_id,omitempty"`
+	Created         string     `json:"created"`
+	Applied         Applied    `json:"applied"`
+	Refined         string     `json:"refined"`
+	Flags           StoryFlags `json:"flags"`
+	DeclaredTitle   string     `json:"declared_title,omitempty"`
+	DeclaredStatus  string     `json:"declared_status,omitempty"`
+	MatchCount      int        `json:"match_count,omitempty"`
+	SourceFile      string     `json:"source_file,omitempty"`
+	Error           string     `json:"error,omitempty"`
+	Content         *Content   `json:"content,omitempty"`
+	DeclaredContent *Content   `json:"declared_content,omitempty"`
+	Raw             string     `json:"raw,omitempty"`
+	RawTruncated    bool       `json:"raw_truncated,omitempty"`
+	RawOmitted      bool       `json:"raw_omitted,omitempty"`
+	ContentOmitted  bool       `json:"content_omitted,omitempty"`
+	OmissionReason  string     `json:"omission_reason,omitempty"`
 }
 
 // Applied is the story-applied cell: either a countable x/y or an
@@ -188,10 +223,12 @@ type Applied struct {
 }
 
 // StoryFlags are the independent identity flags a story row can raise.
+// Each is omitempty so a clean row stays compact under the request budget
+// (the UI renders a chip only for a flag that is true).
 type StoryFlags struct {
-	DuplicateDeclaredID bool `json:"duplicate_declared_id"`
-	IDMismatch          bool `json:"id_mismatch"`
-	DeprecatedFormat    bool `json:"deprecated_format"`
-	NoACs               bool `json:"no_acs"`
-	EmptyInternalID     bool `json:"empty_internal_id"`
+	DuplicateDeclaredID bool `json:"duplicate_declared_id,omitempty"`
+	IDMismatch          bool `json:"id_mismatch,omitempty"`
+	DeprecatedFormat    bool `json:"deprecated_format,omitempty"`
+	NoACs               bool `json:"no_acs,omitempty"`
+	EmptyInternalID     bool `json:"empty_internal_id,omitempty"`
 }
