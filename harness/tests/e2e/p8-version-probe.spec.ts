@@ -38,36 +38,31 @@ test("P8: Test connection drives a version run to terminal ok", async ({ page })
   const fixture = await e.materialize("bare-host");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-
-  const generationBefore = (await e.api.waitForGeneration(session.id, 0)).inventory_generation;
+  e.note({ sessionId: session.session_id });
 
   // Drive the REAL UI control on the sessions list.
   await gotoSessions(page, e.server.baseURL);
-  const row = sessionRow(page, session.id);
+  const row = sessionRow(page, session.session_id);
   await expect(row).toBeVisible({ timeout: 15_000 });
   await row.getByTestId(TID.testConnection).click();
 
   // The control dispatched a version run for THIS session.
   const versionRun = await pollUntil(
     async () => {
-      const detail = await e.api.getSession(session.id);
+      const detail = await e.api.getSession(session.session_id);
 
       return detail.runs.find((candidate) => candidate.command === "version");
     },
     { timeoutMs: 30_000, what: "the Test-connection version run to appear in the session history" },
   );
-  e.note({ runId: versionRun.id });
+  e.note({ runId: versionRun.run_id });
 
   // Terminal ok — no transient-state assertions on the way there.
-  const done = await e.api.waitForRunTerminal(versionRun.id);
+  const done = await e.api.waitForRunTerminal(session.session_id, versionRun.run_id);
   expect(done.outcome).toBe("ok");
 
   // Known version output rendered in the run view.
-  await gotoRun(page, e.server.baseURL, versionRun.id);
+  await gotoRun(page, e.server.baseURL, session.session_id, versionRun.run_id);
   await expect(page.getByTestId(TID.runOutcome)).toHaveText("ok", { timeout: 15_000 });
   await expect(page.getByTestId(TID.runOutput)).toContainText(/true-bdd version \S+/);
-
-  // Re-inventory after the command: strictly increased generation.
-  await e.api.waitForGeneration(session.id, generationBefore);
 });

@@ -74,11 +74,10 @@ async function openSession(
   const fixture = await e.materialize(fixtureName);
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
-  await gotoSession(page, e.server.baseURL, session.id);
+  e.note({ sessionId: session.session_id });
+  await gotoSession(page, e.server.baseURL, session.session_id);
 
-  return { fixture, sessionId: session.id, env: e };
+  return { fixture, sessionId: session.session_id, env: e };
 }
 
 /** Opens the modal for a scoped row after asserting the opener exists. */
@@ -293,7 +292,7 @@ test("P9: arrow-key tab switching moves focus to the destination tab (roving foc
 });
 
 test("P9: a story removed on disk keeps the modal OPEN as changed-on-disk", async ({ page }) => {
-  const { fixture, sessionId, env: e } = await openSession(page, "p9-changed-on-disk", "p3-inventory-spread");
+  const { fixture } = await openSession(page, "p9-changed-on-disk", "p3-inventory-spread");
 
   // Open the modal for 60.3 — the last declared row (position 3, has a file).
   const section = epicSection(page, "epic-60-inventory-spread.yaml");
@@ -309,17 +308,9 @@ test("P9: a story removed on disk keeps the modal OPEN as changed-on-disk", asyn
   expect(withoutLastStory.length).toBeLessThan(original.length);
   fs.writeFileSync(epicPath, withoutLastStory);
 
-  // Trigger a re-scan (the open native <dialog> makes the page inert, so the
-  // on-page Refresh button cannot be clicked): POST the same JSON body the UI
-  // sends, with the browser origin. The promoted-generation bump refetches the
-  // inventory, where the selected identity no longer resolves.
-  const refreshResponse = await page.request.post(`${e.server.baseURL}/api/sessions/${sessionId}/refresh`, {
-    data: {},
-    headers: { origin: e.server.baseURL },
-  });
-  expect(refreshResponse.status()).toBe(202);
-  // The server must promote a NEW generation from the smaller scan.
-  await e.api.waitForGeneration(sessionId, 1);
+  // v2 has NO /refresh route: every browser poll of session_detail is a fresh
+  // CLI scan (plan §1.5), so the live poll picks the on-disk change up on its
+  // own — no manual re-scan trigger needed.
 
   // The dialog STAYS OPEN (never silently unmounts) and reports the story
   // changed on disk (finding 4).
@@ -339,12 +330,12 @@ test("P9: a degraded snapshot shows the truncation banner and an omission-state 
   const fixture = await e.materialize("p3-inventory-spread");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
+  e.note({ sessionId: session.session_id });
 
   // Do NOT wait for a generation — a degraded/again-413 flow may never
   // promote until implemented; assert the banner at the DOM level so the
   // failure is assertion-level (banner absent), not a setup timeout.
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
 
   await expect(page.getByTestId(TID.inventoryTruncatedBanner)).toBeVisible({ timeout: 20_000 });
 
@@ -365,9 +356,9 @@ test("P9: a server cap below the minimum viable request shows the limit-too-smal
   const fixture = await e.materialize("p3-inventory-spread");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
+  e.note({ sessionId: session.session_id });
 
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
 
   const banner = page.getByTestId(TID.inventoryTruncatedBanner);
   await expect(banner).toBeVisible({ timeout: 20_000 });

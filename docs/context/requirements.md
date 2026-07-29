@@ -68,5 +68,17 @@ _transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.m
 - Use Opus rather than Fable for all future code- and test-writing agents (requested 2026-07-28T22:33:37Z).
 - For the harness UI rework, keep the established Codex-involved process, test the UI itself, and do not exercise time-consuming operation buttons in this round (requested 2026-07-29T05:54:37Z).
 - [correction] The harness review UI must present a useful domain hierarchy: a list of epics expandable into their user stories, with each story openable in a popup for review; the existing flat story presentation was rejected as not useful (corrected 2026-07-29T05:54:37Z).
+
+## 2026-07-29 — Peter redirected the harness architecture to CLI-owned state with a thin-client web UI.
+
+- [correction] All harness state moves to the CLI: each `true-bdd remote` owns a per-project SQLite inside its host folder; the web/Next.js server keeps NO database at all — it is a stateless relay with only an in-memory registry of connected CLIs (the earlier server-owned-SQLite design is superseded) (corrected 2026-07-29T12:40:00Z).
+- The WebUI must reflect exactly the CLI's current state — no cache, no server-side store-and-forward: every view reads the CLI's state through the relay, and when the CLI requires user action the web shows a dialog and sends the response to the CLI via RPC (requested 2026-07-29T12:40:00Z).
+- Sessions disappear from the UI when their CLI disconnects (no last-known ghost entries) (requested 2026-07-29T12:40:00Z).
 - The harness UI rework must use the repository’s established S&F Design System (requested 2026-07-29T06:40:52Z).
 - For the harness UI rework, automated Playwright tests must be supplemented with a hands-on Playwright MCP smoke pass through representative scenarios and a visual assessment of whether the interface looks and feels smooth (requested 2026-07-29T08:07:14Z).
+
+## 2026-07-28 — The task requested and implemented a repository launcher for selecting Anthropic, Z.AI, or Kimi as the Claude Code backend using configuration from a gitignored `.env` file.
+
+_transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.md_
+
+- Provide a repository-root `start.sh` launcher that can start Claude Code in standard Anthropic, Z.AI, or Kimi mode and reads backend configuration and secrets from a gitignored `.env` file; Kimi must be supported even though it was not previously configured (requested 2026-07-29T16:10:25Z).

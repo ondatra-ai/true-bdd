@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/src/internal/app/store"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/events"
 )
 
@@ -24,15 +25,15 @@ const (
 	streamChunkSize   = 4096
 	eventTailInterval = 120 * time.Millisecond
 
-	// terminalDeliveryTimeout bounds the final terminal-event flush when
-	// the run's ctx is already cancelled (Ctrl+C interrupt): the child is
-	// already down, so a fresh context lets the interrupted envelope reach
-	// the server instead of aborting on the cancelled ctx (plan §3.2).
-	terminalDeliveryTimeout = 30 * time.Second
+	// Control-event append is NEVER-DROP (finding 7): a transient persistence
+	// failure is retried a bounded number of times before failing closed.
+	controlAppendRetries    = 5
+	controlAppendRetryDelay = 25 * time.Millisecond
 
 	streamStdout = "stdout"
 	streamStderr = "stderr"
 
+	// Event type names — the CLI store's generic per-run ledger (plan §1.2).
 	eventTypeOutput       = "output"
 	eventTypePrompt       = "prompt"
 	eventTypeTerminal     = "terminal"
@@ -43,10 +44,10 @@ const (
 )
 
 // childEvent is the child-emitted JSONL shape the remote tails from the
-// event-channel file (plan §3.2). The `result` event carries the FULL
-// engine result — outcome, whether finalization (the post-walk write)
-// succeeded, and any detail — so the remote can synthesize the terminal
-// envelope without erasing the underlying facts (finding 7).
+// event-channel file (plan §1.2). The `result` event carries the FULL engine
+// result — outcome, whether finalization succeeded, and any detail — so the
+// remote synthesizes the terminal envelope without erasing the underlying
+// facts (finding 7).
 type childEvent struct {
 	Type           string         `json:"type"`
 	PromptID       string         `json:"prompt_id"`
@@ -57,47 +58,56 @@ type childEvent struct {
 	Detail         string         `json:"detail"`
 }
 
-// RunExecutor runs one dispatched command as a child process, streams
-// its stdout/stderr and event-channel events into the remote-owned
-// (run_id, seq) stream, relays prompt answers to the child's stdin, and
-// synthesizes the terminal envelope (plan §3.2).
+// RunExecutor runs one dispatched command as a child process, streams its
+// stdout/stderr and event-channel events into the CLI store's per-run event
+// ledger (plan §1.2), relays prompt answers to the child's stdin, and
+// synthesizes the terminal envelope (plan §3.2). It gates the spawn behind the
+// store's command lease (plan §1.5) and records the child's group identity on
+// the run row BEFORE streaming so a crash never leaves an untracked group
+// (plan §1.6).
 type RunExecutor struct {
+	store    *store.DB
+	locks    *store.Locks
+	children *ChildrenRegistry
 	binPath  string
 	folder   string
+	ownerID  string
 	run      RunSpec
-	children *ChildrenRegistry
-	sender   *Outbox
 
-	mu             sync.Mutex
-	stdin          io.WriteCloser
-	pgid           int
-	lastAnswerSeq  int
-	lastPromptKind string
+	mu    sync.Mutex
+	stdin io.WriteCloser
+	pgid  int
 
-	// result is the child's engine result, written by the tailer goroutine
-	// and read after tailer.Wait() establishes the happens-before barrier.
+	// result is the child's engine result, written by the tailer goroutine and
+	// read after tailer.Wait() establishes the happens-before barrier.
 	result childResult
 
-	// interrupted is the CAUSAL shutdown flag (NICE-1): true only when
-	// watchShutdown actually selected ctx.Done() and initiated escalation,
-	// so a natural completion racing a late cancel is not misclassified
-	// interrupted. atomic because watchShutdown runs in its own goroutine.
+	// interrupted is the CAUSAL shutdown flag: true only when watchShutdown
+	// actually selected ctx.Done() and initiated escalation.
 	interrupted atomic.Bool
+
+	// controlFailed latches when a CONTROL event could not be persisted (after
+	// retries): the run fails closed — the child is interrupted and the tailer
+	// stops advancing, so it never blocks on an invisible prompt (finding 7).
+	controlFailed atomic.Bool
 }
 
 // NewRunExecutor builds an executor for one run.
 func NewRunExecutor(
-	client *ServerClient,
-	sessionID, binPath, folder string,
-	run RunSpec,
+	database *store.DB,
+	locks *store.Locks,
 	children *ChildrenRegistry,
+	binPath, folder, ownerID string,
+	run RunSpec,
 ) *RunExecutor {
 	return &RunExecutor{
+		store:    database,
+		locks:    locks,
+		children: children,
 		binPath:  binPath,
 		folder:   folder,
+		ownerID:  ownerID,
 		run:      run,
-		children: children,
-		sender:   newOutbox(client, sessionID, run.RunID, filepath.Join(folder, "tmp"), defaultOutboxOptions()),
 	}
 }
 
@@ -106,83 +116,96 @@ func (e *RunExecutor) RunID() string {
 	return e.run.RunID
 }
 
-// Execute runs the command to a terminal envelope, always sending
-// exactly one terminal event last.
+// Execute takes the command lease, spawns the child, streams its output into
+// the store, and appends exactly one terminal event last. It BLOCKS until the
+// child exits, holding the lease so the folder stays reserved for this command
+// (plan §1.5); releasing it frees the folder for the next command (P10).
 func (e *RunExecutor) Execute(ctx context.Context) {
-	lock, err := AcquireFolderLock(e.lockPath())
-	if err != nil {
-		e.sendTerminal(ctx, lockFailureEnvelope(err))
+	lease, outcome := e.locks.BeginCommand()
+
+	switch outcome {
+	case lockOutcomeOK:
+		defer lease.Release()
+	case lockOutcomeFolderLocked:
+		// A sibling command already holds the folder — terminal folder_locked
+		// without a spawn (plan §1.5, P15).
+		e.appendTerminal(lockFailureEnvelope(errFolderLocked))
+
+		return
+	case lockOutcomeTimeout:
+		// A bounded scan-drain wait exceeded: a 504-class dispatch failure,
+		// classified as error(timeout) — NOT a spawn error and NOT a false
+		// folder_locked (plan §1.5). (The 201 dispatch reply was already sent
+		// before the spawn, so this surfaces on the run row, not the HTTP status.)
+		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailTimeout})
+
+		return
+	default:
+		// Any other unexpected non-ok outcome is a spawn-class error.
+		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailSpawn})
 
 		return
 	}
-	defer lock.Release()
 
-	// Emit the AUTHORITATIVE flock proof immediately after acquisition and
-	// BEFORE argument construction / spawn (plan §3.7 / finding 5). The
-	// server abandons stale older folder runs on THIS event — so a run that
-	// took the lock and then fails to spawn still resolves the old run,
-	// which incidental output/prompt no longer stands in for.
-	e.sendLockAcquired(ctx)
+	// The command lease holds the folder flock; publish the lock-proof
+	// transition (queued → running) into the store (plan §1.2). If it cannot be
+	// persisted, FAIL CLOSED without spawning — a child must never run without
+	// its lock-proof transition recorded (finding 7).
+	if !e.appendLockAcquired() {
+		slog.Error("remote: lock_acquired unpersistable — failing closed without spawn", "run", e.run.RunID)
+		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailSpawn})
 
-	child, eventsPath, err := e.spawnChild(lock)
+		return
+	}
+
+	child, eventsPath, err := e.spawnChild()
 	if err != nil {
 		slog.Error("remote: spawn child failed", "run", e.run.RunID, "error", err)
-		e.sendTerminal(ctx, terminalEnvelope{outcome: outcomeError, detail: detailSpawn})
+		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailSpawn})
 
 		return
 	}
 
-	e.children.Add(childEntry{
-		PGID:          child.pgid,
-		StartIdentity: processStartIdentity(child.pgid),
-		RunID:         e.run.RunID,
-	})
+	// The gated supervisor's identity was recorded BEFORE it was released to run
+	// the real command (spawnChild), so the mutating group is already tracked.
 	defer e.children.Remove(child.pgid)
 
-	// Remove the per-run event JSONL after the tailer's final drain
-	// (NICE-2 lifecycle hygiene): the events were already relayed into the
-	// durable (run_id, seq) stream, so the file is no longer needed.
+	// The events were relayed into the durable store ledger, so drop the
+	// per-run JSONL after the final drain.
 	defer func() { _ = os.Remove(eventsPath) }()
 
 	waitErr := e.stream(ctx, child, eventsPath)
-	e.sendTerminal(ctx, e.classifyTerminal(ctx, waitErr))
+	e.appendTerminal(e.classifyTerminal(ctx, waitErr))
 }
 
-// DeliverAnswer writes a browser-accepted answer to the child's stdin
-// exactly once per answer_seq. The answer_seq is memoized (and reported as
-// consumed) BEFORE the bytes are written (plan §3.3), so a lost-ack
-// redelivery of the same answer is acknowledgement-only — stdin is never
-// written twice per answer_seq. A malformed answer is rejected by
-// remote-side hygiene (plan §3.2) without being written.
-func (e *RunExecutor) DeliverAnswer(answer AnswerMsg) {
+// DeliverAnswer writes a store-accepted answer to the child's stdin (plan
+// §1.4). At-most-once delivery is enforced by the store's delivery_started_at
+// commit, so the executor simply validates and writes. A malformed answer is
+// rejected by remote-side hygiene without being written.
+func (e *RunExecutor) DeliverAnswer(kind, value string) error {
 	e.mu.Lock()
-	defer e.mu.Unlock()
+	stdin := e.stdin
+	e.mu.Unlock()
 
-	if e.stdin == nil || answer.AnswerSeq <= e.lastAnswerSeq {
-		return
+	if stdin == nil {
+		return errNoChildStdin
 	}
 
-	err := validateAnswer(e.lastPromptKind, answer.Value)
+	validationErr := validateAnswer(kind, value)
+	if validationErr != nil {
+		return fmt.Errorf("deliver answer: %w", validationErr)
+	}
+
+	_, err := io.WriteString(stdin, formatAnswer(kind, value))
 	if err != nil {
-		slog.Warn("remote: rejecting invalid answer",
-			"run", e.run.RunID, "seq", answer.AnswerSeq, "error", err)
-
-		return
+		return fmt.Errorf("write answer to child stdin: %w", err)
 	}
 
-	// Memoize BEFORE writing bytes: even if the write below fails or the
-	// process dies mid-write, the same answer_seq is never re-consumed.
-	e.lastAnswerSeq = answer.AnswerSeq
-	e.sender.SetAnswersConsumed(answer.AnswerSeq)
-
-	_, err = io.WriteString(e.stdin, formatAnswer(e.lastPromptKind, answer.Value))
-	if err != nil {
-		slog.Warn("remote: write answer to child stdin failed", "run", e.run.RunID, "error", err)
-	}
+	return nil
 }
 
-// Interrupt forwards SIGINT to the child's process group and closes its
-// stdin (plan §3.2 basic path — a blocked child sees EOF ⇒ Exit).
+// Interrupt forwards SIGINT to the child's process group and closes its stdin
+// (plan §3.2 basic path — a blocked child sees EOF ⇒ Exit).
 func (e *RunExecutor) Interrupt() {
 	e.mu.Lock()
 	pgid := e.pgid
@@ -198,38 +221,34 @@ func (e *RunExecutor) Interrupt() {
 	}
 }
 
-// classifyTerminal picks the terminal envelope. A real Claude call
-// interrupted mid-flight makes the child exit with a non-zero ERROR code
-// (its evaluator's claude call failed), not a signal death, so plan §3.2's
-// "killed by signal ⇒ interrupted" precedence does not always win that
-// race; the remote-level cancellation is the authoritative interrupt
-// signal. The full exit/result envelope is always attached for diagnostics.
+// classifyTerminal picks the terminal envelope. A remote-level cancellation
+// (Ctrl+C / SIGTERM) is the authoritative interrupt signal; version and
+// prompt-probe emit no engine result, so their clean exit is `ok` (plan §3.1).
 func (e *RunExecutor) classifyTerminal(ctx context.Context, waitErr error) terminalEnvelope {
 	env := synthesizeEnvelope(waitErr, e.result)
 
 	if e.wasInterrupted(ctx, waitErr) {
 		env.outcome = outcomeInterrupted
 		env.detail = ""
+
+		return env
+	}
+
+	// version / prompt-probe emit no engine result; a clean exit ⇒ ok.
+	if !e.result.present && !resultExpected(e.run.Command) {
+		code, signaled, _ := exitInfo(waitErr)
+		if !signaled && code == 0 {
+			env.outcome = outcomeOK
+			env.detail = ""
+		}
 	}
 
 	return env
 }
 
 // wasInterrupted decides whether the run was torn down by a remote-level
-// cancellation (Ctrl+C / SIGTERM) rather than by its own completion.
-//
-// It is interrupted when watchShutdown actually SELECTED ctx.Done() and
-// initiated escalation (the causal flag — NICE-1), OR when the run ctx was
-// cancelled and the child did NOT finish as a clean natural completion.
-//
-// The causal flag alone would be fragile: in a real Ctrl+C the child can
-// die (non-zero, no result) from the group signal BEFORE watchShutdown
-// observes ctx.Done(), which would misclassify a genuine interrupt as
-// error(no_result). The second clause keeps that robust. The "clean
-// natural completion" guard (a present result AND a clean exit) is what
-// prevents a LATE, unrelated cancellation from overwriting a real result —
-// the defect NICE-1 targets. This is a deliberately stronger design than a
-// bare causal flag (documented in the fix report).
+// cancellation rather than by its own completion (see the design note retained
+// from v1: a late unrelated cancel must not overwrite a real result).
 func (e *RunExecutor) wasInterrupted(ctx context.Context, waitErr error) bool {
 	if e.interrupted.Load() {
 		return true
@@ -244,10 +263,15 @@ func (e *RunExecutor) wasInterrupted(ctx context.Context, waitErr error) bool {
 	return !cleanNaturalCompletion
 }
 
-// spawnChild launches the command child in its own process group with the
-// folder flock fd inherited (plan §3.7). It returns the managed child and
-// the per-run event-channel path the tailer reads.
-func (e *RunExecutor) spawnChild(lock *FolderLock) (*managedChild, string, error) {
+// spawnChild launches the command via the RESIDENT GATED supervisor (plan §1.6,
+// finding 4): the supervisor becomes the process-group leader and blocks on its
+// release gate; this method records + fsyncs the supervisor's verifiable group
+// identity on the run row AND the per-owner pidfile BEFORE releasing it to exec
+// the real command, so a crash never leaves an untracked mutating group. A
+// bookkeeping failure FAILS CLOSED — the gate is aborted and the supervisor
+// exits without ever running the command. The folder flock is held by the
+// command lease, so the child does not inherit a lock fd in v2.
+func (e *RunExecutor) spawnChild() (*managedChild, string, error) {
 	args, err := commandArgs(e.run)
 	if err != nil {
 		return nil, "", err
@@ -256,15 +280,35 @@ func (e *RunExecutor) spawnChild(lock *FolderLock) (*managedChild, string, error
 	eventsPath := e.eventsPath()
 	_ = os.Remove(eventsPath)
 
-	child, err := spawnProcessGroup(spawnConfig{
-		binPath:  e.binPath,
-		args:     args,
-		env:      childEnv(eventsPath),
-		dir:      e.folder,
-		lockFile: lock.File(),
+	child, err := spawnGatedGroup(spawnConfig{
+		binPath: e.binPath,
+		args:    args,
+		env:     childEnv(eventsPath),
+		dir:     e.folder,
 	})
 	if err != nil {
 		return nil, "", err
+	}
+
+	// Record the RESIDENT supervisor's identity BEFORE releasing it (finding 4).
+	identity := processStartIdentity(child.pgid)
+
+	recErr := e.recordGroupIdentity(child.pgid, identity)
+	if recErr != nil {
+		child.abortGate()
+		_ = child.Wait()
+
+		return nil, "", recErr
+	}
+
+	// Bookkeeping durable → release the supervisor to exec the real command.
+	relErr := child.Release()
+	if relErr != nil {
+		child.abortGate()
+		e.children.Remove(child.pgid)
+		_ = child.Wait()
+
+		return nil, "", relErr
 	}
 
 	e.mu.Lock()
@@ -275,27 +319,42 @@ func (e *RunExecutor) spawnChild(lock *FolderLock) (*managedChild, string, error
 	return child, eventsPath, nil
 }
 
-// stream reads stdout/stderr and the event file concurrently, waits for
-// the child to exit, and returns the wait error. A watcher goroutine
-// escalates SIGINT → SIGTERM → SIGKILL if ctx is cancelled (plan §3.2).
-// stdout/stderr are drained BEFORE Wait (the StdoutPipe contract); the
-// event tailer runs until signalled, then does a final drain so the
-// result event lands.
+// recordGroupIdentity durably records the supervisor's {pgid, start_identity}
+// on the run row (WAL-durable) and the per-owner pidfile (fsynced), so boot
+// reconciliation can verify or clean up the group (finding 4). A run-row write
+// failure fails closed.
+func (e *RunExecutor) recordGroupIdentity(pgid int, identity string) error {
+	err := e.store.Exec(
+		`UPDATE runs SET child_pgid = ?, child_start_identity = ? WHERE id = ?`,
+		pgid, identity, e.run.RunID,
+	)
+	if err != nil {
+		return fmt.Errorf("record group identity: %w", err)
+	}
+
+	e.children.Add(childEntry{PGID: pgid, StartIdentity: identity, RunID: e.run.RunID})
+
+	return nil
+}
+
+// stream reads stdout/stderr and the event file concurrently, waits for the
+// child to exit, and returns the wait error. A watcher goroutine escalates
+// SIGINT → SIGTERM → SIGKILL if ctx is cancelled (plan §3.2).
 func (e *RunExecutor) stream(ctx context.Context, child *managedChild, eventsPath string) error {
 	go watchShutdown(ctx, child, &e.interrupted)
 
 	var readers sync.WaitGroup
 
 	readers.Add(2) //nolint:mnd // stdout + stderr
-	go e.pump(ctx, &readers, child.stdout, streamStdout)
-	go e.pump(ctx, &readers, child.stderr, streamStderr)
+	go e.pump(&readers, child.stdout, streamStdout)
+	go e.pump(&readers, child.stderr, streamStderr)
 
 	tailDone := make(chan struct{})
 
 	var tailer sync.WaitGroup
 
 	tailer.Add(1)
-	go e.tailEvents(ctx, &tailer, eventsPath, tailDone)
+	go e.tailEvents(&tailer, eventsPath, tailDone)
 
 	readers.Wait()
 
@@ -313,9 +372,7 @@ func (e *RunExecutor) stream(ctx context.Context, child *managedChild, eventsPat
 
 // watchShutdown escalates the child's shutdown when ctx is cancelled, or
 // returns quietly once the child exits on its own. It records the CAUSAL
-// interrupt flag (NICE-1) ONLY when it actually selected ctx.Done() and
-// initiated escalation, so a natural completion that merely races a later
-// cancellation is never reported as interrupted.
+// interrupt flag ONLY when it actually selected ctx.Done().
 func watchShutdown(ctx context.Context, child *managedChild, interrupted *atomic.Bool) {
 	select {
 	case <-ctx.Done():
@@ -325,7 +382,7 @@ func watchShutdown(ctx context.Context, child *managedChild, interrupted *atomic
 	}
 }
 
-func (e *RunExecutor) pump(ctx context.Context, group *sync.WaitGroup, reader io.Reader, stream string) {
+func (e *RunExecutor) pump(group *sync.WaitGroup, reader io.Reader, stream string) {
 	defer group.Done()
 
 	buffer := make([]byte, streamChunkSize)
@@ -333,7 +390,7 @@ func (e *RunExecutor) pump(ctx context.Context, group *sync.WaitGroup, reader io
 	for {
 		count, err := reader.Read(buffer)
 		if count > 0 {
-			e.sendOutput(ctx, stream, string(buffer[:count]))
+			e.appendOutput(stream, string(buffer[:count]))
 		}
 
 		if err != nil {
@@ -342,32 +399,17 @@ func (e *RunExecutor) pump(ctx context.Context, group *sync.WaitGroup, reader io
 	}
 }
 
-// sendLockAcquired posts the explicit lock_acquired proof event (finding 5).
-func (e *RunExecutor) sendLockAcquired(ctx context.Context) {
-	err := e.sender.Send(ctx, OutEvent{Type: eventTypeLockAcquired})
-	if err != nil {
-		slog.Warn("remote: send lock_acquired failed", "run", e.run.RunID, "error", err)
-	}
-}
-
-func (e *RunExecutor) sendOutput(ctx context.Context, stream, data string) {
-	err := e.sender.Send(ctx, OutEvent{Type: eventTypeOutput, Stream: stream, Data: data})
-	if err != nil {
-		slog.Warn("remote: send output failed", "run", e.run.RunID, "error", err)
-	}
-}
-
-func (e *RunExecutor) tailEvents(ctx context.Context, group *sync.WaitGroup, path string, done <-chan struct{}) {
+func (e *RunExecutor) tailEvents(group *sync.WaitGroup, path string, done <-chan struct{}) {
 	defer group.Done()
 
 	var offset int64
 
 	for {
-		offset = e.drainEvents(ctx, path, offset)
+		offset = e.drainEvents(path, offset)
 
 		select {
 		case <-done:
-			e.drainEvents(ctx, path, offset)
+			e.drainEvents(path, offset)
 
 			return
 		case <-time.After(eventTailInterval):
@@ -375,9 +417,28 @@ func (e *RunExecutor) tailEvents(ctx context.Context, group *sync.WaitGroup, pat
 	}
 }
 
-// drainEvents reads and handles the complete lines appended past offset,
-// returning the new offset (advanced only past whole lines).
-func (e *RunExecutor) drainEvents(ctx context.Context, path string, offset int64) int64 {
+// lineResult reports how the tailer must treat a processed child line.
+type lineResult int
+
+const (
+	// lineAdvance: the line was persisted, legitimately dropped (run terminal),
+	// a result, or garbage — advance the tail offset past it.
+	lineAdvance lineResult = iota
+	// lineFailClosed: a CONTROL event could not be persisted — fail closed, and
+	// do NOT advance past it (finding 7).
+	lineFailClosed
+)
+
+// drainEvents reads and handles the complete lines appended past offset. The
+// offset advances past a line ONLY after its control event durably committed
+// (or was legitimately dropped); a control event that cannot be persisted fails
+// the run CLOSED and stops the drain there — the offset never advances past a
+// lost control event (finding 7).
+func (e *RunExecutor) drainEvents(path string, offset int64) int64 {
+	if e.controlFailed.Load() {
+		return offset
+	}
+
 	file, err := os.Open(path) //nolint:gosec // path is a remote-controlled tmp file
 	if err != nil {
 		return offset
@@ -398,16 +459,23 @@ func (e *RunExecutor) drainEvents(ctx context.Context, path string, offset int64
 	consumed := 0
 
 	for index := range len(lines) - 1 {
-		e.handleChildLine(ctx, lines[index])
+		if e.handleChildLine(lines[index]) == lineFailClosed {
+			// A control event is unpersistable: fail closed and STOP advancing,
+			// so nothing after the lost event is silently consumed.
+			e.failClosed()
+
+			break
+		}
+
 		consumed += len(lines[index]) + 1
 	}
 
 	return offset + int64(consumed)
 }
 
-func (e *RunExecutor) handleChildLine(ctx context.Context, line []byte) {
+func (e *RunExecutor) handleChildLine(line []byte) lineResult {
 	if len(bytes.TrimSpace(line)) == 0 {
-		return
+		return lineAdvance
 	}
 
 	var event childEvent
@@ -416,80 +484,130 @@ func (e *RunExecutor) handleChildLine(ctx context.Context, line []byte) {
 	if err != nil {
 		slog.Warn("remote: unparseable child event", "run", e.run.RunID, "line", string(line))
 
-		return
+		return lineAdvance
 	}
 
 	switch event.Type {
 	case childEventPrompt:
-		e.relayPrompt(ctx, event)
+		return e.appendPrompt(event)
 	case childEventResult:
-		// Retain the WHOLE result (finding 7). Written in the tailer
-		// goroutine; read after tailer.Wait()'s happens-before barrier.
+		// Retain the WHOLE result (finding 7). Written in the tailer goroutine;
+		// read after tailer.Wait()'s happens-before barrier.
 		e.result = childResult{
 			present:        true,
 			outcome:        event.Outcome,
 			finalizationOK: event.FinalizationOK,
 			detail:         event.Detail,
 		}
+
+		return lineAdvance
+	default:
+		return lineAdvance
 	}
 }
 
-func (e *RunExecutor) relayPrompt(ctx context.Context, event childEvent) {
-	e.mu.Lock()
-	e.lastPromptKind = event.Kind
-	e.mu.Unlock()
+// appendControl persists a control event, retrying transient failures a bounded
+// number of times (finding 7). It returns persisted=true on commit; terminal=
+// true when the run is already terminal/gone (a legitimate, safe drop); and
+// (false,false) when the event remained unpersistable after every retry.
+func (e *RunExecutor) appendControl(event store.EventInput) (bool, bool) {
+	for range controlAppendRetries {
+		out := e.store.AppendEvent(e.run.RunID, event)
+		if !out.Rejected {
+			return true, false
+		}
 
-	err := e.sender.Send(ctx, OutEvent{
+		if out.Terminal {
+			// The run is already terminal/gone — dropping the event is safe.
+			return false, true
+		}
+
+		time.Sleep(controlAppendRetryDelay)
+	}
+
+	return false, false
+}
+
+// failClosed latches the control-failure flag and interrupts the child so it
+// never blocks on an invisible prompt (finding 7).
+func (e *RunExecutor) failClosed() {
+	if e.controlFailed.Swap(true) {
+		return
+	}
+
+	slog.Error("remote: control event unpersistable — failing the run closed", "run", e.run.RunID)
+	e.Interrupt()
+}
+
+// appendLockAcquired publishes the lock-proof transition into the store,
+// retrying transient failures. Returns whether it was persisted (finding 7).
+func (e *RunExecutor) appendLockAcquired() bool {
+	persisted, _ := e.appendControl(store.EventInput{Type: eventTypeLockAcquired, Control: true})
+
+	return persisted
+}
+
+// appendOutput appends one stdout/stderr chunk and enforces the per-run byte
+// budget (plan §1.3).
+func (e *RunExecutor) appendOutput(stream, data string) {
+	e.store.AppendEvent(e.run.RunID, store.EventInput{Type: eventTypeOutput, Stream: stream, Data: data})
+	e.store.EnforceByteBudget(e.run.RunID)
+}
+
+// appendPrompt publishes a child prompt into the store ledger; the store's
+// projection records the pending prompt row (plan §1.2/§1.4). A prompt is a
+// CONTROL event: if it cannot be persisted (after retries) the tail must NOT
+// advance past it — otherwise the child blocks forever on a prompt the browser
+// can never see (finding 7).
+func (e *RunExecutor) appendPrompt(event childEvent) lineResult {
+	payloadJSON := ""
+
+	if event.Payload != nil {
+		raw, err := json.Marshal(event.Payload)
+		if err == nil {
+			payloadJSON = string(raw)
+		}
+	}
+
+	persisted, terminal := e.appendControl(store.EventInput{
 		Type:     eventTypePrompt,
 		PromptID: event.PromptID,
 		Kind:     event.Kind,
-		Payload:  event.Payload,
+		Payload:  payloadJSON,
+		Control:  true,
 	})
-	if err != nil {
-		slog.Warn("remote: relay prompt failed", "run", e.run.RunID, "error", err)
+	if persisted || terminal {
+		return lineAdvance
 	}
+
+	slog.Warn("remote: prompt append unpersistable — failing closed", "run", e.run.RunID, "prompt", event.PromptID)
+
+	return lineFailClosed
 }
 
-// sendTerminal posts the terminal event (last, highest seq) then drives a
-// final bounded flush so a healthy server acks it and the spool is
-// deleted; a persistent outage leaves the spool for startup replay.
-//
-// On a Ctrl+C interrupt the run's ctx is already cancelled — that
-// cancellation is precisely what tore the child down — but the terminal
-// (interrupted) envelope MUST still reach the server, or the run hangs
-// non-terminal until a later incarnation replays the spool. So when the
-// run ctx is already done, delivery switches to a fresh bounded context
-// (plan §3.2: the interrupt path completes with the envelope delivered).
-func (e *RunExecutor) sendTerminal(ctx context.Context, envelope terminalEnvelope) {
-	if ctx.Err() != nil {
-		var cancel context.CancelFunc
-
-		ctx, cancel = context.WithTimeout(context.Background(), terminalDeliveryTimeout)
-		defer cancel()
-	}
-
-	err := e.sender.Send(ctx, OutEvent{
-		Type:           eventTypeTerminal,
-		Outcome:        envelope.outcome,
-		ErrorDetail:    envelope.detail,
-		EngineOutcome:  envelope.engineOutcome,
-		FinalizationOK: envelope.finalizationOK,
-		ExitCode:       envelope.exitCode,
-		Signal:         envelope.signal,
+// appendTerminal writes the terminal event last (the badge classification) and
+// enriches the retained diagnostic columns the generic terminal projection
+// does not set (plan §1.2 / finding 7), then enforces run retention.
+func (e *RunExecutor) appendTerminal(env terminalEnvelope) {
+	out := e.store.AppendEvent(e.run.RunID, store.EventInput{
+		Type:        eventTypeTerminal,
+		Outcome:     env.outcome,
+		ErrorDetail: env.detail,
+		Control:     true,
 	})
-	if err != nil {
-		slog.Error("remote: send terminal failed", "run", e.run.RunID, "error", err)
+	if out.Rejected {
+		// The run is already terminal (e.g. boot-reconciled to abandoned); do
+		// not overwrite it.
+		return
 	}
 
-	err = e.sender.Flush(ctx)
-	if err != nil {
-		slog.Warn("remote: final flush incomplete; spool retained for replay",
-			"run", e.run.RunID, "error", err)
-	}
-}
+	_ = e.store.Exec(
+		`UPDATE runs SET engine_outcome = ?, finalization_ok = ?, exit_code = ?, signal = ? WHERE id = ?`,
+		nullString(env.engineOutcome), nullBool(env.finalizationOK),
+		nullIntPtr(env.exitCode), nullString(env.signal), e.run.RunID,
+	)
 
-func (e *RunExecutor) lockPath() string {
-	return filepath.Join(e.folder, "tmp", "true-bdd-harness.lock")
+	e.store.EnforceRetention()
 }
 
 func (e *RunExecutor) eventsPath() string {
@@ -516,8 +634,8 @@ func commandPipes(cmd *exec.Cmd) (io.WriteCloser, io.ReadCloser, io.ReadCloser, 
 	return stdin, stdout, stderr, nil
 }
 
-// childEnv strips CLAUDECODE (production stripping — plan §3.2/§4.4) and
-// points the child at its per-run event-channel file.
+// childEnv strips CLAUDECODE (production stripping — plan §3.2/§4.4) and points
+// the child at its per-run event-channel file.
 func childEnv(eventsPath string) []string {
 	base := os.Environ()
 	out := make([]string, 0, len(base)+1)
@@ -537,9 +655,8 @@ func childEnv(eventsPath string) []string {
 	return append(out, events.EventsFileEnv+"="+eventsPath)
 }
 
-// formatAnswer frames an answer for the child's line-based collector.
-// Freetext gets a terminating blank line (the collector reads until an
-// empty line — plan §3.2 / A2).
+// formatAnswer frames an answer for the child's line-based collector. Freetext
+// gets a terminating blank line (the collector reads until an empty line).
 func formatAnswer(kind, value string) string {
 	base := value
 	if !strings.HasSuffix(base, "\n") {
@@ -560,4 +677,42 @@ func lockFailureEnvelope(err error) terminalEnvelope {
 	}
 
 	return terminalEnvelope{outcome: outcomeError, detail: detailSpawn}
+}
+
+// resultExpected reports whether the command is an engine command that emits a
+// `result` event; version and prompt-probe do not (plan §3.1/§4).
+func resultExpected(command string) bool {
+	switch command {
+	case commandVersion, commandPromptProbe:
+		return false
+	default:
+		return true
+	}
+}
+
+// nullString maps "" to a SQL NULL, else the value.
+func nullString(s string) any {
+	if s == "" {
+		return nil
+	}
+
+	return s
+}
+
+// nullBool maps a nil *bool to SQL NULL, else the bool.
+func nullBool(b *bool) any {
+	if b == nil {
+		return nil
+	}
+
+	return *b
+}
+
+// nullIntPtr maps a nil *int to SQL NULL, else the int.
+func nullIntPtr(i *int) any {
+	if i == nil {
+		return nil
+	}
+
+	return *i
 }

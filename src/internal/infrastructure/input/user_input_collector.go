@@ -28,6 +28,14 @@ func NewUserInputCollector() *UserInputCollector {
 	return newUserInputCollector(os.Stdin)
 }
 
+// NewUserInputCollectorFrom builds a collector over an arbitrary reader. The
+// hidden `prompt-probe` command (plan §4) uses it to drive the real
+// choice/clarify/freetext collector against a controlled stdin, so protocol
+// tests exercise the prompt dialogs without spawning `claude`.
+func NewUserInputCollectorFrom(reader io.Reader) *UserInputCollector {
+	return newUserInputCollector(reader)
+}
+
 // newUserInputCollector builds a collector over an arbitrary reader so the
 // line-based prompt parsing (choice enum, numeric→option-text clarify
 // mapping, multiline+blank-line freetext termination) is unit-testable

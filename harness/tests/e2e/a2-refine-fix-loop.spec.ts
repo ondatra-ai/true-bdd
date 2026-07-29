@@ -76,48 +76,47 @@ test("A2: refine fix loop — choice→freetext→choice, converges, defect gone
   const fixture = await e.materialize("a2-refine-fix-loop");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
   // Dispatch through the row action with --fix toggled on.
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
   const row = storyRow(page, "70.1");
   await expect(row.getByTestId(TID.actionRefine)).toBeEnabled({ timeout: 15_000 });
   await row.getByTestId(TID.fixToggle).check();
   await row.getByTestId(TID.actionRefine).click();
 
   const dispatched = await pollUntil<RunSummary>(
-    async () => (await e.api.getSession(session.id)).runs.find((run) => run.command === "us-refine"),
+    async () => (await e.api.getSession(session.session_id)).runs.find((run) => run.command === "us-refine"),
     { timeoutMs: 30_000, what: "the Refine action to dispatch a us-refine run" },
   );
   expect(dispatched.story_id).toBe("77.5"); // file-prefix id, not the position-derived 70.1
   expect(dispatched.fix).toBe(true);
-  const runId = dispatched.id;
+  const runId = dispatched.run_id;
   e.note({ runId });
 
-  await gotoRun(page, e.server.baseURL, runId);
+  await gotoRun(page, e.server.baseURL, session.session_id, runId);
 
   // choice #1 → Refine.
-  const choice1 = await waitForPromptKind(e.api, runId, "choice");
+  const choice1 = await waitForPromptKind(e.api, session.session_id, runId, "choice");
   const choice1Id = choice1.prompt.prompt_id;
   await clickChoice(page, choice1Id, "refine");
 
   // freetext → submit the EXACT multiline feedback (no trailing blank line).
-  const freetext = await waitForPromptKind(e.api, runId, "freetext", { notPromptId: choice1Id });
+  const freetext = await waitForPromptKind(e.api, session.session_id, runId, "freetext", { notPromptId: choice1Id });
   const freetextId = freetext.prompt.prompt_id;
   await submitFreetext(page, freetextId, REFINEMENT_FEEDBACK);
 
   // choice #2 — a NEW prompt id — proves the freetext was consumed
   // (remote framed it with the terminating blank line).
-  const choice2 = await waitForPromptKind(e.api, runId, "choice", { notPromptId: freetextId });
+  const choice2 = await waitForPromptKind(e.api, session.session_id, runId, "choice", { notPromptId: freetextId });
   const choice2Id = choice2.prompt.prompt_id;
   expect(choice2Id).not.toBe(choice1Id);
   expect(choice2Id).not.toBe(freetextId);
 
   // Apply-until-terminal from choice #2 (≥1 Apply, fail past the cap).
-  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, runId, {
+  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, session.session_id, runId, {
     cap: APPLY_CAP,
     label: "A2",
     stepTimeoutMs: AI_TERMINAL_TIMEOUT_MS,

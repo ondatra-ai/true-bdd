@@ -1,0 +1,20 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "mcp": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@3.2.5"]
+    },
+    "terminal": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-interactive-terminal@1.0.9"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.78"]
+    }
+  }
+}

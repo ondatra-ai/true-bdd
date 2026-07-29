@@ -13,6 +13,10 @@ const (
 	detailNoResult      = "no_result"
 	detailContradiction = "contradiction"
 	detailFolderLocked  = "folder_locked"
+	// detailTimeout marks a bounded scan-drain wait exceeded — a 504-class
+	// dispatch failure, distinct from a spawn error or a false folder_locked
+	// (plan §1.5).
+	detailTimeout = "timeout"
 
 	// Engine stop-reason outcomes the remote reasons about (mirrors the
 	// runner's event vocabulary). Named so the contradiction check and the

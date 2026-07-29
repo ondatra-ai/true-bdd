@@ -174,31 +174,47 @@ export class RemoteProcess {
   }
 
   /**
-   * Parses `<cwd>/tmp/true-bdd-remote-children.pids` when present.
-   * The exact file format is pinned by the phase-2 Go implementation
-   * (plan §3.2: PGID + process-start identity + run id per entry);
-   * this parser accepts JSONL objects and falls back to
-   * whitespace-separated lines whose first token is the PGID, so it
-   * keeps working across format details.
+   * Parses the remote's children pids file(s) under `<cwd>/tmp/`.
+   *
+   * v2 (plan §1.6): child pid files become PER-OWNER
+   * `true-bdd-remote-children.<owner_id>.jsonl` (fixing the same-folder
+   * clobbering bug where two remotes rewrote one shared file). This parser
+   * globs every such per-owner file AND still reads the legacy single
+   * `true-bdd-remote-children.pids`, so it keeps working across the
+   * migration. Each entry is a JSONL object (PGID + process-start identity
+   * + run id); a whitespace-separated fallback keeps older formats parsing.
    */
   readChildrenPids(): ChildPidEntry[] {
-    const pidsPath = path.join(this.cwd, "tmp", "true-bdd-remote-children.pids");
+    const tmpDir = path.join(this.cwd, "tmp");
 
-    let raw: string;
+    const files: string[] = [path.join(tmpDir, "true-bdd-remote-children.pids")];
     try {
-      raw = fs.readFileSync(pidsPath, "utf8");
+      for (const name of fs.readdirSync(tmpDir)) {
+        if (name.startsWith("true-bdd-remote-children.") && name.endsWith(".jsonl")) {
+          files.push(path.join(tmpDir, name));
+        }
+      }
     } catch {
-      return [];
+      // tmp/ may not exist yet.
     }
 
     const entries: ChildPidEntry[] = [];
-    for (const line of raw.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
+    for (const file of files) {
+      let raw: string;
+      try {
+        raw = fs.readFileSync(file, "utf8");
+      } catch {
+        continue;
+      }
 
-      const parsed = parsePidLine(trimmed);
-      if (parsed !== undefined) {
-        entries.push(parsed);
+      for (const line of raw.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const parsed = parsePidLine(trimmed);
+        if (parsed !== undefined) {
+          entries.push(parsed);
+        }
       }
     }
 

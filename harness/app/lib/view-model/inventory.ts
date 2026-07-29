@@ -457,7 +457,11 @@ export function inventoryTruncated(snapshot: InventorySnapshot | null): boolean 
     return false;
   }
 
-  if (snapshot.snapshot_truncated === true || (snapshot.unavailable ?? "").length > 0) {
+  if (
+    snapshot.snapshot_truncated === true ||
+    snapshot.limit_too_small === true ||
+    (snapshot.unavailable ?? "").length > 0
+  ) {
     return true;
   }
 
@@ -470,22 +474,7 @@ export function inventoryTruncated(snapshot: InventorySnapshot | null): boolean 
   );
 }
 
-// ── Client-side inventory generation reconciliation (plan §2a) ──
-
-/**
- * Whether the loaded inventory is behind the target generation (from the
- * status poll) and must be refetched. Never true when the loaded generation
- * already caught up or overshot a reordered/older status.
- */
-export function inventoryStale(targetGeneration: number, loadedGeneration: number): boolean {
-  return targetGeneration > loadedGeneration;
-}
-
-/**
- * Reconciles the loaded generation against an incoming inventory response's
- * generation, never regressing: a reordered/older response keeps the loaded
- * generation (plan §2a retry-until-match).
- */
-export function reconcileInventoryGeneration(loaded: number, incoming: number): number {
-  return Math.max(loaded, incoming);
+/** True when the fit ladder collapsed to global counts only (§1.5). */
+export function inventoryLimitTooSmall(snapshot: InventorySnapshot | null): boolean {
+  return snapshot?.limit_too_small === true || (snapshot?.unavailable ?? "").length > 0;
 }

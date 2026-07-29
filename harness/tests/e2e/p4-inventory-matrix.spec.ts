@@ -240,10 +240,9 @@ for (const matrixCase of CASES) {
     const fixture = await e.materialize(matrixCase.fixture);
     const remote = await e.startRemote(fixture.target);
     const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-    e.note({ sessionId: session.id });
-    await e.api.waitForGeneration(session.id, 0);
+    e.note({ sessionId: session.session_id });
 
-    await gotoSession(page, e.server.baseURL, session.id);
+    await gotoSession(page, e.server.baseURL, session.session_id);
     await matrixCase.assert(page);
   });
 }

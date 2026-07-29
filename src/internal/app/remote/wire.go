@@ -1,136 +1,193 @@
 package remote
 
-import "github.com/ondatra-ai/true-bdd/src/internal/app/inventory"
+import (
+	"encoding/json"
 
-// This file defines the JSON wire DTOs for the harness RPC protocol
-// (plan §3.3) shared by the ServerClient, RunExecutor, and Agent. The
-// browser-facing shapes live in the Next.js server; these mirror only
-// the agent-facing subset the remote speaks.
+	"github.com/ondatra-ai/true-bdd/src/internal/app/inventory"
+)
 
-// RegisterRequest is the body of POST /api/agent/register.
-type RegisterRequest struct {
-	IncarnationID   string `json:"incarnation_id"`
+// This file defines the v2 register / poll / reply wire DTOs (plan §2) the
+// remote speaks to the STATELESS RELAY, plus the browser-facing projection
+// shapes the query handler PRODUCES as JSON. The relay carries the query /
+// dispatch / answer work items to the CLI and relays the CLI's reply body
+// back to the browser verbatim, so these projection shapes must match
+// harness/tests/e2e/helpers/api-client.ts exactly.
+
+// ── Agent protocol (plan §2) ──
+
+// registerRequest is the body of POST /api/agent/register.
+type registerRequest struct {
+	SessionID       string `json:"session_id"`
 	Folder          string `json:"folder"`
 	CanonicalFolder string `json:"canonical_folder"`
 	PID             int    `json:"pid"`
+	StartIdentity   string `json:"start_identity"`
 	Version         string `json:"version"`
 }
 
-// RegisterResponse is the reply to a successful register. InventoryLimitBytes
-// is the server's effective inventory request byte budget (plan §1a /
-// §r3-1): the remote derives its snapshot-fit budget from it and re-scans
-// smaller on a 413. Zero (omitted) means the server did not negotiate a
-// limit and the remote scans unbounded.
-type RegisterResponse struct {
-	SessionID           string `json:"session_id"`
-	ScanEpoch           int    `json:"scan_epoch"`
-	InventoryLimitBytes int    `json:"inventory_limit_bytes,omitempty"`
+// registerResult is the reply to a successful register: the negotiated
+// connection epoch, reply byte budget (the streamed reply cap), capability
+// token, and the inventory-fit budget (the full-request budget the remote fits
+// its snapshot under — configurable per server, distinct from the large
+// streamed reply cap so a tiny inventory budget degrades the snapshot without
+// 413-ing every read).
+type registerResult struct {
+	ConnectionEpoch      int    `json:"connection_epoch"`
+	ReplyBudgetBytes     int    `json:"reply_budget_bytes"`
+	CapabilityToken      string `json:"capability_token"`
+	InventoryBudgetBytes int    `json:"inventory_budget_bytes"`
 }
 
-// PollRequest is the body of POST /api/agent/poll — the heartbeat. It also
-// carries the OUT-OF-BAND inventory-unavailable signal (plan §1a / finding
-// 1): when the server's negotiated inventory limit is below the minimum that
-// can carry even the floor request, no inventory upload can ever be
-// accepted, so the remote reports the terminal cannot-fit state here — on a
-// channel that is not size-gated — rather than 413-looping forever.
-type PollRequest struct {
-	SessionID           string `json:"session_id"`
-	ActiveRunID         string `json:"active_run_id,omitempty"`
-	InventoryUnavailable string `json:"inventory_unavailable,omitempty"`
+// pollRequest is the body of POST /api/agent/poll — the correlation triple.
+type pollRequest struct {
+	SessionID       string `json:"session_id"`
+	ConnectionEpoch int    `json:"connection_epoch"`
+	CapabilityToken string `json:"capability_token"`
 }
 
-// PollResponse carries any dispatched run, a pending answer, and the
-// current scan epoch.
-type PollResponse struct {
-	Run           *RunSpec   `json:"run,omitempty"`
-	Answer        *AnswerMsg `json:"answer,omitempty"`
-	WantInventory bool       `json:"want_inventory,omitempty"`
-	ScanEpoch     int        `json:"scan_epoch,omitempty"`
+// workItem is one dispatched unit of work the relay hands the CLI on a 200
+// poll (plan §2). Payload is the type-specific body (query / dispatch /
+// answer), decoded lazily.
+type workItem struct {
+	WorkID          string          `json:"work_id"`
+	SessionID       string          `json:"session_id"`
+	ConnectionEpoch int             `json:"connection_epoch"`
+	Type            string          `json:"type"`
+	Payload         json.RawMessage `json:"payload"`
+	Deadline        int64           `json:"deadline"`
 }
 
-// RunSpec describes one dispatched command the remote must execute.
-type RunSpec struct {
-	RunID   string `json:"run_id"`
-	Command string `json:"command"`
-	StoryID string `json:"story_id,omitempty"`
-	Fix     bool   `json:"fix"`
+// replyEnvelope is the body of POST /api/agent/reply: an HTTP status plus the
+// JSON result the relay returns to the awaiting browser (plan §2). The
+// correlation triple travels in headers, OUTSIDE this capped body.
+type replyEnvelope struct {
+	Status int `json:"status"`
+	Body   any `json:"body"`
 }
 
-// AnswerMsg is a browser-accepted answer relayed back to the child.
-type AnswerMsg struct {
+// Work item types (plan §2).
+const (
+	workQuery    = "query"
+	workDispatch = "dispatch"
+	workAnswer   = "answer"
+)
+
+// queryPayload is the body of a `query` work item (plan §3): the view to
+// project, plus the session and (for run_detail) run id.
+type queryPayload struct {
+	View      string `json:"view"`
+	SessionID string `json:"session_id"`
+	RunID     string `json:"run_id"`
+}
+
+// Query views (plan §3).
+const (
+	viewSessionStatus = "session_status"
+	viewSessionDetail = "session_detail"
+	viewRunDetail     = "run_detail"
+)
+
+// dispatchPayload is the body of a `dispatch` work item (plan §3).
+type dispatchPayload struct {
+	SessionID   string `json:"session_id"`
+	Command     string `json:"command"`
+	StoryID     string `json:"story_id"`
+	Fix         bool   `json:"fix"`
+	ClientToken string `json:"client_token"`
+}
+
+// answerPayload is the body of an `answer` work item (plan §3).
+type answerPayload struct {
+	SessionID string `json:"session_id"`
+	RunID     string `json:"run_id"`
 	PromptID  string `json:"prompt_id"`
 	Value     string `json:"value"`
-	AnswerSeq int    `json:"answer_seq"`
 }
 
-// EventsRequest posts a contiguous batch of remote-owned run events.
-// AnswersConsumed is the highest answer_seq the remote has written to the
-// child's stdin (memoized before the write — plan §3.3); the server
-// confirms it back as answers_consumed_through so a lost answer is never
-// re-delivered after it was consumed.
-type EventsRequest struct {
-	SessionID       string     `json:"session_id"`
-	RunID           string     `json:"run_id"`
-	Events          []OutEvent `json:"events"`
-	AnswersConsumed int        `json:"answers_consumed,omitempty"`
+// ── Browser-facing projection shapes (must match api-client.ts) ──
+
+// RunSummary is one row of project run history (plan §3). Nullable columns
+// (story_id, outcome, error_detail) are pointers so they serialize to JSON
+// null, not omitted, matching the TS `string | null` contract.
+type RunSummary struct {
+	RunID       string  `json:"run_id"`
+	OwnerID     string  `json:"owner_id"`
+	Command     string  `json:"command"`
+	StoryID     *string `json:"story_id"`
+	Fix         bool    `json:"fix"`
+	State       string  `json:"state"`
+	Outcome     *string `json:"outcome"`
+	ErrorDetail *string `json:"error_detail"`
+	Answerable  bool    `json:"answerable"`
+	CreatedAt   int64   `json:"created_at"`
+	UpdatedAt   int64   `json:"updated_at"`
 }
 
-// OutEvent is one remote-owned run event in the (run_id, seq) stream.
-// The optional fields carry the payload for its `type`: output chunks
-// use stream/data; prompts use prompt_id/kind/payload; the terminal
-// event uses outcome/error_detail plus the FULL terminal envelope
-// (engine_outcome / finalization_ok / exit_code / signal — plan §3.2 /
-// finding 7); a `lock_acquired` event (plan §3.7 / finding 5) carries no
-// payload — its arrival is the authoritative flock proof. A
-// spool-truncation RANGE TOMBSTONE (`type:"gap"`) uses
-// through_seq/dropped_bytes and covers the inclusive seq range
-// [seq, through_seq] for contiguous ack (plan §3.6).
-type OutEvent struct {
-	Seq            int            `json:"seq"`
-	Type           string         `json:"type"`
-	Stream         string         `json:"stream,omitempty"`
-	Data           string         `json:"data,omitempty"`
-	PromptID       string         `json:"prompt_id,omitempty"`
-	Kind           string         `json:"kind,omitempty"`
-	Payload        map[string]any `json:"payload,omitempty"`
-	Outcome        string         `json:"outcome,omitempty"`
-	ErrorDetail    string         `json:"error_detail,omitempty"`
-	EngineOutcome  string         `json:"engine_outcome,omitempty"`
-	FinalizationOK *bool          `json:"finalization_ok,omitempty"`
-	ExitCode       *int           `json:"exit_code,omitempty"`
-	Signal         string         `json:"signal,omitempty"`
-	ThroughSeq     int            `json:"through_seq,omitempty"`
-	DroppedBytes   int            `json:"dropped_bytes,omitempty"`
+// ActiveOwner is a same-project active owner surfaced for the sibling warning
+// (plan §3). SessionID is the owning live session id (owner_id IS the session
+// id in v2); null when unknown.
+type ActiveOwner struct {
+	OwnerID   string  `json:"owner_id"`
+	SessionID *string `json:"session_id"`
+	RunID     string  `json:"run_id"`
+	Command   string  `json:"command"`
 }
 
-// SpanEnd returns the highest seq this event covers: through_seq for a
-// gap tombstone, otherwise its own seq. The server uses it to advance the
-// contiguous acked_through watermark across truncated ranges.
-func (e OutEvent) SpanEnd() int {
-	if e.Type == eventTypeGap {
-		return e.ThroughSeq
-	}
-
-	return e.Seq
+// SessionStatus is the `session_status` projection (plan §3): active run,
+// project run history newest-first, and same-project active owners — from ONE
+// consistent CLI-side read.
+type SessionStatus struct {
+	SessionID    string        `json:"session_id"`
+	OwnerID      string        `json:"owner_id"`
+	ActiveRun    *RunSummary   `json:"active_run"`
+	Runs         []RunSummary  `json:"runs"`
+	ActiveOwners []ActiveOwner `json:"active_owners"`
 }
 
-// EventsResponse acknowledges a contiguous watermark and the answers
-// the server has recorded as consumed.
-type EventsResponse struct {
-	AckedThrough           int `json:"acked_through"`
-	AnswersConsumedThrough int `json:"answers_consumed_through"`
+// SessionDetail is the `session_detail` projection: SessionStatus PLUS the
+// live inventory scan, in one consistent read (plan §3). SessionStatus is
+// embedded anonymously so its fields flatten into the JSON object.
+type SessionDetail struct {
+	SessionStatus
+
+	Inventory *inventory.Snapshot `json:"inventory"`
 }
 
-// InventoryRequest uploads a folder-scoped inventory snapshot.
-type InventoryRequest struct {
-	SessionID       string             `json:"session_id"`
-	CanonicalFolder string             `json:"canonical_folder"`
-	ScanEpoch       int                `json:"scan_epoch"`
-	Snapshot        inventory.Snapshot `json:"snapshot"`
-	ClientToken     string             `json:"client_token"`
+// TerminalEnvelope is the full diagnostic envelope beyond the outcome badge
+// (plan §3.2 / finding 7).
+type TerminalEnvelope struct {
+	Classification *string `json:"classification"`
+	EngineOutcome  *string `json:"engine_outcome"`
+	FinalizationOK *bool   `json:"finalization_ok"`
+	ExitCode       *int    `json:"exit_code"`
+	Signal         *string `json:"signal"`
 }
 
-// InventoryResponse returns the server-assigned generation.
-type InventoryResponse struct {
-	Generation int `json:"generation"`
+// PendingPrompt is the current unanswered prompt (plan §3).
+type PendingPrompt struct {
+	PromptID string `json:"prompt_id"`
+	Kind     string `json:"kind"`
+	Payload  any    `json:"payload"`
+}
+
+// RunDetail is the `run_detail` projection: a RunSummary plus the serving
+// session id, the entire current capped event window, the pending prompt, and
+// (once terminal) the diagnostic envelope (plan §3).
+type RunDetail struct {
+	RunSummary
+
+	SessionID     string            `json:"session_id"`
+	Events        []map[string]any  `json:"events"`
+	PendingPrompt *PendingPrompt    `json:"pending_prompt"`
+	Envelope      *TerminalEnvelope `json:"envelope"`
+}
+
+// RunSpec describes one dispatched command the remote executes as a child
+// process. It is an internal value carried from the store run row to
+// commandArgs (not a wire type in v2 — the store owns run identity).
+type RunSpec struct {
+	RunID   string
+	Command string
+	StoryID string
+	Fix     bool
 }

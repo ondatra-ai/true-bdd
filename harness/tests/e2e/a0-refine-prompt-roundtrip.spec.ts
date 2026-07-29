@@ -23,7 +23,7 @@ import { ClaudeCallBudget } from "./helpers/claude-budget";
 import { skipUnlessClaudeAvailable } from "./helpers/claude-gate";
 import { AI_TERMINAL_TIMEOUT_MS, clickChoice, waitForPromptKind } from "./helpers/fix-loop";
 import { ProtocolEnv } from "./helpers/protocol-env";
-import { TID, gotoRun } from "./helpers/ui";
+import { TID, gotoRun, promptDialog } from "./helpers/ui";
 import { expectNoCanonicalChange } from "./helpers/tree-hash";
 
 const AI_CALL_BUDGET = 6;
@@ -54,12 +54,11 @@ test("A0: refine prompt round-trip, Exit yields user_exit, session reusable", as
   const fixture = await e.materialize("ai-refine-one-defect");
   const remote = await e.startRemote(fixture.target); // default CLAUDECODE sentinel (production-strip proof)
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
-  const { runId } = await e.api.dispatchRun(session.id, {
+  const { runId } = await e.api.dispatchRun(session.session_id, {
     command: "us-refine",
     story_id: "30.1",
     fix: true,
@@ -67,24 +66,21 @@ test("A0: refine prompt round-trip, Exit yields user_exit, session reusable", as
   });
   e.note({ runId });
 
-  await gotoRun(page, e.server.baseURL, runId);
+  await gotoRun(page, e.server.baseURL, session.session_id, runId);
 
   // Durably blocked at the CHOICE prompt: initial output is already
   // rendered (live-output anchor), and we snapshot the sequence.
-  const atPrompt = await waitForPromptKind(e.api, runId, "choice");
+  const atPrompt = await waitForPromptKind(e.api, session.session_id, runId, "choice");
   const promptId = atPrompt.prompt.prompt_id;
   const seqAtPrompt = maxSeq(atPrompt.run.events);
 
   await expect(page.getByTestId(TID.runOutput)).toContainText(/\S/, { timeout: 30_000 });
-  await expect(page.locator(`[data-testid="${TID.promptPanel}"][data-prompt-id="${promptId}"]`)).toHaveAttribute(
-    "data-kind",
-    "choice",
-  );
+  await expect(promptDialog(page, promptId)).toHaveAttribute("data-kind", "choice");
 
   // Exit through the real UI control.
   await clickChoice(page, promptId, "exit");
 
-  const terminal = await e.api.waitForRunTerminal(runId, { timeoutMs: AI_TERMINAL_TIMEOUT_MS });
+  const terminal = await e.api.waitForRunTerminal(session.session_id, runId, { timeoutMs: AI_TERMINAL_TIMEOUT_MS });
   expect(terminal.outcome).toBe("user_exit");
 
   // After Exit: higher sequence + terminal outcome rendered.
@@ -97,8 +93,8 @@ test("A0: refine prompt round-trip, Exit yields user_exit, session reusable", as
   // No canonical change — Exit applied nothing.
   await expectNoCanonicalChange(fixture.baseline, fixture.target);
 
-  // Session reusable: still connected, no lingering active run.
-  const after = await e.api.getSession(session.id);
-  expect(after.reachability).toBe("connected");
-  expect(after.active_run_id).toBeNull();
+  // Session reusable: still present (connected), no lingering active run.
+  const after = await e.api.getSession(session.session_id);
+  expect(after.session_id).toBe(session.session_id);
+  expect(after.active_run).toBeNull();
 });

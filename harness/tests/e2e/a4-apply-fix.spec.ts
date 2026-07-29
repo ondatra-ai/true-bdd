@@ -60,30 +60,29 @@ test("A4: apply --fix merges lineage 88.9-001; unrelated entry survives byte-for
   const fixture = await e.materialize("a4-apply-fix");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
   // Dispatch through the row action with --fix.
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
   const row = storyRow(page, "70.1");
   await expect(row.getByTestId(TID.actionApply)).toBeEnabled({ timeout: 15_000 });
   await row.getByTestId(TID.fixToggle).check();
   await row.getByTestId(TID.actionApply).click();
 
   const dispatched = await pollUntil<RunSummary>(
-    async () => (await e.api.getSession(session.id)).runs.find((run) => run.command === "us-apply"),
+    async () => (await e.api.getSession(session.session_id)).runs.find((run) => run.command === "us-apply"),
     { timeoutMs: 30_000, what: "the Apply action to dispatch a us-apply run" },
   );
   expect(dispatched.story_id).toBe("77.5");
   expect(dispatched.fix).toBe(true);
-  const runId = dispatched.id;
+  const runId = dispatched.run_id;
   e.note({ runId });
 
-  await gotoRun(page, e.server.baseURL, runId);
+  await gotoRun(page, e.server.baseURL, session.session_id, runId);
 
-  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, runId, {
+  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, session.session_id, runId, {
     cap: APPLY_CAP,
     label: "A4",
     stepTimeoutMs: AI_TERMINAL_TIMEOUT_MS,

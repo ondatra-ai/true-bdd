@@ -54,6 +54,13 @@ type managedChild struct {
 	stderr io.ReadCloser
 	pgid   int
 
+	// releaseWrite is the write end of the gated supervisor's release pipe
+	// (finding 4); nil for a non-gated child. Release() writes the go-byte;
+	// abortGate() closes it WITHOUT writing so the supervisor EOF-exits without
+	// ever running the real command.
+	releaseWrite *os.File
+	releaseOnce  sync.Once
+
 	done     chan struct{}
 	waitErr  error
 	waitOnce sync.Once
@@ -96,6 +103,79 @@ func spawnProcessGroup(cfg spawnConfig) (*managedChild, error) {
 	}, nil
 }
 
+// spawnGatedGroup launches the RESIDENT GATED supervisor (finding 4) as the
+// process-group leader, blocked on a release pipe. The returned child wraps the
+// SUPERVISOR (pgid == supervisor pid); the caller records the group identity and
+// then calls child.Release() to let the supervisor exec the real command. If
+// the caller instead calls child.abortGate() (a bookkeeping failure), the
+// supervisor EOF-exits without ever running the command.
+func spawnGatedGroup(cfg spawnConfig) (*managedChild, error) {
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		return nil, fmt.Errorf("release pipe: %w", err)
+	}
+
+	supArgs := append([]string{SupervisorSubcommand}, cfg.args...)
+
+	//nolint:gosec // remote-owned binary + already-validated args
+	cmd := exec.CommandContext(context.Background(), cfg.binPath, supArgs...)
+	cmd.Dir = cfg.dir
+	cmd.Env = cfg.env
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.ExtraFiles = []*os.File{readPipe} // → fd 3 in the supervisor
+
+	stdin, stdout, stderr, err := commandPipes(cmd)
+	if err != nil {
+		_ = readPipe.Close()
+		_ = writePipe.Close()
+
+		return nil, err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		_ = readPipe.Close()
+		_ = writePipe.Close()
+
+		return nil, fmt.Errorf("start supervisor: %w", err)
+	}
+
+	// The supervisor now holds its own dup of the read end; drop the parent's.
+	_ = readPipe.Close()
+
+	return &managedChild{
+		cmd:          cmd,
+		stdin:        stdin,
+		stdout:       stdout,
+		stderr:       stderr,
+		pgid:         cmd.Process.Pid,
+		releaseWrite: writePipe,
+		done:         make(chan struct{}),
+	}, nil
+}
+
+// Release writes the go-byte so the gated supervisor execs the real command.
+// A no-op for a non-gated child.
+func (c *managedChild) Release() error {
+	var writeErr error
+
+	c.releaseOnce.Do(func() {
+		if c.releaseWrite == nil {
+			return
+		}
+
+		_, writeErr = c.releaseWrite.Write([]byte{'G'})
+		_ = c.releaseWrite.Close()
+		c.releaseWrite = nil
+	})
+
+	if writeErr != nil {
+		return fmt.Errorf("release supervisor: %w", writeErr)
+	}
+
+	return nil
+}
+
 // Wait reaps the child exactly once, closing done so a concurrent Escalate
 // can observe exit without racing on Wait.
 func (c *managedChild) Wait() error {
@@ -127,6 +207,19 @@ func (c *managedChild) Escalate(cfg escalateConfig) {
 
 	c.signalGroup(syscall.SIGKILL)
 	<-c.done
+}
+
+// abortGate closes the release pipe WITHOUT the go-byte, so the gated
+// supervisor EOF-exits without ever running the real command (fail closed).
+func (c *managedChild) abortGate() {
+	c.releaseOnce.Do(func() {
+		if c.releaseWrite == nil {
+			return
+		}
+
+		_ = c.releaseWrite.Close()
+		c.releaseWrite = nil
+	})
 }
 
 // signalGroup sends sig to the child's whole process group (negative pid).

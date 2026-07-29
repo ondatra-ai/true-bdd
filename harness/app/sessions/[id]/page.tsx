@@ -2,53 +2,22 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { EpicsTable } from "../../components/EpicsTable";
 import { InventoryChips } from "../../components/InventoryChips";
 import { StoryModal } from "../../components/StoryModal";
-import { postJson, usePoll } from "../../lib/use-poll";
-import {
-  documentChips,
-  inventoryStale,
-  inventoryTruncated,
-  pathMismatch,
-  reconcileInventoryGeneration,
-  statusTone,
-} from "../../lib/view-model/inventory";
-import { controlsDisabled, inventoryFreshness, siblingWarningVisible } from "../../lib/view-model/session";
+import { usePoll } from "../../lib/use-poll";
+import { documentChips, inventoryLimitTooSmall, inventoryTruncated, pathMismatch } from "../../lib/view-model/inventory";
+import { controlsDisabled, siblingWarningVisible } from "../../lib/view-model/session";
 import { outcomeBadge } from "../../lib/view-model/run";
 import type {
   InventoryEpic,
   InventorySnapshot,
   InventoryStory,
   RunSummary,
-  SessionSummary,
+  SessionDetail,
 } from "../../lib/view-model/types";
-
-interface SessionStatus extends SessionSummary {
-  runs: RunSummary[];
-}
-
-interface SessionDetailWire extends SessionSummary {
-  runs: RunSummary[];
-  inventory: InventorySnapshot | null;
-}
-
-interface LoadedInventory {
-  generation: number;
-  snapshot: InventorySnapshot | null;
-}
-
-/** Formats an inventory age (ms) as a compact `Ns` / `Nm` string. */
-function formatAge(ms: number | null): string {
-  if (ms === null) {
-    return "never";
-  }
-  const seconds = Math.floor(ms / 1000);
-
-  return seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`;
-}
 
 interface SelectedStory {
   epicFile: string;
@@ -56,89 +25,48 @@ interface SelectedStory {
 }
 
 /**
- * Session detail (plan §3.5, view 2) reworked as an epic→story accordion
- * with a native-dialog story review modal (plan §3). Transport (plan §2):
- * the page polls the LIGHTWEIGHT status view at 1 Hz for reachability /
- * active run / run history / generation, and refetches the inventory
- * snapshot ONLY when the promoted generation changes (retry-until-match,
- * never regressing on a reordered response). Visual pass: Peter's S&F system.
+ * Session detail (plan §4, view 2): an epic→story accordion with a native-
+ * dialog story review modal, the inventory chips, the per-story + session
+ * action controls, and the run history. v2 transport (plan §1.5/§3): ONE
+ * live poll of GET /api/sessions/:id (`session_detail` = status + inventory
+ * in one CLI-side consistent read). Every poll is a fresh CLI scan — there
+ * is no generation, no cache. On `session_gone` (404) the page clears its
+ * stale data and shows the disconnected/unavailable view; on `unavailable`
+ * (504) it keeps the last data but marks it not-current.
  */
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
 
-  const status = usePoll<SessionStatus>(`/api/sessions/${sessionId}?view=status`);
-  const sessionsData = usePoll<{ sessions: SessionSummary[] }>("/api/sessions");
-  const [buildFix, setBuildFix] = useState(false);
-  const [loaded, setLoaded] = useState<LoadedInventory>({ generation: 0, snapshot: null });
+  const [refreshTick, setRefreshTick] = useState(0);
+  const { data: detail, status } = usePoll<SessionDetail>(`/api/sessions/${sessionId}`, 1000, refreshTick);
+
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<SelectedStory | null>(null);
   const [modalTab, setModalTab] = useState<"review" | "raw">("review");
-  const openerRef = useRef<HTMLElement | null>(null);
+  const [buildFix, setBuildFix] = useState(false);
   // The last live (story, epic) the open modal presented. When a fresher
   // snapshot no longer resolves the selected composite identity — the story
   // was removed/renamed on disk — the modal stays OPEN on this retained
   // presentation as a changed-on-disk fallback instead of silently
-  // unmounting (finding 4).
+  // unmounting (P9 changed-on-disk).
   const [retained, setRetained] = useState<{ story: InventoryStory; epic: InventoryEpic } | null>(null);
 
-  // A collapsed set + loaded inventory + open modal are per-session, in-page
-  // only: reset them when the id changes, using React's adjust-state-during-
-  // render pattern (never a setState-in-effect cascade).
+  // A collapsed set + open modal are per-session, in-page only: reset them
+  // when the id changes, using React's adjust-state-during-render pattern.
   const [prevSessionId, setPrevSessionId] = useState(sessionId);
   if (prevSessionId !== sessionId) {
     setPrevSessionId(sessionId);
     setCollapsed(new Set());
-    setLoaded({ generation: 0, snapshot: null });
     setSelected(null);
     setRetained(null);
   }
 
-  // Refetch the inventory snapshot ONLY when the promoted generation is ahead
-  // of what is loaded (plan §2/§2a). The status poll changes reference every
-  // tick, so this retries until caught up; a reordered/older response never
-  // regresses the loaded generation.
-  const targetGeneration = status?.inventory_generation ?? 0;
-  useEffect(() => {
-    if (!inventoryStale(targetGeneration, loaded.generation)) {
-      return;
-    }
-
-    let alive = true;
-    void fetch(`/api/sessions/${sessionId}`, { cache: "no-store" })
-      .then((response) => (response.ok ? (response.json() as Promise<SessionDetailWire>) : null))
-      .then((detail) => {
-        if (!alive || detail === null) {
-          return;
-        }
-        setLoaded((prev) => {
-          const generation = reconcileInventoryGeneration(prev.generation, detail.inventory_generation);
-          if (generation <= prev.generation && prev.snapshot !== null) {
-            return prev;
-          }
-
-          return { generation, snapshot: detail.inventory };
-        });
-      })
-      .catch(() => {
-        // Keep the last good snapshot on a transient failure.
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [status, targetGeneration, loaded.generation, sessionId]);
-
-  const inventory = loaded.snapshot;
+  const inventory: InventorySnapshot | null = detail?.inventory ?? null;
   const chips = documentChips(inventory);
-  const disabled = controlsDisabled(status);
-  const siblingWarn = siblingWarningVisible(sessionsData?.sessions, status ?? null);
-  const freshness = inventoryFreshness(status);
-  // The out-of-band cannot-fit signal (finding 1): reported on the status
-  // poll when the server limit is too small for even a floor request, so
-  // there is no snapshot to carry the `unavailable` state itself.
-  const statusUnavailable = (status?.inventory_unavailable ?? "").length > 0;
-  const truncated = inventoryTruncated(inventory) || statusUnavailable;
+  const disabled = controlsDisabled(detail);
+  const siblingWarn = siblingWarningVisible(detail);
+  const truncated = inventoryTruncated(inventory);
 
   const toggleEpic = useCallback((epicFile: string) => {
     setCollapsed((prev) => {
@@ -152,6 +80,8 @@ export default function SessionDetailPage() {
       return next;
     });
   }, []);
+
+  const openerRef = useRef<HTMLElement | null>(null);
 
   const openStory = useCallback(
     (epicFile: string, position: number, opener: HTMLElement) => {
@@ -174,15 +104,17 @@ export default function SessionDetailPage() {
     }
   }, []);
 
-  async function refresh(): Promise<void> {
-    await postJson(`/api/sessions/${sessionId}/refresh`, {});
+  function refresh(): void {
+    // An immediate live re-READ (a fresh CLI scan), NOT a mutation — there
+    // is no /refresh route in v2 (plan §1.5).
+    setRefreshTick((tick) => tick + 1);
   }
 
   async function dispatchBuild(command: "build-tests" | "build-code"): Promise<void> {
-    await postJson(`/api/sessions/${sessionId}/runs`, {
-      command,
-      fix: buildFix,
-      client_token: crypto.randomUUID(),
+    await fetch(`/api/sessions/${sessionId}/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ command, fix: buildFix, client_token: crypto.randomUUID() }),
     });
   }
 
@@ -190,11 +122,11 @@ export default function SessionDetailPage() {
   const selectedStory = selected ? findStory(inventory, selected.epicFile, selected.position) : undefined;
 
   // Retain the last LIVE presentation so a story that vanishes from a fresher
-  // snapshot keeps the modal open as a changed-on-disk fallback (finding 4).
-  // Uses the same adjust-state-during-render pattern as the id-change reset:
-  // the guards make it converge (the resolved story/epic are stable object
-  // references while the snapshot is unchanged), so it never loops. A vanished
-  // story matches neither branch, leaving the last retained value in place.
+  // snapshot keeps the modal open as a changed-on-disk fallback (P9). Uses the
+  // adjust-state-during-render pattern: the guards make it converge (resolved
+  // story/epic are stable references while the snapshot is unchanged), so it
+  // never loops. A vanished story matches neither branch, leaving the last
+  // retained value in place.
   if (selected && selectedStory !== undefined && selectedEpic !== undefined) {
     if (retained?.story !== selectedStory || retained?.epic !== selectedEpic) {
       setRetained({ story: selectedStory, epic: selectedEpic });
@@ -203,15 +135,31 @@ export default function SessionDetailPage() {
     setRetained(null);
   }
 
-  // Fall back to the retained presentation (marked changed-on-disk) when the
-  // selected identity no longer resolves, so the modal never silently
-  // disappears and never surprise-reopens (finding 4).
   const modalPresentation =
     selected && selectedStory && selectedEpic
       ? { story: selectedStory, epic: selectedEpic, changedOnDisk: false }
       : selected && retained
         ? { story: retained.story, epic: retained.epic, changedOnDisk: true }
         : null;
+
+  // Honest poll states (plan §4): session_gone clears data → a terminal
+  // disconnected view; unavailable keeps the last data but marks it stale.
+  const gone = status === "session_gone";
+  const stale = status === "unavailable";
+
+  if (gone) {
+    return (
+      <main className="sf-session">
+        <p className="sf-crumb">
+          <Link href="/">← Sessions</Link>
+        </p>
+        <div className="sf-banner" data-tone="error" data-testid="unavailable-state">
+          This remote has disconnected — its session is gone. The run history persists in the CLI store and is
+          reachable again once the remote reconnects.
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="sf-session">
@@ -220,27 +168,19 @@ export default function SessionDetailPage() {
       </p>
 
       <header className="sf-header">
-        <h1 className="sf-title">{status?.folder ?? sessionId}</h1>
+        <h1 className="sf-title">{detail?.session_id ?? sessionId}</h1>
         <div className="sf-meta">
-          <span className="sf-chip" data-testid="session-reachability" data-tone={statusTone(status?.reachability ?? "")}>
-            <span className="sq" />
-            {status?.reachability ?? "unknown"}
-          </span>
-          <span>
-            <span className="sf-meta-label">Generation</span>
-            <span data-testid="inventory-generation">{status?.inventory_generation ?? 0}</span>
-          </span>
-          <span>
-            <span className="sf-meta-label">Updated</span>
-            <span data-testid="inventory-updated-at" data-stale={freshness.stale ? "true" : "false"}>
-              {formatAge(freshness.ageMs)}
-            </span>
-          </span>
-          <button type="button" className="sf-btn sf-btn-sm" data-testid="refresh" onClick={() => void refresh()}>
+          <button type="button" className="sf-btn sf-btn-sm" data-testid="refresh" onClick={refresh}>
             Refresh
           </button>
         </div>
       </header>
+
+      {stale ? (
+        <div className="sf-banner" data-tone="warn" data-testid="unavailable-state">
+          The CLI did not respond in time — showing the last known state, which may be out of date.
+        </div>
+      ) : null}
 
       {pathMismatch(inventory) ? (
         <div className="sf-banner" data-tone="warn" data-testid="path-mismatch-warning">
@@ -258,7 +198,7 @@ export default function SessionDetailPage() {
 
       {truncated ? (
         <div className="sf-banner" data-tone="warn" data-testid="inventory-truncated-banner">
-          {truncationText(inventory, statusUnavailable)}
+          {truncationText(inventory)}
         </div>
       ) : null}
 
@@ -271,10 +211,22 @@ export default function SessionDetailPage() {
         <span className="num">02—</span>Build pipeline
       </h2>
       <div className="sf-toggle">
-        <button type="button" className="sf-btn" data-testid="action-build-tests" disabled={disabled} onClick={() => void dispatchBuild("build-tests")}>
+        <button
+          type="button"
+          className="sf-btn"
+          data-testid="action-build-tests"
+          disabled={disabled}
+          onClick={() => void dispatchBuild("build-tests")}
+        >
           build tests
         </button>
-        <button type="button" className="sf-btn" data-testid="action-build-code" disabled={disabled} onClick={() => void dispatchBuild("build-code")}>
+        <button
+          type="button"
+          className="sf-btn"
+          data-testid="action-build-code"
+          disabled={disabled}
+          onClick={() => void dispatchBuild("build-code")}
+        >
           build code
         </button>
         <label className="sf-fix">
@@ -298,7 +250,7 @@ export default function SessionDetailPage() {
       <h2 className="sf-section-label">
         <span className="num">04—</span>Runs
       </h2>
-      <RunHistory runs={status?.runs ?? []} />
+      <RunHistory runs={detail?.runs ?? []} sessionId={sessionId} />
 
       {selected && modalPresentation ? (
         <StoryModal
@@ -315,7 +267,7 @@ export default function SessionDetailPage() {
   );
 }
 
-function RunHistory({ runs }: { runs: RunSummary[] }) {
+function RunHistory({ runs, sessionId }: { runs: RunSummary[]; sessionId: string }) {
   if (runs.length === 0) {
     return <p className="sf-empty">No runs yet.</p>;
   }
@@ -334,9 +286,9 @@ function RunHistory({ runs }: { runs: RunSummary[] }) {
         </thead>
         <tbody>
           {runs.map((run) => (
-            <tr key={run.id} data-testid="run-row" data-run-id={run.id} data-command={run.command}>
+            <tr key={run.run_id} data-testid="run-row" data-run-id={run.run_id} data-command={run.command}>
               <td>
-                <Link href={`/runs/${run.id}`}>{run.command}</Link>
+                <Link href={`/sessions/${sessionId}/runs/${run.run_id}`}>{run.command}</Link>
               </td>
               <td>{run.story_id ?? "—"}</td>
               <td>{run.fix ? "fix" : ""}</td>
@@ -351,8 +303,8 @@ function RunHistory({ runs }: { runs: RunSummary[] }) {
 }
 
 /** Names the degrade mode(s) reached for the inventory-truncated banner. */
-function truncationText(snapshot: InventorySnapshot | null, statusUnavailable = false): string {
-  if (statusUnavailable || (snapshot !== null && (snapshot.unavailable ?? "").length > 0)) {
+function truncationText(snapshot: InventorySnapshot | null): string {
+  if (inventoryLimitTooSmall(snapshot)) {
     return "The inventory could not fit the server request budget (limit too small) — showing global counts only.";
   }
   if (snapshot === null) {
@@ -364,7 +316,9 @@ function truncationText(snapshot: InventorySnapshot | null, statusUnavailable = 
     modes.push(`${snapshot.stories_omitted} story row(s) omitted`);
   }
   const rawOmitted = (snapshot.epics ?? []).some((epic) => (epic.stories ?? []).some((story) => story.raw_omitted));
-  const contentOmitted = (snapshot.epics ?? []).some((epic) => (epic.stories ?? []).some((story) => story.content_omitted));
+  const contentOmitted = (snapshot.epics ?? []).some((epic) =>
+    (epic.stories ?? []).some((story) => story.content_omitted),
+  );
   if (rawOmitted) {
     modes.push("raw omitted");
   }

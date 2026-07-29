@@ -1,13 +1,15 @@
 /**
- * Pure view-model for the run view (plan §3.5). Maps a RunDetail (and the
- * owning session's reachability) into render props for the outcome badge,
- * the streaming output tail with retention gap markers, the prompt panel,
- * and the reachability overlay / mark-abandoned controls — no React, so
- * the vitest tables (§4.6) cover every terminal envelope form and the
- * overlay visibility rules against the identical mapping.
+ * Pure view-model for the run view (plan §4). Maps a RunDetail into render
+ * props for the outcome badge, the streaming output tail with retention gap
+ * markers, the terminal envelope diagnostics, and the prompt dialog — no
+ * React, so the vitest tables (§4.6) cover every terminal envelope form
+ * against the identical mapping.
+ *
+ * v2 (plan §6): sessions are gone on disconnect, so the reachability overlay
+ * and the mark-abandoned control are DELETED — there is no unreachable state.
  */
 
-import type { PendingPrompt, RunDetail, RunEvent, SessionSummary, TerminalEnvelope } from "./types";
+import type { PendingPrompt, RunEvent, TerminalEnvelope } from "./types";
 
 /**
  * The run-outcome badge text (README-testids): empty until terminal, then
@@ -15,7 +17,9 @@ import type { PendingPrompt, RunDetail, RunEvent, SessionSummary, TerminalEnvelo
  * ok | converged | not_fixed | user_exit | max_attempts | interrupted |
  * abandoned and error(spawn|no_result|contradiction|folder_locked).
  */
-export function outcomeBadge(run: Pick<RunDetail, "outcome" | "error_detail"> | null | undefined): string {
+export function outcomeBadge(
+  run: { outcome?: RunOutcomeLike; error_detail?: string | null } | null | undefined,
+): string {
   if (!run || run.outcome === null || run.outcome === undefined) {
     return "";
   }
@@ -27,8 +31,11 @@ export function outcomeBadge(run: Pick<RunDetail, "outcome" | "error_detail"> | 
   return String(run.outcome);
 }
 
+/** The badge accepts any string outcome so a future state is never masked. */
+type RunOutcomeLike = string | null;
+
 /** A run is non-terminal until its state reaches `terminal`. */
-export function isNonTerminal(run: Pick<RunDetail, "state"> | null | undefined): boolean {
+export function isNonTerminal(run: { state?: string } | null | undefined): boolean {
   return run !== null && run !== undefined && run.state !== "terminal";
 }
 
@@ -51,9 +58,9 @@ export interface EnvelopeDetailView {
  * flattened to `error(contradiction)`.
  */
 export function envelopeDetails(
-  run: Pick<RunDetail, "envelope"> | null | undefined,
+  run: { envelope?: TerminalEnvelope | null } | null | undefined,
 ): EnvelopeDetailView {
-  const envelope: TerminalEnvelope | undefined = run?.envelope;
+  const envelope: TerminalEnvelope | null | undefined = run?.envelope;
   if (!envelope) {
     return { present: false, engineOutcome: null, finalizationOk: null, exitCode: null, signal: null };
   }
@@ -88,7 +95,7 @@ export interface RunTimingView {
  * null when the store did not carry the timestamps (older wire shape).
  */
 export function runTiming(
-  run: Pick<RunDetail, "created_at" | "updated_at"> | null | undefined,
+  run: { created_at?: number; updated_at?: number } | null | undefined,
   clockNow: number = Date.now(),
 ): RunTimingView {
   return {
@@ -142,24 +149,7 @@ export function runOutputText(events: RunEvent[] | undefined): string {
     .join("");
 }
 
-// ── Reachability overlay + mark-abandoned (plan §3.3 / P2) ──
-
-/**
- * The reachability overlay and the "Mark abandoned" control are shown
- * together exactly when the owning session is unreachable AND the run is
- * still non-terminal — reconnecting resolves the run to a real result, and
- * a terminal run needs no manual abandonment (README-testids / P2).
- */
-export function reachabilityOverlayVisible(
-  run: Pick<RunDetail, "state"> | null | undefined,
-  session: Pick<SessionSummary, "reachability"> | null | undefined,
-): boolean {
-  return isNonTerminal(run) && session?.reachability === "unreachable";
-}
-
-export const markAbandonedVisible = reachabilityOverlayVisible;
-
-// ── Prompt panel (plan §3.5 / §4.3 A0–A4) ──
+// ── Prompt dialog (plan §4 / §4.3 A0–A4) ──
 
 export interface ChoicePromptView {
   kind: "choice";

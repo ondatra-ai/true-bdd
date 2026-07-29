@@ -1,155 +1,97 @@
 /**
- * Transport §2/§2a tables (plan §4.6): the lightweight `?view=status`
- * session read, the atomic single-read inventory pair, and the client-side
- * retry-until-match generation logic.
+ * Client poll-state model (plan §4, FULLY REWRITTEN for v2). The v1 file
+ * tested a SERVER-store `?view=status` read, an atomic generation+snapshot
+ * pair, and client-side retry-until-match GENERATION logic. v2 deletes all
+ * of that (plan §6): the relay holds no DB, `sessionStatus`/`sessionDetail`
+ * come from the CLI store (Go tests), and there is NO generation.
  *
- *   - `sessionStatus(db, id)` — reachability + active run + run history +
- *     generation, and NO inventory snapshot (the session page polls this 1 Hz
- *     instead of re-shipping the full detail every second).
- *   - `sessionInventory(db, id)` — the generation AND the snapshot from ONE
- *     consistent read (fixing the non-atomic snapshot-then-summaryOf pair):
- *     an N+1 generation paired with an N snapshot is impossible at the store.
- *   - `inventoryStale` / `reconcileInventoryGeneration` — the client tracks
- *     TARGET (from status polls) vs LOADED generation; while they differ the
- *     inventory refetches, and reordered consecutive-generation responses
- *     never regress the loaded generation.
+ * What remains client-side is the honest {data, status, error} poll model
+ * (critique §13): `usePoll` returns a discriminated state, so a 404
+ * session_gone CLEARS the data (the page navigates away / shows
+ * disconnected) and a 504 cli_timeout renders an explicit unavailable state
+ * WITHOUT silently presenting the last value as current. This suite pins the
+ * two PURE helpers behind that behavior.
  *
- * None of these functions exist yet; each is accessed through a pinned cast
- * so the file typechecks and every table is RED until the transport is built.
+ * The v2 helpers do not exist yet; they are accessed through a pinned cast
+ * so the file typechecks and every table is RED until the hook is rebuilt.
  */
 
-import type Database from "better-sqlite3";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { dispatchRun, registerSession, upsertInventory } from "../../app/lib/store";
-import * as store from "../../app/lib/store";
-import * as inventoryVM from "../../app/lib/view-model/inventory";
-import { cleanup, makeTempDb, type TempDb } from "./support/temp-db";
+import * as usePollMod from "../../app/lib/use-poll";
 
-let temp: TempDb;
+// ── Pinned v2 target surfaces ──
 
-afterEach(() => cleanup(temp));
+type PollStatus = "ok" | "session_gone" | "unavailable" | "capacity" | "error";
 
-// ── Pinned target surfaces ──
-
-interface SessionStatusView {
-  id: string;
-  reachability: string;
-  active_run_id: string | null;
-  inventory_generation: number;
-  inventory_updated_at: number | null;
-  runs: { id: string; command: string; state: string }[];
+interface PollView<T> {
+  data: T | undefined;
+  status: PollStatus;
+  error: string | null;
 }
 
-interface SessionInventoryRead {
-  generation: number;
-  updated_at: number | null;
-  snapshot: unknown;
+interface TargetPoll {
+  classifyPollStatus: (httpStatus: number) => PollStatus;
+  nextPollState: <T>(prev: PollView<T>, result: { httpStatus: number; data?: T }) => PollView<T>;
 }
 
-interface TargetStore {
-  sessionStatus: (db: Database.Database, id: string) => SessionStatusView | undefined;
-  sessionInventory: (db: Database.Database, id: string) => SessionInventoryRead | null;
+const poll = usePollMod as unknown as TargetPoll;
+
+function state<T>(overrides: Partial<PollView<T>> = {}): PollView<T> {
+  return { data: undefined, status: "ok", error: null, ...overrides };
 }
 
-interface TargetSync {
-  inventoryStale: (targetGeneration: number, loadedGeneration: number) => boolean;
-  reconcileInventoryGeneration: (loaded: number, incoming: number) => number;
-}
-
-const targetStore = store as unknown as TargetStore;
-const sync = inventoryVM as unknown as TargetSync;
-
-/** Registers a reachable session and returns its id + first ticket epoch. */
-function register(db: Database.Database, folder: string): { session_id: string; scan_epoch: number } {
-  return registerSession(db, { incarnation_id: `inc-${folder}`, folder, canonical_folder: folder, pid: 1, version: "v" });
-}
-
-describe("sessionStatus (?view=status)", () => {
-  it("returns reachability, active run, runs, and generation but NO inventory", () => {
-    temp = makeTempDb();
-    const folder = "/host/status";
-    const registered = register(temp.db, folder);
-
-    // Seed a promoted inventory on the register ticket (generation 1).
-    upsertInventory(temp.db, {
-      session_id: registered.session_id,
-      canonical_folder: folder,
-      scan_epoch: registered.scan_epoch,
-      snapshot: { epics: [], documents: {} },
-      client_token: "inv-1",
-    });
-
-    // A queued run so active_run_id + runs are populated.
-    const dispatched = dispatchRun(temp.db, registered.session_id, {
-      command: "version",
-      fix: false,
-      client_token: "run-1",
-    });
-    expect(dispatched.kind).toBe("created");
-
-    const status = targetStore.sessionStatus(temp.db, registered.session_id);
-    expect(status).toBeDefined();
-    if (status !== undefined) {
-      expect(status.reachability).toBe("connected");
-      expect(status.inventory_generation).toBe(1);
-      expect(status.runs.length).toBe(1);
-      expect(status.active_run_id).not.toBeNull();
-      // The whole point of the lightweight view: it omits the snapshot.
-      expect("inventory" in (status as unknown as Record<string, unknown>)).toBe(false);
-    }
+describe("classifyPollStatus (browser status mapping — critique §4)", () => {
+  it("200 → ok", () => {
+    expect(poll.classifyPollStatus(200)).toBe("ok");
   });
 
-  it("returns undefined for an unknown session", () => {
-    temp = makeTempDb();
-    expect(targetStore.sessionStatus(temp.db, "nope")).toBeUndefined();
+  it("404 → session_gone", () => {
+    expect(poll.classifyPollStatus(404)).toBe("session_gone");
+  });
+
+  it("504 → unavailable (cli_timeout)", () => {
+    expect(poll.classifyPollStatus(504)).toBe("unavailable");
+  });
+
+  it("429 and 503 → capacity", () => {
+    expect(poll.classifyPollStatus(429)).toBe("capacity");
+    expect(poll.classifyPollStatus(503)).toBe("capacity");
+  });
+
+  it("other non-2xx (400/500/502) → error", () => {
+    expect(poll.classifyPollStatus(400)).toBe("error");
+    expect(poll.classifyPollStatus(502)).toBe("error");
+    expect(poll.classifyPollStatus(500)).toBe("error");
   });
 });
 
-describe("sessionInventory (atomic generation+snapshot pair)", () => {
-  it("returns the generation AND the snapshot promoted TOGETHER (single read)", () => {
-    temp = makeTempDb();
-    const folder = "/host/atomic";
-    const registered = register(temp.db, folder);
-
-    const snapshotV1 = { epics: [], documents: { config: "present" }, marker: "v1" };
-    upsertInventory(temp.db, {
-      session_id: registered.session_id,
-      canonical_folder: folder,
-      scan_epoch: registered.scan_epoch,
-      snapshot: snapshotV1,
-      client_token: "inv-1",
-    });
-
-    const read = targetStore.sessionInventory(temp.db, registered.session_id);
-    expect(read).not.toBeNull();
-    if (read !== null) {
-      expect(read.generation).toBe(1);
-      // The snapshot MUST be the one promoted at THIS generation — never a
-      // newer generation number paired with an older snapshot.
-      expect(read.snapshot).toEqual(snapshotV1);
-    }
+describe("nextPollState (honest {data, status, error} — critique §13)", () => {
+  it("ok: adopts the fresh data and clears the error", () => {
+    const prev = state<{ n: number }>({ data: { n: 1 }, status: "unavailable", error: "was down" });
+    const next = poll.nextPollState(prev, { httpStatus: 200, data: { n: 2 } });
+    expect(next).toEqual({ data: { n: 2 }, status: "ok", error: null });
   });
 
-  it("returns null when no inventory has been promoted", () => {
-    temp = makeTempDb();
-    const registered = register(temp.db, "/host/empty");
-    expect(targetStore.sessionInventory(temp.db, registered.session_id)).toBeNull();
-  });
-});
-
-describe("client retry-until-match generation logic", () => {
-  it("inventoryStale is true only while the target generation is ahead of loaded", () => {
-    expect(sync.inventoryStale(5, 3)).toBe(true);
-    expect(sync.inventoryStale(3, 3)).toBe(false);
-    expect(sync.inventoryStale(3, 5)).toBe(false); // loaded already ahead — do not refetch
-    expect(sync.inventoryStale(1, 0)).toBe(true); // first load
+  it("session_gone (404): CLEARS the data — never keeps a ghost", () => {
+    const prev = state<{ n: number }>({ data: { n: 1 }, status: "ok", error: null });
+    const next = poll.nextPollState(prev, { httpStatus: 404 });
+    expect(next.status).toBe("session_gone");
+    expect(next.data).toBeUndefined();
   });
 
-  it("reconcileInventoryGeneration never regresses on a reordered/older response", () => {
-    expect(sync.reconcileInventoryGeneration(3, 5)).toBe(5); // catch up
-    expect(sync.reconcileInventoryGeneration(5, 3)).toBe(5); // stale/reordered — keep loaded
-    expect(sync.reconcileInventoryGeneration(5, 5)).toBe(5);
-    expect(sync.reconcileInventoryGeneration(0, 1)).toBe(1);
+  it("unavailable (504): KEEPS the last data but marks it not-current with an error", () => {
+    const prev = state<{ n: number }>({ data: { n: 1 }, status: "ok", error: null });
+    const next = poll.nextPollState(prev, { httpStatus: 504 });
+    expect(next.status).toBe("unavailable");
+    expect(next.data).toEqual({ n: 1 });
+    expect(next.error).not.toBeNull();
+  });
+
+  it("capacity (429/503): keeps data, surfaces the capacity status", () => {
+    const prev = state<{ n: number }>({ data: { n: 1 }, status: "ok", error: null });
+    const next = poll.nextPollState(prev, { httpStatus: 503 });
+    expect(next.status).toBe("capacity");
+    expect(next.data).toEqual({ n: 1 });
   });
 });

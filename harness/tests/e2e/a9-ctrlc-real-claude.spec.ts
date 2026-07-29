@@ -1,18 +1,20 @@
 /**
- * A9 (plan §4.3) — Ctrl+C through a REAL Claude call. The refine run is
- * dispatched and, once an actual `claude` descendant is in flight, the
- * remote's process group is SIGINTed (terminal Ctrl+C semantics). The
- * remote propagates the interrupt to the child group; the run completes
- * (bounded) with the `interrupted` envelope, no claude descendant
- * survives, and the folder lock is released — proven by a REPLACEMENT
- * remote/session whose `version` run reaches terminal `ok`. The signaled
- * remote legitimately dies.
+ * A9 (plan §1.7/§4.3, SEMANTIC REWRITE for v2) — Ctrl+C through a REAL
+ * Claude call; the interrupted terminal is read through a REPLACEMENT CLI.
  *
- * No TERM→KILL-escalation assertion here — forced escalation on an
- * engineered long-running child is the Go test's job (plan §4.6).
+ * The refine run is dispatched and, once an actual `claude` descendant is
+ * in flight, the remote's process group is SIGINTed (terminal Ctrl+C). The
+ * remote propagates the interrupt, the run completes (bounded) with the
+ * `interrupted` envelope (persisted to the CLI store), no claude descendant
+ * survives, and the signaled remote legitimately dies.
  *
- * Oracle (plan §4.5): NO canonical change — the run is interrupted
- * before any fix is applied.
+ * v2 change (critique A9): once the interrupted CLI exits, its session
+ * DISAPPEARS and the run is NOT queryable through it. So the persisted
+ * interrupted terminal is read through a REPLACEMENT CLI's project history
+ * (project-wide reads), and the folder-reusable proof (a version run to
+ * terminal ok) runs on that same replacement.
+ *
+ * Oracle (plan §4.5): NO canonical change — interrupted before any fix.
  */
 
 import { expect, test } from "@playwright/test";
@@ -41,7 +43,7 @@ test.afterEach(async () => {
   }
 });
 
-test("A9: Ctrl+C during a real Claude call yields interrupted; folder reusable after", async () => {
+test("A9: Ctrl+C during a real Claude call; a replacement CLI reads the interrupted terminal", async () => {
   skipUnlessClaudeAvailable(test);
 
   env = await ProtocolEnv.start("a9-ctrlc-real-claude");
@@ -50,12 +52,11 @@ test("A9: Ctrl+C during a real Claude call yields interrupted; folder reusable a
   const fixture = await e.materialize("ai-refine-one-defect");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
-  const { runId } = await e.api.dispatchRun(session.id, {
+  const { runId } = await e.api.dispatchRun(session.session_id, {
     command: "us-refine",
     story_id: "30.1",
     fix: true,
@@ -69,10 +70,6 @@ test("A9: Ctrl+C during a real Claude call yields interrupted; folder reusable a
   // Ctrl+C: SIGINT the remote's process group.
   remote.signalGroup("SIGINT");
 
-  // Bounded completion with the interrupted envelope.
-  const terminal = await e.api.waitForRunTerminal(runId, { timeoutMs: INTERRUPT_COMPLETION_TIMEOUT_MS });
-  expect(terminal.outcome).toBe("interrupted");
-
   // The signaled remote legitimately dies; no claude descendant survives.
   await remote.waitForExit(INTERRUPT_COMPLETION_TIMEOUT_MS);
   await expectNoClaudeDescendants(remote.pid, NO_SURVIVORS_TIMEOUT_MS);
@@ -83,16 +80,27 @@ test("A9: Ctrl+C during a real Claude call yields interrupted; folder reusable a
   // No canonical change — interrupted before any fix.
   await expectNoCanonicalChange(fixture.baseline, fixture.target);
 
-  // Folder lock released + harness usable: a REPLACEMENT remote/session
-  // drives a version run to terminal ok on the same folder.
+  // The dead CLI's session is GONE and the run is not queryable through it.
+  // A REPLACEMENT CLI on the same folder reads the persisted interrupted
+  // terminal from the project history (project-wide reads).
   const replacement = await e.startRemote(fixture.target);
   const replacementSession = await e.api.waitForSession((candidate) => candidate.pid === replacement.pid);
-  const version = await e.api.dispatchRun(replacementSession.id, {
+
+  const interrupted = await e.api.getRun(replacementSession.session_id, runId);
+  expect(interrupted.state).toBe("terminal");
+  expect(interrupted.outcome).toBe("interrupted");
+
+  const history = await e.api.getSession(replacementSession.session_id);
+  expect(history.runs.map((run) => run.run_id)).toContain(runId);
+
+  // Folder lock released + harness usable: the replacement drives a version
+  // run to terminal ok on the same folder.
+  const version = await e.api.dispatchRun(replacementSession.session_id, {
     command: "version",
     fix: false,
     client_token: newRunToken(),
   });
-  const versionTerminal = await e.api.waitForRunTerminal(version.runId, {
+  const versionTerminal = await e.api.waitForRunTerminal(replacementSession.session_id, version.runId, {
     timeoutMs: INTERRUPT_COMPLETION_TIMEOUT_MS,
   });
   expect(versionTerminal.outcome).toBe("ok");

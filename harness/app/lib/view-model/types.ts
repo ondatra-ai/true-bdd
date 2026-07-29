@@ -1,13 +1,18 @@
 /**
- * Wire types the browser consumes from the harness API (plan §3.3), plus
- * the inventory snapshot schema the Go scanner uploads (plan §3.4, the
- * binding contract in src/internal/app/inventory/snapshot.go). These are
+ * Wire types the browser consumes from the harness API (v2 — plan §2/§3;
+ * the binding contract is `tests/e2e/helpers/api-client.ts`), plus the
+ * inventory snapshot schema the Go scanner produces (plan §1.5). These are
  * the INPUT shapes to the pure view-model functions in this directory —
  * kept in one place so both the client views and the vitest tables (§4.6)
  * map the identical structures.
+ *
+ * v2 (plan §1/§2/§3): the relay holds NO state. Sessions are registry-only
+ * (every listed session is connected — no reachability, no active_run_id, no
+ * generation). Run/session state comes from the per-project CLI store; the
+ * status/detail views carry the active run, project run history, and the
+ * same-project active owners (for the sibling warning). Run routes are
+ * session-scoped.
  */
-
-export type Reachability = "connected" | "unreachable";
 
 export type RunState =
   | "queued"
@@ -32,29 +37,27 @@ export type RunErrorDetail = "spawn" | "no_result" | "contradiction" | "folder_l
 
 export type PromptKind = "choice" | "clarify" | "freetext";
 
-// ── Sessions ──
+// ── Sessions (v2 registry-only summary + CLI-store status/detail) ──
 
+/**
+ * Registry-only session summary (plan §3): every listed session is CONNECTED
+ * by definition. `session_id` is CLIENT-OWNED and process-stable (the
+ * incarnation id); a relay restart does not change it.
+ */
 export interface SessionSummary {
-  id: string;
+  session_id: string;
   /** Canonical folder — realpath of the remote's cwd. */
   folder: string;
+  /** The remote process's pid (disambiguates same-folder sessions). */
   pid: number;
-  reachability: Reachability;
-  active_run_id: string | null;
-  inventory_generation: number;
-  /** Wall-clock ms of the last promoted inventory; null until one exists. */
-  inventory_updated_at: number | null;
-  /**
-   * The OUT-OF-BAND terminal cannot-fit reason (e.g. `limit_too_small`) the
-   * remote reports on its poll when the server's inventory limit is below the
-   * minimum viable request (plan §1a / finding 1). Null/absent normally.
-   */
-  inventory_unavailable?: string | null;
+  version: string;
+  /** Wall-clock ms of the register that opened this connection. */
+  connected_at: number;
 }
 
-/** The full remote-synthesized terminal envelope (plan §3.2 / finding 7). */
+/** The full terminal envelope (diagnostics beyond the badge). */
 export interface TerminalEnvelope {
-  classification: RunOutcome | string | null;
+  classification: RunOutcome | null;
   engine_outcome: string | null;
   finalization_ok: boolean | null;
   exit_code: number | null;
@@ -62,24 +65,54 @@ export interface TerminalEnvelope {
 }
 
 export interface RunSummary {
-  id: string;
+  run_id: string;
+  /** The owning CLI incarnation (distinct from the serving session). */
+  owner_id: string;
   command: string;
   story_id: string | null;
   fix: boolean;
-  state: RunState | string;
-  outcome: RunOutcome | string | null;
-  error_detail?: RunErrorDetail | string | null;
-  /** The full terminal envelope; its fields are null until terminal. */
-  envelope?: TerminalEnvelope;
-  /** Wall-clock ms the run was dispatched. */
-  created_at?: number;
-  /** Wall-clock ms of the run's last activity (state change). */
-  updated_at?: number;
+  state: RunState;
+  /** null until state === "terminal". */
+  outcome: RunOutcome | null;
+  error_detail: RunErrorDetail | null;
+  /**
+   * Cross-owner guard (plan §1.1): true only when this run's owner is the
+   * serving live session AND a local active executor/prompt exists.
+   */
+  answerable: boolean;
+  created_at: number;
+  updated_at: number;
 }
 
-export interface SessionDetail extends SessionSummary {
+/** A same-project active owner, surfaced for the sibling warning (§3). */
+export interface ActiveOwner {
+  owner_id: string;
+  /** The owning live session, when it is currently connected. */
+  session_id: string | null;
+  run_id: string;
+  command: string;
+}
+
+/**
+ * One `session_status` CLI work item (plan §3): active run, project run
+ * history, and same-project active owners — from ONE SQLite snapshot.
+ */
+export interface SessionStatus {
+  session_id: string;
+  owner_id: string;
+  active_run: RunSummary | null;
+  /** Project run history, newest first (latest N). */
   runs: RunSummary[];
-  /** The parsed inventory snapshot, or null until one is promoted. */
+  /** Same-project active owners (drives the sibling warning). */
+  active_owners: ActiveOwner[];
+}
+
+/**
+ * One `session_detail` CLI work item (plan §3): `session_status` PLUS the
+ * inventory, in one CLI-side consistent read.
+ */
+export interface SessionDetail extends SessionStatus {
+  /** The parsed inventory snapshot, or null when unavailable. */
   inventory: InventorySnapshot | null;
 }
 
@@ -110,6 +143,8 @@ export interface RunDetail extends RunSummary {
   session_id: string;
   events: RunEvent[];
   pending_prompt: PendingPrompt | null;
+  /** The full terminal envelope; null until terminal. */
+  envelope: TerminalEnvelope | null;
 }
 
 // ── Inventory snapshot (plan §3.4 / §1 hierarchy + review-modal enrichment) ──
@@ -127,6 +162,12 @@ export interface InventorySnapshot {
   snapshot_truncated?: boolean;
   /** Story rows dropped to fit the budget. */
   stories_omitted?: number;
+  /**
+   * The server inventory cap was below the minimum viable request — no
+   * snapshot could fit (plan §1.5 fit ladder). Renders the limit-too-small
+   * banner; global counts only.
+   */
+  limit_too_small?: boolean;
   /** Session-level cannot-fit state, e.g. `limit_too_small` (plan §1a). */
   unavailable?: string;
 }

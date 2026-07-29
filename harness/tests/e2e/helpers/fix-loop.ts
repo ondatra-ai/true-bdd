@@ -1,12 +1,16 @@
 /**
  * Browser-driven `--fix` loop helpers for the AI specs (plan §4.3
  * A0–A9). The A-tests drive the real interactive fix loop THROUGH the
- * run view's prompt panel; these helpers encapsulate the prompt-panel
- * vocabulary (choice / clarify / freetext) and the bounded
+ * run view's prompt DIALOG (plan §4 — prompts are native <dialog>
+ * modals now, not an inline panel); these helpers encapsulate the
+ * prompt-dialog vocabulary (choice / clarify / freetext) and the bounded
  * apply-until-terminal driver.
  *
+ * v2: run reads are SESSION-SCOPED, so every helper takes both the
+ * session id and the run id (critique §1 — the global run route is gone).
+ *
  * Every control is scoped to a specific `data-prompt-id` so a click can
- * never land on a stale panel: if the API already advanced to a new
+ * never land on a stale dialog: if the API already advanced to a new
  * prompt id but the live-polling UI has not re-rendered yet, the scoped
  * locator simply auto-waits until it does.
  *
@@ -33,9 +37,9 @@ const CHOICE_TID: Record<ChoiceAction, string> = {
   exit: TID.promptChoiceExit,
 };
 
-/** Locator for the prompt panel bound to one specific prompt id. */
-export function promptPanelFor(page: Page, promptId: string) {
-  return page.locator(`[data-testid="${TID.promptPanel}"][data-prompt-id="${promptId}"]`);
+/** Locator for the prompt dialog bound to one specific prompt id. */
+export function promptDialogFor(page: Page, promptId: string) {
+  return page.locator(`[data-testid="${TID.promptDialog}"][data-prompt-id="${promptId}"]`);
 }
 
 /**
@@ -46,16 +50,15 @@ export function promptPanelFor(page: Page, promptId: string) {
  */
 export async function waitForPendingPrompt(
   api: HarnessApi,
+  sessionId: string,
   runId: string,
   options: { timeoutMs?: number; what?: string; notPromptId?: string } = {},
 ): Promise<RunDetail> {
   return pollUntil(
     async () => {
-      const run = await api.getRun(runId);
+      const run = await api.getRun(sessionId, runId);
       if (run.state === "terminal") {
-        throw new Error(
-          `run ${runId} reached terminal (${run.outcome ?? "?"}) before a prompt appeared`,
-        );
+        throw new Error(`run ${runId} reached terminal (${run.outcome ?? "?"}) before a prompt appeared`);
       }
 
       const pending = run.pending_prompt;
@@ -79,11 +82,12 @@ export async function waitForPendingPrompt(
  */
 export async function waitForPromptKind(
   api: HarnessApi,
+  sessionId: string,
   runId: string,
   kind: PendingPrompt["kind"],
   options: { timeoutMs?: number; notPromptId?: string } = {},
 ): Promise<{ run: RunDetail; prompt: PendingPrompt }> {
-  const run = await waitForPendingPrompt(api, runId, {
+  const run = await waitForPendingPrompt(api, sessionId, runId, {
     timeoutMs: options.timeoutMs,
     notPromptId: options.notPromptId,
     what: `run ${runId} to publish a ${kind} prompt`,
@@ -97,9 +101,9 @@ export async function waitForPromptKind(
   return { run, prompt };
 }
 
-/** Clicks a choice-prompt button (apply/refine/exit) on its own panel. */
+/** Clicks a choice-prompt button (apply/refine/exit) on its own dialog. */
 export async function clickChoice(page: Page, promptId: string, action: ChoiceAction): Promise<void> {
-  await promptPanelFor(page, promptId).getByTestId(CHOICE_TID[action]).click();
+  await promptDialogFor(page, promptId).getByTestId(CHOICE_TID[action]).click();
 }
 
 /**
@@ -109,9 +113,9 @@ export async function clickChoice(page: Page, promptId: string, action: ChoiceAc
  * prompt proves that framing end-to-end (A2).
  */
 export async function submitFreetext(page: Page, promptId: string, text: string): Promise<void> {
-  const panel = promptPanelFor(page, promptId);
-  await panel.getByTestId(TID.promptFreetextInput).fill(text);
-  await panel.getByTestId(TID.promptFreetextSubmit).click();
+  const dialog = promptDialogFor(page, promptId);
+  await dialog.getByTestId(TID.promptFreetextInput).fill(text);
+  await dialog.getByTestId(TID.promptFreetextSubmit).click();
 }
 
 /**
@@ -119,9 +123,9 @@ export async function submitFreetext(page: Page, promptId: string, text: string)
  * the number to the option's text — A3).
  */
 export async function submitClarifyNumber(page: Page, promptId: string, optionNumber: number): Promise<void> {
-  const panel = promptPanelFor(page, promptId);
-  await panel.getByTestId(TID.promptAnswerInput).fill(String(optionNumber));
-  await panel.getByTestId(TID.promptAnswerSubmit).click();
+  const dialog = promptDialogFor(page, promptId);
+  await dialog.getByTestId(TID.promptAnswerInput).fill(String(optionNumber));
+  await dialog.getByTestId(TID.promptAnswerSubmit).click();
 }
 
 export interface ApplyUntilTerminalResult {
@@ -132,14 +136,12 @@ export interface ApplyUntilTerminalResult {
 /**
  * Repeatedly clicks Apply on each fresh choice prompt until the run is
  * terminal. Bounded by the checklist cap: applying MORE than `cap` times
- * without converging is a failure (the engine's own max-apply-attempts
- * ceiling should terminate the run at the cap). Asserts at least one
- * Apply happened — a fix loop that converges with zero Applies never
- * exercised the fix path.
+ * without converging is a failure. Asserts at least one Apply happened.
  */
 export async function applyUntilTerminal(
   page: Page,
   api: HarnessApi,
+  sessionId: string,
   runId: string,
   options: { cap: number; label: string; stepTimeoutMs?: number },
 ): Promise<ApplyUntilTerminalResult> {
@@ -151,7 +153,7 @@ export async function applyUntilTerminal(
   for (;;) {
     const run = await pollUntil(
       async () => {
-        const candidate = await api.getRun(runId);
+        const candidate = await api.getRun(sessionId, runId);
         if (candidate.state === "terminal") {
           return candidate;
         }

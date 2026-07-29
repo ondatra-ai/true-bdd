@@ -64,8 +64,10 @@ func (r *ChildrenRegistry) Remove(pgid int) {
 	r.flush()
 }
 
-// flush rewrites the pids file from the in-memory entries. Best-effort:
-// a write failure only degrades emergency teardown hygiene.
+// flush rewrites the pids file from the in-memory entries and fsyncs it, so the
+// recorded group identity is durable before the supervisor is released to run
+// the mutating command (finding 4). Best-effort: a write failure only degrades
+// emergency teardown hygiene.
 func (r *ChildrenRegistry) flush() {
 	var buffer bytes.Buffer
 
@@ -79,7 +81,18 @@ func (r *ChildrenRegistry) flush() {
 		buffer.WriteByte('\n')
 	}
 
-	_ = os.WriteFile(r.path, buffer.Bytes(), childrenFilePerm)
+	file, err := os.OpenFile(r.path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, childrenFilePerm)
+	if err != nil {
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	_, err = file.Write(buffer.Bytes())
+	if err != nil {
+		return
+	}
+
+	_ = file.Sync()
 }
 
 // processStartIdentity returns `ps -o lstart=` for pid — a value stable

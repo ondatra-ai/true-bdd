@@ -1,10 +1,26 @@
-# Harness UI + API contract (defined by the protocol specs)
+# Harness v2 UI + API contract (defined by the protocol specs)
 
-The protocol Playwright specs (`p1-*.spec.ts` … `p8-*.spec.ts`) were
-authored BEFORE any feature code (plan §4.3, test-first). This file is
-the contract the server and UI phases implement to. The typed source
-of truth is `helpers/api-client.ts` (routes, bodies, status codes) and
-`helpers/ui.ts` (routes, testids); this document is the human summary.
+The protocol Playwright specs (`p1-*.spec.ts` … `p16-*.spec.ts`) are
+authored BEFORE any feature code (tests-first). This file is the contract
+the CLI store, the stateless relay, and the UI phases implement to. The
+typed source of truth is `helpers/api-client.ts` (routes, bodies, status
+codes, agent protocol) and `helpers/ui.ts` (routes, testids); this document
+is the human summary.
+
+## v2 architecture (plan §1–§4, critique)
+
+- **The CLI owns ALL state** in a per-project SQLite store at
+  `<folder>/tmp/true-bdd-state.db`. The Next server is a **stateless relay**
+  with **no database**.
+- **Sessions are GONE on disconnect.** Every session in `GET /api/sessions`
+  is connected by definition — there is no `unreachable` state, no
+  reachability overlay, and no mark-abandoned control.
+- **No generation, no cache.** Every browser read is a fresh CLI scan. The
+  Refresh button triggers an immediate live `session_detail` read, not a
+  mutation.
+- **Run routes are session-scoped** (a global `/api/runs/:id` is impossible
+  without server state): `/api/sessions/:sid/runs/:rid`.
+- **Prompts are native `<dialog>` modals** answered via RPC.
 
 ## Navigation
 
@@ -12,171 +28,158 @@ of truth is `helpers/api-client.ts` (routes, bodies, status codes) and
 |---|---|
 | `/` | Sessions list |
 | `/sessions/<session-id>` | Session detail (inventory, epics, stories, actions, run history) |
-| `/runs/<run-id>` | Run view (output tail, prompt panel, outcome badge) |
+| `/sessions/<sid>/runs/<rid>` | Run view (output tail, prompt DIALOG, outcome badge) |
 
-All three views **live-poll** their API and re-render without a manual
-reload. Tests assert with locator auto-wait against a self-updating
-page (e.g. the run-outcome badge flips to `abandoned` after clicking
-"Mark abandoned" with no reload).
+All three views **live-poll** their API. `usePoll` returns
+`{data, status, error}`: on `404 session_gone` the page clears data and
+navigates to the sessions list (or a terminal disconnected view); on
+`504 cli_timeout` it renders an explicit **unavailable** state — stale data
+is never silently presented as current.
 
-## API surface (browser-facing)
+## Browser API surface (session-scoped)
 
 | Route | Success | Errors |
 |---|---|---|
 | `GET /api/sessions` | 200 `{sessions: SessionSummary[]}` | 403 wrong Host |
-| `GET /api/sessions/:id` | 200 `SessionDetail` | 404 |
-| `POST /api/sessions/:id/runs` `{command, story_id?, fix, client_token}` | 201 `{run_id}`; 200 `{run_id}` on client_token dedup (same id) | 400 invalid command/body; 409 session unreachable OR any non-terminal run on the session; 403 origin/host |
-| `POST /api/sessions/:id/refresh` | 202 | 403/404 |
-| `GET /api/runs/:id?after_seq=N` | 200 `RunDetail` | 404 |
-| `POST /api/runs/:id/answer` `{prompt_id, value}` | 200 (accepted or exact retry) | 409 conflicting retry; 400 invalid |
-| `POST /api/runs/:id/abandon` | 200 (run → terminal `abandoned`) | 409 not eligible (session reachable or run terminal) |
+| `GET /api/sessions/:id` | 200 `SessionDetail` (status + inventory) | 404 session_gone, 504 cli_timeout, 502 invalid_cli_reply, 413, 429/503 |
+| `GET /api/sessions/:id?view=status` | 200 `SessionStatus` | 404/504/502/429/503 |
+| `POST /api/sessions/:id/runs` `{command, story_id?, fix, client_token}` | 201 `{run_id}`; 200 `{run_id}` on client_token dedup | 400 invalid; 409 CLI domain conflict (nonterminal run per owner OR token reuse with different args); 403 origin/host; 404 session_gone; 504 cli_timeout |
+| `GET /api/sessions/:sid/runs/:rid` (`?after_seq` reserved) | 200 `RunDetail` (entire capped window) | 404 session_gone; 504 cli_timeout |
+| `POST /api/sessions/:sid/runs/:rid/answer` `{prompt_id, value}` | 200 accepted / exact retry | 409 conflicting/terminal-race/cross-owner; 400 invalid; 404 session_gone/run_pruned |
 
-- `command` enum (exact strings): `version`, `us-create`, `us-refine`,
-  `us-apply`, `build-tests`, `build-code`. Anything else → 400.
-- `SessionSummary`: `id`, `folder` (canonical **realpath** of the
-  remote's cwd — never a symlink path), `pid` (the remote's pid,
-  disambiguates same-folder sessions), `reachability`
-  (`connected|unreachable`), `active_run_id`, `inventory_generation`
-  (0 until the first promoted snapshot), `inventory_updated_at`
-  (wall-clock ms of the last promoted inventory, `null` until one exists
-  — finding 8).
-- `SessionDetail` = summary + `runs: RunSummary[]` (history, newest
-  first, survives server restarts — same DB).
+- **`command` enum** (exact strings): `version`, `us-create`, `us-refine`,
+  `us-apply`, `build-tests`, `build-code`, and the hidden **`prompt-probe`**
+  (deterministic non-Claude choice→clarify→freetext driver). Anything else → 400.
+- **`SessionSummary`** (registry-only — critique §2): `session_id`
+  (client-owned, process-stable incarnation id), `folder` (canonical
+  **realpath**), `pid`, `version`, `connected_at`. NO reachability, NO
+  active_run_id, NO inventory_generation.
+- **`SessionStatus`** (one `session_status` CLI work item): `session_id`,
+  `owner_id`, `active_run: RunSummary|null`, `runs: RunSummary[]` (project
+  history, newest first), `active_owners: {owner_id, session_id|null,
+  run_id, command}[]` (same-project active owners — drives the sibling
+  warning; no relay joins).
+- **`SessionDetail`** = `SessionStatus` + `inventory` (one `session_detail`
+  CLI work item — status + inventory in ONE consistent read).
+- **`RunSummary`/`RunDetail`**: `run_id`, `owner_id` (distinct from the
+  serving session), `command`, `story_id`, `fix`, `state`, `outcome`,
+  `error_detail` (`spawn|no_result|contradiction|folder_locked`),
+  `answerable` (cross-owner guard — true only for the owning live session),
+  `created_at`, `updated_at`. `RunDetail` adds `session_id`, `events`,
+  `pending_prompt`, `envelope`.
 - Run `state`: `queued → claimed → running ⇄ prompt_published →
-  answer_accepted → answer_consumed → terminal`. `outcome` is `null`
-  until terminal, then one of `ok`, `converged`, `not_fixed`,
-  `user_exit`, `max_attempts`, `interrupted`, `abandoned`, `error`
-  (with `error_detail`: `spawn|no_result|contradiction|folder_locked`).
-- `RunSummary`/`RunDetail` additionally carry (finding 7/8, additive):
-  `created_at`, `updated_at` (wall-clock ms), and `envelope`, the full
-  terminal envelope `{classification, engine_outcome, finalization_ok,
-  exit_code, signal}` (all fields `null` until terminal). The badge stays
-  `outcome`/`classification`; the other envelope fields are diagnostics.
-  The agent wire (`POST /api/agent/events` terminal event) carries the
-  same `engine_outcome`, `finalization_ok`, `exit_code`, `signal`, plus a
-  new `lock_acquired` event type (no payload — the authoritative flock
-  proof, finding 5).
+  answer_accepted → answer_consumed → terminal`. `outcome` (== the badge
+  classification): `ok`, `converged`, `not_fixed`, `user_exit`,
+  `max_attempts`, `interrupted`, `abandoned` (from boot reconciliation),
+  `error`.
 
-## Origin + Host policy (plan §3.8, asserted by P6)
+## Agent protocol (register / poll / reply, plan §2)
 
-- Browser mutation routes (`POST /api/sessions/:id/runs`, `/refresh`,
-  `/api/runs/:id/answer`, `/abandon`): require the exact allowed
-  Origin (`http://127.0.0.1:<port>`) AND Host; missing Origin,
-  `Origin: null`, foreign Origin, or wrong Host → 403.
-- Agent routes (`/api/agent/*`): loopback Host required; any PRESENT
-  foreign Origin → 403; absent Origin is accepted.
+| Route | Body / headers | Result |
+|---|---|---|
+| `POST /api/agent/register` | `{session_id, folder, canonical_folder, pid, start_identity, version}` | `{connection_epoch, reply_budget_bytes, capability_token}` |
+| `POST /api/agent/poll` | `{session_id, connection_epoch, capability_token}` (held ≤5s) | 204 nothing; 200 work item `{work_id, session_id, connection_epoch, type: query\|dispatch\|answer, payload, deadline}` |
+| `POST /api/agent/reply` | correlation in HEADERS (`x-session-id, x-connection-epoch, x-capability-token, x-work-id`); body = result | 200; 413 `reply_too_large` (streamed cap, correlated); stale-epoch rejected |
+
+- Reconnect: on poll 404 / stale epoch ⇒ re-register with the SAME
+  client-owned `session_id`; a new register bumps the epoch and invalidates
+  the old one; capped full-jitter backoff.
+- Operation deadlines: 5s status/run-detail, 10s mutations, 30s inventory.
+- Relay lifecycle: `queued → delivered → replied | cancelled | expired |
+  client_aborted`. On expiry (10s absence-of-poll; an open poll counts as
+  liveness) the relay atomically removes the session, cancels its poll,
+  fails all waiters, rejects stale-epoch replies, and DROPS queued mutations
+  (never store-and-forward). A browser abort cancels every UNDELIVERED
+  operation (reads AND mutations); an already-delivered mutation completes
+  CLI-side.
+
+## Origin + Host policy (plan §2/§3.8, asserted by P6/P6b)
+
+- Browser mutation routes (`POST …/runs`, `…/runs/:rid/answer`): require the
+  exact allowed Origin AND Host; missing Origin, `Origin: null`, foreign
+  Origin, or wrong Host → 403.
+- Agent routes (`/api/agent/register|poll|reply`): loopback Host required;
+  any PRESENT foreign Origin (incl. literal `null`) → 403; absent Origin
+  accepted; non-JSON content-type → 415 before state access.
 - GETs: Host check only → 403 on wrong Host.
-- 403 is decided BEFORE business logic; an accepted request may then
-  fail with 4xx business errors but never 403.
+- 403 is decided BEFORE business logic.
 
 ## Behavioral constants the tests rely on
 
-- **Reachability threshold**: a session with no agent poll for the
-  threshold flips to `unreachable`. Default must be between 5 s and
-  15 s (recommended 10 s) — P2/P5 dispatch "while still connected"
-  immediately after SIGSTOP and poll the flip with a 60 s ceiling.
-  Reachability NEVER changes run state.
-- **`version` run output**: the run view output must contain
-  `true-bdd version <something>` (asserted as `/true-bdd version \S+/`)
-  and the run terminates with outcome `ok`.
-- **Re-inventory after every command**: a terminal run bumps the
-  session's `inventory_generation` (P8 asserts strictly-greater).
-- Disabled controls are real `disabled` buttons (Playwright
-  `toBeDisabled()`); actions are disabled ONLY for the session's own
-  active run or an unreachable session — sibling-session folder
-  activity shows the warning banner with controls ENABLED (P5).
+- **Disconnect threshold**: a session with no poll for the expiry window
+  (~10s; an open poll counts as liveness) is REMOVED from the registry
+  (P2/P11). Reachability never existed in v2.
+- **`version` run output**: the run view output contains
+  `true-bdd version <something>` (`/true-bdd version \S+/`); terminates `ok`.
+- **Disabled controls** are real `disabled` buttons; controls are disabled
+  ONLY for the session's OWN active run — a same-project SIBLING owner shows
+  the warning banner with controls ENABLED (P5); the folder flock decides at
+  dispatch time (command-vs-command is fail-fast `folder_locked`).
 
 ## data-testid contract
-
-Attribute conventions: dynamic state goes into `data-*` attributes
-(exact strings below), display text is asserted only where noted.
 
 ### Sessions list (`/`)
 
 | testid | Notes |
 |---|---|
-| `session-row` | One per session; carries `data-session-id`, `data-folder`. |
-| `session-folder` | Text = canonical folder (realpath). Inside the row. |
-| `session-reachability` | Text exactly `connected` or `unreachable`. Inside the row AND on session detail. |
-| `session-inventory-age` | Compact promoted-inventory age; `data-stale` ∈ `true`, `false` (finding 8). |
-| `test-connection` | Per-row control; dispatches a `version` run for that session (P8). |
+| `session-row` | One per session; `data-session-id`, `data-folder`. |
+| `session-folder` | Text = canonical folder (realpath). |
+| `session-version` | Text = the remote version. |
+| `test-connection` | Per-row control; dispatches a `version` run (P8). |
 
 ### Session detail (`/sessions/<id>`)
 
 | testid | Notes |
 |---|---|
-| `inventory-generation` | Text = promoted generation number. |
-| `inventory-updated-at` | Promoted-inventory age (text) with `data-stale` ∈ `true`, `false` (finding 8). |
-| `refresh` | Triggers `POST /api/sessions/:id/refresh` (P3). |
-| `folder-warning-banner` | Visible when a SIBLING session on the same folder has a non-terminal run (P5). |
-| `path-mismatch-warning` | Visible when the configured architecture path differs from the canonical default (P4). |
-| `run-history` / `run-row` | `run-row` carries `data-run-id`, `data-command` (P7). |
-| `action-build-tests`, `action-build-code` | Session-level `<button>`s; `disabled` per the rules above (P5). |
+| `refresh` | Triggers an immediate live `session_detail` READ (a fresh scan — plan §1.5), NOT a mutation. |
+| `unavailable-state` | Explicit disconnected / `504 cli_timeout` view (critique §13). |
+| `folder-warning-banner` | Visible when `session_status.active_owners` has a DIFFERENT owner active (P5). |
+| `path-mismatch-warning` | Configured architecture path differs from the canonical default (P4). |
+| `run-history` / `run-row` | `run-row` carries `data-run-id`, `data-command`; its link is session-scoped (P7). |
+| `action-build-tests`, `action-build-code` | Session-level `<button>`s; disabled only for the own active run (P5). |
 | `action-create`, `action-refine`, `action-apply`, `fix-toggle` | Per-story-row action controls (AI specs). |
-| `inventory-doc-<key>` | Status chip; `data-status` ∈ `present`, `missing`, `invalid`, `not_a_dir`, `present_empty`, `ambiguous`, `unknown`. Keys: `config` (`true-bdd/true-bdd.yaml`), `prd`, `architecture`, `registry` (`docs/scenarios.yaml`), `stories-dir`, `epics-dir`, `checklist-<stem>` for stems `us-create`, `us-refine`, `us-apply`, `build-tests`, `build-code`. |
-| `inventory-truncated-banner` | Visible on the session page when the promoted snapshot was degraded to fit the request budget — `snapshot_truncated` is true or any omission count (`stories_omitted`, per-story `raw_omitted`/`content_omitted`) is positive (plan §1a). Names the degrade mode(s) reached. |
-| `epic-section` | Accordion wrapper around one epic's `epic-row` header plus its story-row panel. Carries `data-epic-file` (basename) and `data-epic-number`. UI/modal keying uses `(epic.file, position)`, NOT the create id — duplicate epic numbers declare colliding position-derived ids, so story-row lookups MUST be scoped to the section. Epics render DEFAULT-EXPANDED (collapse is a user action). |
-| `epic-toggle` | Expand/collapse control inside the section header; carries `aria-expanded` ∈ `true`, `false`. Rendered ONLY when a story panel exists — invalid epics (no rows) and noncanonical-filename epics (deliberately no rows) render the header + flags WITHOUT a toggle. Collapsing hides the story rows; re-expanding restores them. |
-| `epic-title` | Text = `Epic.Title` (the epic document's `name:`), falling back to the filename when unparseable. |
-| `epic-row` | Carries `data-epic-file` (basename), `data-epic-number` (integer parsed from the `epic-NN-*` filename, no leading zeros), `data-status` ∈ `parseable`, `invalid`. Lives inside its `epic-section`. |
-| `epic-flag-duplicate-number` | Inside every epic row sharing a filename number. |
-| `epic-flag-id-mismatch` | Inside an epic row whose document `epic.id` differs from the filename number. |
-| `epic-flag-noncanonical-filename` | Inside an epic row whose filename is not the canonical `epic-%02d-*` encoding `us create` resolves (finding 4). Such an epic carries NO Create-addressable story rows (its snapshot `stories` is empty), so its section has NO `epic-toggle`. |
-| `story-row-<create-id>` | One per epic story row; `<create-id>` is the position-derived `<epic-filename-number>.<position>` (e.g. `42.1`). Carries `data-epic-number`, `data-position`, `data-declared-id` (epic-declared story id), `data-file-id` (story-file internal id, when resolvable). Lives inside its `epic-section`'s story panel. |
-| `story-title` | ALWAYS a `<button>` for a declared story row — clicking opens the story review modal (plan §1b guarantees file content, epic-declared content, or an identity-only fallback exists). Ambiguous rows additionally carry `data-match-count` and show the count inline. |
-| `story-created` | Cell inside the story row; `data-status` ∈ `one`, `missing`, `ambiguous`, `invalid`. |
-| `story-applied` | Cell; countable → text exactly `x/y` with `data-status="counted"`, `data-applied`, `data-total`; not countable → text `unknown (<reason>)` with `data-status="unknown"`, `data-reason` ∈ `missing`, `ambiguous`, `invalid`, `deprecated_format`, `no_acceptance_criteria`, `empty_internal_id`, `registry_missing`, `registry_invalid`. Counting: registry entries whose `user_stories[]` reference the EXACT story path and the position-derived lineage id `<internal-id>-NNN` (`%03d`). A missing/unparseable registry taints an otherwise-eligible story `unknown(registry_missing|registry_invalid)` — a valid empty `scenarios: {}` stays counted `0/y` (finding 4). |
-| `story-refined` | Cell; text exactly `not recorded` in v1. |
-| `story-flag-duplicate-declared-id`, `story-flag-id-mismatch`, `story-flag-deprecated-format`, `story-flag-no-acs`, `story-flag-empty-internal-id` | Flag chips inside the story row, visible when the condition holds. |
+| `inventory-doc-<key>` | Status chip; `data-status` ∈ `present`, `missing`, `invalid`, `not_a_dir`, `present_empty`, `ambiguous`, `unknown`. Keys: `config`, `prd`, `architecture`, `registry`, `stories-dir`, `epics-dir`, `checklist-<stem>`. |
+| `inventory-truncated-banner` | Visible when the inventory read was degraded to fit the negotiated reply budget (`snapshot_truncated`, any omission, or `limit_too_small`) — the fit ladder stays, retargeted to the reply envelope (critique §12). |
+| `epic-section` / `epic-toggle` / `epic-title` / `epic-row` / `epic-flag-*` | Epic accordion (unchanged from v1). |
+| `story-row-<create-id>` / `story-title` / `story-created` / `story-applied` / `story-refined` / `story-flag-*` | Story rows + flags (unchanged from v1). |
 
 ### Story review modal (`/sessions/<id>`, opened from `story-title`)
 
-Opened via a native `<dialog>` + `showModal()` — native modality gives
-focus containment, Escape-to-close, and a backdrop; there is no
-hand-written focus trap. Content freshness follows the last scan; on a
-generation change the open modal's story is re-derived by composite
-identity `(epic.file, position)`.
+Unchanged from v1 — native `<dialog>` + `showModal()`. `story-modal`,
+`story-modal-panel`, `story-modal-title`, `story-modal-close`,
+`story-modal-tab-review`/`-raw`, `story-modal-panel-review`/`-raw`,
+`story-modal-statement`, `story-modal-ac` (`data-ac-id`), `story-modal-step`
+(`data-kind`), `story-modal-raw` (byte-exact), `story-modal-error`,
+`story-modal-notice` (`data-reason` incl. `changed_on_disk` — surfaced by the
+next live poll, no refresh route).
+
+### Run view (`/sessions/<sid>/runs/<rid>`)
 
 | testid | Notes |
 |---|---|
-| `story-modal` | The `<dialog>`. Carries `data-story-id` (the position-derived create id). `aria-labelledby` points at `story-modal-title`. |
-| `story-modal-panel` | The single inner content panel. A click on the panel must NOT close the modal; a click on the backdrop (outside the panel) closes it. |
-| `story-modal-title` | The modal heading; accessible name = story id + title. |
-| `story-modal-close` | Labelled close button → closes the modal and restores focus to the opener (`story-title`). |
-| `story-modal-status` | Status chip; falls back to `declared_status`, then `unknown`. |
-| `story-modal-created` / `story-modal-applied` / `story-modal-refined` | Lifecycle chips mirroring the row's created / applied / refined cells. |
-| `story-modal-identity` | Identity line (declared id / file id). |
-| `story-modal-tablist` | `role="tablist"`; keyboard-navigable. |
-| `story-modal-tab-review` / `story-modal-tab-raw` | `role="tab"` with `aria-selected` ∈ `true`, `false`. Review is default. Review is enabled IFF declared content exists (file content or epic-declared content); otherwise `aria-disabled`. An invalid story opens on Raw. |
-| `story-modal-panel-review` / `story-modal-panel-raw` | `role="tabpanel"` for each tab. |
-| `story-modal-statement` | The as-a / i-want / so-that statement block (from file content, else epic-declared content). |
-| `story-modal-ac` | One per acceptance criterion; carries `data-ac-id` (the AC id); contains its description. |
-| `story-modal-step` | One per Gherkin step; carries `data-kind` ∈ `given`, `when`, `then`, `and`, `but`; its text is the exact step text. Source order preserved. |
-| `story-modal-raw` | The verbatim story file in a scrollable `<pre>` (Raw tab). `textContent` equals the file bytes exactly (a truncation/omission notice, when present, is a sibling `story-modal-notice`). |
-| `story-modal-error` | Parse-error banner shown when the story file is invalid (modal opens on Raw). |
-| `story-modal-notice` | Availability / omission / freshness notice; carries `data-reason` ∈ `not_created` (missing file), `ambiguous` (+ match count), `changed_on_disk`, `raw_truncated`, `raw_omitted`, `content_omitted`, `both_omitted`, `invalid_without_raw`. |
+| `run-state` | Text = current run state. |
+| `run-outcome` | Text = outcome badge (`ok`, `converged`, …, `abandoned`, or `error(<detail>)`). |
+| `run-output` | Output tail (retention gap markers rendered). |
+| `run-envelope-engine-outcome`, `run-envelope-finalization`, `run-envelope-exit-code`, `run-envelope-signal` | Terminal-envelope diagnostics; present once terminal. |
 
-### Run view (`/runs/<id>`)
+### Prompt DIALOG (`/sessions/<sid>/runs/<rid>`, plan §4 — PROMPTS BECOME DIALOGS)
+
+The inline PromptPanel is REPLACED by a native `<dialog>` opened with
+`showModal()` (same pattern as the story modal). A failed answer RPC keeps
+the dialog OPEN with a visible error; Escape does NOT answer (the dialog
+stays until the prompt is answered or the run ends).
 
 | testid | Notes |
 |---|---|
-| `run-state` | Text = current run state (e.g. `queued`, `terminal`). |
-| `run-outcome` | Text = outcome badge (the terminal envelope CLASSIFICATION): `ok`, `converged`, `not_fixed`, `user_exit`, `max_attempts`, `interrupted`, `abandoned`, or `error(<detail>)`. |
-| `run-elapsed` / `run-last-activity` | Run elapsed time and time-since-last-activity (finding 8). |
-| `run-envelope-engine-outcome`, `run-envelope-finalization`, `run-envelope-exit-code`, `run-envelope-signal` | The full terminal-envelope diagnostics beyond the badge (finding 7); present only once terminal and only when the corresponding fact is set. |
-| `run-output` | Output tail (contains `true-bdd version …` for version runs). |
-| `reachability-overlay` | Visible while the owning session is unreachable and the run is non-terminal (P2). |
-| `mark-abandoned` | Control (unreachable session + non-terminal run) → `POST /api/runs/:id/abandon` (P2). |
-| `prompt-panel` | Visible while a prompt is pending. Carries `data-kind` ∈ `choice`, `clarify`, `freetext` and `data-prompt-id` (the child-emitted prompt id — A2 asserts the two choice prompts have DISTINCT ids). |
-| `prompt-choice-apply`, `prompt-choice-refine`, `prompt-choice-exit` | Choice-prompt buttons (`kind="choice"`); apply/refine/exit map to the engine's `UserAction` (AI specs A0/A2/A3). |
-| `prompt-answer-input`, `prompt-answer-submit` | Single-line clarify answer control (`kind="clarify"`): the value is the option NUMBER; the engine collector maps it to the option text (A3). |
-| `prompt-clarify-option` | One chip per numbered clarify option; carries `data-index` (1-based) with text = the exact option string. A3 reads the option text at the answered index and asserts the recorded answer equals it. |
-| `prompt-freetext-input`, `prompt-freetext-submit` | MULTILINE `<textarea>` refinement-feedback control (`kind="freetext"`, A2). Distinct from the single-line clarify input so the multiline transport (incl. the terminating blank line the remote appends before `AskRefinementFeedback` returns) is exercised end-to-end. |
+| `prompt-dialog` | The `<dialog>`; `data-kind` ∈ `choice`, `clarify`, `freetext`; `data-prompt-id` (distinct per prompt — A2). |
+| `prompt-dialog-panel` | Inner panel; a click on it must NOT answer/close. |
+| `prompt-dialog-title` | Heading; `aria-labelledby` target. |
+| `prompt-dialog-error` | Visible after a FAILED answer RPC; the dialog stays open. |
+| `prompt-choice-apply` / `-refine` / `-exit` | Choice-prompt buttons (`kind="choice"`). |
+| `prompt-answer-input` / `prompt-answer-submit` | Single-line clarify answer (the option NUMBER; the collector maps it to the option text — A3). |
+| `prompt-clarify-option` | One chip per numbered clarify option; `data-index` (1-based). |
+| `prompt-freetext-input` / `prompt-freetext-submit` | MULTILINE `<textarea>` refinement feedback (`kind="freetext"`, A2). |
 
-**AI-call budget (AI specs, NOT a UI testid):** every A-test counts the
-`claude` processes spawned as descendants of its remote (polling `ps`
-for the command child's subtree — `helpers/claude-budget.ts`) and fails
-if a single-check fixture exceeds a small per-test bound. This catches a
-broken checklist filter (which would walk the full checklist and spawn
-one evaluation call per prompt) before it becomes a multi-hour run. It is
-a process-level oracle, deliberately not a rendered surface.
+**AI-call budget** (AI specs, NOT a UI testid): every A-test counts the
+`claude` processes spawned as descendants of its remote and fails a
+single-check fixture that exceeds a small per-test bound.

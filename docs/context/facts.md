@@ -48,3 +48,9 @@ _transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md
 _transcript: 20260728-185658-083b5c96-next-task-is-to-publish-docs-doc-univers.md_
 
 - GitHub Pages is enabled for `ondatra-ai/true-bdd` and serves the document-universe map at `https://ondatra-ai.github.io/true-bdd/` and `/doc-universe.html`; both URLs rendered successfully in Playwright (verified 2026-07-28T19:00:48Z).
+
+## 2026-07-28 — This transcript chunk continued the CLI-owned-state v2 harness lint cleanup and exposed violations hidden by golangci-lint’s default reporting caps.
+
+_transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.md_
+
+- In this repository, golangci-lint’s default issue-reporting caps hid additional violations; running with `--max-same-issues 0 --max-issues-per-linter 0` exposed the complete lint set, so uncapped runs are needed before declaring lint clean (observed and verified 2026-07-29T17:13:38Z).

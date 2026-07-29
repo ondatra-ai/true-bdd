@@ -45,26 +45,20 @@ test("P1: bare-folder registration through a symlinked cwd shows the realpath", 
   const remote = await e.startRemote(linkPath, { env: { PWD: linkPath } });
 
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
+  e.note({ sessionId: session.session_id });
 
   expect(session.folder).toBe(realFolder);
   expect(session.folder).not.toBe(linkPath);
-  expect(session.reachability).toBe("connected");
-
-  // The bare folder's first inventory snapshot must be promoted before
-  // the chips can render honestly.
-  await e.api.waitForGeneration(session.id, 0);
 
   // Sessions list renders the canonical folder, not the symlink.
   await gotoSessions(page, e.server.baseURL);
-  const row = sessionRow(page, session.id);
+  const row = sessionRow(page, session.session_id);
   await expect(row).toBeVisible({ timeout: 15_000 });
   await expect(row.getByTestId(TID.sessionFolder)).toHaveText(realFolder);
-  await expect(row.getByTestId(TID.sessionReachability)).toHaveText("connected");
 
   // Bare folder: the inventory reports the missing engine config
   // honestly — no eager bootstrap (plan §3.1).
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
   await expect(inventoryDoc(page, "config")).toHaveAttribute("data-status", "missing", {
     timeout: 15_000,
   });

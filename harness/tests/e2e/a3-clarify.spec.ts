@@ -45,12 +45,11 @@ test("A3: duplicate ACs force a clarify prompt; answer by number records the opt
   const fixture = await e.materialize("a3-clarify");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
-  const { runId } = await e.api.dispatchRun(session.id, {
+  const { runId } = await e.api.dispatchRun(session.session_id, {
     command: "us-refine",
     story_id: "44.1",
     fix: true,
@@ -58,10 +57,10 @@ test("A3: duplicate ACs force a clarify prompt; answer by number records the opt
   });
   e.note({ runId });
 
-  await gotoRun(page, e.server.baseURL, runId);
+  await gotoRun(page, e.server.baseURL, session.session_id, runId);
 
   // The fix-generator asks a clarifying question with numbered options.
-  const clarify = await waitForPromptKind(e.api, runId, "clarify");
+  const clarify = await waitForPromptKind(e.api, session.session_id, runId, "clarify");
   const clarifyId = clarify.prompt.prompt_id;
 
   const optionOne = clarifyOption(page, 1);
@@ -79,10 +78,10 @@ test("A3: duplicate ACs force a clarify prompt; answer by number records the opt
 
   // With the merge decision made, the generator produces a fix and the
   // choice prompt appears; end deterministically with Exit.
-  const choice = await waitForPromptKind(e.api, runId, "choice", { notPromptId: clarifyId });
+  const choice = await waitForPromptKind(e.api, session.session_id, runId, "choice", { notPromptId: clarifyId });
   await clickChoice(page, choice.prompt.prompt_id, "exit");
 
-  const terminal = await e.api.waitForRunTerminal(runId, { timeoutMs: AI_TERMINAL_TIMEOUT_MS });
+  const terminal = await e.api.waitForRunTerminal(session.session_id, runId, { timeoutMs: AI_TERMINAL_TIMEOUT_MS });
   expect(terminal.outcome).toBe("user_exit");
 
   budget.stop();

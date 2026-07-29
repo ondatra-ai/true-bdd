@@ -1,76 +1,57 @@
 /**
- * Pure view-model for the session-list + session-detail control surfaces
- * (plan §3.5). The control-disable rule and the sibling-warning rule are
- * the two behaviors the protocol suite (P5) gates on; keeping them as pure
- * predicates lets the vitest tables (§4.6) cover every case without a
- * browser.
+ * Pure view-model for the session-detail control surfaces (plan §4,
+ * REWRITTEN for v2). v2 has no `reachability` (a readable session is
+ * connected — sessions are GONE on disconnect) and no
+ * `inventory_generation` (every read is a fresh scan). So:
+ *   - `controlsDisabled` gates ONLY on the session's OWN active run, taken
+ *     from the `session_status` view's `active_run`.
+ *   - `siblingWarningVisible` is driven by `session_status.active_owners`
+ *     (same-project active owners surfaced by the CLI), NOT by scanning the
+ *     registry list — the relay does no joins.
  */
 
-import type { SessionDetail, SessionSummary } from "./types";
-
-/** After this long without a fresh promoted inventory a session is stale. */
-export const INVENTORY_STALE_AFTER_MS = 60_000;
-
-export interface InventoryFreshnessView {
-  /** ms of the last promoted inventory, or null when none exists. */
-  updatedAt: number | null;
-  /** ms since the last promoted inventory, or null when none exists. */
-  ageMs: number | null;
-  /** Explicit staleness: no inventory yet, or older than the threshold. */
-  stale: boolean;
+/** A same-project active owner (subset used by the warning rule). */
+export interface OwnerRef {
+  owner_id: string;
 }
 
-/**
- * Inventory freshness for the sessions + detail views (plan §3.3/§3.5 /
- * finding 8): the promoted-inventory age and an EXPLICIT staleness flag,
- * computed against an injectable clock so the view-model tables are
- * deterministic. A session with no promoted inventory is stale by
- * definition; otherwise staleness is age past `staleAfterMs`.
- */
-export function inventoryFreshness(
-  session: Pick<SessionSummary, "inventory_updated_at"> | null | undefined,
-  clockNow: number = Date.now(),
-  staleAfterMs: number = INVENTORY_STALE_AFTER_MS,
-): InventoryFreshnessView {
-  const updatedAt = typeof session?.inventory_updated_at === "number" ? session.inventory_updated_at : null;
-  if (updatedAt === null) {
-    return { updatedAt: null, ageMs: null, stale: true };
-  }
+/** The active run reference (subset used by the disable rule). */
+export interface ActiveRunRef {
+  run_id: string;
+}
 
-  const ageMs = Math.max(0, clockNow - updatedAt);
-
-  return { updatedAt, ageMs, stale: ageMs > staleAfterMs };
+/** The `session_status` fields the control surfaces depend on. */
+export interface SessionStatusView {
+  session_id: string;
+  owner_id: string;
+  active_run: ActiveRunRef | null;
+  active_owners: OwnerRef[];
 }
 
 /**
  * Whether a session's action controls (Create/Refine/Apply, build tests /
  * build code) are disabled. Disabled ONLY for the session's OWN active run
- * or an unreachable session — sibling-session folder activity never
- * disables (it warns; see siblingWarningVisible). README-testids / P5.
+ * (plan §4 / P5): a same-project SIBLING owner does not disable — it warns,
+ * and the folder flock decides at dispatch time. A not-yet-loaded status is
+ * disabled by default.
  */
-export function controlsDisabled(session: Pick<SessionSummary, "active_run_id" | "reachability"> | null | undefined): boolean {
-  if (!session) {
+export function controlsDisabled(status: SessionStatusView | null | undefined): boolean {
+  if (!status) {
     return true;
   }
 
-  return session.active_run_id !== null || session.reachability === "unreachable";
+  return status.active_run !== null;
 }
 
 /**
- * Whether the folder-warning banner shows: true when a DIFFERENT session
- * on the SAME canonical folder has a non-terminal run (its active_run_id
- * is set). Derived from GET /api/sessions (P5). The session's own active
- * run does NOT trigger the banner — that is the disable rule above.
+ * Whether the folder-warning banner shows: true when a DIFFERENT owner is
+ * active in the same project (plan §4 / P5). The session's OWN owner being
+ * active never warns. Driven by `session_status.active_owners`.
  */
-export function siblingWarningVisible(
-  sessions: SessionSummary[] | undefined,
-  me: Pick<SessionDetail, "id" | "folder"> | null | undefined,
-): boolean {
-  if (!sessions || !me) {
+export function siblingWarningVisible(status: SessionStatusView | null | undefined): boolean {
+  if (!status) {
     return false;
   }
 
-  return sessions.some(
-    (candidate) => candidate.id !== me.id && candidate.folder === me.folder && candidate.active_run_id !== null,
-  );
+  return status.active_owners.some((owner) => owner.owner_id !== status.owner_id);
 }

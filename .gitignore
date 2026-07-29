@@ -30,3 +30,7 @@ coverage.out
 
 # Python bytecode (Claude hooks)
 __pycache__/
+
+# Local backend secrets for start.sh
+.env
+.env.local

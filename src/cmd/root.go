@@ -46,6 +46,8 @@ func Execute() {
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newRemoteCmd())
+	rootCmd.AddCommand(newRemoteSupervisorCmd())
+	rootCmd.AddCommand(newPromptProbeCmd())
 	rootCmd.AddCommand(NewUSCommand(provide))
 	rootCmd.AddCommand(NewBuildCommand(provide))
 

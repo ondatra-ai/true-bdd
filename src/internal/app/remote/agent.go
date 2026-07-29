@@ -1,93 +1,86 @@
-// Package remote implements the `true-bdd remote` host-folder agent
-// (plan §3.1–§3.3). It runs inside a host project folder, connects OUT
-// to the harness server, registers a session, uploads an inventory
-// snapshot, then polls for dispatched commands — executing each as an
-// isolated child process whose stdout/stderr and structured events are
-// relayed to the server, with the interactive `--fix` prompt loop
-// bridged to the browser. The agent constructs NO bootstrap container,
-// so it runs honestly in a bare folder (plan §3.1).
+// Package remote implements the `true-bdd remote` host-folder agent (plan
+// §1–§2). It runs inside a host project folder and OWNS all run/session state
+// in a per-project SQLite store (`<folder>/tmp/true-bdd-state.db`). It connects
+// OUT to the STATELESS relay via register / poll / reply: the relay carries
+// query / dispatch / answer work items to the CLI and relays the CLI's reply
+// verbatim to the browser. The agent constructs NO bootstrap container, so it
+// runs honestly in a bare folder.
 package remote
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/src/internal/app/inventory"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/queryserver"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/store"
 )
 
 const (
-	pollInterval     = time.Second
-	runChanBuffer    = 1
-	tmpDirPerm       = 0o700
-	registerAttempts = 5
-	registerBackoff  = 500 * time.Millisecond
-	// maxInventoryRescans bounds the 413-driven re-scan loop so a
-	// mid-flight limit change can never wedge into an infinite retry.
-	maxInventoryRescans = 24
-	// budgetShrinkDivisor halves the fit limit on each 413 re-scan.
-	budgetShrinkDivisor = 2
-	// inventoryTokenSample is a representative client token (worst-case
-	// length) used only to size the request envelope when validating the
-	// server cap at register — before a real token is minted.
-	inventoryTokenSample = "-inv-999999999"
+	tmpDirPerm = 0o700
+	// dbFileName is the per-project CLI state store (plan §1.1).
+	dbFileName = "true-bdd-state.db"
 )
 
 // Options configures the remote agent.
 type Options struct {
-	// ServerURL is the harness server the remote connects OUT to.
+	// ServerURL is the relay the remote connects OUT to.
 	ServerURL string
 	// Version is the remote's reported build version.
 	Version string
 }
 
-// Agent is the long-lived remote session loop: one poller goroutine
-// keeps the heartbeat alive and relays run dispatches / answers /
-// inventory requests, while the main loop executes at most one run at a
-// time and re-inventories after each command.
+// Agent is the long-lived remote session: it registers with the relay, runs a
+// single-outstanding-poll loop, and dispatches each work item to a query /
+// dispatch / answer handler. Writes go through the store (the single writer);
+// projection reads use a second read-only handle.
 type Agent struct {
-	client    *ServerClient
+	client   *RelayClient
+	store    *store.DB
+	locks    *store.Locks
+	read     *readHandle
+	children *ChildrenRegistry
+
 	binPath   string
 	folder    string // canonical (realpath) folder
 	rawFolder string
 	version   string
-	children  *ChildrenRegistry
 
-	// incarnation is the ONE stable per-process id (NICE-5): register
-	// retries reuse it, so a dropped register response re-registers into
-	// the SAME server session rather than orphaning one.
-	incarnation string
-	sessionID   string
+	// sessionID is the CLIENT-OWNED, process-stable id used as BOTH the relay
+	// session_id AND the store owner_id (plan §1.7): a relay restart
+	// re-registers with the SAME id.
+	sessionID     string
+	startIdentity string
+	pid           int
 
-	mu         sync.Mutex
-	scanEpoch  int
-	activeExec *RunExecutor
-	handled    *handledRuns
-	invSeq     int
-	// inventoryLimit is the server's negotiated FULL-REQUEST byte limit
-	// (0 = unbounded). The uploader fits the serialized full InventoryRequest
-	// — snapshot PLUS the folder/session/epoch/token envelope — under it, and
-	// on a 413 re-scans against a strictly smaller limit; a successfully
-	// reduced limit is persisted for later refreshes (plan §1a / finding 1).
-	inventoryLimit int
-	// inventoryUnavailable is the terminal cannot-fit reason (e.g.
-	// "limit_too_small") when the server cap is below the minimum viable
-	// request; it is reported OUT OF BAND on every poll (finding 1).
-	inventoryUnavailable string
-	// pendingInv is a scanned-but-unacked inventory upload retained until
-	// the server acks it (finding 2): a failed upload — or a manual refresh
-	// whose commit was lost — is retried, never silently dropped.
-	pendingInv *InventoryRequest
+	mu                   sync.Mutex
+	epoch                int
+	token                string
+	inventoryBudgetBytes int
+	activeExec           *RunExecutor
+
+	// scheduler bounds concurrent work handling (mutations serialized, ≤4
+	// reads, ≤1 inventory) — no unbounded goroutine per poll (finding 6).
+	scheduler *workScheduler
+
+	// runWG tracks in-flight run executors so a normal shutdown WAITS for them
+	// to finish escalating their child before the process exits (finding 4).
+	runWG sync.WaitGroup
 }
 
-// Run resolves the host folder, builds the agent, and drives its
-// register → poll → execute loop until ctx is cancelled.
+// shutdownWait bounds how long a normal shutdown waits for active executors to
+// finish tearing down their child (plan §1.6, finding 4).
+const shutdownWait = 40 * time.Second
+
+// Run resolves the host folder, opens the per-project store + locks, runs boot
+// reconciliation, then drives the register → poll → reply loop until ctx is
+// cancelled (plan §1–§2).
 func Run(ctx context.Context, opts Options) error {
 	raw, err := os.Getwd()
 	if err != nil {
@@ -111,450 +104,277 @@ func Run(ctx context.Context, opts Options) error {
 		return fmt.Errorf("create tmp dir: %w", err)
 	}
 
-	incarnation, err := randomID()
+	agent, err := newAgent(opts, raw, canonical, binPath, tmpDir)
 	if err != nil {
 		return err
 	}
 
-	agent := &Agent{
-		client:      NewServerClient(opts.ServerURL),
-		binPath:     binPath,
-		folder:      canonical,
-		rawFolder:   raw,
-		version:     opts.Version,
-		children:    NewChildrenRegistry(filepath.Join(tmpDir, "true-bdd-remote-children.pids")),
-		handled:     newHandledRuns(handledRunsCap),
-		incarnation: incarnation,
-	}
+	defer agent.closeResources()
+
+	agent.bootReconcile()
 
 	return agent.loop(ctx)
 }
 
-func (a *Agent) loop(ctx context.Context) error {
-	err := a.register(ctx)
+// newAgent opens the store, locks, and read handle, and mints the stable
+// session id + process start identity.
+func newAgent(opts Options, raw, canonical, binPath, tmpDir string) (*Agent, error) {
+	dbPath := filepath.Join(tmpDir, dbFileName)
+
+	database, err := store.Open(dbPath)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("open store: %w", err)
 	}
 
-	// Replay any spooled events an earlier incarnation left unacked — a
-	// crashed or killed remote's terminal event still reaches the server on
-	// the next start, then the spool is removed (plan §3.6).
-	replayErr := replayUnackedSpools(ctx, a.client, a.sessionID, filepath.Join(a.folder, "tmp"))
-	if replayErr != nil && ctx.Err() == nil {
-		slog.Warn("remote: spool replay incomplete", "error", replayErr)
+	locks, err := store.OpenLocks(tmpDir)
+	if err != nil {
+		_ = database.Close()
+
+		return nil, fmt.Errorf("open locks: %w", err)
 	}
 
-	a.uploadInventory(ctx)
+	read, err := openReadHandle(dbPath)
+	if err != nil {
+		_ = database.Close()
 
-	runCh := make(chan RunSpec, runChanBuffer)
-	invCh := make(chan struct{}, 1)
+		return nil, fmt.Errorf("open read handle: %w", err)
+	}
 
-	go a.pollLoop(ctx, runCh, invCh)
+	sessionID, err := randomID()
+	if err != nil {
+		_ = read.Close()
+		_ = database.Close()
 
-	for {
-		select {
-		case <-ctx.Done():
-			a.shutdown()
+		return nil, err
+	}
 
-			return nil
-		case run := <-runCh:
-			a.executeRun(ctx, run)
-		case <-invCh:
-			a.uploadInventory(ctx)
-		}
+	pid := os.Getpid()
+
+	return &Agent{
+		client:        NewRelayClient(opts.ServerURL),
+		store:         database,
+		locks:         locks,
+		read:          read,
+		children:      NewChildrenRegistry(childrenPidfilePath(tmpDir, sessionID)),
+		binPath:       binPath,
+		folder:        canonical,
+		rawFolder:     raw,
+		version:       opts.Version,
+		sessionID:     sessionID,
+		startIdentity: startIdentity(pid),
+		pid:           pid,
+	}, nil
+}
+
+// childrenPidfilePath is the per-owner children pidfile (plan §1.6): keying it
+// on the owner id fixes the same-folder clobbering bug of the shared v1 file.
+func childrenPidfilePath(tmpDir, ownerID string) string {
+	return filepath.Join(tmpDir, "true-bdd-remote-children."+ownerID+".jsonl")
+}
+
+// startIdentity returns a stable-for-life process identity (ps lstart), with a
+// pid+boot-time fallback when ps is unavailable (plan §1.6).
+func startIdentity(pid int) string {
+	if id := processStartIdentity(pid); id != "" {
+		return id
+	}
+
+	return fmt.Sprintf("pid-%d-boot-%d", pid, time.Now().UnixNano())
+}
+
+// closeResources releases the store, read handle, and locks (best-effort).
+func (a *Agent) closeResources() {
+	if a.read != nil {
+		_ = a.read.Close()
+	}
+
+	if a.store != nil {
+		_ = a.store.Close()
 	}
 }
 
-// register announces this incarnation, retrying with the SAME incarnation
-// id so a dropped register response re-registers into the SAME server
-// session rather than orphaning one (NICE-5). The server dedups by
-// incarnation_id, so a retry after a lost reply is idempotent.
-func (a *Agent) register(ctx context.Context) error {
-	var lastErr error
+// loop registers, then runs the single-outstanding-poll loop until ctx is
+// cancelled (plan §2). A context cancellation is a clean shutdown (nil); any
+// other error propagates.
+func (a *Agent) loop(ctx context.Context) error {
+	if a.scheduler == nil {
+		// Bounded work scheduler (finding 6): initialized here so both Run and
+		// the direct-construction test path share the same bounded dispatch.
+		a.scheduler = newWorkScheduler(a.handleWork)
+	}
 
-	for range registerAttempts {
-		resp, err := a.client.Register(ctx, RegisterRequest{
-			IncarnationID:   a.incarnation,
+	rng := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // jitter, not crypto
+
+	err := a.register(ctx)
+	if err != nil {
+		return a.gracefulOrErr(ctx, err)
+	}
+
+	attempt := 0
+
+	for ctx.Err() == nil {
+		item, status, err := a.client.Poll(ctx, a.pollRequest())
+		if err != nil {
+			attempt++
+			_ = sleepCtx(ctx, queryserver.FullJitterBackoff(attempt, rng))
+
+			continue
+		}
+
+		attempt = 0
+
+		reconnErr := a.handlePollResult(ctx, item, status, rng)
+		if reconnErr != nil {
+			return a.gracefulOrErr(ctx, reconnErr)
+		}
+	}
+
+	a.shutdown()
+
+	return nil
+}
+
+// gracefulOrErr maps a context-cancellation error to a clean shutdown (nil),
+// surfacing any other error.
+func (a *Agent) gracefulOrErr(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		a.shutdown()
+
+		//nolint:nilerr // a cancelled context is the graceful-shutdown signal: drop the wrapped ctx error and exit cleanly
+		return nil
+	}
+
+	return err
+}
+
+// handlePollResult reacts to one poll: a 200 work item is handled in its own
+// goroutine (then the loop repolls immediately — exactly one outstanding
+// poll); a 204 repolls; any other status classifies into a reconnect via
+// queryserver (a 404 re-registers with the SAME session id, plan §2).
+func (a *Agent) handlePollResult(ctx context.Context, item *workItem, status int, rng *rand.Rand) error {
+	switch {
+	case status == http.StatusOK && item != nil:
+		// Submit to the bounded scheduler instead of spawning an unbounded
+		// goroutine (finding 6). The submit is non-blocking, so the loop still
+		// re-polls immediately — exactly one outstanding poll.
+		a.scheduler.Submit(ctx, *item)
+
+		return nil
+	case status == http.StatusNoContent:
+		return nil
+	default:
+		reconnect := queryserver.ReconnectFor(queryserver.ClassifyStatus(status))
+
+		if reconnect.Backoff {
+			_ = sleepCtx(ctx, queryserver.FullJitterBackoff(0, rng))
+		}
+
+		if reconnect.ReRegister {
+			return a.register(ctx)
+		}
+
+		return nil
+	}
+}
+
+// register announces this incarnation (SAME session id every time) and stores
+// the negotiated epoch, capability token, and reply budget. It retries forever
+// with capped full-jitter backoff until success or ctx cancel (plan §2).
+func (a *Agent) register(ctx context.Context) error {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // jitter, not crypto
+
+	for attempt := 0; ; attempt++ {
+		if ctx.Err() != nil {
+			return fmt.Errorf("register cancelled: %w", ctx.Err())
+		}
+
+		resp, err := a.client.Register(ctx, registerRequest{
+			SessionID:       a.sessionID,
 			Folder:          a.rawFolder,
 			CanonicalFolder: a.folder,
-			PID:             os.Getpid(),
+			PID:             a.pid,
+			StartIdentity:   a.startIdentity,
 			Version:         a.version,
 		})
 		if err == nil {
-			a.sessionID = resp.SessionID
-			a.setScanEpoch(resp.ScanEpoch)
-			a.applyInventoryLimit(resp.InventoryLimitBytes)
-			slog.Info("remote registered", "session", resp.SessionID, "folder", a.folder)
+			a.mu.Lock()
+			a.epoch = resp.ConnectionEpoch
+			a.token = resp.CapabilityToken
+			a.inventoryBudgetBytes = resp.InventoryBudgetBytes
+			a.mu.Unlock()
+
+			slog.Info("remote registered",
+				"session", a.sessionID, "epoch", resp.ConnectionEpoch,
+				"reply_budget", resp.ReplyBudgetBytes, "inventory_budget", resp.InventoryBudgetBytes,
+				"folder", a.folder)
 
 			return nil
 		}
-
-		lastErr = err
 
 		if ctx.Err() != nil {
 			return fmt.Errorf("register cancelled: %w", ctx.Err())
 		}
 
-		waitErr := sleepCtx(ctx, registerBackoff)
+		waitErr := sleepCtx(ctx, queryserver.FullJitterBackoff(attempt, rng))
 		if waitErr != nil {
 			return waitErr
 		}
 	}
-
-	return fmt.Errorf("register after %d attempts: %w", registerAttempts, lastErr)
 }
 
-func (a *Agent) pollLoop(ctx context.Context, runCh chan RunSpec, invCh chan struct{}) {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			a.pollOnce(ctx, runCh, invCh)
-		}
-	}
-}
-
-func (a *Agent) pollOnce(ctx context.Context, runCh chan RunSpec, invCh chan struct{}) {
-	resp, err := a.client.Poll(ctx, PollRequest{
-		SessionID:            a.sessionID,
-		ActiveRunID:          a.activeRunID(),
-		InventoryUnavailable: a.getInventoryUnavailable(),
-	})
-	if err != nil {
-		if ctx.Err() == nil {
-			slog.Warn("remote: poll failed", "error", err)
-		}
-
-		return
+// shutdown interrupts the active child on ctx cancel and WAITS (bounded) for
+// every active executor to finish tearing its child down, so the process never
+// exits leaving a mutating group mid-escalation (plan §2/§1.6, finding 4). The
+// store and read handle are closed by the deferred closeResources in Run.
+func (a *Agent) shutdown() {
+	if exec := a.getActive(); exec != nil {
+		exec.Interrupt()
 	}
 
-	if resp.ScanEpoch > 0 {
-		a.setScanEpoch(resp.ScanEpoch)
-	}
+	done := make(chan struct{})
 
-	if resp.Answer != nil {
-		if executor := a.getActive(); executor != nil {
-			executor.DeliverAnswer(*resp.Answer)
-		}
-	}
-
-	if resp.Run != nil {
-		a.dispatchRun(*resp.Run, runCh)
-	}
-
-	if resp.WantInventory && a.getActive() == nil {
-		requestInventory(invCh)
-	}
-}
-
-// dispatchRun hands a freshly-delivered run to the main loop exactly
-// once. handled dedups redelivery until the run is claimed; activeExec
-// blocks a second concurrent run.
-func (a *Agent) dispatchRun(run RunSpec, runCh chan RunSpec) {
-	a.mu.Lock()
-
-	if a.activeExec != nil || a.handled.has(run.RunID) {
-		a.mu.Unlock()
-
-		return
-	}
-
-	a.handled.add(run.RunID)
-	a.mu.Unlock()
+	go func() {
+		a.runWG.Wait()
+		close(done)
+	}()
 
 	select {
-	case runCh <- run:
-	default:
-		a.mu.Lock()
-		a.handled.remove(run.RunID)
-		a.mu.Unlock()
+	case <-done:
+	case <-time.After(shutdownWait):
+		slog.Warn("remote: shutdown timed out waiting for active executors")
 	}
 }
 
-func (a *Agent) executeRun(ctx context.Context, run RunSpec) {
-	executor := NewRunExecutor(a.client, a.sessionID, a.binPath, a.folder, run, a.children)
+// ── small synchronized accessors ──
 
-	a.setActive(executor)
-	executor.Execute(ctx)
-	a.setActive(nil)
-
-	// Do NOT re-inventory immediately here (finding 2): the terminal event
-	// flags want_inventory folder-wide on the server, so the NEXT idle poll
-	// issues a FRESH epoch and drives the re-scan through that path. An
-	// immediate same-epoch upload here would reuse a stale ticket and could
-	// mislabel a slow scan.
-}
-
-// uploadInventory scans the folder and uploads a snapshot under a
-// server-issued ticket. The ticket (epoch) is captured BEFORE scanning
-// (finding 2), so a concurrent poll issuing a newer epoch during a slow
-// scan cannot mislabel this older snapshot. The scanned snapshot+token is
-// retained until the server acks it, so a failed upload — or a manual
-// refresh whose commit was lost — is retried rather than silently dropped.
-//
-// The uploader fits the SERIALIZED FULL InventoryRequest (snapshot PLUS the
-// folder/session/epoch/token envelope) under the server's negotiated limit
-// (finding 1), not a guessed constant. A 413 (the request still exceeded the
-// server's byte limit — e.g. the limit changed mid-flight) drives a
-// strictly-smaller RE-SCAN rather than a verbatim retry that would wedge
-// forever (plan §1a); a limit that cannot shrink further is the terminal
-// cannot-fit state, reported out of band via the poll. A successfully
-// reduced limit is PERSISTED so later refreshes start from it.
-//
-// On a successful upload the uploader also compares the acked request's
-// epoch to the current scan epoch (finding 3): if a newer refresh ticket
-// arrived while this older request was in flight (or waiting to retry), it
-// clears the stale request and immediately re-scans for the latest epoch, so
-// a manual refresh is never consumed server-side without its newer ticket
-// ever being scanned.
-func (a *Agent) uploadInventory(ctx context.Context) {
-	if a.getInventoryUnavailable() != "" {
-		return // terminal cannot-fit; the poll reports it out of band
-	}
-
-	a.mu.Lock()
-	limit := a.inventoryLimit
-	a.mu.Unlock()
-
-	for attempt := 0; attempt <= maxInventoryRescans; attempt++ {
-		req := a.buildOrReuseInventory(limit)
-
-		_, err := a.client.PostInventory(ctx, *req)
-		if err == nil {
-			a.clearPendingInventory()
-			a.setInventoryLimit(limit) // persist any reduced limit for later refreshes
-
-			// A newer refresh ticket arrived while this request was in flight:
-			// re-scan for the latest epoch instead of returning stale.
-			if a.currentScanEpoch() > req.ScanEpoch {
-				continue
-			}
-
-			return
-		}
-
-		if !errors.Is(err, errRequestTooLarge) {
-			if ctx.Err() == nil {
-				slog.Warn("remote: inventory upload failed; retained for retry", "error", err)
-			}
-
-			return // keep pendingInv set so the next attempt retries this snapshot
-		}
-
-		// 413 → re-scan against a strictly smaller full-request limit.
-		next := shrinkInventoryLimit(limit, serializedRequestBytes(req))
-
-		a.clearPendingInventory() // force a fresh, smaller scan next iteration
-
-		if next <= 0 {
-			a.setInventoryUnavailable(inventory.UnavailableLimitTooSmall)
-
-			if ctx.Err() == nil {
-				slog.Warn("remote: inventory exceeds the server limit and cannot shrink further", "limit", limit)
-			}
-
-			return
-		}
-
-		limit = next
-	}
-}
-
-// clearPendingInventory drops the retained upload so the next scan is fresh.
-func (a *Agent) clearPendingInventory() {
-	a.mu.Lock()
-	a.pendingInv = nil
-	a.mu.Unlock()
-}
-
-// buildOrReuseInventory returns the retained unacked upload if one exists,
-// otherwise captures a fresh ticket, scans the snapshot fitted so the FULL
-// serialized request stays within the given server limit, and retains the
-// new upload.
-func (a *Agent) buildOrReuseInventory(limit int) *InventoryRequest {
-	a.mu.Lock()
-	if a.pendingInv != nil {
-		req := a.pendingInv
-		a.mu.Unlock()
-
-		return req
-	}
-
-	// Capture the ticket BEFORE scanning.
-	epoch := a.scanEpoch
-	a.invSeq++
-	token := fmt.Sprintf("%s-inv-%d", a.sessionID, a.invSeq)
-	a.mu.Unlock()
-
-	budget := snapshotBudgetFor(limit, a.sessionID, a.folder, token, epoch)
-	snapshot := inventory.ScanWithBudget(a.folder, budget)
-
-	req := &InventoryRequest{
-		SessionID:       a.sessionID,
-		CanonicalFolder: a.folder,
-		ScanEpoch:       epoch,
-		Snapshot:        snapshot,
-		ClientToken:     token,
-	}
-
-	a.mu.Lock()
-	a.pendingInv = req
-	a.mu.Unlock()
-
-	return req
-}
-
-// snapshotBudgetFor derives the SNAPSHOT-fit budget from the server's
-// full-request limit by subtracting the exact serialized envelope
-// (session id + folder + epoch + token wrapper) for this request. Zero (or a
-// non-negotiated limit) means unbounded; a limit at or below the envelope
-// collapses to the smallest positive budget so the scan degrades to the
-// cannot-fit floor rather than scanning unbounded.
-func snapshotBudgetFor(limit int, sessionID, folder, token string, epoch int) int {
-	if limit <= 0 {
-		return 0
-	}
-
-	budget := limit - inventoryEnvelopeBytes(sessionID, folder, token, epoch)
-	if budget < 1 {
-		return 1
-	}
-
-	return budget
-}
-
-// inventoryEnvelopeBytes is the exact serialized size of an InventoryRequest
-// MINUS its snapshot — the folder/session/epoch/token wrapper. Because JSON
-// marshals the snapshot verbatim in field order, the wrapper size is stable
-// regardless of snapshot content, so subtracting an empty snapshot's bytes
-// from a full request built with the SAME wrapper yields the exact envelope.
-func inventoryEnvelopeBytes(sessionID, folder, token string, epoch int) int {
-	full := serializedRequestBytes(&InventoryRequest{
-		SessionID:       sessionID,
-		CanonicalFolder: folder,
-		ScanEpoch:       epoch,
-		Snapshot:        inventory.Snapshot{},
-		ClientToken:     token,
-	})
-
-	empty, err := json.Marshal(inventory.Snapshot{})
-	if err != nil {
-		return full
-	}
-
-	return full - len(empty)
-}
-
-// minViableRequestBytes is the smallest server limit that can carry even the
-// always-fit floor request for this folder: the bounded floor snapshot's
-// worst case plus this folder's request envelope. A server cap below it is a
-// terminal cannot-fit condition validated at register (plan §1a / finding 1).
-func minViableRequestBytes(sessionID, folder string) int {
-	return inventory.MinInventoryFloor + inventoryEnvelopeBytes(sessionID, folder, sessionID+inventoryTokenSample, 0)
-}
-
-// shrinkInventoryLimit returns a full-request limit strictly smaller than the
-// request just sent, halving toward zero. It returns 0 when the limit cannot
-// shrink further (the cannot-fit terminal state).
-func shrinkInventoryLimit(current, sent int) int {
-	if sent <= 1 {
-		return 0
-	}
-
-	target := sent / budgetShrinkDivisor
-	if current > 0 && target >= current {
-		target = current / budgetShrinkDivisor
-	}
-
-	if target < 1 {
-		return 0
-	}
-
-	return target
-}
-
-// serializedRequestBytes is the JSON byte length of a full inventory request
-// — the size the 413 re-scan shrinks below and the fit step verifies.
-func serializedRequestBytes(req *InventoryRequest) int {
-	data, err := json.Marshal(req)
-	if err != nil {
-		return 0
-	}
-
-	return len(data)
-}
-
-// applyInventoryLimit stores the server's negotiated full-request limit and
-// validates it: a cap below the minimum viable request is a terminal
-// cannot-fit condition reported out of band on every poll (finding 1).
-func (a *Agent) applyInventoryLimit(serverLimit int) {
+func (a *Agent) pollRequest() pollRequest {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.inventoryLimit = serverLimit
-	if serverLimit > 0 && serverLimit < minViableRequestBytes(a.sessionID, a.folder) {
-		a.inventoryUnavailable = inventory.UnavailableLimitTooSmall
-	}
+	return pollRequest{SessionID: a.sessionID, ConnectionEpoch: a.epoch, CapabilityToken: a.token}
 }
 
-// setInventoryLimit persists the (possibly reduced) full-request limit.
-func (a *Agent) setInventoryLimit(limit int) {
+func (a *Agent) getToken() string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.inventoryLimit = limit
+	return a.token
 }
 
-// setInventoryUnavailable latches the terminal cannot-fit reason.
-func (a *Agent) setInventoryUnavailable(reason string) {
+// getInventoryBudget returns the negotiated inventory-fit budget (the full
+// request budget the snapshot is fitted under, plan §1.5).
+func (a *Agent) getInventoryBudget() int {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.inventoryUnavailable = reason
+	return a.inventoryBudgetBytes
 }
 
-// getInventoryUnavailable reads the terminal cannot-fit reason (empty when
-// the inventory can still be uploaded).
-func (a *Agent) getInventoryUnavailable() string {
+func (a *Agent) setActive(exec *RunExecutor) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	return a.inventoryUnavailable
-}
-
-// currentScanEpoch reads the latest scan epoch the poller has observed.
-func (a *Agent) currentScanEpoch() int {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	return a.scanEpoch
-}
-
-func (a *Agent) shutdown() {
-	executor := a.getActive()
-	if executor != nil {
-		executor.Interrupt()
-	}
-}
-
-func (a *Agent) setScanEpoch(epoch int) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	if epoch > a.scanEpoch {
-		a.scanEpoch = epoch
-	}
-}
-
-func (a *Agent) setActive(executor *RunExecutor) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	a.activeExec = executor
+	a.activeExec = exec
 }
 
 func (a *Agent) getActive() *RunExecutor {
@@ -564,22 +384,12 @@ func (a *Agent) getActive() *RunExecutor {
 	return a.activeExec
 }
 
-func (a *Agent) activeRunID() string {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	if a.activeExec == nil {
-		return ""
-	}
-
-	return a.activeExec.RunID()
-}
-
-// requestInventory nudges the main loop to re-inventory, coalescing
-// repeats (the buffered channel already holds a pending request).
-func requestInventory(invCh chan struct{}) {
+// sleepCtx sleeps for d or until ctx is cancelled.
+func sleepCtx(ctx context.Context, duration time.Duration) error {
 	select {
-	case invCh <- struct{}{}:
-	default:
+	case <-ctx.Done():
+		return fmt.Errorf("remote wait cancelled: %w", ctx.Err())
+	case <-time.After(duration):
+		return nil
 	}
 }

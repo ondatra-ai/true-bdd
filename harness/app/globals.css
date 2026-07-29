@@ -455,6 +455,22 @@ dialog.sf-modal::backdrop {
   font-size: var(--fs-caption);
 }
 
+/* Prompt-dialog form controls (clarify input + freetext textarea). */
+.sf-input,
+.sf-textarea {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  color: var(--text-body);
+  background: var(--surface-page);
+  border: var(--border-width) solid var(--border-strong);
+  padding: var(--space-1) var(--space-2);
+}
+.sf-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
 /* Tablist — two flush uppercase buttons sharing a hairline; active inverted. */
 .sf-tablist {
   display: flex;

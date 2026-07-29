@@ -76,10 +76,9 @@ test("P3: epic→story hierarchy renders (title, toggle, scoped rows, AI-compat 
   const fixture = await e.materialize("p3-inventory-spread");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
 
   // Document chips still render (unchanged contract).
   await expect(inventoryDoc(page, "config")).toHaveAttribute("data-status", "present", { timeout: 15_000 });
@@ -154,22 +153,20 @@ test("P3: Refresh picks up a worker registry mutation (scoped row)", async ({ pa
   const fixture = await e.materialize("p3-inventory-spread");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
-  await gotoSession(page, e.server.baseURL, session.id);
+  await gotoSession(page, e.server.baseURL, session.session_id);
 
   const section = epicSection(page, EPIC_FILE);
   const row2 = storyRowIn(section, "60.2");
   await expect(row2.getByTestId(TID.storyApplied)).toHaveText("1/2", { timeout: 15_000 });
 
   // WORKER-side mutation (never server-side): cover 60.2's second AC in the
-  // registry, then drive Refresh through the UI.
-  const generationBefore = (await e.api.getSession(session.id)).inventory_generation;
+  // registry, then drive Refresh through the UI — now an immediate live
+  // session_detail READ (plan §1.5), not a /refresh mutation.
   fs.appendFileSync(path.join(fixture.target, "docs", "scenarios.yaml"), REGISTRY_APPEND_602_002);
 
   await page.getByTestId(TID.refresh).click();
-  await e.api.waitForGeneration(session.id, generationBefore);
 
   // The changed state renders in the still-uniquely-resolvable scoped row.
   await expect(row2.getByTestId(TID.storyApplied)).toHaveText("2/2", { timeout: 30_000 });

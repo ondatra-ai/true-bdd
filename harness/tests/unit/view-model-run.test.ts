@@ -2,9 +2,14 @@
  * Component/view-model tables (plan §4.6): every terminal envelope badge
  * (ok|converged|not_fixed|user_exit|max_attempts|interrupted|abandoned and
  * error(spawn|no_result|contradiction|folder_locked)), the run-output tail
- * with retention gap markers, the reachability-overlay / mark-abandoned
- * visibility rules, and the prompt-panel normalization. Pure functions; no
- * DOM.
+ * with retention gap markers, and the prompt normalization. Pure functions;
+ * no DOM.
+ *
+ * v2 RETARGET: the reachability-overlay / mark-abandoned visibility rules
+ * are DELETED (plan §6 — sessions are gone on disconnect; there is no
+ * unreachable state and no mark-abandoned control), so those describe
+ * blocks and their imports are removed. `promptView` still normalizes the
+ * prompt payload for the native <dialog> (plan §4).
  */
 
 import { describe, expect, it } from "vitest";
@@ -12,10 +17,8 @@ import { describe, expect, it } from "vitest";
 import {
   envelopeDetails,
   gapMarker,
-  markAbandonedVisible,
   outcomeBadge,
   promptView,
-  reachabilityOverlayVisible,
   runOutputSegments,
   runOutputText,
   runTiming,
@@ -89,29 +92,6 @@ describe("runOutputSegments — streaming + retention gap markers", () => {
   it("tolerates missing events", () => {
     expect(runOutputSegments(undefined)).toEqual([]);
     expect(runOutputText(undefined)).toBe("");
-  });
-});
-
-describe("reachabilityOverlayVisible / markAbandonedVisible", () => {
-  const cases: { state: string; reachability: string | null; visible: boolean; note: string }[] = [
-    { state: "queued", reachability: "unreachable", visible: true, note: "non-terminal + unreachable" },
-    { state: "running", reachability: "unreachable", visible: true, note: "non-terminal + unreachable" },
-    { state: "prompt_published", reachability: "unreachable", visible: true, note: "non-terminal + unreachable" },
-    { state: "queued", reachability: "connected", visible: false, note: "connected hides the overlay" },
-    { state: "terminal", reachability: "unreachable", visible: false, note: "terminal never shows it" },
-    { state: "running", reachability: null, visible: false, note: "no session ⇒ hidden" },
-  ];
-
-  for (const { state, reachability, visible, note } of cases) {
-    it(`${note}: state=${state} reachability=${reachability} ⇒ ${visible}`, () => {
-      const session = reachability === null ? null : { reachability: reachability as "connected" | "unreachable" };
-      expect(reachabilityOverlayVisible({ state }, session)).toBe(visible);
-      expect(markAbandonedVisible({ state }, session)).toBe(visible);
-    });
-  }
-
-  it("is hidden when the run itself is undefined", () => {
-    expect(reachabilityOverlayVisible(undefined, { reachability: "unreachable" })).toBe(false);
   });
 });
 

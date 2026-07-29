@@ -49,21 +49,20 @@ test("A5: build tests --fix authors a test under tests/ referencing INT-901", as
   const fixture = await e.materialize("a5-build-tests-fix");
   const remote = await e.startRemote(fixture.target);
   const session = await e.api.waitForSession((candidate) => candidate.pid === remote.pid);
-  e.note({ sessionId: session.id });
-  await e.api.waitForGeneration(session.id, 0);
+  e.note({ sessionId: session.session_id });
 
   const budget = new ClaudeCallBudget(remote.pid).start();
 
-  const { runId } = await e.api.dispatchRun(session.id, {
+  const { runId } = await e.api.dispatchRun(session.session_id, {
     command: "build-tests",
     fix: true,
     client_token: newRunToken(),
   });
   e.note({ runId });
 
-  await gotoRun(page, e.server.baseURL, runId);
+  await gotoRun(page, e.server.baseURL, session.session_id, runId);
 
-  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, runId, {
+  const { run: terminal, applies } = await applyUntilTerminal(page, e.api, session.session_id, runId, {
     cap: APPLY_CAP,
     label: "A5",
     stepTimeoutMs: AI_TERMINAL_TIMEOUT_MS,
