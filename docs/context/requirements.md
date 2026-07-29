@@ -53,3 +53,15 @@ _transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md
 - [correction] Structure `architecture.yaml` with `services:` and an `environment:` section split into `dev:` and `prod:`; it must declare the path to required `docker-compose.yaml` and, when present, optional `docker-compose.dev.yaml` (corrected 2026-07-28T15:20:28Z).
 - [correction] Treat `vocabulary` as the definition of allowed BDD language: actions map phrases to concrete meanings, forbidden qualifiers enumerate vague wording, and forbidden actions include replacements; prefer the PRD for forbidden-action/replacement material while allowing it in architecture (corrected 2026-07-28T15:20:28Z).
 - Populate the TrueBDD repository’s root `.mcp.json` with MCP server configurations copied from neighboring repositories (requested 2026-07-28T15:48:13Z).
+
+## 2026-07-28 — The task scoped and began a test-first, Codex-reviewed Next.js web harness for inspecting TrueBDD projects and invoking existing CLI workflows.
+
+_transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.md_
+
+- Create the web harness as a Next.js project under `./harness/`; it must let users select a project folder, parse that folder's `true-bdd.yaml` and required documents, and show what is present and missing (requested 2026-07-28T19:30:56Z).
+- The harness must expose user-story Create, Apply, and Refine operations plus Build Tests and Build Code, with every operation calling the existing `true-bdd` CLI from within the selected folder (requested 2026-07-28T19:30:56Z).
+- Develop the harness test-first: write the correct Playwright tests before implementation, center verification on Playwright, and finish implementation with all Playwright tests passing; change tests only when implementation genuinely cannot satisfy them and the change is relevant (requested 2026-07-28T19:30:56Z).
+- Before planning, analyze the task, repository, and risks, ask Peter questions one at a time, and reconsider the task's purpose whenever Peter says the work is moving in the wrong direction (requested 2026-07-28T19:30:56Z).
+- Use staged Codex review for the harness: iterate goal/risk/question analysis up to three rounds before planning; iterate plan critique up to three rounds and separately review the Playwright plan; then iterate post-implementation critique and relevant fixes up to three rounds. Give Codex access to the repository, `CLAUDE.md`, documents, plans, and runnable commands, and where possible let it run tests and inspect the site with Playwright (requested 2026-07-28T19:30:56Z).
+- Use separate agents for writing Playwright tests and implementing the harness code, and actively manage their work (requested 2026-07-28T19:30:56Z).
+- Use Opus rather than Fable for all future code- and test-writing agents (requested 2026-07-28T22:33:37Z).

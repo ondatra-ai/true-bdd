@@ -1,0 +1,33 @@
+# A3 story: TWO obviously-duplicate acceptance criteria describing the
+# SAME behavior (Claude summarizes a shared Google Doc on request), and
+# BOTH descriptions are malformed Gherkin sentences with no must/should.
+# The rule-based-description check fails; the fix-generator's duplicate
+# detection then forces a clarifying question (merge or keep separate?)
+# with numbered options — which A3 answers by number, then exits.
+
+story:
+    id: "44.1"
+    title: Summarize A Shared Document
+    as_a: Claude User
+    i_want: Claude to summarize a shared Google Doc when I ask
+    so_that: I can grasp the document without reading all of it
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Given a shared Google Doc, when the Claude User asks Claude to summarize it, then Claude shows a short summary in the conversation.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude shows a short summary in the conversation
+        - id: AC-2
+          description: Given a shared Google Doc, when the Claude User asks Claude for a summary of it, then Claude displays a short summary in the conversation.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude for a summary of the document
+            - then:
+                - Claude displays a short summary in the conversation

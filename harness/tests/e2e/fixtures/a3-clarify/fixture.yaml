@@ -1,0 +1,18 @@
+# A3 (plan §4.3): clarify round, engineered.
+#
+# The story has TWO obviously-duplicate acceptance criteria (both
+# describe "Claude summarizes a shared Google Doc"), and BOTH
+# descriptions are malformed Gherkin sentences with no must/should.
+# checklist_prompts filters the live us-refine checklist to the
+# rule-based-description prompt, so that single check fails and the
+# fix-generator runs — and its shipped system prompt REQUIRES a
+# clarifying question before merging duplicate ACs
+# (templates/us-checklist.fix-generator.system.prompt.tpl, "Duplicate
+# Detection"). The generator therefore emits a QUESTIONS block with
+# numbered options instead of a fix. A3 answers by NUMBER and exits.
+base: engine
+input: input
+
+checklist_prompts:
+  us-refine:
+    - "whether its description field follows the rule-based format"

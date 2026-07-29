@@ -18,40 +18,48 @@ const (
 	fixFlagDescription      = "Enable interactive fix mode to resolve failed checks"
 )
 
-// runWithFix is the run function shape every `us` subcommand uses
-// after sourcing its fix flag and a story-number arg.
-type runWithFix func(ctx context.Context, storyNumber string, fix bool) error
+// storyRunE is the run shape every `us` subcommand uses after sourcing
+// its lazily-built container, story-number arg, and fix flag.
+type storyRunE func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error
 
-// NewUSCommand builds the `us` cobra supergroup.
-func NewUSCommand(container *bootstrap.Container) *cobra.Command {
+// NewUSCommand builds the `us` cobra supergroup. The container provider
+// is resolved lazily inside each subcommand's RunE.
+func NewUSCommand(provide containerProvider) *cobra.Command {
 	usCmd := &cobra.Command{
 		Use:   "us",
 		Short: "User story commands",
 	}
 
-	usCmd.AddCommand(newUSCreateCmd(container))
-	usCmd.AddCommand(newUSRefineCmd(container))
-	usCmd.AddCommand(newUSApplyCmd(container))
+	usCmd.AddCommand(newUSCreateCmd(provide))
+	usCmd.AddCommand(newUSRefineCmd(provide))
+	usCmd.AddCommand(newUSApplyCmd(provide))
 
 	return usCmd
 }
 
-// buildStoryCmd builds the cobra shell shared by every `us`
-// subcommand that takes a story number and an optional --fix flag.
-func buildStoryCmd(use, short, long string, run runWithFix) *cobra.Command {
+// buildStoryCmd builds the cobra shell shared by every `us` subcommand
+// that takes a story number and an optional --fix flag. The container is
+// resolved from the provider at RunE time (never at construction), so
+// building the command tree touches no host config.
+func buildStoryCmd(use, short, long string, provide containerProvider, run storyRunE) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
 		Long:  long,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			container, err := provide()
+			if err != nil {
+				return fmt.Errorf("initialize container: %w", err)
+			}
+
 			ctx, stop := signal.NotifyContext(context.Background(),
 				os.Interrupt, syscall.SIGTERM)
 			defer stop()
 
 			fix, _ := cmd.Flags().GetBool("fix")
 
-			err := run(ctx, args[0], fix)
+			err = run(ctx, container, args[0], fix)
 
 			stop()
 
@@ -68,7 +76,7 @@ func buildStoryCmd(use, short, long string, run runWithFix) *cobra.Command {
 	return cmd
 }
 
-func newUSCreateCmd(container *bootstrap.Container) *cobra.Command {
+func newUSCreateCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
 		"create [story-number]",
 		"Create and validate a user story",
@@ -78,7 +86,8 @@ checklist. The story is saved to docs/prd/stories/ upon passing all checks.
 Example:
   true-bdd us create 4.1
   true-bdd us create 4.1 --fix`,
-		func(ctx context.Context, storyNumber string, fix bool) error {
+		provide,
+		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			return commands.RunCreate(ctx, commands.CreateDeps{
 				StoryCommonDeps: storyCommonFromContainer(container),
 				EpicLoader:      container.EpicLoader,
@@ -87,7 +96,7 @@ Example:
 	)
 }
 
-func newUSRefineCmd(container *bootstrap.Container) *cobra.Command {
+func newUSRefineCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
 		"refine [story-number]",
 		"Refine a user story",
@@ -97,7 +106,8 @@ checklist. The story file is updated in place upon passing all checks.
 Example:
   true-bdd us refine 4.1
   true-bdd us refine 4.1 --fix`,
-		func(ctx context.Context, storyNumber string, fix bool) error {
+		provide,
+		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			return commands.RunRefine(ctx, commands.RefineDeps{
 				StoryCommonDeps: storyCommonFromContainer(container),
 				StoryLoader:     container.StoryLoader,
@@ -122,7 +132,7 @@ func storyCommonFromContainer(container *bootstrap.Container) commands.StoryComm
 	}
 }
 
-func newUSApplyCmd(container *bootstrap.Container) *cobra.Command {
+func newUSApplyCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
 		"apply [story-number]",
 		"Apply scenarios from a refined user story into the registry",
@@ -138,7 +148,8 @@ rejected — convert them to acceptance_criteria with embedded steps first.
 Example:
   true-bdd us apply 4.1
   true-bdd us apply 4.1 --fix`,
-		func(ctx context.Context, storyNumber string, fix bool) error {
+		provide,
+		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			return commands.RunApply(ctx, commands.ApplyDeps{
 				StoryScenarioParser:     container.StoryScenarioParser,
 				ChecklistLoader:         container.ChecklistLoader,

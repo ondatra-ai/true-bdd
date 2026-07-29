@@ -8,6 +8,16 @@
 /tmp/
 /dist/
 
+# Web harness (Next.js) — dependencies, build output, runtime data,
+# and Playwright artefacts
+/harness/node_modules/
+/harness/.next/
+/harness/data/
+/harness/playwright-report/
+/harness/test-results/
+/harness/tests/**/.tmp/
+/harness/*.tsbuildinfo
+
 # Conversation history captured by .claude/hooks/history.py
 /docs/history/
 coverage.txt

@@ -1,0 +1,22 @@
+# A4 story: file-prefix id 77.5 (matches the epic-declared id) but
+# INTERNAL story.id 88.9, with exactly ONE acceptance criterion. Apply
+# derives lineage id 88.9-001 from the internal id + position and merges
+# a matching scenario into docs/scenarios.yaml.
+
+story:
+    id: "88.9"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation

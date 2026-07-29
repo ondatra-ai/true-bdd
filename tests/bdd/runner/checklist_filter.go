@@ -98,7 +98,7 @@ func applyChecklistFilters(fixture *Fixture, tmpDir string) error {
 	for stem, snippets := range fixture.ChecklistPrompts {
 		path := filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml")
 
-		err := filterChecklistFile(path, snippets)
+		err := FilterChecklistFile(path, snippets)
 		if err != nil {
 			return fmt.Errorf("filtering %s for fixture %s: %w", path, fixture.Name, err)
 		}
@@ -124,12 +124,18 @@ func commandChecklistStem(cmd string) string {
 	return strings.Join(words, "-")
 }
 
-// filterChecklistFile loads a checklist YAML, keeps only the prompts
+// FilterChecklistFile loads a checklist YAML, keeps only the prompts
 // matched by the snippets, and writes it back. The document is edited
 // as a yaml.Node tree so everything else — the config block, section
 // metadata, and the surviving prompts' exact text — round-trips
 // unchanged in value.
-func filterChecklistFile(path string, snippets []string) error {
+//
+// Each snippet must match exactly one live (non-skipped) prompt, and
+// two snippets must not resolve to the same prompt; violations return
+// the exported ErrSnippet* / ErrChecklistShape / ErrUnsupportedYAML
+// errors. Exported for reuse by the harness fixture materializer,
+// which applies the identical filtering semantics to its fixtures.
+func FilterChecklistFile(path string, snippets []string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("reading checklist: %w", err)

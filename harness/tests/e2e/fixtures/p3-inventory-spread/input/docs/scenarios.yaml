@@ -1,0 +1,63 @@
+# Seed registry for the p3-inventory-spread harness fixture.
+# Lineage coverage engineers the applied spread the P3 test asserts:
+#   60.2 → 1/2 (only 60.2-001 covered)
+#   60.3 → 2/2 (60.3-001 and 60.3-002 covered)
+# Every entry references the EXACT story path and the position-derived
+# lineage id. The P3 test appends E2E-604 (covering 60.2-002) from the
+# worker and clicks Refresh, flipping 60.2 to 2/2.
+
+metadata:
+  title: "Test Requirements Registry (harness fixture seed)"
+  version: "2.0"
+  last_updated: "2026-07-29"
+  description: "Apply-spread seed for the p3-inventory-spread harness fixture"
+
+scenarios:
+  E2E-601:
+    description: "Shared doc summary of 150 words or fewer appears in the conversation"
+    service: "mcp-service"
+    last_updated: "2026-07-29"
+    user_stories:
+      - story: "docs/prd/stories/60.2-summary-shared-docs.yaml"
+        scenario_id: "60.2-001"
+        merge_date: "2026-07-29"
+    merged_steps:
+      given:
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays a summary of 150 words or fewer in the conversation"
+        - "and the summary names the document title"
+  E2E-602:
+    description: "Summary timeout surfaces the timed-out message"
+    service: "mcp-service"
+    last_updated: "2026-07-29"
+    user_stories:
+      - story: "docs/prd/stories/60.3-summary-error-messages.yaml"
+        scenario_id: "60.3-001"
+        merge_date: "2026-07-29"
+    merged_steps:
+      given:
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays the message 'The summary timed out - please try again'"
+  E2E-603:
+    description: "Oversized documents state the summarized word range"
+    service: "mcp-service"
+    last_updated: "2026-07-29"
+    user_stories:
+      - story: "docs/prd/stories/60.3-summary-error-messages.yaml"
+        scenario_id: "60.3-002"
+        merge_date: "2026-07-29"
+    merged_steps:
+      given:
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
+      when:
+        - "the Claude User asks Claude to summarize the document"
+      then:
+        - "Claude displays a summary of the first 10000 words"
+        - "and Claude states that only the first 10000 words were summarized"

@@ -1,0 +1,28 @@
+# Legacy 3.x-format story (p4 matrix: deprecated format). The
+# non-empty scenarios.test_scenarios[] block marks the file
+# apply-INELIGIBLE even though it parses — us apply rejects it with
+# ErrDeprecatedStoryFormat, and the inventory must mirror that.
+
+story:
+    id: "70.1"
+    title: Inventory Probe Story
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation.
+        - id: AC-2
+          description: When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first.
+
+scenarios:
+    test_scenarios:
+        - id: "70.1-legacy-001"
+          description: Legacy pre-refine scenario entry that marks this file as the deprecated 3.x format
+          given:
+            - a Google Doc is shared with the Claude User's account
+          when:
+            - the Claude User asks Claude to summarize the document
+          then:
+            - Claude displays a paragraph-length summary

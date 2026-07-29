@@ -1,0 +1,23 @@
+# Shared AI fixture (plan §4.3): a us-refine story carrying exactly ONE
+# designed defect, driven through the harness `us refine --fix` prompt
+# loop. Used by A0 (prompt round-trip + exit), A7 (folder exclusion +
+# stale abandonment), A8 (restart + durable answer), and A9 (Ctrl+C
+# through real Claude) — each materializes its own fresh copy.
+#
+# ONE defect (one per --fix fixture: the fix applier rewrites the whole
+# story, so a second seeded defect would be collaterally cleaned by the
+# first fix and never earn its own fail/fix chain):
+#   - AC-1's description is a Gherkin Given/When/Then sentence with no
+#     must/should keyword → fails the rule-based-description prompt.
+#
+# checklist_prompts filters the LIVE true-bdd/checklists/us-refine.yaml
+# to just that one prompt (materializer validates exactly-one-match), so
+# the walk evaluates a single check: fail → the fix loop reaches a choice
+# prompt. Every other quality dimension is healthy so no other check
+# would fire even if the filter regressed.
+base: engine
+input: input
+
+checklist_prompts:
+  us-refine:
+    - "whether its description field follows the rule-based format"

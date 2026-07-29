@@ -1,0 +1,10 @@
+# A5 (plan §4.3): `build tests --fix`, one-scenario registry.
+#
+# docs/scenarios.yaml has exactly one scenario (INT-901) and NO test
+# references it, so the single build-tests check (the checklist ships
+# just one prompt) fails; the fix loop authors a test under the ONLY
+# allowed root, tests/ (see .claude/settings.json + CLAUDE.md, mirroring
+# the build-tests-fix-happy-path BDD fixture), the re-walk converges,
+# and the run exits 0.
+base: engine
+input: input

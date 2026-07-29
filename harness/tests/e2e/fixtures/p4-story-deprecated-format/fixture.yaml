@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): deprecated-format story. The story file
+# parses but carries the legacy scenarios.test_scenarios[] block, so
+# it is apply-INELIGIBLE (plan §3.4): created `one`, the
+# deprecated-format flag set, applied `unknown (deprecated_format)`.
+base: engine
+input: input

@@ -1,0 +1,13 @@
+# Story with ZERO acceptance criteria (p4 matrix: no-AC story). The
+# file is otherwise valid; us apply would reject it with
+# ErrNoAcceptanceCriteria, and the inventory must mirror that as
+# applied `unknown (no_acceptance_criteria)`.
+
+story:
+    id: "70.1"
+    title: Inventory Probe Story
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria: []

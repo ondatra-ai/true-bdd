@@ -139,7 +139,7 @@ func TestPrepareRunDirWithoutFilterLeavesChecklistIdentical(t *testing.T) {
 		t.Fatalf("prepare run dir: %v", err)
 	}
 
-	repoRoot, err := findRepoRoot()
+	repoRoot, err := FindRepoRoot()
 	if err != nil {
 		t.Fatalf("find repo root: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestPrepareRunDirRejectsBadSnippets(t *testing.T) {
 }
 
 // writeTempChecklist materializes a checklist file for direct
-// filterChecklistFile tests.
+// FilterChecklistFile tests.
 func writeTempChecklist(t *testing.T, content string) string {
 	t.Helper()
 
@@ -335,7 +335,7 @@ func TestFilterChecklistFileRejectsUnsupportedYAML(t *testing.T) {
 
 			path := writeTempChecklist(t, testCase.content)
 
-			err := filterChecklistFile(path, []string{"question"})
+			err := FilterChecklistFile(path, []string{"question"})
 			if !errors.Is(err, ErrUnsupportedYAML) {
 				t.Errorf("want ErrUnsupportedYAML, got %v", err)
 			}
@@ -355,14 +355,14 @@ func TestFilterChecklistFileExcludesSkippedPrompts(t *testing.T) {
 
 	path := writeTempChecklist(t, content)
 
-	err := filterChecklistFile(path, []string{"skipped question"})
+	err := FilterChecklistFile(path, []string{"skipped question"})
 	if !errors.Is(err, ErrSnippetUnmatched) {
 		t.Errorf("string-skipped prompt must be unselectable, got %v", err)
 	}
 
 	path = writeTempChecklist(t, content)
 
-	err = filterChecklistFile(path, []string{"bool-skip question"})
+	err = FilterChecklistFile(path, []string{"bool-skip question"})
 	if err != nil {
 		t.Errorf("bool skip decodes to no-skip in production and must stay selectable, got %v", err)
 	}

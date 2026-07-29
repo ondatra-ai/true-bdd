@@ -80,3 +80,15 @@ _transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md
 
 - ~~Open the most recently created HTML relationship visualization in Playwright and inspect how it looks; the transcript ends before this request is addressed (requested 2026-07-28T15:50:03Z).~~ _(superseded 2026-07-28)_
 - The requested Playwright inspection of the latest HTML relationship visualization was completed and reported, so no inspection follow-up remains (verified 2026-07-28T15:51:29Z).
+
+## 2026-07-28 — The task scoped and began a test-first, Codex-reviewed Next.js web harness for inspecting TrueBDD projects and invoking existing CLI workflows.
+
+_transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.md_
+
+- ~~Continue the staged process from the in-flight first Codex risk-analysis round and complete the requested harness; this transcript chunk records no completed plan, Playwright tests, implementation, or final review (outstanding 2026-07-28T20:12:38Z).~~ _(superseded 2026-07-28)_
+- ~~Complete the requested web harness from the now-running Go-side phase: finish the full inventory scanner, event channel, remote hardening, server and UI surfaces, AI pass, and final Codex critique/fix rounds; the spike was complete, but these later phases remained unfinished (outstanding 2026-07-29T00:33:23Z).~~ _(superseded 2026-07-28)_
+- ~~Complete the requested web harness from the in-progress UI phase: finish the UI, run the full real-Claude A0–A9 AI pass serially, complete repository/CI hygiene, and perform the final Codex critique and relevant-fix rounds; the server phase was verified complete, while these later phases remained unfinished (server completion verified 2026-07-29T02:16:09Z; remaining work stated 2026-07-29T02:17:03Z).~~ _(superseded 2026-07-28)_
+- ~~Complete the requested web harness from the in-progress real-Claude AI phase: finish the serial A0–A9 pass, complete repository/CI hygiene, and perform the final Codex critique and relevant-fix rounds; the UI phase was completed and verified before the AI pass began (verified 2026-07-29T02:34:48Z).~~ _(superseded 2026-07-28)_
+- ~~Complete the in-flight final Codex critique and apply any goal-relevant fixes through the requested review rounds; the serial real-Claude A0–A9 pass and repository/CI hygiene were complete before that review began (verified 2026-07-29T03:27:57Z).~~ _(superseded 2026-07-28)_
+- ~~For the web-harness task, wrap up as soon as the in-progress tests finish and do not run Codex paths 2 or 3 (requested 2026-07-29T05:13:34Z).~~ _(superseded 2026-07-28)_
+- The web-harness task was wrapped up after the remaining test matrix passed, and Codex solution-review paths 2 and 3 were not run as requested, so no harness follow-up remains (verified 2026-07-29T05:14:17Z).

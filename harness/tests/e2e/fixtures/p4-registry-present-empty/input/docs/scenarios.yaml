@@ -1,0 +1,11 @@
+# Empty-map registry (p4 matrix: present_empty). The file is present
+# and valid but tracks zero scenarios — the inventory must render the
+# registry chip as `present_empty` (plan §3.4).
+
+metadata:
+  title: "Test Requirements Registry (harness fixture seed)"
+  version: "2.0"
+  last_updated: "2026-07-29"
+  description: "Empty-map registry seed for the p4-registry-present-empty harness fixture"
+
+scenarios: {}

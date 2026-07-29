@@ -1,0 +1,7 @@
+# Deliberately INVALID YAML (p4 matrix: malformed story). The
+# unclosed quote and flow sequence break the parser; the inventory
+# must report created `invalid` and applied `unknown (invalid)`.
+story:
+    id: "70.1"
+    title: "Broken Story
+    acceptance_criteria: [

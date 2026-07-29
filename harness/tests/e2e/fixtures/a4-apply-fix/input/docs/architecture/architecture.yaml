@@ -1,0 +1,20 @@
+# Architectural spec for the A4 apply fixture (kept for a complete host
+# project / honest inventory).
+
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp
+      language: go
+      frameworks:
+        - net/http
+      quality_gate:
+        tests:
+          integration:
+            path: tests/integration
+            framework: jest
+            config: tests/jest.config.ts
+            helpers:
+              - name: McpClient
+                description: "Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses"
+      dependencies: []

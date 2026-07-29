@@ -1,0 +1,48 @@
+# Host config for the p4-architecture-path-mismatch harness fixture:
+# a verbatim copy of the engine seed with ONE change — the
+# architecture document lives at the NON-default ./docs/arch/ path.
+# The inventory must warn about the divergence while still scanning
+# the configured location.
+
+engine:
+  model: "claude-opus-4-8"
+
+epics:
+  path: "./docs/prd/epics"
+
+templates:
+  prompts:
+    checklist: "./templates/us-checklist.prompt.tpl"
+    checklist_system: "./templates/us-checklist.system.prompt.tpl"
+    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
+    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
+    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
+    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
+    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
+    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
+    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
+    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
+    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
+    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
+    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
+    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
+    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
+    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
+    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
+    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
+    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
+    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
+    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
+    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
+    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
+    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+
+paths:
+  tmp_dir: "./tmp"
+  tmp_glob: "./tmp/**"
+  stories_dir: "docs/prd/stories"
+  checklists_dir: "./true-bdd/checklists"
+
+documents:
+  prd: "./docs/prd/prd.yaml"
+  architecture_yaml: "./docs/arch/architecture.yaml"

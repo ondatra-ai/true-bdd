@@ -1,0 +1,27 @@
+# Seed registry for the A5 build-tests fixture. ONE scenario (INT-901)
+# with no test referencing it — the build-tests walk fails, the fix loop
+# authors a test under tests/ referencing INT-901, the re-walk converges.
+
+metadata:
+  title: "Test Requirements Registry (harness A5 seed)"
+  version: "2.0"
+  last_updated: "2026-07-01"
+  description: "Seed for the a5-build-tests-fix fixture"
+
+scenarios:
+  INT-901:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    requirement: "fixture seed — expects `build tests` to create a test"
+    last_updated: "2026-07-01"
+    user_stories:
+      - story: "docs/prd/stories/77.5-apply-summary.yaml"
+        scenario_id: "88.9-001"
+        merge_date: "2026-07-01"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"

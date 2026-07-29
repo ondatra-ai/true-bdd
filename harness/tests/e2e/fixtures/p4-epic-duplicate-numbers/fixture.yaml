@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): duplicate epic filename numbers. Two epic
+# files both carry filename number 07 — the loader glob
+# (epic-%02d-*.yaml) can no longer resolve `us create 7.x`
+# unambiguously. Both epic rows must carry the duplicate-number flag.
+base: engine
+input: input

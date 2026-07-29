@@ -1,0 +1,33 @@
+# Architectural spec for the A3 clarify fixture. The single filtered
+# rule-based-description prompt reads only the PRD; this keeps the host
+# project complete for the inventory.
+
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp
+      language: go
+      frameworks:
+        - net/http
+      quality_gate:
+        tests:
+          integration:
+            path: tests/integration
+            framework: jest
+            config: tests/jest.config.ts
+            helpers:
+              - name: McpClient
+                description: "Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses"
+      dependencies: []
+
+vocabulary:
+  actions:
+    - name: "ask Claude"
+      means: "write a prompt in Claude chat"
+  forbidden_qualifiers:
+    - properly
+    - correctly
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: displays, returns, lists, rejects."

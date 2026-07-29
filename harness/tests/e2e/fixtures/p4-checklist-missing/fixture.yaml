@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): missing checklist. `remove` deletes the live
+# us-apply checklist from the engine base; the inventory must report
+# checklist-us-apply `missing` while its siblings stay `present`.
+base: engine
+remove:
+  - true-bdd/checklists/us-apply.yaml

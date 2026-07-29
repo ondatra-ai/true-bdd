@@ -312,6 +312,12 @@ func StoryFinalize(
 // writeConvergedStory writes the engine's final item to disk. The
 // new-vs-update toggle reflects whether the command is creating a
 // brand-new story file or updating an existing one.
+//
+// A write (or load) failure is now SURFACED, not swallowed (plan §3.2):
+// the returned error propagates up so the runner marks the result event
+// finalization_ok=false and the CLI exits non-zero. The user still sees a
+// clear console message, so terminal behavior stays sensible — but a
+// converged walk whose story never landed no longer reports success.
 func writeConvergedStory(
 	versionMgr *fs.StoryVersionManager,
 	storiesDir, storyNumber string,
@@ -321,9 +327,9 @@ func writeConvergedStory(
 
 	latest, err := versionMgr.LoadLatest()
 	if err != nil {
-		slog.Warn("Could not load latest story for writing", "error", err)
+		console.Printf("Error: could not load latest story for writing: %v\n", err)
 
-		return nil
+		return fmt.Errorf("load latest story for writing: %w", err)
 	}
 
 	var storyPath string
@@ -335,10 +341,9 @@ func writeConvergedStory(
 	}
 
 	if err != nil {
-		slog.Warn("Could not write story file", "error", err)
-		console.Printf("Warning: Could not write story file: %v\n", err)
+		console.Printf("Error: could not write story file: %v\n", err)
 
-		return nil
+		return fmt.Errorf("write story file: %w", err)
 	}
 
 	console.Printf("Story saved to: %s\n", storyPath)

@@ -1,0 +1,5 @@
+# P4 matrix (plan §4.3): ambiguous story files. TWO files match the
+# loader glob 70.1-*.yaml; created must render `ambiguous` and applied
+# `unknown (ambiguous)` — the engine would refuse to load either.
+base: engine
+input: input

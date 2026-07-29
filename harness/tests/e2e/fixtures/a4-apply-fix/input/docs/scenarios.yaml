@@ -1,0 +1,28 @@
+# Seed registry for the A4 apply fixture. ONE unrelated scenario
+# (E2E-500) that references a DIFFERENT story path, so the AC under test
+# (lineage 88.9-001, story docs/prd/stories/77.5-apply-summary.yaml) is
+# absent — the "present in registry?" check fails, the fix adds a new
+# entry, and this unrelated entry must survive byte-unchanged.
+
+metadata:
+  title: "Test Requirements Registry (harness A4 seed)"
+  version: "2.0"
+  last_updated: "2026-07-01"
+  description: "Seed for the a4-apply-fix fixture"
+
+scenarios:
+  E2E-500:
+    description: "Unrelated seeded scenario that must survive the apply merge byte-for-byte"
+    service: "mcp-service"
+    last_updated: "2026-07-01"
+    user_stories:
+      - story: "docs/prd/stories/12.4-unrelated.yaml"
+        scenario_id: "12.4-001"
+        merge_date: "2026-07-01"
+    merged_steps:
+      given:
+        - "an unrelated precondition that no other scenario shares"
+      when:
+        - "the Claude User performs an unrelated action"
+      then:
+        - "the system produces an unrelated observable outcome"

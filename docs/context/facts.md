@@ -42,3 +42,9 @@ _transcript: 20260728-102315-7b460a15-ok-let-s-try-to-visualyse-relatiotiship.md
 
 - GitHub Markdown sanitization prevents faithfully embedding an interactive HTML visualization because scripts, styles, and inline styling are stripped; fenced Mermaid diagrams are the supported Markdown-native alternative and were locally render-verified (researched and verified 2026-07-28T15:42:28Z).
 - The available Playwright browser could not open local `file:` URLs directly; serving the directory over localhost enabled the HTML inspection (observed 2026-07-28T15:51:29Z).
+
+## 2026-07-28 — The task published the document-universe visualization to GitHub Pages, configured automatic redeployment from main, and verified the live site with Playwright.
+
+_transcript: 20260728-185658-083b5c96-next-task-is-to-publish-docs-doc-univers.md_
+
+- GitHub Pages is enabled for `ondatra-ai/true-bdd` and serves the document-universe map at `https://ondatra-ai.github.io/true-bdd/` and `/doc-universe.html`; both URLs rendered successfully in Playwright (verified 2026-07-28T19:00:48Z).
