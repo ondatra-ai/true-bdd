@@ -3,10 +3,12 @@
 *.exe
 *.test
 *.out
+/coverage
 
 # Build / test artefacts
 /tmp/
 /dist/
+/node_modules/
 
 # Web harness (Next.js) — dependencies, build output, runtime data,
 # and Playwright artefacts
@@ -17,6 +19,7 @@
 /harness/test-results/
 /harness/tests/**/.tmp/
 /harness/*.tsbuildinfo
+/harness/next-env.d.ts
 
 # Conversation history captured by .claude/hooks/history.py
 /docs/history/
@@ -30,6 +33,9 @@ coverage.out
 
 # Python bytecode (Claude hooks)
 __pycache__/
+
+# Playwright MCP server artefacts (console/page logs)
+.playwright-mcp/
 
 # Local backend secrets for start.sh
 .env

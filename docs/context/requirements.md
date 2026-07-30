@@ -82,3 +82,11 @@ _transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.m
 _transcript: 20260728-193056-431e4f8a-next-task-would-be-to-create-web-interfa.md_
 
 - Provide a repository-root `start.sh` launcher that can start Claude Code in standard Anthropic, Z.AI, or Kimi mode and reads backend configuration and secrets from a gitignored `.env` file; Kimi must be supported even though it was not previously configured (requested 2026-07-29T16:10:25Z).
+
+## 2026-07-29 — The task corrected the deployment source and explored Git-backed Vercel deployment for the local harness, but stopped pending Vercel authentication.
+
+_transcript: 20260729-172938-d9329923-do-you-have-vercel-connection-if-yes-cou.md_
+
+- [correction] For the harness deployment, use the local branch and directory that actually contain the source and configure Vercel for repository-backed automatic deployment; do not switch to `main` for this work (corrected 2026-07-29T17:49:12Z).
+- Do not install the Vercel CLI until Peter has validated the exact installation path and explicitly said “go” (requested 2026-07-29T19:16:57Z).
+- [correction] Run requested Codex checks using its documented non-interactive mode and verify that the process produces a result; a blocking default invocation does not count as having run Codex properly (corrected 2026-07-30T11:05:23Z).
