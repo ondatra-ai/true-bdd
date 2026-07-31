@@ -239,6 +239,7 @@ Durable conversational requirements — observable `should`/`must` statements th
 
 - **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.
 - Environment variables should be stored in .env files (excluded from git)
+- Invoke the Vercel CLI via `npx vercel` (no global install)
 - Never update `.golangci.yaml` without my permission
 - **CRITICAL**: NEVER merge pull requests without explicit user command to merge
 - **CRITICAL**: NEVER use `git commit --amend` or `git push --force`/`--force-with-lease`. Always create new commits.

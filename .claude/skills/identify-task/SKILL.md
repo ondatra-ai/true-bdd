@@ -10,7 +10,7 @@ Define the task as **Goal + Requirements** — behavior, not implementation. The
 ## The brief format
 
 - **Goal** — the outcome in 1–2 sentences. What changes for whom. Not how.
-- **Requirements** — each is a `should`/`must` statement whose SUBJECT is an exact term from `docs/context/terms.md` (a Role, a System, or the Harness), observable and implementation-free — e.g. "A Developer should be able to …", "The true-bdd CLI must …", "The true-bdd harness should …". No bare "System"/"user", no tech choices, no file/function names, no "how." State a **non-goal** only when it prevents a double-interpretation.
+- **Requirements** — each is a behavioral `should`/`must` **capability** (never a process/doc chore like "verified by a test" or "docs updated"). Prefer the **user** perspective for functionality — subject = the role by self-assessment: does the actor develop true-bdd itself (→ "A Developer") or their own software using true-bdd (→ "A BDD System Architect" / "A BDD Product Owner")? use a **system** subject ("The true-bdd CLI"/"The true-bdd harness") only for architecture/infra decisions (e.g. "must use Redis on the backend"). Subjects must be exact terms from `docs/context/terms.md`. Group the brief's requirements under **Product** (functionality) and **System** (architecture). No bare "System"/"user", no "how". **Draft a complete list — both what the user revealed AND what you suggest** (your suggestions are valuable: infer likely requirements from the goal, the code, and Codex). **Tag each requirement [revealed] (from the user) or [suggested] (your inference).** Then **validate them ONE BY ONE** with the user, naming the tag for each, and keep only the ones the user confirms — never write an unvalidated requirement. State a **non-goal** only when it prevents a double-interpretation.
 
 ## The process
 
@@ -19,14 +19,16 @@ Define the task as **Goal + Requirements** — behavior, not implementation. The
 host on Vercel`). If none was given, your very first action is to ask the user
 one question — "What's the task?" — and wait. Don't analyze or plan without it.
 
-1. **Analyze** the task + relevant files. Read `docs/context/requirements.md` (Harness/System/Product) for standing requirements not in code.
-2. **Draft** an initial Goal + Requirements.
+1. **Analyze** the task + relevant files. Read `docs/context/requirements.md` and `docs/context/terms.md` (Harness/System/Product) for standing requirements not in code.
+2. **Draft a full list of requirements** — both what the user has revealed AND what you suggest from the goal, the code, and Codex. Tag each **[revealed]** (from the user) or **[suggested]** (your inference).
 3. **Ambiguity test — the loop's engine.** Can you construct **two distinct, valid user-visible outcomes** that both satisfy the current requirements?
    - **Yes → it's ambiguous.** Form the sharpest disambiguating question and **ask the user ONE question** (never a batch). Update the requirements from the answer. Repeat.
    - **No → it's unambiguous.** Stop asking.
-4. **Use Codex (≤3 rounds)** to surface risks/ambiguities you missed: give it the goal + requirements, repo, `CLAUDE.md`, `docs/`, read + command access; ask what's underspecified or risky. Feed only the relevant gaps back into step 3 as questions.
-5. **If the user flags a wrong direction, shrink the task's purpose** — narrow scope, re-confirm the goal. Pushback means reconsider, not defend.
-6. **Exit** when the two-interpretations test passes (and Codex has nothing relevant left). Write the brief to `docs/tasks/<slug>.md`, where `<slug>` is a short kebab-case slug derived from the goal (e.g. goal "Make true-bdd connect to the harness host on Vercel" → `docs/tasks/make-true-bdd-connect-to-the-harness-host-on-vercel.md`). Create the folder if needed; if that file already exists from a prior run of the same task, update it in place.
+4. **If the user flags a wrong direction, shrink the task's purpose** — narrow scope, re-confirm the goal. Pushback means reconsider, not defend.
+5. Save the task to `docs/tasks/<slug>.md` (a kebab-case slug of the goal; create the folder if needed; update in place if it exists).
+6. **Ask codex to validate your requirements, find gaps and risks in your task** — Ask codex to read  `docs/context/requirements.md` and `docs/context/terms.md`, and current task you saved. Aks codex to analyse the requirments and find any gaps, risks, or ambiguities. Analyse response and incorporate only relevant suggestuins. Repeat until no relevant suggestions found or 3 times.
+7. **Validate requirements via user one by one** — present each to the user individually, naming whether it is [revealed] (from them) or [suggested] (your inference); your suggestions are valuable, so do propose them — but keep only the ones the user confirms. Repeat until each surviving requirement is user-validated.
+8. **Exit** when the two-interpretations test passes, Codex has nothing relevant left, and every requirement is user-validated. Write the brief to `docs/tasks/<slug>.md` (a kebab-case slug of the goal; create the folder if needed; update in place if it exists).
 
 Run Codex non-interactively — without a sandbox flag it hangs:
 ```bash
