@@ -26,18 +26,22 @@ const (
 	filePerm fs.FileMode = 0o644
 )
 
-// ErrRepoRootNotFound is returned when findRepoRoot walks above cwd
+// ErrRepoRootNotFound is returned when FindRepoRoot walks above cwd
 // without finding a .git directory.
 var ErrRepoRootNotFound = errors.New(
 	"BDD runner: repo root (with .git) not found above cwd",
 )
 
-// repoLayer lists subtrees the runner pre-copies from the real repo
+// RepoLayer lists subtrees the runner pre-copies from the real repo
 // into each fixture's tmpdir BEFORE overlaying the fixture's input
 // tree. These are the live engine ingredients (checklists, prompt
 // templates, engine config). Anything outside this list must be
 // provided by the fixture itself under its input directory.
-func repoLayer() []string {
+//
+// Exported because the harness fixture materializer
+// (tests/harness/materializer) shares the same engine-layer
+// convention for its `base: engine` fixtures.
+func RepoLayer() []string {
 	return []string{
 		"true-bdd",
 		"templates",
@@ -51,7 +55,7 @@ func repoLayer() []string {
 // grouped together. The repo's `/tmp/` .gitignore rule covers this
 // tree, so it is never accidentally committed.
 func NewSessionRoot() (string, error) {
-	repoRoot, err := findRepoRoot()
+	repoRoot, err := FindRepoRoot()
 	if err != nil {
 		return "", fmt.Errorf("find repo root: %w", err)
 	}
@@ -67,12 +71,14 @@ func NewSessionRoot() (string, error) {
 	return root, nil
 }
 
-// findRepoRoot walks up from cwd until it finds a directory containing
+// FindRepoRoot walks up from cwd until it finds a directory containing
 // a `.git` entry — the unambiguous repository marker. (Preferring
 // `.git` over `go.mod` is a holdover from the monorepo era when the
 // module lived below the repo root; today go.mod sits at the root
 // too, so either marker would work.)
-func findRepoRoot() (string, error) {
+//
+// Exported for reuse by the harness fixture materializer.
+func FindRepoRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("getwd: %w", err)
@@ -166,7 +172,7 @@ func LoadFixture(dir string) (*Fixture, error) {
 }
 
 // Execute runs the fixture. Four-step prep:
-//  1. Pre-populate the tmpdir from the repo allowlist (repoLayer).
+//  1. Pre-populate the tmpdir from the repo allowlist (RepoLayer).
 //     These are the live engine ingredients (checklists, templates,
 //     config) — pulled from the real repo so a checklist edit
 //     propagates to every fixture automatically.
@@ -273,19 +279,19 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 		return "", fmt.Errorf("create run dir %s: %w", tmpDir, err)
 	}
 
-	repoRoot, err := findRepoRoot()
+	repoRoot, err := FindRepoRoot()
 	if err != nil {
 		return tmpDir, fmt.Errorf("find repo root: %w", err)
 	}
 
-	for _, sub := range repoLayer() {
-		err = copyTree(filepath.Join(repoRoot, sub), filepath.Join(tmpDir, sub))
+	for _, sub := range RepoLayer() {
+		err = CopyTree(filepath.Join(repoRoot, sub), filepath.Join(tmpDir, sub))
 		if err != nil {
 			return tmpDir, fmt.Errorf("pre-populate %s: %w", sub, err)
 		}
 	}
 
-	err = copyTree(filepath.Join(fixture.Dir, fixture.InputPath), tmpDir)
+	err = CopyTree(filepath.Join(fixture.Dir, fixture.InputPath), tmpDir)
 	if err != nil {
 		return tmpDir, fmt.Errorf("overlay input tree: %w", err)
 	}
@@ -382,7 +388,11 @@ func envWithoutClaudeCode(env []string) []string {
 	return out
 }
 
-func copyTree(src, dst string) error {
+// CopyTree recursively copies the directory tree rooted at src into
+// dst, creating directories as needed and overwriting existing files.
+// Exported for reuse by the harness fixture materializer, which layers
+// engine base + fixture input with the same overlay semantics.
+func CopyTree(src, dst string) error {
 	walkErr := filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err

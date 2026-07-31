@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): empty-map registry. docs/scenarios.yaml
+# exists and parses but its `scenarios:` map is empty — the registry
+# chip must render `present_empty`, distinct from `missing` and from
+# a populated `present`.
+base: engine
+input: input

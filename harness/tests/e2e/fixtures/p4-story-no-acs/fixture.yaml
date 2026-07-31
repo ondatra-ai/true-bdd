@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): story with zero acceptance criteria. The
+# file parses but us apply would reject it (ErrNoAcceptanceCriteria);
+# the inventory must render created `one`, the no-ACs flag, and
+# applied `unknown (no_acceptance_criteria)`.
+base: engine
+input: input

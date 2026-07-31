@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
@@ -17,9 +16,13 @@ import (
 
 // ErrBuildTestsNotConverged is returned when the build-tests walk
 // finishes with one or more scenarios still missing a corresponding
-// test. Sets a non-zero CLI exit code.
-var ErrBuildTestsNotConverged = errors.New(
-	"one or more scenarios have no corresponding executable test",
+// test. Sets a non-zero CLI exit code. It wraps
+// runner.ErrExpectedNonconvergence so the terminal envelope classifies it
+// not_fixed (finalization OK) rather than a finalization failure — the CLI
+// exit behavior is unchanged (finding 7).
+var ErrBuildTestsNotConverged = fmt.Errorf(
+	"one or more scenarios have no corresponding executable test: %w",
+	runner.ErrExpectedNonconvergence,
 )
 
 // BuildTestsDeps bundles what `build tests` needs at the command

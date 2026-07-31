@@ -1,0 +1,18 @@
+# A4 (plan §4.3): `us apply --fix`, identity-engineered.
+#
+# Epic row 70.1 declares story id 77.5; the story FILE 77.5-*.yaml has
+# INTERNAL id 88.9 and exactly ONE acceptance criterion (multi-AC is not
+# this test's purpose). The harness Apply action sends the file-prefix
+# id "77.5"; the AC's lineage id is <internal-id>-001 = 88.9-001.
+#
+# The registry seeds ONE UNRELATED scenario (E2E-500, a different story
+# path) that must survive byte-unchanged. checklist_prompts filters the
+# live us-apply checklist to just the "present in registry?" prompt, so
+# the single check fails (AC not present), the fix adds one entry, and
+# the re-walk converges — committing the registry.
+base: engine
+input: input
+
+checklist_prompts:
+  us-apply:
+    - "already appear as a scenario in the registry"

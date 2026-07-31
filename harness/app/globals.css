@@ -1,0 +1,578 @@
+/*
+ * S&F Design System tokens (Peter's claude.ai/design project) applied to the
+ * TrueBDD harness. The four token blocks below are the verbatim values from
+ * tmp/design-tokens/{colors,typography,spacing,effects}.css; Poppins 500/700
+ * is loaded via the pinned @fontsource/poppins package in layout.tsx.
+ *
+ * SCOPE: the `.sf-*` component classes style the SESSION DETAIL PAGE only
+ * (its components are used nowhere else). The tokens load app-wide but the
+ * sessions-list / run-view layouts keep their existing inline styles.
+ */
+
+:root {
+  /* colors */
+  --white-999: #ffffff;
+  --gray-100: #dedfe4;
+  --gray-600: #828388;
+  --gray-999: #232429;
+  --black-999: #040406;
+  --red-500: #ef4345;
+  --green-500: #22c55f;
+  --yellow-500: #eab30a;
+  --spiral-blue-light: #329bff;
+  --spiral-teal: #50e4d2;
+
+  --text-primary: var(--black-999);
+  --text-body: var(--gray-999);
+  --text-muted: var(--gray-600);
+  --text-inverse: var(--white-999);
+  --text-on-dark-muted: var(--gray-100);
+  --surface-page: var(--white-999);
+  --surface-inverse: var(--black-999);
+  --border-hairline: var(--gray-100);
+  --border-strong: var(--black-999);
+
+  /* typography */
+  --font-body: "Poppins", system-ui, sans-serif;
+  --font-display: "Poppins", system-ui, sans-serif;
+  --fs-body: 20px;
+  --fs-h3: 32px;
+  --fs-caption: 14px;
+  --fs-label: 16px;
+  --lh-base: 1.2;
+  --lh-loose: 1.4;
+  --fw-medium: 500;
+  --fw-bold: 700;
+  --ls-tight: -0.02em;
+  --ls-button: 0.06em;
+  --ls-label: 0.08em;
+
+  /* spacing */
+  --space-1: 5px;
+  --space-2: 10px;
+  --space-3: 20px;
+  --space-4: 30px;
+  --space-5: 40px;
+  --space-6: 60px;
+
+  /* effects */
+  --border-width: 1px;
+  --gradient-spiral-soft: radial-gradient(65% 80% at 82% 62%, var(--spiral-teal) 0%, rgba(80, 228, 210, 0) 66%),
+    radial-gradient(50% 62% at 40% 45%, #c9a7f2 0%, rgba(201, 167, 242, 0) 68%),
+    radial-gradient(60% 70% at 62% 50%, var(--spiral-blue-light) 0%, rgba(50, 155, 255, 0) 62%);
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --transition-interactive: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* ── Session detail page shell ── */
+
+.sf-session {
+  font-family: var(--font-body);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 var(--space-3) var(--space-6);
+}
+
+.sf-session a {
+  color: var(--black-999);
+  text-decoration: none;
+  transition: var(--transition-interactive);
+}
+.sf-session a:hover {
+  color: var(--gray-600);
+}
+
+.sf-crumb {
+  padding: var(--space-3) 0 0;
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-weight: var(--fw-bold);
+}
+
+/* Page header — the ONE permitted soft radial gradient band. */
+.sf-header {
+  position: relative;
+  overflow: hidden;
+  border: var(--border-width) solid var(--border-strong);
+  margin-top: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface-page);
+}
+.sf-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-spiral-soft);
+  opacity: 0.16;
+  pointer-events: none;
+}
+.sf-header > * {
+  position: relative;
+}
+.sf-title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-base);
+  margin: 0;
+  word-break: break-all;
+}
+.sf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--fs-caption);
+}
+.sf-meta-label {
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-weight: var(--fw-bold);
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+
+/* Numbered section labels (01—Section). */
+.sf-section-label {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  margin: var(--space-5) 0 var(--space-2);
+}
+.sf-section-label .num {
+  color: var(--text-muted);
+}
+
+/* ── Buttons ── */
+.sf-btn {
+  font-family: var(--font-body);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+.sf-btn:hover:not(:disabled) {
+  background: var(--black-999);
+  color: var(--text-inverse);
+}
+.sf-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.sf-btn:focus-visible {
+  outline: none;
+  border-color: var(--black-999);
+}
+.sf-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.sf-btn-sm {
+  font-size: var(--fs-caption);
+  padding: 3px var(--space-2);
+}
+.sf-btn-primary {
+  background: var(--black-999);
+  color: var(--text-inverse);
+}
+.sf-btn-primary:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* Link-style story-title opener. */
+.sf-story-open {
+  font-family: var(--font-body);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-caption);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--black-999);
+  text-align: left;
+  cursor: pointer;
+  border-bottom: var(--border-width) solid var(--black-999);
+  transition: var(--transition-interactive);
+}
+.sf-story-open:hover {
+  color: var(--gray-600);
+  border-color: var(--gray-600);
+}
+
+/* ── Status chips (colour only in chips) ── */
+.sf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: var(--border-width) solid var(--border-hairline);
+  padding: 2px var(--space-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+.sf-chip .sq {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  background: var(--gray-600);
+}
+.sf-chip .sf-key {
+  font-weight: var(--fw-bold);
+}
+.sf-chip[data-tone="ok"] .sq {
+  background: var(--green-500);
+}
+.sf-chip[data-tone="error"] .sq {
+  background: var(--red-500);
+}
+.sf-chip[data-tone="warn"] .sq {
+  background: var(--yellow-500);
+}
+.sf-chip[data-tone="neutral"] .sq {
+  background: var(--gray-600);
+}
+
+.sf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sf-flag {
+  display: inline-block;
+  border: var(--border-width) solid var(--red-500);
+  color: var(--red-500);
+  padding: 0 var(--space-1);
+  margin-left: var(--space-1);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  white-space: nowrap;
+}
+
+/* Banners. */
+.sf-banner {
+  border: var(--border-width) solid var(--border-strong);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+  font-size: var(--fs-caption);
+}
+.sf-banner[data-tone="warn"] {
+  border-color: var(--yellow-500);
+}
+
+/* ── Epic accordion ── */
+.sf-epics {
+  border: var(--border-width) solid var(--border-strong);
+}
+.sf-epic + .sf-epic {
+  margin-top: -1px;
+}
+.sf-epic {
+  border-top: var(--border-width) solid var(--border-strong);
+}
+.sf-epics > .sf-epic:first-child {
+  border-top: none;
+}
+.sf-epic-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  background: var(--gray-100);
+}
+.sf-epic-num {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+}
+.sf-epic-title {
+  font-weight: var(--fw-bold);
+}
+.sf-epic-file {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.sf-epic-spacer {
+  flex: 1;
+}
+
+table.sf-stories {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--fs-caption);
+}
+.sf-stories th {
+  text-align: left;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-strong);
+}
+.sf-stories td {
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width) solid var(--border-hairline);
+  vertical-align: top;
+}
+.sf-stories tbody tr:first-child td {
+  border-top: none;
+}
+.sf-actions {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.sf-toggle {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.sf-fix {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  font-weight: var(--fw-bold);
+}
+
+/* ── Story review modal (native <dialog>) ──
+ * The dialog fills the viewport with a transparent flex field so a click in
+ * the field AROUND the panel (the "backdrop") closes it, while a click on
+ * the panel does not. The dimming is the native ::backdrop. */
+dialog.sf-modal {
+  padding: var(--space-5) var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  font-family: var(--font-body);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+dialog.sf-modal:not([open]) {
+  display: none;
+}
+dialog.sf-modal::backdrop {
+  background: rgba(4, 4, 6, 0.72);
+}
+.sf-modal-panel {
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-strong);
+  background: var(--surface-page);
+  width: 100%;
+  max-width: 760px;
+  max-height: 100%;
+  overflow: auto;
+}
+.sf-modal-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.sf-modal-title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-base);
+  margin: 0;
+  flex: 1;
+  word-break: break-word;
+}
+.sf-modal-close {
+  font-family: var(--font-body);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  line-height: 1;
+  background: none;
+  border: var(--border-width) solid var(--border-strong);
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: var(--transition-interactive);
+}
+.sf-modal-close:hover {
+  background: var(--black-999);
+  color: var(--text-inverse);
+}
+.sf-modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-3);
+}
+.sf-modal-identity {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+.sf-modal-error {
+  border: var(--border-width) solid var(--red-500);
+  color: var(--red-500);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+}
+.sf-modal-notice {
+  border: var(--border-width) solid var(--yellow-500);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--fs-caption);
+}
+
+/* Prompt-dialog form controls (clarify input + freetext textarea). */
+.sf-input,
+.sf-textarea {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  color: var(--text-body);
+  background: var(--surface-page);
+  border: var(--border-width) solid var(--border-strong);
+  padding: var(--space-1) var(--space-2);
+}
+.sf-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* Tablist — two flush uppercase buttons sharing a hairline; active inverted. */
+.sf-tablist {
+  display: flex;
+  margin-top: var(--space-4);
+  border: var(--border-width) solid var(--border-strong);
+  width: fit-content;
+}
+.sf-tab {
+  font-family: var(--font-body);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  padding: var(--space-1) var(--space-4);
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-interactive);
+}
+.sf-tab + .sf-tab {
+  border-left: var(--border-width) solid var(--border-strong);
+}
+.sf-tab[aria-selected="true"] {
+  background: var(--black-999);
+  color: var(--text-inverse);
+}
+.sf-tab[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sf-tabpanel {
+  margin-top: var(--space-4);
+  max-height: 52vh;
+  overflow: auto;
+}
+.sf-statement {
+  border: var(--border-width) solid var(--border-hairline);
+  padding: var(--space-3);
+  font-size: var(--fs-label);
+  line-height: var(--lh-loose);
+}
+.sf-statement span {
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+.sf-ac {
+  border: var(--border-width) solid var(--border-hairline);
+  margin-top: -1px;
+  padding: var(--space-3);
+}
+.sf-ac-id {
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sf-ac-desc {
+  margin: var(--space-1) 0 var(--space-2);
+}
+.sf-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sf-step {
+  display: flex;
+  gap: var(--space-2);
+  padding: 3px 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-loose);
+}
+.sf-step .kind {
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-button);
+  min-width: 56px;
+  color: var(--text-muted);
+}
+.sf-raw {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface-inverse);
+  color: var(--text-on-dark-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: var(--lh-loose);
+  white-space: pre;
+  overflow: auto;
+}
+
+.sf-empty {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+}
+
+.sf-muted {
+  color: var(--text-muted);
+}

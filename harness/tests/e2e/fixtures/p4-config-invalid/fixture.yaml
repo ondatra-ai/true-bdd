@@ -1,0 +1,5 @@
+# P4 matrix (plan §4.3): invalid engine config. The input overlay
+# replaces the live true-bdd/true-bdd.yaml with unparseable YAML; the
+# inventory must report the config chip `invalid`, not crash.
+base: engine
+input: input

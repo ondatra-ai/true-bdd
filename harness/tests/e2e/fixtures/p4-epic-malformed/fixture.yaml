@@ -1,0 +1,5 @@
+# P4 matrix (plan §4.3): malformed epic. The single epic file is
+# unparseable YAML; the inventory must list the epic row (filename
+# number 70) with status `invalid`.
+base: engine
+input: input

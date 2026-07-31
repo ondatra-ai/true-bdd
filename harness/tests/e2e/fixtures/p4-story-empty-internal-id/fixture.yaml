@@ -1,0 +1,7 @@
+# P4 matrix (plan §4.3): empty internal story id. The story file's
+# story.id is "" — lineage ids would silently fall back to the
+# requested story number (plan §3.4 "empty-fallback flagged"). The
+# inventory must set the empty-internal-id flag and render applied
+# `unknown (empty_internal_id)`.
+base: engine
+input: input

@@ -1,0 +1,13 @@
+# Synthetic PRD for the A3 clarify fixture.
+
+title: "MCP Google Docs Editor (harness AI fixture stub)"
+summary: "Synthetic PRD for harness E2E AI fixtures — deliberately minimal."
+
+personas:
+  - name: Claude User
+    definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
+    primary_use_case: "Document editing through conversational AI interface"
+    characteristics:
+      - "Non-technical users focused on content creation and editing"
+      - "Values seamless integration between Claude AI and Google Docs"
+      - "Expects reliable, fast document operations with clear error messaging"

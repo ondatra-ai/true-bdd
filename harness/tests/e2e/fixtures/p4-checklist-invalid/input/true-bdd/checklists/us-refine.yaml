@@ -1,0 +1,6 @@
+# Deliberately INVALID YAML (p4 matrix: checklist invalid). The
+# unclosed flow sequence breaks the parser; the inventory scanner must
+# report this checklist as `invalid`, never crash.
+version: "1.0"
+sections:
+  - id: [unclosed

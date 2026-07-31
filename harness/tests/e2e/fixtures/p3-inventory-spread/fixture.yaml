@@ -1,0 +1,9 @@
+# P3 (plan §4.3): engine base + a 3-story spread —
+#   60.1: no story file                  → created missing, applied unknown
+#   60.2: story file, 1 of 2 in registry → applied 1/2 (partial x/y)
+#   60.3: story file, 2 of 2 in registry → applied 2/2
+# Registry entries use the EXACT story paths and position-derived
+# lineage ids (<internal-id>-NNN). The P3 test then mutates
+# docs/scenarios.yaml from the worker and clicks Refresh.
+base: engine
+input: input

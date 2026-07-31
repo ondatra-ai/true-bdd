@@ -1,0 +1,61 @@
+# A2 story: file-prefix id 77.5 (matches the epic-declared id) but
+# INTERNAL story.id 88.9. ONE designed defect — AC-1's description is a
+# Gherkin sentence with no must/should. All other ACs are clean
+# one-sentence must/should rules with full Given/When/Then steps, so the
+# single filtered rule-based-description check is the only failure.
+
+story:
+    id: "88.9"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+        - id: AC-2
+          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc exists that is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize that document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'
+        - id: AC-3
+          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+                - the summary backend does not respond within 30 seconds
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'The summary timed out - please try again'
+        - id: AC-4
+          description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+          steps:
+            - given:
+                - a Google Doc with more than 10000 words is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of the first 10000 words
+                - and: Claude states that only the first 10000 words were summarized
+        - id: AC-5
+          description: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline.
+          steps:
+            - given:
+                - a Google Doc with at least three section headings is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude for the document outline
+            - then:
+                - Claude displays each section heading in its original order

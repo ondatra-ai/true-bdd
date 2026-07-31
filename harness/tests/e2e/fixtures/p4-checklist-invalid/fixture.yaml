@@ -1,0 +1,6 @@
+# P4 matrix (plan §4.3): invalid checklist. The input overlay replaces
+# the live us-refine checklist with unparseable YAML; the inventory
+# must report checklist-us-refine `invalid` while its siblings stay
+# `present`.
+base: engine
+input: input

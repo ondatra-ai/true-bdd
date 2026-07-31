@@ -1,0 +1,33 @@
+# Story seed for the p3-inventory-spread harness fixture (row 3).
+# Canonical AC-with-steps format, internal id "60.3". The registry
+# covers BOTH lineage ids (60.3-001 and 60.3-002), so the inventory
+# renders applied 2/2.
+
+story:
+    id: "60.3"
+    title: Summary Error Messages
+    as_a: Claude User
+    i_want: clear error messages when a document summary cannot be produced
+    so_that: I know whether to retry, share the document, or give up
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+                - the summary backend does not respond within 30 seconds
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'The summary timed out - please try again'
+        - id: AC-2
+          description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+          steps:
+            - given:
+                - a Google Doc with more than 10000 words is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of the first 10000 words
+                - and: Claude states that only the first 10000 words were summarized

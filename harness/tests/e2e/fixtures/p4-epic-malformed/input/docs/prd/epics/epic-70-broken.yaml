@@ -1,0 +1,7 @@
+# Deliberately INVALID YAML (p4 matrix: malformed epic). The unclosed
+# quote and flow sequence break the parser; the inventory must report
+# this epic file as `invalid`.
+epic:
+  id: 70
+  name: "Broken Epic
+stories: [

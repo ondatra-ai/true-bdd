@@ -1,0 +1,5 @@
+# P4 matrix (plan §4.3): duplicate declared story ids. Rows 1 and 2
+# of the epic BOTH declare id "70.1"; the inventory must flag both
+# position-derived story rows (70.1 and 70.2) as duplicates.
+base: engine
+input: input

@@ -1,0 +1,8 @@
+# P4 matrix (plan §4.3): non-default architecture path. The host
+# config points documents.architecture_yaml at ./docs/arch/ (not the
+# canonical ./docs/architecture/), and a valid spec lives THERE. The
+# inventory must scan the configured path (chip `present`) AND show
+# the path-mismatch warning (plan §2: divergence reported + warned,
+# mirrored not fixed).
+base: engine
+input: input

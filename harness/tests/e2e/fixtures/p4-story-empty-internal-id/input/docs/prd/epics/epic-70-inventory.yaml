@@ -1,0 +1,22 @@
+# Standard single-row epic for the p4 story matrix fixtures: one row,
+# declared id "70.1". The defect under test lives in the stories
+# directory, never here.
+epic:
+  id: 70
+  name: "Harness Inventory Epic"
+  status: "PLANNED"
+  goal: "Provide a minimal valid epic anchoring one story row for the harness inventory matrix."
+  context: "Used only by the harness p4-* fixtures."
+
+stories:
+  - id: "70.1"
+    title: "Inventory Probe Story"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+    so_that: "I can decide whether the document needs my attention without reading it in full"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation."
+      - id: AC-2
+        description: "When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first."

@@ -1,0 +1,5 @@
+# P4 matrix (plan §4.3): malformed story. Exactly one file matches
+# the loader glob 70.1-*.yaml but it is unparseable YAML; created must
+# render `invalid` and applied `unknown (invalid)`.
+base: engine
+input: input

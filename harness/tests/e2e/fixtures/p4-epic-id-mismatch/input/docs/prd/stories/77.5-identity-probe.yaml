@@ -1,0 +1,31 @@
+# Story file for the p4-epic-id-mismatch harness fixture. File-prefix
+# id 77.5 (matches the epic-declared id) but INTERNAL story.id "88.9"
+# (mirroring plan §4.3 A2) — the identity tuple on story row 42.1 must
+# expose declared "77.5" and file id "88.9".
+
+story:
+    id: "88.9"
+    title: Identity Probe Story
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask
+    so_that: I do not have to read the full document to get the gist
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+        - id: AC-2
+          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc exists that is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize that document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'

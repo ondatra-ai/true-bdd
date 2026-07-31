@@ -1,0 +1,20 @@
+# A1 (plan §4.3): `us create` no-fix, identity-engineered.
+#
+# Epic file number 42, document epic.id 99, row 1 declared story id
+# 77.5. The harness Create action for the position-derived row 42.1
+# sends "42.1"; the engine extracts row 1 from epic-42 and writes the
+# new story under docs/prd/stories/ using the DECLARED id (77.5) as the
+# filename prefix.
+#
+# checklist_prompts filters the LIVE us-create checklist to the single
+# story-format prompt, which the clean extracted story passes → the
+# no-fix walk converges → exactly one new 77.5-*.yaml file is written.
+# A broader filter could fail a different prompt (word count, benefit,
+# ...) and — with no --fix — leave nothing written, so the single-check
+# reduction is load-bearing.
+base: engine
+input: input
+
+checklist_prompts:
+  us-create:
+    - "As a [type of user], I want [some goal] so that [some reason]"

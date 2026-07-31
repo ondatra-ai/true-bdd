@@ -1,0 +1,19 @@
+# A2 (plan §4.3): full `us refine --fix` loop, identity-engineered.
+#
+# Epic file number 70 declares row 1 with story id 77.5; the story FILE
+# docs/prd/stories/77.5-*.yaml carries INTERNAL story.id 88.9. The
+# harness Refine action on row 70.1 sends the story FILE-PREFIX id
+# "77.5" (refine/apply use the file-prefix, not the position-derived
+# create id).
+#
+# ONE designed defect: AC-1's description is a Gherkin sentence with no
+# must/should. checklist_prompts filters the live us-refine checklist to
+# the rule-based-description prompt, so the walk evaluates a single
+# check. The A2 test drives choice -> refine(freetext) -> choice ->
+# Apply to convergence, then asserts the defect is gone.
+base: engine
+input: input
+
+checklist_prompts:
+  us-refine:
+    - "whether its description field follows the rule-based format"

@@ -1,0 +1,5 @@
+# Bare host folder (plan §4.3 P1/P8): no true-bdd.yaml, no docs — the
+# remote must register in it and inventory it honestly (config chip
+# `missing`). Shared by P1, P2, P5, P6, P7, and P8; every test
+# materializes its own fresh copy, so instances never interact.
+base: none

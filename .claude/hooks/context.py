@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Context archivist: distill task transcripts into docs/context/ ledgers.
+"""Context archivist: distill task transcripts into docs/context/requirements.md.
 
 Subcommands:
   sweep            — one pass, two jobs: (1) fully process every finished,
@@ -11,9 +11,9 @@ Subcommands:
                      docs/history/context-processed/<file>.offset — when it grew
                      by at least MIN_DELTA_BYTES. Triggered in the background
                      by the Stop hook (chained after history.py appends the
-                     finished turn, so every response updates the ledgers) and
-                     by /new-task (which deletes the state file first, so the
-                     just-closed task finalizes immediately); safe to run
+                     finished turn, so every response updates the requirements
+                     tree) and by /new-task (which deletes the state file first,
+                     so the just-closed task finalizes immediately); safe to run
                      manually at any time. No-ops under GITHUB_ACTIONS or
                      CLAUDE_HISTORY_ROLE so pipeline / worker claude -p
                      sessions never burn codex calls.
@@ -21,18 +21,20 @@ Subcommands:
                      it is the active one; still skips if already marked done.
 
 Per chunk: codex (read-only sandbox, --output-schema-forced JSON) reads the
-transcript (or its newest chunk) plus the existing ledgers and CLAUDE.md, and
-returns categorized findings; this script renders them into docs/context/*.md.
-An item may carry a `supersedes` substring naming an older ledger bullet it
-overrides — the old line is struck through (~~…~~ _(superseded DATE)_), never
-deleted, and the new item appended. Consecutive chunks of the same task append
-into one dated section instead of stacking headings. The raw reply is stored
-as the done-marker at docs/history/context-processed/<file>.json; markers and
-offsets advance only on success, so a failed codex run is retried by the next
-sweep. All-empty findings still advance — empty is the normal case.
+transcript (or its newest chunk) plus docs/context/requirements.md and
+CLAUDE.md, and returns a list of operations (add/update/delete) against the
+requirements tree; this script applies them to docs/context/requirements.md.
+The tree has three flat sections — # Harness, # System, # Product — each a list
+of `## <requirement>` headings; an operation names its `perspective`
+(harness/system/product) to pick the section. An operation's `match` names a
+unique existing requirement to update or delete (ambiguous/missing matches are
+skipped and logged); an `add` appends a new requirement to its section. The raw
+reply is stored as the done-marker at docs/history/context-processed/<file>.json;
+markers and offsets advance only on success, so a failed codex run is retried
+by the next sweep. Empty operations still advance — empty is the normal case.
 
 A flock on docs/history/context-sweep.lock keeps concurrent sweeps from
-double-appending; a second sweep exits immediately, and the holder loops until
+double-writing; a second sweep exits immediately, and the holder loops until
 stable so turns that land mid-codex-run are never lost wakeups. `process` waits
 on the same lock. Log: docs/history/context-sweep.log.
 """
@@ -40,7 +42,6 @@ on the same lock. Log: docs/history/context-sweep.log.
 import fcntl
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -55,55 +56,15 @@ PROCESSED_DIR = HISTORY_DIR / "context-processed"
 LOCK_FILE = HISTORY_DIR / "context-sweep.lock"
 LOG_FILE = HISTORY_DIR / "context-sweep.log"
 CONTEXT_DIR = REPO / "docs" / "context"
+REQUIREMENTS_FILE = CONTEXT_DIR / "requirements.md"
 PROMPT_FILE = Path(__file__).resolve().parent / "context-prompt.md"
 SCHEMA_FILE = Path(__file__).resolve().parent / "context-schema.json"
 CODEX_TIMEOUT = 480
 MIN_DELTA_BYTES = 300  # active-file ticks skip turns smaller than this
 
-CATEGORIES = ("requirement", "decision", "correction", "fact", "follow_up")
-
-# correction items land in requirements.md: a correction IS a requirement
-# discovered the hard way (they keep a [correction] prefix for traceability).
-LEDGER_FOR = {
-    "requirement": "requirements.md",
-    "correction": "requirements.md",
-    "decision": "decisions.md",
-    "fact": "facts.md",
-    "follow_up": "follow-ups.md",
-}
-
-LEDGER_HEADERS = {
-    "requirements.md": (
-        "# Requirements — conversational ledger\n\n"
-        "Standing requirements and corrections extracted from task transcripts"
-        " by the\ncontext archivist (`.claude/hooks/context.py`). Append-only;"
-        " newest at the\nbottom. A superseded entry is struck through, never"
-        " deleted.\n\nNot the BDD requirements registry: product scenarios live"
-        " in a host project's\n`docs/requirements.yaml`; this file holds"
-        " engine-development knowledge from\nconversations.\n"
-    ),
-    "decisions.md": (
-        "# Decisions — conversational ledger\n\n"
-        "Choices made in conversation — what was chosen, why, and what was"
-        " rejected —\nextracted from task transcripts by the context archivist"
-        " (`.claude/hooks/context.py`).\nAppend-only; newest at the bottom."
-        " A superseded entry is struck through, never\ndeleted.\n"
-    ),
-    "facts.md": (
-        "# Facts — conversational ledger\n\n"
-        "Dated empirical discoveries about external systems, extracted from"
-        " task\ntranscripts by the context archivist"
-        " (`.claude/hooks/context.py`). Append-only;\nnewest at the bottom."
-        " A superseded entry is struck through, never deleted.\n"
-    ),
-    "follow-ups.md": (
-        "# Follow-ups — conversational ledger\n\n"
-        "Work explicitly deferred or requested but not done in its task,"
-        " extracted from\ntask transcripts by the context archivist"
-        " (`.claude/hooks/context.py`).\nAppend-only; newest at the bottom."
-        " Strike through or remove items once done.\n"
-    ),
-}
+_VALID_ACTIONS = ("add", "update", "delete")
+SECTIONS = ("harness", "system", "product")
+SECTION_HEADINGS = {"harness": "# Harness", "system": "# System", "product": "# Product"}
 
 
 def log(msg: str) -> None:
@@ -172,25 +133,36 @@ def _acquire_lock(blocking: bool):
 
 
 def _empty_reply(summary: str) -> dict:
-    reply = {"task_summary": summary}
-    for cat in CATEGORIES:
-        reply[cat] = []
-    return reply
+    return {"task_summary": summary, "operations": []}
 
 
-def _valid_item(item) -> bool:
-    if isinstance(item, str):
-        return True
-    return (
-        isinstance(item, dict)
-        and isinstance(item.get("text"), str)
-        and (item.get("supersedes") is None or isinstance(item["supersedes"], str))
-    )
+def _valid_op(op) -> bool:
+    """Structural + semantic check for one operation. Lenient on stray null
+    fields, strict on the fields each action needs."""
+    if not isinstance(op, dict):
+        return False
+    if op.get("action") not in _VALID_ACTIONS:
+        return False
+    if op.get("perspective") not in SECTIONS:
+        return False
+    requirement = op.get("requirement")
+    match = op.get("match")
+    if not (requirement is None or isinstance(requirement, str)):
+        return False
+    if not (match is None or isinstance(match, str)):
+        return False
+    if op["action"] == "add" and not (requirement and requirement.strip()):
+        return False
+    if op["action"] == "update" and not (requirement and requirement.strip()):
+        return False
+    if op["action"] in ("update", "delete") and not (match and match.strip()):
+        return False
+    return True
 
 
 def _run_codex(target: Path):
     """Run codex on one transcript (or chunk) file. Returns the parsed
-    findings dict, or None on any failure."""
+    reply dict, or None on any failure."""
     rel = target.relative_to(REPO)
     prompt = PROMPT_FILE.read_text().replace("{HISTORY_FILE}", str(rel))
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -228,88 +200,97 @@ def _run_codex(target: Path):
     if not isinstance(reply, dict) or not isinstance(reply.get("task_summary"), str):
         log(f"malformed codex reply for {target.name}")
         return None
-    for cat in CATEGORIES:
-        items = reply.get(cat)
-        if not isinstance(items, list) or any(not _valid_item(i) for i in items):
-            log(f"malformed category '{cat}' for {target.name}")
-            return None
+    ops = reply.get("operations")
+    if not isinstance(ops, list) or any(not _valid_op(o) for o in ops):
+        log(f"malformed operations for {target.name}")
+        return None
     return reply
 
 
-def _entry_date(filename: str) -> str:
-    m = re.match(r"(\d{4})(\d{2})(\d{2})-", filename)
-    if m:
-        return "-".join(m.groups())
-    return time.strftime("%Y-%m-%d", time.gmtime())
+# --- requirements tree: parse / serialize / mutate ---------------------------
+
+def _empty_tree() -> dict:
+    return {name: [] for name in SECTIONS}
 
 
-def _strike(text: str, matches: list, date: str) -> str:
-    """Strike through the bullet line each match names — only when the match
-    is unambiguous (exactly one un-struck bullet contains it)."""
-    lines = text.split("\n")
-    for m in matches:
-        hits = [
-            i for i, ln in enumerate(lines)
-            if ln.strip().startswith("- ") and "~~" not in ln and m in ln
-        ]
-        if len(hits) == 1:
-            ln = lines[hits[0]]
-            indent = ln[: len(ln) - len(ln.lstrip())]
-            lines[hits[0]] = (
-                f"{indent}- ~~{ln.strip()[2:]}~~ _(superseded {date})_"
-            )
-        elif not hits:
-            if any(m in ln and "~~" in ln for ln in lines):
-                log(f"supersedes target already struck: {m[:80]!r}")
+def _parse_tree(text: str) -> dict:
+    """Parse into {harness: [...], system: [...], product: [...]}, each a list
+    of `## <requirement>` heading texts in document order."""
+    tree = _empty_tree()
+    cur = None
+    for line in text.splitlines():
+        s = line.strip()
+        if s in SECTION_HEADINGS.values():
+            cur = next(k for k, v in SECTION_HEADINGS.items() if v == s)
+            continue
+        if cur and s.startswith("## ") and not s.startswith("### "):
+            tree[cur].append(s[3:].strip())
+    return tree
+
+
+def _serialize(tree: dict) -> str:
+    blocks = []
+    for name in SECTIONS:
+        lines = [SECTION_HEADINGS[name]]
+        for r in tree[name]:
+            lines.append(f"## {r}")
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks) + "\n"
+
+
+def _find_unique(items: list, match: str):
+    """Index of the unique item containing `match`, or None when not found or
+    ambiguous."""
+    hits = [i for i, r in enumerate(items) if match in r]
+    if len(hits) == 1:
+        return hits[0]
+    if not hits:
+        log(f"match not found: {match[:80]!r}")
+    else:
+        log(f"match ambiguous ({len(hits)}), skipped: {match[:80]!r}")
+    return None
+
+
+def _apply_operations(text: str, ops: list):
+    """Apply requirement operations to the tree. Returns (new_text, n_applied)."""
+    tree = _parse_tree(text)
+    applied = 0
+    for op in ops:
+        bucket = tree[op["perspective"]]
+        action = op["action"]
+        if action == "add":
+            req = (op.get("requirement") or "").strip()
+            if req in bucket:
+                log(f"add dup, skipped: {req[:80]!r}")
             else:
-                log(f"supersedes target not found: {m[:80]!r}")
-        else:
-            log(f"supersedes ambiguous ({len(hits)} matches), skipped: {m[:80]!r}")
-    return "\n".join(lines)
+                bucket.append(req)
+                applied += 1
+        elif action == "update":
+            new = (op.get("requirement") or "").strip()
+            idx = _find_unique(bucket, (op.get("match") or "").strip())
+            if idx is not None:
+                bucket[idx] = new
+                applied += 1
+        elif action == "delete":
+            idx = _find_unique(bucket, (op.get("match") or "").strip())
+            if idx is not None:
+                del bucket[idx]
+                applied += 1
+    return _serialize(tree), applied
 
 
-def _render(reply: dict, history_filename: str) -> int:
-    """Apply supersedes strikes and append findings to their ledgers.
-    Returns the number of items written."""
-    date = _entry_date(history_filename)
-    per_ledger = {}
-    for cat in CATEGORIES:
-        for item in reply[cat]:
-            if isinstance(item, str):
-                item = {"text": item}
-            text = (item.get("text") or "").strip()
-            if not text:
-                continue
-            if cat == "correction":
-                text = f"[correction] {text}"
-            d = per_ledger.setdefault(
-                LEDGER_FOR[cat], {"items": [], "supersedes": []}
-            )
-            d["items"].append(text)
-            sup = (item.get("supersedes") or "").strip()
-            if sup:
-                d["supersedes"].append(sup)
-    if not per_ledger:
+def _render(reply: dict) -> int:
+    """Apply the reply's operations to requirements.md.
+    Returns the number of operations applied."""
+    ops = reply.get("operations") or []
+    if not ops:
         return 0
     CONTEXT_DIR.mkdir(parents=True, exist_ok=True)
-    marker = f"_transcript: {history_filename}_"
-    for ledger, d in per_ledger.items():
-        path = CONTEXT_DIR / ledger
-        text = path.read_text() if path.exists() else LEDGER_HEADERS[ledger]
-        text = _strike(text, d["supersedes"], date)
-        block = "\n".join(f"- {t}" for t in d["items"])
-        # A later chunk of the task that owns the ledger's last section
-        # continues that section instead of stacking a new heading.
-        last_heading = text.rfind("\n## ")
-        if last_heading != -1 and marker in text[last_heading:]:
-            text = text.rstrip("\n") + f"\n{block}\n"
-        else:
-            heading = (
-                f"## {date} — {reply['task_summary'].strip() or 'untitled task'}"
-            )
-            text = text.rstrip("\n") + f"\n\n{heading}\n\n{marker}\n\n{block}\n"
-        _write_atomic(path, text)
-    return sum(len(d["items"]) for d in per_ledger.values())
+    text = REQUIREMENTS_FILE.read_text() if REQUIREMENTS_FILE.exists() else _serialize(_empty_tree())
+    new_text, applied = _apply_operations(text, ops)
+    if new_text != text:
+        _write_atomic(REQUIREMENTS_FILE, new_text)
+    return applied
 
 
 def _mark_done(history_filename: str, reply: dict) -> None:
@@ -349,10 +330,10 @@ def process_one(history_path: Path) -> bool:
             target.unlink(missing_ok=True)
     if reply is None:
         return False
-    n = _render(reply, name)
+    n = _render(reply)
     _mark_done(name, reply)
     _offset_path(name).unlink(missing_ok=True)
-    log(f"done {name}: {n} item(s) -> docs/context/")
+    log(f"done {name}: {n} op(s) -> docs/context/requirements.md")
     return True
 
 
@@ -387,9 +368,9 @@ def _process_active() -> bool:
         target.unlink(missing_ok=True)
     if reply is None:
         return False
-    n = _render(reply, name)
+    n = _render(reply)
     _write_offset(name, len(data))
-    log(f"tick {name}: {n} item(s) -> docs/context/")
+    log(f"tick {name}: {n} op(s) -> docs/context/requirements.md")
     return True
 
 

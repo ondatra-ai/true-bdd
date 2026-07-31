@@ -9,25 +9,26 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/commands"
 )
 
 const defaultArchitectureFile = "docs/architecture/architecture.yaml"
 
-func NewBuildCommand(container *bootstrap.Container) *cobra.Command {
+// NewBuildCommand builds the `build` cobra supergroup. The container is
+// resolved lazily inside each subcommand's RunE.
+func NewBuildCommand(provide containerProvider) *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Build commands",
 	}
 
-	buildCmd.AddCommand(newBuildTestsCmd(container))
-	buildCmd.AddCommand(newBuildCodeCmd(container))
+	buildCmd.AddCommand(newBuildTestsCmd(provide))
+	buildCmd.AddCommand(newBuildCodeCmd(provide))
 
 	return buildCmd
 }
 
-func newBuildTestsCmd(container *bootstrap.Container) *cobra.Command {
+func newBuildTestsCmd(provide containerProvider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tests",
 		Short: "Walk the requirements registry and check every scenario has an executable test",
@@ -45,6 +46,11 @@ Example:
   true-bdd build tests --requirements docs/scenarios.yaml`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			container, err := provide()
+			if err != nil {
+				return fmt.Errorf("initialize container: %w", err)
+			}
+
 			ctx, stop := signal.NotifyContext(context.Background(),
 				os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -52,7 +58,7 @@ Example:
 			requirementsFile, _ := cmd.Flags().GetString("requirements")
 			fix, _ := cmd.Flags().GetBool("fix")
 
-			err := commands.RunBuildTests(ctx, commands.BuildTestsDeps{
+			err = commands.RunBuildTests(ctx, commands.BuildTestsDeps{
 				RegistryLoader:               container.RegistryLoader,
 				ChecklistLoader:              container.ChecklistLoader,
 				BuildTestsEvaluator:          container.BuildTestsEvaluator,
@@ -80,7 +86,7 @@ Example:
 	return cmd
 }
 
-func newBuildCodeCmd(container *bootstrap.Container) *cobra.Command {
+func newBuildCodeCmd(provide containerProvider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "code",
 		Short: "Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
@@ -97,6 +103,11 @@ Example:
   true-bdd build code --architecture docs/architecture/architecture.yaml`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			container, err := provide()
+			if err != nil {
+				return fmt.Errorf("initialize container: %w", err)
+			}
+
 			ctx, stop := signal.NotifyContext(context.Background(),
 				os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -104,7 +115,7 @@ Example:
 			architectureFile, _ := cmd.Flags().GetString("architecture")
 			fix, _ := cmd.Flags().GetBool("fix")
 
-			err := commands.RunBuildCode(ctx, commands.BuildCodeDeps{
+			err = commands.RunBuildCode(ctx, commands.BuildCodeDeps{
 				ArchitectureLoader:          container.ArchitectureLoader,
 				TestRunnerDispatcher:        container.TestRunnerDispatcher,
 				ChecklistLoader:             container.ChecklistLoader,

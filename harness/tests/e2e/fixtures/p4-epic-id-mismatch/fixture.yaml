@@ -1,0 +1,7 @@
+# P4 matrix (plan §4.3): epic filename ↔ document id mismatch,
+# identity-engineered like plan §4.3 A1 — filename number 42, document
+# epic.id 99, row 1 declared id "77.5", story-file internal id "88.9".
+# The inventory must flag the epic mismatch and expose the full
+# identity tuple on story row 42.1 (create id is POSITION-derived).
+base: engine
+input: input

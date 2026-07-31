@@ -1,0 +1,9 @@
+# P4 (plan §4.3, hierarchy add): a NONCANONICAL epic filename.
+# `epic-7-*` is not the canonical `epic-%02d-*` encoding `us create`
+# resolves ("7" != "07"), so the scanner marks the epic
+# noncanonical_filename and gives it NO Create-addressable story rows.
+# The browser must render the epic-section header + the noncanonical flag
+# WITHOUT an epic-toggle (a control that controls nothing) and WITHOUT
+# story rows — a contract previously covered only by Go honesty tests.
+base: engine
+input: input

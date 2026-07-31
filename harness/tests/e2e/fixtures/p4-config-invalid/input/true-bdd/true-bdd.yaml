@@ -1,0 +1,6 @@
+# Deliberately INVALID YAML (p4 matrix: config invalid). The unclosed
+# flow sequence below breaks the parser; the inventory scanner must
+# report true-bdd.yaml as `invalid` with an error, never crash.
+engine:
+  model: "claude-opus-4-8"
+paths: [unclosed

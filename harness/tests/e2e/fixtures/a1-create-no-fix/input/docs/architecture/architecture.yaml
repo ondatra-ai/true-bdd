@@ -1,0 +1,34 @@
+# Architectural spec for the A1 create fixture (read by us-create's
+# goal/value prompts; the single filtered format prompt needs only the
+# PRD, but a complete host project keeps the inventory honest).
+
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp
+      language: go
+      frameworks:
+        - net/http
+      quality_gate:
+        tests:
+          integration:
+            path: tests/integration
+            framework: jest
+            config: tests/jest.config.ts
+            helpers:
+              - name: McpClient
+                description: "Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses"
+      dependencies: []
+
+vocabulary:
+  actions:
+    - name: "ask Claude"
+      means: "write a prompt in Claude chat"
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - seamless
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
