@@ -29,6 +29,14 @@ import {
 import { ProtocolEnv } from "./helpers/protocol-env";
 import { redisExec } from "./helpers/redis";
 
+// Orphan window for this test. Each `redisExec` spawns `docker compose exec`
+// (~hundreds of ms); the two post-timeout inspections (HGET state, TTL) are
+// separate invocations, so a 1s window could expire between the 504 and those
+// reads and flake the state/TTL assertions. Five seconds keeps both reads
+// comfortably inside the window while the 15s EXISTS poll still proves the TTL
+// eventually fires.
+const ORPHAN_TTL_SEC = 5;
+
 let env: ProtocolEnv | undefined;
 
 test.afterEach(async () => {
@@ -47,10 +55,11 @@ function retain<T extends Promise<unknown>>(promise: T): T {
 }
 
 test("P24: a late reply after the orphan TTL is rejected unknown_work (work hash gone)", async () => {
-  // Shrink the orphan window to 1s so the test advances past it quickly. The
-  // within-window happy path (one late reply accepted) stays in p22.
+  // Shrink the orphan window to a few seconds so the test advances past it
+  // quickly without flaking on docker-exec latency. The within-window happy
+  // path (one late reply accepted) stays in p22.
   env = await ProtocolEnv.start("p24-orphan-ttl", {
-    serverEnv: { HARNESS_ORPHAN_TTL_SEC: "1" },
+    serverEnv: { HARNESS_ORPHAN_TTL_SEC: String(ORPHAN_TTL_SEC) },
   });
   const e = env;
   const fixture = await e.materialize("bare-host");
@@ -89,12 +98,12 @@ test("P24: a late reply after the orphan TTL is rejected unknown_work (work hash
   // regression where TIMEOUT immediately deleted the work hash would yield the
   // same 504 above and the same downstream EXISTS=0 — this test would pass
   // without exercising TTL. Assert the work is in `orphaned` state with a
-  // positive TTL bounded by the configured 1s window FIRST.
+  // positive TTL bounded by the configured orphan window FIRST.
   const workKey = `${e.prefix}:work:${claimed.work_id}`;
   expect(await redisExec(["HGET", workKey, "state"])).toBe("orphaned");
   const ttlAfterTimeout = Number.parseInt(await redisExec(["TTL", workKey]), 10);
   expect(ttlAfterTimeout).toBeGreaterThan(0);
-  expect(ttlAfterTimeout).toBeLessThanOrEqual(1);
+  expect(ttlAfterTimeout).toBeLessThanOrEqual(ORPHAN_TTL_SEC);
 
   // Wait until the work hash is gone — proves the orphan TTL fired (the work
   // record was reclaimed). `redis-cli EXISTS` returning 0 is the deterministic

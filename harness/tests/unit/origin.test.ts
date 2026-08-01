@@ -21,30 +21,35 @@ function req(headers: Record<string, string | undefined>): HeaderCarrier {
   };
 }
 
+// The deployed-mode predicates read these two env keys. Capture their original
+// values ONCE at collection time and restore them after EVERY test via a single
+// suite-level afterEach — so a value set by withDeployedEnv in one test can
+// never leak into the next (Codex r2 #4), without registering hooks from inside
+// a test body (unsupported in Vitest).
+const DEPLOYED_ENV_KEYS = ["HARNESS_DEPLOYED", "HARNESS_PUBLIC_ORIGIN"] as const;
+const ORIGINAL_DEPLOYED_ENV: Record<string, string | undefined> = Object.fromEntries(
+  DEPLOYED_ENV_KEYS.map((key) => [key, process.env[key]]),
+);
+
+afterEach(() => {
+  for (const key of DEPLOYED_ENV_KEYS) {
+    const value = ORIGINAL_DEPLOYED_ENV[key];
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
+
 /**
- * Resets + restores the env keys the deployed-mode predicates read. Both keys
- * are EXPLICITLY returned to their pre-test value in afterEach; on setup every
- * key not supplied by `vars` is deleted, so a leaked value from a previous
- * describe block can never perturb this test (Codex r2 #4).
+ * Applies the deployed-mode env for a single test: resets both keys, then sets
+ * the caller's `vars`. Every key not supplied is deleted, so a value from a
+ * previous test can never perturb this one. Restoration is handled once by the
+ * suite-level afterEach above — this helper registers NO hooks.
  */
 function withDeployedEnv(vars: Record<string, string | undefined>): void {
-  const keys = ["HARNESS_DEPLOYED", "HARNESS_PUBLIC_ORIGIN"];
-  const stash: Record<string, string | undefined> = {};
-  for (const key of keys) {
-    stash[key] = process.env[key];
-  }
-  afterEach(() => {
-    for (const key of keys) {
-      const value = stash[key];
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  });
-  // Reset both first, then apply the caller's vars.
-  for (const key of keys) {
+  for (const key of DEPLOYED_ENV_KEYS) {
     delete process.env[key];
   }
   for (const [key, value] of Object.entries(vars)) {

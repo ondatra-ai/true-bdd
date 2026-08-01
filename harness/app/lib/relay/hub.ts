@@ -87,7 +87,20 @@ export function relayHub(): RedisRelay {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[relay] redis connection error: ${message}`);
     });
-    store[GLOBAL_KEY] = new RedisRelay(redis, keyPrefix());
+    const relay = new RedisRelay(redis, keyPrefix());
+    // When ioredis exhausts its reconnect budget (retryStrategy returns null
+    // after the attempt cap) it emits `end` and the client is dead for good.
+    // Because relayHub() only rebuilds when the slot is undefined, a dead client
+    // would otherwise stay cached for the life of the process — every later
+    // relay request would fail and its background sweep timer would keep firing.
+    // Evict the dead instance (and stop its sweep) so the next call reconnects.
+    redis.once("end", () => {
+      if (store[GLOBAL_KEY] === relay) {
+        store[GLOBAL_KEY] = undefined;
+        void relay.close();
+      }
+    });
+    store[GLOBAL_KEY] = relay;
   }
 
   return store[GLOBAL_KEY];

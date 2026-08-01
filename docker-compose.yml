@@ -14,7 +14,10 @@ services:
     image: redis:7-alpine
     container_name: true-bdd-redis
     ports:
-      - "6379:6379"
+      # Loopback-only: this Redis has no password and holds relay coordination
+      # state; the harness and e2e suite connect via redis://127.0.0.1:6379, so
+      # there is no reason to publish it on every host interface.
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:

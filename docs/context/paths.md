@@ -49,6 +49,14 @@ The coder and reviewer may edit these:
 - `src/` (Go engine), `templates/` (prompt templates), `true-bdd/` (config seed),
   `harness/app/` (Next.js web harness: pages, components, lib, api routes).
 
+## Change-surface exclusions
+
+Directories omitted from the baseline **change-surface content copy** and the
+Phase 3 reviewer's `diff -r` (build + VCS noise, never part of the reviewed
+change) — the single source for this list so the skill does not hardcode it:
+
+- `node_modules/`, `.git/`, `.next/`, and the Codex artifacts dir (`./tmp/`, see Codex).
+
 ## Package manifest
 
 - `harness/package.json` — the coder may add runtime **dependencies** here, but NEVER

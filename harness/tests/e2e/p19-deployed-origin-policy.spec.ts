@@ -32,11 +32,17 @@ test.afterEach(async () => {
   const loopback = loopbackEnv;
   deployedEnv = undefined;
   loopbackEnv = undefined;
-  if (deployed !== undefined) {
-    await deployed.teardown(test.info());
-  }
-  if (loopback !== undefined) {
-    await loopback.teardown(test.info());
+  // Guarantee the loopback env is torn down even if the deployed teardown
+  // throws (ProtocolEnv.teardown's trailing writeReproManifestOnFailure is
+  // unguarded) — otherwise the loopback `next start` would outlive the suite.
+  try {
+    if (deployed !== undefined) {
+      await deployed.teardown(test.info());
+    }
+  } finally {
+    if (loopback !== undefined) {
+      await loopback.teardown(test.info());
+    }
   }
 });
 

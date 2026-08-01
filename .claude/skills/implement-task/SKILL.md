@@ -23,7 +23,7 @@ baseline and recheck → exact diff.)
 - **package-scripts snapshot** — the `scripts` object of the package manifest (paths.md
   → Package manifest) (for the Phase 2 scripts check).
 - **change-surface content copy** — a recursive copy of the production-code dirs + the
-  e2e dir (exclude `node_modules`/`.git`/`.next`/the artifacts dir) (for the Phase 3
+  e2e dir (excluding the change-surface exclusions listed in paths.md) (for the Phase 3
   reviewer's true content diff).
 - Also record `git rev-parse HEAD` and `git status --short`.
 

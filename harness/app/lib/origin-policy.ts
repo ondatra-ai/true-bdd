@@ -84,7 +84,17 @@ function effectiveOrigin(request: HeaderCarrier): string | null {
     return null;
   }
 
-  return `${fwdProto}://${fwdHost}`;
+  try {
+    // Normalize host casing and default ports the same way the browser does
+    // before it sends the Origin header (hostnames are case-insensitive; a
+    // proxy that forwards a mixed-case `x-forwarded-host` must still match the
+    // lowercased Origin). Parsing through URL also rejects a forwarded host
+    // carrying userinfo, a path, or other non-authority characters.
+    const u = new URL(`${fwdProto}://${fwdHost}`);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
 }
 
 function originMatchesAuthority(origin: string, authority: string): boolean {
