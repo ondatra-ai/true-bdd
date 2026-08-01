@@ -2,10 +2,15 @@
  * Restartable production-server controller (plan §4.1).
  *
  * Each test starts its OWN `next start` production server on its own
- * free port with its own SQLite DB file (env TRUE_BDD_HARNESS_DB),
- * bound to 127.0.0.1. The controller supports stop/start/restart on
- * the SAME port + DB within one test (P7 / A8), captures stdout and
+ * free port, bound to 127.0.0.1. The controller supports stop/start/restart
+ * on the SAME port within one test (P7 / A8 / P18), captures stdout and
  * stderr to files, retries on bind races, and kills by process group.
+ *
+ * Redis coordination env (`REDIS_URL`, `REDIS_KEY_PREFIX`) is injected via the
+ * `env` option by ProtocolEnv / CrossInstanceEnv so every server in a test
+ * shares one Redis namespace (plan: connect-cli-to-vercel-harness). The stale
+ * `TRUE_BDD_HARNESS_DB` SQLite env is dropped — the relay holds no database;
+ * coordination state lives in Redis.
  *
  * Requires `next build` to have run (global-setup does this once).
  */
@@ -49,7 +54,11 @@ export async function allocatePort(): Promise<number> {
 }
 
 export interface ServerControllerOptions {
-  /** SQLite file for this server (TRUE_BDD_HARNESS_DB). */
+  /**
+   * Directory for the server's local scratch (logs adjacency + repro manifest).
+   * The relay itself holds NO database; coordination state lives in Redis, so
+   * this is no longer a SQLite path — kept for test artifact layout.
+   */
   dbPath: string;
   /** Directory for server.stdout.log / server.stderr.log. */
   logDir: string;
@@ -208,7 +217,6 @@ export class ServerController {
       env: {
         ...process.env,
         ...this.extraEnv,
-        TRUE_BDD_HARNESS_DB: this.dbPath,
         PORT: String(port),
         NODE_ENV: "production",
       },

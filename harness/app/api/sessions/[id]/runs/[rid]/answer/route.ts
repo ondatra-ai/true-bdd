@@ -6,6 +6,8 @@ import { readJsonBody } from "@/app/lib/request-json";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: above the mutation 10s wait + slack (plan r1 #14).
+export const maxDuration = 20;
 
 /**
  * POST /api/sessions/:sid/runs/:rid/answer (plan §3) — a relayed answer
@@ -25,7 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return parsed.response;
   }
 
-  if (!relayHub().hasSession(id)) {
+  if (!(await relayHub().hasSession(id))) {
     return NextResponse.json({ error: "session_gone" }, { status: 404 });
   }
 

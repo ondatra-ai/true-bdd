@@ -6,6 +6,8 @@ import { readJsonBody } from "@/app/lib/request-json";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: agent long-poll holds up to 5s (plan r1 #14).
+export const maxDuration = 15;
 
 /**
  * POST /api/agent/poll (plan §2). Held ≤5s (an open poll counts as liveness);

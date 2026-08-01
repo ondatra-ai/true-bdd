@@ -5,6 +5,8 @@ import { relayHub, DEADLINE_MS } from "@/app/lib/relay/hub";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: above the runDetail 5s wait + slack (plan r1 #14).
+export const maxDuration = 15;
 
 /**
  * GET /api/sessions/:sid/runs/:rid (plan §3) — ONE `run_detail` work item.
@@ -19,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { id, rid } = await params;
 
-  if (!relayHub().hasSession(id)) {
+  if (!(await relayHub().hasSession(id))) {
     return NextResponse.json({ error: "session_gone" }, { status: 404 });
   }
 

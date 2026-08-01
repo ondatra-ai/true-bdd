@@ -13,6 +13,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
+import { ensureRedisUp } from "./helpers/redis";
 import { createSuiteContext, type SuiteContext } from "./helpers/suite-root";
 
 export default async function globalSetup(): Promise<void> {
@@ -20,6 +21,12 @@ export default async function globalSetup(): Promise<void> {
 
   console.log(`[harness-e2e] suite root: ${ctx.suiteRoot}`);
   console.log(`[harness-e2e] true-bdd binary: ${ctx.binPath}`);
+
+  // Redis coordination backend: ONE container, brought up ONCE and healthcheck-
+  // waited (never a fixed sleep — plan r1 #15). Each test names a unique
+  // REDIS_KEY_PREFIX so sequential tests share Redis without cross-talk; the
+  // container is stopped in global-teardown.
+  await ensureRedisUp();
 
   if (process.env.TRUE_BDD_E2E_SKIP_BUILD === "1") {
     console.log("[harness-e2e] TRUE_BDD_E2E_SKIP_BUILD=1 — reusing existing .next build");

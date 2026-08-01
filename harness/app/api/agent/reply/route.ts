@@ -6,6 +6,8 @@ import { readJsonBody } from "@/app/lib/request-json";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: agent reply (no CLI wait); small budget suffices.
+export const maxDuration = 15;
 
 /** Extracts the correlation triple from the reply HEADERS (outside the capped
  * body, so an over-cap body still yields a CORRELATED failure). */
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
     // An over-cap body is a CORRELATED failure: authenticate the correlation,
     // then fail the correct browser waiter with a 413 (never unauthenticated).
     if (parsed.response.status === 413) {
-      relayHub().failOverCap(correlation);
+      await relayHub().failOverCap(correlation);
     }
 
     return parsed.response;
@@ -64,14 +66,14 @@ export async function POST(request: Request) {
 
   if (!isReplyEnvelope(parsed.body)) {
     // Malformed reply envelope → a correlated 502 to the browser waiter.
-    relayHub().failInvalid(correlation);
+    await relayHub().failInvalid(correlation);
 
     return NextResponse.json({ error: "invalid_reply" }, { status: 502 });
   }
 
   const replyBody: CliReply = { status: parsed.body.status, body: parsed.body.body };
 
-  const result = relayHub().reply(correlation, 0, replyBody);
+  const result = await relayHub().reply(correlation, 0, replyBody);
   if (!result.ok) {
     return NextResponse.json({ error: result.reason }, { status: rejectionStatus(result.reason) });
   }

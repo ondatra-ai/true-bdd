@@ -7,7 +7,7 @@ under the matching section — never the bare words "System" or "user".
 | requirements.md section | terms category | subjects | captures |
 |---|---|---|---|
 | `# Product` | **Roles** | A BDD System Architect, A BDD Product Owner | end-user product experience |
-| `# System` | **Systems** | The true-bdd CLI, The true-bdd harness | the components / system design |
+| `# System` | **Systems** | The true-bdd CLI, The true-bdd harness | architecture/infrastructure decisions only (technology choices, not behavior) |
 | `# Harness` | **Harness** | A Developer | the dev harness / tooling ("it is you") |
 
 ## Roles
