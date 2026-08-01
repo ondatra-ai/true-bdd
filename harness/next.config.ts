@@ -5,6 +5,12 @@ import type { NextConfig } from "next";
 // sqlite store ships. The previous `serverExternalPackages: ["better-sqlite3"]`
 // entry was a stale artifact of a removed design (plan: connect-cli-to-vercel-
 // harness → Implementation → next.config.ts).
-const nextConfig: NextConfig = {};
+// `output: "standalone"` emits `.next/standalone/server.js` with only the
+// traced runtime deps, so the Docker image (harness/Dockerfile) and the
+// docker-compose `harness` service can run the app with `node server.js`
+// instead of the full `next start` + node_modules. See docker-compose.yml.
+const nextConfig: NextConfig = {
+  output: "standalone",
+};
 
 export default nextConfig;

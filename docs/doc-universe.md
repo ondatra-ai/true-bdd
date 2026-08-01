@@ -140,4 +140,4 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd` fixture documents — 2026-07-28.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-07-28.*

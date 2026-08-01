@@ -76,20 +76,20 @@ npm run test:unit
 - Every E2E test is fully isolated: its own server process, DB, port, and
   writable fixture folder under the repo's `tmp/`. Artifacts and a
   repro manifest are preserved on failure.
-- Test fixtures live in `tests/e2e/fixtures/` and are materialized by the Go
-  helper in `tests/harness/materializer` (repo root), which overlays the live
+- Test fixtures live in `tests/harness/fixtures/` and are materialized by the Go
+  helper in `tests/materializer` (repo root), which overlays the live
   engine seed (`true-bdd/` + `templates/`) with designed host-project trees.
 - The `data-testid` and API contract used by the tests is documented in
-  `tests/e2e/helpers/README-testids.md` — it is binding for UI changes.
+  `tests/harness/helpers/README-testids.md` — it is binding for UI changes.
 
 ## Layout
 
 - `app/` — Next.js App Router: pages (`/`, `/sessions/[id]`, `/runs/[id]`),
   API routes (`app/api/`), `lib/` (SQLite store, origin policy, retention),
   `lib/view-model/` (pure render-logic, unit-tested), `components/`.
-- `tests/e2e/` — Playwright specs (`p*` protocol, `a*` AI), helpers,
-  fixtures, global setup/teardown, reporters.
 - `tests/unit/` — vitest: real-SQLite store tests and view-model tables.
+  (The Playwright E2E suite moved out to the repo-root `tests/harness/`
+  self-contained package — specs, helpers, fixtures, setup/teardown, reporters.)
 - `data/` — default runtime SQLite location (gitignored).
 
 The full design (protocol semantics, state machine, retention, security

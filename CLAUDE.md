@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
+This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
 
 ## CLI Subcommands
 
@@ -45,7 +45,7 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 go test ./...
 
 # End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture
-go test -tags bdd ./tests/bdd/...
+go test -tags bdd ./tests/bdd-cli/...
 
 # Lint
 golangci-lint run
@@ -63,7 +63,7 @@ env -u CLAUDECODE ./bin/true-bdd us create 4.1
 
 ## BDD Fixture Harness
 
-Fixtures live under `tests/bdd/fixtures/<scenario>/`. Each fixture is a folder containing exactly two things: `fixture.yaml` (the manifest) and the input directory it references (conventionally `input/`, designed test content).
+Fixtures live under `tests/bdd-cli/fixtures/<scenario>/`. Each fixture is a folder containing exactly two things: `fixture.yaml` (the manifest) and the input directory it references (conventionally `input/`, designed test content).
 
 `fixture.yaml` declares what to run and what to assert:
 
@@ -115,7 +115,10 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
   - `src/internal/pkg/` — `console` (terminal UI output), `errors`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
 - `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
-- `tests/bdd/` — the fixture harness: `bdd_test.go`, `runner/`, `fixtures/<scenario>/`.
+- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `harness/tests/unit/`):
+  - `tests/bdd-cli/` — the Go BDD-CLI fixture harness: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
+  - `tests/harness/` — the web-harness Playwright E2E suite, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `a*` AI), `helpers/`, `fixtures/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test launches its own harness container via `docker compose` (see `helpers/server-controller.ts`). Run: `cd tests/harness && npx playwright test --project=protocol`.
+  - `tests/materializer/` — the Go fixture materializer (shared with `tests/bdd-cli/runner`), built by the E2E suite to overlay fixtures.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), main checked out and fast-forwarded to origin — except `docs/context/`, whose uncommitted archivist writes always survive the reset. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
 - `docs/context/` — the requirements tree (git-tracked): a single `requirements.md` with three flat sections — `# Harness` (web-harness), `# System` (system design), `# Product` (user experience) — each a list of `## <requirement>` headings. Maintained by the context archivist (see Context below) via add/update/delete operations — the durable memory for what is said in conversation but never lands in a commit. **Not** the BDD requirements registry: product scenarios live in a host project's `docs/scenarios.yaml` (or a fixture's input tree). `terms.md` lists the only allowed subject terms (Harness / Systems / Roles) that a requirement may be phrased around.

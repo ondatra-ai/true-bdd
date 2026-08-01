@@ -1,0 +1,38 @@
+# Epic seed for the `us-create-validation-fails` BDD fixture.
+#
+# Story 98.1 is deliberately malformed so a non-fix `us create 98.1`
+# walk records semantic failures on six us-create prompts:
+#
+#   - word count: the full statement is far above 50 words.
+#   - role: "Data Scientist" is not a persona defined in the PRD.
+#   - user goal: i_want prescribes a technical solution.
+#   - implementation terms in i_want: WebSocket, Redis cache, REST
+#     endpoint, microservice, database, JWT.
+#   - so_that describes system behavior, not a user/business benefit.
+#   - so_that restates i_want in different words.
+#
+# All three clauses are PRESENT, so the format-recognizable check is
+# not a designed failure. The run must end NotFixed: exit 0, report
+# printed, no story file written.
+
+epic:
+  id: 98
+  name: "BDD Defect Epic"
+  status: "PLANNED"
+  goal: "Provide a deliberately malformed story statement so the true-bdd BDD harness can exercise the us-create checklist's failure branches."
+  context: "Used only by tests/bdd-cli/fixtures/us-create-validation-fails. Every clause is present but the statement is verbose, technical, and role-invalid by design."
+
+stories:
+  - id: "98.1"
+    title: "Realtime Document Sync Engine"
+    as_a: "Data Scientist"
+    i_want: "a WebSocket-based realtime synchronization engine with a Redis cache layer and a REST endpoint in our backend microservice that continuously parses every shared Google Doc into our internal database schema and keeps the JWT session cache warm for every downstream consumer"
+    so_that: "the synchronization engine keeps the internal database schema updated over WebSockets and the Redis cache stays warm for the backend microservices that consume the REST endpoint"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When a shared Google Doc changes, the engine updates the internal database within one second."
+      - id: AC-2
+        description: "When the cache is cold, the first request repopulates it."
+      - id: AC-3
+        description: "When the WebSocket connection drops, the engine reconnects within five seconds."

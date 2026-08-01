@@ -1,6 +1,6 @@
 /**
  * Dynamic data-testid builders shared by the views. These MUST stay in
- * lock-step with tests/e2e/helpers/ui.ts (the binding selector contract):
+ * lock-step with tests/harness/helpers/ui.ts (the binding selector contract):
  * the harness app cannot import the test helper, so the two derive the
  * identical strings from the same rule.
  */

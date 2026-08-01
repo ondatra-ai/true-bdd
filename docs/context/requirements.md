@@ -10,6 +10,8 @@
 ## A Developer should receive a research-backed, Codex-informed escalation whenever satisfying an end-to-end test appears to require changing it, and should retain the decision to pursue a code-only solution or approve a test change before implementation continues.
 ## A Developer should receive a final independent review that considers the task, plan, implementation challenges, solution changes, and gaps or weaknesses in the end-to-end tests.
 ## A Developer should be able to configure repository folder locations used by the implement-task skill and its agents from one shared context file, without hardcoded path values in the skill or agent instructions.
+## A Developer should be able to find all end-to-end and BDD tests and their supporting helpers in one top-level test area, organized into separate harness and CLI suites, with unit tests excluded.
+## A Developer should be able to run the complete true-bdd harness locally, including its state backend, with Docker Compose.
 
 # System
 ## The true-bdd harness must use Redis as its state backend.

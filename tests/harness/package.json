@@ -1,0 +1,18 @@
+{
+  "name": "true-bdd-harness-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-contained Playwright E2E suite for the TrueBDD web harness. Drives the harness app (built/served out of ../../harness) against a Redis coordination backend; see global-setup.ts.",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:protocol": "playwright test --project=protocol",
+    "test:e2e:ai": "playwright test --project=ai"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0"
+  }
+}

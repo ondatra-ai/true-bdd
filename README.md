@@ -164,10 +164,10 @@ with sprig).
 go test ./...
 
 # end-to-end BDD fixtures — real Claude calls, ~3–5 min per fixture
-go test -tags bdd ./tests/bdd/...
+go test -tags bdd ./tests/bdd-cli/...
 ```
 
-Fixtures under `tests/bdd/fixtures/<scenario>/` are folders containing
+Fixtures under `tests/bdd-cli/fixtures/<scenario>/` are folders containing
 a `fixture.yaml` manifest and the referenced input directory tree
 (conventionally `input/`, holding designed host-project content —
 `docs/` at minimum, plus project sources, a per-fixture `CLAUDE.md`,

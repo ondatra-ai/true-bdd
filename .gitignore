@@ -21,6 +21,12 @@
 /harness/*.tsbuildinfo
 /harness/next-env.d.ts
 
+# Self-contained Playwright E2E suite (tests/harness) — deps + artefacts
+/tests/harness/node_modules/
+/tests/harness/test-results/
+/tests/harness/playwright-report/
+/tests/harness/.tmp/
+
 # Conversation history captured by .claude/hooks/history.py
 /docs/history/
 coverage.txt

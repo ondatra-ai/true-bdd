@@ -54,7 +54,7 @@ func materialize(t *testing.T, fixture string) string {
 	t.Helper()
 
 	root := repoRoot(t)
-	fixtureDir := filepath.Join(root, "harness", "tests", "e2e", "fixtures", fixture)
+	fixtureDir := filepath.Join(root, "tests", "harness", "fixtures", fixture)
 	manifest := readManifest(t, filepath.Join(fixtureDir, "fixture.yaml"))
 	target := t.TempDir()
 
