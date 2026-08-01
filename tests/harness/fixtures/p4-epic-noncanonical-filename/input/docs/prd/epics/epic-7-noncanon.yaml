@@ -1,0 +1,21 @@
+# Noncanonical filename: the loader glob epic-%02d-*.yaml resolves
+# epic-07-*, never epic-7-*. The document is otherwise well-formed and
+# declares a story, but none of its stories are Create-addressable, so the
+# scanner emits NO story rows for it (plan §3.4 / finding 4).
+epic:
+  id: 7
+  name: "Noncanonical Filename Epic"
+  status: "PLANNED"
+  goal: "Prove the harness renders a header + flag, no toggle, and no rows for a noncanonically-named epic file."
+  context: "Used only by tests/harness/fixtures/p4-epic-noncanonical-filename."
+
+stories:
+  - id: "7.1"
+    title: "Unreachable Story"
+    as_a: "Claude User"
+    i_want: "this declaration to be visible as an epic even though us create cannot resolve it"
+    so_that: "the mis-encoded filename is surfaced rather than silently hidden"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "The epic renders with the noncanonical-filename flag and no addressable story rows."

@@ -12,8 +12,7 @@
     "start": "next start -H 127.0.0.1 -p ${PORT:-4517}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@fontsource/poppins": "5.2.6",
@@ -23,7 +22,6 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.0",
     "@types/node": "26.1.2",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",

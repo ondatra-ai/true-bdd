@@ -1,14 +1,18 @@
-# Redis coordination backend for the harness relay (plan: connect-cli-to-vercel-harness).
+# Local stack for the TrueBDD web harness: the Next.js relay+UI (`harness`) plus
+# its Redis coordination backend (`redis`). `docker compose up` brings up the
+# whole stack for manual/dev use — the harness on http://127.0.0.1:4517, backed
+# by Redis on redis://127.0.0.1:6379. On Vercel, REDIS_URL is provisioned by the
+# platform; locally the harness reaches Redis over the compose network (redis:6379).
 #
-# Startup scaffolding ONLY — no application service, no production logic. The
-# test-author creates this so the e2e/global-setup can bring Redis up once and
-# the Redis-backed relay (implemented by the coder in harness/app/lib/relay/)
-# can read REDIS_URL from it. On Vercel, REDIS_URL is provisioned by the platform;
-# locally it points here (redis://127.0.0.1:6379).
+# The e2e suite (tests/harness) uses this file too, but differently: global-setup
+# builds the `harness` image once (`docker compose build harness`, tagged
+# true-bdd-harness:e2e) and brings up ONLY `redis` (`up -d redis`). Each test then
+# launches its OWN harness container from docker-compose.test.yml (a per-instance
+# override) so restart / two-instance / per-test-env specs keep working —
+# see tests/harness/helpers/server-controller.ts.
 #
-# The e2e suite brings this up in global-setup and stops it in global-teardown.
-# Per-test isolation is by REDIS_KEY_PREFIX (every relay key is prefixed), NOT
-# by logical-DB selection — see harness/tests/e2e/helpers/redis.ts.
+# Per-test isolation is by REDIS_KEY_PREFIX (every relay key is prefixed), NOT by
+# logical-DB selection — see tests/harness/helpers/redis.ts.
 services:
   redis:
     image: redis:7-alpine
@@ -30,6 +34,36 @@ services:
     # holds only coordination state (session registry, work queue, transient
     # replies) — run output / inventory stay on the host CLI.
     command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+
+  harness:
+    # Next.js relay + UI, built from harness/Dockerfile (Next standalone output).
+    # The explicit image tag is what the e2e per-instance override
+    # (docker-compose.test.yml) references, so `docker compose build harness`
+    # produces exactly the image the tests run.
+    build:
+      context: ./harness
+    image: true-bdd-harness:e2e
+    container_name: true-bdd-harness
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Dev stack reaches Redis over the compose network. (The e2e override sets
+      # its own REDIS_URL via env-file, pointing at the host-published Redis.)
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:4517:4517"
+    healthcheck:
+      # Node 26 ships global fetch; alpine has no curl/wget by default.
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "fetch('http://127.0.0.1:4517/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
 
 volumes:
   redis-data:

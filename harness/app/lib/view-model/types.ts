@@ -1,6 +1,6 @@
 /**
  * Wire types the browser consumes from the harness API (v2 — plan §2/§3;
- * the binding contract is `tests/e2e/helpers/api-client.ts`), plus the
+ * the binding contract is `tests/harness/helpers/api-client.ts`), plus the
  * inventory snapshot schema the Go scanner produces (plan §1.5). These are
  * the INPUT shapes to the pure view-model functions in this directory —
  * kept in one place so both the client views and the vitest tables (§4.6)

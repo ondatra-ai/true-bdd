@@ -4,7 +4,7 @@
 // container, so it runs honestly in a bare or degraded folder and never
 // panics on malformed input. The remote uploads the resulting Snapshot;
 // the harness server stores it opaquely and the browser renders it (the
-// data-testid contract lives in harness/tests/e2e/helpers/README-testids.md).
+// data-testid contract lives in tests/harness/helpers/README-testids.md).
 //
 // # Snapshot JSON schema (binding for the server + UI phases)
 //

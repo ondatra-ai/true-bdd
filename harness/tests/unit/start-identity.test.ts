@@ -8,7 +8,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { maySignalIdentity, processStartIdentity } from "../e2e/helpers/start-identity";
+// The e2e suite moved to the repo-root self-contained package tests/harness/;
+// this unit test still exercises that helper's pure functions.
+import {
+  maySignalIdentity,
+  processStartIdentity,
+} from "../../../tests/harness/helpers/start-identity";
 
 describe("maySignalIdentity", () => {
   it("permits signalling only when the recorded identity matches the live one", () => {
