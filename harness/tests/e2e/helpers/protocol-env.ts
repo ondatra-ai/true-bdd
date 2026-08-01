@@ -19,6 +19,7 @@ import type { TestInfo } from "@playwright/test";
 import { HarnessApi } from "./api-client";
 import { materializeFixture, runFixtureTeardown, type MaterializedFixture } from "./materializer";
 import { processStartIdentity, RemoteProcess } from "./remote-process";
+import { REDIS_URL, uniquePrefix, flushPrefix } from "./redis";
 import { writeReproManifestOnFailure, type ReproManifestInput } from "./repro-manifest";
 import { ServerController } from "./server-controller";
 import { mkdirUnderSuiteRoot } from "./suite-root";
@@ -40,34 +41,45 @@ export class ProtocolEnv {
   readonly api: HarnessApi;
   readonly remotes: RemoteProcess[] = [];
   readonly fixtures: MaterializedFixture[] = [];
+  /** Unique Redis key prefix shared by this env's server (+ its remotes). */
+  readonly prefix: string;
 
   private readonly notes: ReproManifestInput = {};
   private fixtureCount = 0;
   private remoteCount = 0;
 
-  private constructor(dir: string, server: ServerController, api: HarnessApi) {
+  private constructor(dir: string, server: ServerController, api: HarnessApi, prefix: string) {
     this.dir = dir;
     this.server = server;
     this.api = api;
+    this.prefix = prefix;
   }
 
   /**
-   * Starts a fresh server (own DB + port) in a test-scoped dir. Pass
-   * `serverEnv` to inject extra environment into the server process —
+   * Starts a fresh server (own port) in a test-scoped dir, injected with a
+   * unique `REDIS_KEY_PREFIX` + `REDIS_URL` so the Redis-backed relay isolates
+   * this test from sequential siblings (plan: connect-cli-to-vercel-harness).
+   * Pass `serverEnv` to inject extra environment into the server process —
    * the degraded-inventory P9 case sets a tiny MAX_INVENTORY_REQUEST_BYTES
-   * to exercise the remote's fit-to-budget path (plan §1a/§4.3).
+   * to exercise the remote's fit-to-budget path (plan §1a/§4.3); p19 sets
+   * HARNESS_DEPLOYED=1 for the deployed-origin-policy server.
    */
   static async start(slug: string, options: { serverEnv?: Record<string, string> } = {}): Promise<ProtocolEnv> {
     const dir = mkdirUnderSuiteRoot(slug);
+    const prefix = uniquePrefix(slug);
     const server = new ServerController({
       dbPath: path.join(dir, "db", "harness.db"),
       logDir: path.join(dir, "server"),
-      env: options.serverEnv,
+      env: {
+        REDIS_URL,
+        REDIS_KEY_PREFIX: prefix,
+        ...options.serverEnv,
+      },
     });
     await server.start();
     const api = await HarnessApi.create(server.baseURL);
 
-    return new ProtocolEnv(dir, server, api);
+    return new ProtocolEnv(dir, server, api, prefix);
   }
 
   /** Materializes a fixture into this test's scope. */
@@ -139,7 +151,15 @@ export class ProtocolEnv {
       // Disposing a dead context is uninteresting.
     }
 
-    // 4. Reproduction manifest — only when the test did not end as expected.
+    // 4. Scoped Redis cleanup — delete only this test's prefix (plan r2 #10).
+    //    Best-effort: prefix uniqueness already isolates sequential tests.
+    try {
+      await flushPrefix(this.prefix);
+    } catch (error) {
+      console.warn(`[protocol-env] redis flushPrefix failed: ${String(error)}`);
+    }
+
+    // 5. Reproduction manifest — only when the test did not end as expected.
     await writeReproManifestOnFailure(testInfo, {
       ...this.notes,
       port: tryPort(this.server),

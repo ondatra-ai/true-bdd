@@ -5,6 +5,8 @@ import { relayHub } from "@/app/lib/relay/hub";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: registry list (no CLI wait); small budget suffices.
+export const maxDuration = 15;
 
 /**
  * GET /api/sessions (plan §3, critique §2) — REGISTRY-ONLY. Every listed
@@ -16,15 +18,13 @@ export async function GET(request: Request) {
     return forbidden();
   }
 
-  const sessions = relayHub()
-    .listSessions()
-    .map((meta) => ({
-      session_id: meta.session_id,
-      folder: meta.canonical_folder,
-      pid: meta.pid,
-      version: meta.version,
-      connected_at: meta.connected_at,
-    }));
+  const sessions = (await relayHub().listSessions()).map((meta) => ({
+    session_id: meta.session_id,
+    folder: meta.canonical_folder,
+    pid: meta.pid,
+    version: meta.version,
+    connected_at: meta.connected_at,
+  }));
 
   return NextResponse.json({ sessions });
 }

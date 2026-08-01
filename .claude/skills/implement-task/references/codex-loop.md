@@ -48,6 +48,11 @@ the gates at composite ≥7:
    arm a Monitor that fires on exit. **Always read-only** — Codex suggests; the agent
    applies the keeps and runs the tests itself. Never let Codex edit files directly
    (that would bypass the scoring gate). The answer lands in the artifacts dir.
+   **Status line (one, when you launch each round):** name the round, the cap, and the
+   prompt file path — e.g. `Codex round 1 out of 3 is running in the background with
+   prompt: ./tmp/codex-<label>-r1.md. I'll wait for it to complete.` Do not echo the
+   prompt's contents. (The same shape applies to a blocker-consultation Codex call,
+   minus the "out of N".)
 3. **Score** each finding (composite + gates above); apply only the keeps. Skip the rest.
 4. **Record the round** in the plan's "Codex rounds" ledger: prompt file, response
    file, and each finding's composite + gates + keep/skip.

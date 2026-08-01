@@ -5,6 +5,10 @@ import { relayHub, DEADLINE_MS } from "@/app/lib/relay/hub";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: above the inventory 30s wait + Redis/cold-start slack.
+// On local `next start` this is inert; the relay wait is clamped under it only
+// when HARNESS_DEPLOYED=1 (redis-relay.ts: deployedWaitCeilingMs).
+export const maxDuration = 60;
 
 /**
  * GET /api/sessions/:id (plan §3). `?view=status` runs ONE `session_status`
@@ -20,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
 
-  if (!relayHub().hasSession(id)) {
+  if (!(await relayHub().hasSession(id))) {
     return NextResponse.json({ error: "session_gone" }, { status: 404 });
   }
 

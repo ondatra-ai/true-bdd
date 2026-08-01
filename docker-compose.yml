@@ -1,0 +1,32 @@
+# Redis coordination backend for the harness relay (plan: connect-cli-to-vercel-harness).
+#
+# Startup scaffolding ONLY — no application service, no production logic. The
+# test-author creates this so the e2e/global-setup can bring Redis up once and
+# the Redis-backed relay (implemented by the coder in harness/app/lib/relay/)
+# can read REDIS_URL from it. On Vercel, REDIS_URL is provisioned by the platform;
+# locally it points here (redis://127.0.0.1:6379).
+#
+# The e2e suite brings this up in global-setup and stops it in global-teardown.
+# Per-test isolation is by REDIS_KEY_PREFIX (every relay key is prefixed), NOT
+# by logical-DB selection — see harness/tests/e2e/helpers/redis.ts.
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: true-bdd-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+      start_period: 2s
+    # Best-effort memory cap so a runaway test can't OOM the host; the relay
+    # holds only coordination state (session registry, work queue, transient
+    # replies) — run output / inventory stay on the host CLI.
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+
+volumes:
+  redis-data:

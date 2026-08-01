@@ -23,6 +23,8 @@ function inventoryBudgetBytes(): number {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Vercel function budget: register (no CLI wait); small budget suffices.
+export const maxDuration = 15;
 
 /**
  * POST /api/agent/register (plan §2). The client-owned session_id makes a
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid registration" }, { status: 400 });
   }
 
-  const result = relayHub().register({
+  const result = await relayHub().register({
     session_id: body.session_id,
     folder: body.folder,
     canonical_folder: body.canonical_folder,

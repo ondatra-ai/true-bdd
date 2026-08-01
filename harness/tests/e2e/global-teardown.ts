@@ -10,6 +10,7 @@
  */
 
 import { emergencyKillAll } from "./helpers/process-registry";
+import { takeRedisDown } from "./helpers/redis";
 import { suiteContext } from "./helpers/suite-root";
 
 export default async function globalTeardown(): Promise<void> {
@@ -28,6 +29,11 @@ export default async function globalTeardown(): Promise<void> {
         "a test's scoped teardown failed to reap them",
     );
   }
+
+  // Stop the Redis compose stack ONCE (plan: per-test `compose down` would kill
+  // the Redis other sequential tests reuse). Best-effort: a failed stop never
+  // masks the suite verdict.
+  await takeRedisDown();
 
   console.log(`[harness-e2e] artifacts preserved at: ${suiteRoot}`);
 }
