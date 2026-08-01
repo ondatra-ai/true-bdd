@@ -1,0 +1,16 @@
+:root{
+/* main — monochromatic ramp, exact values from S&F Guidelines 03—Colors */
+--white-999:#FFFFFF;--gray-100:#DEDFE4;--gray-600:#828388;--gray-999:#232429;--black-999:#040406;
+/* semantic status */
+--red-500:#EF4345;--green-500:#22C55F;--yellow-500:#EAB30A;
+/* spiral-dynamics gradient stops (Clare Graves / Don Beck), Blue → Teal */
+--spiral-blue:#0173D7;--spiral-orange:#F57600;--spiral-green:#00A896;--spiral-blue-light:#329BFF;--spiral-yellow:#FFE94A;--spiral-teal:#50E4D2;
+
+/* semantic aliases */
+--text-primary:var(--black-999);--text-body:var(--gray-999);--text-muted:var(--gray-600);--text-inverse:var(--white-999);--text-on-dark-muted:var(--gray-100);
+--surface-page:var(--white-999);--surface-card:var(--white-999);--surface-subtle:var(--gray-100);--surface-inverse:var(--black-999);--surface-inverse-soft:var(--gray-999);
+--border-hairline:var(--gray-100);--border-strong:var(--black-999);--border-on-dark:var(--gray-999);
+--status-error:var(--red-500);--status-success:var(--green-500);--status-warning:var(--yellow-500);
+
+--link-color:var(--black-999);--link-color-hover:var(--gray-600);
+}
