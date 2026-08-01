@@ -29,12 +29,23 @@ All paths are repo-relative (repo root = where this file's `docs/` lives).
 
 ## End-to-end tests
 
-The only tests this workflow writes and hardens; the coder may NOT touch them (see
-Off-limits). Unit tests are out of scope for implement-task.
+The e2e/BDD tests that **drive** the coding (red → green). Written and hardened by the
+test-author; the coder may NOT touch them (see Off-limits). Only these gate the task.
 
 - **E2E tests (Playwright)**: `tests/harness/` (self-contained suite: its own
   `package.json` + `node_modules`) — binding UI/API contract:
   `tests/harness/helpers/README-testids.md`.
+- **BDD-CLI fixtures + coverage/materializer harness**: everything else under `tests/`
+  (`tests/bdd-cli/`, `tests/materializer/`).
+
+## Unit tests
+
+The coder's responsibility (NOT the test-author's), written alongside the production
+code they exercise. They are the coder's own quality net and never gate the task —
+only the e2e/BDD suite does. Not off-limits to the coder:
+
+- **TS unit (Vitest)**: `harness/tests/unit/` + its runner config `harness/vitest.config.ts`.
+- **Go unit**: `*_test.go` beside the production package under `src/`.
 
 ## Architectural startup scaffolding
 
@@ -73,14 +84,16 @@ fenced block below — the **only** place these patterns live (edit here, not in
 hook). Anything matched is denied even in `bypassPermissions`; the coder must
 escalate to the test-author via the orchestrator instead of editing tests.
 
+Scope is deliberately the **e2e/BDD** tree only (everything under `tests/`). The
+unit-test trees (`harness/tests/unit/`, `harness/vitest.config.ts`, Go `*_test.go`
+beside `src/`) are the coder's own territory (see Unit tests) and are NOT listed.
+
 `harness/package.json` is deliberately **not** in this list (the coder may add
 runtime deps): its `test:*` scripts stay off-limits by prompt + parent diff-review,
 since a path hook cannot scope inside a single file.
 
 ```text
 tests/
-harness/tests/
-harness/vitest.config.ts
 ```
 
 ## Codex

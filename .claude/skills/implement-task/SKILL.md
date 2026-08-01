@@ -1,6 +1,6 @@
 ---
 name: implement-task
-description: Second half of the codex-task workflow — ship an already-scoped task test-first via four model-pinned subagents: an Opus planner writes a tests-first plan, an Opus test-author writes the e2e tests (+ startup scaffolding) and leaves them red, a Sonnet coder greens them by implementing production code only (hard-blocked from touching tests), and a Fable reviewer runs a final Codex review. Each phase runs its own Codex critique loop (the agent scores composite ≥7/10 + pass/fail gates, ≤3 rounds). Use when implementing an already-scoped task ("implement/build/ship this"), or when the codex-task orchestrator calls it. All folder paths come from docs/context/paths.md.
+description: Second half of the codex-task workflow — ship an already-scoped task test-first via four model-pinned subagents: an Opus planner writes a tests-first plan, an Opus test-author writes the e2e/BDD tests (+ startup scaffolding) and leaves them red, a Sonnet coder greens them by implementing production code plus its backing unit tests (hard-blocked from touching the e2e/BDD tests that drive the task), and a Fable reviewer runs a final Codex review. Each phase runs its own Codex critique loop (the agent scores composite ≥7/10 + pass/fail gates, ≤3 rounds). Use when implementing an already-scoped task ("implement/build/ship this"), or when the codex-task orchestrator calls it. All folder paths come from docs/context/paths.md.
 ---
 
 # Implement task
@@ -54,9 +54,9 @@ the user. Review each agent's return before the next.
 
 4. **Snapshot** the off-limits tree (re-manifest) AND the package `scripts` to "before"
    files. Spawn `implement-task-coder` (Sonnet) with the reproduce block. It runs only
-   those red tests and implements production code; file-edit tools AND Bash writes
-   (including `git apply`/`patch` and snapshot-update flags) to off-limits paths are
-   blocked by its hook.
+   those red tests and implements production code (plus the unit tests that back it);
+   file-edit tools AND Bash writes (including `git apply`/`patch` and snapshot-update
+   flags) to the off-limits e2e/BDD paths are blocked by its hook.
 5. **Verify, don't blindly roll back.**
    - Re-manifest the off-limits tree to an "after" file, `diff` vs "before". Any
      off-limits file added/modified/deleted → **STOP and report exactly which** (no
@@ -108,8 +108,9 @@ of the task's features.
       no surface exists).
 - [ ] **Codex loops ran** — the planner, test-author, and reviewer each ran their Codex
       critique loop; the plan's "Codex rounds" ledger is populated.
-- [ ] **Coder touched no tests** — off-limits manifest and package-`scripts` snapshot
-      both clean (zero test-file / test-script edits).
+- [ ] **Coder touched no e2e/BDD tests** — off-limits manifest (the `tests/` tree) and
+      package-`scripts` snapshot both clean (zero e2e/BDD-test / test-script edits). The
+      coder MAY have written unit tests — those are not off-limits and don't count here.
 - [ ] **Test-author touched no production code** — production-only manifest clean (zero
       production-code additions/modifications/deletions).
 - [ ] **Reproduce block honored** — the coder confirmed the same red baseline before
