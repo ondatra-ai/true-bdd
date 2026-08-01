@@ -1,16 +1,7 @@
-# Keep the build context small and deterministic. node_modules is reinstalled
-# from the lockfile in the deps stage; build output, tests, and local secrets
-# never belong in the image.
 node_modules
 .next
+.git
 .vercel
+.env*.local
 tests
-test-results
-playwright-report
-*.tsbuildinfo
-next-env.d.ts
-.env*
-Dockerfile
-.dockerignore
-go.mod
-README.md
+*.md

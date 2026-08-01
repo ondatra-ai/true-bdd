@@ -2,32 +2,32 @@
   "name": "true-bdd-harness",
   "version": "0.1.0",
   "private": true,
-  "description": "Web harness for driving TrueBDD host projects (plan: tmp/harness-plan.md)",
-  "packageManager": "npm@11.17.0",
+  "description": "TrueBDD web harness: a stateless Next.js relay + UI between the true-bdd CLI (remote agent) and the browser, coordinated through Redis.",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
+    "dev": "next dev -p 4517",
     "build": "next build",
-    "start": "next start -H 127.0.0.1 -p ${PORT:-4517}",
+    "start": "node server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run"
   },
   "dependencies": {
-    "@fontsource/poppins": "5.2.6",
-    "ioredis": "^6.0.0",
-    "next": "16.2.12",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "ioredis": "^5.4.1",
+    "next": "15.5.22",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
-    "@types/node": "26.1.2",
-    "@types/react": "19.2.17",
-    "@types/react-dom": "19.2.3",
-    "eslint": "9.39.5",
-    "eslint-config-next": "16.2.12",
-    "typescript": "5.9.3",
-    "vitest": "4.1.10"
+    "@eslint/eslintrc": "^3.2.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "15.5.22",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
   }
 }

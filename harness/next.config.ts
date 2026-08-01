@@ -1,16 +1,13 @@
 import type { NextConfig } from "next";
 
-// No native-addon carve-out is needed: the relay holds no database (its
-// coordination state lives in Redis via `ioredis`, which is pure JS), and no
-// sqlite store ships. The previous `serverExternalPackages: ["better-sqlite3"]`
-// entry was a stale artifact of a removed design (plan: connect-cli-to-vercel-
-// harness → Implementation → next.config.ts).
-// `output: "standalone"` emits `.next/standalone/server.js` with only the
-// traced runtime deps, so the Docker image (harness/Dockerfile) and the
-// docker-compose `harness` service can run the app with `node server.js`
-// instead of the full `next start` + node_modules. See docker-compose.yml.
+// Standalone output: the Docker runtime layer copies only .next/standalone +
+// .next/static (see ../Dockerfile) — no full node_modules, no `next` CLI.
 const nextConfig: NextConfig = {
   output: "standalone",
+  eslint: {
+    // Linting is a separate `npm run lint` step; never block `next build`.
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

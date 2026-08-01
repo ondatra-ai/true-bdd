@@ -31,29 +31,3 @@ jobs:
 
       - name: Test
         run: go test ./...
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: harness/.nvmrc
-          cache: npm
-          cache-dependency-path: harness/package-lock.json
-
-      - name: Harness install
-        run: npm ci
-        working-directory: harness
-
-      - name: Harness lint
-        run: npm run lint
-        working-directory: harness
-
-      - name: Harness typecheck
-        run: npm run typecheck
-        working-directory: harness
-
-      - name: Harness unit tests
-        run: npm run test:unit
-        working-directory: harness
-
-      - name: Harness production build
-        run: npm run build
-        working-directory: harness

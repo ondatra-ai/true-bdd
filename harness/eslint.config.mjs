@@ -1,21 +1,19 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
-import nextTypescript from "eslint-config-next/typescript";
+import { FlatCompat } from "@eslint/eslintrc";
 
-// eslint-config-next 16 ships native flat configs (Linter.Config[]).
-const eslintConfig = defineConfig([
-  ...nextCoreWebVitals,
-  ...nextTypescript,
-  globalIgnores([
-    "node_modules/**",
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "playwright-report/**",
-    "test-results/**",
-    "data/**",
-  ]),
-]);
+const compat = new FlatCompat({
+  baseDirectory: import.meta.dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "next-env.d.ts",
+      "tests/unit/**/*.d.ts",
+    ],
+  },
+];
 
 export default eslintConfig;
