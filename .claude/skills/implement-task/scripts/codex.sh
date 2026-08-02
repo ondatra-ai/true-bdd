@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# codex.sh — proven non-interactive codex invocation, shared by the codex-task skills.
+# codex.sh — proven non-interactive codex invocation, shared by the task-workflow skills.
 #
 # Bakes in the flags that matter most: a sandbox policy (without one, `codex exec`
 # blocks silently on approval prompts and hangs headlessly forever), ephemeral
@@ -7,7 +7,7 @@
 # to a file. Full trace is teed so a timeout still leaves a partial report.
 #
 # Usage (run from the repo root):
-#   ./.claude/skills/codex-task/scripts/codex.sh <mode> <prompt-file> [label]
+#   ./.claude/skills/implement-task/scripts/codex.sh <mode> <prompt-file> [label]
 #
 #   mode        ro   = read-only audit/verify (default)
 #                auto = workspace-write (Codex may edit files / run side effects)

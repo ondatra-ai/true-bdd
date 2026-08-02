@@ -16,8 +16,12 @@ Two subcommands:
   block since the last user prompt, read from the transcript — under
   the writer's role heading (CLAUDE_HISTORY_ROLE, default "claude").
   The payload's `last_assistant_message` backstops the final block in
-  case the transcript's tail hasn't been flushed yet. No cursor: each
-  Stop maps to exactly one finished turn.
+  case the transcript's tail hasn't been flushed yet. A per-session
+  cursor (tmp/history-cursor/<session8>.json, keyed by prompt_id)
+  records how many blocks of the current turn are already logged, so
+  a blocking Stop hook (phase_state.py stop-gate) that forces the
+  turn to continue doesn't make the next Stop re-append the whole
+  turn — only the continuation's new blocks land.
 
 State file: docs/history/hook-state
     A single line: the current task file's name. Nothing else.
@@ -48,6 +52,7 @@ REPO = Path(
 ).resolve()
 HISTORY_DIR = REPO / "docs" / "history"
 STATE_FILE = HISTORY_DIR / "hook-state"
+CURSOR_DIR = REPO / "tmp" / "history-cursor"
 ROLE = os.environ.get("CLAUDE_HISTORY_ROLE", "") or "claude"
 
 
@@ -159,6 +164,35 @@ def _turn_blocks(entries) -> list:
     return blocks
 
 
+# ---------- turn cursor (survives a blocking Stop hook) ----------
+
+def _cursor_file(sid: str) -> Path:
+    return CURSOR_DIR / f"{(sid[:8] or 'unknown')}.json"
+
+
+def _cursor_read(sid: str, pid: str) -> int:
+    """Blocks of the current turn already logged (0 if a different turn)."""
+    if not pid:
+        return 0
+    try:
+        d = json.loads(_cursor_file(sid).read_text())
+        return int(d.get("blocks", 0)) if d.get("prompt_id") == pid else 0
+    except Exception:
+        return 0
+
+
+def _cursor_write(sid: str, pid: str, blocks: int) -> None:
+    if not pid:
+        return
+    try:
+        CURSOR_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = _cursor_file(sid).with_suffix(f".tmp.{os.getpid()}")
+        tmp.write_text(json.dumps({"prompt_id": pid, "blocks": blocks}))
+        tmp.replace(_cursor_file(sid))
+    except Exception:
+        pass
+
+
 # ---------- event handlers ----------
 
 def new_task(_payload: dict) -> None:
@@ -206,9 +240,13 @@ def prompt_submit(payload: dict) -> None:
     last = (payload.get("last_assistant_message") or "").strip()
     if last and (not blocks or blocks[-1] != last):
         blocks.append(last)
-    text = "\n\n".join(blocks)
+    sid = payload.get("session_id") or ""
+    pid = payload.get("prompt_id") or ""
+    done = _cursor_read(sid, pid)
+    text = "\n\n".join(blocks[done:])
     if text:
         _append(filename, ROLE, text)
+    _cursor_write(sid, pid, len(blocks))
 
 
 HANDLERS = {

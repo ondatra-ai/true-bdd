@@ -15,11 +15,17 @@ Codex prompt contains, in full:
    changed since the last round.
 3. **Everything Codex has found so far** — the accumulated findings from ALL prior
    rounds (round 1 … N−1), so Codex sees the full history and doesn't repeat itself.
+4. **The disposition of every prior finding** (from round 2 on) — applied (where and
+   how) or skipped (the one-line reason from the ledger). Without this, Codex cannot
+   audit what you did with round N−1.
 
-**Codex does NOT score.** Ask Codex only for findings (gaps, defects, improvements),
-each with evidence and a concrete fix. **The AGENT scores every finding itself** (see
-Scoring below) and decides what to apply. Never let Codex's own ranking or severity
-drive the decision.
+**Codex does NOT score.** From round 2 on, ask Codex for three things, in order:
+(a) **verify every applied finding** — is the fix correctly and completely
+implemented in the current state?; (b) **challenge every skip** — does the recorded
+reason hold?; (c) **fresh findings** (gaps, defects, improvements). Round 1 is (c)
+only. Everything returns as findings with evidence and a concrete fix — no scores.
+**The AGENT scores every finding itself** (see Scoring below) and decides what to
+apply. Never let Codex's own ranking or severity drive the decision.
 
 ## Scoring (done by the AGENT, not Codex)
 
@@ -38,12 +44,18 @@ justification.
 
 ## The loop
 
-Repeat up to **3 rounds**, stopping early when a round returns nothing that passes
-the gates at composite ≥7:
+Repeat up to the phase's round cap, stopping early when a round is dry (step 5:
+applications verified, skips unchallenged, nothing new passes the gates).
+**The cap comes from the task's lane** —
+see `references/complexity-matrix.md` (tiny: review-only 1 round; easy: 1 per
+phase that has one; hard: ≤3). Where this doc says "3 rounds" it describes the
+hard-lane cap:
 
 1. **Write the prompt** — full task + all current changes + all prior-round findings
-   (above) — to a prompt file under the Codex artifacts directory (paths.md). Ask
-   Codex to run commands to verify its claims and to return findings only (no scores).
+   + their dispositions (the four ingredients above) — to a prompt file under the
+   Codex artifacts directory (paths.md). Ask for the three jobs in order (verify
+   applications / challenge skips / fresh findings), tell Codex to run commands to
+   verify its claims, and to return findings only (no scores).
 2. **Run the Codex wrapper** (path + usage in paths.md) as a **background** task and
    arm a Monitor that fires on exit. **Always read-only** — Codex suggests; the agent
    applies the keeps and runs the tests itself. Never let Codex edit files directly
@@ -54,9 +66,15 @@ the gates at composite ≥7:
    prompt's contents. (The same shape applies to a blocker-consultation Codex call,
    minus the "out of N".)
 3. **Score** each finding (composite + gates above); apply only the keeps. Skip the rest.
-4. **Record the round** in the plan's "Codex rounds" ledger: prompt file, response
-   file, and each finding's composite + gates + keep/skip.
-5. **Stop** when a round yields no keeps, or after **3 rounds**.
+4. **Record the round** in the Codex rounds ledger file — `<slug>.codex.md` beside
+   the plan (paths.md → Plan) — prompt file, response file, and each finding's
+   composite + gates + keep/skip. The ledger lives OUTSIDE the plan so downstream
+   agents reading the plan don't pay for it; the plan's "Codex rounds" section is
+   just a one-line pointer to this file.
+5. **Stop** when a round is **dry** — every prior application verified clean, no
+   skip-challenge survived scoring, and no fresh finding passed the gates — or at
+   the lane's round cap. A round that flags a botched application is never dry:
+   fix it and it counts as an applied finding for the next round to verify.
 
 Every prompt is grounded in the **task goal** and the **plan**. Apply keeps by editing
 the artifact (plan / code / tests) — never silently; each change must be visible and
