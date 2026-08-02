@@ -12,6 +12,12 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 
 "$ROOT/.claude/hooks/history.py" new-task
 
+# A new task means the previous implement-task phase state (gates, banners,
+# commit block) must not leak forward. tmp/ is gitignored, so git clean below
+# won't touch it — clear it explicitly. /new-task is user-invoked, so this is
+# an inherently user-consented reset of any half-done task's enforcement state.
+rm -rf "$ROOT/tmp/implement-task"
+
 git -C "$ROOT" restore --staged --worktree -- . ':(exclude)docs/context'
 git -C "$ROOT" clean -fd
 MAIN_BRANCH=$(git -C "$ROOT" show-ref --verify --quiet refs/heads/master && echo master || echo main)
