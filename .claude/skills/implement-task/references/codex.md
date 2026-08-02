@@ -27,7 +27,7 @@ codex exec -s read-only --ephemeral -C "$PWD" --color never \
 
 `codex exec` prints nothing until exit — launch as a **background** task and arm a Monitor on exit; cover success AND timeout/hang in the filter (silence ≠ "still thinking").
 
-Wrapper: `./.claude/skills/codex-task/scripts/codex.sh <ro|auto> <prompt-file> [label]` (bakes the flags + tees trace).
+Wrapper: `./.claude/skills/implement-task/scripts/codex.sh <ro|auto> <prompt-file> [label]` (bakes the flags + tees trace).
 
 ## Playwright access for Codex
 

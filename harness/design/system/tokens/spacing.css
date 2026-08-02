@@ -1,0 +1,10 @@
+:root{
+/* 20 is the base unit — it is the grid gutter, so every rhythm value is a multiple of it. */
+--space-unit:20px;
+--space-1:5px;--space-2:10px;--space-3:20px;--space-4:30px;--space-5:40px;--space-6:60px;--space-7:80px;--space-8:120px;--space-9:160px;--space-10:200px;
+/* semantic */
+--pad-button-y:24px;--pad-button-x:40px;
+--pad-card:40px;--pad-card-lg:60px;
+--section-y:120px;--section-y-tight:80px;
+--stack-tight:10px;--stack-base:20px;--stack-loose:40px;
+}
