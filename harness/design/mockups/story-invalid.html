@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Story file: parse error — TrueBDD Workspace</title>
+<link rel="stylesheet" href="../system/tokens.css" />
+<link rel="stylesheet" href="assets/mockups.css" />
+</head>
+<body>
+  <div class="app-frame" data-testid="app-frame">
+    <nav class="mockup-sidebar" data-testid="mockup-sidebar" aria-label="Workspace navigation">
+      <div class="sidebar-brand">
+        <span class="mockup-brand" data-token-probe="--text-primary">TrueBDD</span>
+        <div class="sidebar-brand__meta">Workspace — Inventory Spread</div>
+      </div>
+      <div class="sidebar-nav">
+        <a class="sidebar-flat-link" href="workspace-overview.html">Workspace overview</a>
+
+        <details class="sidebar-section" data-testid="sidebar-section-architecture" open>
+          <summary>01—Architecture</summary>
+          <ul class="sidebar-tree">
+            <li><a href="service.html">mcp-service <span class="sidebar-row-service">service</span></a></li>
+            <li><a href="vocabulary.html">Vocabulary</a></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-product" open>
+          <summary>02—Product</summary>
+          <ul class="sidebar-tree">
+            <li><a href="prd-overview.html">PRD overview</a></li>
+          </ul>
+          <details class="sidebar-epic" open>
+            <summary>Inventory Spread Epic</summary>
+            <ul class="sidebar-tree">
+              <li><a href="story-detail.html">60.1 — Summary Length Preference</a></li>
+              <li><a href="story-detail.html">60.2 — Summary For Shared Docs</a></li>
+              <li><a href="story-detail.html">60.3 — Summary Error Messages</a></li>
+            </ul>
+          </details>
+          <a class="sidebar-epic-open" href="epic.html">Open epic page</a>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-requirements" open>
+          <summary>03—Requirements / Scenarios</summary>
+          <div class="sidebar-tree sidebar-tree--flat">
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-601 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-602 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-603 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">INT-901 <span class="sidebar-row-service">mcp-service</span></a>
+          </div>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-runs" open>
+          <summary>04—Runs</summary>
+          <ul class="sidebar-tree">
+            <li><a href="runs.html">All runs</a></li>
+          </ul>
+        </details>
+      </div>
+      <a class="sidebar-flat-link sidebar-return" href="sessions.html">Return to sessions</a>
+    </nav>
+
+    <div class="app-main">
+    <nav class="mockup-breadcrumb" data-testid="mockup-breadcrumb" aria-label="Breadcrumb">
+      <a href="sessions.html">Sessions</a>
+      <span class="crumb-sep">/</span>
+      <a href="workspace-overview.html">Workspace overview</a>
+      <span class="crumb-sep">/</span>
+      <a href="prd-overview.html">Product</a>
+      <span class="crumb-sep">/</span>
+      <a href="epic.html">Inventory Spread Epic</a>
+      <span class="crumb-sep">/</span>
+      <span aria-current="page">Invalid story file</span>
+    </nav>
+
+      <main class="mockup-canvas canvas-max" data-testid="mockup-canvas">
+<div class="page-header">
+  <div>
+    <span class="section-label">02—Product / Epic 60 / Story lookup</span>
+    <h1>Story file: parse error</h1>
+  </div>
+</div>
+<div class="banner-group">
+  <div class="banner banner--error">
+    <span class="banner__title">Invalid story file</span>
+    <code>docs/prd/stories/61.4-broken-story.yaml</code> is invalid — parse error: mapping values are not allowed here (line 12, column 5).
+  </div>
+</div>
+<h2 class="subsection">Raw file</h2>
+<pre class="raw-file">story:
+    id: "61.4"
+    title: Broken Story
+    as_a: Claude User
+    i_want Claude to do the thing
+        so_that: this line is not valid YAML
+    status: PLANNED</pre>
+
+      </main>
+    </div>
+  </div>
+
+<script src="assets/mockups.js"></script>
+</body>
+</html>

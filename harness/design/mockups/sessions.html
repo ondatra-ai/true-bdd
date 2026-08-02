@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sessions — TrueBDD Workspace</title>
+<link rel="stylesheet" href="../system/tokens.css" />
+<link rel="stylesheet" href="assets/mockups.css" />
+</head>
+<body class="app-shell">
+<div class="top-bar gradient-band">
+  <div class="mockup-brand-row">
+    <span class="mockup-brand mockup-brand--on-dark" data-token-probe="--text-inverse">TrueBDD</span>
+  </div>
+  <span class="top-bar__tagline">Spec-Anchored CLI — connected sessions</span>
+</div>
+<div class="sessions-canvas">
+  <div class="page-header">
+    <div>
+      <h1>Sessions</h1>
+      <p class="page-header__meta">Every CLI process currently registered with the harness relay. Open a connected session to enter its workspace.</p>
+    </div>
+  </div>
+
+  <div class="row-list">
+    <div class="list-row" data-testid="session-row" data-session-id="sess-alpha-7f3" data-folder="/Users/dev/projects/mcp-google-docs">
+      <div class="list-row__primary">
+        <div class="list-row__title">/Users/dev/projects/mcp-google-docs</div>
+        <div class="list-row__meta">session sess-alpha-7f3 — connected</div>
+      </div>
+      <div class="list-row__side">
+        <span class="chip">v1.4.2</span>
+        <button type="button" class="btn">Test connection</button>
+        <a class="btn btn--solid" href="workspace-overview.html">Open workspace</a>
+      </div>
+    </div>
+    <div class="list-row" data-testid="session-row" data-session-id="sess-beta-2c9" data-folder="/Users/dev/projects/inventory-spread-demo">
+      <div class="list-row__primary">
+        <div class="list-row__title">/Users/dev/projects/inventory-spread-demo</div>
+        <div class="list-row__meta">session sess-beta-2c9 — connected</div>
+      </div>
+      <div class="list-row__side">
+        <span class="chip">v1.3.0</span>
+        <button type="button" class="btn">Test connection</button>
+        <a class="btn btn--solid" href="workspace-overview.html">Open workspace</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 40px; font-size: 13px;">
+    A session that stops polling simply disappears from this list on the
+    next read — there is no reachability state, no reconnection affordance,
+    and no separate row marker for a session that has gone away.
+  </p>
+</div>
+
+<script src="assets/mockups.js"></script>
+</body>
+</html>

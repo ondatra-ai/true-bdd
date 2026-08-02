@@ -1,0 +1,21 @@
+:root{
+/* Sharp corners everywhere. Radius exists only so consumers know it is zero. */
+--radius-none:0px;--radius:0px;
+--border-width:1px;--border-width-strong:2px;
+/* No drop shadows in the system — depth comes from value contrast and gradient fields. */
+--shadow-none:none;
+/* Gradient fields: radial, blurred, edgeless. Never a linear directional blend. */
+--gradient-spiral:radial-gradient(60% 70% at 68% 78%,var(--spiral-teal) 0%,rgba(80,228,210,0) 62%),radial-gradient(55% 65% at 78% 42%,var(--spiral-blue-light) 0%,rgba(50,155,255,0) 60%),radial-gradient(50% 60% at 46% 32%,#B98CF5 0%,rgba(185,140,245,0) 62%),radial-gradient(70% 80% at 20% 15%,var(--white-999) 0%,rgba(255,255,255,0) 70%);
+--gradient-spiral-soft:radial-gradient(65% 80% at 82% 62%,var(--spiral-teal) 0%,rgba(80,228,210,0) 66%),radial-gradient(50% 62% at 40% 45%,#C9A7F2 0%,rgba(201,167,242,0) 68%),radial-gradient(60% 70% at 62% 50%,var(--spiral-blue-light) 0%,rgba(50,155,255,0) 62%);
+--gradient-spiral-full:linear-gradient(90deg,var(--spiral-blue) 0%,var(--spiral-blue-light) 22%,var(--spiral-teal) 42%,var(--spiral-green) 60%,var(--spiral-yellow) 80%,var(--spiral-orange) 100%);
+/* --gradient-image-* resolve against THIS stylesheet. Safe in CSS inside the design system;
+   in consumer pages use the GradientField component, which resolves the asset at runtime. */
+--gradient-image-radial:url("../assets/gradients/gradient-field-radial.png");/* @kind other */
+--gradient-image-soft:url("../assets/gradients/gradient-field-soft.png");/* @kind other */
+--blur-field:80px;/* @kind other */
+/* Interaction feel: instant, mechanical, no bounce. Inversion, not softening. */
+--ease-standard:cubic-bezier(.2,0,.2,1);/* @kind other */
+--dur-fast:120ms;/* @kind other */
+--dur-base:180ms;/* @kind other */
+--transition-interactive:background-color var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard),border-color var(--dur-fast) var(--ease-standard),opacity var(--dur-fast) var(--ease-standard);/* @kind other */
+}

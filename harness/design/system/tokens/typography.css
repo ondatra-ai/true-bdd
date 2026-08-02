@@ -1,0 +1,20 @@
+:root{
+/* Sizing logic: body 20 → h3 32 → h2 52 → h1 84. Ratio walks ~1.6 and widens as it climbs,
+   so headings dominate and body stays quiet. Line height is a flat 120% everywhere. */
+--fs-body:20px;--fs-h3:32px;--fs-h2:52px;--fs-h1:84px;
+--fs-caption:14px;--fs-label:16px;--fs-button:16px;--fs-display:120px;
+--lh-tight:1.2;/* @kind other */
+--lh-base:1.2;/* @kind other */
+--lh-loose:1.4;/* @kind other */
+--fw-medium:500;/* @kind font */
+--fw-bold:700;/* @kind font */
+--ls-tight:-0.02em;--ls-normal:0;/* @kind other */
+--ls-button:0.06em;--ls-label:0.08em;
+/* semantic roles */
+--type-h1:var(--fw-bold) var(--fs-h1)/var(--lh-base) var(--font-display);
+--type-h2:var(--fw-bold) var(--fs-h2)/var(--lh-base) var(--font-display);
+--type-h3:var(--fw-bold) var(--fs-h3)/var(--lh-base) var(--font-display);
+--type-body:var(--fw-medium) var(--fs-body)/var(--lh-base) var(--font-body);
+--type-caption:var(--fw-medium) var(--fs-caption)/var(--lh-loose) var(--font-body);
+--type-button:var(--fw-bold) var(--fs-button)/1 var(--font-body);
+}

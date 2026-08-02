@@ -1,0 +1,20 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Buttons & Tags" subtitle="Sharp rectangles, bold uppercase, flush rows" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script></head>
+<body style="padding:20px;background:var(--white-999)"><div id="root"></div>
+<script type="text/babel">
+const {Button,ButtonRow,Tag}=window.SFDesignSystem_147f5d;
+const L=({t,children})=>React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}},React.createElement('span',{style:{font:'var(--type-caption)',textTransform:'uppercase',letterSpacing:'var(--ls-label)',color:'var(--gray-600)'}},t),children);
+ReactDOM.createRoot(document.getElementById('root')).render(
+<div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+  <L t="Flush row — primary + secondary"><ButtonRow><Button variant="primary">See How We Build for Change</Button><Button variant="secondary">Start the conversation</Button></ButtonRow></L>
+  <L t="Sizes sm / md / lg"><div style={{display:'flex',gap:'20px',alignItems:'flex-start'}}><Button size="sm">Small</Button><Button size="md">Medium</Button><Button size="lg">Large</Button></div></L>
+  <div style={{display:'flex',gap:'20px',alignItems:'flex-end'}}>
+    <L t="Ghost / disabled"><div style={{display:'flex',gap:'20px'}}><Button variant="ghost">Ghost</Button><Button disabled>Disabled</Button></div></L>
+    <L t="Tags"><div style={{display:'flex',gap:'10px'}}><Tag>Research</Tag><Tag tone="solid">Field</Tag><Tag tone="success">Live</Tag><Tag tone="error">Blocked</Tag></div></L>
+  </div>
+</div>);
+</script></body></html>
