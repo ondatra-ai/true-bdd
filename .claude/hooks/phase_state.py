@@ -352,6 +352,8 @@ def hook_subagent_stop(payload: dict) -> int:
 def hook_prompt_submit(payload: dict) -> int:
     if payload.get("agent_id"):  # a subagent's own prompt, not a user turn
         return allow()
+    if not ACTIVE.exists():  # fast path: fires on every user prompt
+        return allow()
     with Lock():
         state = load_state()
         if state is None:
@@ -374,6 +376,8 @@ def hook_session_start(payload: dict) -> int:
 
 
 def hook_stop_gate(payload: dict) -> int:
+    if not ACTIVE.exists():  # fast path: fires on every turn end
+        return allow()
     with Lock():
         state = load_state()
         if state is None or state["status"] != "in_progress":
