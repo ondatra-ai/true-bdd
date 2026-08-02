@@ -26,6 +26,21 @@ All paths are repo-relative (repo root = where this file's `docs/` lives).
 - **Plan file** — created by the planner; the orchestrator records implementation
   challenges here: `docs/tasks/plans/<slug>.md` (tracked alongside task briefs;
   create the folder if absent).
+- **Codex rounds ledger** — `docs/tasks/plans/<slug>.codex.md`, written by each
+  agent's Codex loop. Lives beside (not inside) the plan so downstream agents
+  reading the plan don't pay for the round tables; the plan's "Codex rounds"
+  section is a one-line pointer here.
+
+## Phase state (enforcement)
+
+- **Hook script**: `.claude/hooks/phase_state.py` (wired in `.claude/settings.json`).
+  Records agent spawns/completions, denies out-of-order phases, blocks turn-end and
+  commits while the reviewer is pending, and appends task metrics on close.
+- **Active state**: `tmp/implement-task/active.json`; archives + audit log under
+  `tmp/implement-task/`.
+- **Metrics**: `docs/context/skill-metrics.jsonl` (one line per closed task).
+- **Retro output**: `docs/context/retro/<slug>.md` (written by the `task-retro`
+  skill; proposals only, never auto-applied).
 
 ## End-to-end tests
 
@@ -98,9 +113,10 @@ tests/
 
 ## Codex
 
-- **Wrapper**: `.claude/skills/codex-task/scripts/codex.sh` (`<ro|auto> <prompt-file> [label]`).
-- **Mechanics + prompt guide**: `.claude/skills/codex-task/references/codex.md`.
+- **Wrapper**: `.claude/skills/implement-task/scripts/codex.sh` (`<ro|auto> <prompt-file> [label]`).
+- **Mechanics + prompt guide**: `.claude/skills/implement-task/references/codex.md`.
 - **Loop procedure** (shared by all four agents): `.claude/skills/implement-task/references/codex-loop.md`.
+- **Complexity matrix** (lane → agents + Codex round caps): `.claude/skills/implement-task/references/complexity-matrix.md`.
 - **Artifacts**: answers at `./tmp/codex-<label>.md` (+ `.trace.log`); prompts at `./tmp/codex-<label>-rN.md`.
 
 ## Run commands

@@ -1,0 +1,5 @@
+/* S&F ships Poppins in two weights only: Medium (500) for body, Bold (700) for headings.
+   No Regular/400 file was supplied — 500 is the lightest legal weight. */
+@font-face{font-family:"Poppins";font-style:normal;font-weight:500;font-display:swap;src:url("../fonts/Poppins-Medium.ttf") format("truetype")}
+@font-face{font-family:"Poppins";font-style:normal;font-weight:700;font-display:swap;src:url("../fonts/Poppins-Bold.ttf") format("truetype")}
+:root{--font-poppins:"Poppins","Helvetica Neue",Helvetica,Arial,sans-serif;--font-sans:var(--font-poppins);--font-display:var(--font-poppins);--font-body:var(--font-poppins)}

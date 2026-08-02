@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vocabulary — TrueBDD Workspace</title>
+<link rel="stylesheet" href="../system/tokens.css" />
+<link rel="stylesheet" href="assets/mockups.css" />
+</head>
+<body>
+  <div class="app-frame" data-testid="app-frame">
+    <nav class="mockup-sidebar" data-testid="mockup-sidebar" aria-label="Workspace navigation">
+      <div class="sidebar-brand">
+        <span class="mockup-brand" data-token-probe="--text-primary">TrueBDD</span>
+        <div class="sidebar-brand__meta">Workspace — Inventory Spread</div>
+      </div>
+      <div class="sidebar-nav">
+        <a class="sidebar-flat-link" href="workspace-overview.html">Workspace overview</a>
+
+        <details class="sidebar-section" data-testid="sidebar-section-architecture" open>
+          <summary>01—Architecture</summary>
+          <ul class="sidebar-tree">
+            <li><a href="service.html">mcp-service <span class="sidebar-row-service">service</span></a></li>
+            <li><a href="vocabulary.html">Vocabulary</a></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-product" open>
+          <summary>02—Product</summary>
+          <ul class="sidebar-tree">
+            <li><a href="prd-overview.html">PRD overview</a></li>
+          </ul>
+          <details class="sidebar-epic" open>
+            <summary>Inventory Spread Epic</summary>
+            <ul class="sidebar-tree">
+              <li><a href="story-detail.html">60.1 — Summary Length Preference</a></li>
+              <li><a href="story-detail.html">60.2 — Summary For Shared Docs</a></li>
+              <li><a href="story-detail.html">60.3 — Summary Error Messages</a></li>
+            </ul>
+          </details>
+          <a class="sidebar-epic-open" href="epic.html">Open epic page</a>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-requirements" open>
+          <summary>03—Requirements / Scenarios</summary>
+          <div class="sidebar-tree sidebar-tree--flat">
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-601 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-602 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-603 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">INT-901 <span class="sidebar-row-service">mcp-service</span></a>
+          </div>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-runs" open>
+          <summary>04—Runs</summary>
+          <ul class="sidebar-tree">
+            <li><a href="runs.html">All runs</a></li>
+          </ul>
+        </details>
+      </div>
+      <a class="sidebar-flat-link sidebar-return" href="sessions.html">Return to sessions</a>
+    </nav>
+
+    <div class="app-main">
+    <nav class="mockup-breadcrumb" data-testid="mockup-breadcrumb" aria-label="Breadcrumb">
+      <a href="sessions.html">Sessions</a>
+      <span class="crumb-sep">/</span>
+      <a href="workspace-overview.html">Workspace overview</a>
+      <span class="crumb-sep">/</span>
+      <span aria-current="page">Vocabulary</span>
+    </nav>
+
+      <main class="mockup-canvas canvas-max" data-testid="mockup-canvas">
+<div class="page-header">
+  <div>
+    <span class="section-label">01—Architecture / Vocabulary</span>
+    <h1>Vocabulary</h1>
+    <p class="page-header__meta">docs/architecture/architecture.yaml — the wording checklists hold every generated document to.</p>
+  </div>
+</div>
+
+<h2 class="subsection">Actions</h2>
+<dl class="dl-grid">
+  <dt>ask Claude</dt>
+  <dd>write a prompt in Claude chat</dd>
+</dl>
+
+<h2 class="subsection">Forbidden qualifiers</h2>
+<div class="tag-row">
+  <span class="chip">properly</span>
+  <span class="chip">correctly</span>
+  <span class="chip">seamless</span>
+</div>
+
+<h2 class="subsection">Forbidden actions</h2>
+<div class="card">
+  <span class="section-label">handle</span>
+  <p style="font-size: 13px; margin: 0 0 6px;"><strong>Reason:</strong> Hides what the system observably does with the input.</p>
+  <p style="font-size: 13px; margin: 0;"><strong>Replacement:</strong> Name the observable action: displays, returns, lists, rejects.</p>
+</div>
+
+      </main>
+    </div>
+  </div>
+
+<script src="assets/mockups.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Runs — TrueBDD Workspace</title>
+<link rel="stylesheet" href="../system/tokens.css" />
+<link rel="stylesheet" href="assets/mockups.css" />
+</head>
+<body>
+  <div class="app-frame" data-testid="app-frame">
+    <nav class="mockup-sidebar" data-testid="mockup-sidebar" aria-label="Workspace navigation">
+      <div class="sidebar-brand">
+        <span class="mockup-brand" data-token-probe="--text-primary">TrueBDD</span>
+        <div class="sidebar-brand__meta">Workspace — Inventory Spread</div>
+      </div>
+      <div class="sidebar-nav">
+        <a class="sidebar-flat-link" href="workspace-overview.html">Workspace overview</a>
+
+        <details class="sidebar-section" data-testid="sidebar-section-architecture" open>
+          <summary>01—Architecture</summary>
+          <ul class="sidebar-tree">
+            <li><a href="service.html">mcp-service <span class="sidebar-row-service">service</span></a></li>
+            <li><a href="vocabulary.html">Vocabulary</a></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-product" open>
+          <summary>02—Product</summary>
+          <ul class="sidebar-tree">
+            <li><a href="prd-overview.html">PRD overview</a></li>
+          </ul>
+          <details class="sidebar-epic" open>
+            <summary>Inventory Spread Epic</summary>
+            <ul class="sidebar-tree">
+              <li><a href="story-detail.html">60.1 — Summary Length Preference</a></li>
+              <li><a href="story-detail.html">60.2 — Summary For Shared Docs</a></li>
+              <li><a href="story-detail.html">60.3 — Summary Error Messages</a></li>
+            </ul>
+          </details>
+          <a class="sidebar-epic-open" href="epic.html">Open epic page</a>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-requirements" open>
+          <summary>03—Requirements / Scenarios</summary>
+          <div class="sidebar-tree sidebar-tree--flat">
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-601 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-602 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">E2E-603 <span class="sidebar-row-service">mcp-service</span></a>
+            <a data-testid="scenario-row" href="scenario-detail.html">INT-901 <span class="sidebar-row-service">mcp-service</span></a>
+          </div>
+        </details>
+
+        <details class="sidebar-section" data-testid="sidebar-section-runs" open>
+          <summary>04—Runs</summary>
+          <ul class="sidebar-tree">
+            <li><a href="runs.html">All runs</a></li>
+          </ul>
+        </details>
+      </div>
+      <a class="sidebar-flat-link sidebar-return" href="sessions.html">Return to sessions</a>
+    </nav>
+
+    <div class="app-main">
+    <nav class="mockup-breadcrumb" data-testid="mockup-breadcrumb" aria-label="Breadcrumb">
+      <a href="sessions.html">Sessions</a>
+      <span class="crumb-sep">/</span>
+      <a href="workspace-overview.html">Workspace overview</a>
+      <span class="crumb-sep">/</span>
+      <span aria-current="page">Runs</span>
+    </nav>
+
+      <main class="mockup-canvas canvas-max" data-testid="mockup-canvas">
+<div class="page-header">
+  <div>
+    <h1>Runs</h1>
+    <p class="page-header__meta">Run history for this session — every run stays session-scoped, newest first.</p>
+  </div>
+</div>
+<div class="row-list">
+  <div class="list-row" data-testid="run-row" data-session-id="sess-alpha-7f3">
+    <div class="list-row__primary">
+      <div class="list-row__title">build tests --fix</div>
+      <div class="list-row__meta">session sess-alpha-7f3 — terminal — 2026-08-01 20:41</div>
+    </div>
+    <div class="list-row__side">
+      <span class="status-pill">not_fixed</span>
+      <a class="btn" href="run-detail.html?session=sess-alpha-7f3">View run</a>
+    </div>
+  </div>
+  <div class="list-row" data-testid="run-row" data-session-id="sess-alpha-7f3">
+    <div class="list-row__primary">
+      <div class="list-row__title">us apply 60.2</div>
+      <div class="list-row__meta">session sess-alpha-7f3 — terminal — 2026-08-01 19:58</div>
+    </div>
+    <div class="list-row__side">
+      <span class="status-pill">converged</span>
+      <a class="btn" href="run-detail.html?session=sess-alpha-7f3">View run</a>
+    </div>
+  </div>
+  <div class="list-row" data-testid="run-row" data-session-id="sess-alpha-7f3">
+    <div class="list-row__primary">
+      <div class="list-row__title">version</div>
+      <div class="list-row__meta">session sess-alpha-7f3 — terminal — 2026-08-01 19:40</div>
+    </div>
+    <div class="list-row__side">
+      <span class="status-pill">ok</span>
+      <a class="btn" href="run-detail.html?session=sess-alpha-7f3">View run</a>
+    </div>
+  </div>
+</div>
+
+      </main>
+    </div>
+  </div>
+
+<script src="assets/mockups.js"></script>
+</body>
+</html>
