@@ -19,10 +19,24 @@
 
         <details class="sidebar-section" data-testid="sidebar-section-architecture" open>
           <summary>01—Architecture</summary>
-          <ul class="sidebar-tree">
-            <li><a href="service.html">mcp-service <span class="sidebar-row-service">service</span></a></li>
-            <li><a href="vocabulary.html">Vocabulary</a></li>
-          </ul>
+          <details class="sidebar-epic" open>
+            <summary><span class="tree-caret" aria-hidden="true"></span>Services:</summary>
+            <ul class="sidebar-tree">
+              <li><a href="service.html">mcp-service <span class="sidebar-row-service">service</span></a></li>
+            </ul>
+          </details>
+          <details class="sidebar-epic" open>
+            <summary><span class="tree-caret" aria-hidden="true"></span>Terms:</summary>
+            <ul class="sidebar-tree">
+              <li><a href="vocabulary.html">Vocabulary</a></li>
+            </ul>
+          </details>
+          <details class="sidebar-epic" open>
+            <summary><span class="tree-caret" aria-hidden="true"></span>Docker:</summary>
+            <ul class="sidebar-tree">
+              <li><a href="#">docker-compose.yml</a></li>
+            </ul>
+          </details>
         </details>
 
         <details class="sidebar-section" data-testid="sidebar-section-product" open>
@@ -31,14 +45,16 @@
             <li><a href="prd-overview.html">PRD overview</a></li>
           </ul>
           <details class="sidebar-epic" open>
-            <summary>Inventory Spread Epic</summary>
+            <summary>
+              <span class="tree-caret" aria-hidden="true"></span>
+              <a class="tree-name-link" href="epic.html" onclick="event.stopPropagation()">Inventory Spread Epic</a>
+            </summary>
             <ul class="sidebar-tree">
               <li><a href="story-detail.html">60.1 — Summary Length Preference</a></li>
               <li><a href="story-detail.html">60.2 — Summary For Shared Docs</a></li>
               <li><a href="story-detail.html">60.3 — Summary Error Messages</a></li>
             </ul>
           </details>
-          <a class="sidebar-epic-open" href="epic.html">Open epic page</a>
         </details>
 
         <details class="sidebar-section" data-testid="sidebar-section-requirements" open>

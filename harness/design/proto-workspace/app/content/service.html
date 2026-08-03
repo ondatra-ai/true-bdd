@@ -1,0 +1,37 @@
+<nav class="mockup-breadcrumb" data-testid="mockup-breadcrumb" aria-label="Breadcrumb">
+      <a href="/sessions">Sessions</a>
+      <span class="crumb-sep">/</span>
+      <a href="/workspace-overview">Workspace overview</a>
+      <span class="crumb-sep">/</span>
+      <span aria-current="page">mcp-service</span>
+    </nav>
+
+      <main class="mockup-canvas canvas-max" data-testid="mockup-canvas">
+<div class="page-header">
+  <div>
+    <span class="section-label">01—Architecture / Services</span>
+    <h1>mcp-service</h1>
+    <p class="page-header__meta">docs/architecture/architecture.yaml</p>
+  </div>
+</div>
+<dl class="run-meta-grid" style="grid-template-columns: repeat(2, minmax(0,1fr));">
+  <div><dt>Path</dt><dd>services/mcp</dd></div>
+  <div><dt>Language</dt><dd>Go</dd></div>
+  <div><dt>Frameworks</dt><dd>net/http</dd></div>
+  <div><dt>Dependencies</dt><dd>none</dd></div>
+</dl>
+
+<h2 class="subsection">Quality gate — integration tests</h2>
+<dl class="run-meta-grid" style="grid-template-columns: repeat(3, minmax(0,1fr));">
+  <div><dt>Path</dt><dd>tests/integration</dd></div>
+  <div><dt>Framework</dt><dd>Jest</dd></div>
+  <div><dt>Config</dt><dd>tests/jest.config.ts</dd></div>
+</dl>
+
+<h2 class="subsection">Helpers</h2>
+<div class="card">
+  <span class="section-label">McpClient</span>
+  <p style="font-size: 13px;">Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses.</p>
+</div>
+
+      </main>
