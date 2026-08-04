@@ -2,8 +2,9 @@
  * w9 — design LAYOUT conformance via the local codex vision judge (task
  * `design-conformance-tests`, R2).
  *
- * Screenshots the designed mockup (paths.yaml → design_system mockups,
- * `workspace-overview.html`) and the corresponding production workspace page at
+ * Screenshots the design baseline (paths.yaml → design_system: the runnable
+ * PROTOTYPE's `/workspace-overview` page, booted from the repo) and the
+ * corresponding production workspace page at
  * the SAME 1440x900 desktop reference viewport (design/SPEC.md §6), then submits
  * both to `codex exec` with a schema-forced JSON rubric of concrete named layout
  * checks derived from design/SPEC.md §1 (persistent sidebar/breadcrumb/canvas
@@ -25,15 +26,17 @@ import {
   REPO_ROOT,
   auditVerdict,
   codexOnPath,
-  mockupFileUrl,
   runDesignJudge,
 } from "./helpers/design-conformance";
+import { PROTO_BASELINE_ROUTES, bootPrototype, stopPrototype } from "./helpers/proto-baseline";
 import { WTID, fileView, gotoWorkspace, wsRoutes } from "./helpers/ui";
 import { WorkspaceEnv } from "./helpers/workspace-env";
 
-const MOCKUP_PAGE = "workspace-overview.html";
-
 let env: WorkspaceEnv | undefined;
+
+test.afterAll(async () => {
+  await stopPrototype();
+});
 
 test.afterEach(async () => {
   const info = test.info();
@@ -70,10 +73,11 @@ test("w9.1 the production workspace frame conforms to the design mockup (codex v
   });
   await page.screenshot({ path: prodPng });
 
-  // ── Designed mockup screenshot at the same viewport ──
+  // ── Design-baseline screenshot (the booted prototype) at the same viewport ──
+  const proto = await bootPrototype();
   const mock = await context.newPage();
   await mock.setViewportSize({ ...DESKTOP_VIEWPORT });
-  await mock.goto(mockupFileUrl(MOCKUP_PAGE), { waitUntil: "load" });
+  await mock.goto(`${proto.baseURL}${PROTO_BASELINE_ROUTES.workspaceOverview}`, { waitUntil: "load" });
   await expect(mock.getByTestId("mockup-breadcrumb")).toBeVisible();
   const mockupPng = testInfo.outputPath("mockup-workspace.png");
   await mock.evaluate(async () => {

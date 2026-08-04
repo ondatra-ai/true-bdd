@@ -333,7 +333,77 @@ export const WTID = {
   // Section landings.
   homeLanding: "home-landing",
   buildsLanding: "builds-landing",
+
+  // Workspace-overview canvas (Home landing design-parity surfaces — the `/home`
+  // canvas mirrors the prototype's /workspace-overview page; the icon rail +
+  // docked sidebar chrome is UNCHANGED). See README-testids → "Workspace overview".
+  overviewTitle: "overview-title", // h1 "Workspace overview"
+  overviewMeta: "overview-meta", // metadata line beneath the title: folder path + session id
+  overviewActions: "overview-actions", // the build-actions row wrapping the three buttons
+  overviewActionBuildTests: "overview-action-build-tests", // <button>; dispatches command "build-tests"
+  overviewActionBuildCode: "overview-action-build-code", // <button>; dispatches command "build-code"
+  overviewActionRefresh: "overview-action-refresh", // <button>; triggers an immediate session_detail READ
+  overviewInventory: "overview-inventory", // the inventory-health list container (from SessionDetail.inventory)
+  overviewInventoryRow: "overview-inventory-row", // one per inventory entry; + data-key; carries path + kind label + chip
+  overviewInventoryChip: "overview-inventory-chip", // status chip; + data-status ∈ INVENTORY_STATUSES
+  overviewBanner: "overview-banner", // bordered degraded-state banner; + data-kind ∈ OVERVIEW_BANNER_KINDS; absent states render nothing
+
+  // ── Product-section prototype-parity additions (w12–w15). Additive to the
+  // contract above; documented in README-testids.md → "Product prototype parity".
+  //
+  // Rail item anatomy (w12.2): each rail-item-<section> nests an icon glyph +
+  // a small-caps FULL-word label (icon above/before the label).
+  railItemIcon: "rail-item-icon", // non-empty glyph element inside a rail item
+  railItemLabel: "rail-item-label", // full-word label (Home/Architecture/Product/Builds); uppercase transform + --ls-label
+
+  // Branded sidebar (w12.1): brand header + workspace-context meta + an
+  // underlined per-section header.
+  sidebarBrand: "sidebar-brand", // brand header; text contains "TrueBDD"
+  sidebarBrandMeta: "sidebar-brand-meta", // distinct workspace-context meta line (non-empty)
+  sidebarSectionHeader: "sidebar-section-header", // underlined "02—PRODUCT" header inside the section
+
+  // GitHub-style file-view page header + card header bar (w13.1/w13.2/w13.3).
+  fileViewKicker: "file-view-kicker", // "02—PRODUCT[…]" kicker, structurally ABOVE the title
+  fileViewTitle: "file-view-title", // display title (e.g. "prd.yaml" / "<id> — <story title>")
+  fileViewMeta: "file-view-meta", // muted subtitle, BELOW the title; color = --text-muted
+  fileViewHeader: "file-view-header", // the card header bar; CONTAINS the path + line-count
+  fileViewLineCount: "file-view-line-count", // "N lines" counter; N == buffer.split("\n").length
+
+  // Story feature-pill anatomy (w13.2): the collapsed toggle nests three parts.
+  featurePillLabel: "feature-pill-label", // text "Feature:"
+  featurePillValue: "feature-pill-value", // current feature value (or "(none)")
+  featurePillChange: "feature-pill-change", // the CHANGE affordance; text matches /change/i
+
+  // Feature-detail page kicker (w14.1).
+  featurePageKicker: "feature-page-kicker", // "02—PRODUCT / FEATURES / <NAME>"
+
+  // Scenarios registry TABLE (w13.4 — orchestrator TABLE ruling, overrides the
+  // FileView reading). Columns SCENARIO(link)/DESCRIPTION/SERVICE/LINKED STORY(link),
+  // one row per docs/scenarios.yaml entry. NOTE: distinct from the sidebar's
+  // `scenario-row` so the two never collide on the scenarios page.
+  scenarioTable: "scenario-table", // the <table> element (thead has the 4 column headers)
+  scenarioTableRow: "scenario-table-row", // one per scenario; + data-scenario-id
+  scenarioIdLink: "scenario-id-link", // SCENARIO-column link; text = scenario id
+  scenarioDescriptionCell: "scenario-description-cell", // DESCRIPTION cell text
+  scenarioServiceCell: "scenario-service-cell", // SERVICE cell text
+  scenarioLinkedStoryLink: "scenario-linked-story-link", // LINKED STORY-column link; text = story id, href → story route
 } as const;
+
+/** The status vocabulary an inventory-health chip may carry (mockup + README). */
+export const INVENTORY_STATUSES = [
+  "present",
+  "present_empty",
+  "missing",
+  "not_a_dir",
+  "ambiguous",
+  "invalid",
+  "unknown",
+] as const;
+export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
+
+/** The degraded/flagged banner kinds the overview may surface (mockup §05). */
+export const OVERVIEW_BANNER_KINDS = ["inventory_truncated", "folder_conflict", "path_mismatch"] as const;
+export type OverviewBannerKind = (typeof OVERVIEW_BANNER_KINDS)[number];
 
 // ── Workspace dynamic testids ──
 export function railItemTestId(section: WorkspaceSection): string {
@@ -405,6 +475,25 @@ export function fileView(page: Page): Locator {
   return page.getByTestId(WTID.fileView);
 }
 
+// ── Workspace-overview locator helpers ──
+
+/** An inventory-health row on the overview, keyed by its inventory `data-key`. */
+export function overviewInventoryRow(scope: Page | Locator, key: string): Locator {
+  return scope.locator(`[data-testid="${WTID.overviewInventoryRow}"][data-key="${key}"]`);
+}
+
+/** The status chip inside an inventory-health row (or scoped to the list). */
+export function overviewInventoryChip(scope: Page | Locator): Locator {
+  return scope.getByTestId(WTID.overviewInventoryChip);
+}
+
+/** A degraded-state banner on the overview, optionally bound to a `data-kind`. */
+export function overviewBanner(page: Page, kind?: OverviewBannerKind): Locator {
+  const suffix = kind === undefined ? "" : `[data-kind="${kind}"]`;
+
+  return page.locator(`[data-testid="${WTID.overviewBanner}"]${suffix}`);
+}
+
 export function saveState(page: Page): Locator {
   return page.getByTestId(WTID.saveState);
 }
@@ -466,4 +555,37 @@ export function lineIndex(content: string, re: RegExp): number {
   }
 
   return index;
+}
+
+// ── Product-section prototype-parity locator helpers (w12–w15) ──
+
+/** The icon glyph element inside a rail item (w12.2). */
+export function railItemIcon(page: Page, section: WorkspaceSection): Locator {
+  return railItem(page, section).getByTestId(WTID.railItemIcon);
+}
+
+/** The full-word label element inside a rail item (w12.2). */
+export function railItemLabel(page: Page, section: WorkspaceSection): Locator {
+  return railItem(page, section).getByTestId(WTID.railItemLabel);
+}
+
+/** A scenarios-registry table row scoped to a container, keyed by `data-scenario-id` (w13.4). */
+export function scenarioTableRow(scope: Page | Locator, scenarioId: string): Locator {
+  return scope.locator(`[data-testid="${WTID.scenarioTableRow}"][data-scenario-id="${scenarioId}"]`);
+}
+
+/**
+ * Resolves a `:root` CSS custom property to its computed `rgb(...)` form, so a
+ * token-linked colour assertion (e.g. the active rail tile = `--surface-page`)
+ * reads the SAME resolved value the browser paints. Mirrors w7.1's discipline.
+ */
+export async function cssVarRgb(page: Page, varName: string): Promise<string> {
+  const raw = (
+    await page.evaluate((name) => getComputedStyle(document.documentElement).getPropertyValue(name), varName)
+  ).trim();
+  if (raw === "") {
+    throw new Error(`cssVarRgb: :root ${varName} is empty (token mirror not consumed)`);
+  }
+
+  return toRgb(page, raw);
 }

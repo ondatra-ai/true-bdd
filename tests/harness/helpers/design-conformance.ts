@@ -2,7 +2,8 @@
  * Design-conformance helpers for the workspace design gate (task
  * `design-conformance-tests`, R1 + R2). The design source of truth lives under
  * `harness/design/` (paths.yaml → design_system): `system/tokens.css` (the S&F
- * token palette) and `mockups/*.html` (the per-screen layout baseline). These
+ * token palette) and the runnable prototype (`proto-workspace`, the per-screen
+ * layout baseline — booted via helpers/proto-baseline.ts). These
  * helpers:
  *
  *   - parse the token palette (R1 deterministic checks) — the allowed colour and
@@ -30,15 +31,8 @@ import { findRepoRoot } from "./suite-root";
 export const REPO_ROOT = findRepoRoot();
 export const DESIGN_ROOT = path.join(REPO_ROOT, "harness", "design");
 export const TOKENS_CSS = path.join(DESIGN_ROOT, "system", "tokens.css");
-export const MOCKUPS_DIR = path.join(DESIGN_ROOT, "mockups");
-
-/** The mockups' pinned desktop reference viewport (design/SPEC.md §6). */
+/** The design baseline's pinned desktop reference viewport (design/SPEC.md §6). */
 export const DESKTOP_VIEWPORT = { width: 1440, height: 900 } as const;
-
-/** `file://` URL for a self-contained offline mockup page. */
-export function mockupFileUrl(name: string): string {
-  return `file://${path.join(MOCKUPS_DIR, name)}`;
-}
 
 // ── R1: token palette parsing ──
 
@@ -295,7 +289,7 @@ export interface JudgeVerdict {
   checks: JudgeCheck[];
 }
 
-/** The concrete named layout checks (design/SPEC.md §1) the judge must report. */
+/** The concrete named layout checks (design/SPEC.md §1) the FRAME judge reports. */
 export const JUDGE_CHECK_NAMES = [
   "persistent_frame",
   "sidebar_fixed_width",
@@ -303,30 +297,54 @@ export const JUDGE_CHECK_NAMES = [
   "canvas_padding",
 ] as const;
 
-/** Schema forcing codex's final message to a machine-readable verdict. */
-export const JUDGE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["verdict", "checks"],
-  properties: {
-    verdict: { type: "string", enum: ["pass", "fail"] },
-    checks: {
-      type: "array",
-      minItems: JUDGE_CHECK_NAMES.length,
-      maxItems: JUDGE_CHECK_NAMES.length,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["name", "status", "note"],
-        properties: {
-          name: { type: "string", enum: [...JUDGE_CHECK_NAMES] },
-          status: { type: "string", enum: ["pass", "fail"] },
-          note: { type: "string" },
+/**
+ * Builds a schema forcing codex's final message to a machine-readable verdict
+ * over EXACTLY the given named checks. Parameterised so a second design-judge
+ * pair (the workspace-overview canvas parity) reuses this helper with a
+ * DIFFERENT check set instead of forking a parallel judge.
+ */
+export function buildJudgeSchema(checkNames: readonly string[]) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["verdict", "checks"],
+    properties: {
+      verdict: { type: "string", enum: ["pass", "fail"] },
+      checks: {
+        type: "array",
+        minItems: checkNames.length,
+        maxItems: checkNames.length,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["name", "status", "note"],
+          properties: {
+            name: { type: "string", enum: [...checkNames] },
+            status: { type: "string", enum: ["pass", "fail"] },
+            note: { type: "string" },
+          },
         },
       },
     },
-  },
-} as const;
+  } as const;
+}
+
+/** Schema for the FRAME profile (design/SPEC.md §1); the default judge target. */
+export const JUDGE_SCHEMA = buildJudgeSchema(JUDGE_CHECK_NAMES);
+
+/** The named canvas-parity checks the workspace-overview judge pair reports. */
+export const CANVAS_PARITY_CHECK_NAMES = [
+  "title_metadata",
+  "actions_row",
+  "inventory_health",
+  "breadcrumb_trail",
+] as const;
+
+/** A judge configuration: the named checks + the rubric that scores them. */
+export interface JudgeProfile {
+  checkNames: readonly string[];
+  rubric: string;
+}
 
 /**
  * Runtime-validates a judge verdict beyond the type cast (Codex r1 #6/#7): a
@@ -335,7 +353,10 @@ export const JUDGE_SCHEMA = {
  * Returns the failed checks and any STRUCTURAL problems; a non-empty `problems`
  * list is itself an assertion failure in the spec.
  */
-export function auditVerdict(verdict: JudgeVerdict): { failedChecks: JudgeCheck[]; problems: string[] } {
+export function auditVerdict(
+  verdict: JudgeVerdict,
+  checkNames: readonly string[] = JUDGE_CHECK_NAMES,
+): { failedChecks: JudgeCheck[]; problems: string[] } {
   const problems: string[] = [];
   const checks = Array.isArray(verdict?.checks) ? verdict.checks : [];
   if (!Array.isArray(verdict?.checks)) {
@@ -349,7 +370,7 @@ export function auditVerdict(verdict: JudgeVerdict): { failedChecks: JudgeCheck[
   for (const check of checks) {
     seen.set(check.name, (seen.get(check.name) ?? 0) + 1);
   }
-  for (const name of JUDGE_CHECK_NAMES) {
+  for (const name of checkNames) {
     const count = seen.get(name) ?? 0;
     if (count === 0) {
       problems.push(`missing required check "${name}"`);
@@ -397,6 +418,145 @@ function judgeRubric(): string {
   ].join("\n");
 }
 
+/**
+ * The workspace-overview CANVAS-PARITY rubric (task R6). Judges the main content
+ * canvas + breadcrumb of the production `/home` page against the mockup, while
+ * TOLERATING the icon rail + docked sidebar navigation chrome (production uses a
+ * narrow icon rail + secondary sidebar where the mockup uses one labelled
+ * sidebar — that column difference must NEVER fail a check, exactly as the w9
+ * frame judge tolerates the rail). All content/data VALUES are ignored.
+ */
+function canvasParityRubric(): string {
+  return [
+    "You are a strict design-conformance judge for a web UI.",
+    "",
+    "IMAGE 1 is the DESIGN MOCKUP (the source of truth for the CONTENT CANVAS layout).",
+    "IMAGE 2 is the PRODUCTION application screenshot, taken at the same 1440x900 desktop viewport.",
+    "",
+    "Judge ONLY the MAIN CONTENT CANVAS (the large region right of the navigation)",
+    "and the breadcrumb bar above it. Both images show a narrow icon rail plus a",
+    "docked sidebar on the left — IGNORE the left-navigation chrome entirely; any",
+    "difference there must NOT fail any check.",
+    "IGNORE all content/data differences too (folder path text,",
+    "session id, inventory row names/paths, chip status values and counts, button",
+    "wording) — judge STRUCTURE and LAYOUT INTENT only.",
+    "",
+    "Evaluate exactly these named checks and return the schema-forced JSON verdict:",
+    "- title_metadata: the canvas LEADS with a page-title heading and, directly",
+    "  beneath it, a secondary metadata line (a folder path + session id), like the",
+    "  mockup's header block. FAIL if the canvas has no title-with-metadata header.",
+    "- actions_row: a horizontal ROW of build-action buttons (three: build tests,",
+    "  build code, refresh) sits in the canvas header area, like the mockup's button",
+    "  row. FAIL if there is no such row of action buttons in the canvas.",
+    "- inventory_health: the canvas shows an INVENTORY-HEALTH LIST — stacked rows,",
+    "  each with a label on the left and a right-aligned status CHIP/PILL — like the",
+    "  mockup's inventory list. FAIL if there is no such list of rows with status chips.",
+    "- breadcrumb_trail: a MULTI-LEVEL breadcrumb trail (a parent 'Sessions' link,",
+    "  a separator, then the current page crumb) sits above the canvas, like the",
+    "  mockup's 'Sessions / Workspace overview'. Tolerate the exact labels; FAIL only",
+    "  if the breadcrumb is single-level or absent.",
+    "",
+    "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
+    "verdict is 'pass' ONLY if every check is 'pass', otherwise 'fail'.",
+  ].join("\n");
+}
+
+/** The default (frame) judge profile — design/SPEC.md §1 three-region frame. */
+export const FRAME_JUDGE_PROFILE: JudgeProfile = {
+  checkNames: JUDGE_CHECK_NAMES,
+  rubric: judgeRubric(),
+};
+
+/** The workspace-overview canvas-parity judge profile (task R6). */
+export const CANVAS_PARITY_PROFILE: JudgeProfile = {
+  checkNames: CANVAS_PARITY_CHECK_NAMES,
+  rubric: canvasParityRubric(),
+};
+
+// ── Product-section prototype-parity judge profiles (task
+// `product-section-prototype-parity`, R8). Unlike the frame/canvas judges, the
+// BASELINE image is the runnable PROTOTYPE app (booted live from the repo, see
+// helpers/proto-baseline.ts) — NOT a static mockup — and BOTH images use the
+// rail + docked sidebar, so the rail/sidebar chrome is compared DIRECTLY (the
+// w9/w11 "tolerate the left-nav difference" clause is deliberately DROPPED).
+
+/** Named checks shared by every product-parity page (shell chrome). */
+const PRODUCT_SHELL_CHECKS = ["sidebar_structure", "rail_labels", "kicker_title_block"] as const;
+
+export const PRODUCT_LANDING_CHECK_NAMES = [...PRODUCT_SHELL_CHECKS, "file_card"] as const;
+export const STORY_PAGE_CHECK_NAMES = [...PRODUCT_SHELL_CHECKS, "file_card", "feature_pill"] as const;
+export const FEATURE_DETAIL_CHECK_NAMES = [...PRODUCT_SHELL_CHECKS, "section_lists"] as const;
+
+/** The check-name → rubric-clause text every product-parity rubric can draw from. */
+const PRODUCT_CHECK_CLAUSES: Record<string, string> = {
+  sidebar_structure:
+    "- sidebar_structure: the docked left sidebar has the SAME structure as the baseline — a brand header " +
+    "(a product/app name over a smaller muted context line) at the top, then an UNDERLINED section header, " +
+    "a highlighted file row, and labelled subsection GROUPS (features / stories / scenarios) listing rows " +
+    "with a vertical guide line. FAIL if the sidebar lacks the brand header OR the underlined section header " +
+    "OR the labelled groups.",
+  rail_labels:
+    "- rail_labels: the narrow dark far-left rail shows, per entry, an ICON glyph ABOVE/BEFORE a small-caps " +
+    "text label (the full section words), and the ACTIVE entry is an INVERTED (light-on-dark → dark-on-light) " +
+    "tile; a session/utility entry sits pinned at the BOTTOM. FAIL if the rail entries are icon-only, or have " +
+    "no text labels, or the active entry is not an inverted tile.",
+  kicker_title_block:
+    "- kicker_title_block: the content canvas LEADS with a small uppercase kicker line, then a large display " +
+    "title beneath it, then a muted subtitle line beneath that (three stacked, decreasing-emphasis lines). " +
+    "FAIL if the canvas has no kicker-over-title-over-subtitle header block.",
+  file_card:
+    "- file_card: the file is shown as a GitHub-style CARD — a header BAR with the document path on the left " +
+    "and an 'N lines' counter on the right, then a line-number gutter beside a monospace file body. FAIL if " +
+    "there is no header bar with a path + line-count, or no gutter beside the body.",
+  feature_pill:
+    "- feature_pill: ABOVE the file card sits a 'Feature: <name>' PILL control bearing a change affordance " +
+    "(a label + a value + a change control in one pill). FAIL if there is no such feature pill above the card.",
+  section_lists:
+    "- section_lists: the canvas shows THREE named sections (user stories / requirements / unaligned " +
+    "requirements), each a stacked list of card ROWS where every row has a LINKED title on the LEFT and a " +
+    "'Feature:' pill control on the RIGHT. FAIL if the three sections or the left-title/right-pill row anatomy " +
+    "are absent.",
+};
+
+function productParityRubric(checkNames: readonly string[]): string {
+  return [
+    "You are a strict design-conformance judge for a web UI.",
+    "",
+    "IMAGE 1 is the BASELINE — a runnable design-truth PROTOTYPE of this exact page.",
+    "IMAGE 2 is the PRODUCTION application screenshot, taken at the same 1440x900 desktop viewport.",
+    "",
+    "Judge ONLY structure, layout, spacing and typography INTENT of the production",
+    "screenshot against the baseline. BOTH images use the SAME navigation chrome (a narrow",
+    "icon rail PLUS a docked sidebar), so compare that chrome DIRECTLY — it is NOT exempt.",
+    "IGNORE all content/data differences (different file names, list rows, ids, labels,",
+    "descriptions, counts, placeholder vs fixture text) — those must NOT fail any check.",
+    "",
+    "Evaluate exactly these named checks and return the schema-forced JSON verdict:",
+    ...checkNames.map((name) => PRODUCT_CHECK_CLAUSES[name]),
+    "",
+    "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
+    "verdict is 'pass' ONLY if every check is 'pass', otherwise 'fail'.",
+  ].join("\n");
+}
+
+/** w15.1 — product landing (`/product`) prototype-parity judge profile. */
+export const PRODUCT_LANDING_PROFILE: JudgeProfile = {
+  checkNames: PRODUCT_LANDING_CHECK_NAMES,
+  rubric: productParityRubric(PRODUCT_LANDING_CHECK_NAMES),
+};
+
+/** w15.2 — story page prototype-parity judge profile. */
+export const STORY_PAGE_PROFILE: JudgeProfile = {
+  checkNames: STORY_PAGE_CHECK_NAMES,
+  rubric: productParityRubric(STORY_PAGE_CHECK_NAMES),
+};
+
+/** w15.3 — feature-detail prototype-parity judge profile. */
+export const FEATURE_DETAIL_PROFILE: JudgeProfile = {
+  checkNames: FEATURE_DETAIL_CHECK_NAMES,
+  rubric: productParityRubric(FEATURE_DETAIL_CHECK_NAMES),
+};
+
 export interface JudgeRun {
   verdict: JudgeVerdict;
   verdictPath: string;
@@ -418,16 +578,20 @@ export async function runDesignJudge(opts: {
   prodPng: string;
   artifactDir: string;
   label: string;
+  /** The judge configuration (named checks + rubric). Defaults to the FRAME
+   * profile so existing callers (w9) are unchanged. */
+  profile?: JudgeProfile;
   timeoutMs?: number;
 }): Promise<JudgeRun> {
+  const profile = opts.profile ?? FRAME_JUDGE_PROFILE;
   fs.mkdirSync(opts.artifactDir, { recursive: true });
   const schemaPath = path.join(opts.artifactDir, `${opts.label}.schema.json`);
   const promptPath = path.join(opts.artifactDir, `${opts.label}.prompt.txt`);
   const verdictPath = path.join(opts.artifactDir, `${opts.label}.verdict.json`);
   const tracePath = path.join(opts.artifactDir, `${opts.label}.trace.log`);
 
-  fs.writeFileSync(schemaPath, JSON.stringify(JUDGE_SCHEMA, null, 2));
-  fs.writeFileSync(promptPath, judgeRubric());
+  fs.writeFileSync(schemaPath, JSON.stringify(buildJudgeSchema(profile.checkNames), null, 2));
+  fs.writeFileSync(promptPath, profile.rubric);
   if (fs.existsSync(verdictPath)) {
     fs.rmSync(verdictPath);
   }
@@ -467,7 +631,7 @@ export async function runDesignJudge(opts: {
       clearTimeout(timer);
       resolve(code ?? 1);
     });
-    child.stdin.write(judgeRubric());
+    child.stdin.write(profile.rubric);
     child.stdin.end();
   });
   fs.closeSync(traceFd);

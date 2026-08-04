@@ -41,12 +41,21 @@ project guidance listed in paths.yaml.
    full task, plan, and all prior findings each round. Include questions about
    Playwright coverage, assertion strength, flakiness, and whether tests fail when
    behavior is broken. Codex is read-only and never edits. You score every finding;
-   keep only composite ≥7 with all four gates satisfied.
+   keep only composite ≥7 with all four gates satisfied. **Apply each kept finding
+   COMPLETELY in the round you accept it: after the primary edit, sweep the WHOLE plan
+   (Current/Target state, Challenges, Startup, End-to-end cases) and purge every
+   contradicting clause — a stale clause left elsewhere makes the next round's "verify
+   applied" pass re-flag the same fix (the product-parity run spent ~5 keeps across
+   rounds 2–3 that way; one finding took three rounds to fully land).**
 
 ## Status
 
-Print start, each round N/3 with kept/skipped counts, and plan written. Monitor each
-Codex round with bounded `Monitor` until it exits; do not end the turn while it runs.
+Print start, each round N/3 with kept/skipped counts, and plan written. Run every Codex
+round as a single **foreground/blocking** Bash invocation (no `run_in_background` + a
+future-turn `Monitor`, a generous `timeout`) — a blocking call cannot return until Codex
+exits, so the turn physically cannot end mid-round. **Never end your turn with a Codex
+round still in flight** — if one is running you are not done; there is no valid reason to
+yield mid-round.
 
 ## Output
 

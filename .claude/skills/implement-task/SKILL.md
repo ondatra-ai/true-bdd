@@ -133,6 +133,10 @@ Read-then-Write. This applies to you and to every agent.
      test, so a co-running load starves it and produces resource-contamination flakes
      that masquerade as real failures; re-run any failure isolated before treating it
      as genuine.
+     The suite's global-teardown `docker compose down`s the **repo-root** compose stack
+     on every exit — which tears down a developer's shared dev stack running from the
+     same file. Export `TRUE_BDD_E2E_KEEP_STACK=1` for your own suite runs (and tell the
+     reviewer to) so the teardown leaves the stack up; otherwise restore it afterward.
 6. **If the test-fixer stops with a blocker:** research deep (architecture, solution
    design, context7, web) for a code-only fix.
    - **Code-only fix found:** re-run the test-fixer with that guidance (the guidance

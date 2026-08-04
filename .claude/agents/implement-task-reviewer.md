@@ -52,9 +52,10 @@ kept findings, notify the orchestrator; this triggers escalation to the full cap
 ## Status
 
 Print start, each round N/cap with kept/skipped counts, CLI and browser smoke
-pass/fail, and final pass/fail. Monitor each Codex round with bounded `Monitor` until
-it exits; do not end the turn while it runs. Inspect images only when required for
-a decision, preferring one composite check.
+pass/fail, and final pass/fail. Run every Codex round as a single **foreground/blocking**
+Bash invocation (no backgrounding), and wait out every background run, before you
+continue. **Never end your turn with a Codex round still in flight.** Inspect images only
+when required for a decision, preferring one composite check.
 
 ## Output
 

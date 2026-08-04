@@ -130,14 +130,16 @@ design_system:
   paths:
     - harness/design/system/
     - harness/design/SPEC.md
-    - harness/design/mockups/
+    - harness/design/proto-workspace/
   description: >-
     The visual source of truth for all harness UI. Agents that write harness UI
     style it from these deliverables — tokens and components, never ad-hoc
     colors/spacing/typography. Token values: harness/design/system/tokens.css.
-    Mockups are the per-screen design baseline (static HTML) that
-    design-conformance tests judge production screens against; design changes
-    land in the mockup first — the mockup is the spec artifact.
+    The runnable PROTOTYPE (harness/design/proto-workspace/app — bootable via
+    tests/harness/helpers/proto-baseline.ts) is the per-screen design baseline
+    that design-conformance judges screenshot production against (the static
+    mockups it superseded were deleted 2026-08-04); design changes land in the
+    prototype first — the prototype is the spec artifact.
 
 change_surface_exclusions:
   paths:

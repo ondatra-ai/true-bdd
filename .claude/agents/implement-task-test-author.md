@@ -54,8 +54,9 @@ test-fixer. If booting needs a stub, create it as a new empty scaffolding file.
 ## Status
 
 Print start, each Codex round N/cap, and the run result with readiness and
-passed/failed counts. Monitor each Codex round with bounded `Monitor` until it exits;
-do not end the turn while it runs.
+passed/failed counts. Run every Codex round as a single **foreground/blocking** Bash
+invocation (no backgrounding), and wait out every background test run, before you
+continue. **Never end your turn with a Codex round or a test run still in flight.**
 
 ## Output
 

@@ -69,20 +69,32 @@ func yamlDoc(path string) docResult {
 }
 
 // rawArchitectureShape mirrors architecture.Loader's decode shape: the
-// `architecture.services:` list build code walks. Only presence of the
-// list matters for the chip.
+// legacy `architecture.services:` list build code walks. Only presence of
+// the list matters for the chip.
 type rawArchitectureShape struct {
 	Architecture struct {
 		Services []yaml.Node `yaml:"services"`
 	} `yaml:"architecture"`
 }
 
-// architectureDoc classifies docs/architecture/architecture.yaml the way
-// the build-code loader validates it (architecture.Loader.Load): missing
+// rawWorkspaceArchitectureShape mirrors the workspace file-as-source schema
+// (harness/src/app/lib/workspace/derive.ts's deriveArchitecture): a
+// top-level `services:` MAP (no `architecture:` wrapper, no list) — the
+// schema the workspace UI's architecture.yaml pages/editor speak. Only
+// presence of at least one service matters for the chip.
+type rawWorkspaceArchitectureShape struct {
+	Services map[string]yaml.Node `yaml:"services"`
+}
+
+// architectureDoc classifies docs/architecture/architecture.yaml: missing
 // when absent, invalid on a parse error, and — mirroring ErrNoServices —
-// invalid when the file parses but declares no `architecture.services:`.
-// A generic yamlDoc would mark any syntactically valid YAML `present`,
-// advertising an architecture the real command cannot walk.
+// invalid when the file parses but declares no services under EITHER
+// supported schema. Two schemas coexist in this codebase: the legacy engine
+// shape the build-code loader walks (`architecture.services:` list,
+// architecture.Loader.Load) and the newer workspace file-as-source shape
+// (top-level `services:` map). A generic yamlDoc would mark any
+// syntactically valid YAML `present`, advertising an architecture no reader
+// can actually walk.
 func architectureDoc(path string) docResult {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -96,11 +108,18 @@ func architectureDoc(path string) docResult {
 		return docResult{status: StatusInvalid, err: err.Error()}
 	}
 
-	if len(raw.Architecture.Services) == 0 {
-		return docResult{status: StatusInvalid, err: architecture.ErrNoServices.Error()}
+	if len(raw.Architecture.Services) > 0 {
+		return docResult{status: StatusPresent}
 	}
 
-	return docResult{status: StatusPresent}
+	var flat rawWorkspaceArchitectureShape
+
+	err = yaml.Unmarshal(data, &flat)
+	if err == nil && len(flat.Services) > 0 {
+		return docResult{status: StatusPresent}
+	}
+
+	return docResult{status: StatusInvalid, err: architecture.ErrNoServices.Error()}
 }
 
 // dirDoc classifies a path expected to be a directory: missing when

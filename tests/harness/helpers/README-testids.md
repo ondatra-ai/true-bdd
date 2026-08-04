@@ -323,6 +323,103 @@ Default width is wide (~40% at 1920). ONE conversation follows navigation.
 ### Section landings
 `home-landing` · `builds-landing` (navigation-only: no `file-view`, no chat edit target).
 
+### Workspace overview (`/sessions/:sid/home` canvas — design-parity with `design/mockups/workspace-overview.html`)
+
+The Home landing canvas mirrors the mockup's content surfaces; the icon rail +
+docked sidebar chrome is UNCHANGED (w1–w7 binding). All data comes from the
+existing browser API surface — `SessionDetail` (status + inventory), the folder
+from `GET /api/sessions`, and the run-dispatch routes — no new engine endpoints.
+
+| testid | Notes |
+|---|---|
+| `overview-title` | The canvas title heading ("Workspace overview"). |
+| `overview-meta` | Metadata line beneath the title: the session's folder path (realpath, from `GET /api/sessions`) AND the session id. |
+| `overview-actions` | The build-actions row wrapping the three buttons. |
+| `overview-action-build-tests` / `-build-code` | `<button>`s wired to `POST …/runs` with `command` `build-tests` / `build-code`; disabled per the OWN-active-run rule (same as `action-build-*` on the protocol detail page). |
+| `overview-action-refresh` | `<button>` that triggers an immediate live `session_detail` READ (a fresh scan — not a mutation), like the detail page's `refresh`. |
+| `overview-inventory` | The inventory-health list container, derived from `SessionDetail.inventory`. |
+| `overview-inventory-row` | One row per inventory entry; `+ data-key` (`config`/`prd`/`architecture`/`registry`/`stories-dir`/`epics-dir`/`checklist-<stem>`); renders the entry's path + kind label + status chip. |
+| `overview-inventory-chip` | The row's status chip; `+ data-status` ∈ `present`, `present_empty`, `missing`, `not_a_dir`, `ambiguous`, `invalid`, `unknown` (the mockup's chip vocabulary). |
+| `overview-banner` | A bordered degraded/flagged-state banner; `+ data-kind` ∈ `inventory_truncated`, `folder_conflict`, `path_mismatch`. Rendered ONLY when `SessionDetail` reports the state; **absent states render nothing** (zero banners on a clean read). |
+
+The persistent breadcrumb (`content-breadcrumb`) on `/home` is a **two-level
+trail**: a `Sessions` link to `/` followed by the current `Workspace overview`
+crumb (`aria-current="page"`), matching the mockup's `Sessions / Workspace
+overview`.
+
+The **design-judge suite** gains a workspace-overview pair (mockup vs prod
+`/home`, `helpers/design-conformance.ts` → `CANVAS_PARITY_PROFILE`): named checks
+`title_metadata`, `actions_row`, `inventory_health`, `breadcrumb_trail` — the
+icon rail is tolerated and all content/data values are ignored.
+
+## Product prototype parity (`w12`–`w15` — additive)
+
+Additive contract pinning the Product section + its shell to the runnable
+prototype `harness/design/proto-workspace/app` (the design-truth baseline). Every
+entry below is NEW; the existing workspace contract above is unchanged.
+
+### Rail item anatomy (`w12.2`)
+| testid | Notes |
+|---|---|
+| `rail-item-icon` | Non-empty icon glyph inside a `rail-item-<section>`. |
+| `rail-item-label` | The FULL section word (`Home`/`Architecture`/`Product`/`Builds`); small-caps via CSS (`text-transform:uppercase` + `letter-spacing:--ls-label`), NOT DOM caps and NOT the truncated `Arch`/`Prod`/`Bld`. Icon sits above/before the label. The ACTIVE `rail-item` is an INVERTED tile: computed `background` resolves from `--surface-page`, `color` from `--text-primary` (the inverse of the `--surface-inverse` rail). |
+
+The bottom `rail-utilities` holds a **Sessions** entry: a `<a>` (accessible name `/sessions/i`) to the sessions route (`/`), pinned in the lower rail region.
+
+### Branded sidebar (`w12.1`)
+| testid | Notes |
+|---|---|
+| `sidebar-brand` | Brand header inside the `sidebar`; text contains `TrueBDD`. |
+| `sidebar-brand-meta` | A DISTINCT workspace-context meta line (non-empty), beneath the brand name. |
+| `sidebar-section-header` | The per-section header inside `sidebar-section-<section>`; Product text matches `/02\s*[—-]\s*PRODUCT/i`; UNDERLINED (a non-`none` `border-bottom` OR a `text-decoration` underline). |
+
+`+ New story` (`new-story-open`) moves INTO the sidebar Stories group; it stays reachable page-wide via `page.getByTestId` (keeps `w5` green) and still opens `new-story-form`.
+
+### File-view page header + card bar (`w13.1`/`w13.2`/`w13.3`)
+| testid | Notes |
+|---|---|
+| `file-view-kicker` | Uppercase kicker (`02—PRODUCT[…]`), structurally ABOVE the title. |
+| `file-view-title` | Display title: `prd.yaml` / `features.yaml` / `<id> — <story title>` (story title read from the served buffer). |
+| `file-view-meta` | Muted subtitle: computed `color` == `--text-muted`, positioned BELOW the title. |
+| `file-view-header` | The card header BAR; CONTAINS `file-view-path` (the doc path) + `file-view-line-count`. |
+| `file-view-line-count` | `N lines` counter; N == `editorBuffer.split("\n").length` (the prototype formula — counts the trailing empty segment; NOT a newline count). |
+
+The product page-header (`file-view-kicker`/`file-view-title`) is product-SCOPED: it must have count 0 on the Architecture route (shared-FileView leak guard, `w13.1`).
+
+### Story feature pill (`w13.2`)
+| testid | Notes |
+|---|---|
+| `feature-pill-label` | Text `Feature:` — a child of the collapsed `feature-picker-toggle`. |
+| `feature-pill-value` | The current feature value (or `(none)`). |
+| `feature-pill-change` | The CHANGE affordance; text matches `/change/i`. |
+
+Only ACTIVATING the toggle reveals the searchable `feature-picker-input` (hidden before the click). The story-page breadcrumb (`content-breadcrumb`) is the DEEP trail `Sessions / Workspace overview / Product / <file>.yaml` (last crumb = the story FILE name, `aria-current="page"`).
+
+### Feature detail (`w14.1`)
+| testid | Notes |
+|---|---|
+| `feature-page-kicker` | `02—PRODUCT / FEATURES / <NAME>`. |
+
+Sections rename to EXACT `User stories` / `Requirements` / `Unaligned requirements`. `feature-description` EQUALS the served `features.yaml` record (muted, below the title). Each `feature-story-row` / `feature-scenario-row` / `unaligned-scenario-row` has a LINKED title on the LEFT (id + title/description, href → the item's page) and a row-scoped `feature-picker` on the RIGHT; unaligned rows show a `feature-pill-value` of `(none)`.
+
+### Scenarios registry TABLE (`w13.4` — orchestrator R7 ruling)
+The scenarios page is the TABLE anatomy (NOT a FileView): heading `Requirements / Scenarios`, a flat-registry subtitle, columns `SCENARIO`/`DESCRIPTION`/`SERVICE`/`LINKED STORY`, one row per `docs/scenarios.yaml` entry.
+| testid | Notes |
+|---|---|
+| `scenario-table` | The `<table>`; `thead` carries the four `columnheader`s in order. |
+| `scenario-table-row` | One per registry scenario; `+ data-scenario-id`. DISTINCT from the sidebar's `scenario-row` (which coexists on the page). |
+| `scenario-id-link` | SCENARIO-column link; text = scenario id. |
+| `scenario-description-cell` / `scenario-service-cell` | The DESCRIPTION / SERVICE cell text. |
+| `scenario-linked-story-link` | LINKED STORY-column link; text = the linked story id, href → that story's page (derived from the scenario's `user_stories`). |
+
+### Design-judge pairs (`w15`, `helpers/design-conformance.ts` + `helpers/proto-baseline.ts`)
+`PRODUCT_LANDING_PROFILE` / `STORY_PAGE_PROFILE` / `FEATURE_DETAIL_PROFILE` — named
+checks `sidebar_structure`, `rail_labels`, `kicker_title_block`, and per page
+`file_card` / `feature_pill` / `section_lists`. The BASELINE is the prototype
+booted live (`bootPrototype()`), never a committed PNG; UNLIKE `w9`/`w11` the
+rubric compares the rail+sidebar chrome DIRECTLY (both sides use it). Skips ONLY
+when `codex` is absent; every boot/readiness/judge failure is a TEST FAILURE.
+
 ## Deterministic chat driver (protocol `w6` — no model call)
 
 Enabled by the CLI remote env `TRUE_BDD_CHAT_DRIVER=deterministic` (set by

@@ -114,7 +114,14 @@ than a hardcoded literal.
 
 ## 4. Page inventory (17 pages)
 
-All under `harness/design/mockups/`:
+> **Baseline moved (2026-08-04):** the static mockup set this section describes
+> was retired and deleted; the runnable prototype
+> (`harness/design/proto-workspace/`) superseded it as the per-screen design
+> baseline (paths.yaml → design_system). The inventory below is retained as the
+> historical catalog of screens and their intent; the prototype's routes are the
+> living equivalents.
+
+Historically under `harness/design/mockups/`:
 
 | Filename | Purpose |
 |---|---|
