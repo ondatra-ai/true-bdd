@@ -19,6 +19,15 @@ import { ensureRedisUp } from "./helpers/redis";
 import { createSuiteContext, type SuiteContext } from "./helpers/suite-root";
 
 export default async function globalSetup(): Promise<void> {
+  // Goldens capture (`npm run goldens:update` → --project=goldens) only boots
+  // the design prototype — no harness image, Go binaries, or Redis. The env
+  // var is set exclusively by that npm script, scoped to the goldens project.
+  if (process.env.UPDATE_GOLDENS === "1") {
+    console.log("[harness-e2e] UPDATE_GOLDENS=1 — goldens capture run; skipping suite build + Redis setup");
+
+    return;
+  }
+
   const ctx = await createSuiteContext();
 
   console.log(`[harness-e2e] suite root: ${ctx.suiteRoot}`);

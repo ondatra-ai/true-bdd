@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-08-04T19:06:32.653Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "source": "harness/design/proto-workspace/app (booted via `next dev` by helpers/proto-baseline.ts)",
+  "routes": {
+    "workspace-overview": "/workspace-overview",
+    "product-landing": "/product",
+    "story-page": "/story/60-1",
+    "feature-detail": "/feature/summaries"
+  }
+}

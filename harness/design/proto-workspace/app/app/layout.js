@@ -7,6 +7,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="stylesheet" href="/vendor/tokens.css" />
+        <link rel="stylesheet" href="/vendor/workspace.css" />
         <link rel="stylesheet" href="/vendor/mockups.css" />
         <link rel="stylesheet" href="/proto-extra.css" />
       </head>

@@ -31,8 +31,66 @@ import { findRepoRoot } from "./suite-root";
 export const REPO_ROOT = findRepoRoot();
 export const DESIGN_ROOT = path.join(REPO_ROOT, "harness", "design");
 export const TOKENS_CSS = path.join(DESIGN_ROOT, "system", "tokens.css");
+/** The repo-owned workspace density layer (`--wk-*` scale) promoted from the
+ * prototype skin — the design truth for workspace CHROME sizing (w16). */
+export const WORKSPACE_CSS = path.join(DESIGN_ROOT, "system", "workspace.css");
 /** The design baseline's pinned desktop reference viewport (design/SPEC.md §6). */
 export const DESKTOP_VIEWPORT = { width: 1440, height: 900 } as const;
+
+// ── Design gold standards ──
+//
+// The judge's baseline images are COMMITTED gold-standard screenshots under
+// tests/harness/goldens/, captured from the booted prototype at test-AUTHORING
+// time via `npm run goldens:update` (goldens.update.spec.ts). Judge specs
+// compare golden vs the live production render — they never boot the
+// prototype themselves, so a run compares against exactly what the test
+// author signed off, not whatever the prototype happens to render today.
+export const GOLDENS_DIR = path.join(REPO_ROOT, "tests", "harness", "goldens");
+
+/** The stable golden names (file: `<name>.png`) the judge specs consume. */
+export const GOLDEN_NAMES = {
+  workspaceOverview: "workspace-overview",
+  productLanding: "product-landing",
+  storyPage: "story-page",
+  featureDetail: "feature-detail",
+} as const;
+
+/**
+ * Resolves a committed golden's path, failing LOUDLY when it is absent — a
+ * missing golden is an authoring defect (the test changed without recapturing
+ * its gold standard), never a skip.
+ */
+export function requireGolden(name: string): string {
+  const golden = path.join(GOLDENS_DIR, `${name}.png`);
+  if (!fs.existsSync(golden)) {
+    throw new Error(
+      `design golden missing: ${golden}\n` +
+        "Gold standards are captured from the design prototype at test-authoring time — " +
+        "run `npm run goldens:update` in tests/harness after writing or changing a visual spec.",
+    );
+  }
+
+  return golden;
+}
+
+/**
+ * Parses the workspace density layer into a `--wk-*` → px map. Reading the
+ * DESIGN FILE (not the live page) keeps the expectation anchored to design
+ * truth even when the production app fails to consume the layer at all —
+ * the spec then reports "renders 20px, design says 13px" instead of
+ * comparing two empty strings.
+ */
+export function readWorkspaceScale(): Record<string, number> {
+  const css = fs.readFileSync(WORKSPACE_CSS, "utf8");
+  const out: Record<string, number> = {};
+  const re = /(--wk-[a-z-]+)\s*:\s*(\d+(?:\.\d+)?)px/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(css)) !== null) {
+    out[match[1]] = Number.parseFloat(match[2]);
+  }
+
+  return out;
+}
 
 // ── R1: token palette parsing ──
 
@@ -480,8 +538,19 @@ export const CANVAS_PARITY_PROFILE: JudgeProfile = {
 // rail + docked sidebar, so the rail/sidebar chrome is compared DIRECTLY (the
 // w9/w11 "tolerate the left-nav difference" clause is deliberately DROPPED).
 
-/** Named checks shared by every product-parity page (shell chrome). */
-const PRODUCT_SHELL_CHECKS = ["sidebar_structure", "rail_labels", "kicker_title_block"] as const;
+/** Named checks shared by every product-parity page (shell chrome).
+ * `type_scale`, `chat_toggle`, and `breadcrumb_trail` were added 2026-08-04
+ * after a passed-green-but-visibly-wrong episode: the original presence-only
+ * check set could not fail an oversized type scale, a restyled chat
+ * affordance, or a flattened breadcrumb (tmp/design-compare/why-tests-passed.md). */
+const PRODUCT_SHELL_CHECKS = [
+  "sidebar_structure",
+  "rail_labels",
+  "kicker_title_block",
+  "type_scale",
+  "chat_toggle",
+  "breadcrumb_trail",
+] as const;
 
 export const PRODUCT_LANDING_CHECK_NAMES = [...PRODUCT_SHELL_CHECKS, "file_card"] as const;
 export const STORY_PAGE_CHECK_NAMES = [...PRODUCT_SHELL_CHECKS, "file_card", "feature_pill"] as const;
@@ -493,8 +562,11 @@ const PRODUCT_CHECK_CLAUSES: Record<string, string> = {
     "- sidebar_structure: the docked left sidebar has the SAME structure as the baseline — a brand header " +
     "(a product/app name over a smaller muted context line) at the top, then an UNDERLINED section header, " +
     "a highlighted file row, and labelled subsection GROUPS (features / stories / scenarios) listing rows " +
-    "with a vertical guide line. FAIL if the sidebar lacks the brand header OR the underlined section header " +
-    "OR the labelled groups.",
+    "with a vertical guide line. FAIL if the sidebar lacks the brand header, the underlined section header, " +
+    "the labelled groups, OR the vertical guide line on nested rows; ALSO FAIL if list rows are individually " +
+    "ruled with underlines/borders (the baseline rules only section headers, its rows are plain), or if any " +
+    "sidebar entry is DUPLICATED (the same row/label rendered twice, e.g. the file row appearing as both a " +
+    "chip and a row).",
   rail_labels:
     "- rail_labels: the narrow dark far-left rail shows, per entry, an ICON glyph ABOVE/BEFORE a small-caps " +
     "text label (the full section words), and the ACTIVE entry is an INVERTED (light-on-dark → dark-on-light) " +
@@ -506,8 +578,24 @@ const PRODUCT_CHECK_CLAUSES: Record<string, string> = {
     "FAIL if the canvas has no kicker-over-title-over-subtitle header block.",
   file_card:
     "- file_card: the file is shown as a GitHub-style CARD — a header BAR with the document path on the left " +
-    "and an 'N lines' counter on the right, then a line-number gutter beside a monospace file body. FAIL if " +
-    "there is no header bar with a path + line-count, or no gutter beside the body.",
+    "and an 'N lines' counter on the right, then a line-number gutter beside a monospace file body; the card " +
+    "is OUTLINED by a strong DARK border and ENDS at its content (no large empty region trailing below the " +
+    "last line). FAIL if there is no header bar with a path + line-count, no gutter beside the body, no dark " +
+    "card outline, or the card sprawls with a large empty tail below the content.",
+  type_scale:
+    "- type_scale: the chrome typography DENSITY matches the baseline — sidebar rows, group labels, " +
+    "breadcrumb and header-bar text render at visually the SAME small scale as the baseline (a dense " +
+    "13-16px tool-UI feel), NOT a larger editorial scale. Compare row heights and how much fits vertically: " +
+    "FAIL if production chrome text is noticeably larger, or its rows noticeably taller, than the baseline's.",
+  chat_toggle:
+    "- chat_toggle: the right-edge chat affordance is a DARK INVERTED vertical strip bearing an UPPERCASE " +
+    "vertical text label (like the baseline's 'CHAT' tab). FAIL if it is a light/gray strip, a bare " +
+    "chevron/arrow or icon, or carries no text label.",
+  breadcrumb_trail:
+    "- breadcrumb_trail: a MULTI-LEVEL breadcrumb trail sits above the canvas — at least one parent LINK, a " +
+    "SPACED separator, then a visually distinct (bold/dark) current crumb, like the baseline's " +
+    "'Sessions / Workspace overview / <doc>'. Tolerate the exact labels; FAIL if the trail is single-level " +
+    "or absent, or the separator is jammed against the crumb text with no spacing around it.",
   feature_pill:
     "- feature_pill: ABOVE the file card sits a 'Feature: <name>' PILL control bearing a change affordance " +
     "(a label + a value + a change control in one pill). FAIL if there is no such feature pill above the card.",
@@ -522,7 +610,8 @@ function productParityRubric(checkNames: readonly string[]): string {
   return [
     "You are a strict design-conformance judge for a web UI.",
     "",
-    "IMAGE 1 is the BASELINE — a runnable design-truth PROTOTYPE of this exact page.",
+    "IMAGE 1 is the BASELINE — the committed gold-standard screenshot of the design-truth",
+    "prototype for this exact page (captured at test-authoring time).",
     "IMAGE 2 is the PRODUCTION application screenshot, taken at the same 1440x900 desktop viewport.",
     "",
     "Judge ONLY structure, layout, spacing and typography INTENT of the production",

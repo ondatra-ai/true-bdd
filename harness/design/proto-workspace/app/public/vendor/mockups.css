@@ -25,17 +25,11 @@
  *     for the S&F partner lockup) and — (section numbering, e.g. "01—Sessions").
  */
 
-/* ── density scale (local to the workspace skin; NOT S&F tokens) ── */
-:root {
-  --wk-fs-micro: 11px;
-  --wk-fs-caption: 12px;
-  --wk-fs-row: 13px;
-  --wk-fs-body: 14px;
-  --wk-fs-label: 15px;
-  --wk-fs-subhead: 16px;
-  --wk-sidebar-w: 280px;
-  --wk-breadcrumb-h: 48px;
-}
+/* ── density scale ── PROMOTED (2026-08-04) into the design system proper:
+   harness/design/system/workspace.css (vendored here as vendor/workspace.css,
+   linked BEFORE this file). The --wk-* custom properties this file consumes
+   are defined there — the single source of truth shared with the production
+   harness app. Do not redefine them here. */
 
 /* ── page shell ── */
 html, body { height: 100%; }

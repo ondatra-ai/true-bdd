@@ -2,14 +2,16 @@
  * w9 — design LAYOUT conformance via the local codex vision judge (task
  * `design-conformance-tests`, R2).
  *
- * Screenshots the design baseline (paths.yaml → design_system: the runnable
- * PROTOTYPE's `/workspace-overview` page, booted from the repo) and the
- * corresponding production workspace page at
- * the SAME 1440x900 desktop reference viewport (design/SPEC.md §6), then submits
- * both to `codex exec` with a schema-forced JSON rubric of concrete named layout
- * checks derived from design/SPEC.md §1 (persistent sidebar/breadcrumb/canvas
- * frame, sidebar fixed width, breadcrumb hairline border, canvas padding).
- * Content/data differences are explicitly excluded from the verdict.
+ * Compares the COMMITTED gold standard (tests/harness/goldens/
+ * workspace-overview.png — captured from the prototype at test-authoring time
+ * via `npm run goldens:update`) against a fresh screenshot of the production
+ * workspace page at the SAME 1440x900 desktop reference viewport
+ * (design/SPEC.md §6), then submits both to `codex exec` with a schema-forced
+ * JSON rubric of concrete named layout checks derived from design/SPEC.md §1
+ * (persistent sidebar/breadcrumb/canvas frame, sidebar fixed width,
+ * breadcrumb hairline border, canvas padding). Content/data differences are
+ * explicitly excluded from the verdict. A missing golden FAILS the spec with
+ * the recapture command named — the prototype is never booted here.
  *
  * Skips cleanly with a NAMED reason when the `codex` CLI is unavailable (R3).
  * RED intent: the current production frame omits the persistent breadcrumb bar
@@ -23,20 +25,17 @@ import { expect, test } from "@playwright/test";
 
 import {
   DESKTOP_VIEWPORT,
+  GOLDEN_NAMES,
   REPO_ROOT,
   auditVerdict,
   codexOnPath,
+  requireGolden,
   runDesignJudge,
 } from "./helpers/design-conformance";
-import { PROTO_BASELINE_ROUTES, bootPrototype, stopPrototype } from "./helpers/proto-baseline";
 import { WTID, fileView, gotoWorkspace, wsRoutes } from "./helpers/ui";
 import { WorkspaceEnv } from "./helpers/workspace-env";
 
 let env: WorkspaceEnv | undefined;
-
-test.afterAll(async () => {
-  await stopPrototype();
-});
 
 test.afterEach(async () => {
   const info = test.info();
@@ -50,10 +49,12 @@ test.afterEach(async () => {
 
 test("w9.1 the production workspace frame conforms to the design mockup (codex vision judge, R2)", async ({
   page,
-  context,
 }, testInfo) => {
   test.skip(!codexOnPath(), "codex CLI not on PATH — the design vision judge requires it");
   testInfo.setTimeout(5 * 60_000);
+
+  // ── The committed gold standard (authoring-time capture) ──
+  const mockupPng = requireGolden(GOLDEN_NAMES.workspaceOverview);
 
   // ── Production screenshot at the desktop reference viewport ──
   env = await WorkspaceEnv.start("w9-design-judge");
@@ -72,19 +73,6 @@ test("w9.1 the production workspace frame conforms to the design mockup (codex v
     await document.fonts.ready;
   });
   await page.screenshot({ path: prodPng });
-
-  // ── Design-baseline screenshot (the booted prototype) at the same viewport ──
-  const proto = await bootPrototype();
-  const mock = await context.newPage();
-  await mock.setViewportSize({ ...DESKTOP_VIEWPORT });
-  await mock.goto(`${proto.baseURL}${PROTO_BASELINE_ROUTES.workspaceOverview}`, { waitUntil: "load" });
-  await expect(mock.getByTestId("mockup-breadcrumb")).toBeVisible();
-  const mockupPng = testInfo.outputPath("mockup-workspace.png");
-  await mock.evaluate(async () => {
-    await document.fonts.ready;
-  });
-  await mock.screenshot({ path: mockupPng });
-  await mock.close();
 
   // ── Codex vision verdict ──
   // Under the Codex artifacts dir (paths.yaml → codex_artifacts, tmp/), but a

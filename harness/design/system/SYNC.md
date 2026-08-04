@@ -11,6 +11,10 @@
   orchestrator from the source project's split token files (`tokens/*.css`),
   with `@font-face` re-based to `./fonts/` and gradient image URLs re-based to
   `./assets/gradients/`. Values are verbatim from the source.
+- `workspace.css` — REPO-OWNED workspace density layer (`--wk-*` type scale +
+  frame dimensions), promoted from the proto-workspace skin 2026-08-04. NOT
+  part of the S&F sync — never overwrite it during a re-sync. Consumers link
+  it immediately AFTER `tokens.css`.
 - `tokens/` + `styles.css` — the source project's own split layout, as pulled
   (font URLs re-based from `../assets/fonts/` to `../fonts/` to match this
   mirror's layout).

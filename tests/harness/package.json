@@ -10,7 +10,8 @@
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:protocol": "playwright test --project=protocol",
-    "test:e2e:ai": "playwright test --project=ai"
+    "test:e2e:ai": "playwright test --project=ai",
+    "goldens:update": "UPDATE_GOLDENS=1 playwright test --project=goldens"
   },
   "devDependencies": {
     "@playwright/test": "1.62.0",

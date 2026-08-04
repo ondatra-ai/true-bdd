@@ -55,6 +55,15 @@ export default defineConfig({
       timeout: 5 * MINUTE_MS,
     },
     {
+      // Authoring-time only: captures the committed design gold-standard
+      // screenshots from the booted prototype (tests/harness/goldens/). The
+      // spec self-skips unless UPDATE_GOLDENS=1, so a plain `playwright test`
+      // never silently rewrites goldens — run `npm run goldens:update`.
+      name: "goldens",
+      testMatch: "**/goldens.update.spec.ts",
+      timeout: 10 * MINUTE_MS,
+    },
+    {
       name: "ai",
       testMatch: "**/a[0-9]*.spec.ts",
       timeout: 30 * MINUTE_MS,

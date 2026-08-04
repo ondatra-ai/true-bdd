@@ -387,6 +387,11 @@ export const WTID = {
   scenarioDescriptionCell: "scenario-description-cell", // DESCRIPTION cell text
   scenarioServiceCell: "scenario-service-cell", // SERVICE cell text
   scenarioLinkedStoryLink: "scenario-linked-story-link", // LINKED STORY-column link; text = story id, href → story route
+
+  // ── Workspace design-scale fidelity additions (w16). Additive; documented in
+  // README-testids.md → "Workspace design scale".
+  scenarioRowService: "scenario-row-service", // muted service annotation inside a sidebar scenario-row (prototype `.sidebar-row-service`)
+  breadcrumbSep: "breadcrumb-sep", // dedicated "/" separator element between breadcrumb crumbs (prototype `.crumb-sep`)
 } as const;
 
 /** The status vocabulary an inventory-health chip may carry (mockup + README). */

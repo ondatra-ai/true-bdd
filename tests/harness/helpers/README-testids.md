@@ -275,6 +275,8 @@ Section keys (`WorkspaceSection`): `home` · `architecture` · `product` · `bui
 | `sidebar-guide-line` | Thin child-indentation guide line. |
 | `arch-service-row` / `arch-term-row` / `arch-docker-row` | Architecture outline rows (`+ data-service` / `+ data-term`; docker row text = compose_file path). ONE row per service, no nested sub-tree. |
 | `prd-row` / `feature-row` / `story-row` / `scenario-row` | Product outline rows (`+ data-feature` / `+ data-story-id` / `+ data-scenario-id`). Every navigable row carries `+ data-selected` (`true`/`false`) for the open-page highlight (P6). No `epic-*` testid exists anywhere in the workspace (P19). |
+| `scenario-row-service` | Workspace design scale (w16.3): muted service annotation nested in a sidebar `scenario-row` (prototype `.sidebar-row-service`) — `--wk-fs-micro`, `--text-muted`. |
+| `breadcrumb-sep` | Workspace design scale (w16.6): dedicated `/` separator element between breadcrumb crumbs (prototype `.crumb-sep`) — spaced from both neighbours, never glued into crumb text. |
 
 ### GitHub-style file view
 | testid | Notes |

@@ -140,7 +140,10 @@ input.inline-field-input:focus {
    tokens.css), so the hover flyout gets depth from a heavy border + sitting
    on `--surface-page` against the page, not a box-shadow. */
 :root {
-  --rail-w: 76px;
+  /* PROMOTED (2026-08-04): the rail width now lives in the design system
+     proper (system/workspace.css → --wk-rail-w); this local alias only
+     preserves the existing var name used below. */
+  --rail-w: var(--wk-rail-w);
 }
 
 .workspace-rail-wrap {
