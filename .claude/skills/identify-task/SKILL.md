@@ -90,4 +90,4 @@ Run Codex non-interactively — without a sandbox flag it hangs:
 codex exec -s read-only --ephemeral -C "$PWD" --color never \
   -c model_reasoning_effort=low -o ./tmp/codex-review.md - < ./tmp/codex-prompt.md
 ```
-Background it; full guide + wrapper: paths in `docs/context/paths.md` → Codex.
+Background it; full guide + wrapper: paths in `docs/context/paths.yaml` → the codex_* entries.

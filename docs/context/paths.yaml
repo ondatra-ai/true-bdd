@@ -1,0 +1,210 @@
+# implement-task paths — single source of truth for every folder/file path used
+# by the implement-task skill (.claude/skills/implement-task/SKILL.md) and its
+# four agents (.claude/agents/implement-task-*.md). Skills and agents read paths
+# from this file; do not hardcode paths in skill or agent instructions.
+#
+# The only path literals permitted in the skill/agents are (1) this file —
+# docs/context/paths.yaml, the config entry point — and (2) the PreToolUse hook
+# path in the test-fixer agent's frontmatter (static agent wiring). Every other
+# folder/file location is read from here.
+#
+# Schema: every entry is {path (or paths), description: how to use it}.
+# All paths are repo-relative. <slug> is the task brief's filename stem,
+# produced by identify-task.
+
+task_brief:
+  path: docs/tasks/<slug>.md
+  description: >-
+    The scoped task from identify-task — the orchestrator's input. Never passed
+    to the test-fixer (task-blind).
+
+requirements_context:
+  paths:
+    - docs/context/requirements.md
+    - docs/context/requirements-guide.md
+    - docs/context/terms.md
+  description: >-
+    Durable conversational requirements + the allowed subject terms. Read for
+    goal/constraints when planning and authoring tests.
+
+project_guidance:
+  path: CLAUDE.md
+  description: Project conventions and architecture principles.
+
+plan_file:
+  path: docs/tasks/plans/<slug>.md
+  description: >-
+    Created by the planner (tests-ONLY: e2e test cases + startup scaffolding,
+    never production changes); the orchestrator records implementation
+    challenges here. Tracked alongside task briefs; create the folder if absent.
+
+codex_ledger:
+  path: docs/tasks/plans/<slug>.codex.md
+  description: >-
+    Codex rounds ledger, written by each agent's Codex loop. Lives beside (not
+    inside) the plan so downstream agents reading the plan don't pay for the
+    round tables; the plan's "Codex rounds" section is a one-line pointer here.
+    The orchestrator passes this path to the test-fixer (one of the only two
+    things in its prompt).
+
+phase_state:
+  paths:
+    - .claude/hooks/phase_state.py
+    - tmp/implement-task/active.json
+    - docs/context/skill-metrics.jsonl
+    - docs/context/retro/<slug>.md
+  description: >-
+    Enforcement: phase_state.py (wired in .claude/settings.json) records agent
+    spawns/completions, denies out-of-order phases, blocks turn-end and commits
+    while the reviewer is pending, and appends task metrics on close. Active
+    state + archives + audit log under tmp/implement-task/; metrics one line
+    per closed task; retro output written by the task-retro skill (analyst
+    proposes, orchestrator auto-applies — user-mandated 2026-08-04).
+
+e2e_tests:
+  path: tests/harness/
+  description: >-
+    The e2e/BDD tests that DRIVE the coding (red → green) — the task's entire
+    specification from the test-fixer's point of view. Written and hardened by
+    the test-author; the test-fixer may NOT touch them (see
+    off_limits_test_fixer). Only these gate the task. Self-contained Playwright
+    suite (own package.json + node_modules); binding UI/API contract:
+    tests/harness/helpers/README-testids.md. Design-conformance specs
+    (screenshot-judge mockup vs prod, design-token checks) are part of this
+    suite; their baseline is the design_system entry, not a committed
+    screenshot.
+
+bdd_cli_fixtures:
+  paths:
+    - tests/bdd-cli/
+    - tests/materializer/
+  description: >-
+    BDD-CLI fixture harness + coverage/materializer — everything else under
+    tests/. Same off-limits rule as e2e_tests.
+
+harness_code_root:
+  path: harness/src/
+  description: >-
+    THE single folder for ALL generated harness code: the Next.js app
+    (harness/src/app/ — pages, components, lib, api routes) AND its unit tests
+    (harness/src/tests/unit/). CORE PRINCIPLE: all code under this root must be
+    REGENERATABLE from the e2e suite (e2e_tests is the spec; this folder is a
+    build artifact) — it is gitignored, never tracked. Every harness production
+    file and unit test the test-fixer writes MUST live under this folder.
+
+unit_tests:
+  paths:
+    - harness/src/tests/unit/
+    - harness/vitest.config.ts
+  description: >-
+    The test-fixer's responsibility (NOT the test-author's), written alongside
+    the production code they exercise inside harness_code_root (Go unit tests:
+    *_test.go beside the production package under src/). The test-fixer's own
+    quality net; never gate the task — only the e2e/BDD suite does. Not
+    off-limits to the test-fixer.
+
+startup_scaffolding:
+  paths:
+    - docker-compose*.yml
+    - harness/Dockerfile
+    - harness/.dockerignore
+  description: >-
+    Architectural startup scaffolding (repo-root compose files incl. the e2e
+    override docker-compose.test.yml, the harness image, new service
+    directories). The test-author may create these so services start, but
+    leaves them EMPTY for the test-fixer to implement (no production logic).
+
+production_code:
+  paths:
+    - src/
+    - templates/
+    - true-bdd/
+    - harness/src/
+  description: >-
+    What the test-fixer and reviewer may edit: the Go engine (src/), prompt
+    templates, the engine config seed, and the generated harness root
+    (harness_code_root — ALL harness code goes there, nowhere else under
+    harness/).
+
+design_system:
+  paths:
+    - harness/design/system/
+    - harness/design/SPEC.md
+    - harness/design/mockups/
+  description: >-
+    The visual source of truth for all harness UI. Agents that write harness UI
+    style it from these deliverables — tokens and components, never ad-hoc
+    colors/spacing/typography. Token values: harness/design/system/tokens.css.
+    Mockups are the per-screen design baseline (static HTML) that
+    design-conformance tests judge production screens against; design changes
+    land in the mockup first — the mockup is the spec artifact.
+
+change_surface_exclusions:
+  paths:
+    - node_modules/
+    - .git/
+    - .next/
+    - tmp/
+  description: >-
+    Directories omitted from the baseline change-surface content copy and the
+    Phase 3 reviewer's diff -r (build + VCS noise, never part of the reviewed
+    change). Single source for this list. tmp/ is also the Codex artifacts dir.
+
+package_manifest:
+  path: harness/package.json
+  description: >-
+    The test-fixer may add runtime DEPENDENCIES here, but NEVER its scripts
+    (the test scripts). The orchestrator snapshots the scripts object
+    before/after the test-fixer and rejects any change to it. Deliberately not
+    in off_limits_test_fixer (a path hook cannot scope inside a single file).
+
+off_limits_test_fixer:
+  paths:
+    - tests/
+  description: >-
+    Hard-enforced by .claude/hooks/block_test_edits.py, which reads THIS
+    entry's paths list — the only place these patterns live (edit here, not in
+    the hook). Anything matched is denied even in bypassPermissions; the
+    test-fixer must escalate to the test-author via the orchestrator instead
+    of editing tests. Scope is deliberately the e2e/BDD tree only; the
+    unit-test trees (see unit_tests) are the test-fixer's own territory and
+    are NOT listed.
+
+codex_wrapper:
+  path: .claude/skills/implement-task/scripts/codex.sh
+  description: "Codex invocation wrapper. Usage: <ro|auto> <prompt-file> [label]."
+
+codex_mechanics:
+  path: .claude/skills/implement-task/references/codex.md
+  description: Codex mechanics + prompt guide (sandbox flags, setup).
+
+codex_loop:
+  path: .claude/skills/implement-task/references/codex-loop.md
+  description: >-
+    The shared critique-loop procedure (all four agents). The test-fixer runs
+    it for a FIXED 3 rounds at every lane — no early exit.
+
+codex_matrix:
+  path: .claude/skills/implement-task/references/complexity-matrix.md
+  description: Complexity matrix — lane → agents + Codex round caps.
+
+codex_artifacts:
+  path: tmp/
+  description: >-
+    Codex artifacts: answers at tmp/codex-<label>.md (+ .trace.log), prompts at
+    tmp/codex-<label>-rN.md.
+
+run_commands:
+  - command: cd tests/harness && npx playwright test --project=protocol
+    description: >-
+      E2E (Playwright); use --project=ai for the real-Claude suite. For
+      specific specs (preferred for tight iteration) pass the spec file(s) —
+      Playwright routes by filename (p*→protocol, w*→workspace, a*→ai).
+  - command: cd harness && npm run test:unit
+    description: Unit tests (Vitest).
+  - command: cd harness && npm run typecheck && npm run lint
+    description: Harness typecheck + lint.
+  - command: go test ./...
+    description: Go unit tests.
+  - command: golangci-lint run
+    description: Go lint.

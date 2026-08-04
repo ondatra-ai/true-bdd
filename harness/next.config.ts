@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     return [
       // `_test` is a Next.js App Router PRIVATE folder prefix (excluded from
       // filesystem routing), so the test-only receipt-audit route's real
-      // implementation lives at a normal path (`app/api/test-receipts/`) and
+      // implementation lives at a normal path (`src/app/api/test-receipts/`) and
       // this rewrite maps the binding public URL onto it.
       { source: "/api/_test/receipts", destination: "/api/test-receipts" },
     ];

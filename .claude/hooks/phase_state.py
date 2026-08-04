@@ -5,9 +5,9 @@ Records which implement-task agents actually ran (spawns from PreToolUse[Agent],
 completions from PostToolUse[Agent] + SubagentStop) into a single state file, and
 gates the three actions that historically let the orchestrator skip the reviewer:
 
-- spawning agents out of order            (PreToolUse[Agent]  -> permission deny)
-- ending the turn after coder, no review  (Stop               -> decision block)
-- committing an unreviewed task           (PreToolUse[Bash]   -> permission deny)
+- spawning agents out of order                 (PreToolUse[Agent] -> permission deny)
+- ending the turn after the test-fixer, no review (Stop           -> decision block)
+- committing an unreviewed task                (PreToolUse[Bash]  -> permission deny)
 
 Design rules (mirrors block_test_edits.py):
 - Every hook mode FAILS OPEN: any internal error warns to stderr and allows.
@@ -32,7 +32,7 @@ CLI (run by the orchestrator per implement-task SKILL.md):
     phase_state.py start <slug> [--lane tiny|easy|hard]   # lane per complexity-matrix.md
     phase_state.py escalate --reason "<trigger>"          # bump lane one level, audited
     phase_state.py block --reason "<why>"
-    phase_state.py skip-gate --phase <planner|test_author|coder|reviewer> \
+    phase_state.py skip-gate --phase <planner|test_author|test_fixer|reviewer> \
                    --approved-by-user "<verbatim user quote>"
     phase_state.py close --done
     phase_state.py close --abandoned --approved-by-user "<verbatim user quote>"
@@ -59,10 +59,13 @@ METRICS = REPO / "docs" / "context" / "skill-metrics.jsonl"
 AGENT_PHASE = {
     "implement-task-planner": "planner",
     "implement-task-test-author": "test_author",
-    "implement-task-coder": "coder",
+    "implement-task-test-fixer": "test_fixer",
+    # Legacy alias (agent renamed 2026-08-04): a stray spawn of the old name must
+    # still be recorded and order-gated, never silently allowed.
+    "implement-task-coder": "test_fixer",
     "implement-task-reviewer": "reviewer",
 }
-PHASE_ORDER = ["planner", "test_author", "coder", "reviewer"]
+PHASE_ORDER = ["planner", "test_author", "test_fixer", "reviewer"]
 # Per-lane phase -> predecessor that must have >=1 completion (>=1, never ==0:
 # re-runs of any phase are legitimate — blocker guidance, approved test fixes,
 # re-review). Lanes per references/complexity-matrix.md: tiny/easy run no planner
@@ -70,9 +73,9 @@ PHASE_ORDER = ["planner", "test_author", "coder", "reviewer"]
 # required predecessor there. Unknown/undeclared lane = hard (the safe default).
 LANES = ["tiny", "easy", "hard"]
 PREDECESSOR_BY_LANE = {
-    "hard": {"test_author": "planner", "coder": "test_author", "reviewer": "coder"},
-    "easy": {"coder": "test_author", "reviewer": "coder"},
-    "tiny": {"coder": "test_author", "reviewer": "coder"},
+    "hard": {"test_author": "planner", "test_fixer": "test_author", "reviewer": "test_fixer"},
+    "easy": {"test_fixer": "test_author", "reviewer": "test_fixer"},
+    "tiny": {"test_fixer": "test_author", "reviewer": "test_fixer"},
 }
 
 
@@ -120,7 +123,11 @@ def load_state() -> dict | None:
     if not ACTIVE.exists():
         return None
     try:
-        return json.loads(ACTIVE.read_text(encoding="utf-8"))
+        state = json.loads(ACTIVE.read_text(encoding="utf-8"))
+        phases = state.get("phases")
+        if isinstance(phases, dict) and "coder" in phases and "test_fixer" not in phases:
+            phases["test_fixer"] = phases.pop("coder")  # pre-rename state file
+        return state
     except (OSError, json.JSONDecodeError) as exc:
         try:
             ACTIVE.rename(ACTIVE.with_suffix(f".corrupt-{now().replace(':', '')}"))
@@ -173,7 +180,7 @@ def completions(state: dict, phase: str) -> int:
 
 
 def reviewer_pending(state: dict) -> bool:
-    return completions(state, "coder") >= 1 and completions(state, "reviewer") == 0
+    return completions(state, "test_fixer") >= 1 and completions(state, "reviewer") == 0
 
 
 def archive(state: dict) -> None:
@@ -225,7 +232,7 @@ def banner(state: dict) -> str:
     ]
     if reviewer_pending(state):
         lines.append(
-            "The coder has completed but implement-task-reviewer has NOT run. The task "
+            "The test-fixer has completed but implement-task-reviewer has NOT run. The task "
             "is not reviewable-complete: spawn implement-task-reviewer (minimal prompt: "
             "slug, plan path, diff artifact path) before closing or committing. NEVER "
             "review inline."
@@ -430,7 +437,7 @@ def hook_stop_gate(payload: dict) -> int:
         audit({"mode": "stop-gate", "decision": "block", "n": blocks})
         if blocks == 1:
             return block_stop(
-                f"implement-task '{state['slug']}': the coder phase is complete but "
+                f"implement-task '{state['slug']}': the test-fixer phase is complete but "
                 "implement-task-reviewer has not run. Spawn implement-task-reviewer NOW "
                 "with a minimal prompt (first line 'slug: <slug>', then the plan path and "
                 "the diff artifact path — never the inline diff). Reviewing inline is "
@@ -459,7 +466,7 @@ def hook_bash_gate(payload: dict) -> int:
         return allow()  # unrelated work on another branch is never blocked
     audit({"mode": "bash-gate", "decision": "deny", "cmd": cmd[:200]})
     return deny(
-        f"implement-task '{state['slug']}' is not reviewable-complete: the coder finished "
+        f"implement-task '{state['slug']}' is not reviewable-complete: the test-fixer finished "
         "but implement-task-reviewer never ran (tmp/implement-task/active.json). Spawn the "
         "reviewer first, or — only with explicit user approval — abandon via "
         "`.claude/hooks/phase_state.py close --abandoned --approved-by-user \"<quote>\"`."

@@ -115,7 +115,7 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
   - `src/internal/pkg/` — `console` (terminal UI output), `errors`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
 - `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
-- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `harness/tests/unit/`):
+- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `harness/src/tests/unit/`):
   - `tests/bdd-cli/` — the Go BDD-CLI fixture harness: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
   - `tests/harness/` — the web-harness Playwright E2E suite, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `a*` AI), `helpers/`, `fixtures/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test launches its own harness container via `docker compose` (see `helpers/server-controller.ts`). Run: `cd tests/harness && npx playwright test --project=protocol`.
   - `tests/materializer/` — the Go fixture materializer (shared with `tests/bdd-cli/runner`), built by the E2E suite to overlay fixtures.

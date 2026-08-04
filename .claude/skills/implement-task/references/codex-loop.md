@@ -1,7 +1,7 @@
 # Codex critique loop
 
 Shared by the four `implement-task` agents. **Take the wrapper path, artifact
-directory, and invocation usage from `docs/context/paths.md` (Codex section); do not
+directory, and invocation usage from `docs/context/paths.yaml` (the codex_* entries); do not
 hardcode them.**
 
 ## How EVERY Codex call works (non-negotiable)
@@ -10,6 +10,9 @@ Every round is a FULL, independent review — never a narrow delta follow-up. Ea
 Codex prompt contains, in full:
 
 1. **The entire task** — goal, all requirements, non-goals, constraints.
+   (Test-fixer exception: it is task-blind and has no brief — its "task" is the
+   reproduce block plus the e2e specs it is greening, read from disk. Ground its
+   rounds in those; never fetch the brief or plan to fill this slot.)
 2. **All current changes** — the complete current state of the artifact under review
    (the whole plan, or the full current diff plus all relevant files), not just what
    changed since the last round.
@@ -48,15 +51,16 @@ Repeat up to the phase's round cap, stopping early when a round is dry (step 5:
 applications verified, skips unchallenged, nothing new passes the gates).
 **The cap comes from the task's lane** —
 see `references/complexity-matrix.md` (tiny: review-only 1 round; easy: 1 per
-phase that has one; hard: ≤3). Where this doc says "3 rounds" it describes the
-hard-lane cap:
+phase that has one; hard: ≤3). **Exception: the test-fixer runs a FIXED 3 rounds
+at every lane — no early exit; step 5's dry-stop does not apply to it.** Where
+this doc says "3 rounds" it describes the hard-lane cap:
 
 1. **Write the prompt** — full task + all current changes + all prior-round findings
    + their dispositions (the four ingredients above) — to a prompt file under the
-   Codex artifacts directory (paths.md). Ask for the three jobs in order (verify
+   Codex artifacts directory (paths.yaml). Ask for the three jobs in order (verify
    applications / challenge skips / fresh findings), tell Codex to run commands to
    verify its claims, and to return findings only (no scores).
-2. **Run the Codex wrapper** (path + usage in paths.md) as a **background** task and
+2. **Run the Codex wrapper** (path + usage in paths.yaml) as a **background** task and
    arm a Monitor that fires on exit. **Always read-only** — Codex suggests; the agent
    applies the keeps and runs the tests itself. Never let Codex edit files directly
    (that would bypass the scoring gate). The answer lands in the artifacts dir.
@@ -67,7 +71,7 @@ hard-lane cap:
    minus the "out of N".)
 3. **Score** each finding (composite + gates above); apply only the keeps. Skip the rest.
 4. **Record the round** in the Codex rounds ledger file — `<slug>.codex.md` beside
-   the plan (paths.md → Plan) — prompt file, response file, and each finding's
+   the plan (paths.yaml → codex_ledger) — prompt file, response file, and each finding's
    composite + gates + keep/skip. The ledger lives OUTSIDE the plan so downstream
    agents reading the plan don't pay for it; the plan's "Codex rounds" section is
    just a one-line pointer to this file.
@@ -80,18 +84,19 @@ Every prompt is grounded in the **task goal** and the **plan**. Apply keeps by e
 the artifact (plan / code / tests) — never silently; each change must be visible and
 re-runnable.
 
-## Blocker consultation (coder only — distinct from the loop above)
+## Blocker consultation (test-fixer only — distinct from the loop above)
 
-When the coder hits a test it cannot satisfy in code, do NOT run the relevance loop.
-Make ONE focused read-only Codex call that must return a structured verdict:
+When the test-fixer hits a test it cannot satisfy in code, do NOT run the relevance
+loop. Make ONE focused read-only Codex call that must return a structured verdict:
 
 - **CODE-FIX** — a concrete, executable code-only proposal (which file, which
   change), with a confidence level; OR
 - **STOP — test must change** — the specific test, the architectural reason it can't
   be satisfied in code, and what a correct test would assert.
 
-Pass the failing assertion, the relevant code, and what you already tried. The coder
-acts on CODE-FIX; on STOP it returns the verdict to the orchestrator (Phase 2.4).
+Pass the failing assertion, the relevant code, and what you already tried. The
+test-fixer acts on CODE-FIX; on STOP it returns the verdict to the orchestrator
+(Phase 2.4).
 
 For full Codex mechanics (sandbox flags, Playwright-MCP setup, prompt guide) see the
-mechanics doc in paths.md (Codex section).
+mechanics doc in paths.yaml (codex_mechanics).

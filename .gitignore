@@ -21,12 +21,11 @@
 /harness/next-env.d.ts
 
 # Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
-# tests/harness/ is the spec, and implement-task regenerates /harness/app/ and
-# its unit tests from it. Working copies stay on disk but are never tracked.
-/harness/app/
-/harness/tests/
-/harness/components/
-/harness/lib/
+# tests/harness/ is the spec, and ALL harness production code + unit tests are
+# regeneratable from it. Everything implement-task writes lives under the single
+# /harness/src/ root (see docs/context/paths.yaml → harness_code_root). Working
+# copies stay on disk but are never tracked.
+/harness/src/
 
 # Self-contained Playwright E2E suite (tests/harness) — deps + artefacts
 /tests/harness/node_modules/

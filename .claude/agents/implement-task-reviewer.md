@@ -13,7 +13,7 @@ prevent spawning. If an MCP browser action is unavailable, drive that step with
 `npx playwright` in Bash, but do not substitute `npx playwright test` for the
 required interactive browser smoke test.
 
-Read `docs/context/paths.md` first. Take every path and command from it; never
+Read `docs/context/paths.yaml` first. Take every path and command from it; never
 hardcode or assume one.
 
 ## Input
@@ -27,7 +27,7 @@ kept findings, notify the orchestrator; this triggers escalation to the full cap
 
 ## Do
 
-1. Run the lane-capped, read-only Codex loop from paths.md. Each round sends the
+1. Run the lane-capped, read-only Codex loop from paths.yaml. Each round sends the
    full task, diff, plan, challenges, and all prior findings + their dispositions. Ask about coverage,
    missing or weak assertions, flakiness, whether each test fails when behavior is
    broken, and code correctness/quality. Codex only finds and never edits. You score

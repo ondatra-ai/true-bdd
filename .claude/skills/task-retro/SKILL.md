@@ -24,7 +24,7 @@ Do not depend on the context archivist.
 ## Inputs (all read, none required to exist)
 
 Take `<slug>` from the skill argument, or from the active phase state, or ask.
-Paths per `docs/context/paths.md`:
+Paths per `docs/context/paths.yaml`:
 
 - The plan `docs/tasks/plans/<slug>.md` — especially **Workflow log** and
   **Challenges** — and the brief `docs/tasks/<slug>.md`.
@@ -49,11 +49,23 @@ paths above (paths, not contents). It must:
    orchestrator improvise outside the skill's script (compare the log against
    `.claude/skills/implement-task/SKILL.md`)? Any violations or near-misses in
    the audit logs?
-3. **Write `docs/context/retro/<slug>.md`** with exactly these sections:
+3. **Judge regeneratability (standing lens, user-mandated 2026-08-04).** CORE
+   PRINCIPLE: ALL harness code (paths.yaml → harness_code_root) must be
+   REGENERATABLE from the e2e suite alone — the tests are the spec, the code is
+   a build artifact. Every retro evaluates this run against that principle and
+   proposes changes that make regeneration MORE effective over time: Did the
+   task-blind test-fixer need knowledge the tests didn't carry (a gap in the
+   e2e specs or the binding contract)? Did any behavior ship that no test
+   demands (unregeneratable)? Would deleting harness_code_root and re-running
+   implement-task reproduce the app? Proposals that strengthen the tests-as-spec
+   loop rank above cost optimizations.
+4. **Write `docs/context/retro/<slug>.md`** with exactly these sections:
    - **Run summary** — one table: phase → spawns/completions, tokens, duration.
    - **What cost the most** — top 2–3 cost centers with numbers.
    - **Deviations & violations** — improvisations, blocked attempts, escapes.
    - **Codex loop efficiency** — keeps per round; rounds that were pure confirmation.
+   - **Regeneratability** — the standing-lens verdict (step 3): gaps found, or a
+     clean pass.
    - **Proposals** — each: the problem (with evidence from THIS run), then a
      ready-to-apply **unified diff** against the specific `.claude/skills/*/SKILL.md`
      / `.claude/agents/*.md` file. Only propose changes this run's evidence
