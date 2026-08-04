@@ -40,7 +40,8 @@ All paths are repo-relative (repo root = where this file's `docs/` lives).
   `tmp/implement-task/`.
 - **Metrics**: `docs/context/skill-metrics.jsonl` (one line per closed task).
 - **Retro output**: `docs/context/retro/<slug>.md` (written by the `task-retro`
-  skill; proposals only, never auto-applied).
+  skill; the analyst writes proposals, the orchestrator auto-applies them —
+  user-mandated 2026-08-04).
 
 ## End-to-end tests
 
@@ -50,6 +51,9 @@ test-author; the coder may NOT touch them (see Off-limits). Only these gate the 
 - **E2E tests (Playwright)**: `tests/harness/` (self-contained suite: its own
   `package.json` + `node_modules`) — binding UI/API contract:
   `tests/harness/helpers/README-testids.md`.
+- **Design-conformance specs**: part of the e2e suite in `tests/harness/` —
+  screenshot-judge (mockup vs prod) and design-token checks. Their baseline is
+  the Design system section below (mockups + tokens), not a committed screenshot.
 - **BDD-CLI fixtures + coverage/materializer harness**: everything else under `tests/`
   (`tests/bdd-cli/`, `tests/materializer/`).
 
@@ -77,6 +81,21 @@ The coder and reviewer may edit these:
 
 - `src/` (Go engine), `templates/` (prompt templates), `true-bdd/` (config seed),
   `harness/app/` (Next.js web harness: pages, components, lib, api routes).
+
+## Design system
+
+The visual source of truth for all harness UI (`harness/app/`). Agents that write
+harness UI style it from these deliverables — tokens and components, never ad-hoc
+colors/spacing/typography (the instruction lives in the agent briefs; the paths
+live here):
+
+- **Design-system mirror** (tokens, components, guidelines, fonts):
+  `harness/design/system/` — token values in `harness/design/system/tokens.css`.
+- **Design spec** (layout frame, page inventory, token→UI mapping):
+  `harness/design/SPEC.md`.
+- **Mockups** (per-screen design baseline, static HTML): `harness/design/mockups/`
+  — the reference that design-conformance tests judge production screens against.
+  Design changes land here first; the mockup is the spec artifact.
 
 ## Change-surface exclusions
 

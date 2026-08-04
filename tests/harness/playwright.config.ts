@@ -8,10 +8,12 @@
  * - Production runtime only: global setup runs ONE `next build`; each
  *   test starts its own server via ServerController.
  * - `workers: 1` is explicit — serial is configuration, not intention.
- * - Two projects by filename convention at the suite root:
- *     protocol — p<N>-*.spec.ts  (never resolves or executes claude)
- *     ai       — a<N>-*.spec.ts  (real Claude; 30-minute timeout,
- *                retries 0; depends on the ai-gate probe)
+ * - Projects by filename convention at the suite root:
+ *     protocol  — p<N>-*.spec.ts  (never resolves or executes claude)
+ *     workspace — w<N>-*.spec.ts  (file-as-source workspace UI; no claude;
+ *                 ~3-minute timeout; shares global-setup with protocol/ai)
+ *     ai        — a<N>-*.spec.ts  (real Claude; 30-minute timeout,
+ *                 retries 0; depends on the ai-gate probe)
  * - No baseURL: every test owns its server and builds its own URLs /
  *   API contexts at runtime (plan §4.1).
  */
@@ -41,6 +43,11 @@ export default defineConfig({
       name: "protocol",
       testMatch: "**/p[0-9]*.spec.ts",
       timeout: 2 * MINUTE_MS,
+    },
+    {
+      name: "workspace",
+      testMatch: "**/w[0-9]*.spec.ts",
+      timeout: 3 * MINUTE_MS,
     },
     {
       name: "ai-gate",

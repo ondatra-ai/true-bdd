@@ -46,6 +46,8 @@ type Agent struct {
 	locks    *store.Locks
 	read     *readHandle
 	children *ChildrenRegistry
+	docs     *docStore
+	chat     *chatHandler
 
 	binPath   string
 	folder    string // canonical (realpath) folder
@@ -156,6 +158,8 @@ func newAgent(opts Options, raw, canonical, binPath, tmpDir string) (*Agent, err
 		locks:         locks,
 		read:          read,
 		children:      NewChildrenRegistry(childrenPidfilePath(tmpDir, sessionID)),
+		docs:          newDocStore(canonical),
+		chat:          newChatHandler(canonical),
 		binPath:       binPath,
 		folder:        canonical,
 		rawFolder:     raw,

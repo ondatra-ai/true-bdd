@@ -1,0 +1,386 @@
+/* Global workspace stylesheet. Consumes the S&F design-system token mirror
+   (harness/design/system/tokens.css — square corners, no drop shadows,
+   Poppins) per P7; the file-view editor/gutter carry a SCOPED monospace
+   exception. Attribute (data-testid) selectors are used deliberately: the
+   workspace components render no CSS-module class names of their own, so
+   styling hooks directly onto the same stable testid contract the specs
+   assert against. */
+
+@import "../design/system/tokens.css";
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  /* The content pane owns the scroll; the body must never scroll
+     (Established fact — a right-edge-docked element would hide under the
+     body scrollbar otherwise). */
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── App shell (100vh frame; content pane owns the scroll) ── */
+
+[data-testid="app-shell"] {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+[data-testid="content-pane"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-3);
+}
+
+/* ── Icon rail ── */
+
+[data-testid="rail"] {
+  flex: 0 0 auto;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface-inverse);
+  padding-block: var(--space-2);
+}
+
+.ws-rail-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ws-rail-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-on-dark-muted);
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.ws-rail-item[aria-current="page"] {
+  border-color: var(--white-999);
+  color: var(--white-999);
+}
+
+[data-testid="rail-utilities"] {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.ws-rail-utility {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--text-on-dark-muted);
+  border: 1px solid var(--border-on-dark);
+}
+
+/* ── Rail hover flyout (floats immediately right of the rail, over content) ── */
+
+[data-testid="rail-flyout"] {
+  position: fixed;
+  top: 0;
+  left: 56px;
+  height: 100vh;
+  width: 260px;
+  background: var(--surface-card);
+  border-right: var(--border-width) solid var(--border-hairline);
+  z-index: 50;
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+/* ── Docked sidebar ── */
+
+[data-testid="sidebar"] {
+  flex: 0 0 auto;
+  width: 260px;
+  background: var(--surface-card);
+  border-right: var(--border-width) solid var(--border-hairline);
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+.ws-sidebar-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
+}
+
+.ws-sidebar-caret {
+  display: none;
+  width: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+}
+
+[data-testid="sidebar-group"]:hover .ws-sidebar-caret {
+  display: inline-block;
+}
+
+.ws-sidebar-group-name {
+  font-weight: var(--fw-bold);
+  color: var(--text-body);
+}
+
+.ws-sidebar-group-name[data-selected="true"] {
+  color: var(--link-color);
+  font-weight: var(--fw-bold);
+}
+
+.ws-sidebar-group-body {
+  position: relative;
+  padding-left: var(--space-3);
+  margin-left: var(--space-1);
+}
+
+[data-testid="sidebar-guide-line"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-hairline);
+}
+
+.ws-row {
+  display: block;
+  padding-block: 4px;
+  cursor: pointer;
+  color: var(--text-body);
+  text-decoration: none;
+}
+
+.ws-row[data-selected="true"] {
+  color: var(--link-color);
+  font-weight: var(--fw-bold);
+}
+
+.ws-empty-tree {
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+/* ── GitHub-style file view (scoped monospace exception) ── */
+
+.ws-file-view-path {
+  font: var(--type-caption);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.ws-file-view-body {
+  position: relative;
+  display: flex;
+  border: var(--border-width) solid var(--border-hairline);
+  height: calc(100vh - 220px);
+}
+
+[data-testid="file-view-gutter"] {
+  flex: 0 0 auto;
+  width: 48px;
+  overflow: hidden;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  text-align: right;
+  padding-right: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ws-gutter-line {
+  height: 20px;
+}
+
+[data-testid="file-view-editor"] {
+  flex: 1 1 auto;
+  resize: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0 var(--space-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre;
+  overflow: auto;
+  color: var(--text-body);
+}
+
+.ws-file-view-flash {
+  position: absolute;
+  left: 48px;
+  right: 0;
+  height: 20px;
+  background: rgba(1, 115, 215, 0.15);
+  pointer-events: none;
+}
+
+.ws-invalid-indicator {
+  color: var(--status-error);
+  font: var(--type-caption);
+  margin-top: var(--space-1);
+}
+
+.ws-save-state {
+  font: var(--type-caption);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── Architecture per-service derived details ── */
+
+.ws-arch-details {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.ws-service-details {
+  border: var(--border-width) solid var(--border-hairline);
+  padding: var(--space-2);
+  min-width: 260px;
+}
+
+.ws-chip {
+  display: inline-block;
+  border: var(--border-width) solid var(--border-hairline);
+  padding: 2px 6px;
+  margin: 2px;
+  font: var(--type-caption);
+}
+
+/* ── Feature picker ── */
+
+[data-testid="feature-picker"] {
+  position: relative;
+  display: inline-block;
+}
+
+[data-testid="feature-picker-input"] {
+  display: block;
+}
+
+.ws-picker-dropdown {
+  position: absolute;
+  z-index: 10;
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-hairline);
+  min-width: 200px;
+  padding: var(--space-1);
+}
+
+.ws-picker-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+}
+
+/* ── Docked chat ── */
+
+[data-testid="chat-dock-toggle"] {
+  position: relative;
+  flex: 0 0 auto;
+  width: 32px;
+  background: var(--surface-subtle);
+  border: none;
+  border-left: var(--border-width) solid var(--border-hairline);
+  cursor: pointer;
+}
+
+[data-testid="chat-dock"] {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+[data-testid="chat-dock-resizer"] {
+  flex: 0 0 auto;
+  width: 6px;
+  cursor: col-resize;
+  background: var(--border-hairline);
+}
+
+[data-testid="chat-dock-panel"] {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface-card);
+  border-left: var(--border-width) solid var(--border-hairline);
+  position: static;
+}
+
+[data-testid="chat-dock-header"] {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2);
+  border-bottom: var(--border-width) solid var(--border-hairline);
+}
+
+[data-testid="chat-dock-history"] {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.ws-chat-message {
+  padding: 4px 0;
+}
+
+.ws-chat-input-row {
+  flex: 0 0 auto;
+  margin-top: auto;
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+[data-testid="chat-dock-input"] {
+  flex: 1 1 auto;
+}
+
+/* ── New-story form ── */
+
+[data-testid="new-story-form"] {
+  border: var(--border-width) solid var(--border-hairline);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* ── Unaligned bucket ── */
+
+[data-testid="unaligned-bucket"] {
+  border: var(--border-width) dashed var(--border-hairline);
+  padding: var(--space-2);
+  margin-top: var(--space-3);
+}

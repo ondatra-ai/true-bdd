@@ -324,6 +324,12 @@ def hook_agent_post(payload: dict) -> int:
         state["turn"] = {"prompt_id": payload.get("prompt_id"), "activity": True,
                         "stop_blocks": state["turn"].get("stop_blocks", 0)}
         add_event(state, "completion", phase=phase)
+        # Mirror of the subagent-stop clear: a stop-gate-induced auto_block is
+        # stale once the reviewer completion lands via this path instead.
+        if state["status"] == "auto_blocked" and not reviewer_pending(state):
+            state["status"] = "in_progress"
+            state["block_reason"] = None
+            add_event(state, "auto_unblocked_by_completion", phase=phase)
         save_state(state)
     audit({"mode": "agent-post", "phase": phase})
     return allow()
@@ -344,6 +350,11 @@ def hook_subagent_stop(payload: dict) -> int:
         state["phases"][phase]["completions"].append(
             {"ts": now(), "agent_id": agent_id, "source": "subagent-stop"})
         add_event(state, "completion", phase=phase, source="subagent-stop")
+        # A stop-gate-induced auto_block is stale once the reviewer actually completes.
+        if state["status"] == "auto_blocked" and not reviewer_pending(state):
+            state["status"] = "in_progress"
+            state["block_reason"] = None
+            add_event(state, "auto_unblocked_by_completion", phase=phase)
         save_state(state)
     audit({"mode": "subagent-stop", "phase": phase})
     return allow()
@@ -390,8 +401,12 @@ def hook_stop_gate(payload: dict) -> int:
             save_state(state)
             audit({"mode": "stop-gate", "decision": "allow", "via": "marker"})
             return allow()
+        # A reviewer that has been spawned but not yet completed IS running in the
+        # background — the gate exists to catch a MISSING reviewer, not a slow one.
+        reviewer_spawned = len(state["phases"]["reviewer"]["spawns"]) >= 1
         armed = (
             reviewer_pending(state)
+            and not reviewer_spawned
             and state["turn"].get("activity")
             and state["turn"].get("prompt_id") == payload.get("prompt_id")
         )

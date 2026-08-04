@@ -183,3 +183,164 @@ stays until the prompt is answered or the run ends).
 **AI-call budget** (AI specs, NOT a UI testid): every A-test counts the
 `claude` processes spawned as descendants of its remote and fails a
 single-check fixture that exceeds a small per-test bound.
+
+---
+
+# Workspace UI + API contract (defined by the `w*` specs + a10)
+
+The workspace file-as-source UI (`w1`–`w7`, `a10`) is authored tests-first; this
+section is the binding contract the coder implements to. The typed source of
+truth is `helpers/ui.ts` (`WTID`, `wsRoutes`, `WorkspaceSection`, locator +
+action helpers) and `helpers/workspace-env.ts` (the env + S1 oracle). It gates
+requirements S1–S2 and P1–P25.
+
+## Architecture (why these shapes)
+
+- **S1 persistence** goes browser → relay → **CLI** → disk. The relay never
+  touches the filesystem; the CLI owns every committed write. The e2e container
+  has **no host-folder mount** (`docker-compose.test.yml` has no `volumes:`), so
+  an on-disk change proves the relay did NOT write it.
+- The **S1 oracle is two-part**: (1) `waitForDocOnDisk(...)` (parsed) — relay
+  ruled out; AND (2) the **CLI write receipt** `{path, committed_revision,
+  content_hash}` matching the on-disk `SHA-256`, read TWO ways — the browser
+  `doc_write` **response** body AND the **relay receipt-audit hook** keyed by
+  `work_id`. `/api/agent/reply` is CLI→relay and NOT browser-observable, so the
+  audit hook is the only browser-side window onto the CLI receipt.
+
+## Browser API surface (session-scoped, additive to the protocol contract)
+
+| Route | Success | Errors |
+|---|---|---|
+| `GET /api/sessions/:sid/docs` | 200 `doc_tree` (fixed-schema manifest: path → node + `revision`) | 404 session_gone, 504 cli_timeout |
+| `GET /api/sessions/:sid/docs/read?path=` | 200 `{content, revision, parse_status}` | 404, 504 |
+| `POST /api/sessions/:sid/docs/write` `{path, content, base_revision, client_token}` | 200 `{receipt:{path, committed_revision, content_hash, work_id, bytes}}` | 404 `{error:"session_gone"}`, 504 `{error:"cli_timeout"}`, 409 conflict (stale `base_revision` / token-reuse-different-args), 422 invalid YAML, 403 origin/host |
+| `GET /api/_test/receipts?sid=` | 200 `{receipts: WriteReceipt[]}` — each `{path, committed_revision, content_hash, work_id}` (test-only; enabled by `HARNESS_RECEIPT_AUDIT=1`; OFF in production) | — |
+
+- Every receipt (browser response AND audit record) carries `work_id`; the S1
+  oracle correlates the two by **exact `work_id`** (not by path/hash, which an
+  unrelated identical-bytes write could satisfy), then matches `path` /
+  `committed_revision` / `content_hash` against the on-disk `SHA-256`.
+- The `doc_write` error body carries the exact mapped `error` string
+  (`session_gone` for 404, `cli_timeout` for 504).
+
+- `revision` is **content-derived** (`SHA-256(bytes)` + existence), recomputed
+  under the per-document lock — never an in-memory counter.
+- `doc_write` allowlist (exact patterns): `docs/architecture/architecture.yaml`,
+  `docs/prd/prd.yaml`, `docs/prd/features.yaml`, `docs/scenarios.yaml`,
+  `docs/prd/stories/*.yaml` (the last exclusive-creatable for a NEW story).
+- `doc_write` is a mutation → exact **Origin+Host** enforced before business logic.
+
+## Navigation (`wsRoutes`; the `(workspace)` route group is elided from the URL)
+
+| Route | View |
+|---|---|
+| `/` | Sessions list |
+| `/sessions/:sid/home` | Workspace overview (Home landing; no backing file) |
+| `/sessions/:sid/architecture` | architecture.yaml file page |
+| `/sessions/:sid/product` | PRD (prd.yaml) file page = Product root |
+| `/sessions/:sid/product/features` | features.yaml file page |
+| `/sessions/:sid/product/features/:id` | feature aggregation (derived, no file) |
+| `/sessions/:sid/product/stories/:storyId` | story file page |
+| `/sessions/:sid/product/scenarios` | scenarios.yaml file page |
+| `/sessions/:sid/builds` | Builds landing (navigation-only; no editor/chat target) |
+
+Workspace routes are **App Router route modules** (S2); the served HTML carries
+the RSC flight marker `__next_f`. The persistent `(workspace)` layout (the shell:
+`FilesProvider`, rail, sidebar, chat) survives client-side navigation.
+
+## data-testid contract
+
+Section keys (`WorkspaceSection`): `home` · `architecture` · `product` · `builds`.
+
+### App shell + icon rail
+| testid | Notes |
+|---|---|
+| `app-shell` / `content-pane` | 100vh frame; the CONTENT pane owns the scroll (body must not scroll). |
+| `rail` | Narrow dark far-left rail; `+ data-active-section`; consumes `--surface-inverse`. |
+| `rail-item-<section>` | Per section; `+ data-section`; active carries `aria-current="page"`. |
+| `rail-flyout` | Hover preview of a NON-active section's tree; floats immediately right of the rail, over content; ~150ms open/close delay. |
+| `rail-utilities` / `rail-utility-item` | Utility items pinned at the rail BOTTOM. |
+
+### Docked sidebar
+| testid | Notes |
+|---|---|
+| `sidebar` | The docked section tree. |
+| `sidebar-section-<section>` | One per section; only the docked section is present. |
+| `sidebar-group` | Collapsible group; `+ data-group` = `Services`/`Terms`/`Docker`/`PRD`/`Features`/`Stories`/`Scenarios`. |
+| `sidebar-group-name` | The group header's NAME link (navigates); `+ data-selected` when it is the open page. |
+| `sidebar-caret` | Hover-revealed toggle (absent at rest); `+ data-expanded` (`true`/`false`); glyph `▾` expanded / `▸` collapsed. |
+| `sidebar-group-body` | The group's child-row container (hidden when collapsed). |
+| `sidebar-guide-line` | Thin child-indentation guide line. |
+| `arch-service-row` / `arch-term-row` / `arch-docker-row` | Architecture outline rows (`+ data-service` / `+ data-term`; docker row text = compose_file path). ONE row per service, no nested sub-tree. |
+| `prd-row` / `feature-row` / `story-row` / `scenario-row` | Product outline rows (`+ data-feature` / `+ data-story-id` / `+ data-scenario-id`). Every navigable row carries `+ data-selected` (`true`/`false`) for the open-page highlight (P6). No `epic-*` testid exists anywhere in the workspace (P19). |
+
+### GitHub-style file view
+| testid | Notes |
+|---|---|
+| `file-view` / `file-view-path` | Container; path text = the exact `docs/...` path. |
+| `file-view-gutter` / `file-view-gutter-line` | Line-number gutter; one `-line` per buffer line (count == `buffer.split("\n").length`). |
+| `file-view-editor` | Edit-in-place surface. P17: computed background `rgba(0,0,0,0)` focused AND unfocused, no border/outline/shadow change, no reflow. Monospace font (the scoped exception) while `body` resolves to Poppins. |
+| `file-view-flash` | Exact-line jump flash; `+ data-line` (0-based buffer line). Jumps clamp at scroll extremes; cross-page jumps navigate first then scroll (`scroll={false}`). |
+| `yaml-invalid-indicator` | Visible when the buffer does not parse (P10b); outline/derived views keep last-valid. |
+| `save-state` | `+ data-save-state` ∈ `idle`\|`saving`\|`saved`\|`invalid`\|`conflict`\|`error`; `+ data-revision`. The observable autosave signal (no fixed sleeps). |
+
+### Architecture per-service derived details (on the file page)
+| testid | Notes |
+|---|---|
+| `arch-service-details` | `+ data-service`; the derived details region. Endpoints/tech/provenance are its DESCENDANTS, absent from the other service's region. |
+| `service-tech` | `+ data-tech`. |
+| `service-endpoint` | `+ data-method`, `+ data-path` (custom services only). |
+| `service-connection` | `+ data-key` (supporting/db services only). |
+| `service-docker-provenance` | Dockerfile path (custom) or compose_ref (image). |
+
+### Feature aggregation + unaligned bucket
+| testid | Notes |
+|---|---|
+| `feature-description` | The feature's description (from features.yaml). |
+| `feature-stories-list` / `feature-scenarios-list` | Derived lists; rows `feature-story-row` (`+ data-story-id`) / `feature-scenario-row` (`+ data-scenario-id`). Re-bucket live on any `feature:` change. |
+| `unaligned-bucket` / `unaligned-scenario-row` | Scenarios with no `feature:` OR a dangling ref; `+ data-scenario-id`, `+ data-dangling` (`true`/`false`), `+ data-dangling-ref`. |
+
+### Feature picker (searchable; reused, disambiguated by scoping to its container)
+`feature-picker` · `feature-picker-toggle` · `feature-picker-input` ·
+`feature-picker-option` (`+ data-feature`) · `feature-picker-create` (inline new).
+The list must FILTER as you type (a static `<select>` fails w5.5a).
+
+### New-story form (P22)
+`new-story-open` (opens) · `new-story-form` · `new-story-title` ·
+`new-story-submit`. The feature picker is **required** (submit blocked without a
+feature). Create-new appends an `id`+`description`-only stub to features.yaml and
+exclusive-creates the story file.
+
+### Docked chat (P10/P11/P12)
+`chat-dock` · `chat-dock-toggle` (edge tab / open) · `chat-dock-panel` (flow
+sibling, NOT `position:fixed`; narrows content) · `chat-dock-resizer` ·
+`chat-dock-header` · `chat-dock-new` · `chat-dock-history` · `chat-dock-message`
+(`+ data-role`) · `chat-dock-input` (pinned at panel bottom) · `chat-dock-send`.
+Default width is wide (~40% at 1920). ONE conversation follows navigation.
+
+### Section landings
+`home-landing` · `builds-landing` (navigation-only: no `file-view`, no chat edit target).
+
+## Deterministic chat driver (protocol `w6` — no model call)
+
+Enabled by the CLI remote env `TRUE_BDD_CHAT_DRIVER=deterministic` (set by
+`WorkspaceEnv`; a10 passes `deterministicChat:false` for the REAL Claude turn).
+The driver short-circuits the Claude turn with a scripted structured result
+`{reply_text, edit:{path: current_path, new_content}|null}`; the browser applies
+the edit to the buffer and the normal debounced `doc_write` persists it (the SAME
+S1 path). Directives (schema-aware so the LIVE outline re-derives, not just a
+comment append):
+
+- `@probe add-term <name>` — on the architecture file, `new_content` inserts a
+  VALID term node (`- name: <name>` + description) under `terms:` → the Terms
+  outline gains an `arch-term-row[data-term=<name>]` live.
+- `@probe add-scenario <ID>` — on the scenarios file, inserts a VALID scenario
+  node `<ID>:` under `scenarios:` → the Scenarios outline gains a
+  `scenario-row[data-scenario-id=<ID>]` live.
+- `@probe append <text>` — on any file, appends `<text>` as a trailing line
+  (persistence-only cases).
+- On a NON-file page (Home, feature aggregation — `current_path` null) → EVERY
+  directive returns `{reply_text, edit:null}`; NO `doc_write` is issued. The
+  assistant reply message (`chat-dock-message[data-role="assistant"]`) is the
+  observable "turn finished" signal (tests wait for it before snapshotting).
+- The driver must never leak into production UX (gate it behind the env).

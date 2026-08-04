@@ -233,3 +233,235 @@ export function storyRow(page: Page, createId: string): Locator {
 export function runRow(page: Page, runId: string): Locator {
   return page.locator(`[data-testid="${TID.runRow}"][data-run-id="${runId}"]`);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Workspace file-as-source UI contract (the `w*` project + a10 assert against
+// exactly these routes + testids; the coder implements the workspace to match).
+// The human summary lives in helpers/README-testids.md → "Workspace UI".
+//
+// Section keys used by the icon rail + docked sidebar.
+export type WorkspaceSection = "home" | "architecture" | "product" | "builds";
+
+// ── Workspace static testids ──
+export const WTID = {
+  // App shell (100vh frame; the CONTENT pane owns the scroll — Established fact).
+  appShell: "app-shell",
+  contentPane: "content-pane",
+
+  // Icon rail (narrow, dark, far-left) + hover flyout.
+  rail: "rail", // + data-active-section
+  railFlyout: "rail-flyout", // hover preview of a NON-active section's tree
+  railUtilities: "rail-utilities", // utility items pinned at the rail BOTTOM (w7.1a)
+  railUtilityItem: "rail-utility-item",
+  // rail-item-<section> per section; each carries data-section and the active
+  // marker (aria-current="page" when active). Use railItem(page, section).
+
+  // Docked sidebar (section tree).
+  sidebar: "sidebar",
+  // sidebar-section-<section> per section tree. Use sidebarSection(page, section).
+  sidebarGroup: "sidebar-group", // collapsible group; + data-group="<Label>"
+  sidebarGroupName: "sidebar-group-name", // the NAME link in a group header (navigates)
+  sidebarCaret: "sidebar-caret", // hover-revealed toggle; + data-expanded ("true"|"false"); glyph ▸/▾
+  sidebarGroupBody: "sidebar-group-body", // the group's child-rows container (hidden when collapsed)
+  sidebarGuideLine: "sidebar-guide-line", // thin child-indentation guide line (w7.1a)
+
+  // Sidebar rows. Every navigable row carries data-selected ("true"|"false")
+  // for the open-page highlight (P6) and a kind-specific id attribute.
+  archServiceRow: "arch-service-row", // + data-service (Architecture › Services)
+  archTermRow: "arch-term-row", // + data-term (Architecture › Terms)
+  archDockerRow: "arch-docker-row", // the compose_file path (Architecture › Docker)
+  prdRow: "prd-row", // Product › PRD entry
+  featureRow: "feature-row", // Product › Features row; + data-feature
+  storyRow: "story-row", // Product › Stories row; + data-story-id
+  scenarioRow: "scenario-row", // Product › Scenarios row; + data-scenario-id
+
+  // GitHub-style file view.
+  fileView: "file-view",
+  fileViewPath: "file-view-path", // text = the docs/ path
+  fileViewGutter: "file-view-gutter",
+  fileViewGutterLine: "file-view-gutter-line", // one per content line
+  fileViewEditor: "file-view-editor", // the edit-in-place surface (monospace exception)
+  fileViewFlash: "file-view-flash", // exact-line jump flash; + data-line
+  yamlInvalidIndicator: "yaml-invalid-indicator",
+  saveState: "save-state", // + data-save-state (idle|saving|saved|invalid|conflict|error), + data-revision
+
+  // Architecture per-service derived details region (on the file page).
+  archServiceDetails: "arch-service-details", // + data-service
+  serviceTech: "service-tech", // + data-tech (descendant of arch-service-details)
+  serviceEndpoint: "service-endpoint", // + data-method, data-path (custom services)
+  serviceConnection: "service-connection", // + data-key (supporting services)
+  serviceDockerProvenance: "service-docker-provenance", // + data-kind (dockerfile|compose_ref)
+
+  // Feature aggregation (derived page) + unaligned bucket.
+  featureDescription: "feature-description",
+  featureStoriesList: "feature-stories-list",
+  featureScenariosList: "feature-scenarios-list",
+  featureStoryRow: "feature-story-row", // + data-story-id
+  featureScenarioRow: "feature-scenario-row", // + data-scenario-id
+  unalignedBucket: "unaligned-bucket",
+  unalignedScenarioRow: "unaligned-scenario-row", // + data-scenario-id, data-dangling ("true"|"false"), data-dangling-ref
+
+  // Searchable feature picker (reused: new-story form, a story/scenario row, the
+  // unaligned bucket). Multiple pickers on a page are disambiguated by SCOPING
+  // to their container (row/form) — the sub-testids are shared, not per-id.
+  featurePicker: "feature-picker",
+  featurePickerToggle: "feature-picker-toggle", // collapsed pill → opens the searchable dropdown
+  featurePickerInput: "feature-picker-input",
+  featurePickerOption: "feature-picker-option", // + data-feature (existing feature)
+  featurePickerCreate: "feature-picker-create", // "+ Create <query>" (inline new feature)
+
+  // New-story form (P22).
+  newStoryOpen: "new-story-open", // opens the form
+  newStoryForm: "new-story-form",
+  newStoryTitle: "new-story-title",
+  newStorySubmit: "new-story-submit",
+
+  // Docked chat (P10/P11/P12).
+  chatDock: "chat-dock",
+  chatDockToggle: "chat-dock-toggle", // edge tab (collapsed) / open control
+  chatDockPanel: "chat-dock-panel",
+  chatDockResizer: "chat-dock-resizer",
+  chatDockHeader: "chat-dock-header",
+  chatDockNew: "chat-dock-new", // new-chat control in the header (w7.1a)
+  chatDockHistory: "chat-dock-history",
+  chatDockMessage: "chat-dock-message", // + data-role (user|assistant)
+  chatDockInput: "chat-dock-input",
+  chatDockSend: "chat-dock-send",
+
+  // Section landings.
+  homeLanding: "home-landing",
+  buildsLanding: "builds-landing",
+} as const;
+
+// ── Workspace dynamic testids ──
+export function railItemTestId(section: WorkspaceSection): string {
+  return `rail-item-${section}`;
+}
+export function sidebarSectionTestId(section: WorkspaceSection): string {
+  return `sidebar-section-${section}`;
+}
+
+// ── Workspace navigation (session-scoped; the `(workspace)` route group is
+// elided from the URL, consistent with Next App Router). ──
+export const wsRoutes = {
+  sessions: "/",
+  home: (sid: string) => `/sessions/${sid}/home`,
+  architecture: (sid: string) => `/sessions/${sid}/architecture`,
+  product: (sid: string) => `/sessions/${sid}/product`,
+  features: (sid: string) => `/sessions/${sid}/product/features`,
+  feature: (sid: string, id: string) => `/sessions/${sid}/product/features/${id}`,
+  story: (sid: string, storyId: string) => `/sessions/${sid}/product/stories/${storyId}`,
+  scenarios: (sid: string) => `/sessions/${sid}/product/scenarios`,
+  builds: (sid: string) => `/sessions/${sid}/builds`,
+} as const;
+
+export async function gotoWorkspace(page: Page, baseURL: string, route: string): Promise<void> {
+  await page.goto(new URL(route, baseURL).href);
+}
+
+// ── Workspace locator helpers ──
+export function railItem(page: Page, section: WorkspaceSection): Locator {
+  return page.getByTestId(railItemTestId(section));
+}
+
+export function sidebarSection(page: Page, section: WorkspaceSection): Locator {
+  return page.getByTestId(sidebarSectionTestId(section));
+}
+
+/** A sidebar group (Services / Terms / Docker / PRD / Features / Stories / Scenarios). */
+export function sidebarGroup(scope: Page | Locator, label: string): Locator {
+  return scope.locator(`[data-testid="${WTID.sidebarGroup}"][data-group="${label}"]`);
+}
+
+/** The caret toggle inside a group header. */
+export function sidebarCaret(group: Locator): Locator {
+  return group.getByTestId(WTID.sidebarCaret);
+}
+
+export function archServiceRow(scope: Page | Locator, service: string): Locator {
+  return scope.locator(`[data-testid="${WTID.archServiceRow}"][data-service="${service}"]`);
+}
+
+/** The file-page derived details region for one service (endpoints/tech/etc. are its descendants). */
+export function archServiceDetails(page: Page, service: string): Locator {
+  return page.locator(`[data-testid="${WTID.archServiceDetails}"][data-service="${service}"]`);
+}
+
+export function sidebarStoryRow(scope: Page | Locator, storyId: string): Locator {
+  return scope.locator(`[data-testid="${WTID.storyRow}"][data-story-id="${storyId}"]`);
+}
+
+export function sidebarScenarioRow(scope: Page | Locator, scenarioId: string): Locator {
+  return scope.locator(`[data-testid="${WTID.scenarioRow}"][data-scenario-id="${scenarioId}"]`);
+}
+
+export function sidebarFeatureRow(scope: Page | Locator, feature: string): Locator {
+  return scope.locator(`[data-testid="${WTID.featureRow}"][data-feature="${feature}"]`);
+}
+
+export function fileView(page: Page): Locator {
+  return page.getByTestId(WTID.fileView);
+}
+
+export function saveState(page: Page): Locator {
+  return page.getByTestId(WTID.saveState);
+}
+
+// ── Workspace UI action helpers ──
+
+/** Reads the file-view editor buffer (textarea value or contenteditable text). */
+export function readEditor(editor: Locator): Promise<string> {
+  return editor.evaluate((el) => {
+    const value = (el as HTMLTextAreaElement).value;
+
+    return typeof value === "string" ? value : (el.textContent ?? "");
+  });
+}
+
+/** Replaces the whole editor buffer (a live edit; autosave debounces a doc_write). */
+export async function writeEditor(editor: Locator, text: string): Promise<void> {
+  await editor.fill(text);
+}
+
+/** Sends a chat message through the docked chat input. */
+export async function sendChat(page: Page, text: string): Promise<void> {
+  await page.getByTestId(WTID.chatDockInput).fill(text);
+  await page.getByTestId(WTID.chatDockSend).click();
+}
+
+/** Picks an EXISTING feature via the searchable picker, scoped to its container. */
+export async function pickFeatureIn(scope: Page | Locator, feature: string): Promise<void> {
+  await scope.getByTestId(WTID.featurePickerToggle).click();
+  await scope.getByTestId(WTID.featurePickerInput).fill(feature);
+  await scope.locator(`[data-testid="${WTID.featurePickerOption}"][data-feature="${feature}"]`).click();
+}
+
+/** Types a novel query and clicks "+ Create" to inline-create a feature. */
+export async function createFeatureIn(scope: Page | Locator, query: string): Promise<void> {
+  await scope.getByTestId(WTID.featurePickerToggle).click();
+  await scope.getByTestId(WTID.featurePickerInput).fill(query);
+  await scope.getByTestId(WTID.featurePickerCreate).click();
+}
+
+/** Resolves a CSS color literal (hex / var value) to its computed `rgb(...)` string. */
+export function toRgb(page: Page, color: string): Promise<string> {
+  return page.evaluate((c) => {
+    const probe = document.createElement("span");
+    probe.style.color = c;
+    document.body.appendChild(probe);
+    const rgb = getComputedStyle(probe).color;
+    probe.remove();
+
+    return rgb;
+  }, color);
+}
+
+/** 0-based index of the first buffer line matching `re` (for exact-line jump oracles). */
+export function lineIndex(content: string, re: RegExp): number {
+  const index = content.split("\n").findIndex((line) => re.test(line));
+  if (index < 0) {
+    throw new Error(`lineIndex: no line matched ${re}`);
+  }
+
+  return index;
+}

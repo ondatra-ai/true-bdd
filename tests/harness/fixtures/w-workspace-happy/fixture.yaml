@@ -1,0 +1,19 @@
+# w-workspace-happy (plan §"End-to-end test cases" → Fixtures): the happy-path
+# host project the workspace file-as-source specs (w1–w7, a10) edit.
+#
+# base: engine overlays the tracked true-bdd/ config seed + templates/ so the
+# CLI remote can inventory + serve the documents; the input tree supplies the
+# host docs/ in their REAL shapes (mirroring the Established facts):
+#   - docs/architecture/architecture.yaml — mcp-service (custom, endpoints) +
+#     postgres (image, connection info) + terms + docker compose_file.
+#   - docs/prd/prd.yaml, docs/prd/features.yaml (id+description only),
+#     three flat docs/prd/stories/60.x-*.yaml (each carrying `feature:`),
+#     docs/scenarios.yaml (E2E-601/602/603 aligned, INT-901 unaligned,
+#     E2E-604 dangling `feature: ghost` for P25).
+#
+# There is deliberately no cmd/expected: the Playwright specs drive every edit
+# through the workspace UI and own every assertion. No host-folder mount exists
+# in docker-compose.test.yml, so the relay demonstrably cannot write these
+# files — the S1 "relay ruled out" fact.
+base: engine
+input: input

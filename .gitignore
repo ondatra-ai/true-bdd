@@ -21,12 +21,13 @@
 /harness/*.tsbuildinfo
 /harness/next-env.d.ts
 
-# Web harness source is regenerated from the e2e suite (tests/harness),
-# not tracked — see the Sonnet rebuild experiment
-/harness/app/
+# Web harness source under /harness/app/ is now the tracked production app
+# (rebuilt by implement-task: test-author scaffolding + coder pages/api routes;
+# see docs/context/paths.md "Production code"). /harness/tests/ is now the
+# coder's tracked Vitest unit-test tree (see paths.md "Unit tests");
+# components/lib stay ignored until the coder rebuilds them.
 /harness/components/
 /harness/lib/
-/harness/tests/
 
 # Self-contained Playwright E2E suite (tests/harness) — deps + artefacts
 /tests/harness/node_modules/

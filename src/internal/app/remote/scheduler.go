@@ -100,6 +100,14 @@ func workClass(item workItem) queryserver.WorkClass {
 		return queryserver.ClassAnswer
 	case workDispatch:
 		return queryserver.ClassDispatch
+	case workDocTree, workDocRead, workDocWrite:
+		// Its OWN lane (plan Slice 0, r3 #6): document work never contends
+		// with the run-mutation lane for a slot.
+		return queryserver.ClassDoc
+	case workChat:
+		// A separate lane from ClassDispatch (plan Slice 5, r3 #6): a slow
+		// chat turn can never stall dispatch/answer.
+		return queryserver.ClassChat
 	case workQuery:
 		var payload queryPayload
 		if json.Unmarshal(item.Payload, &payload) == nil && payload.View == viewSessionDetail {

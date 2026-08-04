@@ -43,6 +43,13 @@ coder. If booting needs a stub, create it as a new empty scaffolding file.
    crashes, timeouts, missing dependencies, or startup failures are defects in your
    tests/scaffolding: fix them. The tests must execute and fail on the missing
    behavior.
+5. Before declaring RED, gate the e2e test package with a **static typecheck**: run
+   `npx tsc --noEmit` over the configured e2e directory (create a minimal
+   `tsconfig.json` in that package as scaffolding if none exists) and drive it to
+   zero errors. Playwright transpiles specs WITHOUT type-checking, so a wrong import
+   path or a missing named export compiles clean and only explodes when the runtime
+   reaches the call site — which a spec that fails earlier (e.g. at the env/session
+   gate) hides. A green `tsc --noEmit` is part of a valid RED.
 
 ## Status
 

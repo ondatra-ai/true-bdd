@@ -117,12 +117,26 @@ Read-then-Write. This applies to you and to every agent.
      (This closes the transient-edit window: if a test was weakened then restored, the
      suite goes red again under your run; if left weakened, the off-limits diff catches
      it.)
+     Run the e2e suite in **isolation** — never concurrently with another suite,
+     `docker compose` stack, or heavy build. The harness launches one container per
+     test, so a co-running load starves it and produces resource-contamination flakes
+     that masquerade as real failures; re-run any failure isolated before treating it
+     as genuine.
 6. **If the coder stops with a blocker:** research deep (architecture, solution
    design, context7, web) for a code-only fix.
    - **Code-only fix found:** re-run the coder with that guidance.
-   - **Test itself wrong:** get the user's choice via `AskUserQuestion` (pursue a
-     code-only fix vs approve a test change). On approval, re-run the test-author to
-     fix the test, then re-run the coder.
+   - **Test itself wrong — NON-BEHAVIORAL repair** (a wrong import path, a typo, a
+     syntax/compile error; provably ZERO change to any assertion, expected value, or
+     selector semantics, and Codex's blocker verdict confirms the fix is
+     non-behavioral): the orchestrator may direct the test-author to apply it
+     directly — no `AskUserQuestion` — recording the diff plus the Codex confirmation
+     in the Challenges section as the evidence. The coder stays hard-blocked from
+     tests, so the test-author still makes the edit.
+   - **Test itself wrong — BEHAVIORAL change** (any assertion weakening, expected-
+     value edit, or selector-semantics change — the core threat — or any doubt about
+     whether the change is behavioral): get the user's choice via `AskUserQuestion`
+     (pursue a code-only fix vs approve the test change). On approval, re-run the
+     test-author to fix the test, then re-run the coder.
    - **Record a structured challenge** in the plan's Challenges section: failing
      assertion, architectural constraint, sources consulted, Codex verdict, code-only
      approaches tried, your recommendation, the user's decision, next action.
@@ -195,8 +209,10 @@ of the task's features.
 ### Close (after the report)
 
 1. **Retro** — invoke the `task-retro` skill for `<slug>`. It writes the
-   self-improvement analysis + proposals to `docs/context/retro/<slug>.md`
-   (proposals-only; it never edits skills/agents itself).
+   self-improvement analysis + proposals to `docs/context/retro/<slug>.md`,
+   and the orchestrator then AUTO-APPLIES the proposals (user-mandated
+   2026-08-04; the retro file is the audit record — see task-retro's Apply
+   section). The analyst subagent itself never edits skills/agents.
 2. **`.claude/hooks/phase_state.py close --done`** — refuses unless the reviewer
    agent actually completed; appends the task's metrics line to
    `docs/context/skill-metrics.jsonl` and archives the phase state. If the task is

@@ -1,6 +1,6 @@
 ---
 name: task-retro
-description: Self-improvement retro for a completed (or abandoned) implement-task run — reads the task's plan, workflow log, Codex ledger, phase-state events, and metrics, then writes an analysis with concrete diff proposals against the skills/agents to docs/context/retro/<slug>.md. Proposals ONLY — it never edits .claude/skills or .claude/agents itself. Runs as the mandated final step of implement-task (before phase_state close), or standalone via /task-retro <slug>.
+description: Self-improvement retro for a completed (or abandoned) implement-task run — reads the task's plan, workflow log, Codex ledger, phase-state events, and metrics, writes an analysis with concrete diff proposals against the skills/agents to docs/context/retro/<slug>.md, then the ORCHESTRATOR applies the proposals automatically (user-mandated auto-apply, 2026-08-04; the retro file is the audit record, the working tree carries the applied diffs uncommitted). The analyst subagent itself never edits .claude/*. Runs as the mandated final step of implement-task (before phase_state close), or standalone via /task-retro <slug>.
 ---
 
 # Task retro
@@ -9,10 +9,17 @@ Turn one finished task into concrete, reviewable improvements to the workflow th
 produced it. Output: `docs/context/retro/<slug>.md` (create the folder if absent;
 `docs/context/` survives `/new-task` by design).
 
-**Hard rule: proposals only.** This skill and its agent NEVER edit
-`.claude/skills/*`, `.claude/agents/*`, `.claude/hooks/*`, or `CLAUDE.md`. The user
-reads the retro and applies what they accept as a normal reviewed change ("apply
-retro <slug>"). Do not depend on the context archivist.
+**Division of labor (auto-apply policy, user-mandated 2026-08-04).** The analyst
+SUBAGENT writes proposals only — it never edits `.claude/skills/*`,
+`.claude/agents/*`, `.claude/hooks/*`, or `CLAUDE.md`. The ORCHESTRATOR then
+applies every proposal's diff immediately after the retro is written — no user
+verdict required. The retro file is the audit record of what changed and why;
+the applied edits sit uncommitted in the working tree, reviewable via `git diff`
+and revertable file-by-file. `CLAUDE.md` stays orchestrator-off-limits too —
+propose CLAUDE.md changes in the retro but leave application to the user. If a
+proposal's diff conflicts with the current file (drifted since the retro was
+written), apply the intent manually and note the adjustment in the retro file.
+Do not depend on the context archivist.
 
 ## Inputs (all read, none required to exist)
 
@@ -54,8 +61,15 @@ paths above (paths, not contents). It must:
      supports no change, say so — an empty Proposals section is a valid result.
 - The subagent returns ≤10 lines: the retro path + one line per proposal.
 
+## Apply (orchestrator, immediately after the subagent returns)
+
+Read the retro's Proposals section and apply every diff to its target file
+(`.claude/skills/*`, `.claude/agents/*`, `.claude/hooks/*` — everything except
+`CLAUDE.md`). Syntax-check what's checkable (`python3 -m py_compile` for hooks).
+Leave everything uncommitted.
+
 ## Exit
 
-Tell the user: the retro path, the proposal count, and that nothing was applied —
-they apply by saying "apply retro <slug>" (a normal reviewed change on its own
-branch).
+Tell the user: the retro path, the proposal count, and which proposals were
+auto-applied (with target files) — plus any CLAUDE.md-targeted proposal left for
+their review. They can inspect via `git diff` and revert selectively.

@@ -39,7 +39,10 @@ reproduce block.
 1. Run the reproduce command for exactly the reported specs. Before editing,
    compare failures with the supplied baseline and capture the assertions. If they
    differ, report drift instead of guessing.
-2. Implement production behavior and add or adjust your unit tests. Iterate code,
+2. Implement production behavior and add or adjust your unit tests. When the
+   change touches harness UI, style it from the design system identified in
+   paths.md (Design system section) — its tokens and components; never introduce
+   ad-hoc colors, spacing, or typography outside the token set. Iterate code,
    affected tests, and fixes until green.
 3. If an e2e/BDD test seems impossible to satisfy in code, search the web and
    context7, then make one focused, read-only Codex blocker consultation following

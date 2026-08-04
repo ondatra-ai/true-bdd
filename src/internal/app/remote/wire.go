@@ -65,11 +65,16 @@ type replyEnvelope struct {
 	Body   any `json:"body"`
 }
 
-// Work item types (plan §2).
+// Work item types (plan §2; doc_tree/doc_read/doc_write/chat are plan Slice
+// 0/5 — the workspace document + chat surface, off the run machinery).
 const (
 	workQuery    = "query"
 	workDispatch = "dispatch"
 	workAnswer   = "answer"
+	workDocTree  = "doc_tree"
+	workDocRead  = "doc_read"
+	workDocWrite = "doc_write"
+	workChat     = "chat"
 )
 
 // queryPayload is the body of a `query` work item (plan §3): the view to
