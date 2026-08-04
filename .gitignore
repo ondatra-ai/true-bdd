@@ -17,15 +17,14 @@
 /harness/data/
 /harness/playwright-report/
 /harness/test-results/
-/harness/tests/**/.tmp/
 /harness/*.tsbuildinfo
 /harness/next-env.d.ts
 
-# Web harness source under /harness/app/ is now the tracked production app
-# (rebuilt by implement-task: test-author scaffolding + coder pages/api routes;
-# see docs/context/paths.md "Production code"). /harness/tests/ is now the
-# coder's tracked Vitest unit-test tree (see paths.md "Unit tests");
-# components/lib stay ignored until the coder rebuilds them.
+# Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
+# tests/harness/ is the spec, and implement-task regenerates /harness/app/ and
+# its unit tests from it. Working copies stay on disk but are never tracked.
+/harness/app/
+/harness/tests/
 /harness/components/
 /harness/lib/
 
