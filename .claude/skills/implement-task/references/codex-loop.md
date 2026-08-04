@@ -57,13 +57,22 @@ this doc says "3 rounds" it describes the hard-lane cap:
 
 1. **Write the prompt** — full task + all current changes + all prior-round findings
    + their dispositions (the four ingredients above) — to a prompt file under the
-   Codex artifacts directory (paths.yaml). Ask for the three jobs in order (verify
+   Codex artifacts directory (paths.yaml). Give the prompt file and the wrapper's
+   `-o` answer file DISTINCT paths — a shared path overwrites the prompt with an
+   empty file and wastes the launch (this bit the reviewer's first round in the
+   design-conformance-tests run). Ask for the three jobs in order (verify
    applications / challenge skips / fresh findings), tell Codex to run commands to
    verify its claims, and to return findings only (no scores).
 2. **Run the Codex wrapper** (path + usage in paths.yaml) as a **background** task and
    arm a Monitor that fires on exit. **Always read-only** — Codex suggests; the agent
    applies the keeps and runs the tests itself. Never let Codex edit files directly
    (that would bypass the scoring gate). The answer lands in the artifacts dir.
+   **Test-fixer exception — run Codex in the FOREGROUND.** The test-fixer invokes the
+   wrapper as a single **blocking** Bash call (no `run_in_background`, a generous
+   `timeout`), never background+Monitor. A blocking call cannot return until Codex
+   exits, so the turn physically cannot end mid-round — closing the premature-stop
+   window that forced four manual resume nudges in the design-conformance-tests run.
+   Wait out background test runs the same way before yielding.
    **Status line (one, when you launch each round):** name the round, the cap, and the
    prompt file path — e.g. `Codex round 1 out of 3 is running in the background with
    prompt: ./tmp/codex-<label>-r1.md. I'll wait for it to complete.` Do not echo the

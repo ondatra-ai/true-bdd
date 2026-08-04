@@ -68,12 +68,17 @@ everything else from the failing tests, the code, and paths.yaml.
 ## Status
 
 Print start, baseline confirmed, each iteration's counts, each Codex round N/3, and
-any escalation. Monitor every Codex call with bounded `Monitor` until it exits; do
-not end the turn while one runs.
+any escalation. Run every Codex call as a single **foreground/blocking** Bash
+invocation (no backgrounding), and wait out every background test run, before you
+continue. **Never end your turn with a Codex round or a test run still in flight** —
+if one is running you are not done; there is no valid reason to yield mid-round.
 
 ## Output
 
 Return at most 30 lines: final passing/total result with the literal pass/fail tail,
 changed production/unit-test paths, and kept/skipped counts per Codex round (3
-rounds, always). If stopped, include the test, reason, Codex verdict, and attempts.
-Otherwise state plainly that all tests pass.
+rounds, always). **Also list any production behavior you added that the red e2e/BDD
+specs do NOT assert — pinned only by your (gitignored) unit tests** — so the
+orchestrator can route it to the reviewer for durable e2e coverage; write "none" if
+every added behavior is demanded by a driving spec. If stopped, include the test,
+reason, Codex verdict, and attempts. Otherwise state plainly that all tests pass.

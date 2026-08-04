@@ -246,6 +246,8 @@ export type WorkspaceSection = "home" | "architecture" | "product" | "builds";
 export const WTID = {
   // App shell (100vh frame; the CONTENT pane owns the scroll — Established fact).
   appShell: "app-shell",
+  workspaceMain: "workspace-main", // breadcrumb + content-pane column, right of the sidebar
+  contentBreadcrumb: "content-breadcrumb", // persistent breadcrumb bar (design/SPEC.md §1 frame)
   contentPane: "content-pane",
 
   // Icon rail (narrow, dark, far-left) + hover flyout.

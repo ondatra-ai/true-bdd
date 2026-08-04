@@ -33,6 +33,13 @@ kept findings, notify the orchestrator; this triggers escalation to the full cap
    broken, and code correctness/quality. Codex only finds and never edits. You score
    every finding; keep only composite ≥7 with all four gates satisfied. Apply kept
    changes yourself to e2e tests and production code.
+   **Regeneratability audit (durable-spec check).** The e2e suite (paths.yaml →
+   e2e_tests) is the ONLY committed spec; `harness_code_root` — production code AND
+   its unit tests — is gitignored, regenerated-from-tests code. Enumerate every
+   production behavior in the diff that is pinned ONLY by a unit test (nothing in the
+   e2e suite asserts it): on a fresh regenerate-from-tests it silently vanishes. For
+   each, either add an e2e assertion (you may edit e2e tests) or record it in
+   residual risk as accepted regeneration-loss — never leave it unstated.
 2. Always attempt each applicable live surface:
    - exercise CLI commands/flows in a shell and capture real output;
    - drive the UI interactively with Playwright MCP through the user-facing flow,

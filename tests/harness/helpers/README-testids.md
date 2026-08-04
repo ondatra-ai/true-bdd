@@ -256,6 +256,8 @@ Section keys (`WorkspaceSection`): `home` · `architecture` · `product` · `bui
 | testid | Notes |
 |---|---|
 | `app-shell` / `content-pane` | 100vh frame; the CONTENT pane owns the scroll (body must not scroll). |
+| `workspace-main` | Column wrapping the persistent breadcrumb + `content-pane`, right of the sidebar. |
+| `content-breadcrumb` | Persistent breadcrumb bar above the canvas (design/SPEC.md §1 three-region frame); hairline bottom border; token-only type/colour. Trail derived by `lib/workspace/breadcrumb.ts`; last crumb `aria-current="page"`, the routeless `stories` crumb is plain text (no index route). |
 | `rail` | Narrow dark far-left rail; `+ data-active-section`; consumes `--surface-inverse`. |
 | `rail-item-<section>` | Per section; `+ data-section`; active carries `aria-current="page"`. |
 | `rail-flyout` | Hover preview of a NON-active section's tree; floats immediately right of the rail, over content; ~150ms open/close delay. |
