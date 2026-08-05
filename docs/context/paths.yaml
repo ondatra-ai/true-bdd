@@ -1,11 +1,11 @@
-# implement-task paths — single source of truth for every folder/file path used
-# by the implement-task skill (.claude/skills/implement-task/SKILL.md) and its
-# four agents (.claude/agents/implement-task-*.md). Skills and agents read paths
-# from this file; do not hardcode paths in skill or agent instructions.
+# Skill paths — single source of truth for every folder/file path used by the
+# repo's skills (.claude/skills/*/SKILL.md) and their agents
+# (.claude/agents/*.md). Skills and agents read paths from this file; do not
+# hardcode paths in skill or agent instructions.
 #
-# The only path literals permitted in the skill/agents are (1) this file —
+# The only path literals permitted in the skills/agents are (1) this file —
 # docs/context/paths.yaml, the config entry point — and (2) the PreToolUse hook
-# path in the test-fixer agent's frontmatter (static agent wiring). Every other
+# path in the test-fixer agents' frontmatter (static agent wiring). Every other
 # folder/file location is read from here.
 #
 # Schema: every entry is {path (or paths), description: how to use it}.
@@ -195,6 +195,29 @@ codex_artifacts:
   description: >-
     Codex artifacts: answers at tmp/codex-<label>.md (+ .trace.log), prompts at
     tmp/codex-<label>-rN.md.
+
+visual_waivers:
+  path: docs/context/visual-waivers.md
+  description: >-
+    Cross-run memory for the visual-sweep skill: findings the user accepted as
+    non-goals plus surfaces already verified clean. The skill dedupes new
+    findings against this file before flagging; entries are added only with
+    explicit user approval.
+
+visual_sweep_artifacts:
+  path: tmp/visual-sweep/
+  description: >-
+    Per-run visual-sweep artifacts: <run-ts>/ledger.md + report.md, and
+    round-N/ probe JSON, videos, screenshots, findings. Ephemeral (tmp/ is
+    gitignored, wiped manually).
+
+visual_probe_scripts:
+  path: .claude/skills/visual-sweep/scripts/
+  description: >-
+    Durable generic instrumented probes (hover-probe, transit-sweep,
+    walk-shifts .mjs + lib/discover.mjs) run with node against a live app,
+    parameterized by VS_* env vars. May be copied into the run dir and extended
+    ad hoc; the committed copies are the templates.
 
 run_commands:
   - command: cd tests/harness && npx playwright test --project=protocol

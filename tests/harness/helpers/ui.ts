@@ -296,6 +296,7 @@ export const WTID = {
   sidebarCaret: "sidebar-caret", // hover-revealed toggle; + data-expanded ("true"|"false"); glyph ▸/▾
   sidebarGroupBody: "sidebar-group-body", // the group's child-rows container (hidden when collapsed)
   sidebarGuideLine: "sidebar-guide-line", // thin child-indentation guide line (w7.1a)
+  sidebarGroupEmpty: "sidebar-group-empty", // explicit non-empty "no entries" indicator shown inside a FIXED outline group (Services/Terms/Docker) whose contract keys are absent (w20.4 / P4); ABSENT on a populated group
 
   // Sidebar rows. Every navigable row carries data-selected ("true"|"false")
   // for the open-page highlight (P6) and a kind-specific id attribute.

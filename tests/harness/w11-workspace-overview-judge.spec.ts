@@ -79,6 +79,25 @@ test("w11.1 the production workspace-overview canvas conforms to the design mock
   await expect(page.getByTestId(WTID.overviewTitle)).toBeVisible();
   await expect(page.getByTestId(WTID.overviewActions)).toBeVisible();
   await expect(page.getByTestId(WTID.overviewInventory)).toBeVisible();
+  // The w20.1 anti-jump fix renders inventory rows immediately with reserved-space
+  // "…" placeholder chips, then the live read fills each chip ~a second later.
+  // Judge the SETTLED canvas the rubric was always about. NOTE: the skeleton pass
+  // already renders data-status="unknown" (non-empty), so polling on a non-empty
+  // data-status false-passes on the placeholder frame (reviewer Codex r1 #2). The
+  // pending marker is the visible "…" TEXT — wait until EVERY chip shows a real
+  // label so the judge never screenshots placeholder chips (mirrors w10's idiom).
+  const chips = page.getByTestId(WTID.overviewInventoryChip);
+  await expect(chips.first()).toBeVisible();
+  await expect
+    .poll(
+      async () => {
+        const texts = await chips.evaluateAll((els) => els.map((el) => (el.textContent ?? "").trim()));
+
+        return texts.length > 0 && texts.every((t) => t.length > 0 && t !== "…");
+      },
+      { timeout: 30_000, message: "every overview-inventory-chip resolved to a live label (not the pending …) before capture" },
+    )
+    .toBe(true);
 
   const prodPng = testInfo.outputPath("prod-overview.png");
   // Settle the Poppins web font before capture so the comparison is deterministic.

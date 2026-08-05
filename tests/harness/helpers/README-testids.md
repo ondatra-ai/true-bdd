@@ -308,6 +308,7 @@ Section keys (`WorkspaceSection`): `home` · `architecture` · `product` · `bui
 | `sidebar-caret` | Hover-revealed toggle (absent at rest); `+ data-expanded` (`true`/`false`); glyph `▾` expanded / `▸` collapsed. |
 | `sidebar-group-body` | The group's child-row container (hidden when collapsed). |
 | `sidebar-guide-line` | Thin child-indentation guide line. |
+| `sidebar-group-empty` | Explicit non-empty empty indicator inside a FIXED outline group (`Services`/`Terms`/`Docker`) whose contract keys are absent (e.g. an `architecture:`-wrapped file with no top-level `services:`/`terms:`/`docker:`). One per empty fixed group; ABSENT on a populated group — never a silently bare group header (w20.4 / P4). |
 | `arch-service-row` / `arch-term-row` / `arch-docker-row` | Architecture outline rows (`+ data-service` / `+ data-term`; docker row text = compose_file path). ONE row per service, no nested sub-tree. |
 | `prd-row` / `feature-row` / `story-row` / `scenario-row` | Product outline rows (`+ data-feature` / `+ data-story-id` / `+ data-scenario-id`). Every navigable row carries `+ data-selected` (`true`/`false`) for the open-page highlight (P6). No `epic-*` testid exists anywhere in the workspace (P19). |
 | `scenario-row-service` | Workspace design scale (w16.3): muted service annotation nested in a sidebar `scenario-row` (prototype `.sidebar-row-service`) — `--wk-fs-micro`, `--text-muted`. |
