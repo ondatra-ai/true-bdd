@@ -119,12 +119,65 @@ async function killChildTree(child: ChildProcess): Promise<void> {
 }
 
 /**
- * The in-flight `npm ci` child, tracked module-side so `stopPrototype` can
- * force-kill it even while the boot singleton is still pending in
- * `ensureInstalled` — otherwise a test that times out mid-install would leak the
- * installer AND wedge teardown on the pending promise (round-1 F1).
+ * The in-flight SETUP child (`npm ci` or `next build`), tracked module-side so
+ * `stopPrototype` can force-kill it even while the boot singleton is still
+ * pending — otherwise a test that times out mid-setup would leak the child AND
+ * wedge teardown on the pending promise (round-1 F1).
  */
 let activeInstall: ChildProcess | null = null;
+
+/** Isolated production dist dir for golden captures (next.config.js →
+ * PROTO_DIST_DIR): never collides with a developer's long-running `next dev`
+ * on the default `.next`. Gitignored via harness/.gitignore. */
+const GOLDEN_DIST_DIR = ".next-goldens";
+const BUILD_TIMEOUT_MS = 5 * 60_000;
+
+/** True when this process is a goldens capture run (`npm run goldens:update`):
+ * the baseline must then be a PRODUCTION build — the same `next build`
+ * pipeline the harness app ships with — because dev-mode rendering differs at
+ * the sub-pixel level and contaminates the w17 pixel-parity goldens. */
+function goldenCaptureMode(): boolean {
+  return process.env.UPDATE_GOLDENS === "1";
+}
+
+/** Runs `next build` (into GOLDEN_DIST_DIR) for golden captures; throws on
+ * failure with the build log named. */
+async function buildPrototype(): Promise<void> {
+  fs.mkdirSync(PROTO_ARTIFACT_DIR, { recursive: true });
+  const logPath = path.join(PROTO_ARTIFACT_DIR, "proto-build.log");
+  const logFd = fs.openSync(logPath, "w");
+  const nextBin = path.join(PROTO_APP_DIR, "node_modules", ".bin", "next");
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(nextBin, ["build"], {
+      cwd: PROTO_APP_DIR,
+      detached: true, // own group → killable as a tree by stopPrototype
+      stdio: ["ignore", logFd, logFd],
+      env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", PROTO_DIST_DIR: GOLDEN_DIST_DIR },
+    });
+    activeInstall = child;
+    const timer = setTimeout(() => killChildTree(child), BUILD_TIMEOUT_MS);
+    child.once("error", (err) => {
+      clearTimeout(timer);
+      reject(new Error(`prototype \`next build\` failed to spawn: ${err.message}; log: ${logPath}`));
+    });
+    child.once("exit", (code, signal) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`prototype \`next build\` exited (code ${code}, signal ${signal}); log: ${logPath}`));
+      }
+    });
+  }).finally(() => {
+    activeInstall = null;
+    try {
+      fs.closeSync(logFd);
+    } catch {
+      /* best effort */
+    }
+  });
+}
 
 /**
  * Runs `npm ci` ONCE when the prototype's deps are absent (F14: lockfile-only,
@@ -203,6 +256,10 @@ async function fetchOk(url: string): Promise<{ ok: boolean; detail: string }> {
 /** Boots the prototype once; retries on EADDRINUSE with a fresh port. */
 async function startPrototype(): Promise<PrototypeServer> {
   await ensureInstalled();
+  const production = goldenCaptureMode();
+  if (production) {
+    await buildPrototype();
+  }
   fs.mkdirSync(PROTO_ARTIFACT_DIR, { recursive: true });
   const nextBin = path.join(PROTO_APP_DIR, "node_modules", ".bin", "next");
 
@@ -215,12 +272,21 @@ async function startPrototype(): Promise<PrototypeServer> {
     let output = "";
     let exited: { code: number | null; signal: NodeJS.Signals | null } | null = null;
 
-    const child = spawn(nextBin, ["dev", "-H", "127.0.0.1", "-p", String(port)], {
-      cwd: PROTO_APP_DIR,
-      detached: true, // own process group → tree kill on teardown
-      stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, BROWSER: "none", NEXT_TELEMETRY_DISABLED: "1" },
-    });
+    const child = spawn(
+      nextBin,
+      [production ? "start" : "dev", "-H", "127.0.0.1", "-p", String(port)],
+      {
+        cwd: PROTO_APP_DIR,
+        detached: true, // own process group → tree kill on teardown
+        stdio: ["ignore", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          BROWSER: "none",
+          NEXT_TELEMETRY_DISABLED: "1",
+          ...(production ? { PROTO_DIST_DIR: GOLDEN_DIST_DIR } : {}),
+        },
+      },
+    );
     // Retain + wire the handle IMMEDIATELY (F11/F15) so a crash mid-readiness is
     // observed and the child is always killable.
     const onData = (buf: Buffer): void => {

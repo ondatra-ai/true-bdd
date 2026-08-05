@@ -73,6 +73,55 @@ export function requireGolden(name: string): string {
   return golden;
 }
 
+/** A content-varying region (golden-crop coordinates) zeroed on BOTH sides
+ * before the w17 pixel diff. */
+export interface GoldenCropMask {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface GoldenCropMeta {
+  width: number;
+  height: number;
+  masks: GoldenCropMask[];
+}
+
+/** Resolves a committed component-crop golden (goldens/crops/<name>.png). */
+export function requireGoldenCrop(name: string): string {
+  const crop = path.join(GOLDENS_DIR, "crops", `${name}.png`);
+  if (!fs.existsSync(crop)) {
+    throw new Error(
+      `design golden crop missing: ${crop}\n` +
+        "Component crops are captured from the design prototype at test-authoring time — " +
+        "run `npm run goldens:update` in tests/harness after writing or changing a visual spec.",
+    );
+  }
+
+  return crop;
+}
+
+/** Reads the goldens manifest's crop metadata; fails loudly when absent. */
+export function requireGoldenCropMeta(name: string): GoldenCropMeta {
+  const manifestPath = path.join(GOLDENS_DIR, "manifest.json");
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`goldens manifest missing: ${manifestPath} — run \`npm run goldens:update\` in tests/harness.`);
+  }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+    crops?: Record<string, GoldenCropMeta>;
+  };
+  const meta = manifest.crops?.[name];
+  if (meta === undefined) {
+    throw new Error(
+      `goldens manifest has no crop metadata for "${name}" — run \`npm run goldens:update\` in tests/harness ` +
+        "(the updater records crop dimensions + content masks).",
+    );
+  }
+
+  return meta;
+}
+
 /**
  * Parses the workspace density layer into a `--wk-*` → px map. Reading the
  * DESIGN FILE (not the live page) keeps the expectation anchored to design
@@ -342,9 +391,17 @@ export interface JudgeCheck {
   note: string;
 }
 
+/** An UNLISTED deviation the judge noticed beyond the named checks — the
+ * escape hatch that un-caps the enumerated rubric (a `major` fails the spec). */
+export interface JudgeOtherDifference {
+  description: string;
+  severity: "minor" | "major";
+}
+
 export interface JudgeVerdict {
   verdict: "pass" | "fail";
   checks: JudgeCheck[];
+  other_differences?: JudgeOtherDifference[];
 }
 
 /** The concrete named layout checks (design/SPEC.md §1) the FRAME judge reports. */
@@ -365,7 +422,7 @@ export function buildJudgeSchema(checkNames: readonly string[]) {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["verdict", "checks"],
+    required: ["verdict", "checks", "other_differences"],
     properties: {
       verdict: { type: "string", enum: ["pass", "fail"] },
       checks: {
@@ -380,6 +437,22 @@ export function buildJudgeSchema(checkNames: readonly string[]) {
             name: { type: "string", enum: [...checkNames] },
             status: { type: "string", enum: ["pass", "fail"] },
             note: { type: "string" },
+          },
+        },
+      },
+      // The escape hatch: salient deviations OUTSIDE the named checks. A
+      // "major" fails the run (auditVerdict) — coverage is no longer capped
+      // by the rubric author's imagination.
+      other_differences: {
+        type: "array",
+        maxItems: 12,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["description", "severity"],
+          properties: {
+            description: { type: "string" },
+            severity: { type: "string", enum: ["minor", "major"] },
           },
         },
       },
@@ -437,9 +510,21 @@ export function auditVerdict(
     }
   }
 
-  const failedChecks = checks.filter((check) => check.status === "fail");
+  // Unlisted deviations: a MAJOR other_difference is a failure exactly like a
+  // failed named check (the enumerated-checklist blindness fix — a judge that
+  // SEES a glaring deviation must be able to fail on it even when no named
+  // check covers it).
+  const majors = (verdict?.other_differences ?? [])
+    .filter((difference) => difference.severity === "major")
+    .map((difference): JudgeCheck => ({ name: "other_difference", status: "fail", note: difference.description }));
+
+  const failedChecks = [...checks.filter((check) => check.status === "fail"), ...majors];
   if (verdict?.verdict === "pass" && failedChecks.length > 0) {
-    problems.push("verdict is \"pass\" but one or more checks failed");
+    problems.push(
+      majors.length > 0 && checks.every((check) => check.status === "pass")
+        ? "verdict is \"pass\" but a MAJOR other_difference was reported"
+        : "verdict is \"pass\" but one or more checks failed",
+    );
   }
   if (verdict?.verdict === "fail" && failedChecks.length === 0 && problems.length === 0) {
     problems.push("verdict is \"fail\" but no check reported a failure");
@@ -472,7 +557,15 @@ function judgeRubric(): string {
     "  content (content is not flush against the frame edges).",
     "",
     "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
-    "verdict is 'pass' ONLY if every check is 'pass', otherwise 'fail'.",
+    "",
+    "AFTER the named checks, ALSO fill `other_differences`: any OTHER visually salient",
+    "difference in the chrome's structure, layout, density, or styling (still IGNORING",
+    "content/data values) that no named check covers. severity 'major' = the two clearly",
+    "do not share the same design (size/density/color/affordance-class differences);",
+    "'minor' = a subtle deviation. An empty array means none. Do not restate named-check",
+    "failures there.",
+    "verdict is 'pass' ONLY if every check is 'pass' AND there is no 'major'",
+    "other_difference, otherwise 'fail'.",
   ].join("\n");
 }
 
@@ -515,7 +608,15 @@ function canvasParityRubric(): string {
     "  if the breadcrumb is single-level or absent.",
     "",
     "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
-    "verdict is 'pass' ONLY if every check is 'pass', otherwise 'fail'.",
+    "",
+    "AFTER the named checks, ALSO fill `other_differences`: any OTHER visually salient",
+    "difference in the chrome's structure, layout, density, or styling (still IGNORING",
+    "content/data values) that no named check covers. severity 'major' = the two clearly",
+    "do not share the same design (size/density/color/affordance-class differences);",
+    "'minor' = a subtle deviation. An empty array means none. Do not restate named-check",
+    "failures there.",
+    "verdict is 'pass' ONLY if every check is 'pass' AND there is no 'major'",
+    "other_difference, otherwise 'fail'.",
   ].join("\n");
 }
 
@@ -624,7 +725,15 @@ function productParityRubric(checkNames: readonly string[]): string {
     ...checkNames.map((name) => PRODUCT_CHECK_CLAUSES[name]),
     "",
     "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
-    "verdict is 'pass' ONLY if every check is 'pass', otherwise 'fail'.",
+    "",
+    "AFTER the named checks, ALSO fill `other_differences`: any OTHER visually salient",
+    "difference in the chrome's structure, layout, density, or styling (still IGNORING",
+    "content/data values) that no named check covers. severity 'major' = the two clearly",
+    "do not share the same design (size/density/color/affordance-class differences);",
+    "'minor' = a subtle deviation. An empty array means none. Do not restate named-check",
+    "failures there.",
+    "verdict is 'pass' ONLY if every check is 'pass' AND there is no 'major'",
+    "other_difference, otherwise 'fail'.",
   ].join("\n");
 }
 
@@ -696,7 +805,11 @@ export async function runDesignJudge(opts: {
     "--color",
     "never",
     "-c",
-    "model_reasoning_effort=low",
+    // Medium, not low: the judge is the semantic net over the deterministic
+    // gates, and single low-effort calls proved too coarse (quality-over-cost
+    // principle; the deterministic w16/w17 gates keep runs cheap by catching
+    // most regressions before a judge is even consulted).
+    "model_reasoning_effort=medium",
     "-i",
     opts.mockupPng,
     "-i",

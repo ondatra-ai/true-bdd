@@ -21,4 +21,8 @@
   --wk-sidebar-w: 280px;
   --wk-breadcrumb-h: 48px;
   --wk-rail-w: 76px;
+  /* icon-rail anatomy (promoted 2026-08-04 evening — previously hardcoded in
+     the prototype's proto-extra.css; the rail's density is design truth too) */
+  --wk-rail-icon-fs: 20px;
+  --wk-rail-label-fs: 9px;
 }

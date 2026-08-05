@@ -53,6 +53,7 @@ __pycache__/
 .env
 .env.local
 
-# Design gold-standard screenshots (tests/harness/goldens) MUST be tracked —
-# the user-level ~/.gitignore_global ignores *.png, so re-include them here.
-!tests/harness/goldens/*.png
+# Design gold-standard screenshots (tests/harness/goldens, incl. the
+# per-component crops/ subdir) MUST be tracked — the user-level
+# ~/.gitignore_global ignores *.png, so re-include them here.
+!tests/harness/goldens/**/*.png

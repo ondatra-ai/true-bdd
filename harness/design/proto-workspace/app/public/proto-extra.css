@@ -186,9 +186,9 @@ input.inline-field-input:focus {
   border-right: 3px solid var(--text-primary);
   font-weight: var(--fw-bold);
 }
-.rail-item__icon { font-size: 20px; line-height: 1; }
+.rail-item__icon { font-size: var(--wk-rail-icon-fs); line-height: 1; }
 .rail-item__label {
-  font-size: 9px;
+  font-size: var(--wk-rail-label-fs);
   font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: var(--ls-label);
