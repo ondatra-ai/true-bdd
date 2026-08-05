@@ -118,14 +118,49 @@ is never silently presented as current.
 
 ## data-testid contract
 
-### Sessions list (`/`)
+### Sessions list / home (`/`)
+
+The harness root is a **live sessions list**, driven entirely off the existing
+`GET /api/sessions` registry read (every listed session is connected by
+definition). Behavior (asserted by `w18-*`):
+
+- **Live, no reload** — the list polls and re-renders in place: a newly
+  connected CLI appears and a stopped CLI vanishes WITHOUT a full-document
+  navigation (`w18.4`/`w18.5` count main-document navigations and assert 0).
+- **Empty state** only after a **successful zero read** — never a flash before
+  the first read resolves (`w18.8`); the empty state REPLACES the list.
+- **Unavailable notice** only after **sustained** read failure (~30s), then
+  **auto-returns** when reads recover — no manual reload (`w18.9`).
+- **Gone on disconnect, no marker** — a dead session's row simply disappears;
+  there is NO dead-session / reachability / reconnect affordance (`w18.5`).
+- **Design baseline**: the prototype `/sessions` (gradient top bar + `--text-inverse`
+  wordmark + tagline + `row-list` rows) **minus** the Test-connection control
+  **plus** the empty state (`w18.10` deterministic parity; `w19` codex vision).
 
 | testid | Notes |
 |---|---|
-| `session-row` | One per session; `data-session-id`, `data-folder`. |
+| `sessions-list` | The row-list container. Exact-count row assertions scope rows to it; absent when the empty state or the unavailable notice is showing. |
+| `session-row` | One per connected session; `data-session-id`, `data-folder`. |
 | `session-folder` | Text = canonical folder (realpath). |
+| `session-meta` | Per-row meta line; CONTAINS the session id (prototype `session <id> — connected`). |
 | `session-version` | Text = the remote version. |
-| `test-connection` | Per-row control; dispatches a `version` run (P8). |
+| `session-open` | Per-row Open-workspace control — an `<a>` whose `href` = `wsRoutes.home(<data-session-id>)`. |
+| `sessions-empty` | Honest empty state: a "no sessions connected" message + a short hint on how to connect one. Replaces the list on a successful zero read. |
+| `sessions-unavailable` | Sustained-read-failure notice (P10). Rendered only after failures persist past the ~30s threshold; cleared automatically once reads recover. |
+
+**P5 negative contract — NEVER rendered.** Sessions are gone on disconnect, so
+production must never render a dead-session / reachability / reconnect
+affordance. These testids exist ONLY so the specs can assert they stay count 0
+page-wide throughout a disconnect (`w18.5`):
+
+| testid | Notes |
+|---|---|
+| `session-disconnected` | Never rendered (a dead-session marker would violate "gone on disconnect"). |
+| `session-unreachable` | Never rendered (there is no reachability state in v2). |
+| `session-reconnect` | Never rendered (no reconnect affordance). |
+
+The `test-connection` control is **retired** (P7 drop) — the sessions home has
+no Test-connection button.
 
 ### Session detail (`/sessions/<id>`)
 

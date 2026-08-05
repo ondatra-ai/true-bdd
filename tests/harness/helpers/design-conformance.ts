@@ -632,6 +632,75 @@ export const CANVAS_PARITY_PROFILE: JudgeProfile = {
   rubric: canvasParityRubric(),
 };
 
+// ── Sessions-home prototype-parity judge (task `home-sessions-list`, w19). The
+// BASELINE image is the runnable PROTOTYPE `/sessions` route (booted live via
+// helpers/proto-baseline.ts), production is `/`. Both are the PRE-workspace
+// sessions frame (no icon rail, no sidebar), so the frame is compared directly.
+// The prototype still shows a Test-connection button and has no empty state —
+// the rubric TOLERATES the button and IGNORES all data/text values.
+
+/** The named sessions-home parity checks the w19 judge reports. */
+export const SESSIONS_PARITY_CHECK_NAMES = [
+  "top_bar",
+  "wordmark_tagline",
+  "page_heading",
+  "row_list_anatomy",
+] as const;
+
+function sessionsParityRubric(): string {
+  return [
+    "You are a strict design-conformance judge for a web UI.",
+    "",
+    "IMAGE 1 is the BASELINE — the design-truth prototype's `/sessions` page.",
+    "IMAGE 2 is the PRODUCTION application's sessions home (`/`), taken at the same 1440x900 desktop viewport.",
+    "",
+    "Both pages are the SAME pre-workspace 'connected sessions' screen (a gradient",
+    "top bar, then a page header, then a vertical list of session rows). Neither has",
+    "an icon rail or a docked sidebar. Judge STRUCTURE, LAYOUT, spacing and typography",
+    "INTENT of production against the baseline.",
+    "",
+    "TOLERATE two known, intentional divergences — they must NEVER fail a check:",
+    "  (1) the baseline carries a 'Test connection' button on each row that production",
+    "      deliberately drops — its ABSENCE in production is correct, not a defect;",
+    "  (2) production may show an empty-state or unavailable message the baseline lacks.",
+    "IGNORE all content/data differences too (folder paths, session ids, version",
+    "strings, row counts, exact heading/tagline wording) — judge STRUCTURE only.",
+    "",
+    "Evaluate exactly these named checks and return the schema-forced JSON verdict:",
+    "- top_bar: production LEADS with a full-width TOP BAR filled by a soft colour",
+    "  GRADIENT field (not a flat/white bar), spanning the page width above the content,",
+    "  like the baseline. FAIL if there is no gradient top bar.",
+    "- wordmark_tagline: that top bar carries a product WORDMARK (light text reading on",
+    "  the dark gradient) AND a small secondary TAGLINE line, like the baseline's brand",
+    "  row + tagline. FAIL if the top bar has no wordmark, or no tagline line.",
+    "- page_heading: BELOW the top bar the content LEADS with a page header — a large",
+    "  title heading (the baseline's 'Sessions') over a muted intro/meta line. FAIL if",
+    "  there is no large page-title header block below the top bar.",
+    "- row_list_anatomy: the sessions are a VERTICAL LIST of rows, each row a LEFT block",
+    "  (a bold title line over a smaller muted meta line) and a RIGHT block (a small",
+    "  version CHIP plus an Open-workspace action), like the baseline's row list. FAIL if",
+    "  there is no such row list, or rows lack the left title/meta + right chip/action",
+    "  anatomy.",
+    "",
+    "status is 'pass' or 'fail' per check with a one-line note citing the visual evidence.",
+    "",
+    "AFTER the named checks, ALSO fill `other_differences`: any OTHER visually salient",
+    "difference in the structure, layout, density, or styling (still IGNORING content/data",
+    "values AND the two tolerated divergences above) that no named check covers. severity",
+    "'major' = the two clearly do not share the same design (size/density/color/",
+    "affordance-class differences); 'minor' = a subtle deviation. An empty array means none.",
+    "Do not restate named-check failures there.",
+    "verdict is 'pass' ONLY if every check is 'pass' AND there is no 'major'",
+    "other_difference, otherwise 'fail'.",
+  ].join("\n");
+}
+
+/** w19.1 — sessions-home prototype-parity judge profile. */
+export const SESSIONS_PARITY_PROFILE: JudgeProfile = {
+  checkNames: SESSIONS_PARITY_CHECK_NAMES,
+  rubric: sessionsParityRubric(),
+};
+
 // ── Product-section prototype-parity judge profiles (task
 // `product-section-prototype-parity`, R8). Unlike the frame/canvas judges, the
 // BASELINE image is the runnable PROTOTYPE app (booted live from the repo, see

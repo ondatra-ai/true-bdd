@@ -30,11 +30,27 @@ import type { Locator, Page } from "@playwright/test";
 // ── Static testids ──
 
 export const TID = {
-  // Sessions list (one row per session — every listed session is connected).
-  sessionRow: "session-row", // + data-session-id, data-folder
+  // Sessions list / home (`/`) — one LIVE row per connected CLI session
+  // (every listed session is connected by definition). The list stays live
+  // without a manual reload: a new CLI appears and a stopped CLI vanishes on
+  // the poll; an honest empty state shows only after a successful zero read;
+  // a sustained read failure raises the unavailable notice (auto-returning on
+  // recovery). Design baseline: the prototype `/sessions` MINUS Test connection
+  // PLUS the empty state (README-testids → "Sessions list (`/`)").
+  sessionsList: "sessions-list", // row-list container; exact-count row assertions scope to it
+  sessionRow: "session-row", // one per session; + data-session-id, data-folder
   sessionFolder: "session-folder", // text = canonical folder (realpath)
+  sessionMeta: "session-meta", // per-row meta line; CONTAINS the session id
   sessionVersion: "session-version", // text = remote version
-  testConnection: "test-connection", // per-row control; dispatches `version`
+  sessionOpen: "session-open", // per-row Open-workspace <a>; href = wsRoutes.home(sid)
+  sessionsEmpty: "sessions-empty", // honest empty state (P6) — REPLACES the list on a zero read
+  sessionsUnavailable: "sessions-unavailable", // P10 notice — sustained read-failure state
+  // P5 NEGATIVE contract — markers production must NEVER render (sessions are
+  // GONE on disconnect: no dead-session/reachability/reconnect affordance). Each
+  // is asserted count 0 page-wide THROUGHOUT the disconnect window (w18.5).
+  sessionDisconnected: "session-disconnected", // never rendered
+  sessionUnreachable: "session-unreachable", // never rendered
+  sessionReconnect: "session-reconnect", // never rendered
 
   // Session detail.
   refresh: "refresh", // triggers an immediate live session_detail READ (§1.5)
@@ -216,6 +232,20 @@ export async function gotoRun(page: Page, baseURL: string, sessionId: string, ru
 
 export function sessionRow(page: Page, sessionId: string): Locator {
   return page.locator(`[data-testid="${TID.sessionRow}"][data-session-id="${sessionId}"]`);
+}
+
+/** The sessions-list container (row-list); exact-count row assertions scope to it. */
+export function sessionsList(page: Page): Locator {
+  return page.getByTestId(TID.sessionsList);
+}
+
+/**
+ * A row's Open-workspace control (`session-open`), scoped to its row so the
+ * per-row href → wsRoutes.home(sid) association is pinned (w18.3). Pass a row
+ * Locator; passing the Page returns every open control on the list.
+ */
+export function sessionOpen(scope: Page | Locator): Locator {
+  return scope.getByTestId(TID.sessionOpen);
 }
 
 export function inventoryDoc(page: Page, key: string): Locator {

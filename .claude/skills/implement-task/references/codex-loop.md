@@ -79,6 +79,12 @@ this doc says "3 rounds" it describes the hard-lane cap:
    prompt's contents. (The same shape applies to a blocker-consultation Codex call,
    minus the "out of N".)
 3. **Score** each finding (composite + gates above); apply only the keeps. Skip the rest.
+   **Confirm each application before recording:** re-read the changed lines against the
+   finding and, for a multi-part finding (e.g. "validate EVERY field", "assert BOTH
+   directions", two waiters/locators), check off each part. A half-applied keep caught
+   here costs a re-read; caught by Codex next round it costs a whole capped verify slot.
+   This does not replace the next round's independent verification — it lowers the botch
+   rate feeding it.
 4. **Record the round** in the Codex rounds ledger file — `<slug>.codex.md` beside
    the plan (paths.yaml → codex_ledger) — prompt file, response file, and each finding's
    composite + gates + keep/skip. The ledger lives OUTSIDE the plan so downstream

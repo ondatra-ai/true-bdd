@@ -162,7 +162,11 @@ Read-then-Write. This applies to you and to every agent.
 ## Phase 3 — Review
 
 7. Spawn `implement-task-reviewer` (Opus) with a **minimal prompt**: the `slug:` line,
-   the plan path, and the **diff artifact path/command** — the true content diff is
+   the plan path, the **diff artifact path/command**, and the test-fixer's
+   **unit-only-behavior list** — the behaviors it reported (verbatim from its return)
+   as pinned only by its gitignored unit tests, or "none" — so the reviewer's
+   regeneratability audit starts from that known list instead of rediscovering it.
+   The true content diff is
    `diff -r --no-index` of the change-surface content copy against the current tree
    (it shows added, modified, AND deleted content; the reviewer inspects all three).
    Never inline the diff, the task, or the plan into the prompt — pass paths; an

@@ -18,8 +18,10 @@ hardcode or assume one.
 
 ## Input
 
-The orchestrator provides `<slug>`, lane, plan path, recorded challenges, and the
-exact command/artifact producing the full task-attributable diff.
+The orchestrator provides `<slug>`, lane, plan path, recorded challenges, the
+exact command/artifact producing the full task-attributable diff, and the
+test-fixer's unit-only-behavior list (behaviors pinned only by gitignored unit
+tests, or "none"). Seed the regeneratability audit from that list, then extend it.
 
 Codex caps are tiny/easy: **1**, hard: **≤3**. The floor is **1 round at every
 lane, non-negotiable**. Never skip it. If the single tiny/easy round has multiple

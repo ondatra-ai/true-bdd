@@ -25,6 +25,17 @@ mkdir -p ./tmp
 out="./tmp/codex-${label}.md"
 trace="./tmp/codex-${label}.trace.log"
 
+# Refuse the prompt==answer collision: -o "$out" overwrites the prompt file.
+# The run still "works" (stdin is consumed before -o writes) but the prompt
+# artifact is destroyed, which has twice forced a discard+redo. Fail loudly
+# before burning a Codex call so the caller uses distinct paths
+# (e.g. <label>-rN-prompt.md in, <label>-rN.md out).
+if [ "$(cd "$(dirname "$out")" && pwd -P)/$(basename "$out")" = \
+      "$(cd "$(dirname "$prompt_file")" && pwd -P)/$(basename "$prompt_file")" ]; then
+  printf 'codex.sh: -o answer path (%s) equals the prompt file — use distinct paths\n' "$out" >&2
+  exit 3
+fi
+
 case "$mode" in
   ro)   sandbox=(-s read-only --ephemeral) ;;
   auto) sandbox=(-s workspace-write --ephemeral) ;;

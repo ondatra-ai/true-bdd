@@ -50,6 +50,10 @@ export const PROTO_BASELINE_ROUTES = {
   // Warmed for the w9/w11 judges too — the prototype replaced the deleted
   // static mockups as the workspace-overview baseline.
   workspaceOverview: "/workspace-overview",
+  // The sessions-home baseline (w19): the prototype's `/sessions` page — the
+  // design-truth for production `/` (gradient top bar + wordmark/tagline +
+  // `row-list` rows), warmed so the w19 judge screenshots a compiled route.
+  sessions: "/sessions",
 } as const;
 
 const LAUNCH_ATTEMPTS = 4; // mirrors ServerController's bounded bind retries
