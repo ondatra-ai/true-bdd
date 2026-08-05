@@ -1,0 +1,87 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - navigation "Sections" [ref=f1e4]:
+      - link "Home" [ref=f1e5] [cursor=pointer]:
+        - /url: /workspace-overview
+        - generic [ref=f1e6]: ⌂
+      - link "Architecture" [ref=f1e8] [cursor=pointer]:
+        - /url: /architecture
+        - generic [ref=f1e9]: ▦
+      - link "Product" [ref=f1e11] [cursor=pointer]:
+        - /url: /product
+        - generic [ref=f1e12]: ◆
+      - link "Builds" [ref=f1e14] [cursor=pointer]:
+        - /url: /runs
+        - generic [ref=f1e15]: ▶
+      - link "Sessions" [ref=f1e17] [cursor=pointer]:
+        - /url: /sessions
+        - generic [ref=f1e18]: ↩
+    - navigation "Workspace navigation" [ref=f1e20]:
+      - generic [ref=f1e21]:
+        - text: TrueBDD
+        - generic [ref=f1e22]: Workspace — Inventory Spread
+      - group [ref=f1e24]:
+        - link "02—Product" [ref=f1e26] [cursor=pointer]:
+          - /url: /product
+        - list [ref=f1e27]:
+          - listitem [ref=f1e28]:
+            - link "PRD" [ref=f1e29] [cursor=pointer]:
+              - /url: /product
+        - group [ref=f1e30]:
+          - link "Features:" [ref=f1e32] [cursor=pointer]:
+            - /url: /features
+          - generic [ref=f1e33]:
+            - link "summaries" [ref=f1e34] [cursor=pointer]:
+              - /url: /feature/summaries
+            - link "error-handling" [ref=f1e35] [cursor=pointer]:
+              - /url: /feature/error-handling
+            - link "inventory-view" [ref=f1e36] [cursor=pointer]:
+              - /url: /feature/inventory-view
+        - group [ref=f1e37]:
+          - link "Stories:" [ref=f1e39] [cursor=pointer]:
+            - /url: /product
+          - generic [ref=f1e40]:
+            - link "60.1 — Summary Length Preference" [ref=f1e41] [cursor=pointer]:
+              - /url: /story/60-1
+            - link "60.2 — Summary For Shared Docs" [ref=f1e42] [cursor=pointer]:
+              - /url: /story/60-2
+            - link "60.3 — Summary Error Messages" [ref=f1e43] [cursor=pointer]:
+              - /url: /story/60-3
+            - button "+ New story" [ref=f1e44] [cursor=pointer]
+        - group [ref=f1e45]:
+          - link "Scenarios:" [ref=f1e47] [cursor=pointer]:
+            - /url: /requirements
+          - generic [ref=f1e48]:
+            - link "E2E-601 mcp-service" [ref=f1e49] [cursor=pointer]:
+              - /url: /requirements
+            - link "E2E-602 mcp-service" [ref=f1e50] [cursor=pointer]:
+              - /url: /requirements
+            - link "E2E-603 mcp-service" [ref=f1e51] [cursor=pointer]:
+              - /url: /requirements
+            - link "INT-901 mcp-service" [ref=f1e52] [cursor=pointer]:
+              - /url: /requirements
+    - generic [ref=f1e53]:
+      - generic [ref=f1e54]:
+        - navigation "Breadcrumb" [ref=f1e55]:
+          - link "Sessions" [ref=f1e56] [cursor=pointer]:
+            - /url: /sessions
+          - generic [ref=f1e57]: /
+          - link "Workspace overview" [ref=f1e58] [cursor=pointer]:
+            - /url: /workspace-overview
+          - generic [ref=f1e59]: /
+          - generic [ref=f1e60]: prd.yaml
+        - main [ref=f1e61]:
+          - generic [ref=f1e63]:
+            - generic [ref=f1e64]: 02—Product
+            - heading "prd.yaml" [level=1] [ref=f1e65]
+            - paragraph [ref=f1e66]: Whole-file view, GitHub-style — PRD goals + personas. Edit directly below, or ask the chat to change it.
+          - generic [ref=f1e67]:
+            - generic [ref=f1e68]:
+              - generic [ref=f1e69]: docs/prd/prd.yaml
+              - generic [ref=f1e70]: 26 lines
+            - generic [ref=f1e71]:
+              - generic [ref=f1e73]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+              - textbox "docs/prd/prd.yaml contents — editable" [ref=f1e74]: "title: \"MCP Google Docs Editor (harness AI fixture stub)\" summary: \"Synthetic PRD for harness E2E AI fixtures — deliberately minimal.\" personas: - name: Claude User definition: \"An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands\" primary_use_case: \"Document editing through conversational AI interface\" characteristics: - \"Non-technical users focused on content creation and editing\" - \"Values seamless integration between Claude AI and Google Docs\" - \"Expects reliable, fast document operations with clear error messaging\" - name: Developer/Maintainer definition: \"Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system\" primary_use_case: \"System development, deployment, and operational support\" characteristics: - \"Technical expertise in Go, Railway CLI, MCP protocol, and Google APIs\" - \"Focused on system reliability, security, and performance\" stories: - id: \"60.1\" file: docs/prd/stories/60.1-summary-length-preference.yaml - id: \"60.2\" file: docs/prd/stories/60.2-summary-shared-docs.yaml - id: \"60.3\" file: docs/prd/stories/60.3-summary-error-messages.yaml"
+      - button "Chat" [ref=f1e76] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=f1e82] [cursor=pointer]
+  - alert [ref=f1e86]

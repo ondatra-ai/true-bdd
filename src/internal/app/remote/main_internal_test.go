@@ -17,14 +17,14 @@ import (
 // the flock-inheritance, SIGINT-EOF, forced TERM→KILL escalation, and
 // nested-descendant-cleanup paths deterministically.
 const (
-	testChildModeEnv = "TRUE_BDD_REMOTE_TEST_CHILD_MODE"
+	testChildModeEnv     = "TRUE_BDD_REMOTE_TEST_CHILD_MODE"
 	testGrandchildPidEnv = "TRUE_BDD_REMOTE_TEST_GC_PID_FILE"
 )
 
 // Helper child modes.
 const (
-	modeBlockStdin     = "block-stdin"
-	modeIgnoreSignals  = "ignore-signals"
+	modeBlockStdin      = "block-stdin"
+	modeIgnoreSignals   = "ignore-signals"
 	modeSpawnGrandchild = "spawn-grandchild"
 )
 

@@ -1,8 +1,13 @@
 /**
- * P1 (plan §4.3) — register, bare folder: a remote started THROUGH a
- * symlinked cwd in a `base: none` fixture registers a session whose
- * displayed folder equals realpath(cwd) (never the symlink), and the
- * inventory honestly reports the missing true-bdd.yaml.
+ * P1 (plan §4.3, reworked for `home-sessions-list` H1) — register, bare folder:
+ * a remote started THROUGH a symlinked cwd in a `base: none` fixture registers a
+ * session whose displayed folder equals realpath(cwd) (never the symlink),
+ * proven at BOTH the API (`GET /api/sessions`) and the live sessions list (`/`).
+ *
+ * The `/sessions/<sid>` detail-inventory half was retired here: session-detail
+ * is out of scope for `home-sessions-list`, and the list-level sessions home is
+ * the surface this spec now shares with `w18-*`. Symlink→realpath is proven at
+ * the list; the general row anatomy lives in w18.2.
  */
 
 import fs from "node:fs";
@@ -11,7 +16,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 import { ProtocolEnv } from "./helpers/protocol-env";
-import { TID, gotoSession, gotoSessions, inventoryDoc, sessionRow } from "./helpers/ui";
+import { TID, gotoSessions, sessionRow } from "./helpers/ui";
 
 let env: ProtocolEnv | undefined;
 
@@ -50,16 +55,9 @@ test("P1: bare-folder registration through a symlinked cwd shows the realpath", 
   expect(session.folder).toBe(realFolder);
   expect(session.folder).not.toBe(linkPath);
 
-  // Sessions list renders the canonical folder, not the symlink.
+  // Sessions list renders the canonical folder, not the symlink (list level).
   await gotoSessions(page, e.server.baseURL);
   const row = sessionRow(page, session.session_id);
   await expect(row).toBeVisible({ timeout: 15_000 });
   await expect(row.getByTestId(TID.sessionFolder)).toHaveText(realFolder);
-
-  // Bare folder: the inventory reports the missing engine config
-  // honestly — no eager bootstrap (plan §3.1).
-  await gotoSession(page, e.server.baseURL, session.session_id);
-  await expect(inventoryDoc(page, "config")).toHaveAttribute("data-status", "missing", {
-    timeout: 15_000,
-  });
 });

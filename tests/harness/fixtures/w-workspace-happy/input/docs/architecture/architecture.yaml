@@ -1,0 +1,40 @@
+version: 1
+services:
+  mcp-service:
+    type: custom
+    path: services/mcp
+    dockerfile: services/mcp/Dockerfile
+    technologies:
+      - go
+      - net/http
+    dependencies: none
+    quality_gate:
+      integration_tests:
+        path: tests/integration
+        framework: jest
+        config: tests/jest.config.ts
+    endpoints:
+      - method: POST
+        path: /mcp
+        summary: JSON-RPC endpoint for tool calls
+      - method: GET
+        path: /health
+        summary: Liveness probe
+      - method: GET
+        path: /mcp/tools
+        summary: List available tools
+  postgres:
+    type: postgres
+    image: postgres:16-alpine
+    port: 5432
+    volume: pgdata:/var/lib/postgresql/data
+    compose_ref: docker-compose.yml#services.postgres
+terms:
+  - name: Vocabulary
+    description: Shared BDD glossary terms referenced by scenarios and specs.
+  - name: Scenario
+    description: One record in the scenarios registry — the requirement entity.
+docker:
+  compose_file: docker-compose.yml
+  description: >
+    Image-based services reference their own section here via compose_ref.

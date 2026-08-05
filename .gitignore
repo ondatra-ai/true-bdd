@@ -17,16 +17,15 @@
 /harness/data/
 /harness/playwright-report/
 /harness/test-results/
-/harness/tests/**/.tmp/
 /harness/*.tsbuildinfo
 /harness/next-env.d.ts
 
-# Web harness source is regenerated from the e2e suite (tests/harness),
-# not tracked — see the Sonnet rebuild experiment
-/harness/app/
-/harness/components/
-/harness/lib/
-/harness/tests/
+# Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
+# tests/harness/ is the spec, and ALL harness production code + unit tests are
+# regeneratable from it. Everything implement-task writes lives under the single
+# /harness/src/ root (see docs/context/paths.yaml → harness_code_root). Working
+# copies stay on disk but are never tracked.
+/harness/src/
 
 # Self-contained Playwright E2E suite (tests/harness) — deps + artefacts
 /tests/harness/node_modules/
@@ -53,3 +52,8 @@ __pycache__/
 # Local backend secrets for start.sh
 .env
 .env.local
+
+# Design gold-standard screenshots (tests/harness/goldens, incl. the
+# per-component crops/ subdir) MUST be tracked — the user-level
+# ~/.gitignore_global ignores *.png, so re-include them here.
+!tests/harness/goldens/**/*.png

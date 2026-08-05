@@ -1,0 +1,106 @@
+/* S&F Design System — single-entrypoint token stylesheet for consumers.
+   Normalized by the orchestrator from the source project's split token files
+   (tokens/fonts|colors|typography|spacing|layout|effects|base.css) with URLs
+   re-based to this file's location. Source of truth: see SYNC.md. */
+
+/* ── fonts (tokens/fonts.css) ── */
+@font-face{font-family:"Poppins";font-style:normal;font-weight:500;font-display:swap;src:url("./fonts/Poppins-Medium.ttf") format("truetype")}
+@font-face{font-family:"Poppins";font-style:normal;font-weight:700;font-display:swap;src:url("./fonts/Poppins-Bold.ttf") format("truetype")}
+:root{--font-poppins:"Poppins","Helvetica Neue",Helvetica,Arial,sans-serif;--font-sans:var(--font-poppins);--font-display:var(--font-poppins);--font-body:var(--font-poppins)}
+
+/* ── colors (tokens/colors.css) ── */
+:root{
+/* main — monochromatic ramp, exact values from S&F Guidelines 03—Colors */
+--white-999:#FFFFFF;--gray-100:#DEDFE4;--gray-600:#828388;--gray-999:#232429;--black-999:#040406;
+/* semantic status */
+--red-500:#EF4345;--green-500:#22C55F;--yellow-500:#EAB30A;
+/* spiral-dynamics gradient stops (Clare Graves / Don Beck), Blue → Teal */
+--spiral-blue:#0173D7;--spiral-orange:#F57600;--spiral-green:#00A896;--spiral-blue-light:#329BFF;--spiral-yellow:#FFE94A;--spiral-teal:#50E4D2;
+
+/* semantic aliases */
+--text-primary:var(--black-999);--text-body:var(--gray-999);--text-muted:var(--gray-600);--text-inverse:var(--white-999);--text-on-dark-muted:var(--gray-100);
+--surface-page:var(--white-999);--surface-card:var(--white-999);--surface-subtle:var(--gray-100);--surface-inverse:var(--black-999);--surface-inverse-soft:var(--gray-999);
+--border-hairline:var(--gray-100);--border-strong:var(--black-999);--border-on-dark:var(--gray-999);
+--status-error:var(--red-500);--status-success:var(--green-500);--status-warning:var(--yellow-500);
+
+--link-color:var(--black-999);--link-color-hover:var(--gray-600);
+}
+
+/* ── typography (tokens/typography.css) ── */
+:root{
+/* Sizing logic: body 20 → h3 32 → h2 52 → h1 84. Ratio walks ~1.6 and widens as it climbs,
+   so headings dominate and body stays quiet. Line height is a flat 120% everywhere. */
+--fs-body:20px;--fs-h3:32px;--fs-h2:52px;--fs-h1:84px;
+--fs-caption:14px;--fs-label:16px;--fs-button:16px;--fs-display:120px;
+--lh-tight:1.2;
+--lh-base:1.2;
+--lh-loose:1.4;
+--fw-medium:500;
+--fw-bold:700;
+--ls-tight:-0.02em;--ls-normal:0;
+--ls-button:0.06em;--ls-label:0.08em;
+/* semantic roles */
+--type-h1:var(--fw-bold) var(--fs-h1)/var(--lh-base) var(--font-display);
+--type-h2:var(--fw-bold) var(--fs-h2)/var(--lh-base) var(--font-display);
+--type-h3:var(--fw-bold) var(--fs-h3)/var(--lh-base) var(--font-display);
+--type-body:var(--fw-medium) var(--fs-body)/var(--lh-base) var(--font-body);
+--type-caption:var(--fw-medium) var(--fs-caption)/var(--lh-loose) var(--font-body);
+--type-button:var(--fw-bold) var(--fs-button)/1 var(--font-body);
+}
+
+/* ── spacing (tokens/spacing.css) ── */
+:root{
+/* 20 is the base unit — it is the grid gutter, so every rhythm value is a multiple of it. */
+--space-unit:20px;
+--space-1:5px;--space-2:10px;--space-3:20px;--space-4:30px;--space-5:40px;--space-6:60px;--space-7:80px;--space-8:120px;--space-9:160px;--space-10:200px;
+/* semantic */
+--pad-button-y:24px;--pad-button-x:40px;
+--pad-card:40px;--pad-card-lg:60px;
+--section-y:120px;--section-y-tight:80px;
+--stack-tight:10px;--stack-base:20px;--stack-loose:40px;
+}
+
+/* ── layout (tokens/layout.css) ── */
+:root{
+/* Swiss 12-column grid. Margin 0 — content runs edge to edge. Gutter 20. */
+--grid-columns:12;
+--grid-gutter:20px;--grid-margin:0px;
+--container-max:none;
+--measure-paragraph:44ch;
+--headline-max-lines:2;
+}
+.sf-grid{display:grid;grid-template-columns:repeat(var(--grid-columns),minmax(0,1fr));gap:var(--grid-gutter);padding-inline:var(--grid-margin)}
+/* Connected modules: equal-width columns butted directly together, no gap. */
+.sf-modules{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0}
+
+/* ── effects (tokens/effects.css) ── */
+:root{
+/* Sharp corners everywhere. Radius exists only so consumers know it is zero. */
+--radius-none:0px;--radius:0px;
+--border-width:1px;--border-width-strong:2px;
+/* No drop shadows in the system — depth comes from value contrast and gradient fields. */
+--shadow-none:none;
+/* Gradient fields: radial, blurred, edgeless. Never a linear directional blend. */
+--gradient-spiral:radial-gradient(60% 70% at 68% 78%,var(--spiral-teal) 0%,rgba(80,228,210,0) 62%),radial-gradient(55% 65% at 78% 42%,var(--spiral-blue-light) 0%,rgba(50,155,255,0) 60%),radial-gradient(50% 60% at 46% 32%,#B98CF5 0%,rgba(185,140,245,0) 62%),radial-gradient(70% 80% at 20% 15%,var(--white-999) 0%,rgba(255,255,255,0) 70%);
+--gradient-spiral-soft:radial-gradient(65% 80% at 82% 62%,var(--spiral-teal) 0%,rgba(80,228,210,0) 66%),radial-gradient(50% 62% at 40% 45%,#C9A7F2 0%,rgba(201,167,242,0) 68%),radial-gradient(60% 70% at 62% 50%,var(--spiral-blue-light) 0%,rgba(50,155,255,0) 62%);
+--gradient-spiral-full:linear-gradient(90deg,var(--spiral-blue) 0%,var(--spiral-blue-light) 22%,var(--spiral-teal) 42%,var(--spiral-green) 60%,var(--spiral-yellow) 80%,var(--spiral-orange) 100%);
+--gradient-image-radial:url("./assets/gradients/gradient-field-radial.png");
+--gradient-image-soft:url("./assets/gradients/gradient-field-soft.png");
+--blur-field:80px;
+/* Interaction feel: instant, mechanical, no bounce. Inversion, not softening. */
+--ease-standard:cubic-bezier(.2,0,.2,1);
+--dur-fast:120ms;
+--dur-base:180ms;
+--transition-interactive:background-color var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard),border-color var(--dur-fast) var(--ease-standard),opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* ── base element rules (tokens/base.css) ── */
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{margin:0;background:var(--surface-page);color:var(--text-body);font:var(--type-body);text-wrap:pretty}
+h1,h2,h3,h4{margin:0;color:var(--text-primary);letter-spacing:var(--ls-tight);text-wrap:balance}
+h1{font:var(--type-h1)}h2{font:var(--type-h2)}h3{font:var(--type-h3)}
+p{margin:0;font:var(--type-body);max-width:var(--measure-paragraph)}
+a{color:var(--link-color);text-decoration:none;border-bottom:1px solid currentColor;transition:var(--transition-interactive)}
+a:hover{color:var(--link-color-hover)}
+*,*::before,*::after{box-sizing:border-box}
+::selection{background:var(--spiral-teal);color:var(--black-999)}

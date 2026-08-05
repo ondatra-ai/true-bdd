@@ -1,0 +1,36 @@
+metadata:
+  title: "Requirements Registry (workspace fixture)"
+  version: "1.0"
+  description: "Scenario registry — flat by design, no epic/story nesting."
+
+scenarios:
+  E2E-601:
+    description: "Shared doc summary of 150 words or fewer appears in the conversation"
+    service: "mcp-service"
+    feature: summaries
+    user_stories:
+      - story: docs/prd/stories/60.2-summary-shared-docs.yaml
+        scenario_id: "60.2-001"
+  E2E-602:
+    description: "Summary timeout surfaces the timed-out message"
+    service: "mcp-service"
+    feature: error-handling
+    user_stories:
+      - story: docs/prd/stories/60.3-summary-error-messages.yaml
+        scenario_id: "60.3-001"
+  E2E-603:
+    description: "Oversized documents state the summarized word range"
+    service: "mcp-service"
+    feature: error-handling
+    user_stories:
+      - story: docs/prd/stories/60.3-summary-error-messages.yaml
+        scenario_id: "60.3-002"
+  E2E-604:
+    description: "Dangling-feature scenario — its feature ref matches nothing in features.yaml"
+    service: "mcp-service"
+    feature: ghost
+    user_stories: []
+  INT-901:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    user_stories: []

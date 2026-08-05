@@ -1,0 +1,28 @@
+/* S&F workspace density layer — REPO-OWNED, not part of the S&F mirror sync.
+   Loaded AFTER tokens.css by every workspace consumer (the proto-workspace
+   prototype and the production harness app).
+
+   Promoted from the proto-workspace skin (vendor/mockups.css) on 2026-08-04:
+   the runnable prototype is the workspace design baseline, and its dense
+   chrome scale is design truth for tool surfaces. The editorial scale in
+   tokens.css (20/32/52/84) stays reserved for display/editorial surfaces and
+   for headings (page titles keep --fs-h3 etc. per the SPEC token→UI map);
+   workspace CHROME — sidebar rows, group labels, breadcrumbs, header bars,
+   chips, the chat tab — renders at this scale. */
+:root {
+  /* type scale */
+  --wk-fs-micro: 11px;
+  --wk-fs-caption: 12px;
+  --wk-fs-row: 13px;
+  --wk-fs-body: 14px;
+  --wk-fs-label: 15px;
+  --wk-fs-subhead: 16px;
+  /* frame dimensions */
+  --wk-sidebar-w: 280px;
+  --wk-breadcrumb-h: 48px;
+  --wk-rail-w: 76px;
+  /* icon-rail anatomy (promoted 2026-08-04 evening — previously hardcoded in
+     the prototype's proto-extra.css; the rail's density is design truth too) */
+  --wk-rail-icon-fs: 20px;
+  --wk-rail-label-fs: 9px;
+}

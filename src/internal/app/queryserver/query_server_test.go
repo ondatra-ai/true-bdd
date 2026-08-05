@@ -120,6 +120,39 @@ func TestWorkerPoolMutationsSerializedWithAnswerPriority(t *testing.T) {
 	}
 }
 
+func TestWorkerPoolDocAndChatAreSeparateLanesFromRunMutations(t *testing.T) {
+	// A slow chat turn or a doc write must NEVER occupy the run-mutation slot
+	// (plan Slice 0/5, r3 #6): submit one of each class and confirm all four
+	// run concurrently — not serialized behind each other.
+	pool := queryserver.NewWorkerPool(queryserver.PoolSettings{MaxReads: 4, MaxInventory: 1})
+
+	pool.Submit("dispatch-1", queryserver.ClassDispatch)
+	pool.Submit("doc-1", queryserver.ClassDoc)
+	pool.Submit("chat-1", queryserver.ClassChat)
+
+	batch := pool.RunnableNow()
+
+	for _, id := range []string{"dispatch-1", "doc-1", "chat-1"} {
+		if !contains(batch, id) {
+			t.Fatalf("%s must run concurrently with the others (separate lanes): %v", id, batch)
+		}
+	}
+
+	// A second chat/doc item waits behind its OWN lane bound (default 1 chat,
+	// 4 docs), independent of the dispatch/answer mutation lane.
+	pool.Submit("chat-2", queryserver.ClassChat)
+
+	if contains(pool.RunnableNow(), "chat-2") {
+		t.Fatalf("a second concurrent chat turn must wait behind the chat lane bound")
+	}
+
+	pool.Complete("chat-1")
+
+	if !contains(pool.RunnableNow(), "chat-2") {
+		t.Fatalf("completing chat-1 must free the chat lane for chat-2")
+	}
+}
+
 func readID(i int) string {
 	return "rd-" + string(rune('0'+i))
 }

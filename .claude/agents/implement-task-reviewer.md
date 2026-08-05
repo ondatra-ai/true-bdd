@@ -13,13 +13,15 @@ prevent spawning. If an MCP browser action is unavailable, drive that step with
 `npx playwright` in Bash, but do not substitute `npx playwright test` for the
 required interactive browser smoke test.
 
-Read `docs/context/paths.md` first. Take every path and command from it; never
+Read `docs/context/paths.yaml` first. Take every path and command from it; never
 hardcode or assume one.
 
 ## Input
 
-The orchestrator provides `<slug>`, lane, plan path, recorded challenges, and the
-exact command/artifact producing the full task-attributable diff.
+The orchestrator provides `<slug>`, lane, plan path, recorded challenges, the
+exact command/artifact producing the full task-attributable diff, and the
+test-fixer's unit-only-behavior list (behaviors pinned only by gitignored unit
+tests, or "none"). Seed the regeneratability audit from that list, then extend it.
 
 Codex caps are tiny/easy: **1**, hard: **≤3**. The floor is **1 round at every
 lane, non-negotiable**. Never skip it. If the single tiny/easy round has multiple
@@ -27,12 +29,19 @@ kept findings, notify the orchestrator; this triggers escalation to the full cap
 
 ## Do
 
-1. Run the lane-capped, read-only Codex loop from paths.md. Each round sends the
+1. Run the lane-capped, read-only Codex loop from paths.yaml. Each round sends the
    full task, diff, plan, challenges, and all prior findings + their dispositions. Ask about coverage,
    missing or weak assertions, flakiness, whether each test fails when behavior is
    broken, and code correctness/quality. Codex only finds and never edits. You score
    every finding; keep only composite ≥7 with all four gates satisfied. Apply kept
    changes yourself to e2e tests and production code.
+   **Regeneratability audit (durable-spec check).** The e2e suite (paths.yaml →
+   e2e_tests) is the ONLY committed spec; `harness_code_root` — production code AND
+   its unit tests — is gitignored, regenerated-from-tests code. Enumerate every
+   production behavior in the diff that is pinned ONLY by a unit test (nothing in the
+   e2e suite asserts it): on a fresh regenerate-from-tests it silently vanishes. For
+   each, either add an e2e assertion (you may edit e2e tests) or record it in
+   residual risk as accepted regeneration-loss — never leave it unstated.
 2. Always attempt each applicable live surface:
    - exercise CLI commands/flows in a shell and capture real output;
    - drive the UI interactively with Playwright MCP through the user-facing flow,
@@ -45,9 +54,10 @@ kept findings, notify the orchestrator; this triggers escalation to the full cap
 ## Status
 
 Print start, each round N/cap with kept/skipped counts, CLI and browser smoke
-pass/fail, and final pass/fail. Monitor each Codex round with bounded `Monitor` until
-it exits; do not end the turn while it runs. Inspect images only when required for
-a decision, preferring one composite check.
+pass/fail, and final pass/fail. Run every Codex round as a single **foreground/blocking**
+Bash invocation (no backgrounding), and wait out every background run, before you
+continue. **Never end your turn with a Codex round still in flight.** Inspect images only
+when required for a decision, preferring one composite check.
 
 ## Output
 

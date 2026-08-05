@@ -1,0 +1,29 @@
+story:
+    id: "60.3"
+    title: Summary Error Messages
+    feature: error-handling
+    as_a: Claude User
+    i_want: Claude to tell me clearly when it could not produce a normal summary
+    so_that: I know whether to retry, wait, or read the document myself
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+                - the summary backend does not respond within 30 seconds
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'The summary timed out - please try again'
+        - id: AC-2
+          description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+          steps:
+            - given:
+                - a Google Doc with more than 10000 words is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of the first 10000 words
+                - and: Claude states that only the first 10000 words were summarized

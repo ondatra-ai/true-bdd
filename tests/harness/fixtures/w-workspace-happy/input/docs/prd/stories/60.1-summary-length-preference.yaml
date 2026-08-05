@@ -1,0 +1,27 @@
+story:
+    id: "60.1"
+    title: Summary Length Preference
+    feature: summaries
+    as_a: Claude User
+    i_want: to tell Claude how long or short my summary should be
+    so_that: I get exactly as much detail as I need for the doc at hand
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must limit the summary to 75 words or fewer when the Claude User asks for a "short" summary.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude for a short summary of the document
+            - then:
+                - Claude displays a summary of 75 words or fewer in the conversation
+        - id: AC-2
+          description: Claude must allow up to 300 words when the Claude User asks for a "detailed" summary.
+          steps:
+            - given:
+                - a Google Doc is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude for a detailed summary of the document
+            - then:
+                - Claude displays a summary of up to 300 words in the conversation

@@ -202,6 +202,17 @@ func TestHonestyArchitectureMirrorsBuildCodeLoader(t *testing.T) {
 			"architecture:\n  services:\n    - name: svc\n      path: services/svc\n",
 			inventory.StatusPresent,
 		},
+		// The workspace file-as-source schema (task workspace-overview-design-parity,
+		// R3): a top-level `services:` MAP, no `architecture:` wrapper — mirrors
+		// harness/src/app/lib/workspace/derive.ts's deriveArchitecture. Both schemas
+		// must classify correctly since the SAME inventory chip serves the protocol
+		// detail page AND the workspace overview canvas.
+		{"workspace_schema_no_services", "services: {}\n", inventory.StatusInvalid},
+		{
+			"workspace_schema_with_services",
+			"services:\n  mcp-service:\n    type: custom\n",
+			inventory.StatusPresent,
+		},
 	}
 
 	for _, testCase := range cases {

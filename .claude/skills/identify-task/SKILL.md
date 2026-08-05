@@ -55,12 +55,32 @@ orchestrate: clarify only what's ambiguous, relay everything else untouched.
    After each iteration surface: what changed + the one-line "how to try it".
    Keep a running **steering log** — every steering and reaction is a future
    requirement.
+   **Validate each iteration — two tiers, both mandatory:**
+   - *Tier 1 — the prototyper self-validates* (its agent definition requires
+     it): exercises what it changed and returns VERIFIED/UNVERIFIED evidence —
+     for UI, before/after screenshot pairs around each interaction (headless
+     Playwright via Bash); for non-UI, real command output.
+   - *Tier 2 — you review, cheaply.* Read the evidence screenshots/output and
+     check they show what the report claims. Then re-drive exactly ONE
+     interaction yourself (Playwright MCP / CLI) — the riskiest one: the
+     behavior whose failure would most embarrass the demo. Escalate to full
+     re-verification ONLY if evidence is missing, contradicts the report, or
+     your spot-check fails. Screenshots prove looks, not behavior — never
+     accept a "looks right" screenshot as proof that a click works, and never
+     surface an unverified claim to the user as working.
 4. **End** when the user says so ("done", "enough", "make it a task").
-5. **Distill, then revert.** From the steering log + final prototype state, draft
-   the requirements — steerings and reactions are `[revealed]`, your inferences
-   `[suggested]`; record what the prototype proved as Established facts. THEN
-   revert to the step 1 baseline: `git restore` changed tracked files, delete
-   untracked files created since. Nothing survives except the brief.
+5. **Distill, then ask about the prototype's fate.** From the steering log +
+   final prototype state, draft the requirements — steerings and reactions are
+   `[revealed]`, your inferences `[suggested]`; record what the prototype proved
+   as Established facts. THEN ask the user ONE `AskUserQuestion` — "Revert the
+   prototype?" — with options: **Revert** (restore the step 1 baseline:
+   `git restore` changed tracked files, delete untracked files created since —
+   nothing survives except the brief) and **Keep** (preserve it: copy the
+   prototype into a tracked folder, e.g. under `harness/design/`, minus
+   node_modules/build artifacts, with a README naming the brief; leave the
+   working tree uncommitted — never commit without an explicit instruction).
+   The harness adds Other for anything in between. Honor the choice; revert
+   exclusions noted in `./tmp/proto-baseline.txt` survive either way.
 6. **Rejoin the normal process** at step 6 (save the brief), then 7 (Codex
    validation) and 8 (Keep/Drop) — the user now knows what they want, so
    validation is fast.
@@ -70,4 +90,4 @@ Run Codex non-interactively — without a sandbox flag it hangs:
 codex exec -s read-only --ephemeral -C "$PWD" --color never \
   -c model_reasoning_effort=low -o ./tmp/codex-review.md - < ./tmp/codex-prompt.md
 ```
-Background it; full guide + wrapper: paths in `docs/context/paths.md` → Codex.
+Background it; full guide + wrapper: paths in `docs/context/paths.yaml` → the codex_* entries.

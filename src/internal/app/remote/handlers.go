@@ -25,8 +25,76 @@ func (a *Agent) handleWork(ctx context.Context, item workItem) {
 		a.handleDispatch(ctx, item)
 	case workAnswer:
 		a.handleAnswer(ctx, item)
+	case workDocTree:
+		a.handleDocTree(ctx, item)
+	case workDocRead:
+		a.handleDocRead(ctx, item)
+	case workDocWrite:
+		a.handleDocWrite(ctx, item)
+	case workChat:
+		a.handleChat(ctx, item)
 	default:
 		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("unknown_work_type")})
+	}
+}
+
+// handleDocTree replies with the fixed-schema document manifest (plan Slice
+// 0): every fixed document plus a fresh scan of the story files.
+func (a *Agent) handleDocTree(ctx context.Context, item workItem) {
+	a.reply(ctx, item, replyEnvelope{Status: http.StatusOK, Body: a.docs.tree()})
+}
+
+// handleDocRead replies with a document's current bytes, existence/parse
+// status, and content-derived revision (plan Slice 0).
+func (a *Agent) handleDocRead(ctx context.Context, item workItem) {
+	var payload docReadPayload
+
+	err := json.Unmarshal(item.Payload, &payload)
+	if err != nil {
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("invalid")})
+
+		return
+	}
+
+	result, readErr := a.docs.read(payload.Path)
+	if readErr != nil {
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("invalid_path")})
+
+		return
+	}
+
+	a.reply(ctx, item, replyEnvelope{Status: http.StatusOK, Body: result})
+}
+
+// handleDocWrite is the S1 persistence backend: path-safety, YAML gate,
+// idempotency dedup, per-document serialization, stale-revision conflict, and
+// an atomic durable commit — replying with the write receipt (plan Slice 0).
+func (a *Agent) handleDocWrite(ctx context.Context, item workItem) {
+	var payload docWritePayload
+
+	err := json.Unmarshal(item.Payload, &payload)
+	if err != nil {
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("invalid")})
+
+		return
+	}
+
+	outcome := a.docs.write(payload)
+
+	switch outcome.kind {
+	case docWriteOK:
+		a.reply(ctx, item, replyEnvelope{
+			Status: http.StatusOK,
+			Body:   map[string]any{"receipt": outcome.receipt},
+		})
+	case docWriteInvalidYAML:
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusUnprocessableEntity, Body: errorBody("invalid_yaml")})
+	case docWriteConflict:
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusConflict, Body: errorBody("conflict")})
+	case docWriteInvalidPath:
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("invalid_path")})
+	default:
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusInternalServerError, Body: errorBody("write_failed")})
 	}
 }
 
@@ -114,6 +182,24 @@ func (a *Agent) runDetailReply(runID string) replyEnvelope {
 	}
 
 	return replyEnvelope{Status: http.StatusNotFound, Body: errorBody("not_found")}
+}
+
+// handleChat runs one chat turn (deterministic driver or a real Claude call,
+// plan Slice 5) and replies with the structured result. Never a blind write:
+// the browser applies `edit.new_content` to the buffer and the NORMAL
+// debounced doc_write persists it (S1's single persistence path).
+func (a *Agent) handleChat(ctx context.Context, item workItem) {
+	var payload chatPayload
+
+	err := json.Unmarshal(item.Payload, &payload)
+	if err != nil {
+		a.reply(ctx, item, replyEnvelope{Status: http.StatusBadRequest, Body: errorBody("invalid")})
+
+		return
+	}
+
+	result := a.chat.turn(ctx, payload)
+	a.reply(ctx, item, replyEnvelope{Status: http.StatusOK, Body: result})
 }
 
 // handleDispatch runs the store dispatch transaction, replies with the mapped

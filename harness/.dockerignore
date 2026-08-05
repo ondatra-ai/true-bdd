@@ -3,5 +3,5 @@ node_modules
 .git
 .vercel
 .env*.local
-tests
+src/tests
 *.md

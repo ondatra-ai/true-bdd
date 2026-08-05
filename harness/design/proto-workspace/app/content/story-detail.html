@@ -1,0 +1,101 @@
+<nav class="mockup-breadcrumb" data-testid="mockup-breadcrumb" aria-label="Breadcrumb">
+      <a href="/sessions">Sessions</a>
+      <span class="crumb-sep">/</span>
+      <a href="/workspace-overview">Workspace overview</a>
+      <span class="crumb-sep">/</span>
+      <a href="/prd-overview">Product</a>
+      <span class="crumb-sep">/</span>
+      <a href="/epic">Inventory Spread Epic</a>
+      <span class="crumb-sep">/</span>
+      <span aria-current="page">60.2 — Summary For Shared Docs</span>
+    </nav>
+
+      <main class="mockup-canvas canvas-max" data-testid="mockup-canvas">
+<div class="page-header">
+  <div>
+    <span class="section-label">02—Product / Epic 60 / Story 60.2</span>
+    <h1>60.2 — Summary For Shared Docs</h1>
+    <div class="tag-row" style="margin-top: 10px;">
+      <span class="status-pill" data-testid="status-pill">Planned</span>
+      <span class="chip lifecycle-chip" data-testid="lifecycle-chip" data-kind="created">Created</span>
+      <span class="chip lifecycle-chip" data-testid="lifecycle-chip" data-kind="applied">1/2</span>
+      <span class="chip lifecycle-chip" data-testid="lifecycle-chip" data-kind="refined">Not recorded</span>
+    </div>
+  </div>
+  <div class="page-actions">
+    <div class="btn-row">
+      <button type="button" class="btn">Create</button>
+      <button type="button" class="btn">Refine</button>
+      <button type="button" class="btn btn--solid">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+  <p class="mt-0"><strong>As a</strong> Claude User,<br />
+  <strong>I want</strong> Claude to give me a short summary of a shared Google Doc when I ask for one,<br />
+  <strong>so that</strong> I can decide whether the document needs my attention without reading it in full.</p>
+</div>
+
+<div class="fix-toggle-row">
+  <input type="checkbox" id="fix-toggle" role="switch" />
+  <label for="fix-toggle">Fix mode — drive a Claude-mediated repair loop on failed checks</label>
+</div>
+
+<h2 class="subsection">Acceptance criteria</h2>
+
+<div class="ac-block">
+  <span class="ac-block__id">AC-1</span>
+  <p style="font-size: 13px; margin: 4px 0 0;">Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.</p>
+  <ul class="step-list">
+    <li><span class="step-kind">Given</span>a Google Doc with at least 500 words of body text is shared with the Claude User's account</li>
+    <li><span class="step-kind">When</span>the Claude User asks Claude to summarize the document</li>
+    <li><span class="step-kind">Then</span>Claude displays a summary of 150 words or fewer in the conversation</li>
+    <li><span class="step-kind">And</span>the summary names the document title</li>
+  </ul>
+</div>
+<div class="ac-block">
+  <span class="ac-block__id">AC-2</span>
+  <p style="font-size: 13px; margin: 4px 0 0;">Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.</p>
+  <ul class="step-list">
+    <li><span class="step-kind">Given</span>a Google Doc exists that is not shared with the Claude User's account</li>
+    <li><span class="step-kind">When</span>the Claude User asks Claude to summarize that document</li>
+    <li><span class="step-kind">Then</span>Claude displays the message 'This document is not shared with your account'</li>
+    <li><span class="step-kind">But</span>Claude does not display any content from the document</li>
+  </ul>
+</div>
+
+<h2 class="subsection">Raw file</h2>
+<details class="raw-details">
+  <summary>Raw story file</summary>
+  <pre class="story-raw" data-testid="story-raw">story:
+    id: "60.2"
+    title: Summary For Shared Docs
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+                - and: the summary names the document title
+        - id: AC-2
+          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc exists that is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize that document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'
+                - but: Claude does not display any content from the document</pre>
+</details>
+
+      </main>

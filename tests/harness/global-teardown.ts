@@ -15,6 +15,11 @@ import { sweepHarnessContainers } from "./helpers/server-controller";
 import { suiteContext } from "./helpers/suite-root";
 
 export default async function globalTeardown(): Promise<void> {
+  // Mirror of the global-setup goldens guard: nothing was brought up.
+  if (process.env.UPDATE_GOLDENS === "1") {
+    return;
+  }
+
   let suiteRoot: string | undefined;
   try {
     suiteRoot = suiteContext().suiteRoot;

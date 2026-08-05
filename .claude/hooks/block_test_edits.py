@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: stop the implement-task-coder agent from editing test files.
+"""PreToolUse hook: stop the implement-task-test-fixer agent from editing test files.
 
-Wired into the `implement-task-coder` agent's frontmatter `hooks.PreToolUse` only,
-so it runs solely while that agent is active — the test-author and reviewer agents
-(which legitimately edit tests) are unaffected. Enforced in every permission mode,
-including bypassPermissions.
+Wired into the `implement-task-test-fixer` agent's frontmatter `hooks.PreToolUse`
+only, so it runs solely while that agent is active — the test-author and reviewer
+agents (which legitimately edit tests) are unaffected. Enforced in every permission
+mode, including bypassPermissions.
 
 Two surfaces are guarded:
   * File-edit tools (Write/Edit/MultiEdit/NotebookEdit) — denied when the target
@@ -16,15 +16,15 @@ Two surfaces are guarded:
 
 This Bash guard is BEST-EFFORT defense-in-depth — a determined command can evade it
 (variable indirection, obfuscation, transient edit + restore). The real guarantee is
-the orchestrator hashing the off-limits tree before/after the coder and stopping on
-any change. Matching is deliberately conservative: a rare benign command that names a
-mutating verb and a test path may be denied; the agent can rephrase or escalate.
+the orchestrator hashing the off-limits tree before/after the test-fixer and stopping
+on any change. Matching is deliberately conservative: a rare benign command that names
+a mutating verb and a test path may be denied; the agent can rephrase or escalate.
 
-The off-limits path patterns live in a fenced block under the
-"## Off-limits to the coder" heading of docs/context/paths.md — edit them there, not
-here. Missing config or unreadable stdin fails OPEN (allows) with a loud warning; the
-coder's prompt prohibition and the orchestrator snapshot remain as backstops (the Bash
-guard cannot run without the patterns).
+The off-limits path patterns live in the `off_limits_test_fixer.paths` list of
+docs/context/paths.yaml — edit them there, not here. Missing config or unreadable
+stdin fails OPEN (allows) with a loud warning; the test-fixer's prompt prohibition
+and the orchestrator snapshot remain as backstops (the Bash guard cannot run without
+the patterns).
 
 Input  (stdin JSON): {"tool_name": "...", "tool_input": {"file_path"|"command": "...", ...}}
 Output (stdout JSON when denying):
@@ -47,9 +47,9 @@ from pathlib import Path
 REPO = Path(
     os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2]
 ).resolve()
-PATHS_FILE = REPO / "docs" / "context" / "paths.md"
+PATHS_FILE = REPO / "docs" / "context" / "paths.yaml"
 AUDIT_LOG = REPO / "tmp" / "block_test_edits.log"
-OFFLIMITS_HEADING = "## Off-limits to the coder"
+OFFLIMITS_KEY = "off_limits_test_fixer"
 FILE_EDIT_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 
 # A write operator that, immediately followed by an off-limits path token, means the
@@ -68,7 +68,7 @@ SNAPSHOT_UPDATE_RE = re.compile(
     r"\b(?:playwright|vitest|jest|pytest|py\.test)\b[^|;]*?(?:-u|--update-snapshots)\b"
 )
 # Applying an external diff can modify tests off-path (the target lives in the patch
-# file, not the command), so deny these outright for the coder.
+# file, not the command), so deny these outright for the test-fixer.
 PATCH_RE = re.compile(r"\bgit\s+apply\b|(?:^|[;&|]\s*)patch\b")
 
 
@@ -83,36 +83,46 @@ def audit(record):
 
 
 def load_offlimits():
-    """Return path patterns from the fenced block under the off-limits heading."""
+    """Return path patterns from paths.yaml's off_limits_test_fixer.paths list."""
     try:
-        lines = PATHS_FILE.read_text(encoding="utf-8").splitlines()
+        text = PATHS_FILE.read_text(encoding="utf-8")
     except OSError:
         return None
     try:
-        start = next(i for i, ln in enumerate(lines) if ln.startswith(OFFLIMITS_HEADING))
-    except StopIteration:
-        return None
-    try:
-        fence_open = next(
-            i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("```")
-        )
-    except StopIteration:
-        return None
-    patterns = []
-    for ln in lines[fence_open + 1:]:
-        if ln.lstrip().startswith("```"):
-            break
-        s = ln.split("#", 1)[0].strip()
-        if s:
-            patterns.append(s)
+        import yaml  # PyYAML — present in the dev environment
+
+        entry = (yaml.safe_load(text) or {}).get(OFFLIMITS_KEY) or {}
+        patterns = [str(p).strip() for p in entry.get("paths") or [] if str(p).strip()]
+        return patterns or None
+    except Exception:  # noqa: BLE001 — fall through to the dependency-free parse
+        pass
+    # Fallback (no PyYAML / parse error): indentation scan for the entry's list.
+    patterns, in_entry, in_paths = [], False, False
+    for ln in text.splitlines():
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        indented = ln[0] in " \t"
+        if not indented:
+            in_entry = ln.startswith(OFFLIMITS_KEY + ":")
+            in_paths = False
+            continue
+        if not in_entry:
+            continue
+        s = ln.strip()
+        if s.startswith("paths:"):
+            in_paths = True
+        elif in_paths and s.startswith("- "):
+            patterns.append(s[2:].strip().strip("'\""))
+        elif in_paths:
+            in_paths = False
     return patterns or None
 
 
 def _path_tokens(pattern):
     """Regexes matching `pattern` as a real path token (with boundaries).
 
-    Directory patterns keep their trailing slash (so `harness/tests/` does NOT match
-    `harness/tests-results`); file patterns require a boundary after. A leading
+    Directory patterns keep their trailing slash (so `harness/src/tests/` does NOT
+    match `harness/src/tests-results`); file patterns require a boundary after. A leading
     boundary (not preceded by a word/dot/dash) prevents matching inside a longer name.
     Forms: repo-relative, `./`-prefixed, and absolute. File patterns ALSO match their
     bare basename (at start or after whitespace/quote) so `cd <parent> && > <basename>`
@@ -173,8 +183,8 @@ def now_iso():
 
 def deny(tool, target, rule, extra=None):
     reason = (
-        f"implement-task-coder must not modify test files: {tool} target '{target}' "
-        f"is off-limits (matched '{rule}' in docs/context/paths.md). Escalate to the "
+        f"implement-task-test-fixer must not modify test files: {tool} target '{target}' "
+        f"is off-limits (matched '{rule}' in docs/context/paths.yaml). Escalate to the "
         "test-author via the orchestrator instead of editing tests."
     )
     sys.stderr.write("block_test_edits: DENY — " + reason + "\n")
@@ -225,7 +235,7 @@ def main():
     if not patterns:
         warn_then_allow(
             f"off-limits block not found in {PATHS_FILE.relative_to(REPO)}; failing open "
-            "(only the coder prompt prohibition and the orchestrator snapshot remain; "
+            "(only the test-fixer prompt prohibition and the orchestrator snapshot remain; "
             "the Bash guard is inactive without patterns)"
         )
 

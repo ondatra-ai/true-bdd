@@ -10,13 +10,13 @@ import (
 // Reconnect signals — the CLI's typed reaction to an HTTP status or a poll
 // body that reports a stale session/epoch (plan §2).
 const (
-	signalOK             = ""
-	signalSessionGone    = "session_gone"
-	signalStaleEpoch     = "stale_epoch"
-	signalReplyTooLarge  = "reply_too_large"
-	signalInvalidReply   = "invalid_reply"
-	signalCapacity       = "capacity"
-	signalTransport      = "transport"
+	signalOK            = ""
+	signalSessionGone   = "session_gone"
+	signalStaleEpoch    = "stale_epoch"
+	signalReplyTooLarge = "reply_too_large"
+	signalInvalidReply  = "invalid_reply"
+	signalCapacity      = "capacity"
+	signalTransport     = "transport"
 )
 
 // ClassifyStatus maps an HTTP status to the CLI's typed reconnect signal

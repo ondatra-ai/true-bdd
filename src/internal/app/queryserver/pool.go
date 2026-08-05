@@ -12,13 +12,37 @@ const (
 	ClassDispatch  WorkClass = "dispatch"
 	ClassRead      WorkClass = "read"
 	ClassInventory WorkClass = "inventory"
+	// ClassDoc is the workspace document lane (doc_tree/doc_read/doc_write —
+	// plan Slice 0, r3 #6): its own concurrency bound, independent of the
+	// run-mutation lane (answer/dispatch), so document work never contends
+	// with run scheduling for a slot.
+	ClassDoc WorkClass = "doc"
+	// ClassChat is the workspace chat lane (plan Slice 5, r3 #6): scheduled
+	// separately from ClassDispatch so a slow chat turn (a real Claude call)
+	// can never occupy the run-mutation slot and stall dispatch/answer.
+	ClassChat WorkClass = "chat"
 )
 
 // PoolSettings is field-identical to the seam PoolConfig.
 type PoolSettings struct {
 	MaxReads     int
 	MaxInventory int
+	// MaxDocs bounds concurrent doc_tree/doc_read/doc_write handling (its own
+	// lane, off the run-mutation lane). Zero means unbounded via the default
+	// applied by NewWorkerPool (defaultMaxDocs).
+	MaxDocs int
+	// MaxChat bounds concurrent chat-turn handling (its own lane; a single
+	// workspace-wide conversation makes 1 the natural default).
+	MaxChat int
 }
+
+// Defaults applied when a caller leaves MaxDocs/MaxChat unset (zero) — chosen
+// so existing callers that construct PoolSettings with only
+// MaxReads/MaxInventory (protocol-era code) keep working unchanged.
+const (
+	defaultMaxDocs = 4
+	defaultMaxChat = 1
+)
 
 type unit struct {
 	id    string
@@ -36,8 +60,18 @@ type WorkerPool struct {
 	pending  []unit
 }
 
-// NewWorkerPool builds a pool with the given bounds.
+// NewWorkerPool builds a pool with the given bounds. MaxDocs/MaxChat default
+// to defaultMaxDocs/defaultMaxChat when left zero (existing protocol-era
+// callers construct PoolSettings without them).
 func NewWorkerPool(settings PoolSettings) *WorkerPool {
+	if settings.MaxDocs <= 0 {
+		settings.MaxDocs = defaultMaxDocs
+	}
+
+	if settings.MaxChat <= 0 {
+		settings.MaxChat = defaultMaxChat
+	}
+
 	return &WorkerPool{settings: settings}
 }
 
@@ -50,15 +84,20 @@ func (p *WorkerPool) Submit(unitID string, class WorkClass) {
 }
 
 // RunnableNow returns the ids the pool would run concurrently: up to MaxReads
-// reads, up to MaxInventory inventory scans, and at most ONE mutation chosen by
-// priority (answer over dispatch).
+// reads, up to MaxInventory inventory scans, up to MaxDocs doc_tree/doc_read/
+// doc_write, up to MaxChat chat turns, and at most ONE mutation chosen by
+// priority (answer over dispatch). One switch per class keeps each lane's
+// bound readable in place; splitting per-class would scatter the SAME
+// bounded-lane pattern across more functions than it would clarify.
+//
+//nolint:cyclop // see above
 func (p *WorkerPool) RunnableNow() []string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	chosenMutation := p.highestPriorityMutation()
 
-	reads, invs := 0, 0
+	reads, invs, docs, chats := 0, 0, 0, 0
 
 	var out []string
 
@@ -73,6 +112,20 @@ func (p *WorkerPool) RunnableNow() []string {
 			if invs < p.settings.MaxInventory {
 				out = append(out, item.id)
 				invs++
+			}
+		case ClassDoc:
+			// Its OWN lane (r3 #6): bounded independently of the run-mutation
+			// lane so document work never contends with dispatch/answer.
+			if docs < p.settings.MaxDocs {
+				out = append(out, item.id)
+				docs++
+			}
+		case ClassChat:
+			// A separate lane from ClassDispatch (r3 #6): a slow chat turn
+			// (a real Claude call) can never occupy the run-mutation slot.
+			if chats < p.settings.MaxChat {
+				out = append(out, item.id)
+				chats++
 			}
 		case ClassAnswer, ClassDispatch:
 			if item.id == chosenMutation {

@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-08-05T04:57:51.067Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "source": "harness/design/proto-workspace/app (booted via `next dev` by helpers/proto-baseline.ts)",
+  "routes": {
+    "workspace-overview": "/workspace-overview",
+    "product-landing": "/product",
+    "story-page": "/story/60-1",
+    "feature-detail": "/feature/summaries"
+  },
+  "crops": {
+    "rail": {
+      "width": 76,
+      "height": 900,
+      "masks": []
+    },
+    "sidebar": {
+      "width": 280,
+      "height": 900,
+      "masks": [
+        {
+          "x": 0,
+          "y": 477,
+          "w": 280,
+          "h": 900
+        }
+      ]
+    },
+    "breadcrumb": {
+      "width": 1057,
+      "height": 48,
+      "masks": []
+    },
+    "file-card": {
+      "width": 977,
+      "height": 580,
+      "masks": [
+        {
+          "x": 38,
+          "y": 39,
+          "w": 977,
+          "h": 580
+        },
+        {
+          "x": 899,
+          "y": 6,
+          "w": 69,
+          "h": 26
+        }
+      ]
+    },
+    "chat-toggle": {
+      "width": 27,
+      "height": 900,
+      "masks": []
+    }
+  }
+}

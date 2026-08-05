@@ -1,0 +1,7 @@
+features:
+  - id: summaries
+    description: "Generating and tuning Claude's Google Doc summaries — length preferences, defaults, and coverage for shared docs."
+  - id: error-handling
+    description: "Clear failure messaging when a summary can't be produced normally — timeouts, oversized documents, and other edge cases."
+  - id: inventory-view
+    description: "The apply-state inventory view (missing / partial / full) surfaced on the workspace overview — no stories or requirements aligned yet."
