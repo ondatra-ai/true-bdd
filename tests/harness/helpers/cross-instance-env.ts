@@ -1,13 +1,13 @@
 /**
- * Two-`next start`-instance environment for the serverless-rendezvous specs
+ * Two-server-instance environment for the serverless-rendezvous specs
  * (plan: connect-cli-to-vercel-harness → p17/p20/p21/p22).
  *
  * The core serverless proof: browser reads/mutations pinned to instance A and
- * CLI poll/reply pinned to instance B — TWO separate `next start` processes —
- * rendezvous through ONE shared Redis (same `REDIS_KEY_PREFIX`). Under the
- * in-process (globalThis) relay this is IMPOSSIBLE: each process has its own
- * registry/work queue, so any cross-instance operation fails. That failure is
- * the intended RED until the coder lands the Redis-backed relay.
+ * CLI poll/reply pinned to instance B — TWO separate host `node server.js`
+ * processes — rendezvous through ONE shared Redis (same `REDIS_KEY_PREFIX`).
+ * Under the in-process (globalThis) relay this is IMPOSSIBLE: each process has
+ * its own registry/work queue, so any cross-instance operation fails. That
+ * failure is the intended RED until the coder lands the Redis-backed relay.
  *
  * Mirrors ProtocolEnv's teardown discipline (remotes + child groups first,
  * fixture teardown, scoped Redis flush, both servers, repro manifest) but owns
@@ -79,9 +79,9 @@ export class CrossInstanceEnv {
   }
 
   /**
-   * Starts TWO `next start` instances sharing one Redis namespace (unique
-   * prefix). `serverEnv` is applied to BOTH (e.g. HARNESS_DEPLOYED for p19-
-   * style cases — not used by the cross-instance specs today, but available).
+   * Starts TWO host `node server.js` instances sharing one Redis namespace
+   * (unique prefix). `serverEnv` is applied to BOTH (e.g. HARNESS_DEPLOYED for
+   * p19-style cases — not used by the cross-instance specs today, but available).
    */
   static async start(slug: string, options: { serverEnv?: Record<string, string> } = {}): Promise<CrossInstanceEnv> {
     const dir = mkdirUnderSuiteRoot(slug);

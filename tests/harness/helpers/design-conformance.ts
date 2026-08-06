@@ -24,7 +24,7 @@ import path from "node:path";
 
 import type { Page } from "@playwright/test";
 
-import { findRepoRoot } from "./suite-root";
+import { findRepoRoot, suiteContext } from "./suite-root";
 
 // ── Design-source locations (all under paths.yaml → design_system) ──
 
@@ -832,6 +832,69 @@ export interface JudgeRun {
   exitCode: number;
 }
 
+// ── Codex judge concurrency semaphore ──
+//
+// Under `fullyParallel` many Playwright workers can reach a design judge at
+// once, but each judge shells out to the local `codex` vision CLI — a heavy
+// external LLM call. Running too many concurrently invites codex rate-limit
+// flake and host memory pressure. This is a CROSS-PROCESS semaphore (Playwright
+// workers are separate node processes, so an in-memory limiter would not bind):
+// a slot is a directory `<suiteRoot>/codex-slots/<i>`; an atomic `mkdirSync`
+// wins it (EEXIST = already owned by another worker), and `rmdirSync` in a
+// finally frees it. Bound by CODEX_JUDGE_CONCURRENCY (default 3).
+const CODEX_JUDGE_CONCURRENCY = Number(process.env.CODEX_JUDGE_CONCURRENCY ?? 3);
+const CODEX_SLOT_POLL_MS = 250;
+/** Generous overall wait cap: throw a clear error rather than hang forever if a
+ * crashed worker leaks a slot (each judge itself is timeout-bounded ≤150s). */
+const CODEX_SLOT_DEADLINE_MS = 10 * 60 * 1000;
+
+/**
+ * Acquires one cross-process codex slot, polling every 250ms until one frees.
+ * Returns an idempotent release fn — call it in a `finally`. Throws after a
+ * generous deadline instead of hanging forever.
+ */
+async function acquireCodexSlot(): Promise<() => void> {
+  const slotsDir = path.join(suiteContext().suiteRoot, "codex-slots");
+  fs.mkdirSync(slotsDir, { recursive: true });
+
+  const deadline = Date.now() + CODEX_SLOT_DEADLINE_MS;
+  for (;;) {
+    for (let i = 0; i < CODEX_JUDGE_CONCURRENCY; i++) {
+      const slot = path.join(slotsDir, String(i));
+      try {
+        fs.mkdirSync(slot); // atomic: succeeds => slot owned; EEXIST => taken
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+          continue; // slot taken by another worker — try the next one
+        }
+        throw err;
+      }
+      let released = false;
+
+      return () => {
+        if (released) {
+          return;
+        }
+        released = true;
+        try {
+          fs.rmdirSync(slot);
+        } catch {
+          /* best-effort: a missing slot is fine (already reclaimed) */
+        }
+      };
+    }
+
+    if (Date.now() > deadline) {
+      throw new Error(
+        `codex judge semaphore: no slot free after ${CODEX_SLOT_DEADLINE_MS}ms ` +
+          `(CODEX_JUDGE_CONCURRENCY=${CODEX_JUDGE_CONCURRENCY}, slots dir ${slotsDir}) — ` +
+          "a crashed worker may have leaked a slot directory.",
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, CODEX_SLOT_POLL_MS));
+  }
+}
+
 /**
  * Runs the codex vision judge over the two screenshots and returns the parsed
  * verdict. Read-only sandbox (codex never edits); `--output-schema` + `-o` force
@@ -890,22 +953,29 @@ export async function runDesignJudge(opts: {
     "-",
   ];
 
+  // Throttle concurrent codex judges across ALL parallel workers before spawning.
+  const releaseSlot = await acquireCodexSlot();
   const traceFd = fs.openSync(tracePath, "w");
-  const exitCode = await new Promise<number>((resolve, reject) => {
-    const child = spawn("codex", args, { cwd: REPO_ROOT, stdio: ["pipe", traceFd, traceFd] });
-    const timer = setTimeout(() => child.kill("SIGKILL"), opts.timeoutMs ?? 150_000);
-    child.once("error", (err) => {
-      clearTimeout(timer);
-      reject(err);
+  let exitCode: number;
+  try {
+    exitCode = await new Promise<number>((resolve, reject) => {
+      const child = spawn("codex", args, { cwd: REPO_ROOT, stdio: ["pipe", traceFd, traceFd] });
+      const timer = setTimeout(() => child.kill("SIGKILL"), opts.timeoutMs ?? 150_000);
+      child.once("error", (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+      child.once("exit", (code) => {
+        clearTimeout(timer);
+        resolve(code ?? 1);
+      });
+      child.stdin.write(profile.rubric);
+      child.stdin.end();
     });
-    child.once("exit", (code) => {
-      clearTimeout(timer);
-      resolve(code ?? 1);
-    });
-    child.stdin.write(profile.rubric);
-    child.stdin.end();
-  });
-  fs.closeSync(traceFd);
+  } finally {
+    fs.closeSync(traceFd);
+    releaseSlot();
+  }
 
   if (!fs.existsSync(verdictPath)) {
     const tail = fs.readFileSync(tracePath, "utf8").split("\n").slice(-25).join("\n");

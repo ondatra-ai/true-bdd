@@ -27,14 +27,14 @@ const execFileAsync = promisify(execFile);
 
 /**
  * Redis URL for the e2e suite. The compose file maps 6379:6379 and global-setup
- * brings the container up before any test runs, so the default reaches the
- * container from the host `next start` processes. Allow an override for CI.
+ * brings the container up before any test runs, so the default reaches Redis
+ * from the host `node server.js` server processes. Allow an override for CI.
  */
 export const REDIS_URL = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 
 /**
  * A unique namespace for one test's relay keys. Shared by that test's A and B
- * `next start` instances (p17/p20/p21) so they rendezvous, and never reused.
+ * `node server.js` instances (p17/p20/p21) so they rendezvous, and never reused.
  */
 export function uniquePrefix(slug: string): string {
   return `e2e:${slug}:${randomUUID()}`;
@@ -131,9 +131,10 @@ export async function flushPrefix(prefix: string): Promise<void> {
 export async function ensureRedisUp(timeoutMs = 60_000): Promise<void> {
   const file = composeFile();
   // ONLY redis: the base compose file also defines the `harness` app service,
-  // but the e2e suite launches its own per-instance harness containers from
-  // docker-compose.test.yml (see server-controller.ts). Bringing the base
-  // harness up here would boot an unused container on the fixed dev port.
+  // but the e2e suite runs each test's harness as a host `node server.js`
+  // process (see server-controller.ts), so the compose `harness` service is the
+  // manual dev stack only. Bringing it up here would boot an unused container on
+  // the fixed dev port.
   console.log(`[harness-e2e] docker compose up -d redis — ${file}`);
   await execFileAsync("docker", ["compose", "-f", file, "up", "-d", "redis"], {
     timeout: 120_000,
