@@ -3,7 +3,9 @@
 The only project-specific file in this skill. It tells a sweep how to launch
 this repo's target app, where findings get pinned, and where fixes land. To
 point visual-sweep at a different app, replace this file — the skill core and
-probes stay unchanged.
+probes stay unchanged. The **Pin target** and **Fix target** sections below
+are forwarded by the driver agents into their crush prompts — crush is the
+writer that must follow them.
 
 Paths referenced by key come from `docs/context/paths.yaml`.
 

@@ -1,7 +1,8 @@
 # Crush self-writes `*` here to keep its runtime data (sessions, logs) out of
 # git. We track the hooks/ subtree deliberately: it carries the PreToolUse
-# write-guard that sandboxes crush to harness/-only edits (see .crush.json).
+# write-guard that sandboxes crush per role (see .crush.json).
 *
 !.gitignore
 !hooks/
 !hooks/**
+hooks/__pycache__/

@@ -211,6 +211,25 @@ visual_sweep_artifacts:
     round-N/ probe JSON, videos, screenshots, findings. Ephemeral (tmp/ is
     gitignored, wiped manually).
 
+crush_wrapper:
+  path: .claude/skills/visual-sweep/scripts/crush-run.sh
+  description: >-
+    Crush invocation wrapper for the visual-sweep driver agents. Usage:
+    <author|fixer> <prompt-file|-> [label] [--continue]. The role selects the
+    write sandbox enforced by .crush/hooks/guard.py (author -> tests/harness/
+    only, fixer -> harness/ only); '-' reads the prompt from stdin (quoted
+    heredoc — the drivers have no Write tool); --continue resumes crush's most
+    recent session for follow-up turns; a stalled run is tree-killed after
+    CRUSH_TIMEOUT seconds (default 1800; a full authoring round with one
+    self-correction measures ~20-25 min) with exit 124.
+
+crush_artifacts:
+  path: tmp/crush/
+  description: >-
+    Crush artifacts: prompts at tmp/crush/<label>.prompt.md, transcripts at
+    <label>.out, the write-guard log at hook.log. Also the only sanctioned
+    bash-redirect target for chatty test output inside a crush run.
+
 visual_probe_scripts:
   path: .claude/skills/visual-sweep/scripts/
   description: >-

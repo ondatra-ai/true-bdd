@@ -1,7 +1,18 @@
 {
   "$schema": "https://charm.land/crush.json",
+  "models": {
+    "large": {
+      "model": "glm-5.2",
+      "provider": "zhipu-coding"
+    }
+  },
   "permissions": {
-    "allowed_tools": ["view", "ls", "grep", "glob"]
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "glob"
+    ]
   },
   "hooks": {
     "PreToolUse": [
