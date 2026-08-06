@@ -1,0 +1,15 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "permissions": {
+    "allowed_tools": ["view", "ls", "grep", "glob"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "harness-write-guard",
+        "command": "python3 .crush/hooks/guard.py",
+        "timeout": 15
+      }
+    ]
+  }
+}
