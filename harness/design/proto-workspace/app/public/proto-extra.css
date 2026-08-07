@@ -218,8 +218,12 @@ input.inline-field-input:focus {
   left: var(--wk-rail-w);
   height: 100vh;
   z-index: 50;
-  border: var(--border-width) solid var(--border-strong);
-  border-left: none;
+  /* No border overrides. The flyout exactly overlays the docked sidebar
+     column, so it inherits .mockup-sidebar's borders (right hairline only, NO
+     top border) and lines up pixel-for-pixel with the docked panel. A
+     `border: strong` here would draw a 1px near-black TOP line the docked
+     sidebar lacks (the stray "black line" on hover) AND push the brand down 1px
+     via the box model (wordmark/meta jump y+1) — a visible open-time jiggle. */
 }
 
 /* ── /service: type selector ── */
