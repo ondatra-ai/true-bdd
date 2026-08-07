@@ -35,8 +35,9 @@ export const TID = {
   // without a manual reload: a new CLI appears and a stopped CLI vanishes on
   // the poll; an honest empty state shows only after a successful zero read;
   // a sustained read failure raises the unavailable notice (auto-returning on
-  // recovery). Design baseline: the prototype `/sessions` MINUS Test connection
-  // PLUS the empty state (README-testids → "Sessions list (`/`)").
+  // recovery). Design baseline: the prototype `/sessions` (which itself dropped
+  // Test connection per P7) PLUS the empty state (README-testids →
+  // "Sessions list (`/`)").
   sessionsList: "sessions-list", // row-list container; exact-count row assertions scope to it
   sessionRow: "session-row", // one per session; + data-session-id, data-folder
   sessionFolder: "session-folder", // text = canonical folder (realpath)
