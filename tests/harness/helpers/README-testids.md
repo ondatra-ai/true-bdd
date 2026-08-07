@@ -347,7 +347,8 @@ The list must FILTER as you type (a static `<select>` fails w5.5a).
 
 ### New-story form (P22)
 `new-story-open` (opens) · `new-story-form` · `new-story-title` ·
-`new-story-submit`. The feature picker is **required** (submit blocked without a
+`new-story-submit` · `new-story-cancel` (Cancel/dismiss control that closes the
+form). The feature picker is **required** (submit blocked without a
 feature). Create-new appends an `id`+`description`-only stub to features.yaml and
 exclusive-creates the story file.
 

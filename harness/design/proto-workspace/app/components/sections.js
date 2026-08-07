@@ -70,9 +70,7 @@ export const SECTIONS = [
     icon: "▶", // ▶
     href: "/runs",
     match: (p) =>
-      ["/runs", "/run-detail", "/prompt-choice", "/prompt-clarify", "/prompt-freetext"].includes(
-        p
-      ),
+      ["/runs", "/prompt-choice", "/prompt-clarify", "/prompt-freetext"].includes(p),
   },
 ];
 
@@ -353,16 +351,17 @@ function ProductTree() {
 }
 
 function BuildsTree() {
+  // Builds is navigation-only for now (report F10): prod ships this as a
+  // future-task stub, so the mockup mirrors that — the header points at the
+  // /runs stub and there's no runs list to enumerate yet.
   return (
     <details className="sidebar-section" data-testid="sidebar-section-builds" open>
       <summary>
-        {/* Judgment call: Builds has one child ("All runs"), so the root
-            points straight at /runs rather than a near-duplicate stub. */}
         <CaretName href="/runs">04—Builds</CaretName>
       </summary>
       <ul className="sidebar-tree">
         <li>
-          <NavLink href="/runs">All runs</NavLink>
+          <span className="sidebar-tree__label">Build runs — a future task</span>
         </li>
       </ul>
     </details>

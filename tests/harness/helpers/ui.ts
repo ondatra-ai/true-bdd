@@ -349,6 +349,7 @@ export const WTID = {
   newStoryForm: "new-story-form",
   newStoryTitle: "new-story-title",
   newStorySubmit: "new-story-submit",
+  newStoryCancel: "new-story-cancel", // Cancel/dismiss control that closes the form (w24.1)
 
   // Docked chat (P10/P11/P12).
   chatDock: "chat-dock",

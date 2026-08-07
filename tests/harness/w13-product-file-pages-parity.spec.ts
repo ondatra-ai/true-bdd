@@ -109,12 +109,16 @@ test("w13.1 the product landing renders prd.yaml as a GitHub-style file card (R3
     docPath: "docs/prd/prd.yaml",
   });
 
-  // Architecture-untouched guard (round-3 fresh #2): the SHARED FileView must
-  // NOT leak the product page-header onto the architecture route.
+  // Architecture header guard (mockup-parity decision, 2026-08-07): the shared
+  // kicker+title page-header is now intentional on EVERY section file route, not
+  // just Product — matching the proto/mockup (which gives Architecture its own
+  // "01—Architecture" / architecture.yaml header). Pinned by w23.1. This guard
+  // asserts the header renders correctly on the architecture route (it must NOT
+  // be absent, and must NOT carry the Product kicker text).
   await gotoWorkspace(page, e.baseURL, wsRoutes.architecture(e.sid));
   await expect(page.getByTestId(WTID.fileView)).toBeVisible();
-  await expect(page.getByTestId(WTID.fileViewKicker)).toHaveCount(0);
-  await expect(page.getByTestId(WTID.fileViewTitle)).toHaveCount(0);
+  await expect(page.getByTestId(WTID.fileViewKicker)).toHaveText(/01\s*[—-]\s*Architecture/i);
+  await expect(page.getByTestId(WTID.fileViewTitle)).toHaveText("architecture.yaml");
 
   // Edit round-trip preserved (F17): appending a unique YAML comment still
   // persists valid YAML through the relay.

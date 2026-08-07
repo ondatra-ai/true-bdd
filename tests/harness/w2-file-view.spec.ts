@@ -66,7 +66,15 @@ test("w2.2 edit-in-place: no background/border/outline/shadow change on focus, n
         border: s.borderStyle,
         outline: s.outlineStyle,
         shadow: s.boxShadow,
-        top: el.getBoundingClientRect().top,
+        // Editor top RELATIVE TO the file-view container, so this isolates a real
+        // REFLOW from a native scroll-into-view. On section pages with the shared
+        // header (mockup-parity, 2026-08-07) the editor can extend below the
+        // scrollable content-pane, so clicking it scrolls the PANE (not window)
+        // to reveal the caret — a scroll, not a reflow. The editor's offset
+        // within the file-view is scroll-invariant and still moves on a real reflow.
+        top:
+          el.getBoundingClientRect().top -
+          (el.closest('[data-testid="file-view"]')?.getBoundingClientRect().top ?? 0),
       };
     });
 
