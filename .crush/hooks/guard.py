@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""PreToolUse write-guard for crush runs driven by the visual-sweep skill.
+"""PreToolUse write-guard for crush runs driven by the test-author + fixer agents.
 
 Crush's `run` mode has NO permission gate — this hook is the ONLY enforcement.
-The invoking wrapper (.claude/skills/visual-sweep/scripts/crush-run.sh) sets
+The invoking wrapper (.claude/scripts/crush-run.sh) sets
 CRUSH_GUARD_ROLE to select the sandbox:
 
   author — pins findings as e2e specs: file writes ONLY under tests/harness/
@@ -115,7 +115,7 @@ def main():
         deny(
             payload,
             "guard: CRUSH_GUARD_ROLE is not set (or unknown) — this repo only permits "
-            "crush writes via .claude/skills/visual-sweep/scripts/crush-run.sh, which "
+            "crush writes via .claude/scripts/crush-run.sh, which "
             "sets the role. Read-only tools remain available.",
             role,
         )

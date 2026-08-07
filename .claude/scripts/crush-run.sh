@@ -20,7 +20,9 @@
 # exit 124 so the driver can tell a stall from a model failure.
 set -u
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+# Repo root, location-independent (this script moved out of a skill dir): prefer
+# git's toplevel, fall back to two levels up (.claude/scripts -> repo root).
+REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd))"
 USAGE="usage: crush-run.sh <author|fixer> <prompt-file|-> [label] [--continue]"
 
 ROLE="${1:?$USAGE}"

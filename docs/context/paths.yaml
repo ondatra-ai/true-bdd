@@ -173,22 +173,20 @@ off_limits_test_fixer:
     are NOT listed.
 
 codex_wrapper:
-  path: .claude/skills/implement-task/scripts/codex.sh
+  path: .claude/scripts/codex.sh
   description: "Codex invocation wrapper. Usage: <ro|auto> <prompt-file> [label]."
 
 codex_mechanics:
-  path: .claude/skills/implement-task/references/codex.md
+  path: .claude/references/codex.md
   description: Codex mechanics + prompt guide (sandbox flags, setup).
 
 codex_loop:
-  path: .claude/skills/implement-task/references/codex-loop.md
+  path: .claude/references/codex-loop.md
   description: >-
-    The shared critique-loop procedure (all four agents). The test-fixer runs
-    it for a FIXED 3 rounds at every lane — no early exit.
-
-codex_matrix:
-  path: .claude/skills/implement-task/references/complexity-matrix.md
-  description: Complexity matrix — lane → agents + Codex round caps.
+    The shared crush↔codex review-loop procedure. The caller passes each agent a
+    codex_cap of 0/1/3/5 — the number of codex→crush cycles to run (0 = no codex
+    review). codex reviews read-only; crush applies the kept findings and re-runs
+    ALL tests so only the expected specs are red.
 
 codex_artifacts:
   path: tmp/
@@ -196,32 +194,25 @@ codex_artifacts:
     Codex artifacts: answers at tmp/codex-<label>.md (+ .trace.log), prompts at
     tmp/codex-<label>-rN.md.
 
-visual_waivers:
-  path: docs/context/visual-waivers.md
+crush_mechanics:
+  path: .claude/references/crush.md
   description: >-
-    Cross-run memory for the visual-sweep skill: findings the user accepted as
-    non-goals plus surfaces already verified clean. The skill dedupes new
-    findings against this file before flagging; entries are added only with
-    explicit user approval.
-
-visual_sweep_artifacts:
-  path: tmp/visual-sweep/
-  description: >-
-    Per-run visual-sweep artifacts: <run-ts>/ledger.md + report.md, and
-    round-N/ probe JSON, videos, screenshots, findings. Ephemeral (tmp/ is
-    gitignored, wiped manually).
+    Crush mechanics + gotchas (the crush parallel to codex_mechanics): wrapper
+    invocation, the two write-guard roles + their bash whitelists, and the
+    non-negotiable gotchas (--reporter=dot deadlock, crush knows nothing about
+    the repo, the model-pin trap, agent-def caching, verify-don't-trust).
 
 crush_wrapper:
-  path: .claude/skills/visual-sweep/scripts/crush-run.sh
+  path: .claude/scripts/crush-run.sh
   description: >-
-    Crush invocation wrapper for the visual-sweep driver agents. Usage:
+    Crush invocation wrapper for the test-author + fixer agents. Usage:
     <author|fixer> <prompt-file|-> [label] [--continue]. The role selects the
     write sandbox enforced by .crush/hooks/guard.py (author -> tests/harness/
     only, fixer -> harness/ only); '-' reads the prompt from stdin (quoted
     heredoc — the drivers have no Write tool); --continue resumes crush's most
     recent session for follow-up turns; a stalled run is tree-killed after
-    CRUSH_TIMEOUT seconds (default 1800; a full authoring round with one
-    self-correction measures ~20-25 min) with exit 124.
+    CRUSH_TIMEOUT seconds (default 1800; a full round with one self-correction
+    measures ~20-25 min) with exit 124.
 
 crush_artifacts:
   path: tmp/crush/
@@ -230,13 +221,31 @@ crush_artifacts:
     <label>.out, the write-guard log at hook.log. Also the only sanctioned
     bash-redirect target for chatty test output inside a crush run.
 
-visual_probe_scripts:
-  path: .claude/skills/visual-sweep/scripts/
+crush_prompts:
+  test_author_write_tests: .claude/references/templates/test-author-crush-write-tests.md
+  test_author_apply_review: .claude/references/templates/test-author-crush-apply-review.md
+  fixer_fix_code: .claude/references/templates/fixer-crush-fix-code.md
+  fixer_apply_review: .claude/references/templates/fixer-crush-apply-review.md
   description: >-
-    Durable generic instrumented probes (hover-probe, transit-sweep,
-    walk-shifts .mjs + lib/discover.mjs) run with node against a live app,
-    parameterized by VS_* env vars. May be copied into the run dir and extended
-    ad hoc; the committed copies are the templates.
+    Fill-in crush prompt templates the driver agents populate each run. Naming:
+    .claude/references/templates/<agent>-<tool>-<purpose>.md; keys are
+    <agent>_<purpose>. *_write_tests / *_fix_code = the WRITE round (Step 1);
+    *_apply_review = the codex→crush review-cycle follow-up (Step 2, wrapper
+    --continue). The driver resolves every {{...}} to a concrete value (paths from
+    paths.yaml, requirements/reproduce-block/findings from its inputs) BEFORE
+    piping — crush never reads paths.yaml, so nothing may reach it as an unfilled
+    placeholder or a bare paths.yaml key.
+
+codex_prompts:
+  test_author_review: .claude/references/templates/test-author-codex-review.md
+  fixer_review: .claude/references/templates/fixer-codex-review.md
+  description: >-
+    Fill-in codex prompt templates (same naming + fill rule as crush_prompts).
+    *_review = the read-only codex review of crush's current diff (Step 2). The
+    driver fills every {{...}}, writes the result to a prompt file under
+    codex_artifacts (DISTINCT from the wrapper's answer file), and runs
+    <codex_wrapper> ro <prompt-file> <label>. codex returns findings only (no
+    scores); the driver scores them (composite ≥7 + gates, see codex_loop).
 
 run_commands:
   - command: cd tests/harness && npx playwright test --project=protocol
