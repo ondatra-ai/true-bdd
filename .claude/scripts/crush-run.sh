@@ -1,27 +1,25 @@
 #!/usr/bin/env bash
-# Crush invocation wrapper for the visual-sweep driver agents.
+# Single crush-invocation wrapper (author/fixer sandbox roles).
 #
 # Usage: crush-run.sh <author|fixer> <prompt-file|-> [label] [--continue]
 #
 #   role         author | fixer — exported as CRUSH_GUARD_ROLE, selecting the
 #                write sandbox enforced by .crush/hooks/guard.py.
-#   prompt-file  Path to the crush prompt, or '-' to read it from stdin
-#                (drivers have no Write tool; they pipe a quoted heredoc).
+#   prompt-file  Path to the crush prompt, or '-' to read it from stdin.
 #   label        Artifact basename (default: the role). Prompt is preserved at
 #                tmp/crush/<label>.prompt.md, transcript at tmp/crush/<label>.out.
-#   --continue   Resume crush's most recent session (follow-up turns). Drivers
-#                run strictly sequentially, so "most recent" is safe inside a
-#                driver's window.
+#   --continue   Resume crush's most recent session (follow-up turns). Bound
+#                positionally as the 4th arg, so pass an explicit label with it.
 #
 # Stall handling: crush's embedded shell pipe-deadlocks on chatty child output,
 # so a hung run must be killed, not waited out. After CRUSH_TIMEOUT seconds
-# (default 1800 — a measured authoring round with one self-correction takes
-# ~20-25 min at GLM-5.2 xhigh) the whole crush process tree is killed and we
-# exit 124 so the driver can tell a stall from a model failure.
+# (default 1800 — a long author/fixer round with one self-correction takes
+# ~20-25 min) the whole crush process tree is killed and we exit 124 so the
+# driver can tell a stall from a model failure.
 set -u
 
-# Repo root, location-independent (this script moved out of a skill dir): prefer
-# git's toplevel, fall back to two levels up (.claude/scripts -> repo root).
+# Repo root, location-independent: prefer git's toplevel, fall back to two
+# levels up (.claude/scripts -> repo root).
 REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd))"
 USAGE="usage: crush-run.sh <author|fixer> <prompt-file|-> [label] [--continue]"
 

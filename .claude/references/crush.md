@@ -19,9 +19,8 @@ dir, roles, and prompt templates from `docs/context/paths.yaml` (`crush_wrapper`
 - **artifacts** — prompt at `tmp/crush/<label>.prompt.md`, transcript at `<label>.out`,
   guard log at `hook.log`.
 - **stall** — chatty child output pipe-deadlocks crush's shell, so a hung run is
-  TREE-KILLED after `CRUSH_TIMEOUT` (default 1800s; a healthy author round ~20–25 min at
-  xhigh) with **exit 124**. Run the wrapper foreground/blocking; on 124 relaunch once,
-  then return a blocker.
+  TREE-KILLED after `CRUSH_TIMEOUT` (default 1800s) with **exit 124**. Run the wrapper
+  foreground/blocking; on 124 relaunch once, then return a blocker.
 
 ## Sandbox roles (hook-enforced by `.crush/hooks/guard.py` — the ONLY enforcement)
 
@@ -39,7 +38,7 @@ roles are a sandbox axis, not agent names:** the `test-author` agent drives role
   compound `; | &` / redirects (except the one sanctioned `> tmp/crush/*.log 2>&1` on a
   test run) is denied.
 - **Consequence:** the `author` role CANNOT run the unit suite (`cd harness && npm run
-  …`) — only `fixer` can. So the test-author's "ALL tests" is the e2e suite only.
+  …`) — only `fixer` can.
 
 ## Gotchas (non-negotiable)
 
@@ -63,7 +62,7 @@ roles are a sandbox axis, not agent names:** the `test-author` agent drives role
 
 ## MCP (`crush.json`)
 
-Crush has its own MCP servers (context7, an interactive terminal, playwright), but the
-guard default-denies any tool not on its allowlist, so under a role crush effectively
-works through file tools + the bash whitelist + read-only tools. Do not rely on crush's
-MCP for any enforcement-sensitive step.
+Crush has its own MCP servers, but under a role the write-guard default-denies any tool
+not on its allowlist (see Sandbox roles above), so crush effectively works through file
+tools + the bash whitelist + read-only tools. Do not rely on crush's MCP for any
+enforcement-sensitive step.

@@ -11,10 +11,11 @@ comment block are stripped by the driver; everything below `====` is the prompt.
 -->
 
 You are writing end-to-end Playwright specs for this repository. Do EXACTLY the
-five steps below and NOTHING else. You may write files ONLY under `{{E2E_DIR}}`
-(your sandbox) — writes anywhere else are blocked.
+five steps below and NOTHING else. You may write files ONLY under these roots —
+writes anywhere else are blocked: `{{E2E_DIR}}` (the specs), the testid contract
+files listed below, and `{{DOC_DIR}}` (your step docs + `result.json`).
 
-# The requirements to pin (one `test()` per requirement)
+# The requirements to pin
 
 {{REQUIREMENTS}}
 
@@ -29,34 +30,37 @@ five steps below and NOTHING else. You may write files ONLY under `{{E2E_DIR}}`
 - run the e2e suite with: `{{E2E_RUN_CMD}}`
   ALWAYS pass `--reporter=dot` (a chatty reporter deadlocks your shell); for a
   long run redirect `> {{LOG_PATH}} 2>&1` and then read that log.
-- typecheck the e2e package with: `{{TSC_CMD}}` — drive it to ZERO errors.
+- typecheck the e2e package with: `{{TSC_CMD}}`.
 - write your per-step docs and the final result under: `{{DOC_DIR}}`
 
 # Steps (write ONE doc file per step into `{{DOC_DIR}}`)
 
 1. **Baseline → `01-baseline.md`.** Read the existing specs and list, one line
    each, what every `test()` already pins. Run the FULL e2e suite and confirm it
-   is GREEN. If it is ALREADY red, STOP now: write `result.json` with
-   `status: "RED-BASELINE"` + the failing tail, and end. (You cannot author
-   against a failing suite.)
+   is GREEN. If it is ALREADY red, STOP now: write `result.json` in the Step-5
+   shape with `status: "RED-BASELINE"` and the failing tail in `blocker_reason`,
+   and end. (You cannot author against a failing suite.)
 2. **Reconcile → `02-reconcile.md`.** For each requirement decide **ADD** (no
    spec pins it yet), **UPDATE** (a spec pins it but the intended behaviour
    changed), or **DELETE** (an existing pin is no longer wanted). If a
    requirement CONTRADICTS an existing pin (both cannot hold), STOP: write
-   `result.json` with `status: "CONFLICT"`, both statements, and the pinning
-   spec. Otherwise write the **expected-RED list**: the specs your ADD/UPDATE
-   will make fail.
+   `result.json` in the Step-5 shape with `status: "CONFLICT"` and both
+   statements + the pinning spec in `blocker_reason`. Otherwise write the
+   **expected-RED list**: the specs your ADD/UPDATE will make fail.
 3. **Author → `03-author.md`.** Write / update / delete the specs. One `test()`
    per requirement, asserting the INTENT a user observes — NEVER implementation
-   details, internal timings, or private structure. Where a requirement has a
-   healthy counterpart, add a green-guard test for it. Register every new testid
-   in the contract files above. Drive `{{TSC_CMD}}` to zero errors.
+   details, internal timings, or private structure. If a requirement forbids or
+   negates a behaviour (an error/failure case), also add a test asserting the
+   corresponding success path stays green. Register every new testid in the
+   contract files above. Drive `{{TSC_CMD}}` to zero errors.
 4. **Verify RED → `04-red-verify.md`.** Run the FULL e2e suite again. The red set
    must be EXACTLY your expected-RED list — each red for the RIGHT reason (an
    assertion failure on the absent/changed behaviour, NOT a crash, collection
    error, or timeout), every green-guard green, and NOTHING else red anywhere. If
    it does not match, fix your specs and re-run until it does.
-5. **Result → `{{DOC_DIR}}/result.json`.** Emit this exact shape:
+5. **Result → `{{DOC_DIR}}/result.json`.** Emit this exact shape (every exit —
+   OK or blocker — uses it; set `status` and put any blocker detail in
+   `blocker_reason`):
 
    ```json
    {
@@ -71,4 +75,4 @@ five steps below and NOTHING else. You may write files ONLY under `{{E2E_DIR}}`
    }
    ```
 
-Finish your turn by listing every file you created or changed.
+Finish your turn by confirming every file you created or changed is recorded in `files_changed`.

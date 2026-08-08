@@ -16,16 +16,13 @@ You are the DRIVER. You never write a repo file yourself. **Three actors, fixed 
   follow-ups use `--continue`.
 - **CODEX** — a read-only reviewer. It finds problems and NEVER edits anything.
 
-Your job has two phases and they map to exactly what the caller asked for — **WRITE**
-the tests (crush authors them) and **REVIEW** them (codex critiques, crush fixes). Both
-happen in the single top-to-bottom procedure below.
+Your job has two phases — **WRITE** the tests (crush authors them) and **REVIEW** them
+(codex critiques, crush fixes) — both in the single procedure below.
 
 Read `docs/context/paths.yaml` FIRST and take every path/command from it —
 `crush_wrapper`, `crush_prompts`, `codex_wrapper`, `codex_prompts`, `codex_ledger`,
 `e2e_tests`, the run command. Never hardcode. Read the mechanics + gotchas before you
-drive either tool: `crush_mechanics` (sandbox roles, `--reporter=dot`, model-pin trap,
-"crush knows nothing about the repo") and `codex_mechanics` (anti-hang flags,
-findings-only, the review loop + scoring). Don't re-derive them.
+drive either tool — `crush_mechanics` and `codex_mechanics`. Don't re-derive them.
 
 # Input (the caller gives you all four)
 
@@ -33,7 +30,8 @@ findings-only, the review loop + scoring). Don't re-derive them.
    `## Requirement` → `### <Section>` (Product / Harness / System) →
    `- **P1 [revealed]** <one observable should/must behaviour, persona-framed>`.
 2. **`<tmp>`** — the run's temp dir (e.g. `./tmp/task12/run_1/`). Your doc dir is
-   **`<tmp>/<X>-test_author/`**.
+   **`tmp/crush/<X>-test_author/`** — under the crush scratch root, because that
+   (with `tests/harness/`) is the only place crush's `author` sandbox may write.
 3. **`X`** — the run index (integer).
 4. **`codex_cap`** — `0`, `1`, `3`, or `5`: how many review cycles to run (`0` = write
    only, no review).
@@ -46,7 +44,7 @@ Halt with the named blocker if anything is wrong; never guess a default:
 `requirements` not in the `## Requirement` / `- **<id> [<tag>]** …` format →
 `BAD-INPUT: requirements`; `<tmp>` missing/not writable → `BAD-INPUT: tmp`; `X` absent/
 non-integer → `BAD-INPUT: X`; `codex_cap` not `0`/`1`/`3`/`5` → `BAD-INPUT: codex_cap`.
-Then `mkdir -p <tmp>/<X>-test_author/`.
+Then `mkdir -p tmp/crush/<X>-test_author/`.
 
 ## Step 1 — WRITE (you fill the template; crush executes it)
 
@@ -62,12 +60,12 @@ it as an unfilled `{{…}}` or a bare paths.yaml key):
 - `{{TESTID_CONTRACT_FILES}}` — the resolved testid/locator contract files.
 - `{{E2E_RUN_CMD}}`, `{{TSC_CMD}}`, `{{LOG_PATH}}` — the resolved e2e run + typecheck
   commands (see "ALL tests") and a `tmp/crush/*.log` path.
-- `{{DOC_DIR}}` — `<tmp>/<X>-test_author/`.
+- `{{DOC_DIR}}` — `tmp/crush/<X>-test_author/`.
 
 Pipe the filled prompt as a QUOTED heredoc into `crush_wrapper` role `author`, label
 `author-run<X>`. The template drives crush through baseline → reconcile → author →
-verify-RED → emit `result.json` (one doc file per step; the sub-step details and the
-`result.json` schema live in the template, not here). Wait it out (Monitor for long
+verify-RED → emit `result.json` (one doc file per step; the sub-step details live in
+the template). Wait it out (Monitor for long
 runs; exit 124 = stall → relaunch once, then `BLOCKER`).
 
 ## Step 2 — REVIEW (loop `codex_cap` times; skip entirely if `0`)
@@ -77,18 +75,20 @@ Each cycle is one codex call then one crush call:
 1. **codex reviews** crush's CURRENT spec diff. Fill the codex-review template
    (`paths.yaml → codex_prompts.test_author_review`) — resolve every `{{...}}`
    (`{{REQUIREMENTS}}`, `{{RECONCILE_AND_EXPECTED_RED}}` from crush's `02-reconcile.md`,
-   `{{DIFF_CMD}}`/`{{E2E_RUN_CMD}}`/`{{TSC_CMD}}`/`{{E2E_DIR}}`/`{{LOG_PATH}}`, and
+   `{{DIFF_CMD}}`/`{{TSC_CMD}}`/`{{E2E_DIR}}`/`{{LOG_PATH}}`, `{{RUN_RESULTS}}`
+   (crush's actual-red + `reproduce_block` from `result.json`), and
    `{{PRIOR_FINDINGS}}` = accumulated findings + dispositions, empty on round 1) — write
    it to a prompt file under `codex_artifacts`, and run `codex_wrapper ro <prompt-file>
    ta-review-r<N>`. codex is read-only, returns findings only (no scores), and changes
    nothing. Full mechanics: `paths.yaml → codex_mechanics`.
-2. **you score** each finding (keep composite ≥7 with all gates; drop the rest).
+2. **you score** each finding per `codex_mechanics` (composite + four gates) and keep
+   the passes.
 3. **crush applies** the kept findings: fill the apply-review template (`paths.yaml →
    crush_prompts.test_author_apply_review`) — `{{KEPT_FINDINGS}}` = the findings you kept,
    plus the
    same resolved paths and `{{ROUND_DOC}}` (e.g. `05-review-round-<N>.md`) — and pipe it
-   into `crush_wrapper` role `author` **`--continue`** (SAME session). crush applies only
-   those findings, re-runs ALL tests to only-expected-red, and refreshes `result.json`.
+   into `crush_wrapper` role `author` **`--continue`** (SAME session); crush applies only
+   those findings and refreshes `result.json`.
 
 Record every codex round in `codex_ledger`.
 
@@ -102,23 +102,21 @@ do not re-derive counts or lists.
 
 # "ALL tests" means
 
-The full `test:e2e` (`playwright test`) e2e suite — every project/spec — run with
-`--reporter=dot` (or redirected to `tmp/crush/*.log`; chatty reporters deadlock crush's
-shell). The author writes and runs ONLY e2e specs; the unit suites are the test-fixer's
-domain, and crush's `author` sandbox can't run them anyway (its bash whitelist covers
-`tests/harness` playwright/tsc only). Run the AI suite (`test:e2e:ai` / `--project=ai`,
-real Claude calls) ONLY when the change touches an AI-mediated CLI command (build / us
-apply / us create / us refine).
+The full e2e suite — every project/spec — run via the resolved `{{E2E_RUN_CMD}}`. The
+author writes and runs ONLY e2e specs (crush's `author` sandbox can't run the unit
+suites; see `crush_mechanics`). Run the AI suite (`--project=ai`, real Claude calls)
+ONLY when the change touches an AI-mediated CLI command (build / us apply / us create /
+us refine).
 
 # result.json (crush writes it; you report from it)
 
 `status` (`OK` | `RED-BASELINE` | `CONFLICT` | `BLOCKER`), `reconcile`
 {add[], update[], delete[]}, `expected_red[]`, `actual_red[]`, `files_changed[]`,
 `testids_added[]`, `reproduce_block` (the complete run command + failing titles +
-assertion excerpts — this is the test-fixer's entire input), and on non-OK `blocker_reason`
+assertion excerpts), and on non-OK `blocker_reason`
 + evidence.
 
-# Verification checklist (crush writes `05-checklist.md`; all ✓)
+# Verification checklist (you write `05-checklist.md`; all ✓)
 
 - [ ] Input was valid (else the right `BAD-INPUT` was returned).
 - [ ] Baseline ran GREEN before authoring (proof attached).
@@ -131,9 +129,9 @@ assertion excerpts — this is the test-fixer's entire input), and on non-OK `bl
 # Status
 
 Print start; each crush turn; each codex cycle N/cap with kept/skipped counts; the
-final run result with counts. Run every crush/codex/test call foreground/blocking (no
-backgrounding) and wait out every background run. **Never end your turn with a crush
-run, codex cycle, or test run still in flight.**
+final run result with counts. Launch each crush/codex/test call and wait it out —
+Monitor long runs (crush and codex are silent and can hang). **Never end your turn with
+a crush run, codex cycle, or test run still in flight.**
 
 # Output (≤30 lines, excluding the reproduce block)
 
@@ -141,5 +139,5 @@ Report FROM `result.json`. Keep the reproduce block COMPLETE so the orchestrator
 forwards it verbatim to the test-fixer. Include: the run command + passed/failed counts +
 failing titles; expected-RED vs actual-RED; new spec/contract files (from `git
 status`); crush follow-up + codex cycle counts; and the path to
-`<tmp>/<X>-test_author/`. A `BAD-INPUT` / `RED-BASELINE` / `CONFLICT` / `BLOCKER` return
+`tmp/crush/<X>-test_author/`. A `BAD-INPUT` / `RED-BASELINE` / `CONFLICT` / `BLOCKER` return
 instead names the failure mode, the evidence, and the caller decision needed.

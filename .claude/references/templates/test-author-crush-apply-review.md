@@ -15,7 +15,7 @@ fixes below. Apply ONLY these — do not add scope, and do not weaken any
 assertion to make a test easier. Same sandbox as before: write ONLY under
 `{{E2E_DIR}}`.
 
-# Review findings to apply (already filtered — apply each one)
+# Review findings to apply (already filtered — apply each one, unless it would change the expected-RED set; see below)
 
 {{KEPT_FINDINGS}}
 
@@ -26,14 +26,14 @@ assertion to make a test easier. Same sandbox as before: write ONLY under
 - Drive `{{TSC_CMD}}` to ZERO errors.
 - Run the FULL e2e suite: `{{E2E_RUN_CMD}}` (ALWAYS `--reporter=dot`, or redirect
   `> {{LOG_PATH}} 2>&1` and read it). The red set must STILL be EXACTLY the
-  **expected-RED list** from your `02-reconcile.md` — no more, no less, each red
+  **expected-RED list** from your `{{DOC_DIR}}/02-reconcile.md` — no more, no less, each red
   for the right reason, every green-guard green. If applying a finding WOULD
   change that expected-RED set, do NOT silently drift: note it in the doc and
   stop instead.
-- Append what you changed to `{{DOC_DIR}}/{{ROUND_DOC}}` (e.g.
-  `05-review-round-1.md`) and REFRESH `{{DOC_DIR}}/result.json` in place (same
+- Append what you changed to `{{DOC_DIR}}/{{ROUND_DOC}}` and REFRESH
+  `{{DOC_DIR}}/result.json` in place (same
   schema — update `actual_red`, `files_changed`, `testids_added`, and
   `reproduce_block`; set `status` to `OK`, or to `BLOCKER` with a reason if you
   had to stop).
 
-Finish your turn by listing every file you created or changed.
+Finish your turn by confirming every file you created or changed is recorded in `files_changed`.

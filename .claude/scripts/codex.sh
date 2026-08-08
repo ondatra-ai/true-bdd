@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# codex.sh — proven non-interactive codex invocation, shared by the task-workflow skills.
+# codex.sh — non-interactive codex invocation wrapper.
 #
-# Bakes in the flags that matter most: a sandbox policy (without one, `codex exec`
-# blocks silently on approval prompts and hangs headlessly forever), ephemeral
-# session, no color, repo root, low reasoning effort, and the final answer written
-# to a file. Full trace is teed so a timeout still leaves a partial report.
+# Bakes in the flags that matter most — above all a sandbox policy: without one,
+# `codex exec` blocks silently on approval prompts and hangs headlessly forever.
 #
 # Usage (run from the repo root):
 #   ./.claude/scripts/codex.sh <mode> <prompt-file> [label]
 #
-#   mode        ro   = read-only audit/verify (default)
+#   mode        ro   = read-only audit/verify
 #                auto = workspace-write (Codex may edit files / run side effects)
 #   prompt-file path to the prompt, read via stdin
 #   label       filename label (default: review) -> ./tmp/codex-<label>.md + .trace.log
@@ -27,8 +25,8 @@ trace="./tmp/codex-${label}.trace.log"
 
 # Refuse the prompt==answer collision: -o "$out" overwrites the prompt file.
 # The run still "works" (stdin is consumed before -o writes) but the prompt
-# artifact is destroyed, which has twice forced a discard+redo. Fail loudly
-# before burning a Codex call so the caller uses distinct paths
+# artifact is destroyed. Fail loudly before burning a Codex call so the caller
+# uses distinct paths
 # (e.g. <label>-rN-prompt.md in, <label>-rN.md out).
 if [ "$(cd "$(dirname "$out")" && pwd -P)/$(basename "$out")" = \
       "$(cd "$(dirname "$prompt_file")" && pwd -P)/$(basename "$prompt_file")" ]; then
