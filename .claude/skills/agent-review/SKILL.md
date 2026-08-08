@@ -93,6 +93,14 @@ Give the subagent the root agent path and this task:
    references), its **fan-in** (files that reference it), and a one-line note on
    what it appears to contain.
 
+**If the web is just the root** — the agent references no other files — say so,
+and run a lighter path: there is no pyramid to map (Phase B's cross-file
+reasoning and Phase D's corpus pass have nothing to compare), and no fan-out to
+review. Do Phase C **inline on the single file** (all four finding categories
+except cross-file ones still apply — role conflicts, internal contradictions,
+verbosity), then go straight to the Phase E plan. Don't spawn per-file or corpus
+subagents for a corpus of one.
+
 ## Phase B — Assign roles, score clarity → table → GATE 1
 
 Using the graph from Phase A, for **each file** determine:
@@ -121,6 +129,12 @@ approve.** This gate exists because every finding in the next phase is judged
 *relative to a file's role* — if a role is wrong here, every conflict you'd
 report against it is wrong too. Lock the roles before reviewing instructions.
 
+If the user corrects any role or score, **update the table in place with the
+corrected values, show the updated table back, and only then proceed.** Phase C
+must receive the *corrected* roles as the approved roles — never the originals.
+(Correcting a role doesn't require re-running Phase A: the graph — fan-in,
+fan-out, edges — is unchanged; only your reading of a file's role is.)
+
 ## Phase C — Per-file instruction review (fan out, one subagent per file)
 
 Now spawn **one subagent per file, in parallel**. Each gets its file plus the
@@ -138,22 +152,23 @@ everything you've already seen. Each subagent reports three lists:
    removed.
 4. **Phantom coupling / needless cross-reference** — a phrase that makes this
    file mention or point at *another* file (or an unrelated concept) it has no
-   functional reason to know about. Judge it by **two tests, both of which must
-   fail**:
-   - **Removal test** — cut the phrase. Does any logic, behavior, or meaning
-     change? If nothing changes, it's a candidate.
-   - **Coupling test** — does the phrase exist *only* to reference something
-     this file doesn't functionally need? (A description of tool X that name-
-     drops tool Y "for parallel," a note that points at a sibling file purely to
-     say they're related.)
+   functional reason to know about. A phrase is phantom coupling **only when it
+   fails BOTH tests**:
+   - **Test 1 — removal:** cut the phrase; does any logic, behavior, or meaning
+     change? Nothing changing means it fails test 1. **Failing test 1 alone is
+     plain verbosity — category #3, not this one.**
+   - **Test 2 — coupling:** does the phrase exist *only* to reference something
+     this file has no functional need to know about? (A description of tool X
+     that name-drops tool Y "for parallel"; a note that points at a sibling file
+     purely to say they're related.)
 
-   A phrase that fails **both** is not mere wordiness (that's #3) — it is a
-   dependency edge carrying zero load. Cutting it doesn't just shorten the file;
-   it **deletes a false edge from the graph** and decouples two files that were
-   never functionally related. This is the finding this skill is uniquely
-   positioned to make: the instruction audit and the fan-in/fan-out graph meet
-   exactly here, because a narration-only cross-reference is a phantom edge
-   inflating coupling for no benefit.
+   Only when a phrase fails **both** — removable *and* coupling-only — is it
+   phantom coupling: a dependency edge carrying zero load. Cutting it doesn't
+   just shorten the file; it **deletes a false edge from the graph** and
+   decouples two files that were never functionally related. This is the finding
+   this skill is uniquely positioned to make: the instruction audit and the
+   fan-in/fan-out graph meet exactly here, because a narration-only
+   cross-reference is a phantom edge inflating coupling for no benefit.
 
 **Every finding quotes the exact offending text and shows the concrete fix** —
 so the user can judge the call, not trust a vague "this is unclear." Format
