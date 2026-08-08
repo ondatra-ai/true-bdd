@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: stop the fixer agent from editing test files.
+"""PreToolUse hook: stop the test-fixer agent from editing test files.
 
-Wired into the `fixer` agent's frontmatter `hooks.PreToolUse`
+Wired into the `test-fixer` agent's frontmatter `hooks.PreToolUse`
 only, so it runs solely while that agent is active — the test-author and reviewer
 agents (which legitimately edit tests) are unaffected. Enforced in every permission
 mode, including bypassPermissions.
@@ -16,13 +16,13 @@ Two surfaces are guarded:
 
 This Bash guard is BEST-EFFORT defense-in-depth — a determined command can evade it
 (variable indirection, obfuscation, transient edit + restore). The real guarantee is
-the orchestrator hashing the off-limits tree before/after the fixer and stopping
+the orchestrator hashing the off-limits tree before/after the test-fixer and stopping
 on any change. Matching is deliberately conservative: a rare benign command that names
 a mutating verb and a test path may be denied; the agent can rephrase or escalate.
 
 The off-limits path patterns live in the `off_limits_test_fixer.paths` list of
 docs/context/paths.yaml — edit them there, not here. Missing config or unreadable
-stdin fails OPEN (allows) with a loud warning; the fixer's prompt prohibition
+stdin fails OPEN (allows) with a loud warning; the test-fixer's prompt prohibition
 and the orchestrator snapshot remain as backstops (the Bash guard cannot run without
 the patterns).
 
@@ -68,7 +68,7 @@ SNAPSHOT_UPDATE_RE = re.compile(
     r"\b(?:playwright|vitest|jest|pytest|py\.test)\b[^|;]*?(?:-u|--update-snapshots)\b"
 )
 # Applying an external diff can modify tests off-path (the target lives in the patch
-# file, not the command), so deny these outright for the fixer.
+# file, not the command), so deny these outright for the test-fixer.
 PATCH_RE = re.compile(r"\bgit\s+apply\b|(?:^|[;&|]\s*)patch\b")
 
 
@@ -183,7 +183,7 @@ def now_iso():
 
 def deny(tool, target, rule, extra=None):
     reason = (
-        f"fixer must not modify test files: {tool} target '{target}' "
+        f"test-fixer must not modify test files: {tool} target '{target}' "
         f"is off-limits (matched '{rule}' in docs/context/paths.yaml). Escalate to the "
         "test-author via the orchestrator instead of editing tests."
     )
@@ -235,7 +235,7 @@ def main():
     if not patterns:
         warn_then_allow(
             f"off-limits block not found in {PATHS_FILE.relative_to(REPO)}; failing open "
-            "(only the fixer prompt prohibition and the orchestrator snapshot remain; "
+            "(only the test-fixer prompt prohibition and the orchestrator snapshot remain; "
             "the Bash guard is inactive without patterns)"
         )
 

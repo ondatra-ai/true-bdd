@@ -180,14 +180,6 @@ codex_mechanics:
   path: .claude/references/codex.md
   description: Codex mechanics + prompt guide (sandbox flags, setup).
 
-codex_loop:
-  path: .claude/references/codex-loop.md
-  description: >-
-    The shared crush↔codex review-loop procedure. The caller passes each agent a
-    codex_cap of 0/1/3/5 — the number of codex→crush cycles to run (0 = no codex
-    review). codex reviews read-only; crush applies the kept findings and re-runs
-    ALL tests so only the expected specs are red.
-
 codex_artifacts:
   path: tmp/
   description: >-
@@ -224,8 +216,8 @@ crush_artifacts:
 crush_prompts:
   test_author_write_tests: .claude/references/templates/test-author-crush-write-tests.md
   test_author_apply_review: .claude/references/templates/test-author-crush-apply-review.md
-  fixer_fix_code: .claude/references/templates/fixer-crush-fix-code.md
-  fixer_apply_review: .claude/references/templates/fixer-crush-apply-review.md
+  test_fixer_fix_code: .claude/references/templates/test-fixer-crush-fix-code.md
+  test_fixer_apply_review: .claude/references/templates/test-fixer-crush-apply-review.md
   description: >-
     Fill-in crush prompt templates the driver agents populate each run. Naming:
     .claude/references/templates/<agent>-<tool>-<purpose>.md; keys are
@@ -234,18 +226,20 @@ crush_prompts:
     --continue). The driver resolves every {{...}} to a concrete value (paths from
     paths.yaml, requirements/reproduce-block/findings from its inputs) BEFORE
     piping — crush never reads paths.yaml, so nothing may reach it as an unfilled
-    placeholder or a bare paths.yaml key.
+    placeholder or a bare paths.yaml key. (crush guard ROLES are author/fixer — a
+    sandbox axis, not the agent name: test-author drives role author, test-fixer
+    drives role fixer.)
 
 codex_prompts:
   test_author_review: .claude/references/templates/test-author-codex-review.md
-  fixer_review: .claude/references/templates/fixer-codex-review.md
+  test_fixer_review: .claude/references/templates/test-fixer-codex-review.md
   description: >-
     Fill-in codex prompt templates (same naming + fill rule as crush_prompts).
     *_review = the read-only codex review of crush's current diff (Step 2). The
     driver fills every {{...}}, writes the result to a prompt file under
     codex_artifacts (DISTINCT from the wrapper's answer file), and runs
     <codex_wrapper> ro <prompt-file> <label>. codex returns findings only (no
-    scores); the driver scores them (composite ≥7 + gates, see codex_loop).
+    scores); the driver scores them (composite ≥7 + gates, see codex_mechanics).
 
 run_commands:
   - command: cd tests/harness && npx playwright test --project=protocol

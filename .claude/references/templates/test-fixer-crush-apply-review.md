@@ -1,8 +1,8 @@
 <!--
-CRUSH PROMPT TEMPLATE — APPLY REVIEW FINDINGS (fixer, Step 2 review cycle).
-The fixer DRIVER fills EVERY {{...}} and pipes the result into the SAME crush
+CRUSH PROMPT TEMPLATE — APPLY REVIEW FINDINGS (test-fixer, Step 2 review cycle).
+The test-fixer DRIVER fills EVERY {{...}} and pipes the result into the SAME crush
 session as the fix round:
-    <crush_wrapper> fixer - fixer-run<X> --continue
+    <crush_wrapper> fixer - test-fixer-run<X> --continue
 codex (read-only) reviewed the production/unit diff crush just wrote; the driver
 has already SCORED the findings and lists only the KEPT ones below. Crush applies
 ONLY those — no new scope. Never leave a {{...}} unfilled. Everything below `====`

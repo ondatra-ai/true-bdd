@@ -1,6 +1,6 @@
 <!--
-CODEX PROMPT TEMPLATE — REVIEW THE FIX (fixer, Step 2 review cycle).
-The fixer DRIVER fills EVERY {{...}}, writes the result to a prompt file under the
+CODEX PROMPT TEMPLATE — REVIEW THE FIX (test-fixer, Step 2 review cycle).
+The test-fixer DRIVER fills EVERY {{...}}, writes the result to a prompt file under the
 codex artifacts dir (paths.yaml → codex_artifacts, e.g. tmp/codex-fx-review-r<N>.md —
 give the prompt file and the wrapper's answer file DISTINCT paths), and runs:
     <codex_wrapper> ro <prompt-file> fx-review-r<N>

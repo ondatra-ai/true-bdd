@@ -1,6 +1,6 @@
 # Crush mechanics
 
-Shared by the `test-author` and `fixer` agents. **Crush (GLM-5.2, 1M context, via
+Shared by the `test-author` and `test-fixer` agents. **Crush (GLM-5.2, 1M context, via
 zhipu-coding) is the ONLY sanctioned writer of repo files** — the driver agents have no
 Write/Edit tools and drive crush through the wrapper. Take the wrapper path, artifact
 dir, roles, and prompt templates from `docs/context/paths.yaml` (`crush_wrapper`,
@@ -25,7 +25,9 @@ dir, roles, and prompt templates from `docs/context/paths.yaml` (`crush_wrapper`
 
 ## Sandbox roles (hook-enforced by `.crush/hooks/guard.py` — the ONLY enforcement)
 
-`crush run` has NO permission gate; the PreToolUse write-guard is the sole gate.
+`crush run` has NO permission gate; the PreToolUse write-guard is the sole gate. **The
+roles are a sandbox axis, not agent names:** the `test-author` agent drives role
+`author` (writes tests); the `test-fixer` agent drives role `fixer` (writes code).
 
 | Role | file writes under | bash it may run |
 |---|---|---|

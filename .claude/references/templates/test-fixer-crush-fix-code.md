@@ -1,10 +1,10 @@
 <!--
-CRUSH PROMPT TEMPLATE — FIX CODE (fixer, Step 1).
-The fixer DRIVER fills EVERY {{...}} (resolving concrete paths from
+CRUSH PROMPT TEMPLATE — FIX CODE (test-fixer, Step 1).
+The test-fixer DRIVER fills EVERY {{...}} (resolving concrete paths from
 docs/context/paths.yaml first) and pipes the result into:
-    <crush_wrapper> fixer - fixer-run<X>
+    <crush_wrapper> fixer - test-fixer-run<X>
 Concatenate so the reproduce block never sits inside the command string:
-    { cat <<'EOF' ...this template, filled... EOF } | <crush_wrapper> fixer - fixer-run<X>
+    { cat <<'EOF' ...this template, filled... EOF } | <crush_wrapper> fixer - test-fixer-run<X>
 Crush is TASK-BLIND here: the failing tests below are its entire specification.
 It knows NOTHING about this repo — every path, command, and the design system are
 inlined below. Never leave a {{...}} unfilled. Everything below `====` is the prompt.
