@@ -15,7 +15,7 @@ Everything below `====` is the prompt.
 
 You are reviewing end-to-end Playwright specs a writer just produced. You are
 READ-ONLY — do NOT edit any file. Run read-only commands to VERIFY every claim
-(never review from memory), then return findings only.
+(never review from memory).
 
 # The task these specs must pin
 
@@ -29,9 +29,12 @@ READ-ONLY — do NOT edit any file. Run read-only commands to VERIFY every claim
 
 - spec directory: `{{E2E_DIR}}`
 - the writer's changes — review this diff: run `{{DIFF_CMD}}`
-- verify red/green claims by running the suite yourself: `{{E2E_RUN_CMD}}`
-  (always `--reporter=dot`, or redirect `> {{LOG_PATH}} 2>&1` and read it)
-- typecheck: `{{TSC_CMD}}`
+- the writer's current run results (verify red/green against THESE — you are
+  READ-ONLY and cannot start the suite's webServer, so do NOT re-run it; read
+  the run log at `{{LOG_PATH}}` for more detail):
+
+  {{RUN_RESULTS}}
+- typecheck (read-only, no writes): `{{TSC_CMD}}`
 
 # Prior findings + how the driver disposed of them  (EMPTY on round 1)
 

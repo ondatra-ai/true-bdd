@@ -41,11 +41,9 @@ plan_file:
 codex_ledger:
   path: docs/tasks/plans/<slug>.codex.md
   description: >-
-    Codex rounds ledger, written by each agent's Codex loop. Lives beside (not
-    inside) the plan so downstream agents reading the plan don't pay for the
-    round tables; the plan's "Codex rounds" section is a one-line pointer here.
-    The orchestrator passes this path to the test-fixer (one of the only two
-    things in its prompt).
+    Codex rounds ledger, written by each agent's Codex loop. Lives beside the
+    plan. The orchestrator passes this path to the test-fixer (one of the only
+    two things in its prompt).
 
 phase_state:
   paths:
@@ -66,12 +64,11 @@ e2e_tests:
   description: >-
     The e2e/BDD tests that DRIVE the coding (red → green) — the task's entire
     specification from the test-fixer's point of view. Written and hardened by
-    the test-author; the test-fixer may NOT touch them (see
-    off_limits_test_fixer). Only these gate the task. Self-contained Playwright
-    suite (own package.json + node_modules); binding UI/API contract:
-    tests/harness/helpers/README-testids.md. Design-conformance specs
-    (screenshot-judge mockup vs prod, design-token checks) are part of this
-    suite; their baseline is the design_system entry, not a committed
+    the test-author (off-limits to the test-fixer — see off_limits_test_fixer).
+    Self-contained Playwright suite (own package.json + node_modules); binding
+    UI/API contract: tests/harness/helpers/README-testids.md. Design-conformance
+    specs (screenshot-judge mockup vs prod, design-token checks) are part of
+    this suite; their baseline is the design_system entry, not a committed
     screenshot.
 
 bdd_cli_fixtures:
@@ -80,17 +77,15 @@ bdd_cli_fixtures:
     - tests/materializer/
   description: >-
     BDD-CLI fixture harness + coverage/materializer — everything else under
-    tests/. Same off-limits rule as e2e_tests.
+    tests/.
 
 harness_code_root:
   path: harness/src/
   description: >-
     THE single folder for ALL generated harness code: the Next.js app
     (harness/src/app/ — pages, components, lib, api routes) AND its unit tests
-    (harness/src/tests/unit/). CORE PRINCIPLE: all code under this root must be
-    REGENERATABLE from the e2e suite (e2e_tests is the spec; this folder is a
-    build artifact) — it is gitignored, never tracked. Every harness production
-    file and unit test the test-fixer writes MUST live under this folder.
+    (harness/src/tests/unit/). Gitignored, never tracked (a build artifact
+    regenerated from e2e_tests).
 
 unit_tests:
   paths:
@@ -100,8 +95,7 @@ unit_tests:
     The test-fixer's responsibility (NOT the test-author's), written alongside
     the production code they exercise inside harness_code_root (Go unit tests:
     *_test.go beside the production package under src/). The test-fixer's own
-    quality net; never gate the task — only the e2e/BDD suite does. Not
-    off-limits to the test-fixer.
+    quality net; never gate the task — only the e2e/BDD suite does.
 
 startup_scaffolding:
   paths:
@@ -123,8 +117,9 @@ production_code:
   description: >-
     What the test-fixer and reviewer may edit: the Go engine (src/), prompt
     templates, the engine config seed, and the generated harness root
-    (harness_code_root — ALL harness code goes there, nowhere else under
-    harness/).
+    (harness_code_root — all test-fixer-generated harness app code goes under
+    harness/src/; the design prototype and config elsewhere under harness/ are
+    owned separately).
 
 design_system:
   paths:
@@ -137,9 +132,8 @@ design_system:
     colors/spacing/typography. Token values: harness/design/system/tokens.css.
     The runnable PROTOTYPE (harness/design/proto-workspace/app — bootable via
     tests/harness/helpers/proto-baseline.ts) is the per-screen design baseline
-    that design-conformance judges screenshot production against (the static
-    mockups it superseded were deleted 2026-08-04); design changes land in the
-    prototype first — the prototype is the spec artifact.
+    that design-conformance judges screenshot production against; design changes
+    land in the prototype first — the prototype is the spec artifact.
 
 change_surface_exclusions:
   paths:
@@ -150,7 +144,7 @@ change_surface_exclusions:
   description: >-
     Directories omitted from the baseline change-surface content copy and the
     Phase 3 reviewer's diff -r (build + VCS noise, never part of the reviewed
-    change). Single source for this list. tmp/ is also the Codex artifacts dir.
+    change).
 
 package_manifest:
   path: harness/package.json
@@ -158,7 +152,7 @@ package_manifest:
     The test-fixer may add runtime DEPENDENCIES here, but NEVER its scripts
     (the test scripts). The orchestrator snapshots the scripts object
     before/after the test-fixer and rejects any change to it. Deliberately not
-    in off_limits_test_fixer (a path hook cannot scope inside a single file).
+    in off_limits_test_fixer.
 
 off_limits_test_fixer:
   paths:
@@ -169,8 +163,7 @@ off_limits_test_fixer:
     the hook). Anything matched is denied even in bypassPermissions; the
     test-fixer must escalate to the test-author via the orchestrator instead
     of editing tests. Scope is deliberately the e2e/BDD tree only; the
-    unit-test trees (see unit_tests) are the test-fixer's own territory and
-    are NOT listed.
+    unit-test trees are the test-fixer's own territory and are NOT listed.
 
 codex_wrapper:
   path: .claude/scripts/codex.sh
@@ -188,23 +181,16 @@ codex_artifacts:
 
 crush_mechanics:
   path: .claude/references/crush.md
-  description: >-
-    Crush mechanics + gotchas (the crush parallel to codex_mechanics): wrapper
-    invocation, the two write-guard roles + their bash whitelists, and the
-    non-negotiable gotchas (--reporter=dot deadlock, crush knows nothing about
-    the repo, the model-pin trap, agent-def caching, verify-don't-trust).
+  description: Crush mechanics + gotchas.
 
 crush_wrapper:
   path: .claude/scripts/crush-run.sh
   description: >-
     Crush invocation wrapper for the test-author + fixer agents. Usage:
-    <author|fixer> <prompt-file|-> [label] [--continue]. The role selects the
-    write sandbox enforced by .crush/hooks/guard.py (author -> tests/harness/
-    only, fixer -> harness/ only); '-' reads the prompt from stdin (quoted
-    heredoc — the drivers have no Write tool); --continue resumes crush's most
-    recent session for follow-up turns; a stalled run is tree-killed after
-    CRUSH_TIMEOUT seconds (default 1800; a full round with one self-correction
-    measures ~20-25 min) with exit 124.
+    <author|fixer> <prompt-file|-> [label] [--continue]; '-' reads the prompt
+    from stdin, --continue resumes crush's most recent session. The role's write
+    sandbox, stall/timeout behavior, and exit codes are documented in
+    crush_mechanics.
 
 crush_artifacts:
   path: tmp/crush/
@@ -223,12 +209,8 @@ crush_prompts:
     .claude/references/templates/<agent>-<tool>-<purpose>.md; keys are
     <agent>_<purpose>. *_write_tests / *_fix_code = the WRITE round (Step 1);
     *_apply_review = the codex→crush review-cycle follow-up (Step 2, wrapper
-    --continue). The driver resolves every {{...}} to a concrete value (paths from
-    paths.yaml, requirements/reproduce-block/findings from its inputs) BEFORE
-    piping — crush never reads paths.yaml, so nothing may reach it as an unfilled
-    placeholder or a bare paths.yaml key. (crush guard ROLES are author/fixer — a
-    sandbox axis, not the agent name: test-author drives role author, test-fixer
-    drives role fixer.)
+    --continue). The driver resolves every {{...}} to a concrete value before
+    piping (crush is repo-blind — see crush_mechanics).
 
 codex_prompts:
   test_author_review: .claude/references/templates/test-author-codex-review.md
@@ -238,8 +220,8 @@ codex_prompts:
     *_review = the read-only codex review of crush's current diff (Step 2). The
     driver fills every {{...}}, writes the result to a prompt file under
     codex_artifacts (DISTINCT from the wrapper's answer file), and runs
-    <codex_wrapper> ro <prompt-file> <label>. codex returns findings only (no
-    scores); the driver scores them (composite ≥7 + gates, see codex_mechanics).
+    <codex_wrapper> ro <prompt-file> <label>. codex returns findings only; the
+    driver scores them (see codex_mechanics).
 
 run_commands:
   - command: cd tests/harness && npx playwright test --project=protocol

@@ -48,6 +48,14 @@ its position in the pyramid**, because those are where instructions rot:
 - A **high fan-out (leaf) file stating generic truths** — a truth that belongs
   once, at the base, gets restated in a consumer. That is duplication waiting
   to drift out of sync.
+- A **high fan-in file that *owns a procedure*** — a base file whose content is a
+  multi-step workflow/loop/orchestration ("the cycle: do X → then Y → then Z")
+  instead of a general truth. Procedures are high-fan-*out* consumer logic by
+  nature, so parking one at the base is a role/position contradiction — and it is
+  almost always **also duplicated**, because each consumer that runs the workflow
+  restates it in its own steps. The base copy then looks "centralized" but is a
+  redundant extra copy that drifts. "Owner of the <X> procedure" is the smell,
+  not a role.
 
 Hold this model the entire way through. Roles are judged against it; the
 clarity score measures it; the fix plan restores it.
@@ -86,18 +94,30 @@ Give the subagent the root agent path and this task:
      indirection** — look for a registry or config file the agent reads up
      front — and resolve those references too. A graph walk that only greps for
      slashes will miss every indirect edge.
-   - **A directory handed to a tool as data or a sandbox is ONE node.** When the
-     agent points a tool at a whole tree (a test suite, a design-system dir) as
-     data/target, that tree is a single data-edge — do NOT promote individual
-     files inside it to separate nodes just because a description or the agent
-     name-drops one. Only a file the agent resolves as a distinct instruction
-     dependency is its own node.
+   - **A mention is not an edge — prove each one.** Admit a node only when the
+     agent's behavior actually depends on the target: it resolves the path/key
+     and reads or writes that file. A file merely *named in another file's prose
+     or a registry description* — but never resolved and read by the agent — is
+     NOT an edge; do not add it. Ask of every candidate edge: if this target
+     changed, would the agent behave differently? If no, it is not a dependency.
+   - **A directory handed to a tool as data or a sandbox is ONE node** (the common
+     special case of the rule above). When the agent points a tool at a whole tree
+     (a test suite, a design-system dir) as data/target, that tree is a single
+     data-edge — do NOT promote individual files inside it to separate nodes just
+     because a description or the agent name-drops one. Only a file the agent
+     resolves as a distinct instruction dependency is its own node.
 2. **Compute reverse edges (fan-in)** for each file discovered: search the
    agents directory and wherever the instruction files live for references to
-   it — by literal path **and** by whatever key/alias resolves to it.
+   it — by literal path **and** by whatever key/alias resolves to it. **When a
+   file's fan-in spans more than one agent's web, mark it SHARED** and record the
+   sibling-agent files that consume it (the agent defs and their templates). Those
+   live OUTSIDE this root's web, so nothing else in the run will surface them —
+   yet they are what decides whether the shared file's content is load-bearing or
+   redundant (Phase D reads them).
 3. Return, for every file in the web: its path, its **fan-out** (deps it
-   references), its **fan-in** (files that reference it), and a one-line note on
-   what it appears to contain.
+   references), its **fan-in** (files that reference it), a **SHARED** flag plus
+   the list of foreign (other-agent) consumers when it applies, and a one-line
+   note on what it appears to contain.
 
 **If the web is just the root** — the agent references no other files — say so,
 and run a lighter path: there is no pyramid to map (Phase B's cross-file
@@ -123,6 +143,15 @@ Using the graph from Phase A, for **each file** determine:
     position (e.g. high fan-in but the content is narrow and volatile).
 - **Flag** any file scoring **< 7** (mark it — e.g. a leading ⚠️) so low-clarity
   files stand out in the table.
+- **A procedure is not a role — resolve it before Gate 1, don't score-and-pass.**
+  If the honest one-sentence role for a **high fan-in** file is "owner of / runs /
+  orchestrates the <X> procedure/loop/workflow," STOP: that is the pyramid
+  contradiction above, and the single most common way this audit's foundation goes
+  wrong. Do **not** launder it into a score-6 "dual role" and proceed. First split
+  the file's contents into genuine general/stable *truths* (these stay — the real
+  role) versus *procedure* (belongs in the consumers; Phase D confirms whether they
+  already carry it), then write the role as the truths alone and flag the split to
+  the user at the gate.
 
 **Every file in the Phase A web gets exactly one row — a single table, no
 omissions and no second "won't-review" table.** Config, scripts, hooks,
@@ -206,6 +235,16 @@ cuttable, ask whether removing it would let a reader make a mistake the wording
 was preventing. If yes, it stays. The goal is a clearer agent, not a shorter
 one.
 
+**But "load-bearing" is a property of the reader who needs it, not of the file.**
+The same clause can be load-bearing in the consumer that acts on it yet redundant
+in a shared base that merely restates it. So "it's important, keep it" is only
+half the test: locate *where the load actually sits* — which consumer relies on
+this clause — before deciding. If the consumer that needs it already carries its
+own copy (e.g. a template inlines it because its executor is repo-blind, or a
+sibling agent restates it), the shared base's restatement is redundant and the
+finding is **delete**, not keep. This check requires reading the consumers, not
+just this file — see Phase D.
+
 Collect every subagent's findings and print an accumulated table:
 
 | File | Type | Offending text (quoted) | Suggested fix |
@@ -226,6 +265,38 @@ files at once** and ask it for what only a corpus-wide view reveals:
   that can't both be followed.
 - Instructions that are **unnecessary given the whole** — covered elsewhere, or
   no longer load-bearing.
+- **False centralization — a "base" that is really a duplicate.** For every SHARED
+  file that appears to *own a procedure or multi-step workflow*, run the REVERSE of
+  the usual duplication check: open the consumers and see whether they each
+  **re-implement that workflow in their own steps**. If two or more do, the shared
+  file is not the single source — it is one more copy that will drift. Keep in the
+  shared file only what the consumers genuinely *defer* to and do NOT restate (the
+  definitions / general truths); leave the procedure where it is actually run, in
+  the consumers. This is the mirror of the leaf-duplicates-base case — here the
+  **base** is the duplicate — and a per-file pass structurally cannot find it (it
+  sees one file); only reading the base against ALL its consumers can.
+
+**Then verify every shared-file finding against the fan-in — the step the graph
+exists for.** Phase A *measured* fan-in but nothing has *read* it yet: the audit
+walks the root's fan-OUT web, while the base of the pyramid — the high-fan-in
+shared files — is where the highest-value findings live, and you cannot settle a
+cut/move/keep on one of them from its own text. So for every Phase C/D finding on
+a file marked **SHARED** (fan-in spanning more than one agent), hand this subagent
+the file's **foreign consumers** (the sibling-agent files and their templates from
+Phase A) and make it answer, with quotes:
+
+- **Who relies on this clause?** If no consumer does, it is dead everywhere → cut.
+- **Does the consumer that needs it already carry its own copy?** (A template that
+  inlines it because its executor is repo-blind; a sibling agent that restates it.)
+  If yes, the shared copy is redundant → the finding becomes **delete**, not keep
+  or move.
+- **For any "move X to file Y":** does Y exist, is it in the approved scope, and is
+  X already there? If X is already in Y → delete here, don't move. If Y is a
+  sibling agent's file outside scope → mark the finding **DEFER** (needs a scope
+  decision), never a silent edit.
+
+A shared-file keep/cut/move that skips this check is a guess — the same guess a
+single-agent, isolated read produces.
 
 Add these to the findings.
 
@@ -258,3 +329,11 @@ agents behave — high blast radius.
 - **Subagent boundaries are deliberate** — graph (A), per-file review (C),
   corpus review (D) each want either scale or an independent read. The
   orchestrator (you) owns the tables, the gates, and the final edits.
+- **Walk the pyramid both ways.** The graph is built by following fan-OUT, but
+  findings on high-fan-in shared files can only be settled by reading their
+  dependents. Fan-in is not just a number in the table — it is a list of files to
+  open (Phase D). A finding reasoned from a file's own text, or from a registry
+  description, instead of from who actually uses it, is the failure mode this
+  skill most often hits. And the duplication can run **either** direction: a leaf
+  can restate the base, but a base can also be a redundant copy of a procedure each
+  consumer re-implements — check both.

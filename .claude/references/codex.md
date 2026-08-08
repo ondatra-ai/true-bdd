@@ -1,7 +1,6 @@
 # Codex mechanics
 
-Shared by the `test-author` and `test-fixer` agents (the review-loop procedure + scoring
-is the "## The review loop + scoring" section below).
+Shared by the `test-author` and `test-fixer` agents.
 
 ## Non-interactive invocation
 
@@ -42,18 +41,4 @@ Wrapper: `./.claude/scripts/codex.sh <ro|auto> <prompt-file> [label]` (bakes the
 
 ## Writing the Codex prompt
 
-In one shot give it: the **task** (the requirements list for the test-author, or the reproduce block + specs for the task-blind fixer); **context** (the relevant files, `CLAUDE.md`); the **artifact** to critique (the current diff + test results); what to **return** (findings only — each with location, evidence, and a concrete fix; explicit verify/challenge re-checks from round 2 on — NO scores, the driver scores); and an instruction to **run commands to verify its own claims** rather than reasoning from memory. The `codex_prompts` templates bake this in.
-
-## The review loop + scoring
-
-The `test-author` and `fixer` agents run a bounded codex↔crush loop. **The caller passes `codex_cap` ∈ {0, 1, 3, 5}** — the number of cycles (`0` = no review). codex reviews (read-only, findings only); the AGENT scores; crush applies the keeps and re-runs ALL tests.
-
-**Full context every round.** Each codex prompt carries, in full: (1) the task — test-author: requirements + the reconcile/expected-RED plan; fixer (task-blind): the reproduce block + the e2e specs being greened, read from disk (never a brief); (2) the complete current diff under review; (3) all prior findings (rounds 1…N−1); (4) the disposition of each prior finding (applied where/how, or skipped + the reason). The `codex_prompts` templates bake these slots in.
-
-**codex's jobs.** Round 1: fresh findings only. Round 2+: (a) verify each APPLIED finding is correctly and completely implemented; (b) challenge each SKIP; (c) fresh findings. No scores, no ranking — codex runs commands to verify its own claims.
-
-**The AGENT scores** each finding: one composite 1–10 plus four pass/fail gates; keep only if **composite ≥7 AND every gate passes** — **Correctness** (right, not merely asserted), **Evidence** (grounded in commands codex ran, not memory), **Scope fit** (inside the task's intent), **Regression risk** (doesn't break existing behaviour or the only-expected-red invariant). Record each kept item's composite + gates + one-line reason in `codex_ledger`.
-
-**The cycle** (repeat ≤ `codex_cap`): fill the `codex_prompts` review template → write it to a prompt file under `codex_artifacts` (DISTINCT from the wrapper's `-o` answer file — a shared path overwrites the prompt) → run `<codex_wrapper> ro <prompt-file> <label>` FOREGROUND/blocking → score → fill the matching `crush_prompts.*_apply_review` template with the keeps and pipe it to `<crush_wrapper> <role> - <label> --continue` (SAME crush session) → crush applies, re-runs ALL tests (only-expected-red for the author / fully green for the fixer), refreshes `result.json` → record the round. Stop at the cap, or earlier when a round is DRY (every prior application verified clean, no skip-challenge survives, no fresh finding passes the gates).
-
-**Impossible-in-code (fixer).** The fixer never edits a driving e2e/BDD test; if a spec genuinely cannot be satisfied in code, STOP and escalate with evidence rather than weaken it.
+In one shot give it: the **task** (the requirements list for the test-author, or the reproduce block + specs for the task-blind fixer); **context** (the relevant files, `CLAUDE.md`); the **artifact** to critique (the current diff + test results); what to **return** (findings only — each with location, evidence, and a concrete fix; explicit verify/challenge re-checks from round 2 on); and an instruction to **run commands to verify its own claims** rather than reasoning from memory. The `codex_prompts` templates bake this in.
