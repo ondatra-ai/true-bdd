@@ -158,12 +158,14 @@ off_limits_test_fixer:
   paths:
     - tests/
   description: >-
-    Hard-enforced by .claude/hooks/block_test_edits.py, which reads THIS
-    entry's paths list — the only place these patterns live (edit here, not in
-    the hook). Anything matched is denied even in bypassPermissions; the
-    test-fixer must escalate to the test-author via the orchestrator instead
-    of editing tests. Scope is deliberately the e2e/BDD tree only; the
-    unit-test trees are the test-fixer's own territory and are NOT listed.
+    The e2e/BDD tree the test-fixer must never modify. crush's write-guard
+    keeps crush out of it, and the test-fixer's own post-crush marker-diff
+    guard (against the orchestrator's fixer-before snapshot) fails the run if
+    anything under it changed; the test-fixer escalates to the test-author via
+    the orchestrator instead of editing tests. codex also reads this list to
+    confirm the writer left the specs untouched. Scope is deliberately the
+    e2e/BDD tree only; the unit-test trees are the test-fixer's own territory
+    and are NOT listed.
 
 codex_wrapper:
   path: .claude/scripts/codex.sh

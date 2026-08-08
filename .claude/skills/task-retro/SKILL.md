@@ -32,8 +32,7 @@ Paths per `docs/context/paths.yaml`:
 - Phase state: `tmp/implement-task/active.json` if it is this slug (retro runs
   BEFORE `phase_state.py close`), else the newest `tmp/implement-task/<slug>/state.*.json`
   plus the slug's line in `docs/context/skill-metrics.jsonl`.
-- Enforcement audit trails: `tmp/implement-task/phase-state.log`,
-  `tmp/block_test_edits.log` (violation attempts).
+- Enforcement audit trail: `tmp/implement-task/phase-state.log`.
 
 ## Do
 

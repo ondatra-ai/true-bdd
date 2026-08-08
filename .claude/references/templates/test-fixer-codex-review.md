@@ -32,9 +32,9 @@ The writer's work lives under `{{HARNESS_CODE_ROOT}}` (production) and
 (regenerated-from-tests), so read them WHOLE — they ARE the change surface; a `git
 diff` will not show them. The e2e specs under `{{E2E_DIR}}` are the read-only source of
 truth the code must satisfy — read them, and use `git diff` there to confirm the writer
-left them UNCHANGED. The writer is barred from the off-limits tree the
-`.claude/hooks/block_test_edits.py` hook enforces (`paths.yaml → off_limits_test_fixer`)
-and from the package `scripts` — confirm nothing there changed. Run the e2e + unit
+left them UNCHANGED. The writer is barred from the off-limits tree declared in
+`paths.yaml → off_limits_test_fixer` and from the package `scripts` — confirm nothing
+there changed. Run the e2e + unit
 suites yourself to verify green / no-regression (find the commands in `package.json`);
 for UI, read the design system declared in `paths.yaml → design_system` (production must
 use only those tokens).
