@@ -86,6 +86,12 @@ Give the subagent the root agent path and this task:
      indirection** — look for a registry or config file the agent reads up
      front — and resolve those references too. A graph walk that only greps for
      slashes will miss every indirect edge.
+   - **A directory handed to a tool as data or a sandbox is ONE node.** When the
+     agent points a tool at a whole tree (a test suite, a design-system dir) as
+     data/target, that tree is a single data-edge — do NOT promote individual
+     files inside it to separate nodes just because a description or the agent
+     name-drops one. Only a file the agent resolves as a distinct instruction
+     dependency is its own node.
 2. **Compute reverse edges (fan-in)** for each file discovered: search the
    agents directory and wherever the instruction files live for references to
    it — by literal path **and** by whatever key/alias resolves to it.
@@ -118,7 +124,16 @@ Using the graph from Phase A, for **each file** determine:
 - **Flag** any file scoring **< 7** (mark it — e.g. a leading ⚠️) so low-clarity
   files stand out in the table.
 
-Print the table:
+**Every file in the Phase A web gets exactly one row — a single table, no
+omissions and no second "won't-review" table.** Config, scripts, hooks,
+templates, and registries are scored the same way as prose files: a non-prose
+file still has one architectural job and a graph position, so it earns a role
+and a clarity score too. Do **not** relegate any file to a side list, and do
+**not** declare a file out of scope at this stage — scope is decided per-finding
+in Phase C/D, never by dropping a file from the table.
+
+Print it as a single GitHub-flavored Markdown **pipe table** (one row per file) —
+never a linearized `Field: value` list or per-file cards:
 
 | File | Fan-out (deps) | Fan-in (dependents) | Role | Clarity | Notes |
 |------|----------------|---------------------|------|---------|-------|
