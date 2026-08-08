@@ -24,7 +24,7 @@ tests); everything under `tests/` stays READ-ONLY and never touch the package `s
 - Keep UI styling on the design system — tokens `{{DESIGN_TOKENS}}`, SPEC
   `{{DESIGN_SPEC}}`, prototype `{{DESIGN_PROTOTYPE}}`; only those tokens/components.
 - Typecheck / build to zero errors: `{{TSC_CMD}}`.
-- Re-run the reproduce specs to green, then the ENTIRE suite (e2e + unit):
+- Re-run the previously-red specs to green, then the ENTIRE suite (e2e + unit):
   `{{E2E_RUN_CMD}}` and `{{UNIT_RUN_CMD}}` (ALWAYS `--reporter=dot`, or redirect
   `> {{LOG_PATH}} 2>&1` and read it). The suite must be FULLY GREEN — no regressions.
   If a finding would break green and can't be resolved in code, do NOT silently drift:

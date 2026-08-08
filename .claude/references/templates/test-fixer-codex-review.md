@@ -4,36 +4,40 @@ The test-fixer DRIVER fills EVERY {{...}}, writes the result to a prompt file un
 codex artifacts dir (paths.yaml → codex_artifacts, e.g. tmp/codex-fx-review-r<N>.md —
 give the prompt file and the wrapper's answer file DISTINCT paths), and runs:
     <codex_wrapper> ro <prompt-file> fx-review-r<N>
-The fixer is TASK-BLIND: codex's "task" is the reproduce block + the e2e specs being
-greened (read from disk), NOT a brief. codex is READ-ONLY, returns findings ONLY with
+The fixer is TASK-BLIND: codex's task is the failing e2e specs being greened (read
+from disk), NOT a brief. codex is READ-ONLY, returns findings ONLY with
 NO scores — the DRIVER scores each (composite ≥7 + four gates). Round 1 = fresh
 findings; round 2+ also verifies applied findings + challenges skips (fill
-{{PRIOR_FINDINGS}}). Everything below `====` is the prompt.
+{{PRIOR_FINDINGS}}). Only {{HARNESS_CODE_ROOT}}, {{UNIT_TESTS_DIR}}, {{E2E_DIR}},
+{{PRIOR_FINDINGS}}; codex reveals everything else from the repo itself.
+Everything below `====` is the prompt.
 ====
 -->
 
-You are reviewing PRODUCTION code (and its unit tests) that a writer produced to make a
-set of failing end-to-end tests pass. You are READ-ONLY — do NOT edit any file. Run
-read-only commands to VERIFY every claim (never review from memory), then return
-findings only.
+You are reviewing the PRODUCTION code (and its unit tests) a writer produced to make a
+set of failing end-to-end tests pass. You are READ-ONLY — never edit a file. Verify
+every claim by running read-only commands or reading files; never review from memory.
+Discover whatever you need from the repo itself — `docs/context/paths.yaml` (the
+path/config source of truth) and the relevant `package.json` — rather than assuming.
 
-# The spec being satisfied (the failing tests — this is the whole task)
+# The task (the failing e2e specs — this is the whole spec)
 
-{{REPRODUCE_BLOCK}}
+The end-to-end specs the writer greened ARE the task — read them under `{{E2E_DIR}}` and
+run the suite to see the set the code must satisfy. There is no separate brief.
 
-The e2e specs that drive this are under `{{E2E_DIR}}` — read them; they are the source
-of truth. The writer must NOT have changed them.
+# What to review
 
-# What to review (the writer's changes)
-
-- production code root: `{{HARNESS_CODE_ROOT}}`
-- unit-test tree: `{{UNIT_TESTS_DIR}}`
-- the diff to review: run `{{DIFF_CMD}}`
-- verify green/red claims by running the suites yourself: `{{E2E_RUN_CMD}}` and
-  `{{UNIT_RUN_CMD}}` (always `--reporter=dot`, or redirect `> {{LOG_PATH}} 2>&1`)
-- typecheck / build: `{{TSC_CMD}}`
-- design system (for UI correctness): tokens `{{DESIGN_TOKENS}}`, SPEC `{{DESIGN_SPEC}}`,
-  prototype `{{DESIGN_PROTOTYPE}}`
+The writer's work lives under `{{HARNESS_CODE_ROOT}}` (production) and
+`{{UNIT_TESTS_DIR}}` (the unit tests backing it). Both are git-ignored
+(regenerated-from-tests), so read them WHOLE — they ARE the change surface; a `git
+diff` will not show them. The e2e specs under `{{E2E_DIR}}` are the read-only source of
+truth the code must satisfy — read them, and use `git diff` there to confirm the writer
+left them UNCHANGED. The writer is barred from the off-limits tree the
+`.claude/hooks/block_test_edits.py` hook enforces (`paths.yaml → off_limits_test_fixer`)
+and from the package `scripts` — confirm nothing there changed. Run the e2e + unit
+suites yourself to verify green / no-regression (find the commands in `package.json`);
+for UI, read the design system declared in `paths.yaml → design_system` (production must
+use only those tokens).
 
 # Prior findings + how the driver disposed of them  (EMPTY on round 1)
 
@@ -50,10 +54,10 @@ of truth. The writer must NOT have changed them.
 
 1. **Correctness** — does the code actually satisfy every driving spec, for the right
    reason (not a hardcoded value or a coincidence that makes the assertion pass)?
-2. **No test edits** — confirm nothing under `tests/` and no package `scripts` changed;
-   the specs are unchanged.
+2. **No test edits** — confirm nothing under the off-limits tree (`paths.yaml →
+   off_limits_test_fixer`) and no package `scripts` changed; the specs are unchanged.
 3. **Regeneratability risk** — the e2e suite is the ONLY committed spec;
-   `{{HARNESS_CODE_ROOT}}` + its unit tests are gitignored, regenerated-from-tests.
+   `{{HARNESS_CODE_ROOT}}` + its unit tests are git-ignored, regenerated-from-tests.
    Flag any production behaviour pinned ONLY by a unit test (no e2e assertion covers
    it): on a fresh regenerate it vanishes.
 4. **Unit-test quality** — do the unit tests actually exercise the code, fail when it

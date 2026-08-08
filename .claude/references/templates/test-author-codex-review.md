@@ -5,36 +5,32 @@ under the codex artifacts dir (paths.yaml → codex_artifacts, e.g.
 tmp/codex-ta-review-r<N>.md — give the prompt file and the wrapper's answer file
 DISTINCT paths), and runs:
     <codex_wrapper> ro <prompt-file> ta-review-r<N>
-codex is READ-ONLY: it finds problems and NEVER edits, and it returns findings
-ONLY with NO scores — the DRIVER scores each (composite ≥7 + four gates) and
-decides what to keep. Round 1 asks for fresh findings only; round 2+ also
-verifies applied findings and challenges skips (fill {{PRIOR_FINDINGS}}).
+codex is READ-ONLY: it finds problems and NEVER edits, and returns findings ONLY
+with NO scores — the DRIVER scores each (composite ≥7 + four gates). Round 1 asks
+for fresh findings; round 2+ also verifies applied findings and challenges skips
+(fill {{PRIOR_FINDINGS}}). Only three {{...}} — {{REQUIREMENTS}}, {{E2E_DIR}},
+{{PRIOR_FINDINGS}}; codex reveals everything else from the repo itself.
 Everything below `====` is the prompt.
 ====
 -->
 
-You are reviewing end-to-end Playwright specs a writer just produced. You are
-READ-ONLY — do NOT edit any file. Run read-only commands to VERIFY every claim
-(never review from memory).
+You are reviewing the end-to-end Playwright specs a writer just produced. You are
+READ-ONLY — never edit a file. Verify every claim by running read-only commands or
+reading files; never review from memory. Discover whatever you need from the repo
+itself — `docs/context/paths.yaml` (the path/config source of truth) and the relevant
+`package.json` — rather than assuming.
 
-# The task these specs must pin
+# The task the specs must pin
 
 {{REQUIREMENTS}}
 
-# The authoring plan (what should be RED, and why)
-
-{{RECONCILE_AND_EXPECTED_RED}}
-
 # What to review
 
-- spec directory: `{{E2E_DIR}}`
-- the writer's changes — review this diff: run `{{DIFF_CMD}}`
-- the writer's current run results (verify red/green against THESE — you are
-  READ-ONLY and cannot start the suite's webServer, so do NOT re-run it; read
-  the run log at `{{LOG_PATH}}` for more detail):
-
-  {{RUN_RESULTS}}
-- typecheck (read-only, no writes): `{{TSC_CMD}}`
+The writer's specs live under `{{E2E_DIR}}`. We do NOT hand you a diff — reveal the
+writer's changes yourself with `git status` / `git diff` (the spec tree is tracked) and
+read the specs there; they are the change surface. You cannot start the e2e webServer,
+so review the specs statically and run the e2e package's typecheck (see its
+`package.json`) to confirm they compile.
 
 # Prior findings + how the driver disposed of them  (EMPTY on round 1)
 
@@ -59,7 +55,7 @@ READ-ONLY — do NOT edit any file. Run read-only commands to VERIFY every claim
 4. **Right-reason RED** — is each intended-red spec red because of an assertion on
    the absent/changed behaviour — not a crash, collection error, timeout, or a bad
    selector that would fail even once the behaviour exists?
-5. **Only-expected-red** — does anything make a spec OUTSIDE the expected-RED set
+5. **Only-expected-red** — does anything make a spec OUTSIDE the intended-red set
    fail (a collateral regression)?
 6. **Flakiness** — waits on state (not `sleep`); deterministic selectors; no
    race-prone ordering or shared-state coupling between tests.
