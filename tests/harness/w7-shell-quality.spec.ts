@@ -88,7 +88,9 @@ test("w7.1a ClickUp parity: rest/hover caret + glyph, guide line, bottom utiliti
   const fb = (await page.getByTestId(WTID.railFlyout).boundingBox())!;
   expect(fb.x).toBeGreaterThanOrEqual(rb.x + rb.width - 2);
 
-  // Chat: own header row (new-chat control) + input pinned at the panel bottom; wide (~40% at 1920).
+  // Chat: own header row (new-chat control) + input pinned at the panel bottom; opens at the
+  // prototype default width (ChatDialog.js DEFAULT_WIDTH=380 — the design baseline supersedes the
+  // pre-prototype ClickUp "~40% at 1920" measurement; see w20.2 / task workspace-visual-jank).
   await gotoWorkspace(page, e.baseURL, wsRoutes.architecture(e.sid));
   await page.getByTestId(WTID.chatDockToggle).click();
   const panel = page.getByTestId(WTID.chatDockPanel);
@@ -96,7 +98,7 @@ test("w7.1a ClickUp parity: rest/hover caret + glyph, guide line, bottom utiliti
   const pb = (await panel.boundingBox())!;
   const ib = (await panel.getByTestId(WTID.chatDockInput).boundingBox())!;
   expect(ib.y).toBeGreaterThan(pb.y + pb.height * 0.5); // input pinned low
-  expect(pb.width).toBeGreaterThan(1920 * 0.3); // wide default
+  expect(Math.abs(pb.width - 380)).toBeLessThanOrEqual(2); // prototype default width
 });
 
 test("w7.2 the file view editor + gutter use a monospace font while the body resolves to Poppins", async ({ page }) => {

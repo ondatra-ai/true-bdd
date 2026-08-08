@@ -24,6 +24,12 @@ const ENV_SUITE_ROOT = "TRUE_BDD_E2E_SUITE_ROOT";
 const ENV_REPO_ROOT = "TRUE_BDD_E2E_REPO_ROOT";
 const ENV_BIN = "TRUE_BDD_E2E_BIN";
 const ENV_MATERIALIZER_BIN = "TRUE_BDD_E2E_MATERIALIZER_BIN";
+/**
+ * Set by global-setup's ensureStandaloneBundle() (helpers/harness-build.ts), not
+ * by createSuiteContext — the bundle is assembled after the Go binaries. Read
+ * back here so ServerController can clone it per instance.
+ */
+const ENV_STANDALONE = "TRUE_BDD_E2E_STANDALONE";
 
 export interface SuiteContext {
   /** Unique per-invocation scratch root (under `<repo>/tmp/`). */
@@ -36,6 +42,8 @@ export interface SuiteContext {
   binPath: string;
   /** Absolute path of the freshly built fixture materializer binary. */
   materializerBin: string;
+  /** Assembled Next standalone bundle path (ServerController clones this per instance). */
+  standaloneBundle: string;
 }
 
 /** Walks up from this file until a `.git` directory is found. */
@@ -92,7 +100,16 @@ export async function createSuiteContext(): Promise<SuiteContext> {
   process.env[ENV_BIN] = binPath;
   process.env[ENV_MATERIALIZER_BIN] = materializerBin;
 
-  return { suiteRoot, repoRoot, harnessDir, binPath, materializerBin };
+  // standaloneBundle is populated later by ensureStandaloneBundle(); the value
+  // here is only for global-setup logging (workers read the live env instead).
+  return {
+    suiteRoot,
+    repoRoot,
+    harnessDir,
+    binPath,
+    materializerBin,
+    standaloneBundle: process.env[ENV_STANDALONE] ?? "",
+  };
 }
 
 /**
@@ -104,8 +121,9 @@ export function suiteContext(): SuiteContext {
   const repoRoot = process.env[ENV_REPO_ROOT];
   const binPath = process.env[ENV_BIN];
   const materializerBin = process.env[ENV_MATERIALIZER_BIN];
+  const standaloneBundle = process.env[ENV_STANDALONE];
 
-  if (!suiteRoot || !repoRoot || !binPath || !materializerBin) {
+  if (!suiteRoot || !repoRoot || !binPath || !materializerBin || !standaloneBundle) {
     throw new Error(
       "suite context env not set — did global-setup run? (helpers require `playwright test`)",
     );
@@ -117,6 +135,7 @@ export function suiteContext(): SuiteContext {
     harnessDir: path.join(repoRoot, "harness"),
     binPath,
     materializerBin,
+    standaloneBundle,
   };
 }
 

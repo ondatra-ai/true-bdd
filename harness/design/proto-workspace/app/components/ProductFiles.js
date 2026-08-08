@@ -85,7 +85,15 @@ export function parseScenariosOutline(scenariosYaml) {
   for (const { line, index } of blockAfter(lines, scenariosIdx)) {
     const idMatch = line.match(/^ {2}([A-Za-z0-9-]+):\s*$/);
     if (idMatch) {
-      current = { id: idMatch[1], line: index, anchorId: scnAnchorId(idMatch[1]), description: "", feature: null };
+      current = {
+        id: idMatch[1],
+        line: index,
+        anchorId: scnAnchorId(idMatch[1]),
+        description: "",
+        feature: null,
+        service: "",
+        storyPath: null,
+      };
       scenarios.push(current);
       continue;
     }
@@ -94,6 +102,12 @@ export function parseScenariosOutline(scenariosYaml) {
     if (descMatch) current.description = descMatch[1].trim();
     const featMatch = line.match(/^\s*feature:\s*"?([\w.-]+)"?/);
     if (featMatch) current.feature = featMatch[1].trim();
+    const svcMatch = line.match(/^\s*service:\s*"?([^"\n]+)"?/);
+    if (svcMatch) current.service = svcMatch[1].trim();
+    // First `- story: <path>.yaml` under user_stories is the covering story
+    // (the /requirements registry table's "Linked story" column, report F12).
+    const storyMatch = line.match(/^\s*-\s*story:\s*"?([^"\n]+?\.yaml)"?/);
+    if (storyMatch && !current.storyPath) current.storyPath = storyMatch[1].trim();
   }
   return { scenariosHeaderLine: scenariosIdx, scenarios };
 }

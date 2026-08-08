@@ -7,7 +7,7 @@
 # to a file. Full trace is teed so a timeout still leaves a partial report.
 #
 # Usage (run from the repo root):
-#   ./.claude/skills/implement-task/scripts/codex.sh <mode> <prompt-file> [label]
+#   ./.claude/scripts/codex.sh <mode> <prompt-file> [label]
 #
 #   mode        ro   = read-only audit/verify (default)
 #                auto = workspace-write (Codex may edit files / run side effects)

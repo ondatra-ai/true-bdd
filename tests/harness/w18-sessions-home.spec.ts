@@ -543,11 +543,10 @@ test("w18.10 P7: deterministic sessions-design parity (primary gate)", async ({ 
   // Zero Test-connection controls (P7 drop). The literal survives ONLY as this
   // negative assertion — the control is retired from the contract.
   await expect(page.getByTestId("test-connection"), "Test-connection is retired from the sessions home").toHaveCount(0);
-  // The testid-only check is opt-in: the MOST LIKELY wrong regeneration is a
-  // faithful copy of the prototype's `/sessions`, which DOES carry a "Test
-  // connection" button — one that would omit the retired testid yet still violate
-  // P7's drop. Pin the drop by ACCESSIBLE NAME so a labelled-but-untagged control
-  // fails too.
+  // The testid-only check is opt-in: a wrong regeneration could reintroduce the
+  // control without the retired testid (the prototype carried a "Test connection"
+  // button until 2026-08-06, when it was removed to match this drop). Pin the
+  // drop by ACCESSIBLE NAME so a labelled-but-untagged control fails too.
   for (const role of ["button", "link"] as const) {
     await expect(
       page.getByRole(role, { name: /test[- ]?connection/i }),

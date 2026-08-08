@@ -5,9 +5,12 @@
  * package.json + node_modules); the config sits at the suite root, so every
  * path below is relative to `tests/harness/`.
  *
- * - Production runtime only: global setup runs ONE `next build`; each
- *   test starts its own server via ServerController.
- * - `workers: 1` is explicit — serial is configuration, not intention.
+ * - Production runtime only: global setup runs ONE host `next build` into a
+ *   cached standalone bundle; each test starts its own `node server.js` from a
+ *   per-instance clone of that bundle via ServerController — no docker per test.
+ * - Parallel by default: `workers: 8` (override with PW_WORKERS),
+ *   `fullyParallel: true`. Per-test isolation comes from dynamic host ports,
+ *   per-test Redis key prefixes, and per-test scratch dirs — not from serialism.
  * - Projects by filename convention at the suite root:
  *     protocol  — p<N>-*.spec.ts  (never resolves or executes claude)
  *     workspace — w<N>-*.spec.ts  (file-as-source workspace UI; no claude;
@@ -27,8 +30,10 @@ export default defineConfig({
   // Never collect specs from the suite's own deps or from fixture input trees
   // (which may ship host-project *.spec.ts of their own).
   testIgnore: ["**/node_modules/**", "**/fixtures/**", "**/test-results/**"],
-  workers: 1,
-  fullyParallel: false,
+  // Parallel by default; PW_WORKERS overrides. Per-test isolation comes from
+  // dynamic ports + per-test Redis prefixes + per-test dirs (not serialism).
+  workers: Number(process.env.PW_WORKERS ?? 8),
+  fullyParallel: true,
   retries: 0,
   forbidOnly: !!process.env.CI,
   globalSetup: "./global-setup.ts",
@@ -49,11 +54,18 @@ export default defineConfig({
       testMatch: "**/w[0-9]*.spec.ts",
       timeout: 3 * MINUTE_MS,
     },
-    {
-      name: "ai-gate",
-      testMatch: "**/ai.gate.setup.ts",
-      timeout: 5 * MINUTE_MS,
-    },
+    // TEMPORARY (2026-08-06): the real-Claude `ai` project (and its gate) is
+    // opt-in via RUN_AI=1 to keep plain `playwright test` runs fast. Remove
+    // the guard to restore the a*-specs to the default suite.
+    ...(process.env.RUN_AI
+      ? [
+          {
+            name: "ai-gate",
+            testMatch: "**/ai.gate.setup.ts",
+            timeout: 5 * MINUTE_MS,
+          },
+        ]
+      : []),
     {
       // Authoring-time only: captures the committed design gold-standard
       // screenshots from the booted prototype (tests/harness/goldens/). The
@@ -63,12 +75,16 @@ export default defineConfig({
       testMatch: "**/goldens.update.spec.ts",
       timeout: 10 * MINUTE_MS,
     },
-    {
-      name: "ai",
-      testMatch: "**/a[0-9]*.spec.ts",
-      timeout: 30 * MINUTE_MS,
-      retries: 0,
-      dependencies: ["ai-gate"],
-    },
+    ...(process.env.RUN_AI
+      ? [
+          {
+            name: "ai",
+            testMatch: "**/a[0-9]*.spec.ts",
+            timeout: 30 * MINUTE_MS,
+            retries: 0,
+            dependencies: ["ai-gate"],
+          },
+        ]
+      : []),
   ],
 });

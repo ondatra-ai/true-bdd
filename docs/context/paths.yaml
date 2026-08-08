@@ -1,11 +1,11 @@
-# implement-task paths — single source of truth for every folder/file path used
-# by the implement-task skill (.claude/skills/implement-task/SKILL.md) and its
-# four agents (.claude/agents/implement-task-*.md). Skills and agents read paths
-# from this file; do not hardcode paths in skill or agent instructions.
+# Skill paths — single source of truth for every folder/file path used by the
+# repo's skills (.claude/skills/*/SKILL.md) and their agents
+# (.claude/agents/*.md). Skills and agents read paths from this file; do not
+# hardcode paths in skill or agent instructions.
 #
-# The only path literals permitted in the skill/agents are (1) this file —
+# The only path literals permitted in the skills/agents are (1) this file —
 # docs/context/paths.yaml, the config entry point — and (2) the PreToolUse hook
-# path in the test-fixer agent's frontmatter (static agent wiring). Every other
+# path in the test-fixer agents' frontmatter (static agent wiring). Every other
 # folder/file location is read from here.
 #
 # Schema: every entry is {path (or paths), description: how to use it}.
@@ -173,28 +173,73 @@ off_limits_test_fixer:
     are NOT listed.
 
 codex_wrapper:
-  path: .claude/skills/implement-task/scripts/codex.sh
+  path: .claude/scripts/codex.sh
   description: "Codex invocation wrapper. Usage: <ro|auto> <prompt-file> [label]."
 
 codex_mechanics:
-  path: .claude/skills/implement-task/references/codex.md
+  path: .claude/references/codex.md
   description: Codex mechanics + prompt guide (sandbox flags, setup).
-
-codex_loop:
-  path: .claude/skills/implement-task/references/codex-loop.md
-  description: >-
-    The shared critique-loop procedure (all four agents). The test-fixer runs
-    it for a FIXED 3 rounds at every lane — no early exit.
-
-codex_matrix:
-  path: .claude/skills/implement-task/references/complexity-matrix.md
-  description: Complexity matrix — lane → agents + Codex round caps.
 
 codex_artifacts:
   path: tmp/
   description: >-
     Codex artifacts: answers at tmp/codex-<label>.md (+ .trace.log), prompts at
     tmp/codex-<label>-rN.md.
+
+crush_mechanics:
+  path: .claude/references/crush.md
+  description: >-
+    Crush mechanics + gotchas (the crush parallel to codex_mechanics): wrapper
+    invocation, the two write-guard roles + their bash whitelists, and the
+    non-negotiable gotchas (--reporter=dot deadlock, crush knows nothing about
+    the repo, the model-pin trap, agent-def caching, verify-don't-trust).
+
+crush_wrapper:
+  path: .claude/scripts/crush-run.sh
+  description: >-
+    Crush invocation wrapper for the test-author + fixer agents. Usage:
+    <author|fixer> <prompt-file|-> [label] [--continue]. The role selects the
+    write sandbox enforced by .crush/hooks/guard.py (author -> tests/harness/
+    only, fixer -> harness/ only); '-' reads the prompt from stdin (quoted
+    heredoc — the drivers have no Write tool); --continue resumes crush's most
+    recent session for follow-up turns; a stalled run is tree-killed after
+    CRUSH_TIMEOUT seconds (default 1800; a full round with one self-correction
+    measures ~20-25 min) with exit 124.
+
+crush_artifacts:
+  path: tmp/crush/
+  description: >-
+    Crush artifacts: prompts at tmp/crush/<label>.prompt.md, transcripts at
+    <label>.out, the write-guard log at hook.log. Also the only sanctioned
+    bash-redirect target for chatty test output inside a crush run.
+
+crush_prompts:
+  test_author_write_tests: .claude/references/templates/test-author-crush-write-tests.md
+  test_author_apply_review: .claude/references/templates/test-author-crush-apply-review.md
+  test_fixer_fix_code: .claude/references/templates/test-fixer-crush-fix-code.md
+  test_fixer_apply_review: .claude/references/templates/test-fixer-crush-apply-review.md
+  description: >-
+    Fill-in crush prompt templates the driver agents populate each run. Naming:
+    .claude/references/templates/<agent>-<tool>-<purpose>.md; keys are
+    <agent>_<purpose>. *_write_tests / *_fix_code = the WRITE round (Step 1);
+    *_apply_review = the codex→crush review-cycle follow-up (Step 2, wrapper
+    --continue). The driver resolves every {{...}} to a concrete value (paths from
+    paths.yaml, requirements/reproduce-block/findings from its inputs) BEFORE
+    piping — crush never reads paths.yaml, so nothing may reach it as an unfilled
+    placeholder or a bare paths.yaml key. (crush guard ROLES are author/fixer — a
+    sandbox axis, not the agent name: test-author drives role author, test-fixer
+    drives role fixer.)
+
+codex_prompts:
+  test_author_review: .claude/references/templates/test-author-codex-review.md
+  test_fixer_review: .claude/references/templates/test-fixer-codex-review.md
+  description: >-
+    Fill-in codex prompt templates (same naming + fill rule as crush_prompts).
+    *_review = the read-only codex review of crush's current diff (Step 2). The
+    driver fills every {{...}}, writes the result to a prompt file under
+    codex_artifacts (DISTINCT from the wrapper's answer file), and runs
+    <codex_wrapper> ro <prompt-file> <label>. codex returns findings only (no
+    scores); the driver scores them (composite ≥7 + gates, see codex_mechanics).
 
 run_commands:
   - command: cd tests/harness && npx playwright test --project=protocol

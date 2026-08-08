@@ -2,10 +2,10 @@
  * Per-test environment for the workspace file-as-source specs (plan §"End-to-end
  * test cases"). A thin wrapper over ProtocolEnv that:
  *
- *   - starts one harness CONTAINER (no host-folder mount — the S1 relay-ruled-out
- *     fact), a `true-bdd remote` CLI agent with cwd = a materialized
- *     `w-workspace-happy` fixture, and waits for the session to appear in
- *     `GET /api/sessions`;
+ *   - starts one harness SERVER (a host `node server.js` process — no host-folder
+ *     mount, the S1 relay-ruled-out fact), a `true-bdd remote` CLI agent with
+ *     cwd = a materialized `w-workspace-happy` fixture, and waits for the session
+ *     to appear in `GET /api/sessions`;
  *   - exposes `{ sid, baseURL, fixtureDir }`;
  *   - reads the host fixture folder (the CLI's cwd) for the S1 on-disk oracle
  *     (`readDocOnDisk` / `waitForDocOnDisk`) and a full-byte snapshot of every
@@ -101,7 +101,7 @@ export class WorkspaceEnv {
     return this.env.server.baseURL;
   }
 
-  /** The restartable harness container (w4.3). */
+  /** The restartable harness server (w4.3). */
   get server() {
     return this.env.server;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFiles } from "./FilesStore";
 
 // Must match .yaml-editor__gutter / .yaml-editor__textarea line-height in
@@ -15,10 +15,25 @@ const FLASH_MS = 900;
 // duplicating the header-bar/gutter/textarea/anchor/flash markup.
 // /architecture itself is left on its own inline implementation
 // (unchanged, already validated) to avoid touching working code.
-export default function FileView({ kicker, title, meta, path, content, onChange, anchors }) {
+export default function FileView({ kicker, title, meta, path, content, onChange, anchors, beforeFile }) {
   const { jumpRequest } = useFiles();
   const lines = content.split("\n");
   const [flashLine, setFlashLine] = useState(null);
+
+  // Autosave state chip (report F13.2). In-memory prototype, so mimic prod's
+  // idle → saving → saved cycle off each edit; skip the initial mount so an
+  // untouched file reads "idle" rather than flashing "saved" on load.
+  const [saveState, setSaveState] = useState("idle");
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    setSaveState("saving");
+    const t = setTimeout(() => setSaveState("saved"), 700);
+    return () => clearTimeout(t);
+  }, [content]);
 
   useEffect(() => {
     if (!jumpRequest) return;
@@ -44,10 +59,21 @@ export default function FileView({ kicker, title, meta, path, content, onChange,
         </div>
       </div>
 
+      {beforeFile}
+
       <div className="file-view">
         <div className="file-view__bar">
           <span className="file-view__path">{path}</span>
-          <span className="file-view__meta">{lines.length} lines</span>
+          <span className="file-view__meta">
+            <span
+              className={`file-view__status file-view__status--${saveState}`}
+              data-testid="file-view-status"
+              aria-live="polite"
+            >
+              {saveState}
+            </span>
+            <span className="file-view__lines">{lines.length} lines</span>
+          </span>
         </div>
         <div className="yaml-editor" data-testid="yaml-editor">
           {anchors.map(({ id, line }) => (

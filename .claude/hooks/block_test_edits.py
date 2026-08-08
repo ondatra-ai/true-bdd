@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: stop the implement-task-test-fixer agent from editing test files.
+"""PreToolUse hook: stop the test-fixer agent from editing test files.
 
-Wired into the `implement-task-test-fixer` agent's frontmatter `hooks.PreToolUse`
+Wired into the `test-fixer` agent's frontmatter `hooks.PreToolUse`
 only, so it runs solely while that agent is active — the test-author and reviewer
 agents (which legitimately edit tests) are unaffected. Enforced in every permission
 mode, including bypassPermissions.
@@ -183,7 +183,7 @@ def now_iso():
 
 def deny(tool, target, rule, extra=None):
     reason = (
-        f"implement-task-test-fixer must not modify test files: {tool} target '{target}' "
+        f"test-fixer must not modify test files: {tool} target '{target}' "
         f"is off-limits (matched '{rule}' in docs/context/paths.yaml). Escalate to the "
         "test-author via the orchestrator instead of editing tests."
     )

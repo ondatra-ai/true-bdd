@@ -200,17 +200,30 @@ input.inline-field-input:focus {
   border-top: var(--border-width) solid var(--surface-inverse-soft);
 }
 
-/* Flyout: fixed over the page content, immediately right of the rail.
-   Reuses .mockup-sidebar (brand + sidebar-nav + tree) unmodified — only
-   position/z-index/border are added here. */
+/* Flyout: fixed panel docked immediately to the RIGHT of the icon rail
+   (left: rail width), overlaying the docked sidebar's column — the standard
+   ClickUp secondary-flyout pattern, so the preview sits right beside the icon
+   being hovered rather than detached over the page. Its width comes from
+   .mockup-sidebar (--wk-sidebar-w), so it spans exactly the sidebar column
+   (rail → rail + sidebar) and never extends over the main content — content
+   links are never intercepted. The flyout only renders while hovering a
+   NON-active rail item; on mouse-leave it closes and the docked outline beneath
+   it is fully interactive again. (Supersedes the earlier `left: calc(rail +
+   sidebar)` offset from report F7, which kept the docked outline reachable
+   mid-preview but left the flyout visually disconnected from its icon.) Reuses
+   .mockup-sidebar unmodified — only position/z-index/border are added here. */
 .rail-flyout {
   position: fixed;
   top: 0;
-  left: var(--rail-w);
+  left: var(--wk-rail-w);
   height: 100vh;
   z-index: 50;
-  border: var(--border-width) solid var(--border-strong);
-  border-left: none;
+  /* No border overrides. The flyout exactly overlays the docked sidebar
+     column, so it inherits .mockup-sidebar's borders (right hairline only, NO
+     top border) and lines up pixel-for-pixel with the docked panel. A
+     `border: strong` here would draw a 1px near-black TOP line the docked
+     sidebar lacks (the stray "black line" on hover) AND push the brand down 1px
+     via the box model (wordmark/meta jump y+1) — a visible open-time jiggle. */
 }
 
 /* ── /service: type selector ── */
@@ -409,7 +422,42 @@ select:focus, .type-select:focus { outline: none; border-color: var(--text-prima
   background: var(--surface-subtle);
 }
 .file-view__path { font-weight: var(--fw-bold); }
-.file-view__meta { color: var(--text-muted); font-size: var(--wk-fs-caption); }
+.file-view__meta {
+  color: var(--text-muted);
+  font-size: var(--wk-fs-caption);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* Autosave state chip (report F13.2): prod surfaces an idle/saved autosave
+   signal under every file card — a genuinely useful edit-state cue. Styled
+   here as a small dotted pill (B&W: muted dot at rest/while saving, solid
+   dark dot once saved) so the mockup carries the same signal. */
+.file-view__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  font-size: var(--wk-fs-micro);
+  font-weight: var(--fw-bold);
+  color: var(--text-muted);
+}
+.file-view__status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex: 0 0 auto;
+}
+.file-view__status--saved { color: var(--text-primary); }
+.file-view__status--saved::before { background: var(--text-primary); }
+
+/* Scenarios registry table (report F12) sits above the whole-file view on
+   /requirements — .data-table itself carries no bottom margin, so add the
+   same gap the file-view leaves below itself. */
+[data-testid="scenarios-registry"] { margin-bottom: var(--space-4); }
 
 .yaml-editor {
   position: relative;

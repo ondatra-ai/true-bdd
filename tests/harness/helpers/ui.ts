@@ -35,8 +35,9 @@ export const TID = {
   // without a manual reload: a new CLI appears and a stopped CLI vanishes on
   // the poll; an honest empty state shows only after a successful zero read;
   // a sustained read failure raises the unavailable notice (auto-returning on
-  // recovery). Design baseline: the prototype `/sessions` MINUS Test connection
-  // PLUS the empty state (README-testids → "Sessions list (`/`)").
+  // recovery). Design baseline: the prototype `/sessions` (which itself dropped
+  // Test connection per P7) PLUS the empty state (README-testids →
+  // "Sessions list (`/`)").
   sessionsList: "sessions-list", // row-list container; exact-count row assertions scope to it
   sessionRow: "session-row", // one per session; + data-session-id, data-folder
   sessionFolder: "session-folder", // text = canonical folder (realpath)
@@ -296,6 +297,7 @@ export const WTID = {
   sidebarCaret: "sidebar-caret", // hover-revealed toggle; + data-expanded ("true"|"false"); glyph ▸/▾
   sidebarGroupBody: "sidebar-group-body", // the group's child-rows container (hidden when collapsed)
   sidebarGuideLine: "sidebar-guide-line", // thin child-indentation guide line (w7.1a)
+  sidebarGroupEmpty: "sidebar-group-empty", // explicit non-empty "no entries" indicator shown inside a FIXED outline group (Services/Terms/Docker) whose contract keys are absent (w20.4 / P4); ABSENT on a populated group
 
   // Sidebar rows. Every navigable row carries data-selected ("true"|"false")
   // for the open-page highlight (P6) and a kind-specific id attribute.
@@ -347,6 +349,7 @@ export const WTID = {
   newStoryForm: "new-story-form",
   newStoryTitle: "new-story-title",
   newStorySubmit: "new-story-submit",
+  newStoryCancel: "new-story-cancel", // Cancel/dismiss control that closes the form (w24.1)
 
   // Docked chat (P10/P11/P12).
   chatDock: "chat-dock",
