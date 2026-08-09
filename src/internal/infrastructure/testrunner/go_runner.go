@@ -115,7 +115,11 @@ func (r *GoTestRunner) exec(
 	allArgs := append([]string{"test"}, args...)
 	cmd := exec.CommandContext(ctx, "go", allArgs...)
 
-	logSpawn("go", allArgs, cmd.Dir)
+	// Unlike the jest and playwright runners, this one sets no cmd.Dir:
+	// `go test ./...` is resolved from the engine's own working
+	// directory. Logging cmd.Dir here would record an empty string, so
+	// the effective directory is resolved instead.
+	logSpawn("go", allArgs, workingDir())
 
 	var stdout, stderr bytes.Buffer
 

@@ -1,6 +1,21 @@
 package testrunner
 
-import "log/slog"
+import (
+	"log/slog"
+	"os"
+)
+
+// workingDir reports the directory a command with no explicit Dir will
+// actually run in. Used so a spawn record never claims an empty
+// directory when it means "wherever the engine was started".
+func workingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	return dir
+}
 
 // logSpawn records the exact command a framework runner is about to
 // execute.

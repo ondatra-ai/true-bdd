@@ -92,12 +92,16 @@ type Renderer struct {
 	totalWall     float64
 	deterministic float64
 	modelTime     float64
-	engineCost    float64
-	judgeCost     float64
-	totalTokens   int
-	maxTurn       float64
-	bootTotal     float64
-	passed        int
+	// mixedTime is span that measurably contains both machine and model
+	// work and cannot be split further. Kept out of the other two so
+	// neither headline number absorbs work it did not do.
+	mixedTime   float64
+	engineCost  float64
+	judgeCost   float64
+	totalTokens int
+	maxTurn     float64
+	bootTotal   float64
+	passed      int
 }
 
 // NewRenderer precomputes every suite-level total the sections share, so
@@ -124,11 +128,18 @@ func NewRenderer(fixtures []*Fixture, session, indexPath string) *Renderer {
 			renderer.totalTokens += fixture.Judge.Tokens
 		}
 
+		// Three kinds, three buckets. An if/else here silently billed the
+		// mixed post-run block — snapshot, diff, teardown AND the judge
+		// call — as pure model time, which is exactly the conflation this
+		// report exists to prevent.
 		for _, phase := range fixture.Phases {
-			if phase.Kind == KindDeterministic {
+			switch phase.Kind {
+			case KindDeterministic:
 				renderer.deterministic += phase.Seconds
-			} else {
+			case KindModel:
 				renderer.modelTime += phase.Seconds
+			case KindMixed:
+				renderer.mixedTime += phase.Seconds
 			}
 		}
 

@@ -24,11 +24,19 @@ func (r *Renderer) writeSummaryTiles() {
 		wall = formatSeconds(r.totalWall)
 	}
 
+	// The three time tiles are exact and therefore do NOT sum to the
+	// wall clock — the mixed remainder is named on the wall-clock tile
+	// rather than folded into whichever neighbour is convenient.
+	wallNote := "measured by go test"
+	if r.mixedTime > 0 {
+		wallNote += " · incl. " + formatSeconds(r.mixedTime) + " mixed"
+	}
+
 	tiles := [][3]string{
-		{"Wall clock", wall, "measured by go test"},
+		{"Wall clock", wall, wallNote},
 		{
 			"Non-deterministic", formatSeconds(r.modelTime),
-			formatPercent(percentScale-deterministicPct, 1) + "% — models deciding",
+			formatPercent(shareOf(r.modelTime, r.totalWall), 1) + "% — models deciding",
 		},
 		{
 			"Deterministic", formatSeconds(r.deterministic),
