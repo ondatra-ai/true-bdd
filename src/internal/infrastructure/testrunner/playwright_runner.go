@@ -46,11 +46,14 @@ var playwrightRegexMeta = regexp.MustCompile(`[\\^$.|?*+()[\]{}]`)
 
 // PlaywrightRunner runs `npx playwright test --reporter=json` and
 // decodes the trailing JSON document into FailingTest values.
-type PlaywrightRunner struct{}
+type PlaywrightRunner struct {
+	artifacts *Artifacts
+}
 
-// NewPlaywrightRunner builds a PlaywrightRunner.
-func NewPlaywrightRunner() *PlaywrightRunner {
-	return &PlaywrightRunner{}
+// NewPlaywrightRunner builds a PlaywrightRunner writing its captured
+// output through artifacts, which may be nil to capture nothing.
+func NewPlaywrightRunner(artifacts *Artifacts) *PlaywrightRunner {
+	return &PlaywrightRunner{artifacts: artifacts}
 }
 
 // Discover runs the full Playwright suite declared by cfg and returns
@@ -67,7 +70,7 @@ func (r *PlaywrightRunner) Discover(
 ) ([]*FailingTest, error) {
 	cwd, configArg, pathArg := playwrightPaths(cfg)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, "test", "--reporter=json",
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, "test", "--reporter=json",
 		"--config", configArg, pathArg)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("playwright discovery under %s failed: %w (stderr: %s)",
@@ -80,6 +83,8 @@ func (r *PlaywrightRunner) Discover(
 	}
 
 	failures := playwrightReportToFailingTests(report, service, layer)
+
+	logPlaywrightReport(PhaseDiscover, report, len(failures))
 
 	if runErr != nil && len(failures) == 0 {
 		failures = append(failures, newPlaywrightStartupFailure(service, layer, cfg, stderr.String()))
@@ -141,7 +146,7 @@ func (r *PlaywrightRunner) RunOne(
 
 	grep := "^" + playwrightRegexMeta.ReplaceAllString(title, `\$0`) + "$"
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, "test", "--reporter=json",
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, "test", "--reporter=json",
 		"--config", configArg, "--grep", grep, file)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright rerun of %s failed: %w",
@@ -155,7 +160,11 @@ func (r *PlaywrightRunner) RunOne(
 		return false, stdout.String(), nil
 	}
 
-	for _, failure := range playwrightReportToFailingTests(report, "", "") {
+	rerunFailures := playwrightReportToFailingTests(report, "", "")
+
+	logPlaywrightReport(PhaseRerun, report, len(rerunFailures))
+
+	for _, failure := range rerunFailures {
 		if failure.TestName == failingTest.TestName {
 			return false, failure.FailureOutput, nil
 		}
@@ -174,7 +183,7 @@ func (r *PlaywrightRunner) runOneStartup(
 	cfg := failingTest.RunnerConfig
 	cwd, configArg, pathArg := playwrightPaths(cfg)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, "test", "--reporter=json",
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseStartupRerun, "test", "--reporter=json",
 		"--config", configArg, pathArg)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright startup rerun failed: %w", runErr)
@@ -188,6 +197,9 @@ func (r *PlaywrightRunner) runOneStartup(
 	}
 
 	rerunFailures := playwrightReportToFailingTests(report, "", "")
+
+	logPlaywrightReport(PhaseStartupRerun, report, len(rerunFailures))
+
 	if runErr == nil && len(rerunFailures) == 0 {
 		return true, "", nil
 	}
@@ -256,30 +268,25 @@ func playwrightPaths(cfg Config) (string, string, string) {
 }
 
 // exec runs `npx playwright ...` with the supplied args. cwd is set so
-// `npx` resolves the local Playwright install. Non-zero exit codes are
-// expected on test failure and returned without wrapping.
+// `npx` resolves the local Playwright install. phase labels the
+// invocation in the log and in the captured output's filename.
+// Non-zero exit codes are expected on test failure.
 func (r *PlaywrightRunner) exec(
 	ctx context.Context,
-	cwd string,
+	cwd, phase string,
 	args ...string,
 ) (bytes.Buffer, bytes.Buffer, error) {
 	allArgs := append([]string{"playwright"}, args...)
 	cmd := exec.CommandContext(ctx, "npx", allArgs...)
 	cmd.Dir = cwd
 
-	logSpawn("npx", allArgs, cwd)
-
-	var stdout, stderr bytes.Buffer
-
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	runErr := cmd.Run()
-	if runErr != nil {
-		return stdout, stderr, fmt.Errorf("playwright exec: %w", runErr)
-	}
-
-	return stdout, stderr, nil
+	return runLogged(cmd, spawnMeta{
+		binary:    "npx",
+		args:      allArgs,
+		framework: FrameworkPlaywright,
+		phase:     phase,
+		artifacts: r.artifacts,
+	})
 }
 
 // splitPlaywrightName parses "<file>::<title chain>" into its parts,
@@ -312,6 +319,46 @@ func parsePlaywrightReport(payload []byte) (*dto.PlaywrightReport, error) {
 	}
 
 	return &report, nil
+}
+
+// logPlaywrightReport records what Playwright itself said about the run
+// it just finished, so the log carries the framework's own account and
+// not only the engine's interpretation of it.
+//
+// The exit code alone cannot distinguish a suite that ran and failed
+// from a process that died before the first test: both are exit 1 with
+// an empty failure list. `stats.startTime` and `stats.duration` are
+// Playwright's own attestation that it executed, and the run-level
+// `errors[]` — which Playwright writes into the report on stdout, never
+// to stderr — carries the reason when it did not. Both are dropped from
+// the FailingTest projection, so without this record they leave no
+// trace anywhere in the run's artifacts.
+func logPlaywrightReport(phase string, report *dto.PlaywrightReport, failures int) {
+	slog.Debug("Playwright report decoded",
+		"phase", phase,
+		"start_time", report.Stats.StartTime,
+		"duration_ms", int64(report.Stats.Duration),
+		"expected", report.Stats.Expected,
+		"unexpected", report.Stats.Unexpected,
+		"skipped", report.Stats.Skipped,
+		"flaky", report.Stats.Flaky,
+		"suites", len(report.Suites),
+		"run_errors", playwrightErrorMessages(report.Errors),
+		"failures_collected", failures,
+	)
+}
+
+// playwrightErrorMessages flattens the run-level error block to its
+// messages. Stacks are omitted: for a webServer failure the stack
+// duplicates the message, and the log record is an index into the
+// failure, not a replacement for reading it.
+func playwrightErrorMessages(errs []dto.PlaywrightError) []string {
+	out := make([]string, 0, len(errs))
+	for _, err := range errs {
+		out = append(out, err.Message)
+	}
+
+	return out
 }
 
 // playwrightReportToFailingTests walks the suite tree and collects one

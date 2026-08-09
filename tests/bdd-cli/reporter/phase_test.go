@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"strings"
 	"testing"
 	"time"
 )
@@ -52,7 +53,7 @@ func buildTestFixture() *Fixture {
 			At: at(base, 202.4), CostUSD: 0.4174, Tokens: 69417,
 		},
 		Discovery: Discovery{
-			Framework: "playwright", End: at(base, 1.033), Found: true,
+			Framework: frameworkPlaywright, End: at(base, 1.033), Found: true,
 		},
 	}
 
@@ -143,6 +144,65 @@ func TestModelTimeExcludesDeterministicWork(t *testing.T) {
 
 	if deterministic <= 0 {
 		t.Error("deterministic time is zero — prep and discovery went missing")
+	}
+}
+
+// testRunPhaseDetail returns the detail line of the timeline's test-run
+// slice — the one sentence that tells the reader how much of the slice
+// is actually measured.
+func testRunPhaseDetail(t *testing.T, fixture *Fixture) string {
+	t.Helper()
+
+	for _, phase := range BuildPhases(fixture) {
+		if phase.Owner == OwnerTests {
+			return phase.Detail
+		}
+	}
+
+	t.Fatal("no test-run phase in the timeline")
+
+	return ""
+}
+
+// TestDiscoveryBoundCountsOnlyDiscoveryRuns pins the discovery slice's
+// measured-time claim to the runs that happened inside it. A `--fix`
+// run reruns the failing test after each fix, and those exit records
+// live in the same list — counting them would attribute fix-loop time
+// to a slice that closed before the first turn.
+func TestDiscoveryBoundCountsOnlyDiscoveryRuns(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildTestFixture()
+	fixture.TestRuns = []TestRun{
+		{Framework: frameworkPlaywright, Phase: phaseDiscover, Duration: 900 * time.Millisecond},
+		{Framework: frameworkPlaywright, Phase: phaseRerun, Duration: 4 * time.Second},
+		{Framework: frameworkPlaywright, Phase: phaseRerun, Duration: 5 * time.Second},
+	}
+
+	detail := testRunPhaseDetail(t, fixture)
+
+	want := "of which 900ms is 1 measured runner invocation(s)"
+	if !strings.Contains(detail, want) {
+		t.Errorf("detail = %q, want it to contain %q", detail, want)
+	}
+}
+
+// TestDiscoveryBoundWithoutDiscoveryRuns checks the honest fallback: a
+// run whose only exit records are reruns has nothing measured inside
+// the discovery slice, so the slice must claim nothing rather than
+// borrow the reruns' duration.
+func TestDiscoveryBoundWithoutDiscoveryRuns(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildTestFixture()
+	fixture.TestRuns = []TestRun{
+		{Framework: frameworkPlaywright, Phase: phaseRerun, Duration: 4 * time.Second},
+	}
+
+	detail := testRunPhaseDetail(t, fixture)
+
+	if strings.Contains(detail, "of which") {
+		t.Errorf("detail = %q, want no measured-time claim", detail)
 	}
 }
 

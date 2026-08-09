@@ -74,6 +74,19 @@ type LogRecord struct {
 	Args   []string `json:"args"`
 	Dir    string   `json:"dir"`
 
+	// Framework/Phase and the Exit* fields describe a test-runner
+	// subprocess. They arrive on "Test runner returned", which is
+	// written AFTER the process exits — unlike the spawn record, which
+	// proves only that the engine intended to run something. DurationMs
+	// above is reused for the measured wall clock.
+	Framework   string `json:"framework"`
+	Phase       string `json:"phase"`
+	ExitCode    *int   `json:"exit_code"`
+	StdoutBytes *int   `json:"stdout_bytes"`
+	StderrBytes *int   `json:"stderr_bytes"`
+	StdoutFile  string `json:"stdout_file"`
+	StderrFile  string `json:"stderr_file"`
+
 	// Fields carried by the engine's own progress records.
 	Command          string `json:"command"`
 	Path             string `json:"path"`

@@ -33,11 +33,14 @@ var jestRegexMeta = regexp.MustCompile(`[\\^$.|?*+()[\]{}]`)
 
 // JestRunner runs `npx jest --json` and decodes its trailing JSON
 // document into FailingTest values.
-type JestRunner struct{}
+type JestRunner struct {
+	artifacts *Artifacts
+}
 
-// NewJestRunner builds a JestRunner.
-func NewJestRunner() *JestRunner {
-	return &JestRunner{}
+// NewJestRunner builds a JestRunner writing its captured output through
+// artifacts, which may be nil to capture nothing.
+func NewJestRunner(artifacts *Artifacts) *JestRunner {
+	return &JestRunner{artifacts: artifacts}
 }
 
 // Discover runs the full Jest suite declared by cfg and returns one
@@ -49,7 +52,7 @@ func (r *JestRunner) Discover(
 ) ([]*FailingTest, error) {
 	cwd, configArg, pathArg := jestPaths(cfg)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, "--json",
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, "--json",
 		"--config", configArg, pathArg)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("jest discovery under %s failed: %w (stderr: %s)",
@@ -92,7 +95,7 @@ func (r *JestRunner) RunOne(
 	cwd, configArg, _ := jestPaths(cfg)
 	pattern := "^" + jestRegexMeta.ReplaceAllString(fullName, `\$0`) + "$"
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, "--json",
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, "--json",
 		"--config", configArg, "--testNamePattern", pattern, file)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("jest rerun of %s failed: %w",
@@ -116,30 +119,25 @@ func (r *JestRunner) RunOne(
 }
 
 // exec runs `npx jest ...` with the supplied args. cwd is set so `npx`
-// resolves the local Jest install. Non-zero exit codes are expected on
-// test failure and returned without wrapping.
+// resolves the local Jest install. phase labels the invocation in the
+// log and in the captured output's filename. Non-zero exit codes are
+// expected on test failure.
 func (r *JestRunner) exec(
 	ctx context.Context,
-	cwd string,
+	cwd, phase string,
 	args ...string,
 ) (bytes.Buffer, bytes.Buffer, error) {
 	allArgs := append([]string{"jest"}, args...)
 	cmd := exec.CommandContext(ctx, "npx", allArgs...)
 	cmd.Dir = cwd
 
-	logSpawn("npx", allArgs, cwd)
-
-	var stdout, stderr bytes.Buffer
-
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	runErr := cmd.Run()
-	if runErr != nil {
-		return stdout, stderr, fmt.Errorf("jest exec: %w", runErr)
-	}
-
-	return stdout, stderr, nil
+	return runLogged(cmd, spawnMeta{
+		binary:    "npx",
+		args:      allArgs,
+		framework: FrameworkJest,
+		phase:     phase,
+		artifacts: r.artifacts,
+	})
 }
 
 // jestPaths derives the (cwd, --config arg, positional path arg) triple

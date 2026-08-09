@@ -148,7 +148,7 @@ func appendPreDispatch(phases []Phase, fixture *Fixture) []Phase {
 	}
 
 	detail := "engine spawned the " + fixture.Discovery.Framework +
-		" runner to find failing tests · bounded by the next engine log record"
+		" runner to find failing tests · " + discoveryBound(fixture)
 	if fixture.Discovery.Outcome != "" {
 		detail += " · " + fixture.Discovery.Outcome
 	}
@@ -254,4 +254,39 @@ func postRunPhase(fixture *Fixture, seconds float64) Phase {
 		CostUSD:  fixture.Judge.CostUSD,
 		Tokens:   fixture.Judge.Tokens,
 	}
+}
+
+// discoveryBound describes how the test-run slice was measured.
+//
+// The slice is bounded by log records, so it also carries whatever the
+// engine did either side of the subprocess (loading architecture.yaml,
+// reaching the checklist loader). When the runner reported its own
+// wall clock, saying how much of the slice it accounts for is the
+// difference between a span the reader has to trust and one they can
+// check.
+//
+// Only discovery-phase invocations count. A `--fix` run reruns the
+// failing test after every applied fix, and those exit records sit in
+// the same list — folding them in would claim more measured time than
+// the slice contains, which is worse than claiming none.
+func discoveryBound(fixture *Fixture) string {
+	measured := time.Duration(0)
+	count := 0
+
+	for _, run := range fixture.TestRuns {
+		if !run.IsDiscovery() {
+			continue
+		}
+
+		measured += run.Duration
+		count++
+	}
+
+	if measured == 0 {
+		return "bounded by the next engine log record"
+	}
+
+	return "bounded by the next engine log record, of which " +
+		formatSeconds(measured.Seconds()) + " is " +
+		itoa(count) + " measured runner invocation(s)"
 }

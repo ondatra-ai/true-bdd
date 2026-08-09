@@ -135,6 +135,12 @@ type RunResult struct {
 	Stderr   string
 	Diff     []FileChange
 	TmpDir   string // predictable per-fixture path under tmp/test_run/<session>/; preserved after every run
+	// StdoutFile/StderrFile are where the CLI's streams were persisted
+	// under TmpDir/bdd-cli-logs. Empty when capture failed. A failing
+	// fixture is read long after the test binary's own output has
+	// scrolled away, so the transcript has to outlive the process.
+	StdoutFile string
+	StderrFile string
 }
 
 // LoadFixture parses a fixture folder.
@@ -231,21 +237,32 @@ func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string)
 	exitCode := cmd.ProcessState.ExitCode()
 
 	after, snapErr := snapshotTree(tmpDir)
+
+	// Persist the CLI's own streams, after the post-run snapshot so the
+	// transcript never lands in the diff the judge grades.
+	spawn := newSpawnLog(tmpDir)
+	stdoutFile := spawn.Write("cli", "stdout", stdout.Bytes())
+	stderrFile := spawn.Write("cli", "stderr", stderr.Bytes())
+
 	if snapErr != nil {
 		return &RunResult{
-			ExitCode: exitCode,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
-			TmpDir:   tmpDir,
+			ExitCode:   exitCode,
+			Stdout:     stdout.String(),
+			Stderr:     stderr.String(),
+			TmpDir:     tmpDir,
+			StdoutFile: stdoutFile,
+			StderrFile: stderrFile,
 		}, fmt.Errorf("snapshot post-run: %w", snapErr)
 	}
 
 	res := &RunResult{
-		ExitCode: exitCode,
-		Stdout:   stdout.String(),
-		Stderr:   stderr.String(),
-		Diff:     computeDiffFromSnapshots(before, after),
-		TmpDir:   tmpDir,
+		ExitCode:   exitCode,
+		Stdout:     stdout.String(),
+		Stderr:     stderr.String(),
+		Diff:       computeDiffFromSnapshots(before, after),
+		TmpDir:     tmpDir,
+		StdoutFile: stdoutFile,
+		StderrFile: stderrFile,
 	}
 
 	// Surface execution errors that aren't "the process exited non-zero"
@@ -305,24 +322,36 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 }
 
 // runPrepCommands executes each fixture-provided prep command in the
-// tmpdir via `bash -c`. Stdin is unset; stdout and stderr are inherited
-// so progress streams to the calling `go test -v` output. Any non-zero
-// exit aborts the fixture. No per-command timeout — the parent
-// `go test -timeout=30m` is the only ceiling.
+// tmpdir via `bash -c`. Stdin is unset; stdout and stderr are teed —
+// streamed to the calling `go test -v` output so progress stays visible
+// during long installs, and captured under bdd-cli-logs/ so a failed
+// prep can still be read afterwards. Any non-zero exit aborts the
+// fixture. No per-command timeout — the parent `go test -timeout=30m`
+// is the only ceiling.
+//
+// These writes land before the pre-run snapshot, so they appear in both
+// snapshots and never show up in the diff.
 func runPrepCommands(ctx context.Context, tmpDir string, prepCmds []string) error {
+	spawn := newSpawnLog(tmpDir)
+
 	for idx, raw := range prepCmds {
 		trimmed := strings.TrimSpace(raw)
 		if trimmed == "" {
 			continue
 		}
 
+		stdout, stderr, flush := spawn.Tee(spawnLogName("prep", idx))
+
 		cmd := exec.CommandContext(ctx, "bash", "-c", trimmed)
 		cmd.Dir = tmpDir
 		cmd.Env = envWithoutClaudeCode(os.Environ())
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
 
 		err := cmd.Run()
+
+		flush()
+
 		if err != nil {
 			return fmt.Errorf("prep[%d] failed (%q): %w", idx, trimmed, err)
 		}
@@ -340,10 +369,12 @@ const teardownTimeout = 2 * time.Minute
 
 // runTeardownCommands executes each fixture-provided teardown command
 // in the tmpdir via `bash -c`, against a fresh context independent of
-// the run timeout. Stdout/stderr are inherited so progress streams to
-// the calling `go test -v`. Failures are logged but never returned —
-// teardown is best-effort hygiene and must not mask the primary run
-// verdict.
+// the run timeout. Stdout/stderr are teed — streamed to the calling
+// `go test -v` and captured under bdd-cli-logs/, which is where the
+// evidence for a stack that refused to come down has to live, since
+// teardown output arrives after the verdict is already decided.
+// Failures are logged but never returned — teardown is best-effort
+// hygiene and must not mask the primary run verdict.
 func runTeardownCommands(tmpDir string, teardownCmds []string) {
 	if len(teardownCmds) == 0 {
 		return
@@ -352,19 +383,26 @@ func runTeardownCommands(tmpDir string, teardownCmds []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), teardownTimeout)
 	defer cancel()
 
+	spawn := newSpawnLog(tmpDir)
+
 	for idx, raw := range teardownCmds {
 		trimmed := strings.TrimSpace(raw)
 		if trimmed == "" {
 			continue
 		}
 
+		stdout, stderr, flush := spawn.Tee(spawnLogName("teardown", idx))
+
 		cmd := exec.CommandContext(ctx, "bash", "-c", trimmed)
 		cmd.Dir = tmpDir
 		cmd.Env = envWithoutClaudeCode(os.Environ())
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
 
 		err := cmd.Run()
+
+		flush()
+
 		if err != nil {
 			fmt.Fprintf(
 				os.Stderr,

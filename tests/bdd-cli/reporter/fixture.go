@@ -21,6 +21,11 @@ func discoveryEndMarkers() []string {
 	return []string{"Loading full checklist", "Loaded prompts"}
 }
 
+// frameworkPlaywright is the engine's name for the playwright runner
+// (testrunner.FrameworkPlaywright), as it reaches the report through
+// the exit record and through the prompts the run left behind.
+const frameworkPlaywright = "playwright"
+
 // startupMarker is the synthetic subject the playwright runner emits
 // when the suite could not start at all
 // (playwright_runner.go: playwrightStartupMarker).
@@ -65,6 +70,10 @@ type Fixture struct {
 	Discovery Discovery
 	Meta      RunMetadata
 	Manifest  *Manifest
+	// TestRuns is every framework-runner subprocess the run spawned,
+	// with its captured output. Empty for a run predating the engine's
+	// exit record.
+	TestRuns []TestRun
 	// Diff and Failures come from the harness's own failure dump, so
 	// they exist only for a fixture that failed.
 	Diff     []string
@@ -135,6 +144,7 @@ func loadFixture(
 		Manifest:            manifest,
 		Turns:               log.Turns(dir),
 		Meta:                log.Metadata(),
+		TestRuns:            log.TestRuns(dir),
 		First:               log.First,
 		Last:                log.Last,
 		EmptyFailurePrompts: findEmptyFailurePrompts(dir),
@@ -195,8 +205,8 @@ func findDiscovery(dir string, log *EngineLog, windowStart, windowEnd time.Time)
 		}
 
 		discovery.Framework = "runner"
-		if strings.Contains(strings.ToLower(text), "playwright") {
-			discovery.Framework = "playwright"
+		if strings.Contains(strings.ToLower(text), frameworkPlaywright) {
+			discovery.Framework = frameworkPlaywright
 		}
 
 		discovery.Outcome = startupOutcome

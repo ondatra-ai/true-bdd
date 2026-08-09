@@ -5,6 +5,27 @@ package dto
 // ignored by encoding/json.
 type PlaywrightReport struct {
 	Suites []PlaywrightSuite `json:"suites"`
+	// Errors holds run-level failures that belong to no individual
+	// test — a webServer that could not boot, a config that would not
+	// load. Playwright puts these on stdout inside the report rather
+	// than on stderr, so this is the only place the reason a suite
+	// never started can be read.
+	Errors []PlaywrightError `json:"errors,omitempty"`
+	Stats  PlaywrightStats   `json:"stats"`
+}
+
+// PlaywrightStats is the run-level summary block. Playwright emits it
+// even when zero tests executed, which makes StartTime the field that
+// separates "the suite ran" from "the process died before it started".
+type PlaywrightStats struct {
+	StartTime string `json:"startTime"`
+	// Duration is the suite's own wall-clock measurement in
+	// milliseconds, fractional as Playwright writes it.
+	Duration   float64 `json:"duration"`
+	Expected   int     `json:"expected"`
+	Unexpected int     `json:"unexpected"`
+	Skipped    int     `json:"skipped"`
+	Flaky      int     `json:"flaky"`
 }
 
 // PlaywrightSuite is one entry in the JSON `suites:` tree. May contain
