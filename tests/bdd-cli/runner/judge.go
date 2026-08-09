@@ -34,22 +34,22 @@ type Judge interface {
 	Verdict(ctx context.Context, req JudgeRequest) (pass bool, reason string, err error)
 }
 
+// judgeModel pins the verdict model. The judge is harness
+// infrastructure, not engine configuration: it must not drift when a
+// host project retargets `engine.models` at a different provider.
+const judgeModel = "sonnet"
+
 // ClaudeJudge calls the existing true-bdd Claude wrapper as a soft
-// check. It reuses ai.ClaudeClient so we don't pull in a new SDK and
+// check. It reuses ai.ClaudeProvider so we don't pull in a new SDK and
 // don't introduce a new env var (the `claude` CLI handles auth).
 type ClaudeJudge struct {
-	client *ai.ClaudeClient
+	client *ai.ClaudeProvider
 }
 
 // NewClaudeJudge constructs a ClaudeJudge backed by the existing
-// ai.ClaudeClient.
+// ai.ClaudeProvider.
 func NewClaudeJudge() (*ClaudeJudge, error) {
-	client, err := ai.NewClaudeClient()
-	if err != nil {
-		return nil, fmt.Errorf("init claude client: %w", err)
-	}
-
-	return &ClaudeJudge{client: client}, nil
+	return &ClaudeJudge{client: ai.NewClaudeProvider()}, nil
 }
 
 const judgeSystemPrompt = `You are an automated test verdict judge. You will be given:
@@ -71,13 +71,11 @@ A FAIL with no reason is invalid; always include a one-sentence reason.`
 func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (bool, string, error) {
 	user := buildJudgeUserPrompt(req)
 
-	resp, err := j.client.ExecutePromptWithSystem(
-		ctx,
-		judgeSystemPrompt,
-		user,
-		"", // empty model → defaults to "sonnet" in claude_client.go:85
-		ai.ExecutionMode{},
-	)
+	resp, err := j.client.Execute(ctx, ai.Request{
+		SystemPrompt: judgeSystemPrompt,
+		UserPrompt:   user,
+		Model:        judgeModel,
+	})
 	if err != nil {
 		return false, "", fmt.Errorf("claude execute: %w", err)
 	}

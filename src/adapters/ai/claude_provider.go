@@ -7,47 +7,42 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	claudecode "github.com/ondatra-ai/true-bdd/src/claudecode"
 	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
-const aiPromptTimeout = 20 * time.Minute // Timeout for AI prompt execution
-
-type ClaudeClient struct {
+// ClaudeProvider runs a turn through the `claude` CLI via the
+// in-process SDK wrapper in src/claudecode. It is the only provider
+// with native system-prompt and per-tool allowlist support, so its
+// permissions come straight from the ExecutionMode with no projection.
+type ClaudeProvider struct {
 	// No persistent client needed with severity1 SDK
 }
 
-func NewClaudeClient() (*ClaudeClient, error) {
-	// No initialization needed with severity1 SDK - clients are created per-request
-	return &ClaudeClient{}, nil
+// NewClaudeProvider creates the Claude provider. Stateless — the SDK
+// builds a client per request.
+func NewClaudeProvider() *ClaudeProvider {
+	return &ClaudeProvider{}
 }
 
-func (c *ClaudeClient) Name() string {
-	return "Claude"
+// Name returns the CLI's config name.
+func (c *ClaudeProvider) Name() string {
+	return "claude"
 }
 
-func (c *ClaudeClient) ExecutePromptWithSystem(
-	ctx context.Context,
-	systemPrompt string,
-	userPrompt string,
-	model string,
-	mode ExecutionMode,
-) (string, error) {
-	c.logPromptExecution(systemPrompt, userPrompt)
+// Execute runs one single-turn prompt. The router owns the timeout.
+func (c *ClaudeProvider) Execute(ctx context.Context, req Request) (string, error) {
+	c.logPromptExecution(req.SystemPrompt, req.UserPrompt)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, aiPromptTimeout)
-	defer cancel()
-
-	opts := c.buildClientOptions(systemPrompt, model, mode)
+	opts := c.buildClientOptions(req.SystemPrompt, req.Model, req.Mode)
 
 	var resultStr string
 
-	err := claudecode.WithClient(timeoutCtx, func(client claudecode.Client) error {
+	err := claudecode.WithClient(ctx, func(client claudecode.Client) error {
 		var queryErr error
 
-		resultStr, queryErr = c.executeQuery(timeoutCtx, client, userPrompt)
+		resultStr, queryErr = c.executeQuery(ctx, client, req.UserPrompt)
 
 		return queryErr
 	}, opts...)
@@ -55,7 +50,7 @@ func (c *ClaudeClient) ExecutePromptWithSystem(
 	return c.handleExecutionResult(resultStr, err)
 }
 
-func (c *ClaudeClient) logPromptExecution(systemPrompt, userPrompt string) {
+func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 	if systemPrompt != "" {
 		slog.Debug("Calling Claude with system prompt", "system_length", len(systemPrompt), "user_length", len(userPrompt))
 	} else {
@@ -63,29 +58,24 @@ func (c *ClaudeClient) logPromptExecution(systemPrompt, userPrompt string) {
 	}
 }
 
-func (c *ClaudeClient) buildClientOptions(systemPrompt, model string, mode ExecutionMode) []claudecode.Option {
+func (c *ClaudeProvider) buildClientOptions(systemPrompt, model string, mode ExecutionMode) []claudecode.Option {
 	var opts []claudecode.Option
 
 	if systemPrompt != "" {
 		opts = append(opts, claudecode.WithSystemPrompt(systemPrompt))
 	}
 
-	opts = append(opts, c.getModelOption(model))
+	// No empty-model fallback: the registry validated the ref at
+	// startup, so an empty model here is a bug worth surfacing rather
+	// than silently downgrading the turn to some default model.
+	opts = append(opts, claudecode.WithModel(model))
 	opts = append(opts, claudecode.WithPermissionMode(claudecode.PermissionModeAcceptEdits))
 	opts = append(opts, c.getToolOptions(mode)...)
 
 	return opts
 }
 
-func (c *ClaudeClient) getModelOption(model string) claudecode.Option {
-	if model != "" {
-		return claudecode.WithModel(model)
-	}
-
-	return claudecode.WithModel("sonnet")
-}
-
-func (c *ClaudeClient) getToolOptions(mode ExecutionMode) []claudecode.Option {
+func (c *ClaudeProvider) getToolOptions(mode ExecutionMode) []claudecode.Option {
 	var opts []claudecode.Option
 
 	if len(mode.AllowedTools) > 0 {
@@ -101,7 +91,11 @@ func (c *ClaudeClient) getToolOptions(mode ExecutionMode) []claudecode.Option {
 	return opts
 }
 
-func (c *ClaudeClient) executeQuery(ctx context.Context, client claudecode.Client, userPrompt string) (string, error) {
+func (c *ClaudeProvider) executeQuery(
+	ctx context.Context,
+	client claudecode.Client,
+	userPrompt string,
+) (string, error) {
 	slog.Debug("Connected to Claude client")
 	slog.Debug("Sending user prompt to Claude", "length", len(userPrompt))
 
@@ -117,7 +111,7 @@ func (c *ClaudeClient) executeQuery(ctx context.Context, client claudecode.Clien
 	return c.streamMessages(ctx, client)
 }
 
-func (c *ClaudeClient) streamMessages(ctx context.Context, client claudecode.Client) (string, error) {
+func (c *ClaudeProvider) streamMessages(ctx context.Context, client claudecode.Client) (string, error) {
 	var result strings.Builder
 
 	slog.Debug("Starting message stream")
@@ -159,7 +153,7 @@ func (c *ClaudeClient) streamMessages(ctx context.Context, client claudecode.Cli
 	}
 }
 
-func (c *ClaudeClient) processMessage(message any, result *strings.Builder) (bool, error) {
+func (c *ClaudeProvider) processMessage(message any, result *strings.Builder) (bool, error) {
 	switch msg := message.(type) {
 	case *claudecode.AssistantMessage:
 		c.processAssistantMessage(msg, result)
@@ -179,7 +173,7 @@ func (c *ClaudeClient) processMessage(message any, result *strings.Builder) (boo
 	return false, nil
 }
 
-func (c *ClaudeClient) processAssistantMessage(msg *claudecode.AssistantMessage, result *strings.Builder) {
+func (c *ClaudeProvider) processAssistantMessage(msg *claudecode.AssistantMessage, result *strings.Builder) {
 	slog.Debug("AssistantMessage received", "content_blocks", len(msg.Content))
 	slog.Debug("AssistantMessage content", "msg", fmt.Sprintf("%+v", msg))
 
@@ -189,7 +183,7 @@ func (c *ClaudeClient) processAssistantMessage(msg *claudecode.AssistantMessage,
 	}
 }
 
-func (c *ClaudeClient) processContentBlock(block any, result *strings.Builder) {
+func (c *ClaudeProvider) processContentBlock(block any, result *strings.Builder) {
 	if textBlock, ok := block.(*claudecode.TextBlock); ok {
 		slog.Debug("TextBlock received")
 		slog.Debug("TextBlock content", "text", textBlock.Text)
@@ -201,7 +195,7 @@ func (c *ClaudeClient) processContentBlock(block any, result *strings.Builder) {
 	}
 }
 
-func (c *ClaudeClient) logToolUseBlock(toolUseBlock *claudecode.ToolUseBlock) {
+func (c *ClaudeProvider) logToolUseBlock(toolUseBlock *claudecode.ToolUseBlock) {
 	slog.Debug("ToolUseBlock received")
 
 	toolBytes, err := json.MarshalIndent(toolUseBlock, "      ", "  ")
@@ -212,7 +206,7 @@ func (c *ClaudeClient) logToolUseBlock(toolUseBlock *claudecode.ToolUseBlock) {
 	}
 }
 
-func (c *ClaudeClient) logUnknownBlock(block any) {
+func (c *ClaudeProvider) logUnknownBlock(block any) {
 	slog.Debug("Unknown block type", "type", fmt.Sprintf("%T", block))
 
 	blockBytes, err := json.MarshalIndent(block, "      ", "  ")
@@ -223,7 +217,7 @@ func (c *ClaudeClient) logUnknownBlock(block any) {
 	}
 }
 
-func (c *ClaudeClient) processResultMessage(msg *claudecode.ResultMessage) (bool, error) {
+func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bool, error) {
 	slog.Debug("ResultMessage received", "is_error", msg.IsError, "result", msg.Result)
 
 	if msg.IsError {
@@ -233,7 +227,7 @@ func (c *ClaudeClient) processResultMessage(msg *claudecode.ResultMessage) (bool
 	return true, nil
 }
 
-func (c *ClaudeClient) handleExecutionResult(resultStr string, err error) (string, error) {
+func (c *ClaudeProvider) handleExecutionResult(resultStr string, err error) (string, error) {
 	if err != nil {
 		slog.Error("WithClient error", "error", err)
 

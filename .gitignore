@@ -49,7 +49,7 @@ __pycache__/
 # Playwright MCP server artefacts (console/page logs)
 .playwright-mcp/
 
-# Local backend secrets for start.sh
+# Local secrets and environment overrides
 .env
 .env.local
 

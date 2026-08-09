@@ -43,19 +43,51 @@ export function gateFilePath(): string {
 }
 
 /**
- * Reads `engine.model` from the live engine config
+ * Reads the engine's default model from the live engine config
  * (`<repo>/true-bdd/true-bdd.yaml`).
+ *
+ * The config declares tiers as `engine.models.<tier>: "<cli>:<model>"`
+ * and picks one with `engine.default_model`. This gate probes the
+ * `claude` CLI specifically, so a default tier bound to another CLI
+ * (crush / codex) has no bearing on it — in that case fall back to the
+ * highest-priority claude-backed tier, and only then to DEFAULT_MODEL.
  */
 export function engineModel(): string {
   try {
     const configPath = path.join(suiteContext().repoRoot, "true-bdd", "true-bdd.yaml");
     const raw = fs.readFileSync(configPath, "utf8");
-    const match = raw.match(/^\s*model:\s*"?([^"\n]+)"?\s*$/m);
+    const tiers = parseModelTiers(raw);
 
-    return match ? match[1].trim() : DEFAULT_MODEL;
+    const defaultTier = raw.match(/^\s*default_model:\s*"?([^"\n#]+)"?\s*$/m)?.[1].trim();
+    const preferred = defaultTier ? tiers.get(defaultTier) : undefined;
+
+    if (preferred?.startsWith("claude:")) {
+      return preferred.slice("claude:".length);
+    }
+
+    for (const ref of tiers.values()) {
+      if (ref.startsWith("claude:")) return ref.slice("claude:".length);
+    }
+
+    return DEFAULT_MODEL;
   } catch {
     return DEFAULT_MODEL;
   }
+}
+
+/** Parses the `engine.models` block into tier → "<cli>:<model>". */
+function parseModelTiers(raw: string): Map<string, string> {
+  const tiers = new Map<string, string>();
+  const block = raw.match(/^\s*models:\s*$\n((?:\s+\S.*$\n?)+)/m);
+
+  if (!block) return tiers;
+
+  for (const line of block[1].split("\n")) {
+    const entry = line.match(/^\s+([A-Za-z_][\w-]*):\s*"?([^"\n#]+)"?\s*$/);
+    if (entry) tiers.set(entry[1].trim(), entry[2].trim());
+  }
+
+  return tiers;
 }
 
 /**

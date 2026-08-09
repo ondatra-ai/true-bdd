@@ -1,0 +1,52 @@
+# Multi-provider routing must fail LOUDLY, never quietly.
+#
+# The engine binds each model tier to a "<cli>:<model>" pair. This
+# fixture's `true-bdd.yaml` points the `coder` tier at `aider`, which
+# has no provider. The engine must refuse to start.
+#
+# The regression this guards is the behaviour the tier system replaced:
+# an unresolvable model used to fall through to a hardcoded default, so
+# a typo silently ran every fix on the wrong model and nothing in the
+# output said so. A misconfigured tier must cost you a startup error,
+# not a run's worth of wrong-model edits.
+#
+# Deliberately cheap: it exits before the first AI call, so unlike the
+# other fixtures it costs no model time.
+
+cmd: build tests
+
+input: input
+
+expected:
+  # Container construction fails, cobra reports it, the CLI exits 1.
+  exit_code: 1
+
+  judge: |
+    # Expectations for `true-bdd build tests` with an unroutable model tier
+
+    The fixture's `true-bdd/true-bdd.yaml` binds the `coder` tier to
+    `"aider:whatever"`. `aider` is not a supported cli, so the engine
+    must reject the configuration at startup — before any AI call and
+    before any file is touched.
+
+    ## What MUST be true after the run
+
+    1. The diff contains **no created or modified files** anywhere
+       outside the per-run `tmp/` scratch directory.
+    2. In particular `docs/scenarios.yaml` is unchanged, and no test
+       file was created under `tests/` or `services/`.
+
+    ## What MUST NOT happen
+
+    - The run MUST NOT have written a test, a fix, or any project file.
+      A run that produced edits means the engine fell back to some other
+      model instead of refusing — exactly the failure this fixture
+      exists to catch.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts — ignore them entirely.
+    - An empty diff is the expected, ideal result.
+
+    Reply `PASS` if no project file was created or modified. Otherwise
+    reply `FAIL: <one-sentence reason>` naming the offending file.

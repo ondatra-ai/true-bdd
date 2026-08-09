@@ -82,6 +82,7 @@ func (l *ChecklistLoader) Load(commandName string) ([]checklist.PromptWithContex
 				CriterionID:   section.ID,
 				CriterionName: section.Name,
 				DefaultDocs:   parsed.DefaultDocs,
+				DefaultModels: parsed.Engine,
 				Prompt:        prompt,
 			})
 		}

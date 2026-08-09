@@ -11,6 +11,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
@@ -46,6 +47,7 @@ type ChecklistPromptData struct {
 type ChecklistEvaluator struct {
 	aiClient     ports.AIPort
 	config       *config.ViperConfig
+	models       *provider.Registry
 	modeFactory  *ai.ModeFactory
 	systemLoader *template.TemplateLoader[ChecklistPromptData]
 	userLoader   *template.TemplateLoader[ChecklistPromptData]
@@ -54,22 +56,28 @@ type ChecklistEvaluator struct {
 }
 
 // NewChecklistEvaluator creates a new checklist evaluator with config-based template paths.
-func NewChecklistEvaluator(aiClient ports.AIPort, cfg *config.ViperConfig) *ChecklistEvaluator {
+func NewChecklistEvaluator(
+	aiClient ports.AIPort,
+	cfg *config.ViperConfig,
+	models *provider.Registry,
+) *ChecklistEvaluator {
 	systemTemplatePath := cfg.GetString("templates.prompts.checklist_system")
 	userTemplatePath := cfg.GetString("templates.prompts.checklist")
 
-	return NewChecklistEvaluatorWithPaths(aiClient, cfg, systemTemplatePath, userTemplatePath)
+	return NewChecklistEvaluatorWithPaths(aiClient, cfg, models, systemTemplatePath, userTemplatePath)
 }
 
 // NewChecklistEvaluatorWithPaths creates a new checklist evaluator with explicit template paths.
 func NewChecklistEvaluatorWithPaths(
 	aiClient ports.AIPort,
 	cfg *config.ViperConfig,
+	models *provider.Registry,
 	systemPath, userPath string,
 ) *ChecklistEvaluator {
 	return &ChecklistEvaluator{
 		aiClient:     aiClient,
 		config:       cfg,
+		models:       models,
 		modeFactory:  ai.NewModeFactory(cfg),
 		systemLoader: template.NewTemplateLoader[ChecklistPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[ChecklistPromptData](userPath),
@@ -142,7 +150,12 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	// Use think mode - allows Read, Glob, Grep tools for accessing reference docs
 	mode := e.modeFactory.GetThinkMode()
 
-	model := e.config.GetString("engine.model")
+	// Tier resolution: this prompt's `model:`, else the checklist's
+	// `prompt_model:`, else engine.default_model.
+	model, err := e.models.ResolveName(promptCtx.EffectiveModelTier())
+	if err != nil {
+		return checklist.ValidationResult{}, pkgerrors.ErrResolveModelTierFailed("validation", err)
+	}
 
 	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
@@ -177,6 +190,11 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		FixPrompt:    fixPrompt,
 		PromptIndex:  promptIndex,
 		Docs:         promptCtx.GetEffectiveDocs(),
+		// Carried forward because the fix generator and applier only
+		// ever see a ValidationResult, never the prompt — same channel
+		// Docs already travels on.
+		FixModelTier:   promptCtx.EffectiveFixTier(),
+		ApplyModelTier: promptCtx.EffectiveApplyTier(),
 	}, nil
 }
 

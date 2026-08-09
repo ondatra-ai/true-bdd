@@ -9,7 +9,10 @@ engine:
   models:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-4-8"
-    coder: "crush:zhipu-coding/glm-5.2"
+    # DELIBERATELY BROKEN: `aider` is not a supported cli. The
+    # engine must refuse to start rather than quietly running
+    # this tier on some other model.
+    coder: "aider:whatever"
   # Tier used when neither a prompt nor its checklist names one.
   default_model: high
 

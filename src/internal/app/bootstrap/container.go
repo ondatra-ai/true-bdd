@@ -1,9 +1,12 @@
 package bootstrap
 
 import (
+	"os"
+
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
@@ -42,21 +45,22 @@ type scenarioTripleConfigKeys struct {
 func newScenarioTriple(
 	aiClient ports.AIPort,
 	cfg *config.ViperConfig,
+	models *provider.Registry,
 	keys scenarioTripleConfigKeys,
 ) scenarioTriple {
 	return scenarioTriple{
 		evaluator: validate.NewChecklistEvaluatorWithPaths(
-			aiClient, cfg,
+			aiClient, cfg, models,
 			cfg.GetString(keys.checklistSystem),
 			cfg.GetString(keys.checklist),
 		),
 		fixGenerator: validate.NewFixPromptGeneratorWithPaths(
-			aiClient, cfg,
+			aiClient, cfg, models,
 			cfg.GetString(keys.fixGeneratorSystem),
 			cfg.GetString(keys.fixGenerator),
 		),
 		fixApplier: validate.NewFixApplierWithPaths(
-			aiClient, cfg,
+			aiClient, cfg, models,
 			cfg.GetString(keys.fixApplierSystem),
 			cfg.GetString(keys.fixApplier),
 		),
@@ -119,12 +123,12 @@ func NewContainer() (*Container, error) {
 		return nil, pkgerrors.ErrCreateRunDirectoryFailed(err)
 	}
 
-	claudeClient, err := ai.NewClaudeClient()
+	aiClient, models, err := newAIRouter(cfg, runDir)
 	if err != nil {
-		return nil, pkgerrors.ErrCreateAIClientFailed(err)
+		return nil, err
 	}
 
-	applyTrip := newScenarioTriple(claudeClient, cfg, scenarioTripleConfigKeys{
+	applyTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.apply_checklist_system",
 		checklist:          "templates.prompts.apply_checklist",
 		fixGeneratorSystem: "templates.prompts.apply_fix_generator_system",
@@ -134,7 +138,7 @@ func NewContainer() (*Container, error) {
 	})
 	applyTrip.fixApplier.UseEditMode()
 
-	buildTestsTrip := newScenarioTriple(claudeClient, cfg, scenarioTripleConfigKeys{
+	buildTestsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.build_tests_checklist_system",
 		checklist:          "templates.prompts.build_tests_checklist",
 		fixGeneratorSystem: "templates.prompts.build_tests_fix_generator_system",
@@ -144,7 +148,7 @@ func NewContainer() (*Container, error) {
 	})
 	buildTestsTrip.fixApplier.UseEditMode()
 
-	buildCodeTrip := newScenarioTriple(claudeClient, cfg, scenarioTripleConfigKeys{
+	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.build_code_checklist_system",
 		checklist:          "templates.prompts.build_code_checklist",
 		fixGeneratorSystem: "templates.prompts.build_code_fix_generator_system",
@@ -166,9 +170,9 @@ func NewContainer() (*Container, error) {
 		ChecklistLoader:              checklist.NewChecklistLoader(cfg),
 		UserInputCollector:           input.NewUserInputCollector(),
 		TableRenderer:                runner.NewTableRenderer(),
-		Evaluator:                    validate.NewChecklistEvaluator(claudeClient, cfg),
-		FixGenerator:                 validate.NewFixPromptGenerator(claudeClient, cfg),
-		FixApplier:                   validate.NewFixApplier(claudeClient, cfg),
+		Evaluator:                    validate.NewChecklistEvaluator(aiClient, cfg, models),
+		FixGenerator:                 validate.NewFixPromptGenerator(aiClient, cfg, models),
+		FixApplier:                   validate.NewFixApplier(aiClient, cfg, models),
 		ApplyEvaluator:               applyTrip.evaluator,
 		ApplyFixPromptGenerator:      applyTrip.fixGenerator,
 		ApplyFixApplier:              applyTrip.fixApplier,
@@ -182,6 +186,26 @@ func NewContainer() (*Container, error) {
 		BuildCodeFixPromptGenerator:  buildCodeTrip.fixGenerator,
 		BuildCodeFixApplier:          buildCodeTrip.fixApplier,
 	}, nil
+}
+
+// newAIRouter resolves the model-tier table and builds the one
+// provider router every checklist role shares. Which CLI actually runs
+// a turn is decided per call by the tier the checklist selected, so a
+// single router serves claude, crush, and codex alike.
+func newAIRouter(cfg *config.ViperConfig, runDir *fs.RunDirectory) (*ai.Router, *provider.Registry, error) {
+	models, err := NewModelRegistry(cfg)
+	if err != nil {
+		// A bad tier table is a CONFIG error, not an AI-client error;
+		// saying so is the difference between a one-line fix and a hunt.
+		return nil, nil, pkgerrors.ErrInvalidModelConfigFailed(err)
+	}
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		return nil, nil, pkgerrors.ErrCreateAIClientFailed(err)
+	}
+
+	return ai.NewRouter(workDir, runDir.GetTmpOutPath()), models, nil
 }
 
 // newTestRunnerDispatcher wires the three framework-specific runners

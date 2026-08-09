@@ -1,11 +1,78 @@
 package ai
 
-import "github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+import (
+	"slices"
+	"strings"
+
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+)
+
+// Tool specs shared by the built-in modes. Named because the same
+// literals appear in both ThinkMode and EditMode.
+const (
+	bashToolName     = "Bash"
+	readAnyToolSpec  = "Read(**)"
+	globAnyToolSpec  = "Glob(**)"
+	grepAnyToolSpec  = "Grep(**)"
+	editAnyToolSpec  = "Edit(**)"
+	multiEditAnySpec = "MultiEdit(**)"
+	agentToolName    = "Agent"
+	taskToolName     = "Task"
+)
 
 // ExecutionMode defines tool permissions for AI execution.
 type ExecutionMode struct {
 	AllowedTools    []string
 	DisallowedTools []string
+}
+
+// writeToolNames lists the tools that create or modify files. Used to
+// project the Claude-style tool specs onto the coarser sandboxes of
+// the crush and codex CLIs.
+func writeToolNames() []string {
+	return []string{"Write", "Edit", "MultiEdit", "NotebookEdit"}
+}
+
+// WriteGlobs returns the path patterns this mode lets file-writing
+// tools touch, parsed out of the Claude tool specs
+// (`Write(./tmp/**)` → `./tmp/**`). An empty result means the turn may
+// not write at all.
+//
+// Providers with no native per-tool allowlist (crush, codex) derive
+// their sandbox from this, so ExecutionMode stays the single source of
+// truth for permissions across every CLI rather than each provider
+// inventing its own rules.
+func (m ExecutionMode) WriteGlobs() []string {
+	globs := make([]string, 0, len(m.AllowedTools))
+
+	for _, spec := range m.AllowedTools {
+		name, glob, ok := splitToolSpec(spec)
+		if !ok || !slices.Contains(writeToolNames(), name) {
+			continue
+		}
+
+		if !slices.Contains(globs, glob) {
+			globs = append(globs, glob)
+		}
+	}
+
+	return globs
+}
+
+// AllowsBash reports whether the mode permits shell execution.
+func (m ExecutionMode) AllowsBash() bool {
+	return !slices.Contains(m.DisallowedTools, bashToolName)
+}
+
+// splitToolSpec splits `Write(./tmp/**)` into ("Write", "./tmp/**").
+// A bare tool name (`Bash`) has no pattern and reports false.
+func splitToolSpec(spec string) (string, string, bool) {
+	open := strings.Index(spec, "(")
+	if open <= 0 || !strings.HasSuffix(spec, ")") {
+		return "", "", false
+	}
+
+	return spec[:open], spec[open+1 : len(spec)-1], true
 }
 
 // ModeFactory creates execution modes with configured paths.
@@ -24,21 +91,21 @@ func (f *ModeFactory) GetThinkMode() ExecutionMode {
 
 	return ExecutionMode{
 		[]string{
-			"Read(**)",
+			readAnyToolSpec,
 			"Write(" + tmpGlob + ")",
-			"Glob(**)",
-			"Grep(**)",
+			globAnyToolSpec,
+			grepAnyToolSpec,
 		},
 		[]string{
-			"Bash",
-			"Edit(**)",
-			"MultiEdit(**)",
+			bashToolName,
+			editAnyToolSpec,
+			multiEditAnySpec,
 			// Sub-agent tools. Every prompt here is a single-turn
 			// `claude -p` call; delegating to a sub-agent and awaiting it
 			// ends the turn with no output (the parent cannot resume),
 			// which silently yields an empty fix prompt. Force inline work.
-			"Agent",
-			"Task",
+			agentToolName,
+			taskToolName,
 		},
 	}
 }
@@ -54,19 +121,19 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 
 	return ExecutionMode{
 		[]string{
-			"Read(**)",
+			readAnyToolSpec,
 			"Write(" + tmpGlob + ")",
 			"Edit(" + tmpGlob + ")",
 			"MultiEdit(" + tmpGlob + ")",
-			"Glob(**)",
-			"Grep(**)",
+			globAnyToolSpec,
+			grepAnyToolSpec,
 		},
 		[]string{
-			"Bash",
+			bashToolName,
 			// See GetThinkMode: sub-agent delegation breaks single-turn
 			// `claude -p` calls, so keep it disallowed here too.
-			"Agent",
-			"Task",
+			agentToolName,
+			taskToolName,
 		},
 	}
 }

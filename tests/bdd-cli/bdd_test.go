@@ -29,10 +29,14 @@ const (
 )
 
 func TestBDDFixtures(t *testing.T) {
+	// The judge always runs on claude, regardless of which CLIs the
+	// engine config routes the fixture's own turns to.
 	_, err := exec.LookPath("claude")
 	if err != nil {
 		t.Skipf("`claude` CLI not on $PATH; skipping BDD suite: %v", err)
 	}
+
+	requireConfiguredCLIs(t)
 
 	binPath := buildTrueBDD(t)
 
@@ -174,4 +178,24 @@ func clip(s string, n int) string {
 	}
 
 	return s[:n] + "…(truncated)…"
+}
+
+// requireConfiguredCLIs skips the suite when a CLI the engine's seed
+// config binds a model tier to is not installed. Without this a
+// `coder: "crush:…"` tier on a machine without crush fails deep inside
+// a fix loop, minutes in, looking like a product bug.
+func requireConfiguredCLIs(t *testing.T) {
+	t.Helper()
+
+	clis, err := runner.RequiredCLIs(filepath.Join("..", "..", "true-bdd", "true-bdd.yaml"))
+	if err != nil {
+		t.Fatalf("read engine config: %v", err)
+	}
+
+	for _, cli := range clis {
+		_, lookErr := exec.LookPath(cli)
+		if lookErr != nil {
+			t.Skipf("engine config binds a model tier to `%s`, which is not on $PATH: %v", cli, lookErr)
+		}
+	}
 }

@@ -689,3 +689,86 @@ func ErrWriteStoryFileFailed(cause error) error {
 		Cause:    errors.Join(ErrWriteStoryFile, cause),
 	}
 }
+
+// Multi-provider routing errors. A model tier that cannot be resolved,
+// or a CLI with no registered provider, is always fatal: the engine
+// must never silently fall back to a different model than the
+// checklist asked for.
+var (
+	ErrProviderNotRegistered = errors.New("no provider registered for cli")
+	ErrProviderExecution     = errors.New("provider execution failed")
+	ErrProviderNoOutput      = errors.New("provider produced no output")
+	ErrResolveModelTier      = errors.New("failed to resolve model tier")
+	ErrCrushPolicyMissing    = errors.New("crush guard policy is not set")
+	ErrCrushPolicyInvalid    = errors.New("crush guard policy is malformed")
+)
+
+func ErrProviderNotRegisteredForCLI(cli string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_NOT_REGISTERED",
+		Message:  "no provider registered for cli " + cli,
+		Cause:    ErrProviderNotRegistered,
+	}
+}
+
+func ErrProviderExecutionFailed(name string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_EXECUTION_FAILED",
+		Message:  name + " execution failed",
+		Cause:    errors.Join(ErrProviderExecution, cause),
+	}
+}
+
+func ErrProviderProducedNoOutput(name string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_NO_OUTPUT",
+		Message:  name + " produced no output",
+		Cause:    ErrProviderNoOutput,
+	}
+}
+
+func ErrResolveModelTierFailed(role string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "RESOLVE_MODEL_TIER_FAILED",
+		Message:  "failed to resolve model tier for " + role,
+		Cause:    errors.Join(ErrResolveModelTier, cause),
+	}
+}
+
+var ErrWriteProviderConfig = errors.New("failed to write generated provider config")
+
+func ErrWriteProviderConfigFailed(path string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "WRITE_PROVIDER_CONFIG_FAILED",
+		Message:  "failed to write generated provider config " + path,
+		Cause:    errors.Join(ErrWriteProviderConfig, cause),
+	}
+}
+
+var ErrCrushGuardNotEnforcing = errors.New("crush write-guard hook is not enforcing")
+
+func ErrCrushGuardNotEnforcingAt(executable string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "CRUSH_GUARD_NOT_ENFORCING",
+		Message: "crush write-guard hook is not enforcing via " + executable +
+			" (crush fails OPEN when a hook cannot run, so the turn is refused)",
+		Cause: ErrCrushGuardNotEnforcing,
+	}
+}
+
+var ErrInvalidModelConfig = errors.New("invalid engine model configuration")
+
+func ErrInvalidModelConfigFailed(cause error) error {
+	return &AppError{
+		Category: CategoryInfrastructure,
+		Code:     "INVALID_MODEL_CONFIG",
+		Message:  "invalid engine model configuration in true-bdd.yaml",
+		Cause:    cause,
+	}
+}

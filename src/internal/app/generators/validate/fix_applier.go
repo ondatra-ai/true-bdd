@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
@@ -23,10 +24,24 @@ type FixApplierData struct {
 	ResultPath string // Path for FILE_START/FILE_END output
 }
 
+// ApplyParams contains the parameters for one fix application.
+type ApplyParams struct {
+	Subject   any    // Current subject to modify
+	SubjectID string // Subject identifier
+	FixPrompt string // The concrete fix prompt to apply
+	TmpDir    string // Run artifact directory
+	Iteration int    // 1-based apply counter, for file naming
+	// ModelTier names the tier that writes the fix. Resolved by the
+	// evaluator while the prompt was in scope and carried here on the
+	// failed check; empty means engine.default_model.
+	ModelTier string
+}
+
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
 	aiClient     ports.AIPort
 	config       *config.ViperConfig
+	models       *provider.Registry
 	modeFactory  *ai.ModeFactory
 	systemLoader *template.TemplateLoader[FixApplierData]
 	userLoader   *template.TemplateLoader[FixApplierData]
@@ -40,22 +55,28 @@ type FixApplier struct {
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
-func NewFixApplier(aiClient ports.AIPort, cfg *config.ViperConfig) *FixApplier {
+func NewFixApplier(
+	aiClient ports.AIPort,
+	cfg *config.ViperConfig,
+	models *provider.Registry,
+) *FixApplier {
 	systemTemplatePath := cfg.GetString("templates.prompts.fix_applier_system")
 	userTemplatePath := cfg.GetString("templates.prompts.fix_applier")
 
-	return NewFixApplierWithPaths(aiClient, cfg, systemTemplatePath, userTemplatePath)
+	return NewFixApplierWithPaths(aiClient, cfg, models, systemTemplatePath, userTemplatePath)
 }
 
 // NewFixApplierWithPaths creates a new fix applier with explicit template paths.
 func NewFixApplierWithPaths(
 	aiClient ports.AIPort,
 	cfg *config.ViperConfig,
+	models *provider.Registry,
 	systemPath, userPath string,
 ) *FixApplier {
 	return &FixApplier{
 		aiClient:     aiClient,
 		config:       cfg,
+		models:       models,
 		modeFactory:  ai.NewModeFactory(cfg),
 		systemLoader: template.NewTemplateLoader[FixApplierData](systemPath),
 		userLoader:   template.NewTemplateLoader[FixApplierData](userPath),
@@ -72,27 +93,21 @@ func (a *FixApplier) UseEditMode() {
 
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
 // The caller is responsible for parsing the returned content into the appropriate type.
-func (a *FixApplier) Apply(
-	ctx context.Context,
-	subject any,
-	subjectID string,
-	fixPrompt string,
-	tmpDir string,
-	iteration int,
-) (string, error) {
-	a.tmpDir = tmpDir
+func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, error) {
+	a.tmpDir = params.TmpDir
 
 	slog.Info("Applying fix prompt",
-		"subjectID", subjectID,
-		"iteration", iteration,
+		"subjectID", params.SubjectID,
+		"iteration", params.Iteration,
 	)
 
-	resultPath := fmt.Sprintf("%s/apply-%s-iter%d-result.yaml", tmpDir, sanitizeID(subjectID), iteration)
+	resultPath := fmt.Sprintf("%s/apply-%s-iter%d-result.yaml",
+		params.TmpDir, sanitizeID(params.SubjectID), params.Iteration)
 
 	promptData := FixApplierData{
-		Subject:    subject,
-		SubjectID:  subjectID,
-		FixPrompt:  fixPrompt,
+		Subject:    params.Subject,
+		SubjectID:  params.SubjectID,
+		FixPrompt:  params.FixPrompt,
 		ResultPath: resultPath,
 	}
 
@@ -107,12 +122,17 @@ func (a *FixApplier) Apply(
 	}
 
 	// Save prompts for debugging
-	a.savePromptFile(subjectID, iteration, "system", systemPrompt)
-	a.savePromptFile(subjectID, iteration, "user", userPrompt)
+	a.savePromptFile(params.SubjectID, params.Iteration, "system", systemPrompt)
+	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
 	mode := a.selectMode()
 
-	model := a.config.GetString("engine.model")
+	// This is the turn that writes files, so it is the one a checklist
+	// typically points at the `coder` tier.
+	model, err := a.models.ResolveName(params.ModelTier)
+	if err != nil {
+		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
+	}
 
 	response, err := a.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
@@ -120,7 +140,7 @@ func (a *FixApplier) Apply(
 	}
 
 	// Save response for debugging
-	a.savePromptFile(subjectID, iteration, "response", response)
+	a.savePromptFile(params.SubjectID, params.Iteration, "response", response)
 
 	// Extract content from response
 	content := ExtractFileContent(response, resultPath)
@@ -134,7 +154,7 @@ func (a *FixApplier) Apply(
 		slog.Warn("Failed to save result file", "path", resultPath, "error", writeErr)
 	}
 
-	slog.Info("Fix applied successfully", "subjectID", subjectID)
+	slog.Info("Fix applied successfully", "subjectID", params.SubjectID)
 
 	return content, nil
 }

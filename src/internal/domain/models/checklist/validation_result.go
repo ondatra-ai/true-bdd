@@ -28,6 +28,12 @@ type ValidationResult struct {
 	FixPrompt    string   // Generated fix prompt when validation fails (optional)
 	PromptIndex  int      // Index of the prompt (1-based) for file naming
 	Docs         []string // Document keys for this validation (e.g., "prd", "user_roles")
+	// Model tiers for the two downstream fix turns, resolved by the
+	// evaluator (the only place a PromptWithContext is in scope) and
+	// carried here because the fix generator and applier receive a
+	// ValidationResult, never the prompt. Same channel as Docs.
+	FixModelTier   string // Tier for the fix-generation turn
+	ApplyModelTier string // Tier for the fix-application turn
 }
 
 // ChecklistReport represents the complete validation report.

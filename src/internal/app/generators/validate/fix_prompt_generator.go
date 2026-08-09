@@ -12,6 +12,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
@@ -45,28 +46,35 @@ type GenerateParams struct {
 type FixPromptGenerator struct {
 	aiClient     ports.AIPort
 	config       *config.ViperConfig
+	models       *provider.Registry
 	modeFactory  *ai.ModeFactory
 	systemLoader *template.TemplateLoader[FixPromptData]
 	userLoader   *template.TemplateLoader[FixPromptData]
 }
 
 // NewFixPromptGenerator creates a new fix prompt generator with config-based template paths.
-func NewFixPromptGenerator(aiClient ports.AIPort, cfg *config.ViperConfig) *FixPromptGenerator {
+func NewFixPromptGenerator(
+	aiClient ports.AIPort,
+	cfg *config.ViperConfig,
+	models *provider.Registry,
+) *FixPromptGenerator {
 	systemTemplatePath := cfg.GetString("templates.prompts.fix_generator_system")
 	userTemplatePath := cfg.GetString("templates.prompts.fix_generator")
 
-	return NewFixPromptGeneratorWithPaths(aiClient, cfg, systemTemplatePath, userTemplatePath)
+	return NewFixPromptGeneratorWithPaths(aiClient, cfg, models, systemTemplatePath, userTemplatePath)
 }
 
 // NewFixPromptGeneratorWithPaths creates a new fix prompt generator with explicit template paths.
 func NewFixPromptGeneratorWithPaths(
 	aiClient ports.AIPort,
 	cfg *config.ViperConfig,
+	models *provider.Registry,
 	systemPath, userPath string,
 ) *FixPromptGenerator {
 	return &FixPromptGenerator{
 		aiClient:     aiClient,
 		config:       cfg,
+		models:       models,
 		modeFactory:  ai.NewModeFactory(cfg),
 		systemLoader: template.NewTemplateLoader[FixPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[FixPromptData](userPath),
@@ -170,7 +178,12 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	mode := g.modeFactory.GetThinkMode()
 
-	model := g.config.GetString("engine.model")
+	// The tier travels on the failed check — the evaluator resolved it
+	// while the prompt was still in scope.
+	model, err := g.models.ResolveName(params.FailedCheck.FixModelTier)
+	if err != nil {
+		return "", pkgerrors.ErrResolveModelTierFailed("fix generation", err)
+	}
 
 	response, err := g.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
 	if err != nil {
