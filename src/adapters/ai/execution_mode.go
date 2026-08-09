@@ -24,6 +24,22 @@ const (
 type ExecutionMode struct {
 	AllowedTools    []string
 	DisallowedTools []string
+	// SourceWriteRoots are project trees outside the tmp dir that this
+	// mode deliberately opens for writing — set only by
+	// GetSourceEditMode, for the appliers that author production code.
+	//
+	// Kept apart from AllowedTools because the coarse-sandbox providers
+	// need to distinguish "may write its own scratch files" from "may
+	// edit the project". codex has no level between those, so without
+	// the distinction every scratch-writing turn would be handed the
+	// whole workspace.
+	SourceWriteRoots []string
+}
+
+// GrantsSourceWrites reports whether this mode opens any project tree
+// outside tmp for writing.
+func (m ExecutionMode) GrantsSourceWrites() bool {
+	return len(m.SourceWriteRoots) > 0
 }
 
 // writeToolNames lists the tools that create or modify files. Used to
@@ -90,13 +106,13 @@ func (f *ModeFactory) GetThinkMode() ExecutionMode {
 	tmpGlob := f.config.GetString("paths.tmp_glob")
 
 	return ExecutionMode{
-		[]string{
+		AllowedTools: []string{
 			readAnyToolSpec,
 			"Write(" + tmpGlob + ")",
 			globAnyToolSpec,
 			grepAnyToolSpec,
 		},
-		[]string{
+		DisallowedTools: []string{
 			bashToolName,
 			editAnyToolSpec,
 			multiEditAnySpec,
@@ -120,7 +136,7 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 	tmpGlob := f.config.GetString("paths.tmp_glob")
 
 	return ExecutionMode{
-		[]string{
+		AllowedTools: []string{
 			readAnyToolSpec,
 			"Write(" + tmpGlob + ")",
 			"Edit(" + tmpGlob + ")",
@@ -128,7 +144,7 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 			globAnyToolSpec,
 			grepAnyToolSpec,
 		},
-		[]string{
+		DisallowedTools: []string{
 			bashToolName,
 			// See GetThinkMode: sub-agent delegation breaks single-turn
 			// `claude -p` calls, so keep it disallowed here too.
@@ -162,6 +178,7 @@ func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
 			"Edit("+glob+")",
 			"MultiEdit("+glob+")",
 		)
+		mode.SourceWriteRoots = append(mode.SourceWriteRoots, glob)
 	}
 
 	return mode

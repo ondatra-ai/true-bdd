@@ -133,6 +133,12 @@ func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 }
 
 // allowsWriteTo checks a file tool's target against the write roots.
+//
+// Both sides are resolved through symlinks before comparison. A lexical
+// check is not enough: `crush run` has no permission gate of its own, so
+// this policy is the ONLY enforcement, and a symlink planted inside a
+// granted root (say `<tmp>/link` → `/etc`) would otherwise let
+// `<tmp>/link/passwd` pass a prefix test and write outside the root.
 func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	if len(p.WriteRoots) == 0 {
 		return false, "this mode grants no write roots"
@@ -142,21 +148,60 @@ func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 		return false, "write tool did not name a target path"
 	}
 
-	resolved := targetPath
-	if !filepath.IsAbs(resolved) {
+	if !filepath.IsAbs(targetPath) {
 		return false, "write target must be an absolute path, got " + targetPath
 	}
 
-	resolved = filepath.Clean(resolved)
+	resolved := resolveThroughSymlinks(filepath.Clean(targetPath))
 
 	for _, root := range p.WriteRoots {
-		if resolved == strings.TrimSuffix(root, string(os.PathSeparator)) ||
-			strings.HasPrefix(resolved, root) {
+		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return true, ""
 		}
 	}
 
 	return false, "write target " + resolved + " is outside " + strings.Join(p.WriteRoots, ", ")
+}
+
+// resolveThroughSymlinks resolves the deepest existing ancestor of a
+// path and re-appends the part that does not exist yet.
+//
+// A write target usually does not exist — that is the point of the
+// write — so EvalSymlinks on the whole path fails. Walking up to the
+// first component that does exist still catches the attack, because a
+// symlink can only be traversed if it exists.
+func resolveThroughSymlinks(path string) string {
+	remainder := ""
+	current := filepath.Clean(path)
+
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			return filepath.Join(resolved, remainder)
+		}
+
+		parent := filepath.Dir(current)
+		if parent == current {
+			// Reached the root without finding anything that exists;
+			// the lexical form is all there is.
+			return filepath.Clean(path)
+		}
+
+		remainder = filepath.Join(filepath.Base(current), remainder)
+		current = parent
+	}
+}
+
+// pathWithinRoot reports whether target sits inside root, comparing on
+// path-component boundaries. A raw prefix test would accept
+// `/repo/tmpfoo` for the root `/repo/tmp`.
+func pathWithinRoot(target, root string) bool {
+	root = strings.TrimSuffix(filepath.Clean(root), string(os.PathSeparator))
+	if target == root {
+		return true
+	}
+
+	return strings.HasPrefix(target, root+string(os.PathSeparator))
 }
 
 // isCrushReadOnlyTool reports whether the tool can only read.

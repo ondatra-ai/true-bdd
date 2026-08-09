@@ -18,6 +18,16 @@ func editMode() ExecutionMode {
 	return ExecutionMode{AllowedTools: []string{testWriteSpec, "Edit(./tmp/**)"}}
 }
 
+// sourceEditMode mirrors GetSourceEditMode: tmp writes PLUS a project
+// tree the applier is meant to author into.
+func sourceEditMode() ExecutionMode {
+	mode := editMode()
+	mode.AllowedTools = append(mode.AllowedTools, "Write(services/**)")
+	mode.SourceWriteRoots = []string{"services/**"}
+
+	return mode
+}
+
 func readOnlyMode() ExecutionMode {
 	return ExecutionMode{
 		AllowedTools:    []string{testReadSpec, testGrepSpec},
@@ -59,7 +69,7 @@ func TestBuildCodexArgs(t *testing.T) {
 	args := buildCodexArgs(Request{
 		Model:   "gpt-5.6-sol",
 		WorkDir: testWorkDir,
-		Mode:    editMode(),
+		Mode:    sourceEditMode(),
 	}, "/tmp/run/answer.md")
 
 	// `-s` is mandatory: without it `codex exec` blocks on an approval
@@ -84,15 +94,25 @@ func TestBuildCodexArgs(t *testing.T) {
 	}
 }
 
-func TestCodexSandboxFollowsWriteGlobs(t *testing.T) {
+// codex has no sandbox level between "nothing" and "all of the working
+// root", so only a mode that deliberately opens a project tree may have
+// workspace-write. A tmp-only write grant must NOT escalate: that would
+// hand a validation or fix turn write access to the tree it is only
+// supposed to read.
+func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
 	t.Parallel()
 
 	if got := codexSandbox(readOnlyMode()); got != codexSandboxReadOnly {
 		t.Errorf("codexSandbox(read-only mode) = %q, want %q", got, codexSandboxReadOnly)
 	}
 
-	if got := codexSandbox(editMode()); got != codexSandboxWorkspaceWrite {
-		t.Errorf("codexSandbox(edit mode) = %q, want %q", got, codexSandboxWorkspaceWrite)
+	if got := codexSandbox(editMode()); got != codexSandboxReadOnly {
+		t.Errorf("codexSandbox(tmp-only writes) = %q, want %q — a scratch write "+
+			"grant must not become workspace write access", got, codexSandboxReadOnly)
+	}
+
+	if got := codexSandbox(sourceEditMode()); got != codexSandboxWorkspaceWrite {
+		t.Errorf("codexSandbox(source edit mode) = %q, want %q", got, codexSandboxWorkspaceWrite)
 	}
 }
 

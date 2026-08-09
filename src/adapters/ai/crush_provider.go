@@ -143,11 +143,18 @@ type crushHook struct {
 // writeCrushConfig generates the per-run config directory and returns
 // its path for CRUSH_GLOBAL_CONFIG.
 func writeCrushConfig(req Request, executable string) (string, error) {
-	configDir := filepath.Join(req.TmpDir, "crush-config")
-
-	err := os.MkdirAll(configDir, crushConfigDirMode)
+	err := os.MkdirAll(req.TmpDir, crushConfigDirMode)
 	if err != nil {
-		return "", pkgerrors.ErrWriteProviderConfigFailed(configDir, err)
+		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
+	}
+
+	// One directory per turn. A fixed name under a shared TmpDir means
+	// two concurrent turns write the same crush.json, and the second
+	// would hand the first turn's policy — including its write roots —
+	// to a turn that was granted something narrower.
+	configDir, err := os.MkdirTemp(req.TmpDir, "crush-config-")
+	if err != nil {
+		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
 	}
 
 	guardCommand := crushGuardCommand(executable)
@@ -195,12 +202,21 @@ func crushAllowedTools(mode ExecutionMode) []string {
 
 // crushGuardCommand builds the hook command line pointing back at this
 // binary, so a host project needs no guard script of its own.
+//
+// The path is always quoted, never conditionally. crush parses this
+// string as a shell command, and a binary living under a path
+// containing a quote, `$`, or `;` would otherwise be emitted raw — at
+// best the hook fails to start, and crush FAILS OPEN when a hook cannot
+// run, so a quoting slip silently removes the only write gate.
 func crushGuardCommand(executable string) string {
-	if strings.ContainsAny(executable, " \t") {
-		executable = "'" + executable + "'"
-	}
+	return shellQuote(executable) + " " + crushGuardSubcommand
+}
 
-	return executable + " " + crushGuardSubcommand
+// shellQuote wraps a value in single quotes, which suppress every shell
+// metacharacter, escaping any embedded single quote by closing the
+// quoted run, emitting an escaped quote, and reopening it.
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
 }
 
 // buildCrushEnv layers the generated config dir and the guard policy
