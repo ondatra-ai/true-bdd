@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/src/internal/app/engine"
+	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
 
 // Tests use small primitives so failures point at engine logic, not
@@ -652,5 +653,134 @@ func TestEngine_GenerateQReceivesOneBasedIndex(t *testing.T) {
 
 	if len(indices) != 3 || indices[0] != 1 || indices[1] != 2 || indices[2] != 3 {
 		t.Errorf("want 1-based indices [1,2,3], got %v", indices)
+	}
+}
+
+// The production bug this bound exists for: an applier that reports
+// success without changing anything. The check keeps failing, the walk
+// keeps restarting, and nothing inside the engine ever stops it — the
+// real run was killed by a 30-minute harness timeout after 5 wasted
+// apply turns. Without SequentialWalker.MaxFixes this test hangs.
+func TestSequentialWalker_StopsWhenFixesNeverConverge(t *testing.T) {
+	t.Parallel()
+
+	userIO := &stubUI{actionsScript: []engine.UserAction{
+		engine.UserActionApply, engine.UserActionApply, engine.UserActionApply,
+		engine.UserActionApply, engine.UserActionApply, engine.UserActionApply,
+	}}
+
+	fixCalls := 0
+	handler := newHandler(t,
+		// Never passes, no matter how many fixes are applied.
+		func(_ context.Context, _ int, _ string) (bool, error) { return false, nil },
+		func(_ context.Context, _ int, _ string, _ map[string]string, _ int) (engine.FixResult, error) {
+			return engine.FixResult{FixPrompt: "x"}, nil
+		},
+		// Reports a fix but changes nothing — exactly what `applied:
+		// false` looked like to the engine before it was detected.
+		func(_ context.Context, item int, _ engine.FixDecision) (int, error) {
+			fixCalls++
+
+			return item, nil
+		},
+		userIO, true,
+	)
+	walker := &engine.SequentialWalker[int, string]{Cell: handler, MaxFixes: 2}
+
+	_, err := walker.Walk(context.Background(), 1, []string{"a"})
+	if !errors.Is(err, pkgerrors.ErrFixLoopStuck) {
+		t.Fatalf("Walk() error = %v, want ErrFixLoopStuck", err)
+	}
+
+	// Budget of 2 plus the one that trips the guard.
+	if fixCalls != 3 {
+		t.Errorf("want 3 fix calls (MaxFixes+1), got %d", fixCalls)
+	}
+}
+
+// A walk that converges within its budget must not be failed by the
+// bound — the fix that finally works is allowed to be the last one.
+func TestSequentialWalker_ConvergingWalkIsNotStopped(t *testing.T) {
+	t.Parallel()
+
+	userIO := &stubUI{actionsScript: []engine.UserAction{
+		engine.UserActionApply, engine.UserActionApply,
+	}}
+
+	handler := newHandler(t,
+		func(_ context.Context, item int, _ string) (bool, error) { return item >= 3, nil },
+		func(_ context.Context, _ int, _ string, _ map[string]string, _ int) (engine.FixResult, error) {
+			return engine.FixResult{FixPrompt: "x"}, nil
+		},
+		func(_ context.Context, item int, _ engine.FixDecision) (int, error) { return item + 1, nil },
+		userIO, true,
+	)
+	// Exactly enough budget: two fixes take item 1 → 3.
+	walker := &engine.SequentialWalker[int, string]{Cell: handler, MaxFixes: 2}
+
+	out, err := walker.Walk(context.Background(), 1, []string{"a"})
+	if err != nil {
+		t.Fatalf("Walk() = %v, want nil for a walk that converged", err)
+	}
+
+	if !out.Passed || out.Item != 3 {
+		t.Errorf("want passed item=3, got %+v", out)
+	}
+}
+
+// The bound counts fixes per query, not per walk, and this is why: a
+// nine-prompt refine that fixes each prompt once is a healthy walk
+// making steady progress. Counting per walk would have failed it at
+// the sixth prompt — several us-refine fixtures pipe 20+ apply
+// answers precisely because that is normal.
+func TestSequentialWalker_ManyDistinctFixesAreNotStuck(t *testing.T) {
+	t.Parallel()
+
+	const queryCount = 9
+
+	actions := make([]engine.UserAction, queryCount)
+	for i := range actions {
+		actions[i] = engine.UserActionApply
+	}
+
+	userIO := &stubUI{actionsScript: actions}
+
+	// Each query fails once and passes after any fix. Item counts the
+	// fixes so far, which is also how many queries have been cleared.
+	fixCalls := 0
+	handler := newHandler(t,
+		func(_ context.Context, item int, query string) (bool, error) {
+			return query <= string(rune('a'+item-1)), nil
+		},
+		func(_ context.Context, _ int, _ string, _ map[string]string, _ int) (engine.FixResult, error) {
+			return engine.FixResult{FixPrompt: "x"}, nil
+		},
+		func(_ context.Context, item int, _ engine.FixDecision) (int, error) {
+			fixCalls++
+
+			return item + 1, nil
+		},
+		userIO, true,
+	)
+
+	queries := make([]string, queryCount)
+	for i := range queries {
+		queries[i] = string(rune('a' + i))
+	}
+
+	// Budget of 2 PER QUERY. Nine distinct fixes must still pass.
+	walker := &engine.SequentialWalker[int, string]{Cell: handler, MaxFixes: 2}
+
+	out, err := walker.Walk(context.Background(), 1, queries)
+	if err != nil {
+		t.Fatalf("Walk() = %v, want nil for a walk fixing distinct queries", err)
+	}
+
+	if !out.Passed {
+		t.Errorf("want passed=true, got %+v", out)
+	}
+
+	if fixCalls <= 2 {
+		t.Errorf("want more fixes than the per-query budget, got %d", fixCalls)
 	}
 }

@@ -229,11 +229,14 @@ func buildSpecEngine[I any](
 	cell := &engine.CellHandler[I, *renderedPrompt]{
 		Query:   buildQueryClosure(spec, builder, &latestResult),
 		GenFix:  buildGenFixClosure(spec, &latestResult),
-		Fix:     buildFixClosure(spec),
+		Fix:     buildFixClosure(spec, &latestResult),
 		UI:      spec.UI,
 		FixMode: spec.Fix,
 	}
-	walker := &engine.SequentialWalker[I, *renderedPrompt]{Cell: cell}
+	// Same budget on both loops: max_apply_attempts caps the fixes one
+	// walk may apply as well as the outer re-walks, so a cell that never
+	// converges fails with a named error instead of spinning.
+	walker := &engine.SequentialWalker[I, *renderedPrompt]{Cell: cell, MaxFixes: maxAttempts}
 
 	return engine.New(
 		renderPrompt, walker,
@@ -344,8 +347,13 @@ func buildGenFixClosure[I any](
 
 // buildFixClosure produces the engine.FixFn. The captured fixCount
 // keeps FixApplier tmp files uniquely named across multiple cell
-// invocations within one run.
-func buildFixClosure[I any](spec Spec[I]) engine.FixFn[I] {
+// invocations within one run. The shared *latestResult slot carries
+// the apply-model tier the evaluator resolved for this cell — the same
+// channel buildGenFixClosure reads the failing check from.
+func buildFixClosure[I any](
+	spec Spec[I],
+	latestResult *checklistmodels.ValidationResult,
+) engine.FixFn[I] {
 	fixCount := 0
 
 	return func(
@@ -356,9 +364,14 @@ func buildFixClosure[I any](spec Spec[I]) engine.FixFn[I] {
 		fixCount++
 		subjectID, _ := spec.GetSubject(item)
 
-		content, err := spec.FixApplier.Apply(
-			ctx, item, subjectID, decision.FixPrompt, spec.TmpDir, fixCount,
-		)
+		content, err := spec.FixApplier.Apply(ctx, validate.ApplyParams{
+			Subject:   item,
+			SubjectID: subjectID,
+			FixPrompt: decision.FixPrompt,
+			TmpDir:    spec.TmpDir,
+			Iteration: fixCount,
+			ModelTier: latestResult.ApplyModelTier,
+		})
 		if err != nil {
 			return item, fmt.Errorf("fix applier failed: %w", err)
 		}
@@ -403,6 +416,7 @@ func flattenChecklistPrompts(
 				CriterionID:   section.ID,
 				CriterionName: section.Name,
 				DefaultDocs:   doc.DefaultDocs,
+				DefaultModels: doc.Engine,
 				Prompt:        prompt,
 			})
 		}

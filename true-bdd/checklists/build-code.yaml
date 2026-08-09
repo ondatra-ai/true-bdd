@@ -13,6 +13,20 @@ last_updated: "2026-05-28"
 config:
   max_apply_attempts: 5
 
+# Model tier per AI role. Names refer to `engine.models` in
+# true-bdd.yaml, never to a model id. Omit a role to inherit that
+# role's engine-level default (`engine.default_prompt_model` /
+# `default_fix_model` / `default_apply_model`); an individual prompt
+# can override any of these with `model:` / `fix_model:` / `apply_model:`.
+engine:
+  # The validation turn only mirrors the Go runner's verdict, so the
+  # everyday tier is ample; the runner, not the model, is authoritative.
+  prompt_model: high
+  fix_model: high
+  # This is the turn that rewrites production source — the cheap,
+  # high-context writing tier is exactly what `coder` is for.
+  apply_model: coder
+
 sections:
   - id: test-passes
     name: "Test Passes"

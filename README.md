@@ -125,8 +125,8 @@ env -u CLAUDECODE ./bin/true-bdd build code  --fix
 
 The host project supplies a `true-bdd/` directory at its root:
 
-- `true-bdd.yaml` — the engine type, filesystem paths (epics, stories,
-  checklists, tmp), per-command prompt-template paths, and a
+- `true-bdd.yaml` — the model tiers (below), filesystem paths (epics,
+  stories, checklists, tmp), per-command prompt-template paths, and a
   `documents:` map naming the files a check may cite (`prd`,
   `architecture_yaml`). Each check in a checklist lists the document
   keys it needs under `docs:`, and the engine points the prompt at
@@ -138,6 +138,85 @@ The host project supplies a `true-bdd/` directory at its root:
   artifacts (stories, epics, the scenario registry, checklists,
   `architecture.yaml`); the host project validates them in its lint
   step, outside the engine itself.
+
+### Model tiers
+
+Every checklist cell runs up to three AI turns with genuinely different
+needs: **validating** a `Q:` wants strong reasoning, turning a failure
+into a **fix prompt** wants a mid model, and **writing the fix** wants a
+cheap high-context coder. The best model for each may live behind a
+different CLI, so the engine names three tiers and binds each to a
+`"<cli>:<model>"` pair — then gives each of the three roles its own
+default, because one fallback tier cannot serve turns this different:
+
+```yaml
+engine:
+  models:
+    xhigh: "claude:claude-fable-5"
+    high: "claude:claude-opus-4-8"
+    coder: "crush:zhipu-coding/glm-5.2"
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: coder
+```
+
+The value splits on the **first** colon, so hyphenated and
+provider-qualified model ids survive intact. Supported CLIs are
+`claude`, `crush`, and `codex`; each must be on `$PATH`.
+
+A checklist picks a tier per role, and any single prompt overrides it:
+
+```yaml
+engine:
+  prompt_model: xhigh   # the validation turn
+  fix_model: high       # failure → fix prompt
+  apply_model: coder    # writes the file
+
+sections:
+  - id: test-passes
+    validation_prompts:
+      - Q: "…"
+        model: high         # overrides prompt_model for this cell
+        fix_model: coder    # optional
+        apply_model: coder  # optional
+```
+
+Resolution runs **prompt → checklist → the role's engine-level
+default**, so a checklist that names nothing still gets `coder` for the
+turn that writes files and `high` for the one that validates. A tier
+name that is not configured, an unknown CLI, a missing role default, and
+a default naming an unconfigured tier are all startup errors — the
+engine never silently substitutes a different model than the checklist
+asked for.
+
+**Permissions across CLIs.** Tool permissions are declared once, as the
+engine's execution mode, and projected onto each CLI:
+
+| | `claude` | `crush` | `codex` |
+|---|---|---|---|
+| System prompt | native flag | prepended to the prompt | prepended to the prompt |
+| Write gate | `--allowedTools` | generated `PreToolUse` hook | `-s read-only` / `workspace-write` |
+
+`crush run` has no permission gate of its own, so the engine generates a
+per-run config (pointed at via `CRUSH_GLOBAL_CONFIG`, leaving any host
+`.crush.json` untouched) whose `PreToolUse` hook is this binary's hidden
+`true-bdd crush-guard` subcommand — a host project needs no guard script
+of its own. Hooks are additive, so a host config's own hooks run
+alongside it and a denial from either blocks the tool.
+
+Two crush behaviours the engine works around, both verified against the
+live CLI rather than assumed:
+
+- crush **silently ignores an unknown model pinned in config**, falling
+  back to global state. The model is therefore always passed as `-m`.
+- crush **fails open** when a hook cannot be executed. The engine
+  probes the guard before every crush turn and refuses to run if it does
+  not deny, so enforcement can never disappear quietly.
+
+codex's sandbox is coarser than the other two: `workspace-write` grants
+the whole working root rather than a specific glob. Roles that must not
+write run `read-only`, and the engine recovers each turn's result from
+the response text rather than from a file the model wrote.
 
 The host project's documents live under `docs/`:
 

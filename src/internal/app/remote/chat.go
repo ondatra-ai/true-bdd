@@ -19,7 +19,39 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
+	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 )
+
+// chatRouter builds the provider router and resolves the engine's
+// default model tier for a chat turn. Unlike the checklist commands
+// this path has no container, so it reads the host config directly. A
+// chat turn is validation-shaped — it reasons and answers rather than
+// applying a fix — so it runs on the prompt role's default.
+func chatRouter() (*ai.Router, provider.ModelRef, error) {
+	cfg, err := config.NewViperConfig()
+	if err != nil {
+		return nil, provider.ModelRef{}, err
+	}
+
+	models, err := bootstrap.NewModelRegistry(cfg)
+	if err != nil {
+		return nil, provider.ModelRef{}, err
+	}
+
+	model, err := models.ResolveRole(provider.RolePrompt, "")
+	if err != nil {
+		return nil, provider.ModelRef{}, err
+	}
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		return nil, provider.ModelRef{}, fmt.Errorf("resolve working directory: %w", err)
+	}
+
+	return ai.NewRouter(workDir, cfg.GetString("paths.tmp_dir")), model, nil
+}
 
 // chatMessage is one turn of the workspace-wide conversation (browser-owned
 // history; the CLI is stateless across turns).
@@ -234,7 +266,10 @@ func chatSystemPrompt(payload chatPayload) string {
 // file-mutating tool: the CLI's own doc_write is the ONLY persistence path
 // (S1) — Claude must never touch the filesystem directly.
 func claudeChatTurn(ctx context.Context, payload chatPayload) chatResult {
-	client, err := ai.NewClaudeClient()
+	// Resolve the engine's default tier rather than hardcoding a model:
+	// this turn used to pass an empty model and silently run on the
+	// adapter's fallback, ignoring configuration entirely.
+	client, model, err := chatRouter()
 	if err != nil {
 		return chatResult{Error: chatErrUnavailable}
 	}
@@ -244,7 +279,7 @@ func claudeChatTurn(ctx context.Context, payload chatPayload) chatResult {
 	}
 
 	raw, execErr := client.ExecutePromptWithSystem(
-		ctx, chatSystemPrompt(payload), lastUserMessage(payload.Conversation), "", mode,
+		ctx, provider.RolePrompt, chatSystemPrompt(payload), lastUserMessage(payload.Conversation), model, mode,
 	)
 	if execErr != nil {
 		if ctx.Err() != nil {

@@ -1,0 +1,29 @@
+<section><h2>What these numbers do and don't cover</h2>
+<ul class="caveats">
+  <li><strong>One block is a residual, not a measurement.</strong>
+      <em>Fixture prep</em> is wall clock minus every measured slice, because
+      <code>go test</code> reports a subtest's total but never stamps when it
+      began. Everything else on the timeline is measured from a log record or
+      an artifact mtime.</li>
+  <li><strong>crush and codex report no usage.</strong> The <code>claude</code>
+      CLI returns a usage block per turn; the others return bare text, so their
+      turns show duration but no tokens or price. Any fixture whose apply turn
+      runs on <code>coder</code> has real spend missing from the cost column.</li>
+  <li><strong>The test-run slice is an upper bound.</strong> The engine logs
+      nothing around its runner invocation, so the slice runs from the
+      engine's first record to the next record it writes afterwards
+      ("Loading full checklist"). Any engine work in between is counted as
+      test time, which for this run overstates it by about 12ms. Deliberately
+      log-derived rather than taken from the runner artifact's mtime: a
+      preserved tmpdir can be re-run by hand later, and a measurement that
+      changes when someone inspects it is worse than none.</li>
+  <li><strong>The post-run block is mixed.</strong> Its span is measured
+      (engine's last log record → the judge's usage record), but it contains
+      the snapshot, the diff, fixture teardown and the judge call together;
+      only the judge's own cost is separable.</li>
+  <li><strong>Turn cost is attributed by sequence.</strong> The usage record
+      carries no turn id, so it is paired with the turn that was open when it
+      was written. The engine walks cells sequentially, so this is exact
+      here.</li>
+</ul>
+</section>

@@ -267,6 +267,8 @@ func (r *PlaywrightRunner) exec(
 	cmd := exec.CommandContext(ctx, "npx", allArgs...)
 	cmd.Dir = cwd
 
+	logSpawn("npx", allArgs, cwd)
+
 	var stdout, stderr bytes.Buffer
 
 	cmd.Stdout = &stdout

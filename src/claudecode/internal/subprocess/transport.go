@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"runtime"
@@ -473,6 +474,39 @@ func (t *Transport) setupCommand(ctx context.Context) {
 			t.cmd.Dir = *t.options.Cwd
 		}
 	}
+
+	// This is the only place the claude argv exists — BuildCommand
+	// assembles it and hands it straight to exec. Logging it here (same
+	// record shape crush and codex use in cli_invocation.go) is what
+	// lets a run report show the real command instead of a plausible
+	// reconstruction of one.
+	slog.Debug("Spawning agent CLI",
+		"binary", args[0],
+		"args", redactPromptArgs(args[1:]),
+		"dir", t.cmd.Dir,
+	)
+}
+
+// redactPromptArgs replaces prompt payloads with their size. The
+// rendered system prompt is passed as an argv element and runs to
+// kilobytes; inlining it would bury every other field in the record,
+// and it is already archived as a prompt artifact next to the run.
+func redactPromptArgs(args []string) []string {
+	redacted := make([]string, len(args))
+	copy(redacted, args)
+
+	for index := range redacted {
+		if index == 0 {
+			continue
+		}
+
+		switch redacted[index-1] {
+		case "--system-prompt", "--append-system-prompt":
+			redacted[index] = fmt.Sprintf("<%d bytes>", len(redacted[index]))
+		}
+	}
+
+	return redacted
 }
 
 // setupIOPipes sets up stdin, stdout, and stderr pipes for the command.

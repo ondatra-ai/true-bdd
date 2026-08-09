@@ -163,6 +163,11 @@ type ItemRun[I any] struct {
 type Options struct {
 	// MaxApplyAttempts bounds the outer fixpoint re-walk. 0 → default
 	// (5). Plumbed from a checklist's `config.max_apply_attempts`.
+	//
+	// The runner gives the same number to SequentialWalker.MaxFixes, so
+	// it also bounds the fixes applied WITHIN one walk. Both loops need
+	// a bound: the outer one only advances when a walk finishes, and a
+	// non-converging cell never finishes one.
 	MaxApplyAttempts int
 	// OnAttemptStart, if non-nil, fires at the top of each outer-walk
 	// attempt (1-indexed). The runner uses this to emit the

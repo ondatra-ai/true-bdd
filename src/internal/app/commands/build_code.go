@@ -101,6 +101,12 @@ func loadFailingTests(
 			return nil, fmt.Errorf("failed to load architecture: %w", err)
 		}
 
+		// The applier may write exactly the production roots the
+		// architecture declares. Taken from the spec rather than config
+		// so "edits production source, never tests" is enforced by the
+		// same document that defines where production source lives.
+		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
+
 		seen := make(map[string]bool)
 		failures := make([]*testrunner.FailingTest, 0)
 
@@ -121,6 +127,20 @@ func loadFailingTests(
 
 		return failures, nil
 	}
+}
+
+// servicePaths collects each declared service's source root, skipping
+// services that declare none.
+func servicePaths(services []architecture.Service) []string {
+	paths := make([]string, 0, len(services))
+
+	for _, svc := range services {
+		if svc.Path != "" {
+			paths = append(paths, svc.Path)
+		}
+	}
+
+	return paths
 }
 
 // walkServiceLayers iterates the three test layers declared by one

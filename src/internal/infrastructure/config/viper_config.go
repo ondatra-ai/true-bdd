@@ -34,3 +34,25 @@ func (c *ViperConfig) GetString(key string) string {
 
 	return c.viper.GetString(key)
 }
+
+// GetStringMapString reads a nested string→string mapping, e.g. the
+// `engine.models` tier table. An unset key yields nil so callers can
+// tell "absent" from "present but empty".
+func (c *ViperConfig) GetStringMapString(key string) map[string]string {
+	if !c.viper.IsSet(key) {
+		return nil
+	}
+
+	return c.viper.GetStringMapString(key)
+}
+
+// GetStringSlice reads a YAML list of strings, e.g. the
+// `paths.test_write_globs` write roots. An unset key yields nil so
+// callers can apply their own default.
+func (c *ViperConfig) GetStringSlice(key string) []string {
+	if !c.viper.IsSet(key) {
+		return nil
+	}
+
+	return c.viper.GetStringSlice(key)
+}

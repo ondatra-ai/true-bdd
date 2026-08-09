@@ -612,6 +612,8 @@ var (
 	ErrLoadChecklistUserPrompt   = errors.New("failed to load checklist user prompt")
 	ErrChecklistAIEvaluation     = errors.New("AI evaluation failed")
 	ErrFixApplierNoContent       = errors.New("no FILE_START/FILE_END content found")
+	ErrFixNotApplied             = errors.New("fix applier reported the fix was not applied")
+	ErrFixLoopStuck              = errors.New("fix loop is not converging")
 	ErrFixPromptGeneration       = errors.New("fix prompt generation failed")
 	ErrFixPromptRefinement       = errors.New("fix prompt refinement failed")
 	ErrSaveStoryVersion          = errors.New("failed to save story version")
@@ -654,6 +656,48 @@ func ErrFixApplierNoContentFound(resultPath string) error {
 	}
 }
 
+// ErrFixNotAppliedByModel reports an applier turn that ran to completion
+// but wrote nothing, self-reported via `applied: false`.
+//
+// This is a hard stop rather than a retry: the summary the model gives
+// is almost always an environmental blocker (a denied write root, a
+// forbidden path) that the identical next attempt would hit again.
+func ErrFixNotAppliedByModel(target, summary string) error {
+	message := "fix applier reported applied: false"
+	if target != "" {
+		message += " for " + target
+	}
+
+	if summary != "" {
+		message += ": " + summary
+	}
+
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_NOT_APPLIED",
+		Message:  message,
+		Cause:    ErrFixNotApplied,
+	}
+}
+
+// ErrFixLoopNotConverging reports a cell whose fixes kept reporting
+// success without ever making the check pass.
+//
+// Without this the walk restarts on every applied fix and never
+// terminates — the only thing stopping it is an external timeout, which
+// a host project does not have.
+func ErrFixLoopNotConverging(applies int) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_LOOP_NOT_CONVERGING",
+		Message: fmt.Sprintf(
+			"gave up after %d applied fix(es) that never made the check pass",
+			applies,
+		),
+		Cause: ErrFixLoopStuck,
+	}
+}
+
 func ErrFixPromptGenerationFailed(cause error) error {
 	return &AppError{
 		Category: CategoryAI,
@@ -687,5 +731,88 @@ func ErrWriteStoryFileFailed(cause error) error {
 		Code:     "WRITE_STORY_FILE_FAILED",
 		Message:  "failed to write story file",
 		Cause:    errors.Join(ErrWriteStoryFile, cause),
+	}
+}
+
+// Multi-provider routing errors. A model tier that cannot be resolved,
+// or a CLI with no registered provider, is always fatal: the engine
+// must never silently fall back to a different model than the
+// checklist asked for.
+var (
+	ErrProviderNotRegistered = errors.New("no provider registered for cli")
+	ErrProviderExecution     = errors.New("provider execution failed")
+	ErrProviderNoOutput      = errors.New("provider produced no output")
+	ErrResolveModelTier      = errors.New("failed to resolve model tier")
+	ErrCrushPolicyMissing    = errors.New("crush guard policy is not set")
+	ErrCrushPolicyInvalid    = errors.New("crush guard policy is malformed")
+)
+
+func ErrProviderNotRegisteredForCLI(cli string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_NOT_REGISTERED",
+		Message:  "no provider registered for cli " + cli,
+		Cause:    ErrProviderNotRegistered,
+	}
+}
+
+func ErrProviderExecutionFailed(name string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_EXECUTION_FAILED",
+		Message:  name + " execution failed",
+		Cause:    errors.Join(ErrProviderExecution, cause),
+	}
+}
+
+func ErrProviderProducedNoOutput(name string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "PROVIDER_NO_OUTPUT",
+		Message:  name + " produced no output",
+		Cause:    ErrProviderNoOutput,
+	}
+}
+
+func ErrResolveModelTierFailed(role string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "RESOLVE_MODEL_TIER_FAILED",
+		Message:  "failed to resolve model tier for " + role,
+		Cause:    errors.Join(ErrResolveModelTier, cause),
+	}
+}
+
+var ErrWriteProviderConfig = errors.New("failed to write generated provider config")
+
+func ErrWriteProviderConfigFailed(path string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "WRITE_PROVIDER_CONFIG_FAILED",
+		Message:  "failed to write generated provider config " + path,
+		Cause:    errors.Join(ErrWriteProviderConfig, cause),
+	}
+}
+
+var ErrCrushGuardNotEnforcing = errors.New("crush write-guard hook is not enforcing")
+
+func ErrCrushGuardNotEnforcingAt(executable string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "CRUSH_GUARD_NOT_ENFORCING",
+		Message: "crush write-guard hook is not enforcing via " + executable +
+			" (crush fails OPEN when a hook cannot run, so the turn is refused)",
+		Cause: ErrCrushGuardNotEnforcing,
+	}
+}
+
+var ErrInvalidModelConfig = errors.New("invalid engine model configuration")
+
+func ErrInvalidModelConfigFailed(cause error) error {
+	return &AppError{
+		Category: CategoryInfrastructure,
+		Code:     "INVALID_MODEL_CONFIG",
+		Message:  "invalid engine model configuration in true-bdd.yaml",
+		Cause:    cause,
 	}
 }

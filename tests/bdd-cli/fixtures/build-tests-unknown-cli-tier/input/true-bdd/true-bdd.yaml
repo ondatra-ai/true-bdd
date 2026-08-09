@@ -1,0 +1,60 @@
+engine:
+  # Three named tiers. A checklist asks for a tier by name; this table
+  # decides which CLI runs it and with which model, so retargeting a
+  # role at a different provider is a config edit, not a code change.
+  #
+  # Value format: "<cli>:<model>". Split on the FIRST colon only.
+  #   cli   — claude | crush | codex (each must be on $PATH)
+  #   model — passed through verbatim to that CLI's model flag
+  models:
+    xhigh: "claude:claude-fable-5"
+    high: "claude:claude-opus-4-8"
+    # DELIBERATELY BROKEN: `aider` is not a supported cli. The
+    # engine must refuse to start rather than quietly running
+    # this tier on some other model.
+    coder: "aider:whatever"
+  # Tier per AI role, used when neither a prompt nor its checklist names
+  # one. A checklist overrides any of these in its own `engine:` block.
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: coder
+
+epics:
+  path: "./docs/prd/epics"
+
+templates:
+  prompts:
+    checklist: "./templates/us-checklist.prompt.tpl"
+    checklist_system: "./templates/us-checklist.system.prompt.tpl"
+    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
+    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
+    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
+    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
+    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
+    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
+    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
+    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
+    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
+    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
+    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
+    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
+    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
+    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
+    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
+    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
+    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
+    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
+    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
+    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
+    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
+    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+
+paths:
+  tmp_dir: "./tmp"
+  tmp_glob: "./tmp/**"
+  stories_dir: "docs/prd/stories"
+  checklists_dir: "./true-bdd/checklists"
+
+documents:
+  prd: "./docs/prd/prd.yaml"
+  architecture_yaml: "./docs/architecture/architecture.yaml"
