@@ -82,12 +82,30 @@ func (d *DetailRenderer) writeCommandList(label string, commands []string) {
 // inside an already-open row, so a page of twelve turns is navigable
 // without hiding anything.
 func (d *DetailRenderer) writeCollapsible(label string, size int, content string) {
+	d.writeDetails(label, size, content, false)
+}
+
+// writeDocument embeds a document expanded. Used where the document IS
+// the evidence for its row rather than supporting material behind it —
+// a reader who has to click to find out whether anything ran is being
+// asked to take the summary on trust.
+func (d *DetailRenderer) writeDocument(label string, size int, content string) {
+	d.writeDetails(label, size, content, true)
+}
+
+// writeDetails writes the shared <details> body.
+func (d *DetailRenderer) writeDetails(label string, size int, content string, open bool) {
 	sizeChip := ""
 	if size > 0 {
 		sizeChip = ` <span class="sz">` + formatBytes(size) + `</span>`
 	}
 
-	d.write(`<details class="doc"><summary>`, escapeHTML(label), sizeChip,
+	openAttr := ""
+	if open {
+		openAttr = " open"
+	}
+
+	d.write(`<details class="doc"`, openAttr, `><summary>`, escapeHTML(label), sizeChip,
 		"</summary><pre>", escapeHTML(content), "</pre></details>")
 }
 

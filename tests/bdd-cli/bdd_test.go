@@ -163,6 +163,16 @@ func dumpRun(t *testing.T, result *runner.RunResult) {
 	t.Logf("tmpdir preserved at: %s", result.TmpDir)
 	t.Logf("exit code: %d", result.ExitCode)
 
+	// The clipped stderr below is a convenience; these two files hold
+	// the streams in full and outlive the test process.
+	if result.StdoutFile != "" {
+		t.Logf("cli stdout: %s (%d bytes)", result.StdoutFile, len(result.Stdout))
+	}
+
+	if result.StderrFile != "" {
+		t.Logf("cli stderr: %s (%d bytes)", result.StderrFile, len(result.Stderr))
+	}
+
 	if result.Stderr != "" {
 		t.Logf("stderr (first 4KB):\n%s", clip(result.Stderr, 4096))
 	}

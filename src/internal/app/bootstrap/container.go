@@ -162,7 +162,7 @@ func NewContainer() (*Container, error) {
 	})
 	buildCodeTrip.fixApplier.UseEditMode()
 
-	testRunnerDispatcher := newTestRunnerDispatcher()
+	testRunnerDispatcher := newTestRunnerDispatcher(runDir)
 
 	return &Container{
 		Config:                       cfg,
@@ -227,12 +227,19 @@ func testWriteGlobs(cfg *config.ViperConfig) []string {
 
 // newTestRunnerDispatcher wires the three framework-specific runners
 // behind the testrunner.Dispatcher used by `build code`. Each runner is
-// stateless and constructed once; the dispatcher routes by the
-// `framework:` field declared in architecture.yaml.
-func newTestRunnerDispatcher() *testrunner.Dispatcher {
+// constructed once; the dispatcher routes by the `framework:` field
+// declared in architecture.yaml.
+//
+// All three share one Artifacts writer rooted at the run directory, so
+// every framework's captured output lands beside the prompts the engine
+// built from it and the sequence numbers order the whole run's test
+// spawns against each other.
+func newTestRunnerDispatcher(runDir *fs.RunDirectory) *testrunner.Dispatcher {
+	artifacts := testrunner.NewArtifacts(runDir.GetTmpOutPath())
+
 	return testrunner.NewDispatcher(map[string]testrunner.Runner{
-		testrunner.FrameworkGoTest:     testrunner.NewGoTestRunner(),
-		testrunner.FrameworkPlaywright: testrunner.NewPlaywrightRunner(),
-		testrunner.FrameworkJest:       testrunner.NewJestRunner(),
+		testrunner.FrameworkGoTest:     testrunner.NewGoTestRunner(artifacts),
+		testrunner.FrameworkPlaywright: testrunner.NewPlaywrightRunner(artifacts),
+		testrunner.FrameworkJest:       testrunner.NewJestRunner(artifacts),
 	})
 }

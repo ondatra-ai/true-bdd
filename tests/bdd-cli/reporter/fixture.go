@@ -65,6 +65,10 @@ type Fixture struct {
 	Discovery Discovery
 	Meta      RunMetadata
 	Manifest  *Manifest
+	// TestRuns is every framework-runner subprocess the run spawned,
+	// with its captured output. Empty for a run predating the engine's
+	// exit record.
+	TestRuns []TestRun
 	// Diff and Failures come from the harness's own failure dump, so
 	// they exist only for a fixture that failed.
 	Diff     []string
@@ -135,6 +139,7 @@ func loadFixture(
 		Manifest:            manifest,
 		Turns:               log.Turns(dir),
 		Meta:                log.Metadata(),
+		TestRuns:            log.TestRuns(dir),
 		First:               log.First,
 		Last:                log.Last,
 		EmptyFailurePrompts: findEmptyFailurePrompts(dir),

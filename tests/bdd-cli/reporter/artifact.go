@@ -23,6 +23,7 @@ const (
 	msgToolUse         = "ToolUseBlock details"
 	msgSpawnAgent      = "Spawning agent CLI"
 	msgSpawnRunner     = "Spawning test runner"
+	msgRunnerReturned  = "Test runner returned"
 )
 
 // Artifact is one file the engine wrote during a turn, with its content.

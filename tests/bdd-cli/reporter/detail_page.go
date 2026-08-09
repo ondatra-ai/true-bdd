@@ -205,7 +205,14 @@ func (d *DetailRenderer) writePrepDetail() {
 	d.writeCommandList("prep commands", manifest.PrepCmds)
 }
 
-// writeTestRunDetail shows the runner invocation and what it returned.
+// writeTestRunDetail shows the runner invocation and, for each
+// subprocess it spawned, what the framework itself reported.
+//
+// The captured stdout is rendered expanded rather than summarized: for
+// a suite that never started, the reason lives in that document's
+// run-level errors[] block and nowhere else, so paraphrasing it is how
+// the row ended up asserting "no tests ran" without being able to say
+// why.
 func (d *DetailRenderer) writeTestRunDetail() {
 	fixture := d.fixture
 
@@ -216,12 +223,53 @@ func (d *DetailRenderer) writeTestRunDetail() {
 			"test-runner command; the span is still measured from the log")
 	}
 
-	rows := [][2]string{{"framework", metaOrDash(fixture.Discovery.Framework)}}
-	if fixture.Discovery.Outcome != "" {
-		rows = append(rows, [2]string{"outcome", fixture.Discovery.Outcome})
+	if len(fixture.TestRuns) == 0 {
+		d.writeFactTable([][2]string{
+			{"framework", metaOrDash(fixture.Discovery.Framework)},
+			{"outcome", fixture.Discovery.Outcome},
+		})
+		d.writeNothingRecorded("this run predates the engine capturing the " +
+			"runner's output; only the span between log records is known")
+
+		return
 	}
 
-	d.writeFactTable(rows)
+	for index := range fixture.TestRuns {
+		d.writeTestRunOutcome(fixture.TestRuns[index])
+	}
+}
+
+// writeTestRunOutcome renders one runner subprocess: its measurements,
+// then both captured streams.
+func (d *DetailRenderer) writeTestRunOutcome(run TestRun) {
+	d.write(`<div class="fkey">`, escapeHTML(run.Label()), "</div>")
+
+	d.writeFactTable([][2]string{
+		{"outcome", run.Outcome()},
+		{"duration", formatSeconds(run.Duration.Seconds())},
+	})
+
+	d.writeStream("stdout", run.Stdout, run.Framework+" wrote nothing to stdout")
+	d.writeStream("stderr", run.Stderr, run.Framework+" wrote nothing to stderr")
+}
+
+// writeStream renders one captured stream. An empty-but-captured stream
+// says so in its own words: it is a finding about the framework, not a
+// gap in the report.
+func (d *DetailRenderer) writeStream(name string, stream Artifact, emptyNote string) {
+	switch {
+	case stream.Path == "":
+		return
+	case stream.Missing:
+		d.writeNothingRecorded(name + " was captured to " + stream.Path +
+			", which is no longer on disk")
+	case stream.Bytes == 0:
+		d.write(`<div class="fkey">`, escapeHTML(name), ` <span class="sz">0 B</span></div>`,
+			`<p class="detail none">`, escapeHTML(emptyNote),
+			` — captured to <code>`, escapeHTML(stream.Path), "</code>.</p>")
+	default:
+		d.writeDocument(name+" — "+stream.Name, stream.Bytes, stream.Content)
+	}
 }
 
 // writeChecklistDetail shows what was loaded and which cells will run.

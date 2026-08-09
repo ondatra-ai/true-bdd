@@ -34,12 +34,15 @@ const goBufferMaxCap = 4 * 1024 * 1024
 var ErrInvalidGoTestName = errors.New("invalid go-test TestName shape")
 
 // GoTestRunner runs `go test -json` and parses its event stream into
-// FailingTest values. Stateless; constructed once per process.
-type GoTestRunner struct{}
+// FailingTest values.
+type GoTestRunner struct {
+	artifacts *Artifacts
+}
 
-// NewGoTestRunner builds a GoTestRunner.
-func NewGoTestRunner() *GoTestRunner {
-	return &GoTestRunner{}
+// NewGoTestRunner builds a GoTestRunner writing its captured output
+// through artifacts, which may be nil to capture nothing.
+func NewGoTestRunner(artifacts *Artifacts) *GoTestRunner {
+	return &GoTestRunner{artifacts: artifacts}
 }
 
 // Discover runs `go test -C cfg.Path -json -count=1 ./...` and returns
@@ -50,7 +53,7 @@ func (r *GoTestRunner) Discover(
 	cfg Config,
 	service, layer string,
 ) ([]*FailingTest, error) {
-	stdout, stderr, runErr := r.exec(ctx, "-C", cfg.Path, "-json", "-count=1", "./...")
+	stdout, stderr, runErr := r.exec(ctx, PhaseDiscover, "-C", cfg.Path, "-json", "-count=1", "./...")
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("go test discovery failed under %s: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -88,7 +91,7 @@ func (r *GoTestRunner) RunOne(
 
 	args := buildGoRunOneArgs(failingTest.RunnerConfig.Path, pkg, test)
 
-	stdout, stderr, runErr := r.exec(ctx, args...)
+	stdout, stderr, runErr := r.exec(ctx, PhaseRerun, args...)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("go test rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -105,33 +108,28 @@ func (r *GoTestRunner) RunOne(
 	return passed, output, nil
 }
 
-// exec runs `go test` with the supplied args and captures stdout/stderr.
-// `go test` exits non-zero on test failure — that is not an
-// infrastructure error and is returned to the caller without wrapping.
+// exec runs `go test` with the supplied args and captures
+// stdout/stderr. phase labels the invocation in the log and in the
+// captured output's filename. `go test` exits non-zero on test failure
+// — that is not an infrastructure error.
 func (r *GoTestRunner) exec(
 	ctx context.Context,
+	phase string,
 	args ...string,
 ) (bytes.Buffer, bytes.Buffer, error) {
 	allArgs := append([]string{"test"}, args...)
 	cmd := exec.CommandContext(ctx, "go", allArgs...)
 
 	// Unlike the jest and playwright runners, this one sets no cmd.Dir:
-	// `go test ./...` is resolved from the engine's own working
-	// directory. Logging cmd.Dir here would record an empty string, so
-	// the effective directory is resolved instead.
-	logSpawn("go", allArgs, workingDir())
-
-	var stdout, stderr bytes.Buffer
-
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	runErr := cmd.Run()
-	if runErr != nil {
-		return stdout, stderr, fmt.Errorf("go test exec: %w", runErr)
-	}
-
-	return stdout, stderr, nil
+	// the package selector is threaded through as `-C <dir>` instead, so
+	// the process inherits the engine's own working directory.
+	return runLogged(cmd, spawnMeta{
+		binary:    "go",
+		args:      allArgs,
+		framework: FrameworkGoTest,
+		phase:     phase,
+		artifacts: r.artifacts,
+	})
 }
 
 // buildGoRunOneArgs assembles the `go test` invocation for re-running a
