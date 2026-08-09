@@ -15,11 +15,13 @@ import (
 )
 
 const (
-	// fixtureTimeout caps the CLI run alone. The `--fix` fixtures make
-	// 30+ sequential Claude calls (walk → fix loop → re-walk) and were
-	// previously killed at the 15-minute mark with the re-walk still
-	// pending.
-	fixtureTimeout = 30 * time.Minute
+	// fixtureTimeout caps the CLI run alone. Deliberately tight: past
+	// five minutes a fixture is not slow, it is wrong — a fix prompt
+	// that cannot land, or a cell whose verdict no fix can move. The
+	// engine now bounds its own fix loop and fails on an applier that
+	// wrote nothing, so a run that still overruns this is a bug worth
+	// failing fast on rather than paying thirty minutes to confirm.
+	fixtureTimeout = 5 * time.Minute
 	// judgeTimeout caps the post-run judge call. The judge gets its
 	// own fresh context so it can still produce a verdict when the CLI
 	// run hits fixtureTimeout (otherwise the same expired context would

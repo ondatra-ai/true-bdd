@@ -612,6 +612,8 @@ var (
 	ErrLoadChecklistUserPrompt   = errors.New("failed to load checklist user prompt")
 	ErrChecklistAIEvaluation     = errors.New("AI evaluation failed")
 	ErrFixApplierNoContent       = errors.New("no FILE_START/FILE_END content found")
+	ErrFixNotApplied             = errors.New("fix applier reported the fix was not applied")
+	ErrFixLoopStuck              = errors.New("fix loop is not converging")
 	ErrFixPromptGeneration       = errors.New("fix prompt generation failed")
 	ErrFixPromptRefinement       = errors.New("fix prompt refinement failed")
 	ErrSaveStoryVersion          = errors.New("failed to save story version")
@@ -651,6 +653,48 @@ func ErrFixApplierNoContentFound(resultPath string) error {
 		Code:     "FIX_APPLIER_NO_CONTENT",
 		Message:  "no FILE_START/FILE_END content found for path: " + resultPath,
 		Cause:    ErrFixApplierNoContent,
+	}
+}
+
+// ErrFixNotAppliedByModel reports an applier turn that ran to completion
+// but wrote nothing, self-reported via `applied: false`.
+//
+// This is a hard stop rather than a retry: the summary the model gives
+// is almost always an environmental blocker (a denied write root, a
+// forbidden path) that the identical next attempt would hit again.
+func ErrFixNotAppliedByModel(target, summary string) error {
+	message := "fix applier reported applied: false"
+	if target != "" {
+		message += " for " + target
+	}
+
+	if summary != "" {
+		message += ": " + summary
+	}
+
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_NOT_APPLIED",
+		Message:  message,
+		Cause:    ErrFixNotApplied,
+	}
+}
+
+// ErrFixLoopNotConverging reports a cell whose fixes kept reporting
+// success without ever making the check pass.
+//
+// Without this the walk restarts on every applied fix and never
+// terminates — the only thing stopping it is an external timeout, which
+// a host project does not have.
+func ErrFixLoopNotConverging(applies int) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_LOOP_NOT_CONVERGING",
+		Message: fmt.Sprintf(
+			"gave up after %d applied fix(es) that never made the check pass",
+			applies,
+		),
+		Cause: ErrFixLoopStuck,
 	}
 }
 

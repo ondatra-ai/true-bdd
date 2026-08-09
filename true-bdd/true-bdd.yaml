@@ -53,6 +53,16 @@ paths:
   tmp_glob: "./tmp/**"
   stories_dir: "docs/prd/stories"
   checklists_dir: "./true-bdd/checklists"
+  # Roots `build tests --fix` may author into. Its applier is told to
+  # write tests here, and ExecutionMode is what the crush guard and
+  # codex sandbox enforce, so this list must cover every root the
+  # build-tests fix-applier prompt names.
+  #
+  # `build code --fix` needs no equivalent key: it takes its write roots
+  # from the service paths declared in architecture.yaml.
+  test_write_globs:
+    - "./tests/**"
+    - "./services/**"
 
 documents:
   prd: "./docs/prd/prd.yaml"

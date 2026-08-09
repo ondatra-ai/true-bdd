@@ -185,7 +185,9 @@ func (g *FixPromptGenerator) executeAIGeneration(
 		return "", pkgerrors.ErrResolveModelTierFailed("fix generation", err)
 	}
 
-	response, err := g.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
+	response, err := g.aiClient.ExecutePromptWithSystem(
+		ctx, provider.RoleFix, systemPrompt, userPrompt, model, mode,
+	)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}

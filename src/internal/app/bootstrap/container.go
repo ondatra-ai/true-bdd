@@ -147,6 +147,10 @@ func NewContainer() (*Container, error) {
 		fixApplier:         "templates.prompts.build_tests_fix_applier",
 	})
 	buildTestsTrip.fixApplier.UseEditMode()
+	// build tests authors test files outside tmp. Unlike build code it
+	// has no architecture.yaml to read roots from — its fixtures ship
+	// none — so the roots are host config.
+	buildTestsTrip.fixApplier.UseWriteRoots(testWriteGlobs(cfg))
 
 	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.build_code_checklist_system",
@@ -206,6 +210,19 @@ func newAIRouter(cfg *config.ViperConfig, runDir *fs.RunDirectory) (*ai.Router, 
 	}
 
 	return ai.NewRouter(workDir, runDir.GetTmpOutPath()), models, nil
+}
+
+// testWriteGlobs resolves the roots `build tests --fix` may author
+// into. The fallback matches the roots the build-tests fix-applier
+// prompt names, so a host config that omits the key still gets an
+// applier whose permissions agree with its instructions.
+func testWriteGlobs(cfg *config.ViperConfig) []string {
+	globs := cfg.GetStringSlice("paths.test_write_globs")
+	if len(globs) > 0 {
+		return globs
+	}
+
+	return []string{"./tests/**", "./services/**"}
 }
 
 // newTestRunnerDispatcher wires the three framework-specific runners

@@ -233,7 +233,10 @@ func buildSpecEngine[I any](
 		UI:      spec.UI,
 		FixMode: spec.Fix,
 	}
-	walker := &engine.SequentialWalker[I, *renderedPrompt]{Cell: cell}
+	// Same budget on both loops: max_apply_attempts caps the fixes one
+	// walk may apply as well as the outer re-walks, so a cell that never
+	// converges fails with a named error instead of spinning.
+	walker := &engine.SequentialWalker[I, *renderedPrompt]{Cell: cell, MaxFixes: maxAttempts}
 
 	return engine.New(
 		renderPrompt, walker,

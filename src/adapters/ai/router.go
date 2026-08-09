@@ -41,9 +41,12 @@ func NewRouter(workDir, tmpDir string) *Router {
 }
 
 // ExecutePromptWithSystem satisfies ports.AIPort. The ModelRef decides
-// both which binary runs and which model it runs.
+// both which binary runs and which model it runs; the Role says which
+// of the three checklist turns is being run, which is what makes the
+// emitted telemetry attributable to a stage of the walk.
 func (r *Router) ExecutePromptWithSystem(
 	ctx context.Context,
+	role provider.Role,
 	systemPrompt string,
 	userPrompt string,
 	model provider.ModelRef,
@@ -54,7 +57,13 @@ func (r *Router) ExecutePromptWithSystem(
 		return "", pkgerrors.ErrProviderNotRegisteredForCLI(string(model.CLI))
 	}
 
+	turn := r.turns.Add(1)
+	label := fmt.Sprintf("%s-turn%03d", model.CLI, turn)
+
 	slog.Info("Dispatching AI turn",
+		"turn", turn,
+		"label", label,
+		"role", string(role),
 		"cli", string(model.CLI),
 		"model", model.Model,
 		"system_length", len(systemPrompt),
@@ -64,6 +73,8 @@ func (r *Router) ExecutePromptWithSystem(
 	timeoutCtx, cancel := context.WithTimeout(ctx, aiPromptTimeout)
 	defer cancel()
 
+	started := time.Now()
+
 	response, err := target.Execute(timeoutCtx, Request{
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
@@ -71,16 +82,35 @@ func (r *Router) ExecutePromptWithSystem(
 		Mode:         mode,
 		WorkDir:      r.workDir,
 		TmpDir:       r.tmpDir,
-		Label:        fmt.Sprintf("%s-turn%03d", model.CLI, r.turns.Add(1)),
+		Label:        label,
 	})
+
+	// Logged on both paths: a turn that burned twenty minutes and then
+	// failed is exactly the one worth seeing in a timing report.
+	elapsed := time.Since(started)
+
 	if err != nil {
+		slog.Info("AI turn failed",
+			"turn", turn, "label", label, "role", string(role),
+			"cli", string(model.CLI), "model", model.Model,
+			"duration_ms", elapsed.Milliseconds(), "error", err.Error(),
+		)
+
 		// Providers already return pkgerrors-wrapped failures naming
 		// the cli; wrapping again here would only add noise.
 		//nolint:wrapcheck // already wrapped at the provider boundary
 		return response, err
 	}
 
-	slog.Info("AI turn returned", "cli", string(model.CLI), "length", len(response))
+	slog.Info("AI turn returned",
+		"turn", turn,
+		"label", label,
+		"role", string(role),
+		"cli", string(model.CLI),
+		"model", model.Model,
+		"duration_ms", elapsed.Milliseconds(),
+		"length", len(response),
+	)
 
 	return response, nil
 }

@@ -137,3 +137,48 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 		},
 	}
 }
+
+// GetSourceEditMode extends GetEditMode with write access to project
+// roots outside tmp — the production or test trees a `build` command's
+// applier is supposed to author into.
+//
+// Without it those turns are told by their system prompt to write under
+// `services/*`, while the only enforced write root is the tmp glob; the
+// guard then denies every write and the applier reports back that it
+// could not apply. Permissions live here rather than in the prompt
+// because ExecutionMode is what the crush guard and codex sandbox are
+// actually derived from.
+func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
+	mode := f.GetEditMode()
+
+	for _, root := range roots {
+		glob := sourceRootGlob(root)
+		if glob == "" {
+			continue
+		}
+
+		mode.AllowedTools = append(mode.AllowedTools,
+			"Write("+glob+")",
+			"Edit("+glob+")",
+			"MultiEdit("+glob+")",
+		)
+	}
+
+	return mode
+}
+
+// sourceRootGlob turns a declared root (`services/frontend`, or an
+// already-globbed `./tests/**`) into a recursive write glob. Roots come
+// from architecture.yaml and host config, so both spellings show up.
+func sourceRootGlob(root string) string {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return ""
+	}
+
+	if strings.ContainsAny(root, "*?[") {
+		return root
+	}
+
+	return strings.TrimSuffix(root, "/") + "/**"
+}

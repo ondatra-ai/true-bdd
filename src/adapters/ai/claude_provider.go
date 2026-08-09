@@ -220,11 +220,49 @@ func (c *ClaudeProvider) logUnknownBlock(block any) {
 func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bool, error) {
 	slog.Debug("ResultMessage received", "is_error", msg.IsError, "result", msg.Result)
 
+	logTurnUsage(msg)
+
 	if msg.IsError {
 		return false, fmt.Errorf("claude returned error: %w", pkgerrors.ErrClaudeError(fmt.Sprintf("%v", msg.Result)))
 	}
 
 	return true, nil
+}
+
+// logTurnUsage emits the cost and token counters the CLI reports for a
+// finished turn. Without this the numbers are parsed off the wire and
+// dropped, leaving no way to attribute spend to a checklist role.
+//
+// Emitted as its own record rather than merged into the router's "AI
+// turn returned" line because only the claude provider sees a usage
+// report at all — crush and codex return bare text.
+func logTurnUsage(msg *claudecode.ResultMessage) {
+	// Cache reads and cache writes are priced differently from ordinary
+	// input, so each counter is kept separate rather than summed.
+	tokenKeys := []string{
+		"input_tokens",
+		"output_tokens",
+		"cache_read_input_tokens",
+		"cache_creation_input_tokens",
+	}
+
+	fields := []any{"cli", "claude"}
+
+	if msg.TotalCostUSD != nil {
+		fields = append(fields, "cost_usd", *msg.TotalCostUSD)
+	}
+
+	if msg.Usage != nil {
+		for _, key := range tokenKeys {
+			if count, ok := (*msg.Usage)[key]; ok {
+				fields = append(fields, key, count)
+			}
+		}
+	}
+
+	// Nothing beyond the cli tag means the CLI reported no usage block;
+	// a record saying so beats a silently missing one in a cost report.
+	slog.Info("AI turn usage", fields...)
 }
 
 func (c *ClaudeProvider) handleExecutionResult(resultStr string, err error) (string, error) {

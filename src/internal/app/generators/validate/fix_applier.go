@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
@@ -52,6 +54,10 @@ type FixApplier struct {
 	// UseEditMode() for handlers that mutate the scratch file in
 	// place via the Edit tool (us apply's F: prompts).
 	useEditMode bool
+	// writeRoots are project trees outside tmp this applier may write,
+	// for the `build` commands whose whole job is authoring source. Set
+	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
+	writeRoots []string
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -89,6 +95,18 @@ func NewFixApplierWithPaths(
 // Claude to edit the scratch registry directly.
 func (a *FixApplier) UseEditMode() {
 	a.useEditMode = true
+}
+
+// UseWriteRoots grants this applier write access to project trees
+// outside tmp — the `services/*` production roots for build code, the
+// test roots for build tests.
+//
+// These turns are instructed by their system prompt to author files
+// there, and ExecutionMode is what the crush guard and codex sandbox
+// enforce, so without this the instruction and the permission disagree
+// and every write is denied.
+func (a *FixApplier) UseWriteRoots(roots []string) {
+	a.writeRoots = roots
 }
 
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
@@ -134,7 +152,9 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
 	}
 
-	response, err := a.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
+	response, err := a.aiClient.ExecutePromptWithSystem(
+		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode,
+	)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
@@ -154,15 +174,76 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		slog.Warn("Failed to save result file", "path", resultPath, "error", writeErr)
 	}
 
+	// A turn that ran to completion is not the same as a fix that
+	// landed: the applier can report `applied: false` when the write it
+	// was told to make is impossible. Treating that as success is what
+	// let a blocked applier spin the fix loop until an external timeout.
+	appliedErr := checkFixApplied(content)
+	if appliedErr != nil {
+		slog.Warn("Fix was NOT applied",
+			"subjectID", params.SubjectID,
+			"iteration", params.Iteration,
+			"error", appliedErr,
+		)
+
+		return "", appliedErr
+	}
+
 	slog.Info("Fix applied successfully", "subjectID", params.SubjectID)
 
 	return content, nil
 }
 
-// selectMode returns the Claude execution mode for this Apply call —
-// EditMode (Edit/MultiEdit allowed on scratch) when the applier was
-// configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
+// applyResultYAML is the confirmation block the fix-applier templates
+// ask for. Applied is a POINTER so an absent field is distinguishable
+// from an explicit false: the us create/refine applier emits a story
+// body with no `applied:` key at all, and must keep succeeding.
+type applyResultYAML struct {
+	Applied *bool  `yaml:"applied"`
+	Target  string `yaml:"target"`
+	Summary string `yaml:"summary"`
+}
+
+// checkFixApplied returns an error when the applier explicitly reported
+// that it wrote nothing. Content it cannot parse is passed through:
+// several appliers return a document body rather than a confirmation
+// block, and those are not this function's business.
+func checkFixApplied(content string) error {
+	result, ok := parseApplyResult(content)
+
+	// Three ways to have no objection: the content is not a
+	// confirmation block at all, the block omits `applied:`, or it
+	// reports success. Only an explicit false is a refusal to act on.
+	if !ok || result.Applied == nil || *result.Applied {
+		return nil
+	}
+
+	return pkgerrors.ErrFixNotAppliedByModel(result.Target, result.Summary)
+}
+
+// parseApplyResult decodes an applier confirmation block. Content that
+// is not one — a story body from us create/refine, or prose — reports
+// ok=false rather than an error, because not being a confirmation block
+// is normal for several of the appliers sharing this code path.
+func parseApplyResult(content string) (applyResultYAML, bool) {
+	var result applyResultYAML
+
+	if yaml.Unmarshal([]byte(stripMarkdownFences(content)), &result) != nil {
+		return applyResultYAML{}, false
+	}
+
+	return result, true
+}
+
+// selectMode returns the execution mode for this Apply call —
+// SourceEditMode when project write roots were declared, EditMode
+// (Edit/MultiEdit allowed on scratch) when the applier was configured
+// via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
+	if len(a.writeRoots) > 0 {
+		return a.modeFactory.GetSourceEditMode(a.writeRoots)
+	}
+
 	if a.useEditMode {
 		return a.modeFactory.GetEditMode()
 	}

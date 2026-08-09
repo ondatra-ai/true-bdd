@@ -157,7 +157,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		return checklist.ValidationResult{}, pkgerrors.ErrResolveModelTierFailed("validation", err)
 	}
 
-	response, err := e.aiClient.ExecutePromptWithSystem(ctx, systemPrompt, userPrompt, model, mode)
+	response, err := e.aiClient.ExecutePromptWithSystem(
+		ctx, provider.RolePrompt, systemPrompt, userPrompt, model, mode,
+	)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}

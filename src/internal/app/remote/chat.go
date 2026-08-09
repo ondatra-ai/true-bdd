@@ -279,7 +279,7 @@ func claudeChatTurn(ctx context.Context, payload chatPayload) chatResult {
 	}
 
 	raw, execErr := client.ExecutePromptWithSystem(
-		ctx, chatSystemPrompt(payload), lastUserMessage(payload.Conversation), model, mode,
+		ctx, provider.RolePrompt, chatSystemPrompt(payload), lastUserMessage(payload.Conversation), model, mode,
 	)
 	if execErr != nil {
 		if ctx.Err() != nil {
