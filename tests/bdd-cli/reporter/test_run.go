@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+const (
+	// phaseDiscover is the engine's label for the opening whole-suite run
+	// (testrunner.PhaseDiscover). Everything else is a fix-loop rerun of
+	// a single test, which happens long after the discovery slice closed.
+	phaseDiscover = "discover"
+	// phaseRerun is the engine's label for one test re-executed after a
+	// fix was applied (testrunner.PhaseRerun).
+	phaseRerun = "rerun"
+)
+
 // TestRun is one framework-runner subprocess as the engine recorded it
 // after the fact: how it ended, how long it took, and the streams it
 // produced.
@@ -81,6 +91,13 @@ func newTestRun(record *LogRecord, fixtureDir string) TestRun {
 	}
 
 	return run
+}
+
+// IsDiscovery reports whether the run is the opening whole-suite
+// invocation, which is the only kind that falls inside the timeline's
+// test-run slice.
+func (t TestRun) IsDiscovery() bool {
+	return t.Phase == phaseDiscover
 }
 
 // Label names the run for a section heading: the framework plus which

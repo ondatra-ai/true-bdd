@@ -264,10 +264,22 @@ func postRunPhase(fixture *Fixture, seconds float64) Phase {
 // wall clock, saying how much of the slice it accounts for is the
 // difference between a span the reader has to trust and one they can
 // check.
+//
+// Only discovery-phase invocations count. A `--fix` run reruns the
+// failing test after every applied fix, and those exit records sit in
+// the same list — folding them in would claim more measured time than
+// the slice contains, which is worse than claiming none.
 func discoveryBound(fixture *Fixture) string {
 	measured := time.Duration(0)
+	count := 0
+
 	for _, run := range fixture.TestRuns {
+		if !run.IsDiscovery() {
+			continue
+		}
+
 		measured += run.Duration
+		count++
 	}
 
 	if measured == 0 {
@@ -276,5 +288,5 @@ func discoveryBound(fixture *Fixture) string {
 
 	return "bounded by the next engine log record, of which " +
 		formatSeconds(measured.Seconds()) + " is " +
-		itoa(len(fixture.TestRuns)) + " measured runner invocation(s)"
+		itoa(count) + " measured runner invocation(s)"
 }

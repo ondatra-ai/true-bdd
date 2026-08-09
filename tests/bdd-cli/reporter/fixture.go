@@ -21,6 +21,11 @@ func discoveryEndMarkers() []string {
 	return []string{"Loading full checklist", "Loaded prompts"}
 }
 
+// frameworkPlaywright is the engine's name for the playwright runner
+// (testrunner.FrameworkPlaywright), as it reaches the report through
+// the exit record and through the prompts the run left behind.
+const frameworkPlaywright = "playwright"
+
 // startupMarker is the synthetic subject the playwright runner emits
 // when the suite could not start at all
 // (playwright_runner.go: playwrightStartupMarker).
@@ -200,8 +205,8 @@ func findDiscovery(dir string, log *EngineLog, windowStart, windowEnd time.Time)
 		}
 
 		discovery.Framework = "runner"
-		if strings.Contains(strings.ToLower(text), "playwright") {
-			discovery.Framework = "playwright"
+		if strings.Contains(strings.ToLower(text), frameworkPlaywright) {
+			discovery.Framework = frameworkPlaywright
 		}
 
 		discovery.Outcome = startupOutcome
