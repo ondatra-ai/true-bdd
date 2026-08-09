@@ -103,7 +103,7 @@ func TestEffectiveTierResolutionOrder(t *testing.T) {
 		},
 		{
 			// Nothing anywhere: every tier is empty, which the registry
-			// reads as engine.default_model.
+			// reads as that role's engine-level default.
 			name:      "no checklist block and no prompt override",
 			wantModel: "", wantFix: "", wantApply: "",
 		},

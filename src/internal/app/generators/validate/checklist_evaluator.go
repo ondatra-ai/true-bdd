@@ -151,8 +151,8 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	mode := e.modeFactory.GetThinkMode()
 
 	// Tier resolution: this prompt's `model:`, else the checklist's
-	// `prompt_model:`, else engine.default_model.
-	model, err := e.models.ResolveName(promptCtx.EffectiveModelTier())
+	// `prompt_model:`, else engine.default_prompt_model.
+	model, err := e.models.ResolveRole(provider.RolePrompt, promptCtx.EffectiveModelTier())
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrResolveModelTierFailed("validation", err)
 	}

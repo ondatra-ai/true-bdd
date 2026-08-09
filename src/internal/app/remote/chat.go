@@ -26,7 +26,9 @@ import (
 
 // chatRouter builds the provider router and resolves the engine's
 // default model tier for a chat turn. Unlike the checklist commands
-// this path has no container, so it reads the host config directly.
+// this path has no container, so it reads the host config directly. A
+// chat turn is validation-shaped — it reasons and answers rather than
+// applying a fix — so it runs on the prompt role's default.
 func chatRouter() (*ai.Router, provider.ModelRef, error) {
 	cfg, err := config.NewViperConfig()
 	if err != nil {
@@ -38,7 +40,7 @@ func chatRouter() (*ai.Router, provider.ModelRef, error) {
 		return nil, provider.ModelRef{}, err
 	}
 
-	model, err := models.Resolve(models.DefaultTier())
+	model, err := models.ResolveRole(provider.RolePrompt, "")
 	if err != nil {
 		return nil, provider.ModelRef{}, err
 	}

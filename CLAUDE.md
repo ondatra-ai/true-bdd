@@ -37,9 +37,9 @@ Checklist resolution is by convention via `paths.checklists_dir` in the host's `
 
 ## Model Tiers and Providers
 
-The engine can drive three agent CLIs — `claude`, `crush`, `codex` — and picks between them per checklist role. `engine.models` in `true-bdd.yaml` binds each of three tiers (`xhigh`, `high`, `coder`) to a `"<cli>:<model>"` pair, and `engine.default_model` names the fallback tier. The value splits on the FIRST colon only.
+The engine can drive three agent CLIs — `claude`, `crush`, `codex` — and picks between them per checklist role. `engine.models` in `true-bdd.yaml` binds each of three tiers (`xhigh`, `high`, `coder`) to a `"<cli>:<model>"` pair, and `engine.default_prompt_model` / `default_fix_model` / `default_apply_model` name the fallback tier for each of the three AI roles. The value splits on the FIRST colon only.
 
-Each checklist cell runs up to three AI turns, each with its own tier knob in the checklist's top-level `engine:` block — `prompt_model` (validation), `fix_model` (failure → fix prompt), `apply_model` (writes the file) — and any single prompt overrides them with `model:` / `fix_model:` / `apply_model:`. Resolution is **prompt → checklist → `engine.default_model`**; anything unresolvable is a startup error, never a silent substitution.
+Each checklist cell runs up to three AI turns, each with its own tier knob in the checklist's top-level `engine:` block — `prompt_model` (validation), `fix_model` (failure → fix prompt), `apply_model` (writes the file) — and any single prompt overrides them with `model:` / `fix_model:` / `apply_model:`. Resolution is **prompt → checklist → `engine.default_<role>_model`** — the bottom of the chain is per-role, so a checklist that names nothing still gets `coder` for the apply turn. Anything unresolvable is a startup error, never a silent substitution.
 
 Key implementation facts:
 

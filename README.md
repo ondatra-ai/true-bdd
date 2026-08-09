@@ -146,7 +146,8 @@ needs: **validating** a `Q:` wants strong reasoning, turning a failure
 into a **fix prompt** wants a mid model, and **writing the fix** wants a
 cheap high-context coder. The best model for each may live behind a
 different CLI, so the engine names three tiers and binds each to a
-`"<cli>:<model>"` pair:
+`"<cli>:<model>"` pair — then gives each of the three roles its own
+default, because one fallback tier cannot serve turns this different:
 
 ```yaml
 engine:
@@ -154,7 +155,9 @@ engine:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-4-8"
     coder: "crush:zhipu-coding/glm-5.2"
-  default_model: high
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: coder
 ```
 
 The value splits on the **first** colon, so hyphenated and
@@ -178,10 +181,13 @@ sections:
         apply_model: coder  # optional
 ```
 
-Resolution runs **prompt → checklist → `engine.default_model`**. A tier
-name that is not configured, an unknown CLI, and a default naming an
-unconfigured tier are all startup errors — the engine never silently
-substitutes a different model than the checklist asked for.
+Resolution runs **prompt → checklist → the role's engine-level
+default**, so a checklist that names nothing still gets `coder` for the
+turn that writes files and `high` for the one that validates. A tier
+name that is not configured, an unknown CLI, a missing role default, and
+a default naming an unconfigured tier are all startup errors — the
+engine never silently substitutes a different model than the checklist
+asked for.
 
 **Permissions across CLIs.** Tool permissions are declared once, as the
 engine's execution mode, and projected onto each CLI:

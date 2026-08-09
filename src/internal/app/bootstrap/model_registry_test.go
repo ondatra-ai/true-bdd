@@ -41,8 +41,12 @@ func TestSeedConfigProducesAValidRegistry(t *testing.T) {
 		}
 	}
 
-	_, err = models.Resolve(models.DefaultTier())
-	if err != nil {
-		t.Errorf("engine.default_model does not resolve: %v", err)
+	// Every role needs its own default configured — a missing key is a
+	// startup error, so a seed that drops one breaks every command.
+	for _, role := range provider.Roles() {
+		_, err = models.Resolve(models.DefaultTier(role))
+		if err != nil {
+			t.Errorf("%s does not resolve: %v", role.ConfigKey(), err)
+		}
 	}
 }

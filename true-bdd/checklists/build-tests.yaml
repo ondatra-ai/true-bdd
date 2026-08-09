@@ -11,9 +11,10 @@ version: "1.0"
 last_updated: "2026-05-13"
 
 # Model tier per AI role. Names refer to `engine.models` in
-# true-bdd.yaml, never to a model id. Omit a role to inherit
-# `engine.default_model`; an individual prompt can override any of
-# these with `model:` / `fix_model:` / `apply_model:`.
+# true-bdd.yaml, never to a model id. Omit a role to inherit that
+# role's engine-level default (`engine.default_prompt_model` /
+# `default_fix_model` / `default_apply_model`); an individual prompt
+# can override any of these with `model:` / `fix_model:` / `apply_model:`.
 engine:
   # Writing the missing test file is a writing job, not a reasoning one.
   apply_model: coder

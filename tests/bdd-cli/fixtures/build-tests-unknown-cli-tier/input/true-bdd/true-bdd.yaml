@@ -13,8 +13,11 @@ engine:
     # engine must refuse to start rather than quietly running
     # this tier on some other model.
     coder: "aider:whatever"
-  # Tier used when neither a prompt nor its checklist names one.
-  default_model: high
+  # Tier per AI role, used when neither a prompt nor its checklist names
+  # one. A checklist overrides any of these in its own `engine:` block.
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: coder
 
 epics:
   path: "./docs/prd/epics"

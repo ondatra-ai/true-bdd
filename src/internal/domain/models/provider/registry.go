@@ -10,22 +10,23 @@ import (
 var (
 	ErrNoModelsConfigured = errors.New("engine.models is empty: configure at least one tier")
 	ErrTierNotConfigured  = errors.New("model tier is not configured under engine.models")
-	ErrDefaultTierMissing = errors.New("engine.default_model names a tier that engine.models does not configure")
+	ErrDefaultTierMissing = errors.New("default model tier names a tier that engine.models does not configure")
 )
 
 // Registry resolves a Tier to the ModelRef that runs it.
 //
-// Built once at startup from `engine.models` + `engine.default_model`
-// and validated eagerly, so a typo'd tier fails the command up front
-// rather than silently downgrading a turn halfway through a walk.
+// Built once at startup from `engine.models` plus one default tier per
+// Role, and validated eagerly, so a typo'd tier fails the command up
+// front rather than silently downgrading a turn halfway through a walk.
 type Registry struct {
-	byTier      map[Tier]ModelRef
-	defaultTier Tier
+	byTier       map[Tier]ModelRef
+	defaultTiers map[Role]Tier
 }
 
 // NewRegistry validates the raw `engine.models` map (tier name →
-// `"<cli>:<model>"`) together with the configured default tier.
-func NewRegistry(rawModels map[string]string, rawDefault string) (*Registry, error) {
+// `"<cli>:<model>"`) together with each role's configured default tier
+// (role → tier name, from `engine.default_<role>_model`).
+func NewRegistry(rawModels map[string]string, rawDefaults map[Role]string) (*Registry, error) {
 	if len(rawModels) == 0 {
 		return nil, ErrNoModelsConfigured
 	}
@@ -46,31 +47,47 @@ func NewRegistry(rawModels map[string]string, rawDefault string) (*Registry, err
 		byTier[tier] = ref
 	}
 
-	defaultTier, err := ParseTier(rawDefault)
+	defaultTiers, err := parseDefaultTiers(byTier, rawDefaults)
 	if err != nil {
-		return nil, fmt.Errorf("engine.default_model: %w", err)
+		return nil, err
 	}
 
-	if _, ok := byTier[defaultTier]; !ok {
-		return nil, fmt.Errorf("%w: %q", ErrDefaultTierMissing, rawDefault)
+	return &Registry{byTier: byTier, defaultTiers: defaultTiers}, nil
+}
+
+// parseDefaultTiers validates every role's default in Roles() order, so
+// a config with several bad keys always reports the same one first.
+func parseDefaultTiers(byTier map[Tier]ModelRef, rawDefaults map[Role]string) (map[Role]Tier, error) {
+	defaultTiers := make(map[Role]Tier, len(Roles()))
+
+	for _, role := range Roles() {
+		raw := rawDefaults[role]
+
+		tier, err := ParseTier(raw)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", role.ConfigKey(), err)
+		}
+
+		if _, ok := byTier[tier]; !ok {
+			return nil, fmt.Errorf("%s: %w: %q", role.ConfigKey(), ErrDefaultTierMissing, raw)
+		}
+
+		defaultTiers[role] = tier
 	}
 
-	return &Registry{byTier: byTier, defaultTier: defaultTier}, nil
+	return defaultTiers, nil
 }
 
-// DefaultTier is the tier used when neither a prompt nor its checklist
-// names one.
-func (r *Registry) DefaultTier() Tier {
-	return r.defaultTier
+// DefaultTier is the tier a role falls back to when neither a prompt nor
+// its checklist names one.
+func (r *Registry) DefaultTier(role Role) Tier {
+	return r.defaultTiers[role]
 }
 
-// Resolve maps a tier to its ModelRef. The empty tier means "whatever
-// engine.default_model says".
+// Resolve maps a tier to its ModelRef. The tier must be a real one —
+// "the checklist said nothing" is ResolveRole's business, because which
+// default applies depends on the role asking.
 func (r *Registry) Resolve(tier Tier) (ModelRef, error) {
-	if tier == "" {
-		tier = r.defaultTier
-	}
-
 	ref, ok := r.byTier[tier]
 	if !ok {
 		return ModelRef{}, fmt.Errorf("%w: %q (configured: %s)",
@@ -80,12 +97,13 @@ func (r *Registry) Resolve(tier Tier) (ModelRef, error) {
 	return ref, nil
 }
 
-// ResolveName validates and resolves a raw tier name straight from
-// YAML — a checklist's `prompt_model:` or a prompt's `model:`. The
-// empty string means the default tier.
-func (r *Registry) ResolveName(raw string) (ModelRef, error) {
+// ResolveRole validates and resolves a raw tier name straight from
+// YAML — a checklist's `prompt_model:` or a prompt's `model:` — for the
+// turn that is about to run. The empty string means the role's default,
+// i.e. `engine.default_<role>_model`.
+func (r *Registry) ResolveRole(role Role, raw string) (ModelRef, error) {
 	if strings.TrimSpace(raw) == "" {
-		return r.Resolve("")
+		return r.Resolve(r.DefaultTier(role))
 	}
 
 	tier, err := ParseTier(raw)

@@ -33,7 +33,7 @@ type ApplyParams struct {
 	Iteration int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
 	// evaluator while the prompt was in scope and carried here on the
-	// failed check; empty means engine.default_model.
+	// failed check; empty means engine.default_apply_model.
 	ModelTier string
 }
 
@@ -129,7 +129,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 
 	// This is the turn that writes files, so it is the one a checklist
 	// typically points at the `coder` tier.
-	model, err := a.models.ResolveName(params.ModelTier)
+	model, err := a.models.ResolveRole(provider.RoleApply, params.ModelTier)
 	if err != nil {
 		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
 	}

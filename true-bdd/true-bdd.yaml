@@ -10,8 +10,13 @@ engine:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-4-8"
     coder: "crush:zhipu-coding/glm-5.2"
-  # Tier used when neither a prompt nor its checklist names one.
-  default_model: high
+  # Tier per AI role, used when neither a prompt nor its checklist names
+  # one. A checklist overrides any of these in its own `engine:` block.
+  default_prompt_model: high
+  default_fix_model: high
+  # The apply turn is the one that writes files — that is exactly what
+  # the cheap, high-context `coder` tier is for.
+  default_apply_model: coder
 
 epics:
   path: "./docs/prd/epics"

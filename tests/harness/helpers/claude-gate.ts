@@ -47,7 +47,9 @@ export function gateFilePath(): string {
  * (`<repo>/true-bdd/true-bdd.yaml`).
  *
  * The config declares tiers as `engine.models.<tier>: "<cli>:<model>"`
- * and picks one with `engine.default_model`. This gate probes the
+ * and picks one per AI role. This gate's probe is a reasoning turn, so
+ * it reads `engine.default_prompt_model` — the validation role's
+ * default — and ignores the fix/apply defaults. The gate probes the
  * `claude` CLI specifically, so a default tier bound to another CLI
  * (crush / codex) has no bearing on it — in that case fall back to the
  * highest-priority claude-backed tier, and only then to DEFAULT_MODEL.
@@ -58,7 +60,7 @@ export function engineModel(): string {
     const raw = fs.readFileSync(configPath, "utf8");
     const tiers = parseModelTiers(raw);
 
-    const defaultTier = raw.match(/^\s*default_model:\s*"?([^"\n#]+)"?\s*$/m)?.[1].trim();
+    const defaultTier = raw.match(/^\s*default_prompt_model:\s*"?([^"\n#]+)"?\s*$/m)?.[1].trim();
     const preferred = defaultTier ? tiers.get(defaultTier) : undefined;
 
     if (preferred?.startsWith("claude:")) {

@@ -21,8 +21,10 @@ type ConfigBlock struct {
 // true-bdd.yaml (xhigh / high / coder), never a model id — which model
 // a tier means is the host project's decision, not the checklist's.
 //
-// An empty field falls through to `engine.default_model`. An
-// individual prompt overrides any of these; see Prompt.
+// An empty field falls through to that role's engine-level default —
+// `engine.default_prompt_model`, `engine.default_fix_model`, or
+// `engine.default_apply_model`. An individual prompt overrides any of
+// these; see Prompt.
 type EngineBlock struct {
 	// PromptModel runs the validation turn that answers `Q:`.
 	PromptModel string `yaml:"prompt_model,omitempty"`

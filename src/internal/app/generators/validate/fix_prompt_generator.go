@@ -180,7 +180,7 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	// The tier travels on the failed check — the evaluator resolved it
 	// while the prompt was still in scope.
-	model, err := g.models.ResolveName(params.FailedCheck.FixModelTier)
+	model, err := g.models.ResolveRole(provider.RoleFix, params.FailedCheck.FixModelTier)
 	if err != nil {
 		return "", pkgerrors.ErrResolveModelTierFailed("fix generation", err)
 	}

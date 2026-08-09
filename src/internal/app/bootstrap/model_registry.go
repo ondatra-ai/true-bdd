@@ -6,14 +6,17 @@ import (
 )
 
 // NewModelRegistry builds the tier→model table from `engine.models`
-// and `engine.default_model`.
+// plus one default tier per role — `engine.default_prompt_model`,
+// `engine.default_fix_model`, `engine.default_apply_model`.
 //
 // Validation is eager on purpose: a typo'd tier, an unknown cli, or a
 // default naming an unconfigured tier fails the command here rather
 // than silently substituting some other model halfway through a walk.
 func NewModelRegistry(cfg *config.ViperConfig) (*provider.Registry, error) {
-	return provider.NewRegistry(
-		cfg.GetStringMapString("engine.models"),
-		cfg.GetString("engine.default_model"),
-	)
+	defaults := make(map[provider.Role]string, len(provider.Roles()))
+	for _, role := range provider.Roles() {
+		defaults[role] = cfg.GetString(role.ConfigKey())
+	}
+
+	return provider.NewRegistry(cfg.GetStringMapString("engine.models"), defaults)
 }

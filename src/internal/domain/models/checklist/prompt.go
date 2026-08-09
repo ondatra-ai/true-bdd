@@ -100,7 +100,7 @@ func (p *PromptWithContext) GetEffectiveDocs() []string {
 
 // EffectiveModelTier returns the tier for the validation turn: the
 // prompt's own `model:`, else the checklist's `prompt_model:`, else ""
-// meaning `engine.default_model`.
+// meaning `engine.default_prompt_model`.
 func (p *PromptWithContext) EffectiveModelTier() string {
 	if p.Prompt.Model != "" {
 		return p.Prompt.Model
@@ -114,7 +114,7 @@ func (p *PromptWithContext) EffectiveModelTier() string {
 }
 
 // EffectiveFixTier returns the tier for the fix-generation turn,
-// resolved prompt → checklist → default.
+// resolved prompt → checklist → `engine.default_fix_model`.
 func (p *PromptWithContext) EffectiveFixTier() string {
 	if p.Prompt.FixModel != "" {
 		return p.Prompt.FixModel
@@ -128,7 +128,7 @@ func (p *PromptWithContext) EffectiveFixTier() string {
 }
 
 // EffectiveApplyTier returns the tier for the fix-application turn,
-// resolved prompt → checklist → default.
+// resolved prompt → checklist → `engine.default_apply_model`.
 func (p *PromptWithContext) EffectiveApplyTier() string {
 	if p.Prompt.ApplyModel != "" {
 		return p.Prompt.ApplyModel
