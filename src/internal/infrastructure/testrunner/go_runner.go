@@ -115,6 +115,8 @@ func (r *GoTestRunner) exec(
 	allArgs := append([]string{"test"}, args...)
 	cmd := exec.CommandContext(ctx, "go", allArgs...)
 
+	logSpawn("go", allArgs, cmd.Dir)
+
 	var stdout, stderr bytes.Buffer
 
 	cmd.Stdout = &stdout
