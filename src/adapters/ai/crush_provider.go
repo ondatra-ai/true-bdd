@@ -119,8 +119,18 @@ func buildCrushArgs(req Request) []string {
 // crushConfig is the subset of crush's config schema the engine
 // generates. The model is deliberately absent — see CrushProvider.
 type crushConfig struct {
+	Options     crushOptions     `json:"options"`
 	Permissions crushPermissions `json:"permissions"`
 	Hooks       crushHooks       `json:"hooks"`
+}
+
+type crushOptions struct {
+	// DataDirectory is where crush keeps per-project state (its SQLite
+	// database). It defaults to `.crush` under the working directory,
+	// which would grow inside the host project on every turn; pinning it
+	// under the run's TmpDir keeps the engine from writing anything into
+	// the host repo outside its declared write roots.
+	DataDirectory string `json:"data_directory"`
 }
 
 type crushPermissions struct {
@@ -160,6 +170,7 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 	guardCommand := crushGuardCommand(executable)
 
 	config := crushConfig{
+		Options:     crushOptions{DataDirectory: crushDataDir(req, configDir)},
 		Permissions: crushPermissions{AllowedTools: crushAllowedTools(req.Mode)},
 		Hooks: crushHooks{PreToolUse: []crushHook{{
 			Name:    "true-bdd-guard",
@@ -181,6 +192,21 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 	}
 
 	return configDir, nil
+}
+
+// crushDataDir resolves the per-turn crush data directory. TmpDir is
+// typically relative (`./tmp/<run-id>` from paths.tmp_dir) and crush
+// resolves a relative data_directory against its own working directory,
+// which is the host project root — the same anchor. Absolutizing anyway
+// removes the coupling, so the value stays correct if either side's cwd
+// ever changes.
+func crushDataDir(req Request, configDir string) string {
+	dataDir := filepath.Join(configDir, "crush-data")
+	if filepath.IsAbs(dataDir) {
+		return dataDir
+	}
+
+	return filepath.Join(req.WorkDir, dataDir)
 }
 
 // crushAllowedTools lists the tools crush may use for this mode. The
@@ -240,17 +266,70 @@ func buildCrushEnv(req Request, configDir string) ([]string, error) {
 // host hook does not displace the engine's, and a denial from either
 // blocks the tool — so writes stay policed. The operator should still
 // know another config is in play.
+//
+// The search walks UP from the workdir because that is crush's actual
+// discovery rule: it merges every config it finds on the way to the
+// filesystem root, nearest last. Checking only the workdir itself once
+// hid a config one level up whose read-only `allowed_tools` and
+// relative-path hook silently blocked every write an apply turn made.
 func warnOnHostCrushConfig(workDir string) {
 	if workDir == "" {
 		return
 	}
 
-	for _, name := range []string{".crush.json", "crush.json"} {
-		_, err := os.Stat(filepath.Join(workDir, name))
-		if err == nil {
-			slog.Warn("Host crush config merges over the engine's generated config",
-				"file", filepath.Join(workDir, name),
-				"note", "engine write-guard hook still applies")
+	dir, err := filepath.Abs(workDir)
+	if err != nil {
+		return
+	}
+
+	for {
+		for _, name := range []string{".crush.json", "crush.json"} {
+			path := filepath.Join(dir, name)
+
+			keys, found := hostCrushConfigKeys(path)
+			if found {
+				slog.Warn("Host crush config merges over the engine's generated config",
+					"file", path,
+					"declares", keys,
+					"note", "engine write-guard hook still applies")
+			}
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return
+		}
+
+		dir = parent
+	}
+}
+
+// hostCrushConfigKeys reports the enforcement-relevant top-level keys a
+// host config declares. A config that names neither `permissions` nor
+// `hooks` cannot narrow what the apply turn may do, so it is not worth
+// a warning.
+func hostCrushConfigKeys(path string) ([]string, bool) {
+	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled host config path
+	if err != nil {
+		return nil, false
+	}
+
+	var decoded map[string]json.RawMessage
+
+	err = json.Unmarshal(raw, &decoded)
+	if err != nil {
+		// Unparseable, but crush will still try to merge it — say so.
+		return []string{"unparseable"}, true
+	}
+
+	var keys []string
+
+	for _, name := range []string{"permissions", "hooks"} {
+		_, ok := decoded[name]
+		if ok {
+			keys = append(keys, name)
 		}
 	}
+
+	return keys, len(keys) > 0
 }

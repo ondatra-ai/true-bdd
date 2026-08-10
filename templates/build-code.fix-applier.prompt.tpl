@@ -42,6 +42,6 @@
 
 === FILE_START: {{.ResultPath}} ===
 applied: true
-target: <repo-relative path of the file you wrote/edited>
+target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===

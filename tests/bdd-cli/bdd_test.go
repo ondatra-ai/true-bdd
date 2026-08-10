@@ -15,12 +15,16 @@ import (
 )
 
 const (
-	// fixtureTimeout caps the CLI run alone. Deliberately tight: past
-	// five minutes a fixture is not slow, it is wrong — a fix prompt
-	// that cannot land, or a cell whose verdict no fix can move. The
-	// engine now bounds its own fix loop and fails on an applier that
-	// wrote nothing, so a run that still overruns this is a bug worth
-	// failing fast on rather than paying thirty minutes to confirm.
+	// fixtureTimeout caps the CLI run alone — prep and teardown have
+	// their own budgets. Deliberately tight: past five minutes a
+	// fixture is not slow, it is wrong — a fix prompt that cannot land,
+	// or a cell whose verdict no fix can move. The engine now bounds
+	// its own fix loop and fails on an applier that wrote nothing, so a
+	// run that still overruns this is a bug worth failing fast on
+	// rather than paying thirty minutes to confirm. A fixture whose CLI
+	// invocation legitimately does heavy external work (building a
+	// Docker image, re-running a browser suite) overrides it with
+	// `timeout:` in its manifest.
 	fixtureTimeout = 5 * time.Minute
 	// judgeTimeout caps the post-run judge call. The judge gets its
 	// own fresh context so it can still produce a verdict when the CLI
@@ -121,12 +125,17 @@ func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Jud
 		t.Fatalf("load fixture: %v", err)
 	}
 
-	runCtx, runCancel := context.WithTimeout(context.Background(), fixtureTimeout)
-	defer runCancel()
+	timeout := fixtureTimeout
+	if fixture.Timeout > 0 {
+		timeout = fixture.Timeout
+	}
 
-	t.Logf("running %q (%s) — this can take several minutes", fixture.Cmd, fixture.Name)
+	t.Logf("running %q (%s, timeout %s) — this can take several minutes",
+		fixture.Cmd, fixture.Name, timeout)
 
-	res, err := runner.Execute(runCtx, fixture, binPath, sessionRoot)
+	// The deadline is applied inside Execute, around the CLI exec alone —
+	// the tmpdir build and the pre-run snapshot must not spend it.
+	res, err := runner.Execute(context.Background(), fixture, binPath, sessionRoot, timeout)
 	if err != nil {
 		dumpRun(t, res)
 		t.Fatalf("execute: %v", err)

@@ -126,6 +126,9 @@ type Fixture struct {
 	// the tmpdir checklist during prep. See
 	// FixtureManifest.ChecklistPrompts.
 	ChecklistPrompts map[string][]string
+	// Timeout caps the CLI run for this fixture. Zero means the caller's
+	// default. See FixtureManifest.Timeout.
+	Timeout time.Duration
 }
 
 // RunResult bundles everything we observed from one fixture run.
@@ -155,6 +158,11 @@ func LoadFixture(dir string) (*Fixture, error) {
 		stdinBytes = []byte(manifest.Answers)
 	}
 
+	timeout, err := parseFixtureTimeout(manifest.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
 	fixture := &Fixture{
 		Name:             filepath.Base(dir),
 		Dir:              dir,
@@ -167,6 +175,7 @@ func LoadFixture(dir string) (*Fixture, error) {
 		PrepCmds:         manifest.Prep,
 		TeardownCmds:     manifest.Teardown,
 		ChecklistPrompts: manifest.ChecklistPrompts,
+		Timeout:          timeout,
 	}
 
 	err = validateChecklistFilters(fixture)
@@ -199,7 +208,18 @@ func LoadFixture(dir string) (*Fixture, error) {
 // deferred call against a fresh context, so long-lived external
 // resources (e.g. docker-compose stacks the CLI brought up) get torn
 // down even when the CLI itself failed or hit the fixture timeout.
-func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string) (*RunResult, error) {
+//
+// runTimeout caps the CLI invocation ALONE. Its deadline starts
+// immediately before the exec, not when Execute was called, so the
+// tmpdir build and the pre-run snapshot cannot eat into it — on the
+// playwright fixture that snapshot reads the whole tree, node_modules
+// included, and charging it to the CLI would fail a run that behaved.
+func Execute(
+	ctx context.Context,
+	fixture *Fixture,
+	binPath, sessionRoot string,
+	runTimeout time.Duration,
+) (*RunResult, error) {
 	tmpDir, err := prepareRunDir(fixture, sessionRoot)
 	if err != nil {
 		return &RunResult{TmpDir: tmpDir}, err
@@ -207,7 +227,7 @@ func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string)
 
 	defer runTeardownCommands(tmpDir, fixture.TeardownCmds)
 
-	err = runPrepCommands(ctx, tmpDir, fixture.PrepCmds)
+	err = runPrepCommands(tmpDir, fixture.PrepCmds)
 	if err != nil {
 		return &RunResult{TmpDir: tmpDir}, err
 	}
@@ -219,7 +239,10 @@ func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string)
 
 	args := strings.Fields(fixture.Cmd)
 
-	cmd := exec.CommandContext(ctx, binPath, args...)
+	runCtx, cancelRun := context.WithTimeout(ctx, runTimeout)
+	defer cancelRun()
+
+	cmd := exec.CommandContext(runCtx, binPath, args...)
 	cmd.Dir = tmpDir
 	cmd.Env = envWithoutClaudeCode(os.Environ())
 
@@ -326,12 +349,24 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 // streamed to the calling `go test -v` output so progress stays visible
 // during long installs, and captured under bdd-cli-logs/ so a failed
 // prep can still be read afterwards. Any non-zero exit aborts the
-// fixture. No per-command timeout — the parent `go test -timeout=30m`
-// is the only ceiling.
+// fixture.
+//
+// The whole prep phase gets its own budget, decoupled from the run ctx:
+// `npm install` and `playwright install` are external work that says
+// nothing about whether the CLI under test behaves, so charging them to
+// the fixture's run timeout would fail a correct fixture on a cold
+// cache.
 //
 // These writes land before the pre-run snapshot, so they appear in both
 // snapshots and never show up in the diff.
-func runPrepCommands(ctx context.Context, tmpDir string, prepCmds []string) error {
+func runPrepCommands(tmpDir string, prepCmds []string) error {
+	if len(prepCmds) == 0 {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), prepTimeout)
+	defer cancel()
+
 	spawn := newSpawnLog(tmpDir)
 
 	for idx, raw := range prepCmds {
@@ -359,6 +394,11 @@ func runPrepCommands(ctx context.Context, tmpDir string, prepCmds []string) erro
 
 	return nil
 }
+
+// prepTimeout caps the *entire* prep phase for one fixture (all prep
+// commands share the budget). Generous: a cold `npm install` plus a
+// browser download is minutes of pure I/O.
+const prepTimeout = 15 * time.Minute
 
 // teardownTimeout caps the *entire* teardown phase for one fixture
 // (all teardown commands share the budget). Decoupled from the

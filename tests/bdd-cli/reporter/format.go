@@ -45,6 +45,18 @@ func formatSeconds(seconds float64) string {
 	return formatDuration(seconds, true)
 }
 
+// formatElapsed renders when a slice began, measured from the start of
+// the fixture's wall clock. The first slice reads "start" rather than
+// "0ms", because a zero here means the beginning of the run and not a
+// measurement that rounded away.
+func formatElapsed(seconds float64) string {
+	if seconds < 1/millisPerSecond {
+		return "start"
+	}
+
+	return "+" + formatSeconds(seconds)
+}
+
 // formatMoney renders a dollar amount to four places — turn costs run to
 // fractions of a cent, and rounding them to two hides the cheap turns
 // entirely. Zero renders as absent, because every zero in this report

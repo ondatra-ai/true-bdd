@@ -18,7 +18,7 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 - After your Edit calls succeed, output a YAML confirmation inside
   FILE_START/FILE_END markers:
   - `applied: true` (or `false` on failure)
-  - `target: <scratch path>`
+  - `target: "<scratch path>"` (QUOTED)
   - `summary: "<one short line describing what changed>"`
 - Preserve all other registry entries — only mutate what the fix prompt
   specifies.
@@ -27,7 +27,7 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 ```
 === FILE_START: {{.ResultPath}} ===
 applied: true
-target: <scratch path>
+target: "<scratch path>"
 summary: "<one-line summary>"
 === FILE_END: {{.ResultPath}} ===
 ```

@@ -35,8 +35,27 @@ func TestExtractFileContent(t *testing.T) {
 			wantOK:   true,
 		},
 		{
+			// crush routinely closes with a bare marker. The opening one
+			// already named the file, so this block is complete.
+			name:     "closing marker omits the path",
+			response: "=== FILE_START: " + path + " ===\n- id: AC-1\n=== FILE_END ===",
+			wantOK:   true,
+		},
+		{
+			name:     "closing marker omits the path but keeps the colon",
+			response: "=== FILE_START: " + path + " ===\n- id: AC-1\n=== FILE_END: ===",
+			wantOK:   true,
+		},
+		{
 			name:     "no match at all",
 			response: "just some random text",
+			wantOK:   false,
+		},
+		{
+			// An opening marker with no close at all is a truncated
+			// response, not a block — it must stay a miss.
+			name:     "start marker with no close",
+			response: "=== FILE_START: " + path + " ===\n- id: AC-1\n",
 			wantOK:   false,
 		},
 	}

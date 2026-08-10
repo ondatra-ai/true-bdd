@@ -54,6 +54,12 @@ type Phase struct {
 // "0ms shutdown" row would be noise.
 const shutdownFloor = 0.0005
 
+// gapFloor is the smallest engine residual around a test run worth its
+// own row. Below this the engine's record and the runner's are the same
+// instant; the time is folded into the adjacent slice so the phases
+// still sum to the gap.
+const gapFloor = 0.0005
+
 // BuildPhases cuts one fixture's wall clock into contiguous slices.
 //
 // Everything is measured except the leading harness block, which is a
@@ -179,20 +185,7 @@ func appendTurns(phases []Phase, fixture *Fixture) []Phase {
 
 	for _, turn := range fixture.Turns {
 		if !previousEnd.IsZero() && !turn.Started.IsZero() {
-			gap := turn.Started.Sub(previousEnd).Seconds()
-			if gap < 0 {
-				gap = 0
-			}
-
-			phases = append(phases, Phase{
-				Label: "Engine between turns",
-				Detail: "parse the model's result file, write " +
-					"artifacts, build the next prompt",
-				Kind:     KindDeterministic,
-				Owner:    OwnerEngine,
-				Seconds:  gap,
-				Measured: true,
-			})
+			phases = appendGap(phases, fixture, previousEnd, turn.Started)
 		}
 
 		phases = append(phases, Phase{
@@ -209,6 +202,134 @@ func appendTurns(phases []Phase, fixture *Fixture) []Phase {
 	}
 
 	return phases
+}
+
+// appendGap cuts the span between two model turns into what actually
+// happened in it.
+//
+// The gap after an apply turn is not engine bookkeeping: the engine's
+// PostFix hook re-executes the test there to decide whether the fix
+// worked, and for a webServer-startup subject that is a whole
+// docker-build-and-run suite. Reporting all of it as "Engine between
+// turns" hid the only step in a `--fix` run that validates anything,
+// and described it as prompt-building.
+//
+// Every emitted slice is contiguous and they sum to the gap exactly: a
+// residual too small for its own row is folded into the slice it abuts
+// rather than dropped.
+func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase {
+	runs := testRunsWithin(fixture, from, until)
+	if len(runs) == 0 {
+		return append(phases, engineGapPhase(spanSeconds(from, until)))
+	}
+
+	cursor := from
+
+	for _, run := range runs {
+		start := run.Started()
+		if start.Before(cursor) {
+			start = cursor
+		}
+
+		lead := spanSeconds(cursor, start)
+		if lead > gapFloor {
+			phases = append(phases, engineGapPhase(lead))
+			cursor = start
+		}
+
+		phases = append(phases, testRunPhase(run, spanSeconds(cursor, run.At)))
+		cursor = run.At
+	}
+
+	trail := spanSeconds(cursor, until)
+	if trail > gapFloor {
+		return append(phases, engineGapPhase(trail))
+	}
+
+	phases[len(phases)-1].Seconds += trail
+
+	return phases
+}
+
+// testRunsWithin lists the runner subprocesses that finished inside the
+// window, oldest first. A run the engine could not place — no exit
+// timestamp — is left out, so the gap falls back to one undivided slice
+// rather than inventing a position for it.
+func testRunsWithin(fixture *Fixture, from, until time.Time) []TestRun {
+	var runs []TestRun
+
+	for _, run := range fixture.TestRuns {
+		if run.At.IsZero() || !run.At.After(from) || run.At.After(until) {
+			continue
+		}
+
+		runs = append(runs, run)
+	}
+
+	return runs
+}
+
+// engineGapPhase is the engine's own work around a turn boundary.
+func engineGapPhase(seconds float64) Phase {
+	return Phase{
+		Label: "Engine between turns",
+		Detail: "parse the model's result file, write artifacts, " +
+			"build the next prompt",
+		Kind:     KindDeterministic,
+		Owner:    OwnerEngine,
+		Seconds:  seconds,
+		Measured: true,
+	}
+}
+
+// testRunPhase is one runner subprocess on the timeline. The slice is
+// bounded by the surrounding turn records, so it can carry a sliver of
+// engine work either side; the detail states the runner's own measured
+// wall clock so the reader can see how much of the slice is the tests.
+func testRunPhase(run TestRun, seconds float64) Phase {
+	return Phase{
+		Label:    "Test run (" + run.Label() + ")",
+		Detail:   testRunDetail(run),
+		Kind:     KindDeterministic,
+		Owner:    OwnerTests,
+		Seconds:  seconds,
+		Measured: true,
+	}
+}
+
+// testRunDetail says why the engine spawned the runner and how it ended.
+func testRunDetail(run TestRun) string {
+	detail := "engine re-ran the test to decide whether the fix worked"
+	if run.Phase == phaseDiscover {
+		detail = "engine spawned the runner to find failing tests"
+	}
+
+	if run.Duration > 0 {
+		detail += " · " + formatSeconds(run.Duration.Seconds()) + " measured"
+	}
+
+	switch {
+	case run.Error != "":
+		detail += " · never started: " + run.Error
+	case !run.HasExit:
+		detail += " · no exit status recorded"
+	case run.ExitCode == 0:
+		detail += " · exit 0, the fix holds"
+	default:
+		detail += " · exit " + itoa(run.ExitCode) + ", still failing"
+	}
+
+	return detail
+}
+
+// spanSeconds is a non-negative wall-clock span.
+func spanSeconds(from, until time.Time) float64 {
+	seconds := until.Sub(from).Seconds()
+	if seconds < 0 {
+		return 0
+	}
+
+	return seconds
 }
 
 // appendShutdown adds the engine's work after its last turn.

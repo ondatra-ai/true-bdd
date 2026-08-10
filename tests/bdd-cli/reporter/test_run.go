@@ -32,6 +32,12 @@ type TestRun struct {
 	HasExit  bool
 	Duration time.Duration
 
+	// At is when the exit record was written, i.e. when the subprocess
+	// was already gone. With Duration it places the run on the wall
+	// clock, which is what lets the timeline show a rerun as its own
+	// slice instead of hiding it inside the engine's gap.
+	At time.Time
+
 	// Stdout and Stderr are the persisted streams. A stream that was
 	// captured but empty still loads — a zero-byte stderr is the
 	// evidence that the framework printed nothing there, which is
@@ -71,6 +77,7 @@ func newTestRun(record *LogRecord, fixtureDir string) TestRun {
 		Framework: record.Framework,
 		Phase:     record.Phase,
 		Error:     record.Error,
+		At:        record.At,
 	}
 
 	if record.ExitCode != nil {
@@ -94,10 +101,22 @@ func newTestRun(record *LogRecord, fixtureDir string) TestRun {
 }
 
 // IsDiscovery reports whether the run is the opening whole-suite
-// invocation, which is the only kind that falls inside the timeline's
-// test-run slice.
+// invocation — the one the timeline's pre-dispatch test-run slice is
+// bounded by. Every other phase is a fix-loop rerun, which gets its own
+// slice inside the gap it actually ran in (see appendGap).
 func (t TestRun) IsDiscovery() bool {
 	return t.Phase == phaseDiscover
+}
+
+// Started is when the subprocess began, derived from the exit record
+// and the wall clock it reported. Zero when either is missing, which is
+// the signal that the run cannot be placed on the timeline.
+func (t TestRun) Started() time.Time {
+	if t.At.IsZero() {
+		return time.Time{}
+	}
+
+	return t.At.Add(-t.Duration)
 }
 
 // Label names the run for a section heading: the framework plus which

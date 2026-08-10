@@ -60,7 +60,7 @@ as_a: Claude User`,
 			content: "I created the file at services/frontend/page.tsx.",
 		},
 		{
-			name: "fenced yaml",
+			name:    "fenced yaml",
 			content: "```yaml\napplied: true\ntarget: services/x\n```",
 		},
 	}
@@ -70,6 +70,94 @@ as_a: Claude User`,
 			t.Parallel()
 
 			err := checkFixApplied(testCase.content)
+			if err != nil {
+				t.Fatalf("checkFixApplied() = %v, want nil", err)
+			}
+		})
+	}
+}
+
+// The block a real run produced: the model put an explanatory `": "`
+// inside an unquoted `target:` scalar, so the whole block is invalid
+// YAML. Passing that through logged "Fix applied successfully" for an
+// applier that had explicitly written nothing.
+func TestCheckFixAppliedRejectsFalseInUnparseableBlock(t *testing.T) {
+	t.Parallel()
+
+	content := `applied: false
+target: services/frontend/ (multiple new files: package.json, app/page.tsx)
+summary: "Could not write any file — every tool was blocked."`
+
+	// Precondition: this really is undecodable, otherwise the test
+	// would pass through the normal path and prove nothing.
+	if _, ok := parseApplyResult(content); ok {
+		t.Fatal("fixture parsed as YAML; it no longer exercises the fallback")
+	}
+
+	err := checkFixApplied(content)
+	if !errors.Is(err, pkgerrors.ErrFixNotApplied) {
+		t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
+	}
+}
+
+// Unparseable content can carry more than one status line — a model
+// that narrates an attempt before reporting the outcome writes both. A
+// refusal must win over an earlier success regardless of order, or the
+// fallback reinstates the very inversion it exists to prevent.
+func TestCheckFixAppliedFallbackFalseWinsOverEarlierTrue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "true then false",
+			content: `applied: true
+target: services/frontend/ (first attempt: page.tsx)
+applied: false
+summary: "rolled back — the guard denied the write"`,
+		},
+		{
+			name: "false then true",
+			content: `applied: false
+target: services/frontend/ (blocked: guard)
+applied: true`,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if _, ok := parseApplyResult(testCase.content); ok {
+				t.Fatal("fixture parsed as YAML; it no longer exercises the fallback")
+			}
+
+			err := checkFixApplied(testCase.content)
+			if !errors.Is(err, pkgerrors.ErrFixNotApplied) {
+				t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
+			}
+		})
+	}
+}
+
+// The fallback must stay as narrow as the parser it backs up: content
+// that merely mentions the word must not be read as a verdict.
+func TestCheckFixAppliedFallbackIgnoresProse(t *testing.T) {
+	t.Parallel()
+
+	tests := []string{
+		"The fix was applied: false starts were needed.",
+		"I applied: the change to services/api and it worked.",
+		"applied: maybe",
+	}
+
+	for _, content := range tests {
+		t.Run(content, func(t *testing.T) {
+			t.Parallel()
+
+			err := checkFixApplied(content)
 			if err != nil {
 				t.Fatalf("checkFixApplied() = %v, want nil", err)
 			}
@@ -90,4 +178,3 @@ func TestCheckFixAppliedRejectsFencedFalse(t *testing.T) {
 		t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
 	}
 }
-

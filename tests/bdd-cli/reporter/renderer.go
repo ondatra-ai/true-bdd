@@ -203,6 +203,24 @@ func bar(pct float64, color string, height int) string {
 		`%;background:` + color + `"></span></div>`
 }
 
+// ganttBar is a slice placed on the run's wall clock: the fill starts
+// where the slice began and is as wide as it lasted.
+//
+// Distinct from bar(), which compares magnitudes from a shared left
+// edge. A timeline drawn with bar() answers "how long", never "what
+// came after what" — every row hugs the left and a millisecond slice
+// renders as nothing at all.
+func ganttBar(offsetPct, widthPct float64, color string) string {
+	if widthPct < minGanttWidth {
+		widthPct = minGanttWidth
+	}
+
+	return `<div class="gantt"><span style="margin-left:` +
+		formatPercent(clampPercent(offsetPct), percentDecimals) +
+		`%;width:` + formatPercent(clampPercent(widthPct), percentDecimals) +
+		`%;background:` + color + `"></span></div>`
+}
+
 // roleDot is a role name preceded by its color key.
 func roleDot(role string) string {
 	label := role

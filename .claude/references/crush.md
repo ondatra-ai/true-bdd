@@ -6,12 +6,20 @@ Write/Edit tools and drive crush through the wrapper. Take the wrapper path, art
 dir, roles, and prompt templates from `docs/context/paths.yaml` (`crush_wrapper`,
 `crush_artifacts`, `crush_prompts`); never hardcode them.
 
-## Invocation (always via the wrapper — a bare `crush run` is read-only)
+## Invocation (ALWAYS via the wrapper — a bare `crush run` is UNGUARDED)
 
 `<crush_wrapper> <author|fixer> <prompt-file|-> [label] [--continue]`
 
 - **role** — exported as `CRUSH_GUARD_ROLE`, selects the write sandbox (below). No role
   = fail-closed (read-only).
+- **config** — the wrapper GENERATES crush's config (model pin, allowed_tools, the
+  write-guard hook, MCP) per invocation and passes it via `CRUSH_GLOBAL_CONFIG`, then
+  deletes it. There is deliberately no `.crush.json` at the repo root: crush merges
+  every `.crush.json` it finds walking up from its cwd, and its `PreToolUse` hooks are
+  additive and un-overridable from a nested config — a root config hijacks every crush
+  process started anywhere inside the repo, including the ones true-bdd spawns for its
+  own apply turns against fixture workspaces under `tmp/`. The corollary: **crush
+  invoked outside the wrapper has no guard at all**, so never call it directly.
 - **prompt** — `-` reads a QUOTED heredoc from stdin (the drivers have no Write tool, so
   they pipe a filled `crush_prompts` template); or a prompt-file path.
 - **`--continue`** — resume crush's most recent session for follow-up turns (SAME
@@ -50,7 +58,7 @@ roles are a sandbox axis, not agent names:** the `test-author` agent drives role
   `{{placeholder}}`. For UI work, resolve `design_system` yourself and inline its paths
   (tokens, SPEC, prototype) — crush does not know the design system exists.
 - **Model-pin trap.** `glm-5.2[1m]` is a DISPLAY suffix, not a config id — pinning it
-  silently falls back to global state. Correct pin (already in `.crush.json`):
+  silently falls back to global state. Correct pin (already in the generated config):
   `{"model": "glm-5.2", "provider": "zhipu-coding"}` (context_window 1,000,000). Verify
   which model actually answered via `.crush/crush.db`
   (`SELECT provider, model FROM messages ORDER BY rowid DESC`; `created_at` is SECONDS).
@@ -60,7 +68,7 @@ roles are a sandbox axis, not agent names:** the `test-author` agent drives role
   after every crush call (sandbox guardrail) and reports from crush's `result.json` /
   transcript, never from crush's prose.
 
-## MCP (`crush.json`)
+## MCP (declared in the wrapper's generated config)
 
 Crush has its own MCP servers, but under a role the write-guard default-denies any tool
 not on its allowlist (see Sandbox roles above), so crush effectively works through file
