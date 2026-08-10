@@ -208,7 +208,18 @@ func LoadFixture(dir string) (*Fixture, error) {
 // deferred call against a fresh context, so long-lived external
 // resources (e.g. docker-compose stacks the CLI brought up) get torn
 // down even when the CLI itself failed or hit the fixture timeout.
-func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string) (*RunResult, error) {
+//
+// runTimeout caps the CLI invocation ALONE. Its deadline starts
+// immediately before the exec, not when Execute was called, so the
+// tmpdir build and the pre-run snapshot cannot eat into it — on the
+// playwright fixture that snapshot reads the whole tree, node_modules
+// included, and charging it to the CLI would fail a run that behaved.
+func Execute(
+	ctx context.Context,
+	fixture *Fixture,
+	binPath, sessionRoot string,
+	runTimeout time.Duration,
+) (*RunResult, error) {
 	tmpDir, err := prepareRunDir(fixture, sessionRoot)
 	if err != nil {
 		return &RunResult{TmpDir: tmpDir}, err
@@ -228,7 +239,10 @@ func Execute(ctx context.Context, fixture *Fixture, binPath, sessionRoot string)
 
 	args := strings.Fields(fixture.Cmd)
 
-	cmd := exec.CommandContext(ctx, binPath, args...)
+	runCtx, cancelRun := context.WithTimeout(ctx, runTimeout)
+	defer cancelRun()
+
+	cmd := exec.CommandContext(runCtx, binPath, args...)
 	cmd.Dir = tmpDir
 	cmd.Env = envWithoutClaudeCode(os.Environ())
 

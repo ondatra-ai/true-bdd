@@ -82,12 +82,17 @@ type FixtureManifest struct {
 	ChecklistPrompts map[string][]string `yaml:"checklist_prompts,omitempty"`
 
 	// Timeout caps the CLI run for this fixture alone (prep and
-	// teardown have their own budgets). Absent means the suite default,
-	// which is deliberately tight: past a few minutes a checklist
-	// fixture is not slow, it is wrong. Raise it only for a fixture
-	// whose CLI invocation legitimately does heavy external work —
-	// building a Docker image, re-running a browser suite. Any duration
-	// string time.ParseDuration accepts, e.g. "15m". Optional.
+	// teardown have their own budgets). Blank or absent means the
+	// suite default, which is deliberately tight: past a few minutes a
+	// checklist fixture is not slow, it is wrong. Raise it only for a
+	// fixture whose CLI invocation legitimately does heavy external
+	// work — building a Docker image, re-running a browser suite.
+	//
+	// Any non-blank value must be a POSITIVE duration that
+	// time.ParseDuration accepts, e.g. "15m"; zero, negative and
+	// malformed values are rejected at load time with
+	// ErrTimeoutInvalid rather than silently falling back to the
+	// default. Optional.
 	Timeout string `yaml:"timeout,omitempty"`
 
 	// Expected is the bundle of assertion strategies applied after

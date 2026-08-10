@@ -238,23 +238,30 @@ var appliedLinePattern = regexp.MustCompile(`(?mi)^\s*applied:\s*(true|false)\s*
 // checkFixAppliedFallback salvages the verdict from unparseable content.
 // Only an explicit `applied: false` is actionable — anything else keeps
 // the pass-through behaviour that non-confirmation appliers rely on.
+//
+// EVERY status line is scanned, not just the first: unparseable content
+// can hold more than one, and a refusal must not be masked by an
+// earlier success. Any false present means the applier did not write
+// what it was asked to, so false wins over true regardless of order.
 func checkFixAppliedFallback(content string) error {
-	match := appliedLinePattern.FindStringSubmatch(stripMarkdownFences(content))
-	if match == nil {
+	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
+	if len(matches) == 0 {
 		return nil
 	}
 
-	if strings.EqualFold(match[1], "true") {
-		slog.Warn("Fix applier confirmation block is not valid YAML; " +
-			"read applied: true from the raw text")
+	for _, match := range matches {
+		if strings.EqualFold(match[1], "false") {
+			slog.Warn("Fix applier confirmation block is not valid YAML; " +
+				"read applied: false from the raw text")
 
-		return nil
+			return pkgerrors.ErrFixNotAppliedByModel("", "")
+		}
 	}
 
 	slog.Warn("Fix applier confirmation block is not valid YAML; " +
-		"read applied: false from the raw text")
+		"read applied: true from the raw text")
 
-	return pkgerrors.ErrFixNotAppliedByModel("", "")
+	return nil
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that

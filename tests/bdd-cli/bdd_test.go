@@ -130,13 +130,12 @@ func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Jud
 		timeout = fixture.Timeout
 	}
 
-	runCtx, runCancel := context.WithTimeout(context.Background(), timeout)
-	defer runCancel()
-
 	t.Logf("running %q (%s, timeout %s) — this can take several minutes",
 		fixture.Cmd, fixture.Name, timeout)
 
-	res, err := runner.Execute(runCtx, fixture, binPath, sessionRoot)
+	// The deadline is applied inside Execute, around the CLI exec alone —
+	// the tmpdir build and the pre-run snapshot must not spend it.
+	res, err := runner.Execute(context.Background(), fixture, binPath, sessionRoot, timeout)
 	if err != nil {
 		dumpRun(t, res)
 		t.Fatalf("execute: %v", err)

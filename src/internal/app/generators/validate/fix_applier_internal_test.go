@@ -100,6 +100,48 @@ summary: "Could not write any file — every tool was blocked."`
 	}
 }
 
+// Unparseable content can carry more than one status line — a model
+// that narrates an attempt before reporting the outcome writes both. A
+// refusal must win over an earlier success regardless of order, or the
+// fallback reinstates the very inversion it exists to prevent.
+func TestCheckFixAppliedFallbackFalseWinsOverEarlierTrue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "true then false",
+			content: `applied: true
+target: services/frontend/ (first attempt: page.tsx)
+applied: false
+summary: "rolled back — the guard denied the write"`,
+		},
+		{
+			name: "false then true",
+			content: `applied: false
+target: services/frontend/ (blocked: guard)
+applied: true`,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if _, ok := parseApplyResult(testCase.content); ok {
+				t.Fatal("fixture parsed as YAML; it no longer exercises the fallback")
+			}
+
+			err := checkFixApplied(testCase.content)
+			if !errors.Is(err, pkgerrors.ErrFixNotApplied) {
+				t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
+			}
+		})
+	}
+}
+
 // The fallback must stay as narrow as the parser it backs up: content
 // that merely mentions the word must not be read as a verdict.
 func TestCheckFixAppliedFallbackIgnoresProse(t *testing.T) {

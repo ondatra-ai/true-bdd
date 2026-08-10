@@ -6,7 +6,7 @@ engine's own code versus a model deciding how long to take.
 
 ```bash
 # 1. run the suite (or a single fixture) and keep the verbose output
-go test -tags bdd ./tests/bdd-cli/... -v -timeout 30m > tmp/bdd-run.log 2>&1
+go test -tags bdd -timeout=180m ./tests/bdd-cli/... -v > tmp/bdd-run.log 2>&1
 
 # 2. render the newest session
 go run ./tests/bdd-cli/reporter
