@@ -26,7 +26,7 @@ executable test for one scenario from the requirements registry.
 - After your Write/Edit calls succeed, output a YAML confirmation
   inside FILE_START/FILE_END markers:
   - `applied: true` (or `false` on failure)
-  - `target: <repo-relative path>`
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
   - `summary: "<one short line describing what changed>"`
 - Preserve all other content in the target file — only add the new
   test block the fix prompt specifies.
@@ -35,7 +35,7 @@ executable test for one scenario from the requirements registry.
 ```
 === FILE_START: {{.ResultPath}} ===
 applied: true
-target: <repo-relative path>
+target: "<repo-relative path>"
 summary: "<one-line summary>"
 === FILE_END: {{.ResultPath}} ===
 ```

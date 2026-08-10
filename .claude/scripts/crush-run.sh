@@ -11,6 +11,13 @@
 #   --continue   Resume crush's most recent session (follow-up turns). Bound
 #                positionally as the 4th arg, so pass an explicit label with it.
 #
+# Config: crush's project config is generated here per invocation (model pin,
+# read-only allowed_tools, the write-guard hook, MCP servers) and handed over
+# through CRUSH_GLOBAL_CONFIG, then deleted on exit. It must NOT be a tracked
+# file at the repo root — crush merges every .crush.json it finds walking up
+# from its cwd, so a root config leaks into every nested crush process,
+# including the ones true-bdd spawns against fixture workspaces under tmp/.
+#
 # Stall handling: crush's embedded shell pipe-deadlocks on chatty child output,
 # so a hung run must be killed, not waited out. After CRUSH_TIMEOUT seconds
 # (default 1800 — a long author/fixer round with one self-correction takes
@@ -56,6 +63,70 @@ ARGS=(run --quiet)
 
 TIMEOUT="${CRUSH_TIMEOUT:-1800}"
 
+# Crush config, generated per invocation and discarded on exit.
+#
+# This deliberately does NOT live at the repo root. crush resolves its
+# project config by walking UP from its cwd and MERGES every .crush.json
+# it finds, with PreToolUse hooks additive and un-overridable from a
+# nested config. A tracked root .crush.json therefore hijacks every crush
+# process started anywhere inside the repo — including the ones the
+# true-bdd engine spawns for its own apply turns against fixture
+# workspaces under tmp/, where the relative guard.py path does not
+# resolve and every tool call is blocked. Generating the config here and
+# passing it through CRUSH_GLOBAL_CONFIG keeps it scoped to this wrapper.
+CONFIG_DIR="$OUT_DIR/config-$$"
+mkdir -p "$CONFIG_DIR"
+cleanup_config() { rm -rf "$CONFIG_DIR"; }
+trap cleanup_config EXIT
+
+# The guard path is absolute so the hook works regardless of cwd, and
+# data_directory pins crush's SQLite state to its historical location so
+# `--continue` keeps resuming the same sessions.
+cat > "$CONFIG_DIR/crush.json" <<EOF
+{
+  "\$schema": "https://charm.land/crush.json",
+  "options": {
+    "data_directory": "$REPO/.crush"
+  },
+  "models": {
+    "large": {
+      "model": "glm-5.2",
+      "provider": "zhipu-coding"
+    }
+  },
+  "permissions": {
+    "allowed_tools": ["view", "ls", "grep", "glob"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "harness-write-guard",
+        "command": "python3 '$REPO/.crush/hooks/guard.py'",
+        "timeout": 15
+      }
+    ]
+  },
+  "mcp": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@3.2.5"]
+    },
+    "terminal": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-interactive-terminal@1.0.9"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.78"]
+    }
+  }
+}
+EOF
+
+export CRUSH_GLOBAL_CONFIG="$CONFIG_DIR"
 export CRUSH_GUARD_ROLE="$ROLE"
 ( cd "$REPO" && exec crush "${ARGS[@]}" < "$PROMPT_FILE" > "$OUT_FILE" 2>&1 ) &
 PID=$!

@@ -29,6 +29,6 @@
 
 === FILE_START: {{.ResultPath}} ===
 applied: true
-target: {{.Subject.RequirementsScratchPath}}
+target: "{{.Subject.RequirementsScratchPath}}"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===

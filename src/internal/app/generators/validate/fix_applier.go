@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -210,15 +212,49 @@ type applyResultYAML struct {
 // block, and those are not this function's business.
 func checkFixApplied(content string) error {
 	result, ok := parseApplyResult(content)
+	if !ok {
+		// The block did not decode. Before concluding "not a
+		// confirmation block", look for a literal `applied:` line: a
+		// model that puts an unquoted `": "` in `target:` writes
+		// invalid YAML, and reading that as success turns an explicit
+		// refusal into "Fix applied successfully".
+		return checkFixAppliedFallback(content)
+	}
 
 	// Three ways to have no objection: the content is not a
 	// confirmation block at all, the block omits `applied:`, or it
 	// reports success. Only an explicit false is a refusal to act on.
-	if !ok || result.Applied == nil || *result.Applied {
+	if result.Applied == nil || *result.Applied {
 		return nil
 	}
 
 	return pkgerrors.ErrFixNotAppliedByModel(result.Target, result.Summary)
+}
+
+// appliedLinePattern matches the `applied:` key of a confirmation block
+// in content YAML could not decode.
+var appliedLinePattern = regexp.MustCompile(`(?mi)^\s*applied:\s*(true|false)\s*$`)
+
+// checkFixAppliedFallback salvages the verdict from unparseable content.
+// Only an explicit `applied: false` is actionable — anything else keeps
+// the pass-through behaviour that non-confirmation appliers rely on.
+func checkFixAppliedFallback(content string) error {
+	match := appliedLinePattern.FindStringSubmatch(stripMarkdownFences(content))
+	if match == nil {
+		return nil
+	}
+
+	if strings.EqualFold(match[1], "true") {
+		slog.Warn("Fix applier confirmation block is not valid YAML; " +
+			"read applied: true from the raw text")
+
+		return nil
+	}
+
+	slog.Warn("Fix applier confirmation block is not valid YAML; " +
+		"read applied: false from the raw text")
+
+	return pkgerrors.ErrFixNotAppliedByModel("", "")
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that

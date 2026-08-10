@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -17,6 +18,10 @@ var ErrCmdRequired = errors.New("fixture.yaml: cmd is required")
 // ErrInputRequired is returned when fixture.yaml has no `input` field
 // — the runner needs to know which directory to overlay onto its tmpdir.
 var ErrInputRequired = errors.New("fixture.yaml: input is required")
+
+// ErrTimeoutInvalid is returned when fixture.yaml declares a `timeout`
+// that time.ParseDuration rejects, or one that is not positive.
+var ErrTimeoutInvalid = errors.New("fixture.yaml: timeout is not a positive duration")
 
 // ErrJudgeSpecRequired is returned when fixture.yaml has no
 // `expected.judge` field. Every fixture must declare a judge rubric —
@@ -76,6 +81,15 @@ type FixtureManifest struct {
 	// same checklist file. Selection keeps source-document order.
 	ChecklistPrompts map[string][]string `yaml:"checklist_prompts,omitempty"`
 
+	// Timeout caps the CLI run for this fixture alone (prep and
+	// teardown have their own budgets). Absent means the suite default,
+	// which is deliberately tight: past a few minutes a checklist
+	// fixture is not slow, it is wrong. Raise it only for a fixture
+	// whose CLI invocation legitimately does heavy external work —
+	// building a Docker image, re-running a browser suite. Any duration
+	// string time.ParseDuration accepts, e.g. "15m". Optional.
+	Timeout string `yaml:"timeout,omitempty"`
+
 	// Expected is the bundle of assertion strategies applied after
 	// the CLI exits.
 	Expected Expected `yaml:"expected"`
@@ -131,6 +145,11 @@ func LoadFixtureManifest(path string) (*FixtureManifest, []*regexp.Regexp, error
 		return nil, nil, err
 	}
 
+	_, err = parseFixtureTimeout(manifest.Timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	regexes, err := compileStdoutRegexes(manifest.Expected.StdoutRegex)
 	if err != nil {
 		return nil, nil, err
@@ -166,6 +185,27 @@ func rejectEmptyFilterDeclaration(data []byte, manifest *FixtureManifest) error 
 	}
 
 	return nil
+}
+
+// parseFixtureTimeout turns the optional `timeout:` string into a
+// duration. An empty value means "use the suite default" and yields 0,
+// which callers read as "unset".
+func parseFixtureTimeout(raw string) (time.Duration, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return 0, nil
+	}
+
+	parsed, err := time.ParseDuration(trimmed)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %q: %w", ErrTimeoutInvalid, trimmed, err)
+	}
+
+	if parsed <= 0 {
+		return 0, fmt.Errorf("%w: %q is not positive", ErrTimeoutInvalid, trimmed)
+	}
+
+	return parsed, nil
 }
 
 func compileStdoutRegexes(patterns []string) ([]*regexp.Regexp, error) {

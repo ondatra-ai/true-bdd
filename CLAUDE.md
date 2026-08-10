@@ -48,7 +48,8 @@ Key implementation facts:
 - `ExecutionMode` is the single permission source for all three CLIs. `WriteGlobs()` / `AllowsBash()` project it onto crush's guard policy and codex's `-s` sandbox, so permissions are declared once.
 - The fix generator and applier never see the prompt, so the evaluator resolves their tiers and carries them on `ValidationResult.FixModelTier` / `ApplyModelTier` — the same channel `Docs` already travels on.
 - **crush gotchas, both verified against the live CLI:** it silently ignores an unknown model pinned in config (so the model is always passed via `-m`), and it fails OPEN when a hook cannot run (so `verifyCrushGuardEnforces` probes the guard before every turn and refuses to proceed if it does not deny).
-- `true-bdd crush-guard` is a hidden subcommand acting as crush's `PreToolUse` write gate, configured through a generated config dir passed via `CRUSH_GLOBAL_CONFIG` — the host's own `.crush.json` is never touched, and hooks are additive.
+- `true-bdd crush-guard` is a hidden subcommand acting as crush's `PreToolUse` write gate, configured through a generated config dir passed via `CRUSH_GLOBAL_CONFIG` — the host's own `.crush.json` is never touched, and hooks are additive. The generated config also pins `options.data_directory` under the run's tmp dir so crush's SQLite state never grows inside the host repo.
+- **crush config discovery walks UP from its cwd and MERGES every `.crush.json` it finds** (nearest last; `.git`, a bare `.crush/`, and a non-dot `crush.json` do not anchor anything). `PreToolUse` hooks merge additively and a nested config cannot remove an inherited one — so a `.crush.json` at a repo root hijacks every crush process started anywhere beneath it. That is why this repo has no root crush config: `.claude/scripts/crush-run.sh` generates the dev-harness one per invocation and passes it via `CRUSH_GLOBAL_CONFIG`. Do not reintroduce a tracked `.crush.json`/`crush.json` at the root — it silently blocks every fixture's apply turn.
 
 ## Development Commands
 
@@ -60,7 +61,7 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 go test ./...
 
 # End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture
-go test -tags bdd ./tests/bdd-cli/...
+go test -tags bdd -timeout=30m ./tests/bdd-cli/...
 
 # Lint
 golangci-lint run

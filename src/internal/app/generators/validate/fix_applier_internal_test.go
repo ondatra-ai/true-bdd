@@ -60,7 +60,7 @@ as_a: Claude User`,
 			content: "I created the file at services/frontend/page.tsx.",
 		},
 		{
-			name: "fenced yaml",
+			name:    "fenced yaml",
 			content: "```yaml\napplied: true\ntarget: services/x\n```",
 		},
 	}
@@ -70,6 +70,52 @@ as_a: Claude User`,
 			t.Parallel()
 
 			err := checkFixApplied(testCase.content)
+			if err != nil {
+				t.Fatalf("checkFixApplied() = %v, want nil", err)
+			}
+		})
+	}
+}
+
+// The block a real run produced: the model put an explanatory `": "`
+// inside an unquoted `target:` scalar, so the whole block is invalid
+// YAML. Passing that through logged "Fix applied successfully" for an
+// applier that had explicitly written nothing.
+func TestCheckFixAppliedRejectsFalseInUnparseableBlock(t *testing.T) {
+	t.Parallel()
+
+	content := `applied: false
+target: services/frontend/ (multiple new files: package.json, app/page.tsx)
+summary: "Could not write any file — every tool was blocked."`
+
+	// Precondition: this really is undecodable, otherwise the test
+	// would pass through the normal path and prove nothing.
+	if _, ok := parseApplyResult(content); ok {
+		t.Fatal("fixture parsed as YAML; it no longer exercises the fallback")
+	}
+
+	err := checkFixApplied(content)
+	if !errors.Is(err, pkgerrors.ErrFixNotApplied) {
+		t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
+	}
+}
+
+// The fallback must stay as narrow as the parser it backs up: content
+// that merely mentions the word must not be read as a verdict.
+func TestCheckFixAppliedFallbackIgnoresProse(t *testing.T) {
+	t.Parallel()
+
+	tests := []string{
+		"The fix was applied: false starts were needed.",
+		"I applied: the change to services/api and it worked.",
+		"applied: maybe",
+	}
+
+	for _, content := range tests {
+		t.Run(content, func(t *testing.T) {
+			t.Parallel()
+
+			err := checkFixApplied(content)
 			if err != nil {
 				t.Fatalf("checkFixApplied() = %v, want nil", err)
 			}
@@ -90,4 +136,3 @@ func TestCheckFixAppliedRejectsFencedFalse(t *testing.T) {
 		t.Fatalf("checkFixApplied() error = %v, want ErrFixNotApplied", err)
 	}
 }
-

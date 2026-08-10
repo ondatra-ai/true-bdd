@@ -1,6 +1,11 @@
 cmd: build code --fix
 input: input
 
+# The CLI run itself builds a Next.js Docker image and re-runs the
+# Playwright suite on top of three AI turns, so the suite's tight
+# default would kill a correct run mid-`docker compose up --build`.
+timeout: 15m
+
 prep:
   - npm install --prefix tests --no-audit --no-fund --silent
   - ./tests/node_modules/.bin/playwright install chromium
