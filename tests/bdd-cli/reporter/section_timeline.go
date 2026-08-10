@@ -104,6 +104,7 @@ func (r *Renderer) writeFixtureTimeline(fixture *Fixture) {
 		`">full detail →</a></span></div>`)
 
 	r.write(`<table class="phases"><thead><tr><th>Phase</th><th>Kind</th>`,
+		`<th class="num" title="time since the run began">Elapsed</th>`,
 		`<th class="num">Duration</th><th class="num">% wall</th>`,
 		"<th>Position in the run</th></tr></thead><tbody>")
 
@@ -133,12 +134,6 @@ func timelineDenominator(fixture *Fixture) float64 {
 // its position on the wall-clock axis.
 func (r *Renderer) writePhaseRow(phase Phase, wall float64) {
 	pct := shareOf(phase.Seconds, wall)
-	left := shareOf(phase.Offset, wall)
-
-	width := pct
-	if width < minGanttWidth {
-		width = minGanttWidth
-	}
 
 	note := ""
 	if !phase.Measured {
@@ -148,12 +143,12 @@ func (r *Renderer) writePhaseRow(phase Phase, wall float64) {
 	r.write(`<tr><td><div class="name">`, escapeHTML(phase.Label), note,
 		`</div><div class="detail">`, escapeHTML(phase.Detail), `</div></td>`,
 		"<td>", kindTag(phase.Kind), "</td>",
+		`<td class="num">`, escapeHTML(formatElapsed(phase.Offset)), `</td>`,
 		`<td class="num">`, formatSeconds(phase.Seconds), `</td>`,
 		`<td class="num">`, formatPercent(pct, 1), `%</td>`,
-		`<td class="wide"><div class="gantt">`,
-		`<span style="margin-left:`, formatPercent(left, percentDecimals),
-		`%;width:`, formatPercent(width, percentDecimals),
-		`%;background:`, phaseColor(phase), `"></span></div></td></tr>`)
+		`<td class="wide">`,
+		ganttBar(shareOf(phase.Offset, wall), pct, phaseColor(phase)),
+		"</td></tr>")
 }
 
 // kindTag renders a slice's kind badge.

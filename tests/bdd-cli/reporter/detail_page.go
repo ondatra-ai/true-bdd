@@ -151,7 +151,9 @@ func (d *DetailRenderer) writePhaseDetail(phase Phase, wall float64) {
 	d.write(`<details class="row"><summary>`,
 		`<span class="rk">`, kindTag(phase.Kind), `</span>`,
 		`<span class="rl">`, escapeHTML(phase.Label), `</span>`,
-		`<span class="rb">`, bar(pct, phaseColor(phase), defaultBarHeight), `</span>`,
+		`<span class="re" title="time since the run began">`,
+		escapeHTML(formatElapsed(phase.Offset)), `</span>`,
+		`<span class="rb">`, ganttBar(shareOf(phase.Offset, wall), pct, phaseColor(phase)), `</span>`,
 		`<span class="rd">`, formatSeconds(phase.Seconds), `</span>`,
 		`<span class="rp">`, formatPercent(pct, 1), `%</span>`,
 		`</summary><div class="rbody">`)

@@ -96,6 +96,17 @@ Exactly one slice is a residual rather than a measurement: *fixture
 prep*, because `go test` reports a subtest's total but never stamps when
 it began. It is labelled as such in the output.
 
+Framework runs get their own slices wherever they happened, not just at
+discovery. In a `--fix` run the engine's `PostFix` hook re-executes the
+test after every applied fix — that is what decides whether the fix
+worked — and for a webServer-startup subject it is a whole
+docker-build-and-run suite. Those runs are placed from the
+`Test runner returned` record's timestamp and its reported wall clock,
+so the gap between two turns splits into the engine's own bookkeeping
+plus a `Test run (<framework> · <phase>)` slice owned by the tests. A
+run the log cannot place — no exit timestamp — leaves its gap
+undivided rather than being given an invented position.
+
 ## Layout
 
 | File | |

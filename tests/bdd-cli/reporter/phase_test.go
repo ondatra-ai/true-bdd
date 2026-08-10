@@ -13,6 +13,9 @@ import (
 // milliseconds of rounding is expected; anything larger is a real gap.
 const driftTolerance = 0.01
 
+// modelOpus is the stand-in model name for the synthetic turns.
+const modelOpus = "opus"
+
 // at builds a timestamp offset from a fixed base, so the tests read as
 // "this many seconds into the run".
 func at(base time.Time, seconds float64) time.Time {
@@ -26,12 +29,12 @@ func buildTestFixture() *Fixture {
 
 	turns := []*Turn{
 		{
-			Number: 1, Role: rolePrompt, CLI: cliClaude, Model: "opus",
+			Number: 1, Role: rolePrompt, CLI: cliClaude, Model: modelOpus,
 			Started: at(base, 1.046), Ended: at(base, 11.066),
 			Duration: 10020 * time.Millisecond, Status: TurnOK,
 		},
 		{
-			Number: 2, Role: roleFix, CLI: cliClaude, Model: "opus",
+			Number: 2, Role: roleFix, CLI: cliClaude, Model: modelOpus,
 			Started: at(base, 11.067), Ended: at(base, 133.692),
 			Duration: 122623 * time.Millisecond, Status: TurnOK,
 		},
@@ -203,6 +206,147 @@ func TestDiscoveryBoundWithoutDiscoveryRuns(t *testing.T) {
 
 	if strings.Contains(detail, "of which") {
 		t.Errorf("detail = %q, want no measured-time claim", detail)
+	}
+}
+
+// buildRerunFixture is a `--fix` run: the apply turn lands a fix, the
+// engine re-runs the suite to check it, and only then does the next
+// validation turn open. The rerun is the shape the timeline used to
+// swallow.
+func buildRerunFixture() *Fixture {
+	fixture := buildTestFixture()
+	base := fixture.First
+
+	fixture.Turns = append(fixture.Turns, &Turn{
+		Number: 4, Role: rolePrompt, CLI: cliClaude, Model: modelOpus,
+		Started: at(base, 240.0), Ended: at(base, 248.0),
+		Duration: 8 * time.Second, Status: TurnOK,
+	})
+
+	fixture.TestRuns = []TestRun{{
+		Framework: frameworkPlaywright,
+		Phase:     phaseRerun,
+		Duration:  38 * time.Second,
+		At:        at(base, 237.0),
+		ExitCode:  0,
+		HasExit:   true,
+	}}
+
+	fixture.Last = at(base, 248.0)
+	fixture.Wall = time.Duration(255.62 * float64(time.Second))
+	fixture.Judge = &JudgeCall{At: at(base, 252.0)}
+
+	fixture.Phases = BuildPhases(fixture)
+	fixture.PhaseTotal = 0
+
+	for _, phase := range fixture.Phases {
+		fixture.PhaseTotal += phase.Seconds
+	}
+
+	return fixture
+}
+
+// findPhase returns the one slice whose label contains want.
+func findPhase(t *testing.T, fixture *Fixture, want string) Phase {
+	t.Helper()
+
+	for _, phase := range fixture.Phases {
+		if strings.Contains(phase.Label, want) {
+			return phase
+		}
+	}
+
+	t.Fatalf("no phase labelled %q in %d slices", want, len(fixture.Phases))
+
+	return Phase{}
+}
+
+// TestPostFixRerunIsItsOwnSlice is the point of the split. The engine's
+// PostFix hook is what decides whether an applied fix worked, and for a
+// webServer-startup subject that is a whole docker-build-and-run suite.
+// Reporting it as "Engine between turns" hid the only validating step
+// in a `--fix` run behind a label that said prompt-building.
+func TestPostFixRerunIsItsOwnSlice(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildRerunFixture()
+
+	phase := findPhase(t, fixture, phaseRerun)
+
+	if phase.Owner != OwnerTests {
+		t.Errorf("rerun owner = %q, want %q", phase.Owner, OwnerTests)
+	}
+
+	if math.Abs(phase.Seconds-38.0) > driftTolerance {
+		t.Errorf("rerun slice = %.3fs, want 38.000s", phase.Seconds)
+	}
+
+	if !strings.Contains(phase.Label, frameworkPlaywright) {
+		t.Errorf("label %q does not name the framework", phase.Label)
+	}
+
+	// The verdict is the reason the slice exists — a reader scanning the
+	// timeline should see whether the fix held without opening the page.
+	if !strings.Contains(phase.Detail, "exit 0") {
+		t.Errorf("detail = %q, want the runner's exit status", phase.Detail)
+	}
+}
+
+// TestRerunTimelineStillSumsAndIsContiguous re-pins the report's central
+// invariants against the split gap: carving a slice out of a gap must
+// neither lose nor double-count the time either side of it.
+func TestRerunTimelineStillSumsAndIsContiguous(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildRerunFixture()
+
+	drift := math.Abs(fixture.Wall.Seconds() - fixture.PhaseTotal)
+	if drift > driftTolerance {
+		t.Errorf("phases sum to %.3fs but wall clock is %.3fs (drift %.3fs)",
+			fixture.PhaseTotal, fixture.Wall.Seconds(), drift)
+	}
+
+	expected := 0.0
+
+	for _, phase := range fixture.Phases {
+		if math.Abs(phase.Offset-expected) > driftTolerance {
+			t.Errorf("phase %q starts at %.3fs, expected %.3fs",
+				phase.Label, phase.Offset, expected)
+		}
+
+		expected += phase.Seconds
+	}
+}
+
+// TestUnplaceableRerunLeavesGapWhole checks the fallback. A run from a
+// log with no exit timestamp cannot be positioned, and inventing a
+// position for it would move every later slice on the gantt — so the
+// gap stays one undivided engine slice.
+func TestUnplaceableRerunLeavesGapWhole(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildRerunFixture()
+	fixture.TestRuns[0].At = time.Time{}
+	fixture.Phases = BuildPhases(fixture)
+
+	for _, phase := range fixture.Phases {
+		if strings.Contains(phase.Label, phaseRerun) {
+			t.Fatalf("placed an unplaceable run as %q", phase.Label)
+		}
+	}
+
+	// The post-apply gap is the only large one: 198.137s (apply turn
+	// ends) → 240.0s (next turn opens). The others are milliseconds.
+	widest := 0.0
+
+	for _, phase := range fixture.Phases {
+		if strings.Contains(phase.Label, "Engine between turns") && phase.Seconds > widest {
+			widest = phase.Seconds
+		}
+	}
+
+	if math.Abs(widest-41.863) > driftTolerance {
+		t.Errorf("gap = %.3fs, want the whole 41.863s undivided", widest)
 	}
 }
 

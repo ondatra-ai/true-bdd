@@ -111,16 +111,17 @@ a:hover{text-decoration:underline}
 details.row{border:1px solid var(--line);border-radius:10px;
   background:var(--card);margin-top:10px;overflow:hidden}
 details.row>summary{display:grid;
-  grid-template-columns:130px 1fr 200px 88px 64px;gap:14px;
+  grid-template-columns:130px 1fr 76px 200px 88px 64px;gap:14px;
   align-items:center;padding:12px 16px;cursor:pointer;font-size:14px;
   list-style:none}
 details.row>summary::-webkit-details-marker{display:none}
 details.row>summary:hover{background:var(--code)}
 details.row[open]>summary{border-bottom:1px solid var(--line)}
 .rl{font-weight:500}
-.rd,.rp{text-align:right;font-variant-numeric:tabular-nums;
+.rd,.rp,.re{text-align:right;font-variant-numeric:tabular-nums;
   white-space:nowrap}
-.rp{color:var(--muted)}
+.rp,.re{color:var(--muted)}
+.re{text-align:left}
 .rbody{padding:14px 16px 18px}
 .rbody .detail{font-size:13px;color:var(--muted);margin:0 0 12px;
   max-width:80ch}
