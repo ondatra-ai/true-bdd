@@ -1,15 +1,24 @@
-package main
+package reporter
 
 import (
 	"path/filepath"
 	"strings"
 )
 
-// detailFileName is the page a fixture's row on the index links to.
-func detailFileName(indexPath, fixtureName string) string {
-	base := strings.TrimSuffix(filepath.Base(indexPath), filepath.Ext(indexPath))
+// detailFileName is the page a fixture's row on the index links to. It
+// sits flat beside index.html, so the pair can be copied or served from
+// anywhere together.
+//
+// filepath.Base guards the name: it is a session directory entry, not a
+// value this package chose. The index guard closes the one way a
+// fixture name could clobber the report's entry page.
+func detailFileName(fixtureName string) string {
+	name := filepath.Base(fixtureName) + ".html"
+	if name == indexFileName {
+		name = "fixture-" + name
+	}
 
-	return base + "-" + fixtureName + ".html"
+	return name
 }
 
 // DetailRenderer builds one fixture's page: the same timeline as the
@@ -18,13 +27,11 @@ type DetailRenderer struct {
 	out     strings.Builder
 	fixture *Fixture
 	session string
-	// indexHref links back to the summary.
-	indexHref string
 }
 
-// NewDetailRenderer prepares a page for one fixture.
-func NewDetailRenderer(fixture *Fixture, session, indexHref string) *DetailRenderer {
-	return &DetailRenderer{fixture: fixture, session: session, indexHref: indexHref}
+// newDetailRenderer prepares a page for one fixture.
+func newDetailRenderer(fixture *Fixture, session string) *DetailRenderer {
+	return &DetailRenderer{fixture: fixture, session: session}
 }
 
 // Render produces the whole document.
@@ -50,7 +57,7 @@ func (d *DetailRenderer) writeHeader() {
 	fixture := d.fixture
 
 	d.write("\n<header>\n  <h1>", escapeHTML(fixture.Name), "</h1>\n",
-		`  <p class="sub"><a href="`, escapeHTML(d.indexHref), `">← run report</a> · session <code>`,
+		`  <p class="sub"><a href="`, indexFileName, `">← run report</a> · session <code>`,
 		escapeHTML(d.session), "</code> · ",
 		formatDuration(fixture.Wall.Seconds(), fixture.HasWall), " wall · ",
 		formatMoney(fixture.Cost+judgeCost(fixture)), " · ",
@@ -382,23 +389,36 @@ func (d *DetailRenderer) writeFailedChecks() {
 	d.write("</ul>")
 }
 
-// writeFileDiff lists what the run changed on disk. The harness prints
-// this only when a fixture fails, so its absence on a pass is expected
-// rather than missing data.
+// writeFileDiff lists what the run changed on disk.
 func (d *DetailRenderer) writeFileDiff() {
 	fixture := d.fixture
 
 	if len(fixture.Diff) == 0 {
-		if fixture.Verdict == verdictPass {
-			d.write(`<p class="detail">The file diff is printed by the harness `,
-				"only for a failing fixture, so this passing run has none to show.</p>")
-		}
+		d.writeEmptyDiffNote()
 
 		return
 	}
 
 	d.writeCollapsible("file diff · "+itoa(len(fixture.Diff))+" entries",
 		0, strings.Join(fixture.Diff, "\n"))
+}
+
+// writeEmptyDiffNote explains an empty diff, which means two different
+// things depending on where the outcome came from. Saying "changed
+// nothing" about a legacy session would be a claim the source cannot
+// support: the old scrape read the diff off the harness's failure dump,
+// which a passing fixture never printed.
+func (d *DetailRenderer) writeEmptyDiffNote() {
+	if d.fixture.HasRecord {
+		d.write(`<p class="detail">The run changed no files.</p>`)
+
+		return
+	}
+
+	if d.fixture.Verdict == verdictPass {
+		d.write(`<p class="detail">The file diff is printed by the harness `,
+			"only for a failing fixture, so this passing run has none to show.</p>")
+	}
 }
 
 // repoLayerNames is what the runner pre-copies into every tmpdir.

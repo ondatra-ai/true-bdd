@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"os"
@@ -55,7 +55,7 @@ func TestTestRunsLoadsCapturedStreams(t *testing.T) {
 
 	dir := writeRunFixture(t, records, report, "")
 
-	log, err := LoadEngineLog(filepath.Join(dir, "tmp", "true-bdd.log.json"))
+	log, err := loadEngineLog(filepath.Join(dir, "tmp", "true-bdd.log.json"))
 	if err != nil {
 		t.Fatalf("load log: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestTestRunsReportsProcessThatNeverStarted(t *testing.T) {
 
 	dir := writeRunFixture(t, records, "", "")
 
-	log, err := LoadEngineLog(filepath.Join(dir, "tmp", "true-bdd.log.json"))
+	log, err := loadEngineLog(filepath.Join(dir, "tmp", "true-bdd.log.json"))
 	if err != nil {
 		t.Fatalf("load log: %v", err)
 	}

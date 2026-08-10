@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // Verdict captures the result of one fixture's three checks.
@@ -14,6 +15,13 @@ type Verdict struct {
 	JudgeOK  bool
 	JudgeMsg string
 	Failures []string
+	// JudgeStartedAt/JudgeEndedAt bracket the judge's model call. The
+	// run report measures the trailing harness block from the far edge —
+	// it is the only stamp that exists after the engine's log goes
+	// quiet — and the window is what pairs a usage record with the
+	// fixture that caused it.
+	JudgeStartedAt time.Time
+	JudgeEndedAt   time.Time
 }
 
 // Pass reports whether all three checks were satisfied.
@@ -30,11 +38,18 @@ func Evaluate(ctx context.Context, fixture *Fixture, result *RunResult, judge Ju
 
 	verdict.RegexOK = checkStdoutRegexes(result.Stdout, fixture.StdoutRegexes, &verdict.Failures)
 
+	verdict.JudgeStartedAt = time.Now()
+
 	pass, reason, err := judge.Verdict(ctx, JudgeRequest{
 		Cmd:       fixture.Cmd,
 		JudgeSpec: fixture.JudgeSpec,
 		Diff:      result.Diff,
 	})
+
+	// Stamped before the branch: a judge that errored may still have
+	// burned tokens, and an unstamped window would bill them to nobody.
+	verdict.JudgeEndedAt = time.Now()
+
 	if err != nil {
 		verdict.JudgeOK = false
 		verdict.JudgeMsg = "judge call errored: " + err.Error()

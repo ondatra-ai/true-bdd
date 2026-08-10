@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import "time"
 
@@ -60,14 +60,14 @@ const shutdownFloor = 0.0005
 // still sum to the gap.
 const gapFloor = 0.0005
 
-// BuildPhases cuts one fixture's wall clock into contiguous slices.
+// buildPhases cuts one fixture's wall clock into contiguous slices.
 //
 // Everything is measured except the leading harness block, which is a
 // residual: `go test` reports a subtest's total but never stamps when it
 // began, so prep is whatever the other measured slices do not claim.
 // That is also why the slices sum to the wall clock by construction —
 // the report prints the drift so a hole in this model stays visible.
-func BuildPhases(fixture *Fixture) []Phase {
+func buildPhases(fixture *Fixture) []Phase {
 	var phases []Phase
 
 	postSeconds, hasPost := postRunSeconds(fixture)

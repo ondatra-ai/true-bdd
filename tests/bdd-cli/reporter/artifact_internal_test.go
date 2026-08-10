@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"testing"
@@ -191,7 +191,7 @@ func TestSpawnAttachesToTheOpenTurn(t *testing.T) {
 }
 
 // record builds one log record with its timestamp parsed, the way
-// LoadEngineLog would.
+// loadEngineLog would.
 func record(stamp, msg string, apply func(*LogRecord)) LogRecord {
 	rec := LogRecord{Time: stamp, Msg: msg}
 	if apply != nil {

@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"fmt"
@@ -63,8 +63,14 @@ type Fixture struct {
 	First time.Time
 	Last  time.Time
 
-	Wall      time.Duration
-	HasWall   bool
+	Wall    time.Duration
+	HasWall bool
+	// HasRecord says the outcome came from the harness's own record
+	// rather than the legacy `go test` scrape. It decides what an empty
+	// Diff means: the record carries the diff for every fixture, so
+	// empty means the run wrote nothing — whereas the scrape only ever
+	// printed a diff for a failing fixture, so empty means unknown.
+	HasRecord bool
 	Verdict   string
 	Judge     *JudgeCall
 	Discovery Discovery
@@ -89,9 +95,9 @@ type Fixture struct {
 	PhaseTotal float64
 }
 
-// LoadFixtures assembles every fixture in a session directory that left
+// loadFixtures assembles every fixture in a session directory that left
 // an engine log behind.
-func LoadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, error) {
+func loadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, error) {
 	entries, err := os.ReadDir(sessionDir)
 	if err != nil {
 		return nil, fmt.Errorf("read session dir: %w", err)
@@ -113,7 +119,7 @@ func LoadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, e
 			continue
 		}
 
-		fixture, loadErr := loadFixture(dir, entry.Name(), repoRoot, logPath, gotest, len(fixtures))
+		fixture, loadErr := loadFixture(dir, entry.Name(), repoRoot, logPath, gotest)
 		if loadErr != nil {
 			return nil, loadErr
 		}
@@ -128,14 +134,13 @@ func LoadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, e
 func loadFixture(
 	dir, name, repoRoot, logPath string,
 	gotest *GoTestLog,
-	index int,
 ) (*Fixture, error) {
-	log, err := LoadEngineLog(logPath)
+	log, err := loadEngineLog(logPath)
 	if err != nil {
 		return nil, err
 	}
 
-	manifest := LoadManifest(repoRoot, name)
+	manifest := loadManifest(repoRoot, name)
 
 	fixture := &Fixture{
 		Name:                name,
@@ -150,19 +155,7 @@ func loadFixture(
 		EmptyFailurePrompts: findEmptyFailurePrompts(dir),
 	}
 
-	if verdict, ok := gotest.Verdicts[name]; ok {
-		fixture.Wall = verdict.Wall
-		fixture.HasWall = true
-		fixture.Verdict = verdict.Verdict
-		fixture.Diff = verdict.Diff
-		fixture.Failures = verdict.Failures
-	}
-
-	// Judge calls carry no fixture name, so they are paired in order.
-	// Fixtures run sequentially, which makes that exact.
-	if index < len(gotest.Judges) {
-		fixture.Judge = &gotest.Judges[index]
-	}
+	applyHarnessOutcome(fixture, dir, gotest)
 
 	for _, turn := range fixture.Turns {
 		fixture.ModelSeconds += turn.Seconds()
@@ -174,7 +167,7 @@ func loadFixture(
 		fixture.Discovery = findDiscovery(dir, log, fixture.First, fixture.Turns[0].Started)
 	}
 
-	fixture.Phases = BuildPhases(fixture)
+	fixture.Phases = buildPhases(fixture)
 	for _, phase := range fixture.Phases {
 		fixture.PhaseTotal += phase.Seconds
 	}

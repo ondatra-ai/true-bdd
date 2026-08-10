@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"path/filepath"
@@ -26,11 +26,11 @@ type Manifest struct {
 	Loaded       bool
 }
 
-// LoadManifest reads one fixture's manifest from the source tree. A
+// loadManifest reads one fixture's manifest from the source tree. A
 // fixture whose folder has since been renamed or deleted yields an
 // unloaded Manifest rather than an error: the run still happened, and
 // its timings are still worth reporting.
-func LoadManifest(repoRoot, name string) *Manifest {
+func loadManifest(repoRoot, name string) *Manifest {
 	dir := filepath.Join(repoRoot, "tests", "bdd-cli", "fixtures", name)
 
 	fixture, err := runner.LoadFixture(dir)

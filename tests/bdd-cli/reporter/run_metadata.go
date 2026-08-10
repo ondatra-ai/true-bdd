@@ -1,4 +1,4 @@
-package main
+package reporter
 
 // RunMetadata is what the engine reported about its own setup and its
 // interactive decisions — the context a timeline slice needs to be

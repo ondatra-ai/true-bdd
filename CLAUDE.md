@@ -60,8 +60,13 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 # Unit tests
 go test ./...
 
-# End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture
+# End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture.
+# Renders the HTML run report to tmp/test_report/ after every fixture,
+# in-process — no output redirect, no second command.
 go test -tags bdd -timeout=180m ./tests/bdd-cli/...
+
+# Re-render the report for an older session (or one whose suite was killed)
+go run ./tests/bdd-cli/cmd/reporter
 
 # Lint
 golangci-lint run
@@ -139,7 +144,8 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), and the current branch fast-forwarded from origin (the branch is never switched) — except `docs/context/`, whose uncommitted archivist writes always survive the reset. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
 - `docs/context/` — the requirements tree (git-tracked): a single `requirements.md` with three flat sections — `# Harness` (web-harness), `# System` (system design), `# Product` (user experience) — each a list of `## <requirement>` headings. Maintained by the context archivist (see Context below) via add/update/delete operations — the durable memory for what is said in conversation but never lands in a commit. **Not** the BDD requirements registry: product scenarios live in a host project's `docs/scenarios.yaml` (or a fixture's input tree). `terms.md` lists the only allowed subject terms (Harness / Systems / Roles) that a requirement may be phrased around.
 - `docs/tasks/` — one Markdown task brief per task (`<slug>.md`, slug derived from the goal), written by the `identify-task` skill (Goal + Requirements) and consumed by `implement-task`.
-- `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk.
+- `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk. Two files there are the run report's structural inputs: `bdd-cli-logs/harness.json` per fixture (wall clock, verdict, diff, judge window — written from a `t.Cleanup`, so it survives a `t.Fatalf`, and strictly after both snapshots, so it never enters the judge's diff) and `harness.log.json` at the session root (the test process's own slog, where the judge's `AI turn usage` record lands).
+- `tmp/test_report/` — the HTML run report: `index.html` plus one `<fixture-name>.html` per fixture, rewritten after every fixture by the BDD harness. Flat and overwritten each run; pages for fixtures that no longer exist are pruned. See `tests/bdd-cli/reporter/README.md`.
 
 ## Architecture Principles
 
