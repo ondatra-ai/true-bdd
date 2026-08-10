@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"bufio"
@@ -113,10 +113,10 @@ type EngineLog struct {
 	Last    time.Time
 }
 
-// LoadEngineLog reads a true-bdd.log.json. Unparsable lines are skipped
+// loadEngineLog reads a true-bdd.log.json. Unparsable lines are skipped
 // rather than fatal: the log is append-only and a run killed mid-write
 // can leave a torn final line, which should not cost the whole report.
-func LoadEngineLog(path string) (*EngineLog, error) {
+func loadEngineLog(path string) (*EngineLog, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open engine log: %w", err)

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/reporter"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
 )
 
@@ -58,6 +59,16 @@ func TestBDDFixtures(t *testing.T) {
 
 	t.Logf("BDD session root: %s", sessionRoot)
 
+	// Point this process's slog at the session before the first judge
+	// call. Left unconfigured, slog falls back to the log package's text
+	// format on stderr and the judge's cost exists structurally nowhere.
+	usage, closeLog, err := runner.InstallHarnessLogging(sessionRoot)
+	if err != nil {
+		t.Fatalf("install harness logging: %v", err)
+	}
+
+	t.Cleanup(closeLog)
+
 	fixtures, err := discoverFixtures()
 	if err != nil {
 		t.Fatalf("discover fixtures: %v", err)
@@ -68,10 +79,64 @@ func TestBDDFixtures(t *testing.T) {
 	}
 
 	for _, dir := range fixtures {
-		t.Run(filepath.Base(dir), func(t *testing.T) {
-			runFixture(t, dir, binPath, sessionRoot, judge)
+		name := filepath.Base(dir)
+		ran := false
+
+		t.Run(name, func(t *testing.T) {
+			ran = true
+
+			// Registered FIRST so it runs LAST: t.Cleanup is LIFO, and
+			// this has to bracket every other cleanup to measure the
+			// span `go test` reports. A cleanup rather than a defer
+			// because it then also fires under t.Fatalf's runtime.Goexit
+			// and under a panic — the two cases a statement at the end
+			// of runFixture would miss, and the two a report is most
+			// needed for.
+			rec := runner.NewHarnessRecorder(sessionRoot, name, usage)
+			t.Cleanup(func() { rec.Finish(t.Failed(), t.Skipped()) })
+
+			runFixture(t, dir, binPath, sessionRoot, judge, rec)
 		})
+
+		// Outside t.Run on purpose. A failing fixture calls t.Fatalf,
+		// which is runtime.Goexit on the subtest's own goroutine — t.Run
+		// recovers it and returns, so this still runs. And because it is
+		// the loop tail rather than a deferred final call, the last
+		// fixture renders on the same path as every other one.
+		//
+		// Guarded on `ran` because `go test -run` skips a subtest without
+		// running its body, and t.Run reports that exactly as it reports
+		// a pass. Unguarded, a single-fixture run would rebuild the whole
+		// report once per fixture the filter excluded.
+		if ran {
+			renderReport(t, sessionRoot)
+		}
 	}
+}
+
+// renderReport re-renders the whole run report from the session
+// directory as it stands. Called after every fixture so a long suite is
+// readable while it is still running, and so a killed run still leaves
+// a report for the fixtures that finished. Each call rebuilds every
+// page, so a partial session yields a partial report rather than a
+// stale one.
+//
+// A render failure is logged, never fatal — the report is an observation
+// of the suite, and a suite that passed must not be failed by the thing
+// watching it. t.Fatalf here would be on the PARENT T, which would
+// abandon every remaining fixture.
+func renderReport(t *testing.T, sessionRoot string) {
+	t.Helper()
+
+	summary, err := reporter.Render(reporter.Options{Session: sessionRoot})
+	if err != nil {
+		t.Logf("render run report: %v", err)
+
+		return
+	}
+
+	t.Logf("run report: %s (%d fixture(s), %d turns)",
+		summary.IndexPath, summary.Fixtures, summary.Turns)
 }
 
 func buildTrueBDD(t *testing.T) string {
@@ -117,11 +182,17 @@ func discoverFixtures() ([]string, error) {
 	return dirs, nil
 }
 
-func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Judge) {
+func runFixture(
+	t *testing.T,
+	dir, binPath, sessionRoot string,
+	judge runner.Judge,
+	rec *runner.HarnessRecorder,
+) {
 	t.Helper()
 
 	fixture, err := runner.LoadFixture(dir)
 	if err != nil {
+		rec.AddFailure("load fixture: " + err.Error())
 		t.Fatalf("load fixture: %v", err)
 	}
 
@@ -136,7 +207,13 @@ func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Jud
 	// The deadline is applied inside Execute, around the CLI exec alone —
 	// the tmpdir build and the pre-run snapshot must not spend it.
 	res, err := runner.Execute(context.Background(), fixture, binPath, sessionRoot, timeout)
+
+	// Before the branch: a run that errored still has a diff worth
+	// recording, and the tmpdir path is what makes it findable.
+	rec.ObserveRun(res, err)
+
 	if err != nil {
+		rec.AddFailure("execute: " + err.Error())
 		dumpRun(t, res)
 		t.Fatalf("execute: %v", err)
 	}
@@ -145,6 +222,7 @@ func runFixture(t *testing.T, dir, binPath, sessionRoot string, judge runner.Jud
 	defer judgeCancel()
 
 	verdict := runner.Evaluate(judgeCtx, fixture, res, judge)
+	rec.ObserveVerdict(verdict)
 
 	if verdict.Pass() {
 		t.Logf("PASS %s (exit=%d, %d file change(s)) — dir: %s",

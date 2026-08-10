@@ -304,7 +304,7 @@ func Execute(
 // after prep commands have a chance to mutate the tree, so prep side
 // effects don't pollute the diff.
 func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
-	tmpDir := filepath.Join(sessionRoot, fixture.Name)
+	tmpDir := RunDir(sessionRoot, fixture.Name)
 
 	// Wipe any leftover from a same-second collision (e.g. `go test
 	// -run X -count=2` re-entering within one second). MkdirAll alone

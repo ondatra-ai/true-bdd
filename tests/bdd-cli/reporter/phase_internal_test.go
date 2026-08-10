@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"math"
@@ -60,7 +60,7 @@ func buildTestFixture() *Fixture {
 		},
 	}
 
-	fixture.Phases = BuildPhases(fixture)
+	fixture.Phases = buildPhases(fixture)
 	for _, phase := range fixture.Phases {
 		fixture.PhaseTotal += phase.Seconds
 	}
@@ -156,7 +156,7 @@ func TestModelTimeExcludesDeterministicWork(t *testing.T) {
 func testRunPhaseDetail(t *testing.T, fixture *Fixture) string {
 	t.Helper()
 
-	for _, phase := range BuildPhases(fixture) {
+	for _, phase := range buildPhases(fixture) {
 		if phase.Owner == OwnerTests {
 			return phase.Detail
 		}
@@ -236,7 +236,7 @@ func buildRerunFixture() *Fixture {
 	fixture.Wall = time.Duration(255.62 * float64(time.Second))
 	fixture.Judge = &JudgeCall{At: at(base, 252.0)}
 
-	fixture.Phases = BuildPhases(fixture)
+	fixture.Phases = buildPhases(fixture)
 	fixture.PhaseTotal = 0
 
 	for _, phase := range fixture.Phases {
@@ -327,7 +327,7 @@ func TestUnplaceableRerunLeavesGapWhole(t *testing.T) {
 
 	fixture := buildRerunFixture()
 	fixture.TestRuns[0].At = time.Time{}
-	fixture.Phases = BuildPhases(fixture)
+	fixture.Phases = buildPhases(fixture)
 
 	for _, phase := range fixture.Phases {
 		if strings.Contains(phase.Label, phaseRerun) {

@@ -1,4 +1,4 @@
-package main
+package reporter
 
 // minGanttWidth keeps a millisecond-scale slice visible on the gantt.
 // Without it the engine's own work — the most interesting number in the

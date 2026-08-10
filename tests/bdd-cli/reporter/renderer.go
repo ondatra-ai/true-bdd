@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	_ "embed"
@@ -82,9 +82,6 @@ func roleOrder() []string {
 type Renderer struct {
 	out     strings.Builder
 	session string
-	// indexPath names the file being written, so per-fixture links can
-	// be derived from it rather than hardcoded.
-	indexPath string
 
 	fixtures []*Fixture
 	turns    []*Turn
@@ -104,14 +101,13 @@ type Renderer struct {
 	passed      int
 }
 
-// NewRenderer precomputes every suite-level total the sections share, so
+// newRenderer precomputes every suite-level total the sections share, so
 // no section has to walk the fixtures again to answer "out of what?".
-func NewRenderer(fixtures []*Fixture, session, indexPath string) *Renderer {
+func newRenderer(fixtures []*Fixture, session string) *Renderer {
 	renderer := &Renderer{
-		fixtures:  fixtures,
-		session:   session,
-		indexPath: indexPath,
-		maxTurn:   1,
+		fixtures: fixtures,
+		session:  session,
+		maxTurn:  1,
 	}
 
 	for _, fixture := range fixtures {
@@ -186,7 +182,7 @@ func (r *Renderer) collectTurns(fixture *Fixture) {
 // detailHref is the relative link from the index to one fixture's page.
 // Relative so the pair can be copied or served from anywhere together.
 func (r *Renderer) detailHref(fixture *Fixture) string {
-	return detailFileName(r.indexPath, fixture.Name)
+	return detailFileName(fixture.Name)
 }
 
 // write appends raw markup.

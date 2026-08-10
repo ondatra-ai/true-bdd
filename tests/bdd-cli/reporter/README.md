@@ -4,15 +4,21 @@ Renders a self-contained HTML report for a BDD fixture session: where a
 run's wall clock went, what each AI turn cost, and which slices are the
 engine's own code versus a model deciding how long to take.
 
+The BDD suite renders it **in-process, after every fixture** — no redirect,
+no second command, and a report exists while a long run is still going:
+
 ```bash
-# 1. run the suite (or a single fixture) and keep the verbose output
-go test -tags bdd -timeout=180m ./tests/bdd-cli/... -v > tmp/bdd-run.log 2>&1
+go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 
-# 2. render the newest session
-go run ./tests/bdd-cli/reporter
+# -> tmp/test_report/index.html        the index
+# -> tmp/test_report/<fixture>.html    one detail page per fixture
+```
 
-# -> tmp/bdd-report.html                  the index
-# -> tmp/bdd-report-<fixture>.html        one detail page per fixture
+To re-render a session by hand — an older one, or one whose suite was
+killed:
+
+```bash
+go run ./tests/bdd-cli/cmd/reporter
 ```
 
 The **index** answers *where the time went*. Each fixture links to its
@@ -29,8 +35,8 @@ so the working directory does not matter.
 | Flag | Default | |
 |---|---|---|
 | `-session` | newest dir under `tmp/test_run/` | the run to report on |
-| `-gotest` | `tmp/bdd-run.log` | verbose `go test` output |
-| `-out` | `tmp/bdd-report.html` | where to write |
+| `-gotest` | none | legacy `go test -v` log, for sessions with no harness record |
+| `-out-dir` | `tmp/test_report` | directory for `index.html` and the per-fixture pages |
 
 ## What it reads
 
@@ -40,10 +46,26 @@ so the working directory does not matter.
    token counters) and `AI turn returned` / `AI turn failed`
    (`duration_ms`). The spans *between* those records are the engine's
    deterministic work.
-2. **The `go test -v` output** — two things live only here: the
-   per-fixture wall clock and verdict, and the harness judge's own slog
-   records. The judge runs in the test process, so its cost never
-   reaches the engine log.
+2. **`tmp/test_run/<session>/<fixture>/bdd-cli-logs/harness.json`** — the
+   harness's own record of the run. Four things live only here, because
+   the engine cannot see them from inside its own process: the fixture's
+   wall clock, its verdict, the file diff, and what the harness judge
+   spent. Written from a `t.Cleanup`, so it survives a `t.Fatalf` — and
+   strictly after `Execute` took both snapshots, so it can never enter
+   the diff the judge grades.
+
+   The judge's cost is billed by **time window**: `runner.Verdict`
+   stamps the model call, and the sink in `runner/harness_logging.go`
+   claims the `AI turn usage` records that fall inside it. A fixture
+   that died before reaching its judge therefore claims nothing, instead
+   of inheriting the next fixture's cost.
+
+   A session recorded before this file existed can still be rendered by
+   passing `-gotest` the old redirected log. Opt-in on purpose: the
+   harness now configures `slog`, which changes the format those judge
+   records were scraped from, so a legacy log left active by default
+   would quietly drop the judge's cost while still producing a
+   complete-looking timeline.
 3. **The fixture's prompt artifacts** under `tmp/<run-id>/` — the system
    and user prompts, responses, result YAML and CLI transcripts. Matched
    to turns positionally: a prompt artifact written before a dispatch is
@@ -79,7 +101,7 @@ flag order against it.
 
 The report's spine is a gap-free timeline: every slice is tagged
 deterministic or non-deterministic, and the slices must sum to the wall
-clock `go test` measured. The command prints the drift per fixture — if
+clock the harness measured. The command prints the drift per fixture — if
 that number is not near zero, the phase model has a hole and the report
 is lying:
 
@@ -93,8 +115,8 @@ loses or double-counts time fails in `go test ./...` rather than in a
 report someone is reading.
 
 Exactly one slice is a residual rather than a measurement: *fixture
-prep*, because `go test` reports a subtest's total but never stamps when
-it began. It is labelled as such in the output.
+prep*, because the harness records a fixture's total but the engine
+never stamps when the prep before it began. It is labelled as such in the output.
 
 Framework runs get their own slices wherever they happened, not just at
 discovery. In a `--fix` run the engine's `PostFix` hook re-executes the
@@ -111,7 +133,7 @@ undivided rather than being given an invented position.
 
 | File | |
 |---|---|
-| `main.go` | flags, repo-root anchoring, drift self-check, page writing |
+| `cmd/reporter/main.go` | flags and printing, for the manual re-render |
 | `engine_log.go` | JSON log parsing, folding records into turns |
 | `turn.go` | one AI turn, its token counters and time split |
 | `artifact.go` | artifact ↔ turn matching, checklist-cell parsing |
@@ -119,7 +141,10 @@ undivided rather than being given an invented position.
 | `toolcall.go` | the tool calls a turn made |
 | `run_metadata.go` | checklist/architecture load, fix-loop decisions |
 | `manifest.go` | the fixture manifest, via `runner.LoadFixture` |
-| `gotest_log.go` | wall clocks, verdicts, and the judge's usage |
+| `report.go` | `Render`, its options and its summary — the only way in |
+| `pages.go` | the flat page set, and pruning what a previous session left |
+| `harness_record.go` | the harness's record of a run, and the legacy fallback |
+| `gotest_log.go` | the legacy `go test -v` scrape, kept for old sessions |
 | `fixture.go` | assembling one fixture from every source |
 | `phase.go` | the timeline: contiguous slices, tagged and owned |
 | `renderer.go` | index assembly, palette, shared helpers |

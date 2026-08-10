@@ -1,4 +1,4 @@
-package main
+package reporter
 
 import (
 	"bufio"
@@ -54,15 +54,8 @@ var (
 	)
 )
 
-// JudgeCall is one harness judge invocation, recovered from the test
-// process's own log lines.
-type JudgeCall struct {
-	At      time.Time
-	CostUSD float64
-	Tokens  int
-}
-
-// GoTestLog is the parsed `go test -v` output.
+// GoTestLog is the parsed `go test -v` output — the legacy fallback for
+// sessions recorded before the harness wrote its own record.
 type GoTestLog struct {
 	Verdicts map[string]FixtureVerdict
 	Judges   []JudgeCall
@@ -70,13 +63,44 @@ type GoTestLog struct {
 	// failure detail printed between RUN and the verdict line lands on
 	// the right fixture in a multi-fixture run.
 	current string
+	// judgeCursor is how many judge calls have already been claimed.
+	// These records carry no fixture name, so the only pairing available
+	// here is order — consumed as fixtures fall back to this source,
+	// rather than indexed by position in the session directory.
+	judgeCursor int
 }
 
-// LoadGoTestLog parses the verbose test output. A missing file is not an
+// applyGoTestVerdict fills a fixture from the legacy log.
+func applyGoTestVerdict(fixture *Fixture, log *GoTestLog) {
+	verdict, ok := log.Verdicts[fixture.Name]
+	if !ok {
+		return
+	}
+
+	fixture.Wall = verdict.Wall
+	fixture.HasWall = true
+	fixture.Verdict = verdict.Verdict
+	fixture.Diff = verdict.Diff
+	fixture.Failures = verdict.Failures
+
+	if log.judgeCursor < len(log.Judges) {
+		fixture.Judge = &log.Judges[log.judgeCursor]
+		log.judgeCursor++
+	}
+}
+
+// emptyGoTestLog is the fallback source when no legacy log was asked
+// for: every lookup misses, so every fixture falls through to its
+// harness record.
+func emptyGoTestLog() *GoTestLog {
+	return &GoTestLog{Verdicts: map[string]FixtureVerdict{}}
+}
+
+// loadGoTestLog parses the verbose test output. A missing file is not an
 // error: the report still renders from the engine logs alone, just
 // without wall clocks, verdicts or judge costs.
-func LoadGoTestLog(path string) (*GoTestLog, error) {
-	log := &GoTestLog{Verdicts: map[string]FixtureVerdict{}}
+func loadGoTestLog(path string) (*GoTestLog, error) {
+	log := emptyGoTestLog()
 
 	file, err := os.Open(path)
 	if err != nil {
