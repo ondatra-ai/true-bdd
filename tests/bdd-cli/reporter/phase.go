@@ -50,6 +50,13 @@ type Phase struct {
 	Turn    *Turn
 	CostUSD float64
 	Tokens  int
+	// TestRuns indexes into Fixture.TestRuns for the subprocesses this
+	// slice contains. Carried explicitly because the label cannot
+	// recover it: a fix loop reruns the same test repeatedly, so several
+	// slices share the label "Test run (playwright · rerun)" and a
+	// consumer matching on it would show every rerun's output under
+	// every rerun's row.
+	TestRuns []int
 }
 
 // shutdownFloor is the smallest tail worth its own row. Below this the
@@ -169,6 +176,9 @@ func appendPreDispatch(phases []Phase, fixture *Fixture) []Phase {
 		Owner:    OwnerTests,
 		Seconds:  fixture.Discovery.End.Sub(fixture.First).Seconds(),
 		Measured: true,
+		// The opening slice is bounded by log records, so it contains
+		// every discovery-phase invocation rather than exactly one.
+		TestRuns: discoveryRuns(fixture),
 	})
 
 	return append(phases, Phase{
@@ -228,7 +238,9 @@ func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase 
 
 	cursor := from
 
-	for _, run := range runs {
+	for _, position := range runs {
+		run := fixture.TestRuns[position]
+
 		start := run.Started()
 		if start.Before(cursor) {
 			start = cursor
@@ -240,7 +252,7 @@ func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase 
 			cursor = start
 		}
 
-		phases = append(phases, testRunPhase(run, spanSeconds(cursor, run.At)))
+		phases = append(phases, testRunPhase(run, position, spanSeconds(cursor, run.At)))
 		cursor = run.At
 	}
 
@@ -255,18 +267,37 @@ func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase 
 }
 
 // testRunsWithin lists the runner subprocesses that finished inside the
-// window, oldest first. A run the engine could not place — no exit
-// timestamp — is left out, so the gap falls back to one undivided slice
-// rather than inventing a position for it.
-func testRunsWithin(fixture *Fixture, from, until time.Time) []TestRun {
-	var runs []TestRun
+// window, oldest first, as indices into fixture.TestRuns. A run the
+// engine could not place — no exit timestamp — is left out, so the gap
+// falls back to one undivided slice rather than inventing a position
+// for it.
+//
+// Indices rather than values: the slice each run produces has to name
+// which run it was, and two reruns of the same test are identical in
+// every field a consumer could match on.
+func testRunsWithin(fixture *Fixture, from, until time.Time) []int {
+	var runs []int
 
-	for _, run := range fixture.TestRuns {
+	for position, run := range fixture.TestRuns {
 		if run.At.IsZero() || !run.At.After(from) || run.At.After(until) {
 			continue
 		}
 
-		runs = append(runs, run)
+		runs = append(runs, position)
+	}
+
+	return runs
+}
+
+// discoveryRuns indexes the discovery-phase invocations, which are what
+// the opening test-run slice spans.
+func discoveryRuns(fixture *Fixture) []int {
+	var runs []int
+
+	for position, run := range fixture.TestRuns {
+		if run.IsDiscovery() {
+			runs = append(runs, position)
+		}
 	}
 
 	return runs
@@ -289,7 +320,7 @@ func engineGapPhase(seconds float64) Phase {
 // bounded by the surrounding turn records, so it can carry a sliver of
 // engine work either side; the detail states the runner's own measured
 // wall clock so the reader can see how much of the slice is the tests.
-func testRunPhase(run TestRun, seconds float64) Phase {
+func testRunPhase(run TestRun, position int, seconds float64) Phase {
 	return Phase{
 		Label:    "Test run (" + run.Label() + ")",
 		Detail:   testRunDetail(run),
@@ -297,6 +328,7 @@ func testRunPhase(run TestRun, seconds float64) Phase {
 		Owner:    OwnerTests,
 		Seconds:  seconds,
 		Measured: true,
+		TestRuns: []int{position},
 	}
 }
 

@@ -474,20 +474,32 @@ const judgeVerdictText = (actual) => {
 // sections showing the same spans, one as bars and one as detail, and
 // the reader had to hold a turn number in their head to cross them.
 //
-// Rows are every phase in chronological order. A phase backed by a model
-// call expands into that turn's detail; the deterministic slices between
-// them stay one thin line, because "parse the result file, write
-// artifacts, build the next prompt" is the same sentence every time and
-// only its DURATION ever says anything.
+// Rows are every phase in chronological order — EVERY phase, however
+// short. A phase backed by a model call expands into that turn's detail;
+// a deterministic slice stays one thin line, because "parse the result
+// file, write artifacts, build the next prompt" is the same sentence
+// every time and only its DURATION ever says anything.
+//
+// The sub-second slices were once folded into a single trailing expander
+// on the grounds that a 2ms row is unactionable. That was wrong twice
+// over: it broke the chronology (the fold landed at the end, so the rows
+// no longer read top-to-bottom as the run happened), and a slice being
+// small is a FINDING — "the engine spent 2ms here" is the evidence that
+// the wall clock belongs to the models, and it can only be read if the
+// row is there. The timeline accounts for the whole run or it accounts
+// for nothing.
 function turnList(runID, name, d) {
   if (!d.phases.length && !d.turns.length) return null;
 
   // Denominator for the bars: the measured wall clock when there is one,
   // else the accounted total, so a run without a harness record still
   // shows proportions rather than dividing by zero.
-  const total = d.summary.has_wall && d.summary.wall_seconds > 0
-    ? d.summary.wall_seconds
-    : (d.summary.phase_total_seconds || 1);
+  const hasWall = d.summary.has_wall && d.summary.wall_seconds > 0;
+  const total = hasWall ? d.summary.wall_seconds : (d.summary.phase_total_seconds || 1);
+  // What the shares are a share OF. Naming the fallback matters: on a
+  // run with no harness record the denominator is the phases' own sum,
+  // and calling that "wall" would claim a measurement that never existed.
+  const denominator = hasWall ? 'wall' : 'accounted phase time';
 
   // Attempts within a cell. A cell is retried until it passes, so
   // consecutive turns often differ ONLY in duration — same cell, same
@@ -499,13 +511,6 @@ function turnList(runID, name, d) {
   }
   const seen = new Map();
 
-  // Deterministic slices under a second are not worth a row each. The
-  // engine's between-turn work is ~2ms and says the same sentence every
-  // time — twenty-nine of those lines bury the turns they sit between.
-  // They are folded into one expander, so the accounting stays complete
-  // without costing the list its shape.
-  const trivial = [];
-
   const rows = [];
 
   for (const p of d.phases) {
@@ -514,12 +519,7 @@ function turnList(runID, name, d) {
     const t = isTurn ? d.turns[p.turn_index] : null;
 
     if (!t) {
-      if (p.seconds < OVERHEAD_FLOOR) {
-        trivial.push(p);
-      } else {
-        rows.push(overheadRow(p, bar));
-      }
-
+      rows.push(phaseRow(runID, name, d, p, bar, total, denominator));
       continue;
     }
 
@@ -527,10 +527,8 @@ function turnList(runID, name, d) {
     const nth = (seen.get(key) || 0) + 1;
     seen.set(key, nth);
 
-    rows.push(turnRow(runID, name, d, t, bar, nth, attempts.get(key)));
+    rows.push(turnRow(runID, name, d, t, bar, nth, attempts.get(key), p.offset_seconds));
   }
-
-  if (trivial.length) rows.push(overheadFold(trivial));
 
   const turnCount = d.turns.length;
 
@@ -541,29 +539,6 @@ function turnList(runID, name, d) {
             `over ${secs(d.summary.wall_seconds)}`)
         : null),
     ...rows);
-}
-
-// OVERHEAD_FLOOR is how long a deterministic slice must last to earn its
-// own row. Below it, the slice is real but unactionable.
-const OVERHEAD_FLOOR = 1;
-
-// overheadFold collapses the sub-second deterministic slices into one
-// row, preserving the total so the timeline still accounts for the whole
-// wall clock.
-function overheadFold(phases) {
-  const spent = phases.reduce((sum, p) => sum + p.seconds, 0);
-
-  return h('details', { class: 'fold' },
-    h('summary', {},
-      h('span', { class: 'turn-head' },
-        `${phases.length} engine slices under ${OVERHEAD_FLOOR}s`),
-      h('span', { class: 'phase-time' }, secs(spent))),
-    h('div', { class: 'body' },
-      wrap(table(['Slice', { label: 'Time', num: true }, 'What it was'],
-        phases.map((p) => h('tr', {},
-          h('td', {}, p.label),
-          h('td', { class: 'num' }, secs(p.seconds)),
-          h('td', { class: 'crumb' }, p.detail || '—')))))));
 }
 
 // ganttBar places a slice on the run's wall clock: it starts where the
@@ -578,31 +553,266 @@ function ganttBar(p, total) {
     h('span', { class: cls, style: `margin-left:${offset.toFixed(2)}%;width:${width.toFixed(2)}%` }));
 }
 
-// overheadRow is one deterministic slice: a thin, non-expandable line.
-// The prose lives in the tooltip because it never varies.
-function overheadRow(p, bar) {
-  return h('div', { class: 'phase-row', title: p.detail || p.label },
-    h('span', { class: 'phase-label' }, p.label,
-      p.measured ? null : h('span', { class: 'tag', style: 'margin-left:6px' }, 'residual')),
-    h('span', { class: 'phase-time' }, secs(p.seconds)),
-    bar);
+// phaseRow is one non-model slice — and it opens, exactly like a turn.
+//
+// A deterministic slice is not "the boring one". It is where the fixture
+// declares itself: which files were overlaid, which checklist was
+// walked and how wide, what the runner subprocess printed, what the
+// judge was told to assert. All of that is in the API and none of it is
+// anywhere else on this page, so a collapsed row that only showed a
+// label and a duration threw the answers away and kept the arithmetic.
+//
+// The owner tag stays on the summary line — "engine" / "tests" /
+// "harness" is the one thing a reader cannot infer from the label, and
+// it is what says whether a slow slice is true-bdd's to fix.
+function phaseRow(runID, name, d, p, bar, total, denominator) {
+  const share = total > 0 ? (p.seconds / total) * 100 : 0;
+
+  return h('details', { class: 'det' },
+    h('summary', {},
+      h('span', { class: 'turn-head' }, p.label,
+        p.owner ? h('span', { class: 'tag', style: 'margin-left:6px' }, p.owner) : null,
+        p.measured ? null : h('span', { class: 'tag', style: 'margin-left:6px' }, 'residual')),
+      h('span', { class: 'phase-at', title: 'time since the run began' }, secs(p.offset_seconds)),
+      h('span', { class: 'phase-time' }, secs(p.seconds)),
+      bar,
+      h('span', { class: 'row-meta' },
+        // "0.0%" of a 2ms slice reads as "this took no time", which is
+        // the opposite of the finding. Below the resolution of one
+        // decimal the share is stated as a bound instead.
+        h('span', { class: 'turn-cost' },
+          share > 0 && share < 0.05
+            ? `<0.1% of ${denominator}`
+            : `${share.toFixed(1)}% of ${denominator}`))),
+    h('div', { class: 'body' },
+      // The slice's own prose. It used to live only in a tooltip, which
+      // is the same as not being there for anyone reading down the page.
+      p.detail ? h('p', { class: 'crumb' }, p.detail) : null,
+      phaseBody(runID, name, d, p)));
+}
+
+// phaseBody dispatches on the slice's label to whatever the report can
+// actually say about that kind of work. The default is honest rather
+// than empty: a between-turns gap really has nothing in it but Go.
+function phaseBody(runID, name, d, p) {
+  const label = p.label || '';
+
+  if (label === 'Fixture prep') return prepBody(d);
+  if (label.startsWith('Test run')) return testRunBody(runID, name, d, p);
+
+  // "Engine start-up" is the merged slice a run gets when there was no
+  // test discovery to split it on — for `us apply` it IS the checklist
+  // load, so it gets the checklist body rather than the generic note.
+  if (label === 'Checklist load + prompt render' || label === 'Engine start-up') {
+    return checklistBody(d);
+  }
+
+  if (label === 'Post-run + judge') return judgeBody(d);
+
+  return h('p', { class: 'crumb' },
+    'Pure Go: no subprocess, no model. The artifacts this step produced ' +
+    'are listed on the turns either side of it.');
+}
+
+// facts is the two-column table every phase body uses.
+const facts = (rows) => wrap(table(['', ''], rows));
+
+// fkey labels a block inside a phase body.
+const fkey = (text) => h('div', { class: 'fkey' }, text);
+
+// commandList renders shell commands as what they are — one line each,
+// monospaced, in the order they run.
+function commandList(title, cmds) {
+  return h('div', {}, fkey(title),
+    h('pre', { class: 'text' }, cmds.join('\n')));
+}
+
+// collapsible is a nested expander for a body too long to sit open.
+const collapsible = (title, text) => h('details', {},
+  h('summary', {}, h('span', { class: 'turn-head' }, title)),
+  h('div', { class: 'body' }, h('pre', { class: 'text' }, text)));
+
+// prepBody is the scaffolding the harness laid down before the CLI ran:
+// what was copied in, what was overlaid on top, and which commands ran
+// between the two. This slice is the report's one residual, so saying
+// what is inside it is the only check a reader has on the number.
+function prepBody(d) {
+  const e = d.expected;
+
+  const source = {
+    snapshot: 'this run’s own manifest.json',
+    repo: 'the source tree as of now — may have drifted',
+    absent: 'no manifest found',
+  }[e.source] || e.source;
+
+  return h('div', {},
+    facts([
+      kv('repo layer (pre-copied)', 'true-bdd/, templates/'),
+      kv('input overlay', e.input_path || '—'),
+      kv('command', `true-bdd ${e.command || '—'}`),
+      kv('stdin piped', e.answers ? `${e.answers.split('\n').filter(Boolean).length} line(s)` : 'none'),
+      kv('manifest read from', source),
+    ]),
+    e.answers ? collapsible('answers piped to stdin', e.answers) : null,
+    e.prep?.length
+      ? commandList('prep commands', e.prep)
+      : h('p', { class: 'crumb' },
+          'No prep: commands — this slice is the repo-layer copy, the input ' +
+          'overlay and the pre-run snapshot alone.'));
+}
+
+// checklistBody is what the engine loaded and how wide the walk is.
+// items × prompts is the shape of the whole run: it says how many model
+// calls the walk can cost before a single fix is applied.
+function checklistBody(d) {
+  const m = d.meta || {};
+
+  const walk = `${m.items || 0} item(s) × ${m.prompts || 0} prompt(s)` +
+    (m.max_apply_attempts ? ` · max ${m.max_apply_attempts} apply attempt(s)` : '');
+
+  const rows = [
+    kv('command', m.checklist_command || '—'),
+    kv('checklist file', m.checklist_path || '—'),
+    kv('architecture', m.architecture_file || '—'),
+    kv('walk', walk),
+  ];
+
+  if (m.decisions) rows.push(kv('decisions', count(m.decisions)));
+  if (m.services) rows.push(kv('services', count(m.services)));
+
+  // Cells the run actually reached, in order. A walk that died early
+  // shows fewer than the checklist declares, and that gap is the point.
+  const cells = [];
+  const seen = new Set();
+  for (const t of d.turns) {
+    const label = t.cell.label;
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    cells.push(label);
+  }
+
+  return h('div', {}, facts(rows),
+    cells.length
+      ? h('div', {}, fkey(`cells walked (${cells.length})`),
+          h('pre', { class: 'text' }, cells.join('\n')))
+      : null);
+}
+
+// testRunBody is the framework runner the engine spawned. Both streams
+// render rather than get summarised: when a suite never starts, the
+// reason is in that output and nowhere else.
+//
+// Which subprocesses belong to this slice comes from the phase, never
+// from its label: a fix loop reruns the same test repeatedly, so
+// several slices carry the identical label "Test run (playwright ·
+// rerun)" and matching on it would put every rerun's output under every
+// rerun's row. A session recorded before the index existed has no
+// association at all — that falls back to listing them, which is the
+// old behaviour and still better than showing nothing.
+function testRunBody(runID, name, d, p) {
+  const parts = [];
+  const m = d.meta || {};
+
+  const all = d.test_runs || [];
+  const mine = p.test_runs
+    ? p.test_runs.map((i) => all[i]).filter(Boolean)
+    : all;
+
+  if (m.test_run_command) parts.push(facts([kv('test runner', m.test_run_command)]));
+
+  if (!mine.length) {
+    parts.push(facts([
+      kv('framework', d.discovery.framework || '—'),
+      kv('outcome', d.discovery.outcome || '—'),
+    ]));
+    parts.push(h('p', { class: 'crumb' },
+      'No runner output was captured for this span — only the time between ' +
+      'engine log records is known.'));
+
+    return h('div', {}, ...parts);
+  }
+
+  for (const run of mine) {
+    parts.push(fkey(run.label));
+    parts.push(facts([
+      kv('outcome', run.outcome || '—'),
+      kv('duration', secs(run.duration_seconds)),
+      kv('exit', run.has_exit ? String(run.exit_code) : '—'),
+    ]));
+    parts.push(streamBlock(runID, name, 'stdout', run.stdout, run.framework));
+    parts.push(streamBlock(runID, name, 'stderr', run.stderr, run.framework));
+  }
+
+  return h('div', {}, ...parts);
+}
+
+// streamBlock renders one captured stream. An empty-but-captured stream
+// says so in its own words — that is a finding about the framework, not
+// a gap in the report.
+function streamBlock(runID, name, label, ref, framework) {
+  if (!ref || !ref.ref) return null;
+
+  if (ref.missing) {
+    return h('p', { class: 'crumb' },
+      `${label} was captured to ${ref.repo_path || ref.name}, which is no longer on disk.`);
+  }
+
+  if (!ref.bytes) {
+    return h('p', { class: 'crumb' }, `${framework || 'the runner'} wrote nothing to ${label}.`);
+  }
+
+  return h('details', {},
+    h('summary', {}, h('span', { class: 'turn-head' }, `${label} · ${count(ref.bytes)} bytes`)),
+    h('div', { class: 'body' }, lazyText(runID, name, ref.ref)));
+}
+
+// judgeBody is the harness's verdict machinery: who graded it, what it
+// cost, what it was asked to assert, and what teardown ran afterwards.
+// The rubric and the file diff have their own sections on this page, so
+// this block points at them rather than printing them twice.
+function judgeBody(d) {
+  const j = d.judge || {};
+  const e = d.expected;
+  const a = d.actual;
+
+  const rows = [
+    kv('judge model', j.ran ? `${j.cli} · ${j.model}` : 'did not run'),
+    kv('judge cost', money(j.cost_usd)),
+    kv('judge tokens', count(j.tokens)),
+    kv('verdict', a.verdict || '—'),
+    kv('expected exit', String(e.exit_code)),
+    kv('stdout checks', e.stdout_checks.length ? e.stdout_checks.join(' · ') : 'none declared'),
+  ];
+
+  return h('div', {}, facts(rows),
+    a.failures.length
+      ? h('div', {}, fkey(`failed checks (${a.failures.length})`),
+          h('pre', { class: 'text' }, a.failures.join('\n\n')))
+      : h('p', { class: 'crumb' }, 'Every declared assertion held.'),
+    e.teardown?.length ? commandList('teardown commands', e.teardown) : null,
+    h('p', { class: 'crumb' },
+      `This span also covers the post-run snapshot and diff — ${d.files.length} ` +
+      'changed file(s), listed below — and the judge rubric shown under ' +
+      '“Expected vs actual”.'));
 }
 
 // turnRow is a model call: the same shape as an overhead row, plus an
 // expander and the copy button.
-function turnRow(runID, name, d, t, bar, nth, total) {
+function turnRow(runID, name, d, t, bar, nth, total, offset) {
   return h('details', {},
     h('summary', {},
       h('span', { class: 'turn-head' },
         `#${t.number} · ${t.cell.label || '—'}`,
         total > 1 ? ` · try ${nth}/${total}` : '',
         ` · ${t.role} · ${t.model}`),
+      h('span', { class: 'phase-at', title: 'time since the run began' }, secs(offset)),
       h('span', { class: 'phase-time' }, secs(t.duration_seconds)),
       bar,
-      h('span', { class: 'turn-cost' }, `${money(t.cost_usd)} · ${count(t.tokens.total)} tok`),
-      t.status !== 'ok' ? h('span', { class: 'tag warn' }, t.status) : null,
-      copyBtn('copy', () => turnPrompt(runID, d, t),
-        'the whole turn: facts, command, file paths AND the full system and user prompt text')),
+      h('span', { class: 'row-meta' },
+        h('span', { class: 'turn-cost' }, `${money(t.cost_usd)} · ${count(t.tokens.total)} tok`),
+        t.status !== 'ok' ? h('span', { class: 'tag warn' }, t.status) : null,
+        copyBtn('copy', () => turnPrompt(runID, d, t),
+          `the whole turn: facts, command, file paths AND the system and user prompt text (each artifact capped at ${count(MAX_EMBED)} chars)`))),
     h('div', { class: 'body' },
       wrap(table(['', ''], [
         kv('cli / model', `${t.cli} / ${t.model}`),
@@ -614,6 +824,85 @@ function turnRow(runID, name, d, t, bar, nth, total) {
         kv('tools', t.tool_calls.length ? toolSummary(t.tool_calls) : '—'),
       ])),
       artifactList(runID, name, [...t.inputs, ...t.outputs], { d, turn: t })));
+}
+
+// turnFacts is the turn's fact table as text — the same rows the page
+// shows, in the same order. Every turn-scoped copy embeds this, so what
+// lands in the clipboard is what is on screen.
+function turnFacts(t) {
+  return [
+    `cli / model   ${t.cli} / ${t.model}`,
+    `duration      ${secs(t.duration_seconds)}` +
+      (t.duration_is_floor ? ' (lower bound)' : '') + ` · status ${t.status}` +
+      (t.error ? ` · ${t.error}` : ''),
+    `cost          ${money(t.cost_usd)}`,
+    `tokens        ${count(t.tokens.total)} — in ${count(t.tokens.input)}, ` +
+      `out ${count(t.tokens.output)}, cache r ${count(t.tokens.cache_read)} / ` +
+      `w ${count(t.tokens.cache_creation)}`,
+    `prompt size   system ${count(t.system_length)} · user ${count(t.user_length)}`,
+    `command       ${t.command || '—'}`,
+    `tools         ${t.tool_calls.length ? toolSummary(t.tool_calls) : '—'}`,
+  ].join('\n');
+}
+
+// fetchArtifact pulls one artifact body, capped so a runaway prompt
+// cannot produce an unpasteable clipboard.
+const MAX_EMBED = 24000;
+
+async function fetchArtifact(runID, name, ref) {
+  try {
+    const body = await apiText(
+      `/api/runs/${encodeURIComponent(runID)}/tests/${encodeURIComponent(name)}/text?ref=${encodeURIComponent(ref)}`);
+    return body.length > MAX_EMBED
+      ? body.slice(0, MAX_EMBED) + `\n…(truncated, ${body.length - MAX_EMBED} more chars)…`
+      : body;
+  } catch (err) {
+    return `(could not read: ${err.message})`;
+  }
+}
+
+// turnPrompt is testPrompt narrowed to one model call: everything needed
+// to ask about THIS turn without describing it first. The artifact paths
+// matter most — the system and user prompts are what the turn actually
+// saw, and they are files on disk rather than anything on this page.
+async function turnPrompt(runID, d, t, only = null) {
+  const lines = [];
+
+  lines.push(`AI turn #${t.number} of BDD fixture \`${d.summary.name}\`, ` +
+    `run \`${d.run}\` of the true-bdd suite.`);
+  lines.push(`Checklist cell: ${t.cell.label || '(none)'} · role: ${t.role}`);
+  lines.push('', turnFacts(t));
+
+  lines.push('', `Run directory: ${d.run_dir}`);
+  lines.push(`Fixture overall: ${d.summary.verdict}` +
+    (d.summary.failures?.length ? ` — ${d.summary.failures[0]}` : '') + '.');
+
+  // The bodies. This is the part that makes the paste self-contained:
+  // the fact table says how the turn went, the prompts say what it was
+  // actually asked, and without them the reader can only guess.
+  //
+  // A missing artifact is named rather than dropped. Silently omitting
+  // it makes the paste claim the turn had no such file, when what
+  // actually happened is that the tmpdir was cleaned — and someone
+  // reading the paste would go looking for a prompt that was never
+  // reported gone.
+  const scoped = [...t.inputs, ...t.outputs].filter((r) => !only || r.ref === only.ref);
+  const files = scoped.filter((r) => !r.missing);
+  const gone = scoped.filter((r) => r.missing);
+
+  for (const r of files) {
+    const body = await fetchArtifact(runID, d.summary.name, r.ref);
+    // Body verbatim: this claims to be the file's full text, so trailing
+    // whitespace and the final newline are part of it.
+    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body);
+  }
+
+  for (const r of gone) {
+    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '',
+      '(recorded by the engine but no longer on disk)');
+  }
+
+  return lines.join('\n');
 }
 
 const kv = (k, v) => h('tr', {}, h('td', { style: 'width:160px;color:var(--muted)' }, k), h('td', { class: 'mono' }, v));
@@ -640,7 +929,7 @@ function artifactList(runID, name, refs, context = null) {
     // requires rendering its body on the page first.
     context
       ? copyBtn('copy', () => turnPrompt(runID, context.d, context.turn, r),
-          'this file\u2019s full text, with the turn it belongs to as context')
+          `this file\u2019s text (capped at ${count(MAX_EMBED)} chars), with the turn it belongs to as context`)
       : (r.repo_path ? copyBtn('copy path', () => r.repo_path, r.repo_path) : null))));
 }
 

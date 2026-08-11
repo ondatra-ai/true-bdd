@@ -176,25 +176,48 @@ h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; letter-spac
 
 /* Timeline rows ------------------------------------------------------- */
 
-/* A turn row and a deterministic-overhead row are laid out identically so
-   the collapsed list reads as one timeline rather than two kinds of
-   thing. The only visual difference is the disclosure triangle, which
-   only turns have. */
-.phase-row, details > summary {
+/* Every timeline row — turn or deterministic slice — is laid out
+   identically, so the collapsed list reads as one chronology rather
+   than two interleaved tables. */
+details > summary {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13px;
 }
 
-.phase-row {
-  padding: 4px 12px 4px 34px;
+/* A deterministic slice is the same widget as a turn — it opens the same
+   way and its columns line up — but it reads as subordinate through
+   weight, not through an indent that would shift its bar out of column:
+   no card fill, a hairline border, muted label. */
+details.det { background: none; border-color: transparent; }
+details.det > summary { color: var(--muted); padding: 4px 12px; }
+details.det[open] { border-color: var(--line); background: var(--card); }
+details.det > summary:hover { background: var(--code); border-radius: 8px; }
+
+/* Elapsed since the run began. Duration alone answers "how long"; this
+   answers "when", which is the question a timeline exists for. */
+.phase-at {
+  flex: none;
+  width: 62px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
   color: var(--muted);
-  border-left: 1px solid var(--line);
-  margin: 0 0 2px 11px;
+  opacity: .75;
 }
 
-.phase-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Block label inside an expanded body. */
+.fkey {
+  margin: 10px 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.body > .fkey:first-child { margin-top: 0; }
+
 .turn-head { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .phase-time {
@@ -206,10 +229,25 @@ h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; letter-spac
   color: var(--muted);
 }
 
-.turn-cost {
+/* Everything to the right of the bar lives in one reserved column — a
+   turn row fills it with cost, an optional status tag and the copy
+   button, a deterministic row with its share of the wall clock. Fixing
+   the width is what keeps the bars in a single column: without it the
+   flex slack lands in a different place on each kind of row and the
+   axis stops being followable. */
+.row-meta {
   flex: none;
-  width: 150px;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 270px;
+}
+
+.row-meta button.copy { margin-left: 0; }
+
+.turn-cost {
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-size: 12px;
   color: var(--muted);
@@ -217,7 +255,20 @@ h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; letter-spac
 
 /* The bar is the timeline: same width on every row so the columns line
    up and the eye can follow where the run spent itself. */
-.phase-row .gantt, details > summary .gantt { flex: none; width: 34%; min-width: 120px; }
+details > summary .gantt { flex: none; width: 34%; min-width: 120px; }
+
+/* Below ~720px the fixed columns (62 + 62 + 120 + 270, plus gaps and
+   padding) no longer fit, and the row would push the page into a
+   horizontal scroll. Wrapping the bar and the meta column onto a second
+   line keeps every number readable — the bars stop forming one axis, but
+   an axis nobody can see without scrolling sideways is worth less than
+   the numbers. */
+@media (max-width: 720px) {
+  details > summary { flex-wrap: wrap; }
+  .turn-head { flex: 1 1 100%; white-space: normal; }
+  details > summary .gantt { flex: 1 1 auto; width: auto; min-width: 80px; }
+  .row-meta { width: auto; }
+}
 
 /* Expanders ---------------------------------------------------------- */
 

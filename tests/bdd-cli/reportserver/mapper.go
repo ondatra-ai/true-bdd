@@ -193,6 +193,7 @@ func mapPhases(fixture *reporter.Fixture) []PhaseDTO {
 			OffsetSecond: phase.Offset,
 			CostUSD:      phase.CostUSD,
 			Tokens:       phase.Tokens,
+			TestRuns:     phase.TestRuns,
 		}
 
 		if phase.Turn != nil {
