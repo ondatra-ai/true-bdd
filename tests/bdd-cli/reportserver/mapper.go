@@ -285,19 +285,53 @@ func mapArtifacts(
 	return refs
 }
 
-// artifactRepoPath locates an artifact from the repo root. Artifact.Path
-// is absolute, so it is re-anchored rather than joined.
+// artifactRepoPath locates an artifact from the repo root.
+//
+// Artifact.Path is whatever the engine logged, which is normally
+// relative to the fixture's own directory but is occasionally absolute.
+// Both are handled: an absolute path is re-anchored on the fixture dir
+// first, a relative one is joined straight on.
 func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) string {
-	if artifact.Path == "" || fixture.Dir == "" || fixture.RelDir == "" {
+	if artifact.Path == "" || fixture.RelDir == "" {
 		return ""
 	}
 
-	rel, err := filepath.Rel(fixture.Dir, artifact.Path)
-	if err != nil {
+	rel := artifact.Path
+
+	if filepath.IsAbs(rel) {
+		if fixture.Dir == "" {
+			return ""
+		}
+
+		anchored, err := filepath.Rel(fixture.Dir, rel)
+		if err != nil {
+			return ""
+		}
+
+		rel = anchored
+	}
+
+	return containedPath(fixture.RelDir, rel)
+}
+
+// containedPath joins rel onto base and returns it only if the result is
+// still inside base.
+//
+// filepath.Join CLEANS as it joins, so a "../.." inside rel silently
+// collapses and produces a path pointing somewhere else entirely — the
+// report would then display, and offer to copy, a location that has
+// nothing to do with the run. These paths are never opened by the server
+// (artifact bodies resolve through opaque refs and a map lookup), so this
+// is about not stating a falsehood rather than about file access.
+func containedPath(base, rel string) string {
+	joined := filepath.Join(base, rel)
+
+	inside, err := filepath.Rel(base, joined)
+	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
 		return ""
 	}
 
-	return filepath.ToSlash(filepath.Join(fixture.RelDir, rel))
+	return filepath.ToSlash(joined)
 }
 
 // mapTestRuns projects the framework-runner subprocesses.
@@ -364,7 +398,7 @@ func repoPath(fixture *reporter.Fixture, path string) string {
 		return path
 	}
 
-	return filepath.ToSlash(filepath.Join(fixture.RelDir, path))
+	return containedPath(fixture.RelDir, path)
 }
 
 // legacyFiles parses "created path (N bytes)" back into structure.
