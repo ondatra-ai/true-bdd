@@ -285,16 +285,30 @@ func mapArtifacts(
 	return refs
 }
 
-// artifactRepoPath locates an artifact from the repo root. Artifact.Path
-// is absolute, so it is re-anchored rather than joined.
+// artifactRepoPath locates an artifact from the repo root.
+//
+// Artifact.Path is whatever the engine logged, which is normally
+// relative to the fixture's own directory but is occasionally absolute.
+// Both are handled: an absolute path is re-anchored on the fixture dir
+// first, a relative one is joined straight on.
 func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) string {
-	if artifact.Path == "" || fixture.Dir == "" || fixture.RelDir == "" {
+	if artifact.Path == "" || fixture.RelDir == "" {
 		return ""
 	}
 
-	rel, err := filepath.Rel(fixture.Dir, artifact.Path)
-	if err != nil {
-		return ""
+	rel := artifact.Path
+
+	if filepath.IsAbs(rel) {
+		if fixture.Dir == "" {
+			return ""
+		}
+
+		anchored, err := filepath.Rel(fixture.Dir, rel)
+		if err != nil {
+			return ""
+		}
+
+		rel = anchored
 	}
 
 	return filepath.ToSlash(filepath.Join(fixture.RelDir, rel))

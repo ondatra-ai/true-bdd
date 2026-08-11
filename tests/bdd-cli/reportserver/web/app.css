@@ -370,4 +370,16 @@ button.copy {
   word-break: break-all;
 }
 
-.pathbar button.copy { margin-left: auto; }
+.pathbar button.copy { margin-left: 0; }
+.pathbar code { margin-right: auto; }
+
+/* An artifact row: the expander, with its copy button floated onto the
+   summary line so the path is reachable without rendering the body. */
+.artifact { position: relative; }
+.artifact > button.copy {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  z-index: 1;
+}
+.artifact > details > summary { padding-right: 90px; }

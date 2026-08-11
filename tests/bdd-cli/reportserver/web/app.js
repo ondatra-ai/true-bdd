@@ -85,7 +85,8 @@ const tile = (k, v) => h('div', { class: 'tile' }, h('div', { class: 'k' }, k), 
 const wrap = (...kids) => h('div', { class: 'wrap' }, ...kids);
 
 // copyBtn writes text to the clipboard and confirms in place. `build` is
-// a thunk so a large prompt is only assembled when actually asked for.
+// a thunk — possibly async — so a payload that has to fetch file bodies
+// is only assembled when someone actually asks for it.
 const copyBtn = (label, build, title = '') => h('button', {
   class: 'copy',
   title,
@@ -93,7 +94,7 @@ const copyBtn = (label, build, title = '') => h('button', {
     const btn = ev.currentTarget;
     const original = btn.textContent;
     try {
-      await navigator.clipboard.writeText(build());
+      await navigator.clipboard.writeText(await build());
       btn.textContent = 'copied';
     } catch {
       btn.textContent = 'copy failed';
@@ -500,6 +501,14 @@ function turnList(runID, name, d) {
       `#${t.number} · ${t.cell.label || '—'} · ${t.role} · ${t.model} · ${secs(t.duration_seconds)}`,
       t.status !== 'ok' ? h('span', { class: 'tag warn', style: 'margin-left:6px' }, t.status) : null),
     h('div', { class: 'body' },
+      h('div', { class: 'pathbar' },
+        h('code', {}, `turn #${t.number} · ${t.cell.label || t.role}`),
+        // One button on purpose. The facts and the command were separate
+        // buttons for a while, but both are already inside this payload,
+        // so they only made the reader choose between things that were
+        // not really alternatives.
+        copyBtn('copy everything', () => turnPrompt(runID, d, t),
+          'the whole turn: facts, command, file paths AND the full system and user prompt text')),
       wrap(table(['', ''], [
         kv('cli / model', `${t.cli} / ${t.model}`),
         kv('duration', secs(t.duration_seconds) + (t.duration_is_floor ? ' (lower bound)' : '')),
@@ -509,9 +518,74 @@ function turnList(runID, name, d) {
         kv('command', t.command || '—'),
         kv('tools', t.tool_calls.length ? toolSummary(t.tool_calls) : '—'),
       ])),
-      artifactList(runID, name, [...t.inputs, ...t.outputs]))));
+      artifactList(runID, name, [...t.inputs, ...t.outputs], { d, turn: t }))));
 
   return h('div', {}, h('h2', {}, `Turns (${d.turns.length})`), ...items);
+}
+
+// turnFacts is the turn's fact table as text — the same rows the page
+// shows, in the same order. Every turn-scoped copy embeds this, so what
+// lands in the clipboard is what is on screen.
+function turnFacts(t) {
+  return [
+    `cli / model   ${t.cli} / ${t.model}`,
+    `duration      ${secs(t.duration_seconds)}` +
+      (t.duration_is_floor ? ' (lower bound)' : '') + ` · status ${t.status}` +
+      (t.error ? ` · ${t.error}` : ''),
+    `cost          ${money(t.cost_usd)}`,
+    `tokens        ${count(t.tokens.total)} — in ${count(t.tokens.input)}, ` +
+      `out ${count(t.tokens.output)}, cache r ${count(t.tokens.cache_read)} / ` +
+      `w ${count(t.tokens.cache_creation)}`,
+    `prompt size   system ${count(t.system_length)} · user ${count(t.user_length)}`,
+    `command       ${t.command || '—'}`,
+    `tools         ${t.tool_calls.length ? toolSummary(t.tool_calls) : '—'}`,
+  ].join('\n');
+}
+
+// fetchArtifact pulls one artifact body, capped so a runaway prompt
+// cannot produce an unpasteable clipboard.
+const MAX_EMBED = 24000;
+
+async function fetchArtifact(runID, name, ref) {
+  try {
+    const body = await apiText(
+      `/api/runs/${encodeURIComponent(runID)}/tests/${encodeURIComponent(name)}/text?ref=${encodeURIComponent(ref)}`);
+    return body.length > MAX_EMBED
+      ? body.slice(0, MAX_EMBED) + `\n…(truncated, ${body.length - MAX_EMBED} more chars)…`
+      : body;
+  } catch (err) {
+    return `(could not read: ${err.message})`;
+  }
+}
+
+// turnPrompt is testPrompt narrowed to one model call: everything needed
+// to ask about THIS turn without describing it first. The artifact paths
+// matter most — the system and user prompts are what the turn actually
+// saw, and they are files on disk rather than anything on this page.
+async function turnPrompt(runID, d, t, only = null) {
+  const lines = [];
+
+  lines.push(`AI turn #${t.number} of BDD fixture \`${d.summary.name}\`, ` +
+    `run \`${d.run}\` of the true-bdd suite.`);
+  lines.push(`Checklist cell: ${t.cell.label || '(none)'} · role: ${t.role}`);
+  lines.push('', turnFacts(t));
+
+  lines.push('', `Run directory: ${d.run_dir}`);
+  lines.push(`Fixture overall: ${d.summary.verdict}` +
+    (d.summary.failures?.length ? ` — ${d.summary.failures[0]}` : '') + '.');
+
+  // The bodies. This is the part that makes the paste self-contained:
+  // the fact table says how the turn went, the prompts say what it was
+  // actually asked, and without them the reader can only guess.
+  const files = [...t.inputs, ...t.outputs]
+    .filter((r) => !r.missing && (!only || r.ref === only.ref));
+
+  for (const r of files) {
+    const body = await fetchArtifact(runID, d.summary.name, r.ref);
+    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body.trimEnd());
+  }
+
+  return lines.join('\n');
 }
 
 const kv = (k, v) => h('tr', {}, h('td', { style: 'width:160px;color:var(--muted)' }, k), h('td', { class: 'mono' }, v));
@@ -522,17 +596,24 @@ const toolSummary = (calls) => {
   return Object.entries(counts).map(([n, c]) => `${n}×${c}`).join(', ');
 };
 
-function artifactList(runID, name, refs) {
+function artifactList(runID, name, refs, context = null) {
   const usable = refs.filter((r) => !r.missing);
   if (!usable.length) return null;
-  return h('div', { style: 'margin-top:8px' }, usable.map((r) => h('details', {},
-    h('summary', {}, `${r.kind} · ${r.name} · ${count(r.bytes)} bytes`),
-    h('div', { class: 'body' },
-      r.repo_path
-        ? h('div', { class: 'pathbar' }, h('code', {}, r.repo_path),
-            copyBtn('copy path', () => r.repo_path))
-        : null,
-      lazyText(runID, name, r.ref)))));
+  return h('div', { style: 'margin-top:8px' }, usable.map((r) => h('div', { class: 'artifact' },
+    h('details', {},
+      h('summary', {}, `${r.kind} · ${r.name} · ${count(r.bytes)} bytes`),
+      h('div', { class: 'body' },
+        r.repo_path
+          ? h('div', { class: 'pathbar' }, h('code', {}, r.repo_path),
+              copyBtn('copy path', () => r.repo_path))
+          : null,
+        lazyText(runID, name, r.ref))),
+    // Outside the expander, so neither copying nor locating a file
+    // requires rendering its body on the page first.
+    context
+      ? copyBtn('copy', () => turnPrompt(runID, context.d, context.turn, r),
+          'this file\u2019s full text, with the turn it belongs to as context')
+      : (r.repo_path ? copyBtn('copy path', () => r.repo_path, r.repo_path) : null))));
 }
 
 // lazyText fetches a body only when its expander is opened — prompts run
