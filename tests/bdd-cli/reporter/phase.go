@@ -411,3 +411,33 @@ func discoveryBound(fixture *Fixture) string {
 		formatSeconds(measured.Seconds()) + " is " +
 		itoa(count) + " measured runner invocation(s)"
 }
+
+// timelineDenominator is what a fixture's per-phase percentages are
+// "of". It falls back to the accounted total when the harness recorded
+// no wall clock, so a page built from engine logs alone still shows
+// proportions.
+func timelineDenominator(fixture *Fixture) float64 {
+	if fixture.HasWall && fixture.Wall.Seconds() > 0 {
+		return fixture.Wall.Seconds()
+	}
+
+	if fixture.PhaseTotal > 0 {
+		return fixture.PhaseTotal
+	}
+
+	return 1
+}
+
+// kindTag renders a slice's kind badge.
+func kindTag(kind PhaseKind) string {
+	switch kind {
+	case KindDeterministic:
+		return `<span class="tag det">deterministic</span>`
+	case KindModel:
+		return `<span class="tag mod">non-deterministic</span>`
+	case KindMixed:
+		return `<span class="tag mix">mixed</span>`
+	default:
+		return `<span class="tag det">` + escapeHTML(string(kind)) + `</span>`
+	}
+}

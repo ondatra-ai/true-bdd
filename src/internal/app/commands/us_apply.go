@@ -10,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 	storyinfra "github.com/ondatra-ai/true-bdd/src/internal/infrastructure/story"
@@ -23,6 +24,7 @@ const scratchRegistryFilename = "scenarios.yaml"
 type ApplyDeps struct {
 	StoryScenarioParser     *storyinfra.StoryScenarioParser
 	ChecklistLoader         *checklist.ChecklistLoader
+	DocResolver             *docs.Resolver
 	ApplyEvaluator          *validate.ChecklistEvaluator
 	ApplyFixPromptGenerator *validate.FixPromptGenerator
 	ApplyFixApplier         *validate.FixApplier
@@ -62,6 +64,7 @@ func RunApply(
 		FixApplier:   deps.ApplyFixApplier,
 
 		ChecklistLoader: deps.ChecklistLoader,
+		DocResolver:     deps.DocResolver,
 		Renderer:        deps.TableRenderer,
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,

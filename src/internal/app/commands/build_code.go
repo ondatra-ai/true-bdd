@@ -11,6 +11,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/testrunner"
@@ -36,6 +37,7 @@ type BuildCodeDeps struct {
 	ArchitectureLoader          *architecture.Loader
 	TestRunnerDispatcher        *testrunner.Dispatcher
 	ChecklistLoader             *checklist.ChecklistLoader
+	DocResolver                 *docs.Resolver
 	BuildCodeEvaluator          *validate.ChecklistEvaluator
 	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
 	BuildCodeFixApplier         *validate.FixApplier
@@ -75,6 +77,7 @@ func RunBuildCode(
 		FixApplier:   deps.BuildCodeFixApplier,
 
 		ChecklistLoader: deps.ChecklistLoader,
+		DocResolver:     deps.DocResolver,
 		Renderer:        deps.TableRenderer,
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,

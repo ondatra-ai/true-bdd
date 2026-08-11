@@ -30,7 +30,6 @@ sections:
         rationale: "Standard user story format ensures clarity and consistency."
         docs:
           - prd
-          - architecture_yaml
 
       - Q: |
           Count total words in the user story statement
@@ -44,7 +43,6 @@ sections:
         rationale: "Must fit on 3x5 index card. Typically 20-50 words maximum."
         docs:
           - prd
-          - architecture_yaml
 
 
 
@@ -99,7 +97,6 @@ sections:
         rationale: "'Log in with Google account' (goal) vs 'OAuth 2.0 authentication' (solution)."
         docs:
           - prd
-          - architecture_yaml
 
       - Q: |
           Count internal implementation terms in the "I want" clause.
@@ -123,7 +120,6 @@ sections:
         rationale: "User language, not technical language."
         docs:
           - prd
-          - architecture_yaml
 
   - id: why
     name: "Business Value"
@@ -149,7 +145,6 @@ sections:
         rationale: "'So that I save time' (benefit) vs 'so that data is stored' (system behavior)."
         docs:
           - prd
-          - architecture_yaml
 
       - Q: |
           Does the "so that" clause just restate the "I want" clause in
@@ -165,7 +160,6 @@ sections:
         rationale: "'Reset password so password is reset' adds no value."
         docs:
           - prd
-          - architecture_yaml
 
       - Q: |
           Would knowing this WHY (the "so that" clause) change the
@@ -186,7 +180,6 @@ sections:
         rationale: "If WHY doesn't inform HOW, it's not a meaningful benefit clause."
         docs:
           - prd
-          - architecture_yaml
 
       - Q: |
           Count internal implementation terms in the "so that" clause.
@@ -210,4 +203,3 @@ sections:
         rationale: "so_that should describe user value, not technical implementation."
         docs:
           - prd
-          - architecture_yaml

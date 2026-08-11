@@ -96,7 +96,7 @@ type Fixture struct {
 }
 
 // loadFixtures assembles every fixture in a session directory that left
-// an engine log behind.
+// behind either an engine log or a harness record.
 func loadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, error) {
 	entries, err := os.ReadDir(sessionDir)
 	if err != nil {
@@ -114,8 +114,12 @@ func loadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, e
 
 		logPath := filepath.Join(dir, "tmp", "true-bdd.log.json")
 
-		_, statErr := os.Stat(logPath)
-		if statErr != nil {
+		// A fixture counts as reportable if the engine logged anything OR
+		// the harness recorded an outcome for it. Requiring the engine log
+		// alone silently dropped every fixture that legitimately starts no
+		// engine — `--help`, and any run refused during validation — from
+		// a page whose whole job is to list what ran.
+		if !exists(logPath) && !exists(filepath.Join(dir, "bdd-cli-logs", "harness.json")) {
 			continue
 		}
 
@@ -135,9 +139,15 @@ func loadFixture(
 	dir, name, repoRoot, logPath string,
 	gotest *GoTestLog,
 ) (*Fixture, error) {
-	log, err := loadEngineLog(logPath)
-	if err != nil {
-		return nil, err
+	log := &EngineLog{}
+
+	if exists(logPath) {
+		loaded, err := loadEngineLog(logPath)
+		if err != nil {
+			return nil, err
+		}
+
+		log = loaded
 	}
 
 	manifest := loadManifest(repoRoot, name)
@@ -261,4 +271,12 @@ func promptArtifacts(dir string) []string {
 	sort.Strings(matches)
 
 	return matches
+}
+
+// exists reports whether a path is present, treating any stat error as
+// absent — the caller only ever asks so it can skip or substitute.
+func exists(path string) bool {
+	_, err := os.Stat(path)
+
+	return err == nil
 }

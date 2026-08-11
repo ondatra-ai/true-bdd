@@ -11,6 +11,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/epic"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
@@ -78,6 +79,7 @@ type Container struct {
 	StoryLoader         *story.StoryLoader
 	StoryScenarioParser *story.StoryScenarioParser
 	ChecklistLoader     *checklist.ChecklistLoader
+	DocResolver         *docs.Resolver
 	UserInputCollector  *input.UserInputCollector
 	TableRenderer       *runner.TableRenderer
 	// Standard generator triple drives `us create` and `us refine`.
@@ -172,6 +174,7 @@ func NewContainer() (*Container, error) {
 		StoryLoader:                  story.NewStoryLoader(cfg),
 		StoryScenarioParser:          story.NewStoryScenarioParser(cfg),
 		ChecklistLoader:              checklist.NewChecklistLoader(cfg),
+		DocResolver:                  docs.NewResolver(cfg),
 		UserInputCollector:           input.NewUserInputCollector(),
 		TableRenderer:                runner.NewTableRenderer(),
 		Evaluator:                    validate.NewChecklistEvaluator(aiClient, cfg, models),

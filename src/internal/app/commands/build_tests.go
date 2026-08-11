@@ -8,6 +8,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/registry"
@@ -30,6 +31,7 @@ var ErrBuildTestsNotConverged = fmt.Errorf(
 type BuildTestsDeps struct {
 	RegistryLoader               *registry.RegistryLoader
 	ChecklistLoader              *checklist.ChecklistLoader
+	DocResolver                  *docs.Resolver
 	BuildTestsEvaluator          *validate.ChecklistEvaluator
 	BuildTestsFixPromptGenerator *validate.FixPromptGenerator
 	BuildTestsFixApplier         *validate.FixApplier
@@ -69,6 +71,7 @@ func RunBuildTests(
 		FixApplier:   deps.BuildTestsFixApplier,
 
 		ChecklistLoader: deps.ChecklistLoader,
+		DocResolver:     deps.DocResolver,
 		Renderer:        deps.TableRenderer,
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,

@@ -15,6 +15,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
 )
@@ -48,6 +49,7 @@ type FixPromptGenerator struct {
 	config       *config.ViperConfig
 	models       *provider.Registry
 	modeFactory  *ai.ModeFactory
+	docResolver  *docs.Resolver
 	systemLoader *template.TemplateLoader[FixPromptData]
 	userLoader   *template.TemplateLoader[FixPromptData]
 }
@@ -76,6 +78,7 @@ func NewFixPromptGeneratorWithPaths(
 		config:       cfg,
 		models:       models,
 		modeFactory:  ai.NewModeFactory(cfg),
+		docResolver:  docs.NewResolver(cfg),
 		systemLoader: template.NewTemplateLoader[FixPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[FixPromptData](userPath),
 	}
@@ -136,21 +139,24 @@ func (g *FixPromptGenerator) buildPromptData(params GenerateParams, resultPath s
 	}
 }
 
-// resolveDocPaths converts doc keys to file paths using config.
+// resolveDocPaths converts doc keys to file paths.
+//
+// The runner has already refused any run whose declared documents
+// cannot be satisfied, so a failure here is a wiring bug — skip the
+// key rather than pointing the fix prompt at a path with nothing
+// behind it.
 func (g *FixPromptGenerator) resolveDocPaths(docKeys []string) map[string]string {
 	docPaths := make(map[string]string, len(docKeys))
-	docKeyMapping := getDocKeyToConfigPath()
 
 	for _, key := range docKeys {
-		configPath, ok := docKeyMapping[key]
-		if !ok {
+		filePath, err := g.docResolver.Resolve(key)
+		if err != nil {
+			slog.Warn("Skipping unsatisfiable document", "key", key, "error", err)
+
 			continue
 		}
 
-		filePath := g.config.GetString(configPath)
-		if filePath != "" {
-			docPaths[key] = filePath
-		}
+		docPaths[key] = filePath
 	}
 
 	return docPaths

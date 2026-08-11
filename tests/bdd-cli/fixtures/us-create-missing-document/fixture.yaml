@@ -1,0 +1,80 @@
+# A checklist prompt may only ask for evidence the engine can actually
+# hand it. If a prompt declares a document under `docs:` and that
+# document does not exist, the run must be refused up front — in the
+# same class of check as the story-number format, before the header,
+# before the story is loaded, before the first AI turn.
+#
+# The regression this guards is a SILENT one, and it was live: every
+# `us-create-*` fixture emitted 8-9 `Read(./docs/architecture/architecture.yaml)`
+# instructions for a file none of them ship. The model noticed each
+# time, said so in its reasoning, and answered from the PRD alone. The
+# suite stayed green. A checklist that quietly validates against half
+# its declared evidence is worse than one that refuses to start.
+#
+# Trigger: this fixture ships the epic but NOT `docs/prd/prd.yaml`,
+# which the shipped `us-create.yaml` declares on all 9 prompts. The
+# trigger is the omitted file, not any particular checklist line, so
+# the fixture keeps its meaning however the `architecture_yaml`
+# declarations are eventually resolved.
+#
+# Deliberately cheap: it exits before the first AI call, so unlike the
+# other us-create fixtures it costs no model time.
+
+cmd: us create 99.1
+
+input: input
+
+expected:
+  # Validation fails, cobra reports it, the CLI exits 1.
+  exit_code: 1
+
+  stdout_regex:
+    # The message must name the document that could not be satisfied,
+    # not just say "a document is missing".
+    - "docs/prd/prd\\.yaml"
+
+  judge: |
+    # Expectations for `true-bdd us create 99.1` with a declared document absent
+
+    The fixture ships `docs/prd/epics/epic-99-bdd-test.yaml` but does
+    **not** ship `docs/prd/prd.yaml`. Every validation prompt in the
+    shipped `us-create.yaml` declares `prd` under `docs:`, so the engine
+    cannot give those prompts the evidence they ask for and must refuse
+    to start.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.** In
+       particular nothing was written under `docs/prd/stories/` — no
+       story file was produced.
+    2. The run aborted **before any AI turn was dispatched**. The log
+       artifact `tmp/true-bdd.log.json` is included in the diff below;
+       read it. It MUST contain **zero** records whose `msg` is
+       `"Dispatching AI turn"` and zero whose `msg` is `"AI turn returned"`.
+       This is the core assertion: an empty output diff alone cannot tell
+       "refused at startup" apart from "ran a full walk and happened to
+       write nothing".
+    3. The failure is attributable from the log alone:
+       `tmp/true-bdd.log.json` contains a record naming the
+       unsatisfiable document `docs/prd/prd.yaml`. Judge this ONLY on
+       the diff below — the run's stdout is asserted separately by the
+       harness and is not part of what you are given.
+
+    ## What MUST NOT happen
+
+    - The run MUST NOT have walked the checklist. Any `Dispatching AI
+      turn` record in `tmp/true-bdd.log.json` means the engine proceeded
+      with a prompt it could not supply evidence for — exactly the
+      failure this fixture exists to catch.
+    - No story file under `docs/prd/stories/`.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for rule 2.
+    - The exact wording of the error message is not fixed. Only the
+      three rules above matter.
+
+    Reply `PASS` if all three hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

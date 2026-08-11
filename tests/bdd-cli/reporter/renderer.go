@@ -2,7 +2,6 @@ package reporter
 
 import (
 	_ "embed"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -39,6 +38,10 @@ const (
 	roleJudge  = "judge"
 )
 
+// minGanttWidth keeps a millisecond-scale slice visible on a gantt.
+// Without it the engine's own work renders as nothing at all.
+const minGanttWidth = 0.4
+
 // percentDecimals is the precision CSS widths are written to. Two
 // places keeps a sub-percent slice from collapsing to 0% wide.
 const percentDecimals = 2
@@ -72,12 +75,6 @@ func roleColor(role string) string {
 	}
 }
 
-// roleOrder is the order roles appear in the summary tables — the order
-// the engine runs them in, so the table reads as a sequence.
-func roleOrder() []string {
-	return []string{rolePrompt, roleFix, roleApply, roleJudge}
-}
-
 // Renderer accumulates the report document.
 type Renderer struct {
 	out     strings.Builder
@@ -86,34 +83,28 @@ type Renderer struct {
 	fixtures []*Fixture
 	turns    []*Turn
 
-	totalWall     float64
-	deterministic float64
-	modelTime     float64
-	// mixedTime is span that measurably contains both machine and model
-	// work and cannot be split further. Kept out of the other two so
-	// neither headline number absorbs work it did not do.
-	mixedTime   float64
-	engineCost  float64
-	judgeCost   float64
-	totalTokens int
-	maxTurn     float64
-	bootTotal   float64
-	passed      int
+	totalWall  float64
+	engineCost float64
+	judgeCost  float64
+	passed     int
 }
 
-// newRenderer precomputes every suite-level total the sections share, so
-// no section has to walk the fixtures again to answer "out of what?".
+// newRenderer precomputes the run-level totals the summary reports.
+//
+// Every one of them is a straight sum over something a log or a harness
+// record measured — no phase model, no attribution of the spans between
+// records. The index used to headline deterministic-versus-model splits
+// derived that way; the detail pages still carry them, where the reader
+// has opted in.
 func newRenderer(fixtures []*Fixture, session string) *Renderer {
 	renderer := &Renderer{
 		fixtures: fixtures,
 		session:  session,
-		maxTurn:  1,
 	}
 
 	for _, fixture := range fixtures {
 		renderer.totalWall += fixture.Wall.Seconds()
 		renderer.engineCost += fixture.Cost
-		renderer.totalTokens += fixture.Tokens
 
 		if fixture.Verdict == verdictPass {
 			renderer.passed++
@@ -121,25 +112,9 @@ func newRenderer(fixtures []*Fixture, session string) *Renderer {
 
 		if fixture.Judge != nil {
 			renderer.judgeCost += fixture.Judge.CostUSD
-			renderer.totalTokens += fixture.Judge.Tokens
 		}
 
-		// Three kinds, three buckets. An if/else here silently billed the
-		// mixed post-run block — snapshot, diff, teardown AND the judge
-		// call — as pure model time, which is exactly the conflation this
-		// report exists to prevent.
-		for _, phase := range fixture.Phases {
-			switch phase.Kind {
-			case KindDeterministic:
-				renderer.deterministic += phase.Seconds
-			case KindModel:
-				renderer.modelTime += phase.Seconds
-			case KindMixed:
-				renderer.mixedTime += phase.Seconds
-			}
-		}
-
-		renderer.collectTurns(fixture)
+		renderer.turns = append(renderer.turns, fixture.Turns...)
 	}
 
 	return renderer
@@ -149,34 +124,11 @@ func newRenderer(fixtures []*Fixture, session string) *Renderer {
 func (r *Renderer) Render() string {
 	r.out.WriteString(documentHead)
 	r.writeHeader()
-	r.writeSummaryTiles()
-	r.writeFindings()
-	r.writeTimeline()
-	r.writeGoSideBreakdown()
-	r.writeTurnInternals()
-	r.writeRoleTable()
-	r.writeCLITable()
-	r.writeTurnTrace()
-	r.writeCaveats()
+	r.writeFixtureList()
+	r.writeRunSummary()
 	r.out.WriteString("</main></body>")
 
 	return r.out.String()
-}
-
-// collectTurns flattens one fixture's turns into the suite-wide list and
-// updates the totals that depend on them.
-func (r *Renderer) collectTurns(fixture *Fixture) {
-	for _, turn := range fixture.Turns {
-		r.turns = append(r.turns, turn)
-
-		if seconds := turn.Seconds(); seconds > r.maxTurn {
-			r.maxTurn = seconds
-		}
-
-		if split := turn.Split(); split.Known {
-			r.bootTotal += split.Boot.Seconds()
-		}
-	}
 }
 
 // detailHref is the relative link from the index to one fixture's page.
@@ -192,20 +144,12 @@ func (r *Renderer) write(parts ...string) {
 	}
 }
 
-// bar renders a proportional bar in its track.
-func bar(pct float64, color string, height int) string {
-	return `<div class="bar" style="height:` + strconv.Itoa(height) + `px">` +
-		`<span style="width:` + formatPercent(clampPercent(pct), percentDecimals) +
-		`%;background:` + color + `"></span></div>`
-}
-
 // ganttBar is a slice placed on the run's wall clock: the fill starts
 // where the slice began and is as wide as it lasted.
 //
-// Distinct from bar(), which compares magnitudes from a shared left
-// edge. A timeline drawn with bar() answers "how long", never "what
-// came after what" — every row hugs the left and a millisecond slice
-// renders as nothing at all.
+// The offset is what makes it a timeline. A plain proportional bar,
+// every row hugging the left edge, answers "how long" but never "what
+// came after what" — and renders a millisecond slice as nothing at all.
 func ganttBar(offsetPct, widthPct float64, color string) string {
 	if widthPct < minGanttWidth {
 		widthPct = minGanttWidth
@@ -215,17 +159,6 @@ func ganttBar(offsetPct, widthPct float64, color string) string {
 		formatPercent(clampPercent(offsetPct), percentDecimals) +
 		`%;width:` + formatPercent(clampPercent(widthPct), percentDecimals) +
 		`%;background:` + color + `"></span></div>`
-}
-
-// roleDot is a role name preceded by its color key.
-func roleDot(role string) string {
-	label := role
-	if label == "" {
-		label = emDash
-	}
-
-	return `<span class="dot" style="background:` + roleColor(role) + `"></span>` +
-		escapeHTML(label)
 }
 
 // verdictChip renders a fixture's PASS/FAIL badge.
@@ -252,16 +185,4 @@ func phaseColor(phase Phase) string {
 // itoa is strconv.Itoa under a short name, for the many inline uses.
 func itoa(value int) string {
 	return strconv.Itoa(value)
-}
-
-// sortedKeys returns a map's keys in a stable order.
-func sortedKeys[V any](source map[string]V) []string {
-	keys := make([]string, 0, len(source))
-	for key := range source {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	return keys
 }

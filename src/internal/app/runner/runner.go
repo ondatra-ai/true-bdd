@@ -11,6 +11,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/events"
 	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
@@ -90,8 +91,11 @@ type Spec[I any] struct {
 	FixGenerator *validate.FixPromptGenerator
 	FixApplier   *validate.FixApplier
 
-	// ChecklistLoader, Renderer, UI are static dependencies.
+	// ChecklistLoader, DocResolver, Renderer, UI are static
+	// dependencies. DocResolver backs the up-front check that every
+	// document the checklist's prompts declare actually exists.
 	ChecklistLoader *checklist.ChecklistLoader
+	DocResolver     *docs.Resolver
 	Renderer        *TableRenderer
 	UI              engine.FixLoopUI
 
@@ -113,18 +117,15 @@ type Spec[I any] struct {
 // The shared closures package up Evaluator/FixGenerator/FixApplier
 // calls so per-command code never touches them directly.
 func Run[I any](ctx context.Context, spec Spec[I]) error {
+	// Validation phase. Everything here is a precondition on the run
+	// itself — it must fail before the header, before any item is
+	// loaded, and above all before the first AI turn, so a
+	// misconfigured run costs nothing.
 	if spec.StoryNumber != "" {
 		err := validateStoryNumber(spec.StoryNumber)
 		if err != nil {
 			return fmt.Errorf("invalid story number: %w", err)
 		}
-	}
-
-	console.Header(headerLine(spec.Name, spec.StoryNumber), SeparatorWidth)
-
-	items, err := spec.LoadItems(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to load items: %w", err)
 	}
 
 	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
@@ -133,6 +134,32 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	}
 
 	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
+
+	err = validateRequiredDocs(prompts, spec.DocResolver)
+	if err != nil {
+		// Both, deliberately. The console line is for whoever ran the
+		// command; the log record is what a harness, a CI scrape, or the
+		// BDD judge reads afterwards, and it must name the offending
+		// document there too — a refusal nobody can attribute is barely
+		// better than the silent degradation this check replaced.
+		slog.Error("Refusing to start: checklist documents unsatisfiable",
+			"command", spec.Name,
+			"checklist", spec.ChecklistName,
+			"error", err,
+		)
+		console.Println("Cannot start: " + err.Error())
+
+		return err
+	}
+
+	// Execution phase.
+	console.Header(headerLine(spec.Name, spec.StoryNumber), SeparatorWidth)
+
+	items, err := spec.LoadItems(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load items: %w", err)
+	}
+
 	maxAttempts := 0
 
 	if doc.Config != nil && doc.Config.MaxApplyAttempts > 0 {

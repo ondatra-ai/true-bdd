@@ -8,6 +8,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/input"
 )
@@ -19,6 +20,7 @@ import (
 // container-agnostic.
 type StoryCommonDeps struct {
 	ChecklistLoader    *checklist.ChecklistLoader
+	DocResolver        *docs.Resolver
 	Evaluator          *validate.ChecklistEvaluator
 	FixGenerator       *validate.FixPromptGenerator
 	FixApplier         *validate.FixApplier
@@ -64,6 +66,7 @@ func runStoryCommand(
 		FixApplier:   deps.FixApplier,
 
 		ChecklistLoader: deps.ChecklistLoader,
+		DocResolver:     deps.DocResolver,
 		Renderer:        deps.TableRenderer,
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          deps.RunDir.GetTmpOutPath(),
