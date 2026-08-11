@@ -257,6 +257,19 @@ details.det > summary:hover { background: var(--code); border-radius: 8px; }
    up and the eye can follow where the run spent itself. */
 details > summary .gantt { flex: none; width: 34%; min-width: 120px; }
 
+/* Below ~720px the fixed columns (62 + 62 + 120 + 270, plus gaps and
+   padding) no longer fit, and the row would push the page into a
+   horizontal scroll. Wrapping the bar and the meta column onto a second
+   line keeps every number readable — the bars stop forming one axis, but
+   an axis nobody can see without scrolling sideways is worth less than
+   the numbers. */
+@media (max-width: 720px) {
+  details > summary { flex-wrap: wrap; }
+  .turn-head { flex: 1 1 100%; white-space: normal; }
+  details > summary .gantt { flex: 1 1 auto; width: auto; min-width: 80px; }
+  .row-meta { width: auto; }
+}
+
 /* Expanders ---------------------------------------------------------- */
 
 details { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 2px; background: var(--card); }

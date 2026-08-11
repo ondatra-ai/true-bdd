@@ -494,9 +494,12 @@ function turnList(runID, name, d) {
   // Denominator for the bars: the measured wall clock when there is one,
   // else the accounted total, so a run without a harness record still
   // shows proportions rather than dividing by zero.
-  const total = d.summary.has_wall && d.summary.wall_seconds > 0
-    ? d.summary.wall_seconds
-    : (d.summary.phase_total_seconds || 1);
+  const hasWall = d.summary.has_wall && d.summary.wall_seconds > 0;
+  const total = hasWall ? d.summary.wall_seconds : (d.summary.phase_total_seconds || 1);
+  // What the shares are a share OF. Naming the fallback matters: on a
+  // run with no harness record the denominator is the phases' own sum,
+  // and calling that "wall" would claim a measurement that never existed.
+  const denominator = hasWall ? 'wall' : 'accounted phase time';
 
   // Attempts within a cell. A cell is retried until it passes, so
   // consecutive turns often differ ONLY in duration — same cell, same
@@ -516,7 +519,7 @@ function turnList(runID, name, d) {
     const t = isTurn ? d.turns[p.turn_index] : null;
 
     if (!t) {
-      rows.push(phaseRow(runID, name, d, p, bar, total));
+      rows.push(phaseRow(runID, name, d, p, bar, total, denominator));
       continue;
     }
 
@@ -562,7 +565,7 @@ function ganttBar(p, total) {
 // The owner tag stays on the summary line — "engine" / "tests" /
 // "harness" is the one thing a reader cannot infer from the label, and
 // it is what says whether a slow slice is true-bdd's to fix.
-function phaseRow(runID, name, d, p, bar, total) {
+function phaseRow(runID, name, d, p, bar, total, denominator) {
   const share = total > 0 ? (p.seconds / total) * 100 : 0;
 
   return h('details', { class: 'det' },
@@ -578,7 +581,9 @@ function phaseRow(runID, name, d, p, bar, total) {
         // the opposite of the finding. Below the resolution of one
         // decimal the share is stated as a bound instead.
         h('span', { class: 'turn-cost' },
-          share > 0 && share < 0.05 ? '<0.1% of wall' : `${share.toFixed(1)}% of wall`))),
+          share > 0 && share < 0.05
+            ? `<0.1% of ${denominator}`
+            : `${share.toFixed(1)}% of ${denominator}`))),
     h('div', { class: 'body' },
       // The slice's own prose. It used to live only in a tooltip, which
       // is the same as not being there for anyone reading down the page.
@@ -593,7 +598,7 @@ function phaseBody(runID, name, d, p) {
   const label = p.label || '';
 
   if (label === 'Fixture prep') return prepBody(d);
-  if (label.startsWith('Test run')) return testRunBody(runID, name, d);
+  if (label.startsWith('Test run')) return testRunBody(runID, name, d, p);
 
   // "Engine start-up" is the merged slice a run gets when there was no
   // test discovery to split it on — for `us apply` it IS the checklist
@@ -696,13 +701,26 @@ function checklistBody(d) {
 // testRunBody is the framework runner the engine spawned. Both streams
 // render rather than get summarised: when a suite never starts, the
 // reason is in that output and nowhere else.
-function testRunBody(runID, name, d) {
+//
+// Which subprocesses belong to this slice comes from the phase, never
+// from its label: a fix loop reruns the same test repeatedly, so
+// several slices carry the identical label "Test run (playwright ·
+// rerun)" and matching on it would put every rerun's output under every
+// rerun's row. A session recorded before the index existed has no
+// association at all — that falls back to listing them, which is the
+// old behaviour and still better than showing nothing.
+function testRunBody(runID, name, d, p) {
   const parts = [];
   const m = d.meta || {};
 
+  const all = d.test_runs || [];
+  const mine = p.test_runs
+    ? p.test_runs.map((i) => all[i]).filter(Boolean)
+    : all;
+
   if (m.test_run_command) parts.push(facts([kv('test runner', m.test_run_command)]));
 
-  if (!d.test_runs?.length) {
+  if (!mine.length) {
     parts.push(facts([
       kv('framework', d.discovery.framework || '—'),
       kv('outcome', d.discovery.outcome || '—'),
@@ -714,7 +732,7 @@ function testRunBody(runID, name, d) {
     return h('div', {}, ...parts);
   }
 
-  for (const run of d.test_runs) {
+  for (const run of mine) {
     parts.push(fkey(run.label));
     parts.push(facts([
       kv('outcome', run.outcome || '—'),
@@ -794,7 +812,7 @@ function turnRow(runID, name, d, t, bar, nth, total, offset) {
         h('span', { class: 'turn-cost' }, `${money(t.cost_usd)} · ${count(t.tokens.total)} tok`),
         t.status !== 'ok' ? h('span', { class: 'tag warn' }, t.status) : null,
         copyBtn('copy', () => turnPrompt(runID, d, t),
-          'the whole turn: facts, command, file paths AND the full system and user prompt text'))),
+          `the whole turn: facts, command, file paths AND the system and user prompt text (each artifact capped at ${count(MAX_EMBED)} chars)`))),
     h('div', { class: 'body' },
       wrap(table(['', ''], [
         kv('cli / model', `${t.cli} / ${t.model}`),
@@ -862,14 +880,26 @@ async function turnPrompt(runID, d, t, only = null) {
   // The bodies. This is the part that makes the paste self-contained:
   // the fact table says how the turn went, the prompts say what it was
   // actually asked, and without them the reader can only guess.
-  const files = [...t.inputs, ...t.outputs]
-    .filter((r) => !r.missing && (!only || r.ref === only.ref));
+  //
+  // A missing artifact is named rather than dropped. Silently omitting
+  // it makes the paste claim the turn had no such file, when what
+  // actually happened is that the tmpdir was cleaned — and someone
+  // reading the paste would go looking for a prompt that was never
+  // reported gone.
+  const scoped = [...t.inputs, ...t.outputs].filter((r) => !only || r.ref === only.ref);
+  const files = scoped.filter((r) => !r.missing);
+  const gone = scoped.filter((r) => r.missing);
 
   for (const r of files) {
     const body = await fetchArtifact(runID, d.summary.name, r.ref);
     // Body verbatim: this claims to be the file's full text, so trailing
     // whitespace and the final newline are part of it.
     lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body);
+  }
+
+  for (const r of gone) {
+    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '',
+      '(recorded by the engine but no longer on disk)');
   }
 
   return lines.join('\n');
@@ -899,7 +929,7 @@ function artifactList(runID, name, refs, context = null) {
     // requires rendering its body on the page first.
     context
       ? copyBtn('copy', () => turnPrompt(runID, context.d, context.turn, r),
-          'this file\u2019s full text, with the turn it belongs to as context')
+          `this file\u2019s text (capped at ${count(MAX_EMBED)} chars), with the turn it belongs to as context`)
       : (r.repo_path ? copyBtn('copy path', () => r.repo_path, r.repo_path) : null))));
 }
 

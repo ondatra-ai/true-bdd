@@ -160,6 +160,10 @@ type PhaseDTO struct {
 	CostUSD      float64 `json:"cost_usd"`
 	Tokens       int     `json:"tokens"`
 	TurnIndex    *int    `json:"turn_index"`
+	// TestRuns indexes into TestRuns for the subprocesses this slice
+	// contains. Null for a session recorded before the association was
+	// carried, which the UI must treat as "unknown" rather than "none".
+	TestRuns []int `json:"test_runs"`
 }
 
 // TurnDTO is one model call.

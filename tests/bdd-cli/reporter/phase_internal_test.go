@@ -292,6 +292,105 @@ func TestPostFixRerunIsItsOwnSlice(t *testing.T) {
 	}
 }
 
+// TestTestRunSlicesNameTheirOwnRuns pins the association a consumer
+// cannot reconstruct. Two reruns of the same test produce two slices
+// with byte-identical labels, so a report matching on the label shows
+// both runs' output under both rows — every rerun looking like it
+// printed what its neighbour printed. The index is the only thing that
+// tells them apart.
+func TestTestRunSlicesNameTheirOwnRuns(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildTestFixture()
+	base := fixture.First
+
+	// Two more validation turns, so there are two wide gaps for a rerun
+	// to land in rather than the 1ms boundaries the base fixture has.
+	fixture.Turns = append(fixture.Turns,
+		&Turn{
+			Number: 4, Role: rolePrompt, CLI: cliClaude, Model: modelOpus,
+			Started: at(base, 240.0), Ended: at(base, 248.0),
+			Duration: 8 * time.Second, Status: TurnOK,
+		},
+		&Turn{
+			Number: 5, Role: rolePrompt, CLI: cliClaude, Model: modelOpus,
+			Started: at(base, 300.0), Ended: at(base, 308.0),
+			Duration: 8 * time.Second, Status: TurnOK,
+		})
+
+	// Two reruns, identical in every field a label is built from, landing
+	// in the two different gaps.
+	fixture.TestRuns = []TestRun{
+		{
+			Framework: frameworkPlaywright, Phase: phaseRerun,
+			Duration: 2 * time.Second, At: at(base, 210.0), HasExit: true,
+		},
+		{
+			Framework: frameworkPlaywright, Phase: phaseRerun,
+			Duration: 2 * time.Second, At: at(base, 260.0), HasExit: true,
+		},
+	}
+
+	fixture.Last = at(base, 308.0)
+	fixture.Phases = buildPhases(fixture)
+
+	// Only the rerun slices — the base fixture also has a discovery slice,
+	// which claims no runs here because none are discovery-phase.
+	var got [][]int
+
+	for _, phase := range fixture.Phases {
+		if strings.Contains(phase.Label, phaseRerun) {
+			got = append(got, phase.TestRuns)
+		}
+	}
+
+	if len(got) != 2 {
+		t.Fatalf("got %d rerun slices, want 2", len(got))
+	}
+
+	// Each slice claims exactly one run, and they claim different ones.
+	for index, runs := range got {
+		if len(runs) != 1 {
+			t.Fatalf("slice %d claims %v, want exactly one run", index, runs)
+		}
+
+		if runs[0] != index {
+			t.Errorf("slice %d claims run %d, want run %d", index, runs[0], index)
+		}
+	}
+}
+
+// TestDiscoverySliceClaimsEveryDiscoveryRun pins the other half: the
+// opening slice is bounded by log records rather than by one
+// subprocess, so it legitimately contains all of them and must say so.
+func TestDiscoverySliceClaimsEveryDiscoveryRun(t *testing.T) {
+	t.Parallel()
+
+	fixture := buildTestFixture()
+	fixture.TestRuns = []TestRun{
+		{Framework: frameworkPlaywright, Phase: phaseDiscover, Duration: time.Second},
+		{Framework: frameworkPlaywright, Phase: phaseDiscover, Duration: time.Second},
+		{Framework: frameworkPlaywright, Phase: phaseRerun, Duration: time.Second},
+	}
+
+	fixture.Phases = buildPhases(fixture)
+
+	phase := findPhase(t, fixture, "Test run")
+
+	if len(phase.TestRuns) != 2 {
+		t.Fatalf("discovery slice claims %v, want the two discovery runs", phase.TestRuns)
+	}
+
+	// The rerun is not a discovery run and must not be swept in — it gets
+	// its own slice in the gap it actually ran in.
+	for _, index := range phase.TestRuns {
+		if !fixture.TestRuns[index].IsDiscovery() {
+			t.Errorf("discovery slice claims run %d, which is phase %q",
+				index, fixture.TestRuns[index].Phase)
+		}
+	}
+}
+
 // TestRerunTimelineStillSumsAndIsContiguous re-pins the report's central
 // invariants against the split gap: carving a slice out of a gap must
 // neither lose nor double-count the time either side of it.
