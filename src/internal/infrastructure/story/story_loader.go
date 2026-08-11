@@ -71,8 +71,11 @@ func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
 		return nil, fmt.Errorf("parse story YAML failed: %w", pkgerrors.ErrParseStoryYAMLFailed(storyFile, err))
 	}
 
-	slog.Debug(
-		"Story document loaded successfully",
+	// Info, not Debug: this path is the subject side of every check the
+	// run performs, and the report names it when explaining what a turn
+	// was comparing against what.
+	slog.Info(
+		"Story document loaded",
 		"story_number", storyNumber,
 		"file", storyFile,
 	)

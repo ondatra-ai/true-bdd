@@ -144,13 +144,14 @@ func (s *Server) handleTest(writer http.ResponseWriter, request *http.Request) {
 			Framework: fixture.Discovery.Framework,
 			Outcome:   fixture.Discovery.Outcome,
 		},
-		Phases:    mapPhases(fixture),
-		Turns:     turns,
-		Files:     mapFiles(fixture),
-		TestRuns:  mapTestRuns(fixture.TestRuns),
-		Artifacts: fixtureRefs(fixture),
-		Meta:      mapMeta(fixture.Meta),
-		Warnings:  orEmpty(fixture.EmptyFailurePrompts),
+		Phases:     mapPhases(fixture),
+		Turns:      turns,
+		Files:      mapFiles(fixture),
+		TestRuns:   mapTestRuns(fixture.TestRuns),
+		Artifacts:  fixtureRefs(fixture),
+		Provenance: provenanceRefs(fixture),
+		Meta:       mapMeta(fixture.Meta),
+		Warnings:   orEmpty(fixture.EmptyFailurePrompts),
 	})
 }
 

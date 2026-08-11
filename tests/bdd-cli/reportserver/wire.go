@@ -93,8 +93,12 @@ type TestDetail struct {
 	Files     []FileChangeDTO `json:"files"`
 	TestRuns  []TestRunDTO    `json:"test_runs"`
 	Artifacts []ArtifactRef   `json:"artifacts"`
-	Meta      map[string]any  `json:"meta"`
-	Warnings  []string        `json:"warnings"`
+	// Provenance are the run-level files behind every check: the subject
+	// source, the checklist, and the file fixes are written to. Sent once
+	// and shown inside each turn, because every turn shares them.
+	Provenance []ArtifactRef  `json:"provenance"`
+	Meta       map[string]any `json:"meta"`
+	Warnings   []string       `json:"warnings"`
 }
 
 // ExpectedDTO is what the fixture declared it wanted.
@@ -187,6 +191,9 @@ type TurnDTO struct {
 	AllowedTools    []string      `json:"allowed_tools"`
 	DisallowedTools []string      `json:"disallowed_tools"`
 	Cell            CellDTO       `json:"cell"`
+	Operation       OperationDTO  `json:"operation"`
+	Attempt         int           `json:"attempt"`
+	AttemptTotal    int           `json:"attempt_total"`
 	Command         string        `json:"command"`
 	ToolCalls       []ToolCallDTO `json:"tool_calls"`
 	Inputs          []ArtifactRef `json:"inputs"`
@@ -211,6 +218,25 @@ type CellDTO struct {
 	Section string `json:"section"`
 	Label   string `json:"label"`
 	Key     string `json:"key"`
+}
+
+// OperationDTO is what a turn did, named: the verb, what it was checked
+// against, and why it happened at all. Label is the row text; CellLabel
+// is the attempt-free form the cross-run comparison uses, where a row
+// can pair a first entry on one side with a re-entry on the other.
+type OperationDTO struct {
+	Verb        string   `json:"verb"`
+	Section     string   `json:"section"`
+	SectionName string   `json:"section_name"`
+	Subject     string   `json:"subject"`
+	Ref         string   `json:"ref"`
+	Why         string   `json:"why"`
+	Label       string   `json:"label"`
+	CellLabel   string   `json:"cell_label"`
+	ItemsFile   string   `json:"items_file"`
+	Checklist   string   `json:"checklist"`
+	Target      string   `json:"target"`
+	Docs        []string `json:"docs"`
 }
 
 // ToolCallDTO is one tool the model invoked.

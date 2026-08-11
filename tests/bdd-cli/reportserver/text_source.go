@@ -18,6 +18,13 @@ const (
 	refCLIStdout     = "cli:stdout"
 	refCLIStderr     = "cli:stderr"
 	refJudgeSpec     = "manifest:judge_spec"
+	// The two sides of every check the run performed, plus the file its
+	// fixes mutate. Named by the run's own log, so they stay lookups
+	// like every other ref rather than a path the client supplies.
+	refItemsFile = "run:items"
+	refChecklist = "run:checklist"
+	refTarget    = "run:target"
+	refCommitted = "run:committed"
 )
 
 // resolveText returns the body a ref names, and whether it exists.
@@ -27,9 +34,9 @@ const (
 // a filesystem path. That is the whole reason refs are opaque tokens
 // rather than paths: there is no traversal surface to get wrong.
 func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
-	body, handled := fixedRef(fixture, ref)
+	body, present, handled := fixedRef(fixture, ref)
 	if handled {
-		return body, body != ""
+		return body, present
 	}
 
 	parts := strings.Split(ref, ":")
@@ -44,30 +51,102 @@ func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
 	}
 }
 
-// fixedRef resolves the pseudo-refs that name exactly one body. The
-// second result says whether the ref was one of them, so an unknown ref
-// falls through to the indexed forms rather than being reported empty.
-func fixedRef(fixture *reporter.Fixture, ref string) (string, bool) {
+// fixedRef resolves the pseudo-refs that name exactly one body.
+//
+// Three results, not two: `present` says the body was found, `handled`
+// says the ref was one of these at all. They are separate because a file
+// can be readable and empty, and collapsing that into "absent" drops a
+// truncated target from the provenance list — the one case where the
+// emptiness is the thing worth seeing.
+func fixedRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
 	switch ref {
 	case refJudgeSystem:
-		return sidecar(fixture, runner.JudgeSystemFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeSystemFile))
 	case refJudgeUser:
-		return sidecar(fixture, runner.JudgeUserFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeUserFile))
 	case refJudgeResponse:
-		return sidecar(fixture, runner.JudgeResponseFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeResponseFile))
 	case refCLIStdout:
-		return recordFile(fixture, stdoutOf), true
+		return presenceOf(recordFile(fixture, stdoutOf))
 	case refCLIStderr:
-		return recordFile(fixture, stderrOf), true
+		return presenceOf(recordFile(fixture, stderrOf))
 	case refJudgeSpec:
 		if fixture.Manifest == nil {
-			return "", true
+			return "", false, true
 		}
 
-		return fixture.Manifest.JudgeSpec, true
+		return presenceOf(fixture.Manifest.JudgeSpec)
 	default:
-		return "", false
+		return provenanceRef(fixture, ref)
 	}
+}
+
+// presenceOf keeps the old contract for the bodies that have no way to
+// distinguish empty from missing: they are read through helpers that
+// return "" for both.
+func presenceOf(body string) (string, bool, bool) {
+	return body, body != "", true
+}
+
+// provenanceRef resolves the refs that name a file the run's own log
+// pointed at, rather than one the harness wrote. Here the read itself
+// reports presence, so a zero-byte file is present.
+func provenanceRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
+	var logged string
+
+	switch ref {
+	case refItemsFile:
+		logged = fixture.Meta.ItemsFile
+	case refChecklist:
+		logged = fixture.Meta.ChecklistPath
+	case refTarget:
+		logged = fixture.Meta.TargetFile
+	case refCommitted:
+		logged = fixture.Meta.CommittedFile
+	default:
+		return "", false, false
+	}
+
+	body, ok := reporter.ReadContained(fixture.Dir, logged)
+
+	return body, ok, true
+}
+
+// provenanceRefs lists the files behind every check the run performed:
+// where the walked items came from, which checklist posed the questions,
+// and what the fixes mutate. Run-level, so they are resolved once and
+// every turn points at the same three bodies.
+func provenanceRefs(fixture *reporter.Fixture) []ArtifactRef {
+	candidates := []struct{ ref, kind, path string }{
+		{refItemsFile, "subject from", fixture.Meta.ItemsFile},
+		{refChecklist, "checklist", fixture.Meta.ChecklistPath},
+		// Both, and usually only one resolves. A run that converged has
+		// had its scratch renamed over the canonical file, so the scratch
+		// is gone and the fixes are findable only at the destination; a
+		// run that did not converge leaves the scratch and never touches
+		// the canonical. Listing both lets whichever exists speak.
+		{refTarget, "fixes written to", fixture.Meta.TargetFile},
+		{refCommitted, "fixes committed to", fixture.Meta.CommittedFile},
+	}
+
+	refs := []ArtifactRef{}
+
+	for _, candidate := range candidates {
+		body, present := resolveText(fixture, candidate.ref)
+		if !present {
+			continue
+		}
+
+		refs = append(refs, ArtifactRef{
+			Ref:      candidate.ref,
+			Kind:     candidate.kind,
+			Name:     candidate.path,
+			RepoPath: containedPath(fixture.RelDir, candidate.path),
+			Bytes:    len(body),
+		})
+	}
+
+	return refs
 }
 
 // stdoutOf and stderrOf name the record's captured CLI streams.

@@ -236,10 +236,38 @@ func mapTurn(fixture *reporter.Fixture, position int, turn *reporter.Turn) TurnD
 		AllowedTools:    orEmpty(turn.AllowedTools),
 		DisallowedTools: orEmpty(turn.DisallowedTools),
 		Cell:            mapCell(turn),
+		Operation:       mapOperation(fixture, turn),
+		Attempt:         turn.Attempt,
+		AttemptTotal:    turn.AttemptTotal,
 		Command:         turn.Invocation.Command(),
 		ToolCalls:       mapToolCalls(turn.ToolCalls),
 		Inputs:          mapArtifacts(fixture, position, "in", turn.Inputs),
 		Outputs:         mapArtifacts(fixture, position, "out", turn.Outputs),
+	}
+}
+
+// mapOperation projects a turn's name and its file provenance. The
+// run-level files ride on every turn so the detail page can show what
+// this turn compared against what without a second lookup.
+func mapOperation(fixture *reporter.Fixture, turn *reporter.Turn) OperationDTO {
+	var meta reporter.RunMetadata
+	if fixture != nil {
+		meta = fixture.Meta
+	}
+
+	return OperationDTO{
+		Verb:        turn.Op.Verb,
+		Section:     turn.Op.Section,
+		SectionName: turn.Op.SectionName,
+		Subject:     turn.Op.Subject,
+		Ref:         turn.Op.Ref,
+		Why:         turn.Op.Why,
+		Label:       turn.Op.Label,
+		CellLabel:   turn.Op.CellLabel,
+		ItemsFile:   meta.ItemsFile,
+		Checklist:   meta.ChecklistPath,
+		Target:      meta.TargetFile,
+		Docs:        orEmpty(turn.Docs),
 	}
 }
 

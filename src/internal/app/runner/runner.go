@@ -279,6 +279,13 @@ func buildSpecEngine[I any](
 // banner at the top of every outer-walk attempt past the first.
 // Attempt 1 is the initial walk; banners only make sense on retries.
 func reWalkBanner(attempt, maxAttempts int) {
+	// Logged for EVERY attempt including the first, so a reader can tell
+	// which walk any later turn belongs to. Without this boundary a
+	// re-validation triggered by another item's fix (a re-walk) is
+	// indistinguishable from one triggered by this item's own fix (the
+	// walker's restart), and the two mean different things.
+	slog.Info("Walk attempt started", "attempt", attempt, "max_attempts", maxAttempts)
+
 	if attempt <= 1 {
 		return
 	}

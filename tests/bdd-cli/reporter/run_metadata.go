@@ -13,6 +13,18 @@ type RunMetadata struct {
 	Prompts          int
 	MaxApplyAttempts int
 
+	// ItemsFile is where the walked items came from — the story file for
+	// the story commands, the same file `us apply` parses its ACs out
+	// of. TargetFile is the file fixes actually mutate: for `us apply`
+	// the scratch registry, which is NOT a `docs:` key and so is
+	// nameable only at seed time.
+	ItemsFile  string
+	TargetFile string
+	// CommittedFile is the canonical file the scratch is renamed over
+	// once the walk converges. A run that converged therefore has NO
+	// scratch left on disk — the fixes are only findable here.
+	CommittedFile string
+
 	// TestRun is the framework runner the engine spawned during
 	// discovery, when it logged one.
 	TestRun Invocation
@@ -51,6 +63,11 @@ func (m *RunMetadata) consume(record *LogRecord) {
 	case msgChecklistLoad:
 		m.ChecklistCommand = record.Command
 		m.ChecklistPath = record.Path
+	case msgStoryLoaded, msgStoryScenarios:
+		m.ItemsFile = record.File
+	case msgScratchSeeded:
+		m.TargetFile = record.To
+		m.CommittedFile = record.From
 	case msgPromptsLoaded:
 		m.Items = intOr(record.Items)
 		m.Prompts = intOr(record.Prompts)

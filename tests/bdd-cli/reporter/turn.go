@@ -62,6 +62,31 @@ type Turn struct {
 
 	Invocation Invocation
 	Cell       ChecklistCell
+
+	// Attempt is 1-based within (cell, role): how many times this seat
+	// of this cell has been occupied, this one included. AttemptTotal is
+	// how many times it ends up being occupied across the whole run.
+	// Attempt is what turns `prompt` into "Re-validate".
+	Attempt      int
+	AttemptTotal int
+	// PromptIdx is the 1-based index into the run's flattened prompt
+	// list. Validation and fix artifacts carry it in their filename;
+	// apply artifacts do not, so classifyCauses inherits it from the fix
+	// turn the apply followed.
+	PromptIdx int
+	// FixPromptArtifact is the generated fix prompt an apply turn
+	// consumed — the only thing it actually reads.
+	FixPromptArtifact string
+	// Docs is "key → path" for every document this turn resolved,
+	// sorted. Empty for a command whose checklist declares no `docs:`
+	// keys, and for any run recorded before the engine logged them.
+	Docs []string
+	// Cause is why this turn happened; Op is the whole naming.
+	Cause TurnCause
+	Op    Operation
+	// evidence is the run state this turn was dispatched under, kept so
+	// the cause can be read off it after attempts are counted.
+	evidence turnEvidence
 	// Inputs are the artifacts written before the turn was dispatched,
 	// Outputs the ones written after it completed.
 	Inputs  []Artifact
@@ -128,4 +153,10 @@ func (t *Turn) Split() BootSplit {
 // report does on it.
 func (t *Turn) Seconds() float64 {
 	return t.Duration.Seconds()
+}
+
+// PromptIndex is the turn's 1-based prompt index, or 0 when the run
+// left no way to know it.
+func (t *Turn) PromptIndex() int {
+	return t.PromptIdx
 }

@@ -2,7 +2,6 @@ package reportserver
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/reporter"
 )
@@ -22,22 +21,14 @@ import (
 //
 // Turn.Number is not usable either: it is the engine's monotonic
 // counter, so keying on it is ordinal pairing wearing a different hat.
+//
+// The reporter counts occupancies of this same key to decide whether a
+// turn is a first entry or a re-entry, so the definition lives there and
+// this is a single call. Two definitions that drifted apart would mean
+// the row labelled "Re-validate" and the row it aligns with were
+// computed from different notions of "same cell".
 func turnKey(turn *reporter.Turn) string {
-	section := turn.Cell.Section
-	if section == "" {
-		// A turn whose artifacts never named a section (the fix and apply
-		// turns of a cell, before inheritance fills them in) still aligns
-		// on its subject. Falling back to the role alone would make every
-		// such turn interchangeable.
-		section = "?"
-	}
-
-	subject := turn.Cell.Subject
-	if subject == "" {
-		subject = "?"
-	}
-
-	return strings.Join([]string{section, subject, turn.Role}, "\x1f")
+	return turn.CellRoleKey()
 }
 
 // turnKeys projects a turn list for diffing.

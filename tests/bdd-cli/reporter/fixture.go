@@ -89,6 +89,10 @@ type Fixture struct {
 	Judge     *JudgeCall
 	Discovery Discovery
 	Meta      RunMetadata
+	// Checklist is the run's own copy of the checklist it walked,
+	// flattened. It supplies the section names and the `F:` presence no
+	// artifact filename carries.
+	Checklist ChecklistDoc
 	Manifest  *Manifest
 	// TestRuns is every framework-runner subprocess the run spawned,
 	// with its captured output. Empty for a run predating the engine's
@@ -149,6 +153,7 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	}
 
 	applyHarnessRecord(fixture, dir)
+	nameOperations(fixture, dir)
 
 	for _, turn := range fixture.Turns {
 		fixture.ModelSeconds += turn.Seconds()
@@ -166,6 +171,18 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	}
 
 	return fixture, nil
+}
+
+// nameOperations gives every turn its operation name, reading the run's
+// OWN copy of the checklist rather than the working tree's — a fixture
+// may have filtered or overridden it, and only the run's copy has the
+// prompt indices the run used.
+func nameOperations(fixture *Fixture, dir string) {
+	fixture.Checklist = loadChecklistDoc(dir, fixture.Meta.ChecklistPath)
+
+	for _, turn := range fixture.Turns {
+		turn.Op = describeTurn(turn, fixture.Checklist, fixture.Meta.ChecklistCommand)
+	}
 }
 
 // relativeToRoot expresses a path relative to the repo root, falling

@@ -501,16 +501,9 @@ function turnList(runID, name, d) {
   // and calling that "wall" would claim a measurement that never existed.
   const denominator = hasWall ? 'wall' : 'accounted phase time';
 
-  // Attempts within a cell. A cell is retried until it passes, so
-  // consecutive turns often differ ONLY in duration — same cell, same
-  // role, same model — and the row reads as a duplicate without this.
-  const attempts = new Map();
-  for (const t of d.turns) {
-    const key = t.cell.key || t.role;
-    attempts.set(key, (attempts.get(key) || 0) + 1);
-  }
-  const seen = new Map();
-
+  // Attempts within a cell come from the server: the same numbers decide
+  // whether a turn is named "Validate" or "Re-validate", and counting
+  // them twice in two languages is how those two disagree.
   const rows = [];
 
   for (const p of d.phases) {
@@ -523,11 +516,7 @@ function turnList(runID, name, d) {
       continue;
     }
 
-    const key = t.cell.key || t.role;
-    const nth = (seen.get(key) || 0) + 1;
-    seen.set(key, nth);
-
-    rows.push(turnRow(runID, name, d, t, bar, nth, attempts.get(key), p.offset_seconds));
+    rows.push(turnRow(runID, name, d, t, bar, t.attempt, t.attempt_total, p.offset_seconds));
   }
 
   const turnCount = d.turns.length;
@@ -568,7 +557,9 @@ function ganttBar(p, total) {
 function phaseRow(runID, name, d, p, bar, total, denominator) {
   const share = total > 0 ? (p.seconds / total) * 100 : 0;
 
-  return h('details', { class: 'det' },
+  // Label plus offset: a phase has no id of its own, and its duration
+  // grows while the run does.
+  return h('details', { class: 'det', 'data-key': `phase:${p.label}:${p.offset_seconds}` },
     h('summary', {},
       h('span', { class: 'turn-head' }, p.label,
         p.owner ? h('span', { class: 'tag', style: 'margin-left:6px' }, p.owner) : null,
@@ -799,12 +790,16 @@ function judgeBody(d) {
 // turnRow is a model call: the same shape as an overhead row, plus an
 // expander and the copy button.
 function turnRow(runID, name, d, t, bar, nth, total, offset) {
-  return h('details', {},
+  // Keyed on the turn number, which is the engine's own stable id for
+  // this call. The summary text is not usable as a key: it carries the
+  // duration, cost and token count, all of which move on every rescan
+  // while the turn is still running — the exact case the expander state
+  // exists to survive.
+  return h('details', { 'data-key': `turn:${t.number}` },
     h('summary', {},
       h('span', { class: 'turn-head' },
-        `#${t.number} · ${t.cell.label || '—'}`,
-        total > 1 ? ` · try ${nth}/${total}` : '',
-        ` · ${t.role} · ${t.model}`),
+        `#${t.number} · ${t.operation.label || t.cell.label || t.role}`,
+        ` · ${t.model}`),
       h('span', { class: 'phase-at', title: 'time since the run began' }, secs(offset)),
       h('span', { class: 'phase-time' }, secs(t.duration_seconds)),
       bar,
@@ -816,14 +811,41 @@ function turnRow(runID, name, d, t, bar, nth, total, offset) {
     h('div', { class: 'body' },
       wrap(table(['', ''], [
         kv('cli / model', `${t.cli} / ${t.model}`),
+        t.operation.why ? kv('why it ran', t.operation.why) : null,
+        total > 1 ? kv('attempt', `${nth} of ${total} on this check`) : null,
         kv('duration', secs(t.duration_seconds) + (t.duration_is_floor ? ' (lower bound)' : '')),
         kv('cost', money(t.cost_usd)),
         kv('tokens', `${count(t.tokens.total)} — in ${count(t.tokens.input)}, out ${count(t.tokens.output)}, cache r ${count(t.tokens.cache_read)} / w ${count(t.tokens.cache_creation)}`),
         kv('prompt size', `system ${count(t.system_length)} · user ${count(t.user_length)}`),
+        ...provenance(t).map(([label, value]) => kv(label, value)),
         kv('command', t.command || '—'),
         kv('tools', t.tool_calls.length ? toolSummary(t.tool_calls) : '—'),
       ])),
+      // The two sides of the check, openable in place: the file the
+      // subject came from and the checklist that posed the question. A
+      // path alone makes the reader go and look; this is the looking.
+      d.provenance?.length ? h('div', {}, h('div', { class: 'fkey' }, 'checked against'),
+        artifactList(runID, name, d.provenance)) : null,
       artifactList(runID, name, [...t.inputs, ...t.outputs], { d, turn: t })));
+}
+
+// provenance names the files behind a turn: where its subject came from,
+// which checklist posed the question, what the fix mutates, and every
+// document the prompt resolved. The row header says WHAT was compared
+// and WHY; this says against exactly which files. Rows with nothing to
+// say are dropped rather than printed as "—", so a command that declares
+// no docs: keys does not grow an empty line.
+function provenance(t) {
+  const o = t.operation || {};
+  const rows = [];
+  // The files themselves are listed under "checked against", openable;
+  // these are the per-turn facts about them that a shared file list
+  // cannot carry — which section of the checklist this turn's question
+  // belongs to, and which documents this turn in particular resolved.
+  if (o.section_name) rows.push(['section', `${o.section} — “${o.section_name}”`]);
+  else if (o.section) rows.push(['section', o.section]);
+  if (o.docs?.length) rows.push(['docs read', o.docs.join(' · ')]);
+  return rows;
 }
 
 // turnFacts is the turn's fact table as text — the same rows the page
@@ -832,6 +854,8 @@ function turnRow(runID, name, d, t, bar, nth, total, offset) {
 function turnFacts(t) {
   return [
     `cli / model   ${t.cli} / ${t.model}`,
+    ...(t.operation.why ? [`why it ran    ${t.operation.why}`] : []),
+    ...(t.attempt_total > 1 ? [`attempt       ${t.attempt} of ${t.attempt_total} on this check`] : []),
     `duration      ${secs(t.duration_seconds)}` +
       (t.duration_is_floor ? ' (lower bound)' : '') + ` · status ${t.status}` +
       (t.error ? ` · ${t.error}` : ''),
@@ -840,6 +864,7 @@ function turnFacts(t) {
       `out ${count(t.tokens.output)}, cache r ${count(t.tokens.cache_read)} / ` +
       `w ${count(t.tokens.cache_creation)}`,
     `prompt size   system ${count(t.system_length)} · user ${count(t.user_length)}`,
+    ...provenance(t).map(([label, value]) => `${label.padEnd(13)} ${value}`),
     `command       ${t.command || '—'}`,
     `tools         ${t.tool_calls.length ? toolSummary(t.tool_calls) : '—'}`,
   ].join('\n');
@@ -870,7 +895,8 @@ async function turnPrompt(runID, d, t, only = null) {
 
   lines.push(`AI turn #${t.number} of BDD fixture \`${d.summary.name}\`, ` +
     `run \`${d.run}\` of the true-bdd suite.`);
-  lines.push(`Checklist cell: ${t.cell.label || '(none)'} · role: ${t.role}`);
+  lines.push(`Operation: ${t.operation.label || t.cell.label || '(none)'}` +
+    (t.operation.why ? ` — ${t.operation.why}` : '') + ` · role: ${t.role}`);
   lines.push('', turnFacts(t));
 
   lines.push('', `Run directory: ${d.run_dir}`);
@@ -917,7 +943,7 @@ function artifactList(runID, name, refs, context = null) {
   const usable = refs.filter((r) => !r.missing);
   if (!usable.length) return null;
   return h('div', { style: 'margin-top:8px' }, usable.map((r) => h('div', { class: 'artifact' },
-    h('details', {},
+    h('details', { 'data-key': `art:${r.ref}` },
       h('summary', {}, `${r.kind} · ${r.name} · ${count(r.bytes)} bytes`),
       h('div', { class: 'body' },
         r.repo_path
@@ -1169,8 +1195,51 @@ function renderTextDiff(d) {
 
 // --------------------------------------------------------------- router
 
+// A re-render replaces the whole view, so anything the READER did to the
+// page — scrolling, opening expanders — is in the new tree's way. While a
+// suite is running the version moves every rescan, which turns that into
+// the page yanking itself out from under someone every few seconds.
+//
+// Expander state is keyed on summary text rather than position: a run in
+// flight grows new turns, and an index would reopen whatever slid into
+// the old slot instead of the thing that was open.
+const openDetails = new Set();
+
+// The renderer assigns data-key to everything whose summary text moves.
+// Summary text remains the fallback for expanders that are stable by
+// construction (a rubric, a fact block) and need no id of their own.
+const detailKey = (el) => {
+  if (el.dataset.key) return el.dataset.key;
+  const summary = el.querySelector(':scope > summary');
+  return summary ? summary.textContent.trim() : '';
+};
+
+// `toggle` does not bubble, so this listens in the capture phase.
+document.addEventListener('toggle', (ev) => {
+  if (ev.target.tagName !== 'DETAILS') return;
+  const key = detailKey(ev.target);
+  if (!key) return;
+  if (ev.target.open) openDetails.add(key);
+  else openDetails.delete(key);
+}, true);
+
+const restoreOpen = (root) => {
+  for (const el of root.querySelectorAll('details')) {
+    if (openDetails.has(detailKey(el))) el.open = true;
+  }
+};
+
+let lastRoute = null;
+
 async function render() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  // Scroll is only worth restoring when the page is the same page.
+  // Navigating somewhere new should land at the top, as it always has.
+  const sameRoute = location.hash === lastRoute;
+  const scroll = window.scrollY;
+  // Keys are only unique within a page — two runs hold the same turn
+  // numbers — so leaving a route drops what was open on it.
+  if (!sameRoute) openDetails.clear();
   try {
     let node;
     if (!parts.length) node = await renderRunList();
@@ -1179,7 +1248,10 @@ async function render() {
     else if (parts[0] === 'cmp' && parts.length === 3) node = await renderCompareRuns(parts[1], parts[2]);
     else if (parts[0] === 'cmp' && parts[3] === 'test') node = await renderCompareTest(parts[1], parts[2], parts[4]);
     else node = h('p', { class: 'empty' }, 'Not found.');
+    if (sameRoute) restoreOpen(node);
     view.replaceChildren(node);
+    lastRoute = location.hash;
+    if (sameRoute) window.scrollTo(0, scroll);
   } catch (err) {
     view.replaceChildren(fail(err));
   }
