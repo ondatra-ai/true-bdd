@@ -91,6 +91,10 @@ const copyBtn = (label, build, title = '') => h('button', {
   class: 'copy',
   title,
   onclick: async (ev) => {
+    // Inside a <summary>, a click would otherwise open the expander.
+    ev.preventDefault();
+    ev.stopPropagation();
+
     const btn = ev.currentTarget;
     const original = btn.textContent;
     try {
@@ -347,7 +351,6 @@ async function renderTest(runID, name) {
       tile('Cost', money(d.summary.cost_usd)),
       tile('Files changed', d.files.length)),
     expectedVsActual(d),
-    timeline(d),
     turnList(runID, name, d),
     fileList(d),
     evidence(runID, name, d));
@@ -467,48 +470,140 @@ const judgeVerdictText = (actual) => {
   return judge ? judge.replace(/^judge:\s*/, 'FAIL: ') : 'PASS';
 };
 
-// timeline renders the phase gantt: every slice is either deterministic
-// work or a model deciding how long to take, and together they account
-// for the whole measured wall clock.
-function timeline(d) {
+// turnList is the run's timeline AND its turn list — they were two
+// sections showing the same spans, one as bars and one as detail, and
+// the reader had to hold a turn number in their head to cross them.
+//
+// Rows are every phase in chronological order. A phase backed by a model
+// call expands into that turn's detail; the deterministic slices between
+// them stay one thin line, because "parse the result file, write
+// artifacts, build the next prompt" is the same sentence every time and
+// only its DURATION ever says anything.
+function turnList(runID, name, d) {
+  if (!d.phases.length && !d.turns.length) return null;
+
+  // Denominator for the bars: the measured wall clock when there is one,
+  // else the accounted total, so a run without a harness record still
+  // shows proportions rather than dividing by zero.
   const total = d.summary.has_wall && d.summary.wall_seconds > 0
     ? d.summary.wall_seconds
     : (d.summary.phase_total_seconds || 1);
 
-  if (!d.phases.length) return h('div', {}, h('h2', {}, 'Timeline'), h('p', { class: 'empty' }, 'No phases recorded — this run started no engine.'));
+  // Attempts within a cell. A cell is retried until it passes, so
+  // consecutive turns often differ ONLY in duration — same cell, same
+  // role, same model — and the row reads as a duplicate without this.
+  const attempts = new Map();
+  for (const t of d.turns) {
+    const key = t.cell.key || t.role;
+    attempts.set(key, (attempts.get(key) || 0) + 1);
+  }
+  const seen = new Map();
 
-  const rows = d.phases.map((p) => {
-    const cls = p.kind === 'deterministic' ? 'role-det' : `role-${p.role || 'prompt'}`;
-    const width = Math.max(0.4, Math.min(100, (p.seconds / total) * 100));
-    const offset = Math.max(0, Math.min(100, (p.offset_seconds / total) * 100));
-    return h('tr', {},
-      h('td', {}, p.label, p.measured ? null : h('span', { class: 'tag', style: 'margin-left:6px' }, 'residual')),
-      h('td', {}, h('span', { class: 'tag' }, p.kind), ' ', h('span', { class: 'tag' }, p.owner)),
-      h('td', { class: 'num' }, secs(p.seconds)),
-      h('td', { style: 'width:45%' },
-        h('div', { class: 'gantt' }, h('span', { class: cls, style: `margin-left:${offset.toFixed(2)}%;width:${width.toFixed(2)}%` }))),
-      h('td', { class: 'crumb' }, p.detail || ''));
-  });
+  // Deterministic slices under a second are not worth a row each. The
+  // engine's between-turn work is ~2ms and says the same sentence every
+  // time — twenty-nine of those lines bury the turns they sit between.
+  // They are folded into one expander, so the accounting stays complete
+  // without costing the list its shape.
+  const trivial = [];
 
-  return h('div', {}, h('h2', {}, 'Timeline'), wrap(table(['Phase', 'Kind', { label: 'Time', num: true }, 'Span', 'Detail'], rows)));
+  const rows = [];
+
+  for (const p of d.phases) {
+    const bar = ganttBar(p, total);
+    const isTurn = p.turn_index !== null && p.turn_index !== undefined;
+    const t = isTurn ? d.turns[p.turn_index] : null;
+
+    if (!t) {
+      if (p.seconds < OVERHEAD_FLOOR) {
+        trivial.push(p);
+      } else {
+        rows.push(overheadRow(p, bar));
+      }
+
+      continue;
+    }
+
+    const key = t.cell.key || t.role;
+    const nth = (seen.get(key) || 0) + 1;
+    seen.set(key, nth);
+
+    rows.push(turnRow(runID, name, d, t, bar, nth, attempts.get(key)));
+  }
+
+  if (trivial.length) rows.push(overheadFold(trivial));
+
+  const turnCount = d.turns.length;
+
+  return h('div', {},
+    h('h2', {}, `Timeline — ${turnCount} turn${turnCount === 1 ? '' : 's'}`,
+      d.summary.has_wall
+        ? h('span', { class: 'crumb', style: 'text-transform:none;margin-left:8px' },
+            `over ${secs(d.summary.wall_seconds)}`)
+        : null),
+    ...rows);
 }
 
-function turnList(runID, name, d) {
-  if (!d.turns.length) return null;
+// OVERHEAD_FLOOR is how long a deterministic slice must last to earn its
+// own row. Below it, the slice is real but unactionable.
+const OVERHEAD_FLOOR = 1;
 
-  const items = d.turns.map((t) => h('details', {},
+// overheadFold collapses the sub-second deterministic slices into one
+// row, preserving the total so the timeline still accounts for the whole
+// wall clock.
+function overheadFold(phases) {
+  const spent = phases.reduce((sum, p) => sum + p.seconds, 0);
+
+  return h('details', { class: 'fold' },
     h('summary', {},
-      `#${t.number} · ${t.cell.label || '—'} · ${t.role} · ${t.model} · ${secs(t.duration_seconds)}`,
-      t.status !== 'ok' ? h('span', { class: 'tag warn', style: 'margin-left:6px' }, t.status) : null),
+      h('span', { class: 'turn-head' },
+        `${phases.length} engine slices under ${OVERHEAD_FLOOR}s`),
+      h('span', { class: 'phase-time' }, secs(spent))),
     h('div', { class: 'body' },
-      h('div', { class: 'pathbar' },
-        h('code', {}, `turn #${t.number} · ${t.cell.label || t.role}`),
-        // One button on purpose. The facts and the command were separate
-        // buttons for a while, but both are already inside this payload,
-        // so they only made the reader choose between things that were
-        // not really alternatives.
-        copyBtn('copy everything', () => turnPrompt(runID, d, t),
-          'the whole turn: facts, command, file paths AND the full system and user prompt text')),
+      wrap(table(['Slice', { label: 'Time', num: true }, 'What it was'],
+        phases.map((p) => h('tr', {},
+          h('td', {}, p.label),
+          h('td', { class: 'num' }, secs(p.seconds)),
+          h('td', { class: 'crumb' }, p.detail || '—')))))));
+}
+
+// ganttBar places a slice on the run's wall clock: it starts where the
+// slice started and is as wide as it lasted. The offset is what makes it
+// a timeline rather than a bar chart — it answers "what came after what".
+function ganttBar(p, total) {
+  const width = Math.max(0.4, Math.min(100, (p.seconds / total) * 100));
+  const offset = Math.max(0, Math.min(100, (p.offset_seconds / total) * 100));
+  const cls = p.kind === 'deterministic' ? 'role-det' : `role-${p.role || 'prompt'}`;
+
+  return h('div', { class: 'gantt' },
+    h('span', { class: cls, style: `margin-left:${offset.toFixed(2)}%;width:${width.toFixed(2)}%` }));
+}
+
+// overheadRow is one deterministic slice: a thin, non-expandable line.
+// The prose lives in the tooltip because it never varies.
+function overheadRow(p, bar) {
+  return h('div', { class: 'phase-row', title: p.detail || p.label },
+    h('span', { class: 'phase-label' }, p.label,
+      p.measured ? null : h('span', { class: 'tag', style: 'margin-left:6px' }, 'residual')),
+    h('span', { class: 'phase-time' }, secs(p.seconds)),
+    bar);
+}
+
+// turnRow is a model call: the same shape as an overhead row, plus an
+// expander and the copy button.
+function turnRow(runID, name, d, t, bar, nth, total) {
+  return h('details', {},
+    h('summary', {},
+      h('span', { class: 'turn-head' },
+        `#${t.number} · ${t.cell.label || '—'}`,
+        total > 1 ? ` · try ${nth}/${total}` : '',
+        ` · ${t.role} · ${t.model}`),
+      h('span', { class: 'phase-time' }, secs(t.duration_seconds)),
+      bar,
+      h('span', { class: 'turn-cost' }, `${money(t.cost_usd)} · ${count(t.tokens.total)} tok`),
+      t.status !== 'ok' ? h('span', { class: 'tag warn' }, t.status) : null,
+      copyBtn('copy', () => turnPrompt(runID, d, t),
+        'the whole turn: facts, command, file paths AND the full system and user prompt text')),
+    h('div', { class: 'body' },
       wrap(table(['', ''], [
         kv('cli / model', `${t.cli} / ${t.model}`),
         kv('duration', secs(t.duration_seconds) + (t.duration_is_floor ? ' (lower bound)' : '')),
@@ -518,76 +613,7 @@ function turnList(runID, name, d) {
         kv('command', t.command || '—'),
         kv('tools', t.tool_calls.length ? toolSummary(t.tool_calls) : '—'),
       ])),
-      artifactList(runID, name, [...t.inputs, ...t.outputs], { d, turn: t }))));
-
-  return h('div', {}, h('h2', {}, `Turns (${d.turns.length})`), ...items);
-}
-
-// turnFacts is the turn's fact table as text — the same rows the page
-// shows, in the same order. Every turn-scoped copy embeds this, so what
-// lands in the clipboard is what is on screen.
-function turnFacts(t) {
-  return [
-    `cli / model   ${t.cli} / ${t.model}`,
-    `duration      ${secs(t.duration_seconds)}` +
-      (t.duration_is_floor ? ' (lower bound)' : '') + ` · status ${t.status}` +
-      (t.error ? ` · ${t.error}` : ''),
-    `cost          ${money(t.cost_usd)}`,
-    `tokens        ${count(t.tokens.total)} — in ${count(t.tokens.input)}, ` +
-      `out ${count(t.tokens.output)}, cache r ${count(t.tokens.cache_read)} / ` +
-      `w ${count(t.tokens.cache_creation)}`,
-    `prompt size   system ${count(t.system_length)} · user ${count(t.user_length)}`,
-    `command       ${t.command || '—'}`,
-    `tools         ${t.tool_calls.length ? toolSummary(t.tool_calls) : '—'}`,
-  ].join('\n');
-}
-
-// fetchArtifact pulls one artifact body, capped so a runaway prompt
-// cannot produce an unpasteable clipboard.
-const MAX_EMBED = 24000;
-
-async function fetchArtifact(runID, name, ref) {
-  try {
-    const body = await apiText(
-      `/api/runs/${encodeURIComponent(runID)}/tests/${encodeURIComponent(name)}/text?ref=${encodeURIComponent(ref)}`);
-    return body.length > MAX_EMBED
-      ? body.slice(0, MAX_EMBED) + `\n…(truncated, ${body.length - MAX_EMBED} more chars)…`
-      : body;
-  } catch (err) {
-    return `(could not read: ${err.message})`;
-  }
-}
-
-// turnPrompt is testPrompt narrowed to one model call: everything needed
-// to ask about THIS turn without describing it first. The artifact paths
-// matter most — the system and user prompts are what the turn actually
-// saw, and they are files on disk rather than anything on this page.
-async function turnPrompt(runID, d, t, only = null) {
-  const lines = [];
-
-  lines.push(`AI turn #${t.number} of BDD fixture \`${d.summary.name}\`, ` +
-    `run \`${d.run}\` of the true-bdd suite.`);
-  lines.push(`Checklist cell: ${t.cell.label || '(none)'} · role: ${t.role}`);
-  lines.push('', turnFacts(t));
-
-  lines.push('', `Run directory: ${d.run_dir}`);
-  lines.push(`Fixture overall: ${d.summary.verdict}` +
-    (d.summary.failures?.length ? ` — ${d.summary.failures[0]}` : '') + '.');
-
-  // The bodies. This is the part that makes the paste self-contained:
-  // the fact table says how the turn went, the prompts say what it was
-  // actually asked, and without them the reader can only guess.
-  const files = [...t.inputs, ...t.outputs]
-    .filter((r) => !r.missing && (!only || r.ref === only.ref));
-
-  for (const r of files) {
-    const body = await fetchArtifact(runID, d.summary.name, r.ref);
-    // Body verbatim: this claims to be the file's full text, so trailing
-    // whitespace and the final newline are part of it.
-    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body);
-  }
-
-  return lines.join('\n');
+      artifactList(runID, name, [...t.inputs, ...t.outputs], { d, turn: t })));
 }
 
 const kv = (k, v) => h('tr', {}, h('td', { style: 'width:160px;color:var(--muted)' }, k), h('td', { class: 'mono' }, v));
