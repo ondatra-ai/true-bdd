@@ -174,10 +174,75 @@ h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; letter-spac
 .role-judge { background: var(--role-judge); }
 .role-det { background: var(--det); }
 
+/* Timeline rows ------------------------------------------------------- */
+
+/* A turn row and a deterministic-overhead row are laid out identically so
+   the collapsed list reads as one timeline rather than two kinds of
+   thing. The only visual difference is the disclosure triangle, which
+   only turns have. */
+.phase-row, details > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.phase-row {
+  padding: 4px 12px 4px 34px;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+  margin: 0 0 2px 11px;
+}
+
+.phase-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turn-head { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.phase-time {
+  flex: none;
+  width: 62px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.turn-cost {
+  flex: none;
+  width: 150px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The bar is the timeline: same width on every row so the columns line
+   up and the eye can follow where the run spent itself. */
+.phase-row .gantt, details > summary .gantt { flex: none; width: 34%; min-width: 120px; }
+
 /* Expanders ---------------------------------------------------------- */
 
-details { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: var(--card); }
-details > summary { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+details { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 2px; background: var(--card); }
+details > summary { padding: 6px 12px; cursor: pointer; }
+
+/* display:flex suppresses the native disclosure triangle, so it is drawn
+   back explicitly. Without it the row gives no sign it opens at all —
+   which is exactly what happened when the flex layout went in. */
+details > summary::marker,
+details > summary::-webkit-details-marker { display: none; content: ""; }
+
+details > summary::before {
+  content: "▶";
+  flex: none;
+  width: 10px;
+  font-size: 9px;
+  color: var(--muted);
+  transition: transform .12s ease;
+}
+
+details[open] > summary::before { transform: rotate(90deg); }
+
+/* Push the summary's copy button to the right edge of the row. */
+details > summary > button.copy { flex: none; }
 details > summary:hover { background: var(--code); }
 details .body { padding: 10px 14px; border-top: 1px solid var(--line); }
 
