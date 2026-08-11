@@ -40,6 +40,15 @@ func ContainedFile(base, rel string) (string, bool) {
 		return "", false
 	}
 
+	// Containment is not enough: a FIFO sitting inside the fixture is
+	// perfectly contained, and os.ReadFile on one blocks until a writer
+	// appears — which for a report request means a goroutine that never
+	// returns. Only a regular file can be read to EOF in bounded time.
+	info, err := os.Stat(resolved)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", false
+	}
+
 	return resolved, true
 }
 
