@@ -107,7 +107,7 @@ func CompareTests(version int64, leftRun, rightRun string, left, right *reporter
 		Expected: compareExpected(left.Manifest, right.Manifest),
 		Actual:   compareActual(left, right),
 		Judge:    compareJudge(left, right),
-		Turns:    compareTurns(left.Turns, right.Turns),
+		Turns:    compareTurns(left, right, left.Turns, right.Turns),
 		Files:    compareFiles(mapFiles(left), mapFiles(right)),
 	}
 
@@ -128,6 +128,17 @@ func compareExpected(left, right *reporter.Manifest) ExpectedDiff {
 	expected.Comparable = expected.SourceLeft == string(reporter.ManifestSnapshot) &&
 		expected.SourceRight == string(reporter.ManifestSnapshot)
 
+	// Sources are captured above, before either side is replaced: an
+	// absent manifest must still report "absent" rather than read as an
+	// empty snapshot. Everything below dereferences, so substitute now.
+	if left == nil {
+		left = &reporter.Manifest{}
+	}
+
+	if right == nil {
+		right = &reporter.Manifest{}
+	}
+
 	expected.Scalars = []ScalarDiff{
 		scalar("command", left.Command, right.Command),
 		scalar("exit_code", itoa(left.ExpectedExit), itoa(right.ExpectedExit)),
@@ -145,11 +156,7 @@ func compareExpected(left, right *reporter.Manifest) ExpectedDiff {
 
 // sourceOf names where a manifest came from.
 func sourceOf(manifest *reporter.Manifest) string {
-	if manifest == nil || manifest.Source == "" {
-		return string(reporter.ManifestAbsent)
-	}
-
-	return string(manifest.Source)
+	return string(manifestSource(manifest))
 }
 
 // compareActual diffs the two outcomes.
@@ -190,7 +197,7 @@ func compareJudge(left, right *reporter.Fixture) JudgeDiff {
 }
 
 // compareTurns aligns two turn sequences on cell identity.
-func compareTurns(left, right []*reporter.Turn) []TurnComparison {
+func compareTurns(leftFixture, rightFixture *reporter.Fixture, left, right []*reporter.Turn) []TurnComparison {
 	edits := diff.Edits(turnKeys(left), turnKeys(right))
 	rows := make([]TurnComparison, 0, len(edits))
 
@@ -202,8 +209,8 @@ func compareTurns(left, right []*reporter.Turn) []TurnComparison {
 			row.Op = opMatch
 			row.CellKey = edit.X
 
-			leftTurn := mapTurn(edit.PosX, left[edit.PosX])
-			rightTurn := mapTurn(edit.PosY, right[edit.PosY])
+			leftTurn := mapTurn(leftFixture, edit.PosX, left[edit.PosX])
+			rightTurn := mapTurn(rightFixture, edit.PosY, right[edit.PosY])
 			row.Left, row.Right = &leftTurn, &rightTurn
 			row.Label = leftTurn.Cell.Label
 			row.Deltas = TurnDeltas{
@@ -215,14 +222,14 @@ func compareTurns(left, right []*reporter.Turn) []TurnComparison {
 		case diff.Delete:
 			row.Op = opDelete
 			row.CellKey = edit.X
-			leftTurn := mapTurn(edit.PosX, left[edit.PosX])
+			leftTurn := mapTurn(leftFixture, edit.PosX, left[edit.PosX])
 			row.Left = &leftTurn
 			row.Label = leftTurn.Cell.Label
 			row.Changed = true
 		case diff.Insert:
 			row.Op = opInsert
 			row.CellKey = edit.Y
-			rightTurn := mapTurn(edit.PosY, right[edit.PosY])
+			rightTurn := mapTurn(rightFixture, edit.PosY, right[edit.PosY])
 			row.Right = &rightTurn
 			row.Label = rightTurn.Cell.Label
 			row.Changed = true

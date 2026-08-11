@@ -1,6 +1,7 @@
 package reportserver
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -53,7 +54,7 @@ func mapTestSummary(fixture *reporter.Fixture) TestSummary {
 		Tokens:            fixture.Tokens,
 		DiffCount:         len(fixture.Diff),
 		Failures:          orEmpty(fixture.Failures),
-		ManifestSource:    string(fixture.Manifest.Source),
+		ManifestSource:    string(manifestSource(fixture.Manifest)),
 	}
 
 	// Drift is the timeline's own self-check: how far the accounted
@@ -76,11 +77,28 @@ func mapTestSummary(fixture *reporter.Fixture) TestSummary {
 	return summary
 }
 
+// manifestSource names where a manifest came from, tolerating both a nil
+// manifest and one that never recorded its source. text_source.go
+// already guards the nil case, so guarding it here too keeps the package
+// consistent rather than leaving one site to panic an HTTP handler —
+// mapTestSummary especially, since buildCell calls it for every cell and
+// one bad fixture would cost the whole matrix response.
+func manifestSource(manifest *reporter.Manifest) reporter.ManifestSource {
+	if manifest == nil || manifest.Source == "" {
+		return reporter.ManifestAbsent
+	}
+
+	return manifest.Source
+}
+
 // mapExpected projects the fixture's declared expectations.
 func mapExpected(manifest *reporter.Manifest) ExpectedDTO {
-	source := manifest.Source
-	if source == "" {
-		source = reporter.ManifestAbsent
+	source := manifestSource(manifest)
+
+	// A nil manifest yields an empty block rather than a panic: the run
+	// still happened, and its timings are still worth showing.
+	if manifest == nil {
+		manifest = &reporter.Manifest{}
 	}
 
 	return ExpectedDTO{
@@ -190,7 +208,7 @@ func mapPhases(fixture *reporter.Fixture) []PhaseDTO {
 }
 
 // mapTurn projects one model call.
-func mapTurn(position int, turn *reporter.Turn) TurnDTO {
+func mapTurn(fixture *reporter.Fixture, position int, turn *reporter.Turn) TurnDTO {
 	return TurnDTO{
 		Index:           position,
 		Number:          turn.Number,
@@ -219,8 +237,8 @@ func mapTurn(position int, turn *reporter.Turn) TurnDTO {
 		Cell:            mapCell(turn),
 		Command:         turn.Invocation.Command(),
 		ToolCalls:       mapToolCalls(turn.ToolCalls),
-		Inputs:          mapArtifacts(position, "in", turn.Inputs),
-		Outputs:         mapArtifacts(position, "out", turn.Outputs),
+		Inputs:          mapArtifacts(fixture, position, "in", turn.Inputs),
+		Outputs:         mapArtifacts(fixture, position, "out", turn.Outputs),
 	}
 }
 
@@ -248,20 +266,38 @@ func mapToolCalls(calls []reporter.ToolCall) []ToolCallDTO {
 
 // mapArtifacts projects a turn's artifacts as references. The body stays
 // on the server until something asks for it by ref.
-func mapArtifacts(turnIndex int, side string, artifacts []reporter.Artifact) []ArtifactRef {
+func mapArtifacts(
+	fixture *reporter.Fixture, turnIndex int, side string, artifacts []reporter.Artifact,
+) []ArtifactRef {
 	refs := make([]ArtifactRef, 0, len(artifacts))
 
 	for position, artifact := range artifacts {
 		refs = append(refs, ArtifactRef{
-			Ref:     "turn:" + strconv.Itoa(turnIndex) + ":" + side + ":" + strconv.Itoa(position),
-			Kind:    artifact.Kind,
-			Name:    artifact.Name,
-			Bytes:   artifact.Bytes,
-			Missing: artifact.Missing,
+			Ref:      "turn:" + strconv.Itoa(turnIndex) + ":" + side + ":" + strconv.Itoa(position),
+			Kind:     artifact.Kind,
+			Name:     artifact.Name,
+			RepoPath: artifactRepoPath(fixture, artifact),
+			Bytes:    artifact.Bytes,
+			Missing:  artifact.Missing,
 		})
 	}
 
 	return refs
+}
+
+// artifactRepoPath locates an artifact from the repo root. Artifact.Path
+// is absolute, so it is re-anchored rather than joined.
+func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) string {
+	if artifact.Path == "" || fixture.Dir == "" || fixture.RelDir == "" {
+		return ""
+	}
+
+	rel, err := filepath.Rel(fixture.Dir, artifact.Path)
+	if err != nil {
+		return ""
+	}
+
+	return filepath.ToSlash(filepath.Join(fixture.RelDir, rel))
 }
 
 // mapTestRuns projects the framework-runner subprocesses.
@@ -303,7 +339,7 @@ func streamRef(index int, stream string, artifact reporter.Artifact) ArtifactRef
 // existed, so an old run still lists what it changed.
 func mapFiles(fixture *reporter.Fixture) []FileChangeDTO {
 	if fixture.Record == nil {
-		return legacyFiles(fixture.Diff)
+		return legacyFiles(fixture)
 	}
 
 	files := make([]FileChangeDTO, 0, len(fixture.Record.Diff))
@@ -311,6 +347,7 @@ func mapFiles(fixture *reporter.Fixture) []FileChangeDTO {
 		files = append(files, FileChangeDTO{
 			Kind:        change.Kind,
 			Path:        change.Path,
+			RepoPath:    repoPath(fixture, change.Path),
 			BytesBefore: change.BytesBefore,
 			BytesAfter:  change.BytesAfter,
 		})
@@ -319,8 +356,20 @@ func mapFiles(fixture *reporter.Fixture) []FileChangeDTO {
 	return files
 }
 
+// repoPath locates one of a run's files from the repo root. The harness
+// records paths relative to the run's tmpdir, which locates nothing on
+// its own — joining the fixture's own relative dir makes it openable.
+func repoPath(fixture *reporter.Fixture, path string) string {
+	if fixture.RelDir == "" {
+		return path
+	}
+
+	return filepath.ToSlash(filepath.Join(fixture.RelDir, path))
+}
+
 // legacyFiles parses "created path (N bytes)" back into structure.
-func legacyFiles(lines []string) []FileChangeDTO {
+func legacyFiles(fixture *reporter.Fixture) []FileChangeDTO {
+	lines := fixture.Diff
 	files := make([]FileChangeDTO, 0, len(lines))
 
 	for _, line := range lines {
@@ -330,7 +379,9 @@ func legacyFiles(lines []string) []FileChangeDTO {
 		}
 
 		path, _, _ := strings.Cut(rest, " (")
-		files = append(files, FileChangeDTO{Kind: kind, Path: path})
+		files = append(files, FileChangeDTO{
+			Kind: kind, Path: path, RepoPath: repoPath(fixture, path),
+		})
 	}
 
 	return files

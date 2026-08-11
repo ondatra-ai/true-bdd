@@ -24,6 +24,12 @@ var ErrDocPathNotConfigured = errors.New("document path not configured")
 // model found nothing there, and answered from whatever else it had.
 var ErrDocFileMissing = errors.New("document file does not exist")
 
+// ErrDocNotRegularFile is returned when a document path exists but is a
+// directory, a device or a socket. Same class of silent failure as
+// ErrDocFileMissing — os.Stat succeeds, preflight passes, and the model
+// is then asked to read something it cannot read.
+var ErrDocNotRegularFile = errors.New("document path is not a regular file")
+
 // Document keys a checklist may name under a prompt's `docs:` list.
 const (
 	KeyPRD              = "prd"
@@ -67,9 +73,18 @@ func (r *Resolver) Resolve(key string) (string, error) {
 			ErrDocPathNotConfigured, key, configPath)
 	}
 
-	_, err := os.Stat(filePath)
+	info, err := os.Stat(filePath)
 	if err != nil {
 		return "", fmt.Errorf("%w: %q -> %s", ErrDocFileMissing, key, filePath)
+	}
+
+	// A directory satisfies os.Stat but cannot be handed to a prompt as a
+	// document. Without this the run passes preflight and then dispatches
+	// AI turns carrying a Read instruction for a directory — which is
+	// exactly the silent, mid-run failure the up-front validation exists
+	// to prevent.
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("%w: %q -> %s", ErrDocNotRegularFile, key, filePath)
 	}
 
 	return filePath, nil

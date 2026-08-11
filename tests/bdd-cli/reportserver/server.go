@@ -128,12 +128,13 @@ func (s *Server) handleTest(writer http.ResponseWriter, request *http.Request) {
 
 	turns := make([]TurnDTO, 0, len(fixture.Turns))
 	for position, turn := range fixture.Turns {
-		turns = append(turns, mapTurn(position, turn))
+		turns = append(turns, mapTurn(fixture, position, turn))
 	}
 
 	writeJSON(writer, request, TestDetail{
 		Version:  snapshot.Version,
 		Run:      run.ID,
+		RunDir:   fixture.RelDir,
 		Summary:  mapTestSummary(fixture),
 		Expected: mapExpected(fixture.Manifest),
 		Actual:   mapActual(fixture),

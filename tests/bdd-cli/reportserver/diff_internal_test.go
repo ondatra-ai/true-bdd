@@ -45,7 +45,7 @@ func ops(rows []TurnComparison) []string {
 // TestIdenticalTurnsAllMatch is the baseline: the same sequence twice
 // must produce nothing but matches.
 func TestIdenticalTurnsAllMatch(t *testing.T) {
-	rows := compareTurns(happyPath(), happyPath())
+	rows := compareTurns(nil, nil, happyPath(), happyPath())
 
 	if len(rows) != 9 {
 		t.Fatalf("rows = %d, want 9", len(rows))
@@ -73,7 +73,7 @@ func TestExtraRetryIsOneInsert(t *testing.T) {
 	right = append(right[:2],
 		append([]*reporter.Turn{turn("us-create-format", "99.1", "prompt")}, right[2:]...)...)
 
-	rows := compareTurns(left, right)
+	rows := compareTurns(nil, nil, left, right)
 
 	inserts := 0
 
@@ -124,7 +124,7 @@ func TestRolesDoNotCollapse(t *testing.T) {
 		turn("merge", "99.3", "apply"),
 	}
 
-	rows := compareTurns(left, right)
+	rows := compareTurns(nil, nil, left, right)
 
 	if got := ops(rows); strings.Join(got, ",") != "match,delete,match" {
 		t.Errorf("ops = %v, want [match delete match] — the fix turn must be the one dropped", got)
@@ -143,7 +143,7 @@ func TestEveryElementAppearsExactlyOnce(t *testing.T) {
 		turn("us-refine-shape", "99.2", "fix"),
 	}
 
-	rows := compareTurns(left, right)
+	rows := compareTurns(nil, nil, left, right)
 
 	fromLeft, fromRight := accountFor(t, rows)
 
@@ -243,15 +243,91 @@ func TestTextDiffReportsIdenticalAndTruncation(t *testing.T) {
 // "changes". They differ on every model-driven run, so flagging them
 // would mark all 19 rows changed and make the signal worthless.
 func TestChangedFieldsIgnoreTimings(t *testing.T) {
-	left := TestSummary{Name: "fx", Verdict: "PASS", WallSeconds: 100, CostUSD: 1.0, Tokens: 10}
-	right := TestSummary{Name: "fx", Verdict: "PASS", WallSeconds: 250, CostUSD: 3.0, Tokens: 90}
+	left := TestSummary{Name: "fx", Verdict: runnerVerdictPass, WallSeconds: 100, CostUSD: 1.0, Tokens: 10}
+	right := TestSummary{Name: "fx", Verdict: runnerVerdictPass, WallSeconds: 250, CostUSD: 3.0, Tokens: 90}
 
 	if fields := changedFields(left, right); len(fields) != 0 {
 		t.Errorf("fields = %v, want none — timings are deltas, not changes", fields)
 	}
 
-	right.Verdict = "FAIL"
+	right.Verdict = runnerVerdictFail
 	if fields := changedFields(left, right); len(fields) != 1 || fields[0] != "verdict" {
 		t.Errorf("fields = %v, want [verdict]", changedFields(left, right))
+	}
+}
+
+// TestDifferentFailuresOfEqualLengthAreAChange pins that failures are
+// compared by content, not by count. Two runs can each fail one check
+// for entirely unrelated reasons — a timeout in one, a rejected diff in
+// the other — and reporting that as unchanged is the most misleading
+// thing the comparison could say.
+func TestDifferentFailuresOfEqualLengthAreAChange(t *testing.T) {
+	left := TestSummary{Name: "fx", Verdict: runnerVerdictFail, Failures: []string{failKilled}}
+	right := TestSummary{Name: "fx", Verdict: runnerVerdictFail, Failures: []string{
+		"judge: the registry was never written",
+	}}
+
+	fields := changedFields(left, right)
+	if len(fields) != 1 || fields[0] != "failures" {
+		t.Errorf("fields = %v, want [failures] — same count, different reason", fields)
+	}
+
+	// Identical failures are genuinely unchanged.
+	same := changedFields(left, left)
+	if len(same) != 0 {
+		t.Errorf("fields = %v on identical failures, want none", same)
+	}
+}
+
+// TestOneOversizedLineCannotBlowTheCap pins that the byte budget counts
+// the line it is about to append. Checking only the running total let a
+// single line longer than the entire budget through in full, which is
+// precisely the case the cap exists for — a minified bundle or an
+// embedded blob on one line.
+func TestOneOversizedLineCannotBlowTheCap(t *testing.T) {
+	huge := strings.Repeat("x", maxDiffBytes*2)
+
+	result := DiffText("small\n", huge+"\n", 3)
+
+	if !result.Truncated {
+		t.Error("a line larger than the whole budget must report truncation")
+	}
+
+	emitted := 0
+
+	for _, hunk := range result.Hunks {
+		if len(hunk.Lines) == 0 {
+			t.Error("an empty hunk was emitted; the truncation flag already says there is more")
+		}
+
+		for _, line := range hunk.Lines {
+			emitted += len(line.Text)
+		}
+	}
+
+	if emitted > maxDiffBytes {
+		t.Errorf("emitted %d bytes, cap is %d", emitted, maxDiffBytes)
+	}
+}
+
+// TestComparisonSurvivesAnAbsentManifest pins that a fixture without a
+// manifest degrades to "absent" rather than panicking the handler. The
+// matrix calls this path for every cell, so one bad fixture would
+// otherwise cost the whole response.
+func TestComparisonSurvivesAnAbsentManifest(t *testing.T) {
+	loaded := &reporter.Manifest{Command: "us create 99.1", Source: reporter.ManifestSnapshot}
+
+	expected := compareExpected(nil, loaded)
+	if expected.SourceLeft != string(reporter.ManifestAbsent) {
+		t.Errorf("left source = %q, want %q", expected.SourceLeft, reporter.ManifestAbsent)
+	}
+
+	if expected.Comparable {
+		t.Error("an absent side cannot make a comparable expectation")
+	}
+
+	// And the mapper's own guard.
+	if got := mapExpected(nil).Source; got != string(reporter.ManifestAbsent) {
+		t.Errorf("mapExpected(nil).Source = %q, want %q", got, reporter.ManifestAbsent)
 	}
 }

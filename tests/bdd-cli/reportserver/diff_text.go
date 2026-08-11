@@ -88,20 +88,30 @@ func DiffText(left, right string, context int) TextDiff {
 		}
 
 		for _, edit := range hunk.Edits {
-			if edits >= maxDiffEdits || bytes >= maxDiffBytes {
+			line := strings.TrimSuffix(edit.Line, "\n")
+
+			// Measured BEFORE appending, including this line's own length.
+			// Checking only the running total let a single line longer than
+			// the whole budget through in full — a minified bundle or an
+			// embedded blob on one line would blow the cap it exists to
+			// enforce.
+			if edits >= maxDiffEdits || bytes+len(line) > maxDiffBytes {
 				result.Truncated = true
 
 				break
 			}
 
-			line := strings.TrimSuffix(edit.Line, "\n")
 			out.Lines = append(out.Lines, TextLine{Op: textOp(edit.Op), Text: line})
 
 			edits++
 			bytes += len(line)
 		}
 
-		result.Hunks = append(result.Hunks, out)
+		// A hunk truncated down to nothing is noise; the truncation flag
+		// already says there is more.
+		if len(out.Lines) > 0 {
+			result.Hunks = append(result.Hunks, out)
+		}
 	}
 
 	return result

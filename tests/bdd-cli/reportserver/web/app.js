@@ -84,6 +84,24 @@ const tile = (k, v) => h('div', { class: 'tile' }, h('div', { class: 'k' }, k), 
 
 const wrap = (...kids) => h('div', { class: 'wrap' }, ...kids);
 
+// copyBtn writes text to the clipboard and confirms in place. `build` is
+// a thunk so a large prompt is only assembled when actually asked for.
+const copyBtn = (label, build, title = '') => h('button', {
+  class: 'copy',
+  title,
+  onclick: async (ev) => {
+    const btn = ev.currentTarget;
+    const original = btn.textContent;
+    try {
+      await navigator.clipboard.writeText(build());
+      btn.textContent = 'copied';
+    } catch {
+      btn.textContent = 'copy failed';
+    }
+    setTimeout(() => { btn.textContent = original; }, 1400);
+  },
+}, label);
+
 const table = (headers, rows) =>
   h('table', {},
     h('thead', {}, h('tr', {}, headers.map((col) =>
@@ -314,6 +332,12 @@ async function renderTest(runID, name) {
   crumb.append(h('a', { href: `#/run/${runID}` }, shortID(runID)), ' / ', name);
 
   return h('div', {},
+    h('div', { class: 'pathbar' },
+      h('code', {}, d.run_dir || ''),
+      copyBtn('copy path', () => d.run_dir,
+        'the fixture\u2019s working directory, relative to the repo root'),
+      copyBtn('copy prompt', () => testPrompt(d),
+        'a ready-to-paste description of this run: what it was, what it did, and where its files are')),
     h('div', { class: 'tiles' },
       tile('Verdict', verdictChip(d.summary.verdict)),
       tile('Wall clock', secs(d.summary.wall_seconds, d.summary.has_wall)),
@@ -326,6 +350,67 @@ async function renderTest(runID, name) {
     turnList(runID, name, d),
     fileList(d),
     evidence(runID, name, d));
+}
+
+// testPrompt assembles everything someone would otherwise have to type
+// before asking about this run: which fixture, in which session, what it
+// was told to do, how it ended, and the repo-relative paths of the files
+// that explain it. Paths are repo-relative on purpose — absolute ones are
+// machine-specific and tmpdir-relative ones locate nothing.
+function testPrompt(d) {
+  const lines = [];
+  const s = d.summary;
+
+  lines.push(`BDD fixture \`${s.name}\` from run \`${d.run}\` of the true-bdd suite.`);
+  lines.push('');
+  lines.push(`Outcome: ${s.verdict}` +
+    (s.exit_code === null ? ' (never exited)' : ` (exit ${s.exit_code})`) +
+    `, ${secs(s.wall_seconds, s.has_wall)} wall, ${s.turns} AI turn(s), ${money(s.cost_usd)}.`);
+  lines.push(`Command: true-bdd ${d.expected.command || s.command}`);
+
+  if (d.expected.exit_code !== undefined) {
+    lines.push(`Expected exit code: ${d.expected.exit_code}`);
+  }
+
+  if (s.failures?.length) {
+    lines.push('', 'Failures:');
+    for (const f of s.failures) lines.push(`- ${f}`);
+  }
+
+  lines.push('', `Run directory (relative to repo root): ${d.run_dir}`);
+
+  const evidence = (d.artifacts || []).filter((a) => a.bytes);
+  if (evidence.length) {
+    lines.push('', 'Evidence:');
+    for (const a of evidence) {
+      lines.push(`- ${a.kind}: ${a.repo_path || `<${a.ref}>`}`);
+    }
+  }
+
+  // Split the diff: everything under the run's own tmp/ is per-prompt
+  // scratch the engine writes on every run, and listing forty of them
+  // buries the handful of files the run was actually judged on.
+  const files = d.files || [];
+  const scratch = files.filter((f) => f.path.startsWith('tmp/'));
+  const output = files.filter((f) => !f.path.startsWith('tmp/'));
+
+  if (output.length) {
+    lines.push('', `Files the run produced (${output.length}):`);
+    for (const f of output) lines.push(`- ${f.kind} ${f.repo_path || f.path}`);
+  } else if (files.length) {
+    lines.push('', 'The run produced no files outside its own scratch directory.');
+  }
+
+  if (scratch.length) {
+    lines.push('', `Plus ${scratch.length} scratch artifact(s) under ${d.run_dir}/tmp/ ` +
+      '(per-prompt system/user/response/result files).');
+  }
+
+  if (d.expected.judge_spec) {
+    lines.push('', 'The judge graded it against this rubric:', '', d.expected.judge_spec.trim());
+  }
+
+  return lines.join('\n');
 }
 
 // expectedVsActual pairs what the fixture declared against what the run
@@ -442,7 +527,12 @@ function artifactList(runID, name, refs) {
   if (!usable.length) return null;
   return h('div', { style: 'margin-top:8px' }, usable.map((r) => h('details', {},
     h('summary', {}, `${r.kind} · ${r.name} · ${count(r.bytes)} bytes`),
-    h('div', { class: 'body' }, lazyText(runID, name, r.ref)))));
+    h('div', { class: 'body' },
+      r.repo_path
+        ? h('div', { class: 'pathbar' }, h('code', {}, r.repo_path),
+            copyBtn('copy path', () => r.repo_path))
+        : null,
+      lazyText(runID, name, r.ref)))));
 }
 
 // lazyText fetches a body only when its expander is opened — prompts run
@@ -468,7 +558,9 @@ function fileList(d) {
   if (!d.files.length) return null;
   const rows = d.files.map((f) => h('tr', {},
     h('td', {}, h('span', { class: 'tag' }, f.kind)),
-    h('td', { class: 'mono' }, f.path),
+    h('td', { class: 'mono' },
+      f.repo_path || f.path,
+      copyBtn('copy', () => f.repo_path || f.path, 'copy this path')),
     h('td', { class: 'num' }, count(f.bytes_before)),
     h('td', { class: 'num' }, count(f.bytes_after))));
   return h('div', {}, h('h2', {}, `Files changed (${d.files.length})`),

@@ -1,6 +1,8 @@
 package reporter
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,6 +61,11 @@ type Fixture struct {
 	Name    string
 	Command string
 	Dir     string
+	// RelDir is Dir relative to the repo root. Every path the report
+	// shows is joined onto this, so a reader can paste one straight into
+	// an editor or a shell from the repo root — an absolute path is
+	// machine-specific and a tmpdir-relative one is unlocatable.
+	RelDir string
 
 	Turns []*Turn
 	First time.Time
@@ -115,12 +122,14 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	log := &EngineLog{}
 
 	if exists(logPath) {
+		// A log that cannot be read degrades this fixture to "no turns
+		// recorded" rather than failing the scan. One unreadable file in
+		// one session must not take down a report covering every other
+		// run — the same stance applyHarnessRecord already takes.
 		loaded, err := loadEngineLog(logPath)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			log = loaded
 		}
-
-		log = loaded
 	}
 
 	manifest := loadManifest(repoRoot, name, dir)
@@ -129,6 +138,7 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 		Name:                name,
 		Command:             manifest.Command,
 		Dir:                 dir,
+		RelDir:              relativeToRoot(repoRoot, dir),
 		Manifest:            manifest,
 		Turns:               log.Turns(dir),
 		Meta:                log.Metadata(),
@@ -156,6 +166,17 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	}
 
 	return fixture, nil
+}
+
+// relativeToRoot expresses a path relative to the repo root, falling
+// back to the absolute path when the two share no ancestor.
+func relativeToRoot(repoRoot, path string) string {
+	rel, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		return path
+	}
+
+	return rel
 }
 
 // findDiscovery bounds the engine's test-run span and says whether tests
@@ -250,6 +271,16 @@ func promptArtifacts(dir string) []string {
 // absent — the caller only ever asks so it can skip or substitute.
 func exists(path string) bool {
 	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
 
-	return err == nil
+	// Only "not there" counts as absent. A permission or I/O error means
+	// the file may well exist and we simply cannot see it — reporting
+	// that as absent would silently drop the fixture from a report whose
+	// entire job is to list what ran. Treating it as present instead
+	// carries the fixture through to the loaders, which already degrade
+	// to "no verdict recorded" on an unreadable file, so the problem
+	// shows up on the page rather than disappearing from it.
+	return !errors.Is(err, fs.ErrNotExist)
 }

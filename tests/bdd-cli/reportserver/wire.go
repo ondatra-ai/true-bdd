@@ -78,8 +78,11 @@ type TestSummary struct {
 
 // TestDetail is one fixture's page.
 type TestDetail struct {
-	Version   int64           `json:"version"`
-	Run       string          `json:"run"`
+	Version int64  `json:"version"`
+	Run     string `json:"run"`
+	// RunDir is the fixture's working directory relative to the repo
+	// root — the one path everything else on this page hangs off.
+	RunDir    string          `json:"run_dir"`
 	Summary   TestSummary     `json:"summary"`
 	Expected  ExpectedDTO     `json:"expected"`
 	Actual    ActualDTO       `json:"actual"`
@@ -216,17 +219,24 @@ type ToolCallDTO struct {
 // token the text endpoint accepts — never a filesystem path from the
 // client, so there is no traversal surface.
 type ArtifactRef struct {
-	Ref     string `json:"ref"`
-	Kind    string `json:"kind"`
-	Name    string `json:"name"`
-	Bytes   int    `json:"bytes"`
-	Missing bool   `json:"missing"`
+	Ref  string `json:"ref"`
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+	// RepoPath locates this artifact from the repo root, for a reader who
+	// would rather open it than read it in the page.
+	RepoPath string `json:"repo_path"`
+	Bytes    int    `json:"bytes"`
+	Missing  bool   `json:"missing"`
 }
 
 // FileChangeDTO is one entry of the run's diff.
 type FileChangeDTO struct {
-	Kind        string `json:"kind"`
-	Path        string `json:"path"`
+	Kind string `json:"kind"`
+	Path string `json:"path"`
+	// RepoPath is Path relative to the repo root, which is what a reader
+	// can actually open. Path alone is relative to the run's tmpdir and
+	// locates nothing.
+	RepoPath    string `json:"repo_path"`
 	BytesBefore int    `json:"bytes_before"`
 	BytesAfter  int    `json:"bytes_after"`
 }

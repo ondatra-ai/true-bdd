@@ -102,6 +102,33 @@ func TestResolveRejectsMissingFile(t *testing.T) {
 	}
 }
 
+// TestResolveRejectsDirectory pins that a path which merely EXISTS is
+// not good enough. os.Stat succeeds on a directory, so without an
+// explicit regular-file check the run passes preflight and then hands a
+// model a Read instruction for a directory — the same silent mid-run
+// failure the up-front validation was built to stop.
+func TestResolveRejectsDirectory(t *testing.T) {
+	resolver := newTestResolver(t,
+		map[string]string{KeyArchitectureYAML: archPath},
+		nil,
+	)
+
+	// Create the configured path as a DIRECTORY rather than a file.
+	err := os.MkdirAll(archPath, 0o755)
+	if err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	_, err = resolver.Resolve(KeyArchitectureYAML)
+	if !errors.Is(err, ErrDocNotRegularFile) {
+		t.Fatalf("Resolve: error = %v, want ErrDocNotRegularFile", err)
+	}
+
+	if !strings.Contains(err.Error(), archPath) {
+		t.Errorf("error must name the offending path, got %q", err)
+	}
+}
+
 func TestResolveRejectsUnknownKey(t *testing.T) {
 	resolver := newTestResolver(t, map[string]string{KeyPRD: prdPath},
 		[]string{prdRel})

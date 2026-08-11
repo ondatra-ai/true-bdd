@@ -175,16 +175,19 @@ func indexIntoValues[T any](items []T, raw string) (T, bool) {
 func fixtureRefs(fixture *reporter.Fixture) []ArtifactRef {
 	refs := []ArtifactRef{}
 
+	// file is the sidecar's name inside bdd-cli-logs, empty for a body
+	// that is not a file on disk (the rubric comes from the manifest).
 	candidates := []struct {
 		ref  string
 		kind string
+		file string
 	}{
-		{refCLIStdout, "cli stdout"},
-		{refCLIStderr, "cli stderr"},
-		{refJudgeSystem, "judge system prompt"},
-		{refJudgeUser, "judge user prompt"},
-		{refJudgeResponse, "judge response"},
-		{refJudgeSpec, "judge rubric"},
+		{refCLIStdout, "cli stdout", spawnStdoutFile},
+		{refCLIStderr, "cli stderr", spawnStderrFile},
+		{refJudgeSystem, "judge system prompt", runner.JudgeSystemFile},
+		{refJudgeUser, "judge user prompt", runner.JudgeUserFile},
+		{refJudgeResponse, "judge response", runner.JudgeResponseFile},
+		{refJudgeSpec, "judge rubric", ""},
 	}
 
 	for _, candidate := range candidates {
@@ -194,12 +197,28 @@ func fixtureRefs(fixture *reporter.Fixture) []ArtifactRef {
 		}
 
 		refs = append(refs, ArtifactRef{
-			Ref:   candidate.ref,
-			Kind:  candidate.kind,
-			Name:  candidate.ref,
-			Bytes: len(body),
+			Ref:      candidate.ref,
+			Kind:     candidate.kind,
+			Name:     candidate.ref,
+			RepoPath: sidecarRepoPath(fixture, candidate.file),
+			Bytes:    len(body),
 		})
 	}
 
 	return refs
+}
+
+// The CLI stream names the spawn log writes (runner/spawn_log.go).
+const (
+	spawnStdoutFile = "cli-stdout.txt"
+	spawnStderrFile = "cli-stderr.txt"
+)
+
+// sidecarRepoPath locates one bdd-cli-logs file from the repo root.
+func sidecarRepoPath(fixture *reporter.Fixture, name string) string {
+	if name == "" || fixture.RelDir == "" {
+		return ""
+	}
+
+	return filepath.ToSlash(filepath.Join(fixture.RelDir, runner.SpawnLogDir, name))
 }

@@ -1,6 +1,7 @@
 package reportserver
 
 import (
+	"slices"
 	"znkr.io/diff"
 )
 
@@ -135,7 +136,11 @@ func changedFields(left, right TestSummary) []string {
 		fields = append(fields, "diff_count")
 	}
 
-	if len(left.Failures) != len(right.Failures) {
+	// Content, not just count. Two runs can each fail one check for
+	// entirely different reasons — a timeout in one, a rejected diff in
+	// the other — and comparing lengths alone would call that unchanged,
+	// which is the single most misleading thing this table could say.
+	if !slices.Equal(left.Failures, right.Failures) {
 		fields = append(fields, "failures")
 	}
 
