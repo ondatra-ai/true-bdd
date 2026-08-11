@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -88,6 +89,12 @@ func loadScenarios(
 		if err != nil {
 			return nil, fmt.Errorf("failed to seed scratch registry: %w", err)
 		}
+
+		// us-apply declares no `docs:` keys — the registry it checks
+		// against rides on the subject, so the evaluator's document
+		// record is empty for this command. This is the only place the
+		// target is nameable.
+		slog.Info("Seeded scratch registry", "from", requirementsFile, "to", scratchPath)
 
 		scenarios, _, err := deps.StoryScenarioParser.ParseStoryScenarios(storyNumber, scratchPath)
 		if err != nil {

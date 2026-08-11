@@ -128,6 +128,16 @@ func (g *FixPromptGenerator) buildPromptData(params GenerateParams, resultPath s
 	// Resolve doc keys to file paths
 	docPaths := g.resolveDocPaths(params.FailedCheck.Docs)
 
+	// Same record the evaluator emits, for the same reason: the fix turn
+	// reads its own document set, and the report names it when saying
+	// what this turn was working from.
+	slog.Info("Prompt documents resolved",
+		"subjectID", params.SubjectID,
+		"promptIndex", params.FailedCheck.PromptIndex,
+		"section", params.FailedCheck.SectionPath,
+		"docs", docPaths,
+	)
+
 	return FixPromptData{
 		Subject:     params.Subject,
 		SubjectID:   params.SubjectID,

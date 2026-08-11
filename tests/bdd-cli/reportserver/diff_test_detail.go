@@ -212,7 +212,7 @@ func compareTurns(leftFixture, rightFixture *reporter.Fixture, left, right []*re
 			leftTurn := mapTurn(leftFixture, edit.PosX, left[edit.PosX])
 			rightTurn := mapTurn(rightFixture, edit.PosY, right[edit.PosY])
 			row.Left, row.Right = &leftTurn, &rightTurn
-			row.Label = leftTurn.Cell.Label
+			row.Label = leftTurn.Operation.CellLabel
 			row.Deltas = TurnDeltas{
 				DurationSeconds: rightTurn.DurationSeconds - leftTurn.DurationSeconds,
 				CostUSD:         rightTurn.CostUSD - leftTurn.CostUSD,
@@ -224,14 +224,14 @@ func compareTurns(leftFixture, rightFixture *reporter.Fixture, left, right []*re
 			row.CellKey = edit.X
 			leftTurn := mapTurn(leftFixture, edit.PosX, left[edit.PosX])
 			row.Left = &leftTurn
-			row.Label = leftTurn.Cell.Label
+			row.Label = leftTurn.Operation.CellLabel
 			row.Changed = true
 		case diff.Insert:
 			row.Op = opInsert
 			row.CellKey = edit.Y
 			rightTurn := mapTurn(rightFixture, edit.PosY, right[edit.PosY])
 			row.Right = &rightTurn
-			row.Label = rightTurn.Cell.Label
+			row.Label = rightTurn.Operation.CellLabel
 			row.Changed = true
 		}
 

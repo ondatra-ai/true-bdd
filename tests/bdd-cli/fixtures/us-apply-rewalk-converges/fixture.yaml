@@ -1,6 +1,13 @@
 cmd: us apply 99.3 --fix
 input: input
 
+# 10m, not the default 5m. This fixture needs two full walks over two
+# ACs to reach its fixpoint — at minimum 4 validations, 2 fix prompts
+# and 2 applies — and crush's apply turn alone has taken 144s of the
+# default budget. The 2026-08-10 run was killed mid-apply on turn 7,
+# three turns short of the convergence the rubric grades.
+timeout: "10m"
+
 # Generate a single-prompt checklist from the live shipped
 # true-bdd/checklists/us-apply.yaml: the runner keeps only the prompt
 # whose Q text contains this snippet. No copied checklist to drift -

@@ -115,6 +115,8 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	resultPath := fmt.Sprintf("%s/%02d-%s-checklist-%s-result.yaml",
 		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath)
 
+	e.logResolvedDocs(promptIndex, sectionPath, requestedDocs)
+
 	// Load system prompt template (uses cached loader)
 	systemPrompt, err := e.systemLoader.LoadTemplate(ChecklistPromptData{})
 	if err != nil {
@@ -318,6 +320,35 @@ func (e *ChecklistEvaluator) loadRequestedDocs(keys []string) map[string]*docs.A
 	}
 
 	return result
+}
+
+// logResolvedDocs records the other side of the comparison.
+// loadRequestedDocs resolves every `docs:` key to a real path and only
+// logs the failures, so without this record the run keeps no trace of
+// WHAT the subject was checked against — only that it was checked.
+func (e *ChecklistEvaluator) logResolvedDocs(
+	promptIndex int,
+	sectionPath string,
+	requestedDocs map[string]*docs.ArchitectureDoc,
+) {
+	slog.Info("Prompt documents resolved",
+		"subjectID", e.subjectID,
+		"promptIndex", promptIndex,
+		"section", sectionPath,
+		"docs", docFilePaths(requestedDocs),
+	)
+}
+
+// docFilePaths flattens the resolved document set to key → path, the
+// shape the run log records. The docs themselves carry template data the
+// log has no use for.
+func docFilePaths(resolved map[string]*docs.ArchitectureDoc) map[string]string {
+	paths := make(map[string]string, len(resolved))
+	for key, doc := range resolved {
+		paths[key] = doc.FilePath
+	}
+
+	return paths
 }
 
 // savePromptFile saves a prompt to a file in the tmp directory.

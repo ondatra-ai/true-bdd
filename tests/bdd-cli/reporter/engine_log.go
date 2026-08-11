@@ -100,6 +100,24 @@ type LogRecord struct {
 	Action           string `json:"action"`
 	RawInput         string `json:"rawInput"` //nolint:tagliatelle // slog field name is the wire contract
 
+	// Fields carried by the records that explain WHY a turn happened and
+	// WHAT it was checked against.
+	//
+	// Attempt/MaxAttempts come from "Walk attempt started" and are the
+	// only way to tell a re-walk (another item's fix invalidated this
+	// cell) from the walker's own restart (this item was just fixed).
+	Attempt     *int `json:"attempt"`
+	MaxAttempts *int `json:"max_attempts"`
+	// PromptIndex is shared by "Generating fix prompt" and "Prompt
+	// documents resolved".
+	PromptIndex *int `json:"promptIndex"` //nolint:tagliatelle // slog field name is the wire contract
+	// Docs is key → resolved path for one turn's document set.
+	Docs map[string]string `json:"docs"`
+	// From/To carry "Seeded scratch registry": the canonical file a run
+	// copies and the scratch copy every fix actually mutates.
+	From string `json:"from"`
+	To   string `json:"to"`
+
 	// At is Time parsed once, offset as written.
 	At time.Time `json:"-"`
 	// Tokens holds whichever of tokenKeys the record carried.
@@ -249,6 +267,12 @@ func (l *EngineLog) Turns(fixtureDir string) []*Turn {
 
 	l.closeUnfinished(folder.turns)
 	inheritCellSections(folder.turns)
+	// Order matters twice over: a seat cannot be counted until its
+	// prompt index is known, and a re-entry cannot be explained until
+	// its seat has been counted.
+	resolveTurnContext(l.Records, folder.turns)
+	assignAttempts(folder.turns)
+	classifyCauses(folder.turns)
 
 	return folder.turns
 }

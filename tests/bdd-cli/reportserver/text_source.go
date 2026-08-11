@@ -18,6 +18,13 @@ const (
 	refCLIStdout     = "cli:stdout"
 	refCLIStderr     = "cli:stderr"
 	refJudgeSpec     = "manifest:judge_spec"
+	// The two sides of every check the run performed, plus the file its
+	// fixes mutate. Named by the run's own log, so they stay lookups
+	// like every other ref rather than a path the client supplies.
+	refItemsFile = "run:items"
+	refChecklist = "run:checklist"
+	refTarget    = "run:target"
+	refCommitted = "run:committed"
 )
 
 // resolveText returns the body a ref names, and whether it exists.
@@ -66,8 +73,87 @@ func fixedRef(fixture *reporter.Fixture, ref string) (string, bool) {
 
 		return fixture.Manifest.JudgeSpec, true
 	default:
+		return provenanceRef(fixture, ref)
+	}
+}
+
+// provenanceRef resolves the three refs that name a file the run's own
+// log pointed at, rather than one the harness wrote.
+func provenanceRef(fixture *reporter.Fixture, ref string) (string, bool) {
+	switch ref {
+	case refItemsFile:
+		return runFile(fixture, fixture.Meta.ItemsFile), true
+	case refChecklist:
+		return runFile(fixture, fixture.Meta.ChecklistPath), true
+	case refTarget:
+		return runFile(fixture, fixture.Meta.TargetFile), true
+	case refCommitted:
+		return runFile(fixture, fixture.Meta.CommittedFile), true
+	default:
 		return "", false
 	}
+}
+
+// runFile reads a file the run's own log named, resolved inside the
+// fixture directory.
+//
+// The path comes from the engine log rather than from the client, but it
+// is still containment-checked: a log is an artifact of a program that
+// crashed at least once, and "the input was written by us" is not a
+// property worth betting a path traversal on.
+func runFile(fixture *reporter.Fixture, logged string) string {
+	if logged == "" || filepath.IsAbs(logged) {
+		return ""
+	}
+
+	path := containedPath(fixture.Dir, logged)
+	if path == "" {
+		return ""
+	}
+
+	blob, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	return string(blob)
+}
+
+// provenanceRefs lists the files behind every check the run performed:
+// where the walked items came from, which checklist posed the questions,
+// and what the fixes mutate. Run-level, so they are resolved once and
+// every turn points at the same three bodies.
+func provenanceRefs(fixture *reporter.Fixture) []ArtifactRef {
+	candidates := []struct{ ref, kind, path string }{
+		{refItemsFile, "subject from", fixture.Meta.ItemsFile},
+		{refChecklist, "checklist", fixture.Meta.ChecklistPath},
+		// Both, and usually only one resolves. A run that converged has
+		// had its scratch renamed over the canonical file, so the scratch
+		// is gone and the fixes are findable only at the destination; a
+		// run that did not converge leaves the scratch and never touches
+		// the canonical. Listing both lets whichever exists speak.
+		{refTarget, "fixes written to", fixture.Meta.TargetFile},
+		{refCommitted, "fixes committed to", fixture.Meta.CommittedFile},
+	}
+
+	refs := []ArtifactRef{}
+
+	for _, candidate := range candidates {
+		body, present := resolveText(fixture, candidate.ref)
+		if !present {
+			continue
+		}
+
+		refs = append(refs, ArtifactRef{
+			Ref:      candidate.ref,
+			Kind:     candidate.kind,
+			Name:     candidate.path,
+			RepoPath: containedPath(fixture.RelDir, candidate.path),
+			Bytes:    len(body),
+		})
+	}
+
+	return refs
 }
 
 // stdoutOf and stderrOf name the record's captured CLI streams.
