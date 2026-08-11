@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/reporter"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
 )
 
@@ -80,11 +79,8 @@ func TestBDDFixtures(t *testing.T) {
 
 	for _, dir := range fixtures {
 		name := filepath.Base(dir)
-		ran := false
 
 		t.Run(name, func(t *testing.T) {
-			ran = true
-
 			// Registered FIRST so it runs LAST: t.Cleanup is LIFO, and
 			// this has to bracket every other cleanup to measure the
 			// span `go test` reports. A cleanup rather than a defer
@@ -97,46 +93,7 @@ func TestBDDFixtures(t *testing.T) {
 
 			runFixture(t, dir, binPath, sessionRoot, judge, rec)
 		})
-
-		// Outside t.Run on purpose. A failing fixture calls t.Fatalf,
-		// which is runtime.Goexit on the subtest's own goroutine — t.Run
-		// recovers it and returns, so this still runs. And because it is
-		// the loop tail rather than a deferred final call, the last
-		// fixture renders on the same path as every other one.
-		//
-		// Guarded on `ran` because `go test -run` skips a subtest without
-		// running its body, and t.Run reports that exactly as it reports
-		// a pass. Unguarded, a single-fixture run would rebuild the whole
-		// report once per fixture the filter excluded.
-		if ran {
-			renderReport(t, sessionRoot)
-		}
 	}
-}
-
-// renderReport re-renders the whole run report from the session
-// directory as it stands. Called after every fixture so a long suite is
-// readable while it is still running, and so a killed run still leaves
-// a report for the fixtures that finished. Each call rebuilds every
-// page, so a partial session yields a partial report rather than a
-// stale one.
-//
-// A render failure is logged, never fatal — the report is an observation
-// of the suite, and a suite that passed must not be failed by the thing
-// watching it. t.Fatalf here would be on the PARENT T, which would
-// abandon every remaining fixture.
-func renderReport(t *testing.T, sessionRoot string) {
-	t.Helper()
-
-	summary, err := reporter.Render(reporter.Options{Session: sessionRoot})
-	if err != nil {
-		t.Logf("render run report: %v", err)
-
-		return
-	}
-
-	t.Logf("run report: %s (%d fixture(s), %d turns)",
-		summary.IndexPath, summary.Fixtures, summary.Turns)
 }
 
 func buildTrueBDD(t *testing.T) string {
@@ -195,6 +152,11 @@ func runFixture(
 		rec.AddFailure("load fixture: " + err.Error())
 		t.Fatalf("load fixture: %v", err)
 	}
+
+	// Snapshotted now, while this run's manifest is in hand. fixture.yaml
+	// never reaches the tmpdir, so a report built later would otherwise
+	// show today's expectations against this run's actuals.
+	rec.ObserveFixture(fixture)
 
 	timeout := fixtureTimeout
 	if fixture.Timeout > 0 {

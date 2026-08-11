@@ -1,13 +1,16 @@
 package reporter
 
 import (
-	"fmt"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
 )
 
 // discoveryEndMarkers are the records the engine writes immediately
@@ -58,6 +61,11 @@ type Fixture struct {
 	Name    string
 	Command string
 	Dir     string
+	// RelDir is Dir relative to the repo root. Every path the report
+	// shows is joined onto this, so a reader can paste one straight into
+	// an editor or a shell from the repo root — an absolute path is
+	// machine-specific and a tmpdir-relative one is unlocatable.
+	RelDir string
 
 	Turns []*Turn
 	First time.Time
@@ -65,6 +73,12 @@ type Fixture struct {
 
 	Wall    time.Duration
 	HasWall bool
+	// Record is the harness's own record of the run, verbatim, when one
+	// was written. Nil for a fixture still in flight or one that predates
+	// the record. Everything below is derived from it; the server reads
+	// the rest (exit code, timestamps, structural diff, judge model)
+	// straight off this.
+	Record *runner.HarnessRecord
 	// HasRecord says the outcome came from the harness's own record
 	// rather than the legacy `go test` scrape. It decides what an empty
 	// Diff means: the record carries the diff for every fixture, so
@@ -95,57 +109,36 @@ type Fixture struct {
 	PhaseTotal float64
 }
 
-// loadFixtures assembles every fixture in a session directory that left
-// an engine log behind.
-func loadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, error) {
-	entries, err := os.ReadDir(sessionDir)
-	if err != nil {
-		return nil, fmt.Errorf("read session dir: %w", err)
+// LoadFixtureDir builds one Fixture and its phase timeline from a
+// fixture's run directory.
+//
+// Exported so the report server can reload one fixture at a time. A
+// fixture whose harness record exists is final — the record is the last
+// byte ever written into its directory — so per-fixture loading is what
+// lets a session be cached and only the run in flight re-read.
+func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
+	logPath := EngineLogPath(dir)
+
+	log := &EngineLog{}
+
+	if exists(logPath) {
+		// A log that cannot be read degrades this fixture to "no turns
+		// recorded" rather than failing the scan. One unreadable file in
+		// one session must not take down a report covering every other
+		// run — the same stance applyHarnessRecord already takes.
+		loaded, err := loadEngineLog(logPath)
+		if err == nil {
+			log = loaded
+		}
 	}
 
-	var fixtures []*Fixture
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		dir := filepath.Join(sessionDir, entry.Name())
-
-		logPath := filepath.Join(dir, "tmp", "true-bdd.log.json")
-
-		_, statErr := os.Stat(logPath)
-		if statErr != nil {
-			continue
-		}
-
-		fixture, loadErr := loadFixture(dir, entry.Name(), repoRoot, logPath, gotest)
-		if loadErr != nil {
-			return nil, loadErr
-		}
-
-		fixtures = append(fixtures, fixture)
-	}
-
-	return fixtures, nil
-}
-
-// loadFixture builds one Fixture and its phase timeline.
-func loadFixture(
-	dir, name, repoRoot, logPath string,
-	gotest *GoTestLog,
-) (*Fixture, error) {
-	log, err := loadEngineLog(logPath)
-	if err != nil {
-		return nil, err
-	}
-
-	manifest := loadManifest(repoRoot, name)
+	manifest := loadManifest(repoRoot, name, dir)
 
 	fixture := &Fixture{
 		Name:                name,
 		Command:             manifest.Command,
 		Dir:                 dir,
+		RelDir:              relativeToRoot(repoRoot, dir),
 		Manifest:            manifest,
 		Turns:               log.Turns(dir),
 		Meta:                log.Metadata(),
@@ -155,7 +148,7 @@ func loadFixture(
 		EmptyFailurePrompts: findEmptyFailurePrompts(dir),
 	}
 
-	applyHarnessOutcome(fixture, dir, gotest)
+	applyHarnessRecord(fixture, dir)
 
 	for _, turn := range fixture.Turns {
 		fixture.ModelSeconds += turn.Seconds()
@@ -173,6 +166,17 @@ func loadFixture(
 	}
 
 	return fixture, nil
+}
+
+// relativeToRoot expresses a path relative to the repo root, falling
+// back to the absolute path when the two share no ancestor.
+func relativeToRoot(repoRoot, path string) string {
+	rel, err := filepath.Rel(repoRoot, path)
+	if err != nil {
+		return path
+	}
+
+	return rel
 }
 
 // findDiscovery bounds the engine's test-run span and says whether tests
@@ -261,4 +265,22 @@ func promptArtifacts(dir string) []string {
 	sort.Strings(matches)
 
 	return matches
+}
+
+// exists reports whether a path is present, treating any stat error as
+// absent — the caller only ever asks so it can skip or substitute.
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+
+	// Only "not there" counts as absent. A permission or I/O error means
+	// the file may well exist and we simply cannot see it — reporting
+	// that as absent would silently drop the fixture from a report whose
+	// entire job is to list what ran. Treating it as present instead
+	// carries the fixture through to the loaders, which already degrade
+	// to "no verdict recorded" on an unreadable file, so the problem
+	// shows up on the page rather than disappearing from it.
+	return !errors.Is(err, fs.ErrNotExist)
 }

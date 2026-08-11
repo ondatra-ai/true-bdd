@@ -61,6 +61,7 @@ Example:
 			err = commands.RunBuildTests(ctx, commands.BuildTestsDeps{
 				RegistryLoader:               container.RegistryLoader,
 				ChecklistLoader:              container.ChecklistLoader,
+				DocResolver:                  container.DocResolver,
 				BuildTestsEvaluator:          container.BuildTestsEvaluator,
 				BuildTestsFixPromptGenerator: container.BuildTestsFixPromptGenerator,
 				BuildTestsFixApplier:         container.BuildTestsFixApplier,
@@ -119,6 +120,7 @@ Example:
 				ArchitectureLoader:          container.ArchitectureLoader,
 				TestRunnerDispatcher:        container.TestRunnerDispatcher,
 				ChecklistLoader:             container.ChecklistLoader,
+				DocResolver:                 container.DocResolver,
 				BuildCodeEvaluator:          container.BuildCodeEvaluator,
 				BuildCodeFixPromptGenerator: container.BuildCodeFixPromptGenerator,
 				BuildCodeFixApplier:         container.BuildCodeFixApplier,

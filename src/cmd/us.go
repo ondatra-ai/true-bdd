@@ -122,6 +122,7 @@ Example:
 func storyCommonFromContainer(container *bootstrap.Container) commands.StoryCommonDeps {
 	return commands.StoryCommonDeps{
 		ChecklistLoader:    container.ChecklistLoader,
+		DocResolver:        container.DocResolver,
 		Evaluator:          container.Evaluator,
 		FixGenerator:       container.FixGenerator,
 		FixApplier:         container.FixApplier,
@@ -153,6 +154,7 @@ Example:
 			return commands.RunApply(ctx, commands.ApplyDeps{
 				StoryScenarioParser:     container.StoryScenarioParser,
 				ChecklistLoader:         container.ChecklistLoader,
+				DocResolver:             container.DocResolver,
 				ApplyEvaluator:          container.ApplyEvaluator,
 				ApplyFixPromptGenerator: container.ApplyFixPromptGenerator,
 				ApplyFixApplier:         container.ApplyFixApplier,

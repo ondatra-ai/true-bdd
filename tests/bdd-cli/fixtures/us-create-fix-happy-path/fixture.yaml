@@ -1,6 +1,13 @@
 cmd: us create 99.1 --fix
 input: input
 
+# A full us-create walk is 9 sequential validation turns plus a fix
+# turn and a crush apply turn, each 20-40s on the `high` tier. That
+# lands just past the suite's 5m default, so a correct run was being
+# killed mid-apply and reported as a failure. The work is legitimately
+# this long; the budget was the thing that was wrong.
+timeout: 10m
+
 answers: |
   1
   1

@@ -1,6 +1,8 @@
 package reporter
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,18 +26,47 @@ type Manifest struct {
 	JudgeSpec    string
 	InputPath    string
 	Loaded       bool
+	// Source says where the expectations came from, and it is load-bearing
+	// for any comparison across runs. SourceSnapshot is what this run was
+	// actually held to; SourceRepo is what the source tree says today,
+	// which may have moved since. A reader comparing two runs has to be
+	// able to tell those apart, or a changed rubric looks like no change
+	// at all.
+	Source ManifestSource
 }
 
-// loadManifest reads one fixture's manifest from the source tree. A
-// fixture whose folder has since been renamed or deleted yields an
-// unloaded Manifest rather than an error: the run still happened, and
-// its timings are still worth reporting.
-func loadManifest(repoRoot, name string) *Manifest {
-	dir := filepath.Join(repoRoot, "tests", "bdd-cli", "fixtures", name)
+// ManifestSource is where a Manifest's expectations were read from.
+type ManifestSource string
 
-	fixture, err := runner.LoadFixture(dir)
+const (
+	// ManifestAbsent means neither source had anything.
+	ManifestAbsent ManifestSource = "absent"
+	// ManifestSnapshot is this run's own record of its manifest.
+	ManifestSnapshot ManifestSource = "snapshot"
+	// ManifestRepo is the fixture folder in the source tree, as it stands
+	// now.
+	ManifestRepo ManifestSource = "repo"
+)
+
+// loadManifest reads one fixture's expectations, preferring this run's
+// own snapshot over the source tree.
+//
+// The snapshot wins because fixture.yaml is never copied into the
+// tmpdir: read from the repo, "expected" is always current HEAD, so two
+// runs of the same fixture would show identical expectations even when
+// the rubric changed between them. A fixture whose folder has since been
+// renamed or deleted and which predates the snapshot yields an unloaded
+// Manifest rather than an error — the run still happened, and its
+// timings are still worth reporting.
+func loadManifest(repoRoot, name, dir string) *Manifest {
+	manifest := manifestFromSnapshot(dir)
+	if manifest != nil {
+		return manifest
+	}
+
+	fixture, err := runner.LoadFixture(filepath.Join(repoRoot, "tests", "bdd-cli", "fixtures", name))
 	if err != nil {
-		return &Manifest{}
+		return &Manifest{Source: ManifestAbsent}
 	}
 
 	checks := make([]string, 0, len(fixture.StdoutRegexes))
@@ -53,6 +84,36 @@ func loadManifest(repoRoot, name string) *Manifest {
 		JudgeSpec:    fixture.JudgeSpec,
 		InputPath:    fixture.InputPath,
 		Loaded:       true,
+		Source:       ManifestRepo,
+	}
+}
+
+// manifestFromSnapshot reads the manifest this run recorded for itself,
+// or nil when it recorded none.
+func manifestFromSnapshot(dir string) *Manifest {
+	blob, err := os.ReadFile(filepath.Join(dir, runner.SpawnLogDir, runner.ManifestSnapshotFile))
+	if err != nil {
+		return nil
+	}
+
+	var snapshot runner.ManifestSnapshot
+
+	err = json.Unmarshal(blob, &snapshot)
+	if err != nil {
+		return nil
+	}
+
+	return &Manifest{
+		Command:      snapshot.Cmd,
+		Answers:      snapshot.Answers,
+		PrepCmds:     snapshot.PrepCmds,
+		TeardownCmds: snapshot.TeardownCmds,
+		ExpectedExit: snapshot.ExpectedExit,
+		StdoutChecks: snapshot.StdoutRegexes,
+		JudgeSpec:    snapshot.JudgeSpec,
+		InputPath:    snapshot.InputPath,
+		Loaded:       true,
+		Source:       ManifestSnapshot,
 	}
 }
 

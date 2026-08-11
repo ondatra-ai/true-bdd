@@ -18,6 +18,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/src/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 	pkgerrors "github.com/ondatra-ai/true-bdd/src/internal/pkg/errors"
@@ -44,6 +45,49 @@ func validateStoryNumber(storyNumber string) error {
 
 	if !matched {
 		return errInvalidStoryNumberFormat
+	}
+
+	return nil
+}
+
+// errUnsatisfiableChecklistDocs is the canonical error returned by
+// validateRequiredDocs.
+var errUnsatisfiableChecklistDocs = errors.New(
+	"checklist declares documents that cannot be provided")
+
+// validateRequiredDocs refuses a walk whose prompts ask for evidence
+// the engine cannot hand them.
+//
+// A prompt's `docs:` list becomes `Read(<path>)` instructions in its
+// rendered prompt. Nothing downstream verifies those paths, so a
+// declared-but-absent document used to cost a silent quality loss: the
+// model reported the file was missing in its reasoning and answered
+// from whatever else it had, while the walk still reported success.
+// Checking up front — with the story-number format, before the header
+// and before any item is loaded — turns that into a startup failure.
+//
+// Every unsatisfiable document is reported together, so one run tells
+// you about all of them.
+func validateRequiredDocs(
+	prompts []checklistmodels.PromptWithContext,
+	resolver *docs.Resolver,
+) error {
+	keys := make([]string, 0)
+
+	for i := range prompts {
+		// GetEffectiveDocs already applies "prompt docs: else checklist
+		// default_docs:", and the caller has already dropped skip:-ped
+		// prompts — so this is exactly the set that would be injected.
+		keys = append(keys, prompts[i].GetEffectiveDocs()...)
+	}
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	_, err := resolver.ResolveAll(keys)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errUnsatisfiableChecklistDocs, err)
 	}
 
 	return nil

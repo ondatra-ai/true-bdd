@@ -1,6 +1,13 @@
 cmd: us refine 96.4
 input: input
 
+# Walks the whole us-refine checklist — 12 sequential validation turns
+# at 20-40s each on the `high` tier. That sits right on the suite's 5m
+# default: this fixture was killed at 305s in one run and finished in
+# 279s in the next, with nothing changed between them. The budget was
+# the flake, not the fixture.
+timeout: 10m
+
 expected:
   exit_code: 0
 

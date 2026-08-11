@@ -1,6 +1,7 @@
 package reporter
 
 import (
+	"strconv"
 	"time"
 )
 
@@ -151,6 +152,6 @@ func (t TestRun) Outcome() string {
 		return "exited 0"
 	}
 
-	return "exited " + itoa(t.ExitCode) +
+	return "exited " + strconv.Itoa(t.ExitCode) +
 		" — routine for a framework reporting test failures"
 }

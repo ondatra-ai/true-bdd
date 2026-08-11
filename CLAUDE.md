@@ -61,12 +61,11 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./src
 go test ./...
 
 # End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture.
-# Renders the HTML run report to tmp/test_report/ after every fixture,
-# in-process — no output redirect, no second command.
 go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 
-# Re-render the report for an older session (or one whose suite was killed)
-go run ./tests/bdd-cli/cmd/reporter
+# Browse the run report — every session, live. Rescans tmp/test_run every
+# 15s, so a suite still running streams into an open page.
+go run ./tests/bdd-cli/cmd/report-server     # http://127.0.0.1:7331
 
 # Lint
 golangci-lint run
@@ -144,8 +143,13 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), and the current branch fast-forwarded from origin (the branch is never switched) — except `docs/context/`, whose uncommitted archivist writes always survive the reset. `docs/history/context-processed/` holds the context archivist's done-markers and offsets (see Context below).
 - `docs/context/` — the requirements tree (git-tracked): a single `requirements.md` with three flat sections — `# Harness` (web-harness), `# System` (system design), `# Product` (user experience) — each a list of `## <requirement>` headings. Maintained by the context archivist (see Context below) via add/update/delete operations — the durable memory for what is said in conversation but never lands in a commit. **Not** the BDD requirements registry: product scenarios live in a host project's `docs/scenarios.yaml` (or a fixture's input tree). `terms.md` lists the only allowed subject terms (Harness / Systems / Roles) that a requirement may be phrased around.
 - `docs/tasks/` — one Markdown task brief per task (`<slug>.md`, slug derived from the goal), written by the `identify-task` skill (Goal + Requirements) and consumed by `implement-task`.
-- `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk. Two files there are the run report's structural inputs: `bdd-cli-logs/harness.json` per fixture (wall clock, verdict, diff, judge window — written from a `t.Cleanup`, so it survives a `t.Fatalf`, and strictly after both snapshots, so it never enters the judge's diff) and `harness.log.json` at the session root (the test process's own slog, where the judge's `AI turn usage` record lands).
-- `tmp/test_report/` — the HTML run report: `index.html` plus one `<fixture-name>.html` per fixture, rewritten after every fixture by the BDD harness. Flat and overwritten each run; pages for fixtures that no longer exist are pruned. See `tests/bdd-cli/reporter/README.md`.
+- `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk. Everything the report reads lives here. The `bdd-cli-logs/` files below are recorder **sidecars**, written from the recorder's `t.Cleanup` so they survive a `t.Fatalf` and land strictly after both snapshots, never entering the judge's diff. `tmp/true-bdd.log.json` is not one of them — the engine writes it from its own process, during the run:
+  - `bdd-cli-logs/harness.json` — wall clock, verdict, exit code, structural diff, judge window and cost. **Its presence means the fixture is final** (it is the last byte written into the directory), which is exactly the cache key the report server keys on. Written write-then-rename so a reader cannot catch it half-written.
+  - `bdd-cli-logs/judge-{system,user,response}.txt` — the judge call verbatim, so two runs' graders can be diffed. Absent for sessions recorded before schema 2.
+  - `bdd-cli-logs/manifest.json` — the fixture manifest **as this run resolved it**. `fixture.yaml` is never copied into the tmpdir, so without this snapshot a report shows today's expectations against an old run's actuals, and comparing "expected" across runs is meaningless.
+  - `tmp/true-bdd.log.json` — the engine's own slog: every AI turn's role, model, duration, cost and tokens.
+  - `harness.log.json` at the session root is the *test process's* slog, not run data — no fixture names, no verdicts. Only the judge's `AI turn usage` records matter, and the recorder already folds those into `harness.json`.
+- **Run report** — served, not generated. `go run ./tests/bdd-cli/cmd/report-server` reads every session under `tmp/test_run`, rescans on a 15s interval, and serves a single-page UI at `127.0.0.1:7331`: run list, per-run fixtures, per-test expected-vs-actual with the phase timeline, and comparison of any two runs — test by test, then turn by turn. Comparison uses a real Myers diff (`znkr.io/diff`), aligning turns on `(checklist cell, role)` rather than turn number, so a run that needed an extra retry shows one insertion instead of shifting every later row. Loaders live in `tests/bdd-cli/reporter/` (parse only); the store, JSON API, diff layer and embedded UI in `tests/bdd-cli/reportserver/`.
 
 ## Architecture Principles
 

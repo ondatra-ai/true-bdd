@@ -41,4 +41,5 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.55.0 // indirect
+	znkr.io/diff v1.0.1 // indirect
 )

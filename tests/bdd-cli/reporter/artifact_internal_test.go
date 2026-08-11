@@ -73,9 +73,9 @@ func TestCellFromArtifact(t *testing.T) {
 // section from the validation turn that opened their cell.
 func TestInheritCellSections(t *testing.T) {
 	turns := []*Turn{
-		{Cell: checklistCell{Subject: "subj-a", Section: testSection}},
-		{Cell: checklistCell{Subject: "subj-a"}},
-		{Cell: checklistCell{Subject: "subj-b"}},
+		{Cell: ChecklistCell{Subject: "subj-a", Section: testSection}},
+		{Cell: ChecklistCell{Subject: "subj-a"}},
+		{Cell: ChecklistCell{Subject: "subj-b"}},
 	}
 
 	inheritCellSections(turns)

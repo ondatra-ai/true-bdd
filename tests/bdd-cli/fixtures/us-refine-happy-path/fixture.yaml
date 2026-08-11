@@ -1,6 +1,14 @@
 cmd: us refine 96.1
 input: input
 
+# This fixture walks the whole us-refine checklist — 12 sequential
+# validation turns at 20-40s each on the `high` tier. That is ~5m of
+# unavoidable model time, so the suite's 5m default killed it on the
+# final prompt. The `us-refine-fix-*` fixtures stay inside the default
+# because they stop at the first failing prompt; a happy-path walk
+# cannot.
+timeout: 10m
+
 expected:
   exit_code: 0
 

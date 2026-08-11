@@ -1,6 +1,12 @@
 cmd: us refine 96.3
 input: input
 
+# Walks the whole us-refine checklist — 12 sequential validation turns
+# at 20-40s each on the `high` tier — because it asserts the run
+# reports failures at the END rather than aborting early. That is ~5m
+# of unavoidable model time, past the suite's 5m default.
+timeout: 10m
+
 expected:
   exit_code: 0
 

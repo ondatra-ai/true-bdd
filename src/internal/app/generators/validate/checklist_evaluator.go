@@ -23,14 +23,6 @@ const (
 	filePermissions = 0o644 // File permissions for saved prompts
 )
 
-// getDocKeyToConfigPath returns the mapping of doc keys to true-bdd.yaml config paths.
-func getDocKeyToConfigPath() map[string]string {
-	return map[string]string{
-		"prd":               "documents.prd",
-		"architecture_yaml": "documents.architecture_yaml",
-	}
-}
-
 // ChecklistPromptData represents data needed for checklist validation prompts.
 type ChecklistPromptData struct {
 	Subject      any
@@ -49,6 +41,7 @@ type ChecklistEvaluator struct {
 	config       *config.ViperConfig
 	models       *provider.Registry
 	modeFactory  *ai.ModeFactory
+	docResolver  *docs.Resolver
 	systemLoader *template.TemplateLoader[ChecklistPromptData]
 	userLoader   *template.TemplateLoader[ChecklistPromptData]
 	tmpDir       string
@@ -79,6 +72,7 @@ func NewChecklistEvaluatorWithPaths(
 		config:       cfg,
 		models:       models,
 		modeFactory:  ai.NewModeFactory(cfg),
+		docResolver:  docs.NewResolver(cfg),
 		systemLoader: template.NewTemplateLoader[ChecklistPromptData](systemPath),
 		userLoader:   template.NewTemplateLoader[ChecklistPromptData](userPath),
 	}
@@ -301,21 +295,19 @@ func stripMarkdownFences(content string) string {
 }
 
 // loadRequestedDocs resolves document keys to file paths.
+//
+// By the time a walk reaches here the runner has already refused any
+// run whose declared documents cannot be satisfied, so a failure is a
+// wiring bug rather than a user-facing condition — log it and skip
+// rather than injecting a Read() instruction for a path that is not
+// there.
 func (e *ChecklistEvaluator) loadRequestedDocs(keys []string) map[string]*docs.ArchitectureDoc {
 	result := make(map[string]*docs.ArchitectureDoc, len(keys))
-	docKeyMapping := getDocKeyToConfigPath()
 
 	for _, key := range keys {
-		configPath, ok := docKeyMapping[key]
-		if !ok {
-			slog.Warn("Unknown document key, skipping", "key", key)
-
-			continue
-		}
-
-		filePath := e.config.GetString(configPath)
-		if filePath == "" {
-			slog.Warn("Document path not configured, skipping", "key", key, "configPath", configPath)
+		filePath, err := e.docResolver.Resolve(key)
+		if err != nil {
+			slog.Warn("Skipping unsatisfiable document", "key", key, "error", err)
 
 			continue
 		}

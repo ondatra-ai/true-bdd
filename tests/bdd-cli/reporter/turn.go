@@ -61,7 +61,7 @@ type Turn struct {
 	ToolCalls       []ToolCall
 
 	Invocation Invocation
-	Cell       checklistCell
+	Cell       ChecklistCell
 	// Inputs are the artifacts written before the turn was dispatched,
 	// Outputs the ones written after it completed.
 	Inputs  []Artifact
