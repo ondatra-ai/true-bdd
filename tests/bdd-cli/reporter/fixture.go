@@ -1,13 +1,14 @@
 package reporter
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
 )
 
 // discoveryEndMarkers are the records the engine writes immediately
@@ -65,6 +66,12 @@ type Fixture struct {
 
 	Wall    time.Duration
 	HasWall bool
+	// Record is the harness's own record of the run, verbatim, when one
+	// was written. Nil for a fixture still in flight or one that predates
+	// the record. Everything below is derived from it; the server reads
+	// the rest (exit code, timestamps, structural diff, judge model)
+	// straight off this.
+	Record *runner.HarnessRecord
 	// HasRecord says the outcome came from the harness's own record
 	// rather than the legacy `go test` scrape. It decides what an empty
 	// Diff means: the record carries the diff for every fixture, so
@@ -95,50 +102,16 @@ type Fixture struct {
 	PhaseTotal float64
 }
 
-// loadFixtures assembles every fixture in a session directory that left
-// behind either an engine log or a harness record.
-func loadFixtures(sessionDir, repoRoot string, gotest *GoTestLog) ([]*Fixture, error) {
-	entries, err := os.ReadDir(sessionDir)
-	if err != nil {
-		return nil, fmt.Errorf("read session dir: %w", err)
-	}
+// LoadFixtureDir builds one Fixture and its phase timeline from a
+// fixture's run directory.
+//
+// Exported so the report server can reload one fixture at a time. A
+// fixture whose harness record exists is final — the record is the last
+// byte ever written into its directory — so per-fixture loading is what
+// lets a session be cached and only the run in flight re-read.
+func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
+	logPath := EngineLogPath(dir)
 
-	var fixtures []*Fixture
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		dir := filepath.Join(sessionDir, entry.Name())
-
-		logPath := filepath.Join(dir, "tmp", "true-bdd.log.json")
-
-		// A fixture counts as reportable if the engine logged anything OR
-		// the harness recorded an outcome for it. Requiring the engine log
-		// alone silently dropped every fixture that legitimately starts no
-		// engine — `--help`, and any run refused during validation — from
-		// a page whose whole job is to list what ran.
-		if !exists(logPath) && !exists(filepath.Join(dir, "bdd-cli-logs", "harness.json")) {
-			continue
-		}
-
-		fixture, loadErr := loadFixture(dir, entry.Name(), repoRoot, logPath, gotest)
-		if loadErr != nil {
-			return nil, loadErr
-		}
-
-		fixtures = append(fixtures, fixture)
-	}
-
-	return fixtures, nil
-}
-
-// loadFixture builds one Fixture and its phase timeline.
-func loadFixture(
-	dir, name, repoRoot, logPath string,
-	gotest *GoTestLog,
-) (*Fixture, error) {
 	log := &EngineLog{}
 
 	if exists(logPath) {
@@ -150,7 +123,7 @@ func loadFixture(
 		log = loaded
 	}
 
-	manifest := loadManifest(repoRoot, name)
+	manifest := loadManifest(repoRoot, name, dir)
 
 	fixture := &Fixture{
 		Name:                name,
@@ -165,7 +138,7 @@ func loadFixture(
 		EmptyFailurePrompts: findEmptyFailurePrompts(dir),
 	}
 
-	applyHarnessOutcome(fixture, dir, gotest)
+	applyHarnessRecord(fixture, dir)
 
 	for _, turn := range fixture.Turns {
 		fixture.ModelSeconds += turn.Seconds()

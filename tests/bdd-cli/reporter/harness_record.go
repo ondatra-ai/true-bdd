@@ -21,33 +21,26 @@ type JudgeCall struct {
 	Tokens  int
 }
 
-// applyHarnessOutcome fills in the four facts that exist only outside
-// the engine's own process: the fixture's wall clock and verdict, the
-// file diff, and what the judge spent.
+// HarnessRecordPath is where a fixture's harness record lives.
 //
-// Per fixture, all-or-nothing: the harness record if it is there, else
-// the legacy `go test` log if the caller opted into one. Never merged
-// field by field — a wall clock from one source and a judge stamp from
-// another manufactures a residual nobody can explain.
-func applyHarnessOutcome(fixture *Fixture, dir string, gotest *GoTestLog) {
-	if applyHarnessRecord(fixture, dir) {
-		return
-	}
-
-	applyGoTestVerdict(fixture, gotest)
+// It is the last byte ever written into a fixture directory —
+// HarnessRecorder.Finish is registered first in the subtest, so
+// t.Cleanup's LIFO runs it last. Its presence therefore means the
+// fixture is final, which is exactly the cache key the report server
+// needs.
+func HarnessRecordPath(dir string) string {
+	return filepath.Join(dir, runner.SpawnLogDir, runner.HarnessRecordFile)
 }
 
 // applyHarnessRecord folds in the harness's own view of a fixture, and
 // reports whether there was one.
 //
-// Absent or unreadable is not an error: a session recorded before the
-// harness wrote this file still renders from the engine log alone, just
-// without a wall clock, a verdict or a judge cost — the same degradation
-// a missing `go test` log used to give.
+// Absent or unreadable is not an error: a fixture whose record has not
+// landed yet — or is being written as we read — still renders from the
+// engine log alone, just without a wall clock, a verdict or a judge
+// cost, and the next scan picks up the rest.
 func applyHarnessRecord(fixture *Fixture, dir string) bool {
-	path := filepath.Join(dir, runner.SpawnLogDir, runner.HarnessRecordFile)
-
-	blob, err := os.ReadFile(path)
+	blob, err := os.ReadFile(HarnessRecordPath(dir))
 	if err != nil {
 		return false
 	}
@@ -58,6 +51,12 @@ func applyHarnessRecord(fixture *Fixture, dir string) bool {
 	if err != nil {
 		return false
 	}
+
+	// Carried whole rather than field by field: the server serves exit
+	// code, timestamps, the structural diff and the judge's model, none
+	// of which the HTML report ever showed, and copying them out one at
+	// a time is how those fields got lost in the first place.
+	fixture.Record = &record
 
 	fixture.Wall = time.Duration(record.WallMs) * time.Millisecond
 	fixture.HasWall = record.WallMs > 0

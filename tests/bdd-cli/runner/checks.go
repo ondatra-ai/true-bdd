@@ -22,6 +22,13 @@ type Verdict struct {
 	// fixture that caused it.
 	JudgeStartedAt time.Time
 	JudgeEndedAt   time.Time
+	// The verbatim text of the judge call. Empty when the judge never
+	// got as far as being asked. Persisted by the recorder so a later
+	// comparison of two runs can diff what the judge was told, not just
+	// what it concluded.
+	JudgeSystemPrompt string
+	JudgeUserPrompt   string
+	JudgeResponse     string
 }
 
 // Pass reports whether all three checks were satisfied.
@@ -40,7 +47,7 @@ func Evaluate(ctx context.Context, fixture *Fixture, result *RunResult, judge Ju
 
 	verdict.JudgeStartedAt = time.Now()
 
-	pass, reason, err := judge.Verdict(ctx, JudgeRequest{
+	outcome, err := judge.Verdict(ctx, JudgeRequest{
 		Cmd:       fixture.Cmd,
 		JudgeSpec: fixture.JudgeSpec,
 		Diff:      result.Diff,
@@ -50,6 +57,12 @@ func Evaluate(ctx context.Context, fixture *Fixture, result *RunResult, judge Ju
 	// burned tokens, and an unstamped window would bill them to nobody.
 	verdict.JudgeEndedAt = time.Now()
 
+	// Also carried before the branch, and for the same reason: an errored
+	// or malformed call is precisely when the prompt is worth reading.
+	verdict.JudgeSystemPrompt = outcome.SystemPrompt
+	verdict.JudgeUserPrompt = outcome.UserPrompt
+	verdict.JudgeResponse = outcome.Response
+
 	if err != nil {
 		verdict.JudgeOK = false
 		verdict.JudgeMsg = "judge call errored: " + err.Error()
@@ -58,11 +71,11 @@ func Evaluate(ctx context.Context, fixture *Fixture, result *RunResult, judge Ju
 		return verdict
 	}
 
-	verdict.JudgeOK = pass
-	verdict.JudgeMsg = reason
+	verdict.JudgeOK = outcome.Pass
+	verdict.JudgeMsg = outcome.Reason
 
-	if !pass {
-		verdict.Failures = append(verdict.Failures, "judge: "+reason)
+	if !outcome.Pass {
+		verdict.Failures = append(verdict.Failures, "judge: "+outcome.Reason)
 	}
 
 	return verdict

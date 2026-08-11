@@ -1,0 +1,343 @@
+/* Theme tokens carried over from the static report's head.html, so the
+   server's look is continuous with the report it replaces. */
+:root {
+  --bg: #fff;
+  --fg: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --card: #fff;
+  --track: #e2e8f0;
+  --code: #f1f5f9;
+  --accent: #2563eb;
+  --pass: #059669;
+  --fail: #dc2626;
+  --skip: #a16207;
+  --add: #059669;
+  --del: #dc2626;
+  --add-bg: #ecfdf5;
+  --del-bg: #fef2f2;
+  --chg-bg: #fffbeb;
+  --role-prompt: #2563eb;
+  --role-fix: #ea580c;
+  --role-apply: #059669;
+  --role-judge: #7c3aed;
+  --det: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1120;
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --line: #1e293b;
+    --card: #111827;
+    --track: #1e293b;
+    --code: #111827;
+    --accent: #60a5fa;
+    --pass: #34d399;
+    --fail: #f87171;
+    --skip: #fbbf24;
+    --add: #34d399;
+    --del: #f87171;
+    --add-bg: #052e23;
+    --del-bg: #3f1414;
+    --chg-bg: #3a2f08;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Layout ------------------------------------------------------------ */
+
+header.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+
+header.top h1 { font-size: 15px; margin: 0; font-weight: 650; }
+header.top .spacer { flex: 1; }
+
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+
+.crumb { color: var(--muted); font-size: 13px; }
+.crumb a { color: var(--muted); }
+
+/* Controls ----------------------------------------------------------- */
+
+button, .btn {
+  font: inherit;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover:not(:disabled) { color: #fff; opacity: .9; }
+
+.status { font-size: 12px; color: var(--muted); }
+.status.live::before {
+  content: "";
+  display: inline-block;
+  width: 7px; height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--pass);
+}
+
+/* Tables ------------------------------------------------------------- */
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--code); }
+
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+
+/* Chips and tags ----------------------------------------------------- */
+
+.chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .03em;
+}
+
+.chip.pass { background: var(--add-bg); color: var(--pass); }
+.chip.fail { background: var(--del-bg); color: var(--fail); }
+.chip.skip { background: var(--chg-bg); color: var(--skip); }
+.chip.none { background: var(--track); color: var(--muted); }
+
+.tag {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--track);
+  color: var(--muted);
+}
+
+.tag.warn { background: var(--chg-bg); color: var(--skip); }
+
+/* Cards and stats ---------------------------------------------------- */
+
+.tiles { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+
+.tile {
+  flex: 1 1 130px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.tile .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.tile .v { font-size: 20px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+h2 { font-size: 14px; margin: 24px 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+
+/* Gantt -------------------------------------------------------------- */
+
+.gantt { background: var(--track); border-radius: 3px; height: 10px; min-width: 160px; overflow: hidden; }
+.gantt span { display: block; height: 100%; border-radius: 3px; }
+
+.role-prompt { background: var(--role-prompt); }
+.role-fix { background: var(--role-fix); }
+.role-apply { background: var(--role-apply); }
+.role-judge { background: var(--role-judge); }
+.role-det { background: var(--det); }
+
+/* Expanders ---------------------------------------------------------- */
+
+details { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: var(--card); }
+details > summary { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+details > summary:hover { background: var(--code); }
+details .body { padding: 10px 14px; border-top: 1px solid var(--line); }
+
+pre.text {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--code);
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 12px;
+  max-height: 480px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Expected vs actual + diffs ------------------------------------------ */
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+.pane { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.pane > h3 {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  background: var(--code);
+  border-bottom: 1px solid var(--line);
+}
+.pane .body { padding: 10px 12px; }
+
+tr.op-insert { background: var(--add-bg); }
+tr.op-delete { background: var(--del-bg); }
+tr.changed { background: var(--chg-bg); }
+
+td.mark { width: 1%; font-weight: 700; color: var(--muted); }
+tr.op-insert td.mark { color: var(--add); }
+tr.op-delete td.mark { color: var(--del); }
+
+.delta.up { color: var(--fail); }
+.delta.down { color: var(--pass); }
+.delta.zero { color: var(--muted); }
+
+/* Line diff ----------------------------------------------------------- */
+
+.linediff { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.linediff .hunk { border-top: 1px dashed var(--line); padding: 2px 0; }
+.linediff .hunk:first-child { border-top: 0; }
+.linediff .ln { display: flex; gap: 8px; padding: 0 8px; white-space: pre-wrap; word-break: break-word; }
+.linediff .ln.insert { background: var(--add-bg); }
+.linediff .ln.delete { background: var(--del-bg); }
+.linediff .ln .sig { width: 1ch; flex: none; color: var(--muted); }
+.linediff .meta { padding: 3px 8px; color: var(--muted); background: var(--code); }
+
+.empty { color: var(--muted); padding: 14px; text-align: center; }
+.err { color: var(--fail); padding: 14px; }
+
+/* Matrix -------------------------------------------------------------- */
+
+/* Two colours only: it passed or it did not. Encoding each reason as its
+   own hue made the reader learn a key before they could read the grid;
+   the reason is now written in the cell as words instead. */
+:root {
+  --cell-pass: #059669; --cell-pass-bg: #ecfdf5;
+  --cell-fail: #dc2626; --cell-fail-bg: #fef2f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cell-pass: #34d399; --cell-pass-bg: #052e23;
+    --cell-fail: #f87171; --cell-fail-bg: #3f1414;
+  }
+}
+
+.matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+
+table.matrix { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+
+table.matrix th, table.matrix td {
+  border-bottom: 1px solid var(--line);
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+/* The test name stays put while the run columns scroll under it —
+   without this a wide history makes every row anonymous. */
+table.matrix .name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  text-align: left;
+  max-width: 300px;
+  min-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+table.matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--card);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+table.matrix thead th.name { z-index: 4; }
+table.matrix tbody tr:hover .name { background: var(--code); }
+
+td.cell {
+  text-align: center;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  border-left: 1px solid var(--bg);
+  min-width: 96px;
+}
+
+td.cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+td.cell.pass { background: var(--cell-pass-bg); color: var(--cell-pass); }
+td.cell.fail { background: var(--cell-fail-bg); color: var(--cell-fail); }
+
+td.cell.gone { color: var(--line); cursor: default; }
+td.cell.gone:hover { outline: none; }
+
+/* The duration reads first, the reason under it in the cell's own colour. */
+td.cell .dur { display: block; font-variant-numeric: tabular-nums; }
+td.cell .why { display: block; font-size: 10.5px; opacity: .85; }
+
+th.col-partial { color: var(--muted); font-style: italic; }
+th.col-partial::after { content: " ·partial"; font-size: 10px; }
+
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.carousel .spacer { flex: 1; }
+
+.carousel button {
+  font-size: 16px;
+  line-height: 1;
+  padding: 3px 12px;
+  min-width: 38px;
+}
+
+.carousel .legend { margin: 0; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+.legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+
+label.pick { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }

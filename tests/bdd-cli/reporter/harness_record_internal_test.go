@@ -104,69 +104,6 @@ func fixtureFromRecord(t *testing.T, record runner.HarnessRecord) *Fixture {
 	return fixture
 }
 
-// TestHarnessRecordWinsOverGoTestLog pins the precedence rule: per
-// fixture, all-or-nothing. Merging a wall clock from one source with a
-// judge stamp from another manufactures a residual nobody can explain.
-func TestHarnessRecordWinsOverGoTestLog(t *testing.T) {
-	dir := t.TempDir()
-	writeRecord(t, dir, runner.HarnessRecord{
-		Fixture: "fx", Verdict: runner.VerdictPass, WallMs: 1000,
-	})
-
-	legacy := &GoTestLog{
-		Verdicts: map[string]FixtureVerdict{
-			"fx": {Verdict: "FAIL", Wall: 99 * time.Second},
-		},
-		Judges: []JudgeCall{{CostUSD: 9.99}},
-	}
-
-	fixture := &Fixture{Name: "fx"}
-	applyHarnessOutcome(fixture, dir, legacy)
-
-	if fixture.Verdict != runner.VerdictPass || fixture.Wall != time.Second {
-		t.Errorf("legacy log overrode the harness record: %q %v", fixture.Verdict, fixture.Wall)
-	}
-
-	if fixture.Judge != nil {
-		t.Error("legacy judge was billed to a fixture that had its own record")
-	}
-}
-
-// TestGoTestFallbackUsedWhenNoRecord pins that an old session still
-// renders when the caller opts into the legacy log.
-func TestGoTestFallbackUsedWhenNoRecord(t *testing.T) {
-	legacy := &GoTestLog{
-		Verdicts: map[string]FixtureVerdict{"fx": {Verdict: "PASS", Wall: 42 * time.Second}},
-		Judges:   []JudgeCall{{CostUSD: 1.5}},
-	}
-
-	fixture := &Fixture{Name: "fx"}
-	applyHarnessOutcome(fixture, t.TempDir(), legacy)
-
-	if !fixture.HasWall || fixture.Wall != 42*time.Second {
-		t.Errorf("wall = %v, want 42s from the legacy log", fixture.Wall)
-	}
-
-	// The legacy scrape read the diff off the harness's failure dump, so
-	// its empty diff means "unknown", not "nothing changed".
-	if fixture.HasRecord {
-		t.Error("HasRecord set on the legacy path, which would claim an empty diff means the run wrote nothing")
-	}
-
-	if fixture.Judge == nil || fixture.Judge.CostUSD != 1.5 {
-		t.Error("legacy judge not billed to the fixture that fell back")
-	}
-
-	// The cursor advanced, so a second fallback claims the NEXT call
-	// rather than the same one.
-	second := &Fixture{Name: "fx"}
-	applyHarnessOutcome(second, t.TempDir(), legacy)
-
-	if second.Judge != nil {
-		t.Error("the same judge call was billed twice")
-	}
-}
-
 // writeRecord puts a harness record where applyHarnessRecord looks.
 func writeRecord(t *testing.T, dir string, record runner.HarnessRecord) {
 	t.Helper()

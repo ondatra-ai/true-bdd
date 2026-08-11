@@ -73,34 +73,3 @@ func compactJSON(raw json.RawMessage) string {
 
 	return strings.Join(parts, " ")
 }
-
-// summariseToolCalls counts calls per tool name, most-used first, for
-// the one-line summary above the full list.
-func summariseToolCalls(calls []ToolCall) string {
-	if len(calls) == 0 {
-		return ""
-	}
-
-	counts := map[string]int{}
-
-	var order []string
-
-	for _, call := range calls {
-		if _, seen := counts[call.Name]; !seen {
-			order = append(order, call.Name)
-		}
-
-		counts[call.Name]++
-	}
-
-	sort.SliceStable(order, func(i, j int) bool {
-		return counts[order[i]] > counts[order[j]]
-	})
-
-	parts := make([]string, 0, len(order))
-	for _, name := range order {
-		parts = append(parts, name+"×"+itoa(counts[name]))
-	}
-
-	return strings.Join(parts, ", ")
-}

@@ -1,6 +1,9 @@
 package reporter
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // PhaseKind is what governs a slice's duration.
 type PhaseKind string
@@ -189,7 +192,7 @@ func appendTurns(phases []Phase, fixture *Fixture) []Phase {
 		}
 
 		phases = append(phases, Phase{
-			Label:    "Turn #" + itoa(turn.Number) + " — " + turn.Role,
+			Label:    "Turn #" + strconv.Itoa(turn.Number) + " — " + turn.Role,
 			Detail:   turn.CLI + " · " + turn.Model,
 			Kind:     KindModel,
 			Role:     turn.Role,
@@ -316,7 +319,7 @@ func testRunDetail(run TestRun) string {
 	case run.ExitCode == 0:
 		detail += " · exit 0, the fix holds"
 	default:
-		detail += " · exit " + itoa(run.ExitCode) + ", still failing"
+		detail += " · exit " + strconv.Itoa(run.ExitCode) + ", still failing"
 	}
 
 	return detail
@@ -409,35 +412,5 @@ func discoveryBound(fixture *Fixture) string {
 
 	return "bounded by the next engine log record, of which " +
 		formatSeconds(measured.Seconds()) + " is " +
-		itoa(count) + " measured runner invocation(s)"
-}
-
-// timelineDenominator is what a fixture's per-phase percentages are
-// "of". It falls back to the accounted total when the harness recorded
-// no wall clock, so a page built from engine logs alone still shows
-// proportions.
-func timelineDenominator(fixture *Fixture) float64 {
-	if fixture.HasWall && fixture.Wall.Seconds() > 0 {
-		return fixture.Wall.Seconds()
-	}
-
-	if fixture.PhaseTotal > 0 {
-		return fixture.PhaseTotal
-	}
-
-	return 1
-}
-
-// kindTag renders a slice's kind badge.
-func kindTag(kind PhaseKind) string {
-	switch kind {
-	case KindDeterministic:
-		return `<span class="tag det">deterministic</span>`
-	case KindModel:
-		return `<span class="tag mod">non-deterministic</span>`
-	case KindMixed:
-		return `<span class="tag mix">mixed</span>`
-	default:
-		return `<span class="tag det">` + escapeHTML(string(kind)) + `</span>`
-	}
+		strconv.Itoa(count) + " measured runner invocation(s)"
 }

@@ -99,21 +99,21 @@ func isArtifactRecord(msg string) bool {
 	}
 }
 
-// checklistCell identifies which checklist cell produced a turn.
+// ChecklistCell identifies which checklist cell produced a turn.
 //
 // Derived from the artifact filename, which the engine builds as
 // `<promptIndex>-<subjectID>-checklist-<section-path>-<suffix>.txt`
 // (checklist_evaluator.go: savePromptFile). The fix and apply turns of
 // the same cell reuse the subject and index, so the whole three-turn
 // cycle resolves to one cell.
-type checklistCell struct {
+type ChecklistCell struct {
 	Index   string
 	Subject string
 	Section string
 }
 
 // String renders the cell for a summary line.
-func (c checklistCell) String() string {
+func (c ChecklistCell) String() string {
 	if c.Section == "" && c.Subject == "" {
 		return ""
 	}
@@ -140,25 +140,25 @@ var iterationSuffix = regexp.MustCompile(`-(fix-)?iter\d+$`)
 //
 // Only the first names the section, so the other two resolve to the same
 // subject and inherit the section from it (see inheritCellSections).
-func cellFromArtifact(name string) (checklistCell, bool) {
+func cellFromArtifact(name string) (ChecklistCell, bool) {
 	base := strings.TrimSuffix(strings.TrimSuffix(name, ".txt"), ".yaml")
 
 	index, rest, found := strings.Cut(base, "-")
 	if !found {
-		return checklistCell{}, false
+		return ChecklistCell{}, false
 	}
 
 	if index == "apply" {
 		subject := trimArtifactSuffix(rest)
 
-		return checklistCell{Subject: subject}, subject != ""
+		return ChecklistCell{Subject: subject}, subject != ""
 	}
 
 	if !isNumeric(index) {
-		return checklistCell{}, false
+		return ChecklistCell{}, false
 	}
 
-	cell := checklistCell{Index: index}
+	cell := ChecklistCell{Index: index}
 
 	subject, section, hasSection := strings.Cut(rest, "-checklist-")
 	if hasSection {

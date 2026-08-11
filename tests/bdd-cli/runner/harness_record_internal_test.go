@@ -74,12 +74,58 @@ func TestPostRunWriteIsNotInDiff(t *testing.T) {
 		t.Fatalf("snapshot after: %v", err)
 	}
 
-	// Exactly the ordering Execute + the t.Cleanup produce.
-	writeHarnessRecord(filepath.Join(tmpDir, SpawnLogDir), HarnessRecord{Fixture: "fx"})
+	// Exactly the ordering Execute + the t.Cleanup produce. Every file
+	// Finish writes goes through one of these two calls, so covering both
+	// here is what keeps the judge transcript and the manifest snapshot
+	// out of the diff the judge itself graded.
+	logDir := filepath.Join(tmpDir, SpawnLogDir)
+
+	writeSidecars(logDir, map[string]string{
+		JudgeSystemFile:      "system",
+		JudgeUserFile:        "user",
+		JudgeResponseFile:    VerdictPass,
+		ManifestSnapshotFile: "{}",
+	})
+	writeHarnessRecord(logDir, HarnessRecord{Fixture: "fx"})
 
 	diff := computeDiffFromSnapshots(before, after)
 	if len(diff) != 0 {
-		t.Errorf("harness record polluted the judge diff: %+v", diff)
+		t.Errorf("post-run harness writes polluted the judge diff: %+v", diff)
+	}
+}
+
+// TestSidecarsRecordOnlyWhatLanded pins that HarnessRecord.Artifacts
+// advertises files a reader can actually open. A record naming a file
+// that was never written is worse than one that admits nothing was:
+// the report uses this list to tell "the judge was never reached" from
+// "this session predates the transcript".
+func TestSidecarsRecordOnlyWhatLanded(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), SpawnLogDir)
+
+	written := writeSidecars(dir, map[string]string{
+		JudgeUserFile:     "the prompt",
+		JudgeResponseFile: VerdictPass,
+	})
+
+	want := []string{JudgeResponseFile, JudgeUserFile} // sorted
+	if len(written) != len(want) {
+		t.Fatalf("wrote %v, want %v", written, want)
+	}
+
+	for i, name := range want {
+		if written[i] != name {
+			t.Errorf("artifact[%d] = %q, want %q", i, written[i], name)
+		}
+
+		_, statErr := os.Stat(filepath.Join(dir, name))
+		if statErr != nil {
+			t.Errorf("advertised %q but it is not readable: %v", name, statErr)
+		}
+	}
+
+	// A judge that was never reached contributes no empty files.
+	if got := writeSidecars(dir, map[string]string{}); got != nil {
+		t.Errorf("empty sidecar set wrote %v, want nil", got)
 	}
 }
 
