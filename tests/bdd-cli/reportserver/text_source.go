@@ -220,5 +220,5 @@ func sidecarRepoPath(fixture *reporter.Fixture, name string) string {
 		return ""
 	}
 
-	return filepath.ToSlash(filepath.Join(fixture.RelDir, runner.SpawnLogDir, name))
+	return containedPath(fixture.RelDir, filepath.Join(runner.SpawnLogDir, name))
 }

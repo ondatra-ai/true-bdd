@@ -582,7 +582,9 @@ async function turnPrompt(runID, d, t, only = null) {
 
   for (const r of files) {
     const body = await fetchArtifact(runID, d.summary.name, r.ref);
-    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body.trimEnd());
+    // Body verbatim: this claims to be the file's full text, so trailing
+    // whitespace and the final newline are part of it.
+    lines.push('', `───── ${r.kind} · ${r.repo_path || r.name} ─────`, '', body);
   }
 
   return lines.join('\n');

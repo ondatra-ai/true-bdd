@@ -311,7 +311,27 @@ func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) str
 		rel = anchored
 	}
 
-	return filepath.ToSlash(filepath.Join(fixture.RelDir, rel))
+	return containedPath(fixture.RelDir, rel)
+}
+
+// containedPath joins rel onto base and returns it only if the result is
+// still inside base.
+//
+// filepath.Join CLEANS as it joins, so a "../.." inside rel silently
+// collapses and produces a path pointing somewhere else entirely — the
+// report would then display, and offer to copy, a location that has
+// nothing to do with the run. These paths are never opened by the server
+// (artifact bodies resolve through opaque refs and a map lookup), so this
+// is about not stating a falsehood rather than about file access.
+func containedPath(base, rel string) string {
+	joined := filepath.Join(base, rel)
+
+	inside, err := filepath.Rel(base, joined)
+	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
+		return ""
+	}
+
+	return filepath.ToSlash(joined)
 }
 
 // mapTestRuns projects the framework-runner subprocesses.
@@ -378,7 +398,7 @@ func repoPath(fixture *reporter.Fixture, path string) string {
 		return path
 	}
 
-	return filepath.ToSlash(filepath.Join(fixture.RelDir, path))
+	return containedPath(fixture.RelDir, path)
 }
 
 // legacyFiles parses "created path (N bytes)" back into structure.

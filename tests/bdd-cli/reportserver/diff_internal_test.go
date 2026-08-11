@@ -331,3 +331,42 @@ func TestComparisonSurvivesAnAbsentManifest(t *testing.T) {
 		t.Errorf("mapExpected(nil).Source = %q, want %q", got, reporter.ManifestAbsent)
 	}
 }
+
+// TestPathsCannotEscapeTheFixtureDir pins the containment guard.
+//
+// filepath.Join cleans as it joins, so a "../.." inside a logged artifact
+// path silently collapses and yields a location with nothing to do with
+// the run. The report displays these paths and offers to copy them, so a
+// path that escaped would be a confident statement of something false.
+func TestPathsCannotEscapeTheFixtureDir(t *testing.T) {
+	const base = "tmp/test_run/2026-01-01_00-00-00/fx"
+
+	cases := []struct {
+		name string
+		rel  string
+		want string
+	}{
+		{"ordinary relative path", "tmp/run/01-system.txt", base + "/tmp/run/01-system.txt"},
+		{"climbs out of the fixture", "../../../etc/passwd", ""},
+		{"climbs out after descending", "tmp/../../../../secrets", ""},
+		{"climbs exactly to the parent", "..", ""},
+		{"stays inside via a harmless dot-dot", "tmp/run/../01.txt", base + "/tmp/01.txt"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := containedPath(base, testCase.rel); got != testCase.want {
+				t.Errorf("containedPath(%q, %q) = %q, want %q",
+					base, testCase.rel, got, testCase.want)
+			}
+		})
+	}
+
+	// And through the real caller, with an absolute artifact path.
+	fixture := &reporter.Fixture{Dir: "/abs/root/" + base, RelDir: base}
+	escaping := reporter.Artifact{Path: "/abs/root/" + base + "/../../../../etc/passwd"}
+
+	if got := artifactRepoPath(fixture, escaping); got != "" {
+		t.Errorf("artifactRepoPath escaped the fixture: %q", got)
+	}
+}
