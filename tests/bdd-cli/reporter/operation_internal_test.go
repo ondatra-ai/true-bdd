@@ -350,6 +350,41 @@ func TestFixCauseSplitsClarificationFromRefinement(t *testing.T) {
 	}
 }
 
+// A turn whose artifacts never named a prompt index, and which logged no
+// documents of its own, must read as "index unknown". Carrying the last
+// index seen would resolve it against the checklist and print a section
+// name and a Q[n] belonging to an entirely different check.
+func TestTurnWithoutItsOwnRecordsInheritsNoIndex(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	write(t, dir, "true-bdd/checklists/us-apply.yaml", applyChecklist)
+	writeLog(t, dir, []string{
+		logLine(t, "2026-08-10T23:17:01Z", "Loading full checklist", map[string]any{
+			fieldCommand: "us-apply", fieldPath: "true-bdd/checklists/us-apply.yaml"}),
+		sectionPromptTurn(t, 1, 1, firstAC, "us-apply-merge"),
+		// A turn killed before it wrote a single artifact: no cell, and no
+		// documents record of its own.
+		dispatch(t, "2026-08-10T23:22:00Z", 2, rolePrompt, cliClaude, opusModel),
+		returned(t, "2026-08-10T23:22:20Z", 2, rolePrompt),
+	})
+
+	fixture := loadFixtureForTest(t, dir)
+	orphan := fixture.Turns[1]
+
+	if orphan.PromptIdx != 0 {
+		t.Errorf("prompt index = %d, want 0 — it borrowed turn 1's", orphan.PromptIdx)
+	}
+
+	if orphan.Op.Ref != "" {
+		t.Errorf("ref = %q, want empty rather than another check's question", orphan.Op.Ref)
+	}
+
+	if orphan.Op.SectionName != "" {
+		t.Errorf("section name = %q, want empty", orphan.Op.SectionName)
+	}
+}
+
 // A cause the log gives no evidence for produces no clause at all. An
 // invented "walk 1" on a session that never logged its walk boundaries
 // would be a guess presented as a fact.

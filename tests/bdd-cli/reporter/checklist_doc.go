@@ -1,9 +1,6 @@
 package reporter
 
 import (
-	"os"
-	"path/filepath"
-
 	"gopkg.in/yaml.v3"
 )
 
@@ -85,19 +82,19 @@ func loadChecklistDoc(fixtureDir, logged string) ChecklistDoc {
 		return doc
 	}
 
-	path := logged
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(fixtureDir, logged)
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
+	// The path comes out of the run's own log, which is a file on disk
+	// like any other. An absolute path, or a relative one that climbs out
+	// of the fixture, would make loading a report read YAML from anywhere
+	// on the machine and surface its section names in the UI. Neither
+	// shape is one the engine ever writes, so both are simply refused.
+	data, ok := ReadContained(fixtureDir, logged)
+	if !ok {
 		return doc
 	}
 
 	var raw rawChecklist
 
-	err = yaml.Unmarshal(data, &raw)
+	err := yaml.Unmarshal([]byte(data), &raw)
 	if err != nil {
 		return doc
 	}

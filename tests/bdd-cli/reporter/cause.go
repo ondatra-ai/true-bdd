@@ -147,10 +147,16 @@ func (w *contextWalker) claimTurn() {
 	turn := w.turns[w.cursor]
 	w.cursor++
 
+	// Both fields come from the same record and are cleared together. A
+	// turn with no documents record of its own must read as "index
+	// unknown", not as the index of whichever earlier turn last logged
+	// one — a stale index resolves against the checklist and prints a
+	// section name and a Q[n] belonging to a different check.
 	turn.Docs = w.docs
-	w.docs = nil
+	pendingIdx := w.docsIdx
+	w.docs, w.docsIdx = nil, 0
 
-	turn.PromptIdx = promptIndexOf(turn, w.lastGenIdx, w.docsIdx)
+	turn.PromptIdx = promptIndexOf(turn, w.lastGenIdx, pendingIdx)
 	turn.evidence = turnEvidence{
 		walk:              w.walk,
 		maxWalk:           w.maxWalk,

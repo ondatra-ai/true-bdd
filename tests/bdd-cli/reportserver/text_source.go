@@ -34,9 +34,9 @@ const (
 // a filesystem path. That is the whole reason refs are opaque tokens
 // rather than paths: there is no traversal surface to get wrong.
 func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
-	body, handled := fixedRef(fixture, ref)
+	body, present, handled := fixedRef(fixture, ref)
 	if handled {
-		return body, body != ""
+		return body, present
 	}
 
 	parts := strings.Split(ref, ":")
@@ -51,72 +51,65 @@ func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
 	}
 }
 
-// fixedRef resolves the pseudo-refs that name exactly one body. The
-// second result says whether the ref was one of them, so an unknown ref
-// falls through to the indexed forms rather than being reported empty.
-func fixedRef(fixture *reporter.Fixture, ref string) (string, bool) {
+// fixedRef resolves the pseudo-refs that name exactly one body.
+//
+// Three results, not two: `present` says the body was found, `handled`
+// says the ref was one of these at all. They are separate because a file
+// can be readable and empty, and collapsing that into "absent" drops a
+// truncated target from the provenance list — the one case where the
+// emptiness is the thing worth seeing.
+func fixedRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
 	switch ref {
 	case refJudgeSystem:
-		return sidecar(fixture, runner.JudgeSystemFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeSystemFile))
 	case refJudgeUser:
-		return sidecar(fixture, runner.JudgeUserFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeUserFile))
 	case refJudgeResponse:
-		return sidecar(fixture, runner.JudgeResponseFile), true
+		return presenceOf(sidecar(fixture, runner.JudgeResponseFile))
 	case refCLIStdout:
-		return recordFile(fixture, stdoutOf), true
+		return presenceOf(recordFile(fixture, stdoutOf))
 	case refCLIStderr:
-		return recordFile(fixture, stderrOf), true
+		return presenceOf(recordFile(fixture, stderrOf))
 	case refJudgeSpec:
 		if fixture.Manifest == nil {
-			return "", true
+			return "", false, true
 		}
 
-		return fixture.Manifest.JudgeSpec, true
+		return presenceOf(fixture.Manifest.JudgeSpec)
 	default:
 		return provenanceRef(fixture, ref)
 	}
 }
 
-// provenanceRef resolves the three refs that name a file the run's own
-// log pointed at, rather than one the harness wrote.
-func provenanceRef(fixture *reporter.Fixture, ref string) (string, bool) {
-	switch ref {
-	case refItemsFile:
-		return runFile(fixture, fixture.Meta.ItemsFile), true
-	case refChecklist:
-		return runFile(fixture, fixture.Meta.ChecklistPath), true
-	case refTarget:
-		return runFile(fixture, fixture.Meta.TargetFile), true
-	case refCommitted:
-		return runFile(fixture, fixture.Meta.CommittedFile), true
-	default:
-		return "", false
-	}
+// presenceOf keeps the old contract for the bodies that have no way to
+// distinguish empty from missing: they are read through helpers that
+// return "" for both.
+func presenceOf(body string) (string, bool, bool) {
+	return body, body != "", true
 }
 
-// runFile reads a file the run's own log named, resolved inside the
-// fixture directory.
-//
-// The path comes from the engine log rather than from the client, but it
-// is still containment-checked: a log is an artifact of a program that
-// crashed at least once, and "the input was written by us" is not a
-// property worth betting a path traversal on.
-func runFile(fixture *reporter.Fixture, logged string) string {
-	if logged == "" || filepath.IsAbs(logged) {
-		return ""
+// provenanceRef resolves the refs that name a file the run's own log
+// pointed at, rather than one the harness wrote. Here the read itself
+// reports presence, so a zero-byte file is present.
+func provenanceRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
+	var logged string
+
+	switch ref {
+	case refItemsFile:
+		logged = fixture.Meta.ItemsFile
+	case refChecklist:
+		logged = fixture.Meta.ChecklistPath
+	case refTarget:
+		logged = fixture.Meta.TargetFile
+	case refCommitted:
+		logged = fixture.Meta.CommittedFile
+	default:
+		return "", false, false
 	}
 
-	path := containedPath(fixture.Dir, logged)
-	if path == "" {
-		return ""
-	}
+	body, ok := reporter.ReadContained(fixture.Dir, logged)
 
-	blob, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-
-	return string(blob)
+	return body, ok, true
 }
 
 // provenanceRefs lists the files behind every check the run performed:

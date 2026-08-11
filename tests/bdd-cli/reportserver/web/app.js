@@ -557,7 +557,9 @@ function ganttBar(p, total) {
 function phaseRow(runID, name, d, p, bar, total, denominator) {
   const share = total > 0 ? (p.seconds / total) * 100 : 0;
 
-  return h('details', { class: 'det' },
+  // Label plus offset: a phase has no id of its own, and its duration
+  // grows while the run does.
+  return h('details', { class: 'det', 'data-key': `phase:${p.label}:${p.offset_seconds}` },
     h('summary', {},
       h('span', { class: 'turn-head' }, p.label,
         p.owner ? h('span', { class: 'tag', style: 'margin-left:6px' }, p.owner) : null,
@@ -788,7 +790,12 @@ function judgeBody(d) {
 // turnRow is a model call: the same shape as an overhead row, plus an
 // expander and the copy button.
 function turnRow(runID, name, d, t, bar, nth, total, offset) {
-  return h('details', {},
+  // Keyed on the turn number, which is the engine's own stable id for
+  // this call. The summary text is not usable as a key: it carries the
+  // duration, cost and token count, all of which move on every rescan
+  // while the turn is still running — the exact case the expander state
+  // exists to survive.
+  return h('details', { 'data-key': `turn:${t.number}` },
     h('summary', {},
       h('span', { class: 'turn-head' },
         `#${t.number} · ${t.operation.label || t.cell.label || t.role}`,
@@ -936,7 +943,7 @@ function artifactList(runID, name, refs, context = null) {
   const usable = refs.filter((r) => !r.missing);
   if (!usable.length) return null;
   return h('div', { style: 'margin-top:8px' }, usable.map((r) => h('div', { class: 'artifact' },
-    h('details', {},
+    h('details', { 'data-key': `art:${r.ref}` },
       h('summary', {}, `${r.kind} · ${r.name} · ${count(r.bytes)} bytes`),
       h('div', { class: 'body' },
         r.repo_path
@@ -1198,7 +1205,11 @@ function renderTextDiff(d) {
 // the old slot instead of the thing that was open.
 const openDetails = new Set();
 
+// The renderer assigns data-key to everything whose summary text moves.
+// Summary text remains the fallback for expanders that are stable by
+// construction (a rubric, a fact block) and need no id of their own.
 const detailKey = (el) => {
+  if (el.dataset.key) return el.dataset.key;
   const summary = el.querySelector(':scope > summary');
   return summary ? summary.textContent.trim() : '';
 };
@@ -1226,6 +1237,9 @@ async function render() {
   // Navigating somewhere new should land at the top, as it always has.
   const sameRoute = location.hash === lastRoute;
   const scroll = window.scrollY;
+  // Keys are only unique within a page — two runs hold the same turn
+  // numbers — so leaving a route drops what was open on it.
+  if (!sameRoute) openDetails.clear();
   try {
     let node;
     if (!parts.length) node = await renderRunList();

@@ -30,8 +30,9 @@ type Operation struct {
 	Verb    string
 	Section string
 	Subject string
-	// Ref names what the turn read: `Q[1]`, `Q[1]+F[1]`, `F[1]`, or the
-	// generated fix-prompt artifact for an apply turn.
+	// Ref names what the turn worked from: `Q[1]` for a validation,
+	// `F[1]` for a fix generation, the generated fix-prompt artifact for
+	// an apply. See turnRef for why a validation never names F.
 	Ref string
 	// Why is the cause clause: "walk 1", "after fix #1 was applied".
 	Why string
@@ -234,7 +235,7 @@ func sectionID(section, command string, entry ChecklistPrompt, known bool) strin
 // govern differently: you validate a cell AGAINST a question, but you
 // generate a fix prompt FOR a cell FROM its template.
 //
-//	Validate            99.3-001 against Q[1]+F[1]
+//	Validate            99.3-001 against Q[1]
 //	Generate fix prompt for 99.3-001 from F[1]
 //	Apply fix           to 99.3-001 from 01-99.3-001-fix-prompts.md
 //
