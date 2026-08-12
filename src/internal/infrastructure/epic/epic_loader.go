@@ -19,7 +19,7 @@ type EpicLoader struct {
 
 func NewEpicLoader(cfg *config.ViperConfig) *EpicLoader {
 	// Get the epic path from configuration
-	basePath := cfg.GetString("epics.path")
+	basePath := cfg.GetString("paths.epics_dir")
 
 	return &EpicLoader{
 		basePath: basePath,

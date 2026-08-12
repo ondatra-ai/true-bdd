@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// rawRegistry mirrors only the docs/scenarios.yaml shape the scanner
+// rawRegistry mirrors only the scenario-registry shape the scanner
 // needs: the scenarios map and each entry's user_stories lineage list.
 type rawRegistry struct {
 	Scenarios map[string]struct {

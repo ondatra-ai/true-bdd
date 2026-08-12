@@ -8,18 +8,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Canonical default paths (plan §2: canonical paths only in v1). These
-// mirror the engine's config seed and the hardcoded CLI defaults
-// (src/cmd/us.go registry path, src/cmd/build.go architecture default).
+// Canonical default paths, mirroring the engine's config seed. The
+// scanner falls back to these when the host config is missing, invalid,
+// or leaves a key blank — it degrades, never fails.
 const (
 	defaultEpicsDir         = "docs/prd/epics"
 	defaultStoriesDir       = "docs/prd/stories"
 	defaultChecklistsDir    = "true-bdd/checklists"
 	defaultPRDPath          = "docs/prd/prd.yaml"
 	defaultArchitecturePath = "docs/architecture/architecture.yaml"
-	// registryRelPath is HARDCODED in src/cmd/us.go (not a config key),
-	// so the scanner hardcodes it too.
-	registryRelPath = "docs/scenarios.yaml"
+	defaultRegistryPath     = "docs/scenarios.yaml"
 	// configRelPath is the engine config file the ViperConfig loader
 	// reads (true-bdd/true-bdd.yaml).
 	configRelPath = "true-bdd/true-bdd.yaml"
@@ -29,16 +27,15 @@ const (
 // directly (never via the Viper loader) so a malformed file degrades to
 // an `invalid` chip with canonical-default paths rather than aborting.
 type rawConfig struct {
-	Epics struct {
-		Path string `yaml:"path"`
-	} `yaml:"epics"`
 	Paths struct {
+		EpicsDir      string `yaml:"epics_dir"`
 		StoriesDir    string `yaml:"stories_dir"`
 		ChecklistsDir string `yaml:"checklists_dir"`
 	} `yaml:"paths"`
 	Documents struct {
 		PRD              string `yaml:"prd"`
 		ArchitectureYAML string `yaml:"architecture_yaml"`
+		ScenariosYAML    string `yaml:"scenarios_yaml"`
 	} `yaml:"documents"`
 }
 
@@ -53,6 +50,7 @@ type resolvedConfig struct {
 	storiesRel    string
 	checklistsRel string
 	prdRel        string
+	registryRel   string
 
 	architectureRel      string
 	architectureMismatch bool
@@ -69,6 +67,7 @@ func resolveConfig(folder string) resolvedConfig {
 		storiesRel:      defaultStoriesDir,
 		checklistsRel:   defaultChecklistsDir,
 		prdRel:          defaultPRDPath,
+		registryRel:     defaultRegistryPath,
 		architectureRel: defaultArchitecturePath,
 	}
 
@@ -95,10 +94,11 @@ func resolveConfig(folder string) resolvedConfig {
 // mirrored not fixed).
 func applyConfig(base resolvedConfig, raw rawConfig) resolvedConfig {
 	base.configStatus = StatusPresent
-	base.epicsRel = defaultRel(raw.Epics.Path, defaultEpicsDir)
+	base.epicsRel = defaultRel(raw.Paths.EpicsDir, defaultEpicsDir)
 	base.storiesRel = defaultRel(raw.Paths.StoriesDir, defaultStoriesDir)
 	base.checklistsRel = defaultRel(raw.Paths.ChecklistsDir, defaultChecklistsDir)
 	base.prdRel = defaultRel(raw.Documents.PRD, defaultPRDPath)
+	base.registryRel = defaultRel(raw.Documents.ScenariosYAML, defaultRegistryPath)
 	base.architectureRel = defaultRel(raw.Documents.ArchitectureYAML, defaultArchitecturePath)
 	base.architectureMismatch = base.architectureRel != defaultArchitecturePath
 

@@ -18,9 +18,6 @@ engine:
   # the cheap, high-context `coder` tier is for.
   default_apply_model: coder
 
-epics:
-  path: "./docs/prd/epics"
-
 templates:
   prompts:
     checklist: "./templates/us-checklist.prompt.tpl"
@@ -51,6 +48,7 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
+  epics_dir: "./docs/prd/epics"
   stories_dir: "docs/prd/stories"
   checklists_dir: "./true-bdd/checklists"
   # Roots `build tests --fix` may author into. Its applier is told to
@@ -67,3 +65,4 @@ paths:
 documents:
   prd: "./docs/prd/prd.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
+  scenarios_yaml: "./docs/scenarios.yaml"

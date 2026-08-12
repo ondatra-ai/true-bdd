@@ -26,7 +26,7 @@ func Scan(folder string) Snapshot {
 // budget plus one in-flight story file rather than the whole folder.
 func ScanWithBudget(folder string, budget int) Snapshot {
 	cfg := resolveConfig(folder)
-	lineage := loadLineageIndex(filepath.Join(folder, registryRelPath))
+	lineage := loadLineageIndex(filepath.Join(folder, cfg.registryRel))
 	documents, documentErrors := scanDocuments(folder, cfg)
 
 	input := epicScanInput{

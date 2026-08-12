@@ -118,7 +118,7 @@ func NewContainer() (*Container, error) {
 		return nil, pkgerrors.ErrInitializeConfigFailed(err)
 	}
 
-	configureLogging()
+	configureLogging(cfg.GetString("paths.tmp_dir"))
 
 	runDir, err := fs.NewRunDirectory(cfg.GetString("paths.tmp_dir"))
 	if err != nil {
@@ -187,7 +187,7 @@ func NewContainer() (*Container, error) {
 		BuildTestsEvaluator:          buildTestsTrip.evaluator,
 		BuildTestsFixPromptGenerator: buildTestsTrip.fixGenerator,
 		BuildTestsFixApplier:         buildTestsTrip.fixApplier,
-		ArchitectureLoader:           architecture.NewLoader(cfg),
+		ArchitectureLoader:           architecture.NewLoader(),
 		TestRunnerDispatcher:         testRunnerDispatcher,
 		BuildCodeEvaluator:           buildCodeTrip.evaluator,
 		BuildCodeFixPromptGenerator:  buildCodeTrip.fixGenerator,

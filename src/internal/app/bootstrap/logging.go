@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -13,17 +14,18 @@ const (
 	fileModeDirectory = 0755 // Standard directory permission
 )
 
-func configureLogging() {
+func configureLogging(tmpDir string) {
 	log.SetFlags(0)
 
 	// Ensure tmp directory exists
-	err := os.MkdirAll("./tmp", fileModeDirectory)
+	err := os.MkdirAll(tmpDir, fileModeDirectory)
 	if err != nil {
 		log.Println("Warning: failed to create tmp directory:", err)
 	}
 
 	// Open log file for JSON output (all levels)
-	logFile, err := os.OpenFile("./tmp/true-bdd.log.json", os.O_CREATE|os.O_WRONLY|os.O_APPEND, fileModeReadWrite)
+	logFile, err := os.OpenFile(filepath.Join(tmpDir, "true-bdd.log.json"),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND, fileModeReadWrite)
 	if err != nil {
 		log.Println("Warning: failed to open log file:", err)
 		// Fallback to console only

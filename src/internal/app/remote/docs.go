@@ -44,6 +44,9 @@ const existingFixedDocCount = 4
 const newFilePerm = 0o644
 
 // The fixed (non-glob) workspace document paths (plan Target state).
+// Deliberately independent of the engine config: these are the workspace
+// UI-manifest contract (doc_tree order, doc_read/doc_write allowlist)
+// shared with the browser, which always addresses the canonical layout.
 const (
 	archYAMLPath      = "docs/architecture/architecture.yaml"
 	prdYAMLPath       = "docs/prd/prd.yaml"

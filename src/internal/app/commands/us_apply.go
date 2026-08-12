@@ -19,6 +19,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/pkg/console"
 )
 
+// scratchRegistryFilename is the scratch copy's basename inside the run
+// tmpdir. Deliberately fixed: one registry per run, and the name never
+// leaves the tmpdir, so it stays stable regardless of where
+// documents.scenarios_yaml points.
 const scratchRegistryFilename = "scenarios.yaml"
 
 // ApplyDeps bundles what `us apply` needs at the command boundary.

@@ -8,8 +8,6 @@ import (
 	"sort"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 )
 
 // ErrNoServices signals that the architecture YAML has no
@@ -75,14 +73,13 @@ type rawArchitecture struct {
 }
 
 // Loader reads architecture.yaml into a sorted Architecture struct.
-type Loader struct {
-	config *config.ViperConfig
-}
+// Purely path-driven: the cmd layer resolves the path (flag override or
+// documents.architecture_yaml) before calling Load.
+type Loader struct{}
 
-// NewLoader builds a Loader. The config is held so callers can fall
-// back to the configured default path when no override is passed.
-func NewLoader(cfg *config.ViperConfig) *Loader {
-	return &Loader{config: cfg}
+// NewLoader builds a Loader.
+func NewLoader() *Loader {
+	return &Loader{}
 }
 
 // Load reads the YAML architecture file at `path`, decodes only the

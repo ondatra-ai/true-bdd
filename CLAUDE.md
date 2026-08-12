@@ -24,12 +24,12 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 
 - `us create <id>` — extract a story from its epic and run the `us-create` checklist.
 - `us refine <id>` — load a story from `docs/prd/stories/` and run the `us-refine` checklist.
-- `us apply <id>` — walk every AC in a refined story, validate against `us-apply`, and merge scenarios into the central `docs/scenarios.yaml` registry.
+- `us apply <id>` — walk every AC in a refined story, validate against `us-apply`, and merge scenarios into the central scenario registry (path from `documents.scenarios_yaml`, conventionally `docs/scenarios.yaml`).
 
 `build` supergroup — Spec-as-Source regeneration steps:
 
-- `build tests` — walks every scenario in the requirements registry against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated test-authoring loop that writes the missing test referencing the scenario id; the registry is never modified by the run. Takes `--requirements <path>` to override the registry location.
-- `build code` — walks every `(service, layer)` pair declared in the architectural spec (`architecture.yaml`, override with `--architecture`), discovers currently-failing tests via each framework's runner (go test / jest / playwright), and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
+- `build tests` — walks every scenario in the requirements registry (path from `documents.scenarios_yaml` in `true-bdd.yaml`) against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated test-authoring loop that writes the missing test referencing the scenario id; the registry is never modified by the run. Takes `--requirements <path>` to override the configured registry location.
+- `build code` — walks every `(service, layer)` pair declared in the architectural spec (path from `documents.architecture_yaml`, override with `--architecture`), discovers currently-failing tests via each framework's runner (go test / jest / playwright), and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
 
 Every command accepts `--fix` for an interactive loop in which Claude proposes edits for each failed check and the user applies, refines, or exits.
 
