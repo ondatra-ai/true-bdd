@@ -85,7 +85,7 @@ test("w9.1 the production workspace frame conforms to the design mockup (codex v
     mockupPng,
     prodPng,
     artifactDir,
-    label: `w9-design-judge-${testInfo.testId}-${randomUUID().slice(0, 8)}`,
+    label: `w9-design-judge-${testInfo.testId}-${randomUUID()}`,
   });
   await testInfo.attach("codex-verdict", { path: verdictPath, contentType: "application/json" });
   await testInfo.attach("codex-trace", { path: tracePath, contentType: "text/plain" });
