@@ -19,6 +19,7 @@
  * checks named — an assertion failure, not a crash.
  */
 
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 import { expect, test } from "@playwright/test";
@@ -75,14 +76,16 @@ test("w9.1 the production workspace frame conforms to the design mockup (codex v
   await page.screenshot({ path: prodPng });
 
   // ── Codex vision verdict ──
-  // Under the repo's gitignored runtime dir (tmp/), but with a per-test label
-  // so concurrent/repeat runs never clobber one another's verdict/trace.
+  // Under the repo's gitignored runtime dir (tmp/), with a per-test label PLUS
+  // a run-unique suffix: testId alone is stable across retries and repeated
+  // invocations, so without the suffix a retry would clobber the previous
+  // attempt's verdict/trace after they were already attached to the report.
   const artifactDir = path.join(REPO_ROOT, "tmp", "design-judge");
   const { verdict, verdictPath, tracePath, exitCode } = await runDesignJudge({
     mockupPng,
     prodPng,
     artifactDir,
-    label: `w9-design-judge-${testInfo.testId}`,
+    label: `w9-design-judge-${testInfo.testId}-${randomUUID().slice(0, 8)}`,
   });
   await testInfo.attach("codex-verdict", { path: verdictPath, contentType: "application/json" });
   await testInfo.attach("codex-trace", { path: tracePath, contentType: "text/plain" });

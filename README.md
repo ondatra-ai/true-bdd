@@ -127,9 +127,10 @@ env -u CLAUDECODE ./bin/true-bdd build code  --fix
 The host project supplies a `true-bdd/` directory at its root:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
-  `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`),
-  per-command prompt-template paths, and a `documents:` map naming the
-  files a check may cite (`prd`, `architecture_yaml`,
+  `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`,
+  `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
+  author into), per-command prompt-template paths, and a `documents:`
+  map naming the files a check may cite (`prd`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.

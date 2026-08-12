@@ -15,19 +15,22 @@ const (
 )
 
 func configureLogging(tmpDir string) {
+	// Until SetDefault runs below, slog records route through the std
+	// log package's default logger; zeroing its flags keeps the
+	// bootstrap warnings emitted here free of timestamp prefixes.
 	log.SetFlags(0)
 
 	// Ensure tmp directory exists
 	err := os.MkdirAll(tmpDir, fileModeDirectory)
 	if err != nil {
-		log.Println("Warning: failed to create tmp directory:", err)
+		slog.Warn("Failed to create tmp directory", "error", err)
 	}
 
 	// Open log file for JSON output (all levels)
 	logFile, err := os.OpenFile(filepath.Join(tmpDir, "true-bdd.log.json"),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND, fileModeReadWrite)
 	if err != nil {
-		log.Println("Warning: failed to open log file:", err)
+		slog.Warn("Failed to open log file, console only", "error", err)
 		// Fallback to console only
 		opts := &slog.HandlerOptions{
 			Level: slog.LevelInfo,

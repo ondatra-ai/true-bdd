@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/commands"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 )
@@ -27,11 +28,78 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 	return buildCmd
 }
 
-func newBuildTestsCmd(provide containerProvider) *cobra.Command {
+// buildRunE is the run shape both `build` subcommands use after sourcing
+// their lazily-built container, resolved spec path, and fix flag.
+type buildRunE func(ctx context.Context, container *bootstrap.Container, specFile string, fix bool) error
+
+// specFlag describes the spec-path override flag a `build` subcommand
+// exposes, and the `documents.*` key that decides the path when the
+// flag is not passed.
+type specFlag struct {
+	name   string
+	usage  string
+	docKey string
+	// label names the document in the resolve error, e.g.
+	// "scenario registry".
+	label string
+}
+
+// buildSpecCmd builds the cobra shell shared by every `build`
+// subcommand: a spec-path flag whose empty default defers to the host
+// config, plus --fix. The container is resolved from the provider at
+// RunE time (never at construction), so building the command tree
+// touches no host config.
+func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvider, run buildRunE) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tests",
-		Short: "Walk the requirements registry and check every scenario has an executable test",
-		Long: `Walk every scenario in the configured scenario registry
+		Use:   use,
+		Short: short,
+		Long:  long,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			container, err := provide()
+			if err != nil {
+				return fmt.Errorf("initialize container: %w", err)
+			}
+
+			ctx, stop := signal.NotifyContext(context.Background(),
+				os.Interrupt, syscall.SIGTERM)
+			defer stop()
+
+			specFile, _ := cmd.Flags().GetString(flag.name)
+			// Flags().Changed is the only reliable signal the user passed
+			// the flag; an unset flag means the config decides.
+			if !cmd.Flags().Changed(flag.name) {
+				specFile, err = container.DocResolver.Resolve(flag.docKey)
+				if err != nil {
+					return fmt.Errorf("resolve %s: %w", flag.label, err)
+				}
+			}
+
+			fix, _ := cmd.Flags().GetBool("fix")
+
+			err = run(ctx, container, specFile, fix)
+
+			stop()
+
+			if err != nil {
+				return fmt.Errorf("build %s: %w", use, err)
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().String(flag.name, "", flag.usage)
+	cmd.Flags().Bool("fix", false, fixFlagDescription)
+
+	return cmd
+}
+
+func newBuildTestsCmd(provide containerProvider) *cobra.Command {
+	return buildSpecCmd(
+		"tests",
+		"Walk the requirements registry and check every scenario has an executable test",
+		`Walk every scenario in the configured scenario registry
 (documents.scenarios_yaml, conventionally docs/scenarios.yaml) against the
 build-tests checklist. The checklist asks whether each scenario id is
 referenced by an executable test under tests/integration/, tests/e2e/,
@@ -45,30 +113,16 @@ Example:
   true-bdd build tests
   true-bdd build tests --fix
   true-bdd build tests --requirements docs/scenarios.yaml`,
-		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			container, err := provide()
-			if err != nil {
-				return fmt.Errorf("initialize container: %w", err)
-			}
-
-			ctx, stop := signal.NotifyContext(context.Background(),
-				os.Interrupt, syscall.SIGTERM)
-			defer stop()
-
-			requirementsFile, _ := cmd.Flags().GetString("requirements")
-			// Flags().Changed is the only reliable signal the user passed
-			// the flag; an unset flag means the config decides.
-			if !cmd.Flags().Changed("requirements") {
-				requirementsFile, err = container.DocResolver.Resolve(docs.KeyScenariosYAML)
-				if err != nil {
-					return fmt.Errorf("resolve scenario registry: %w", err)
-				}
-			}
-
-			fix, _ := cmd.Flags().GetBool("fix")
-
-			err = commands.RunBuildTests(ctx, commands.BuildTestsDeps{
+		specFlag{
+			name: "requirements",
+			usage: "Path to the requirements registry YAML " +
+				"(default: documents.scenarios_yaml from true-bdd/true-bdd.yaml)",
+			docKey: docs.KeyScenariosYAML,
+			label:  "scenario registry",
+		},
+		provide,
+		func(ctx context.Context, container *bootstrap.Container, requirementsFile string, fix bool) error {
+			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
 				RegistryLoader:               container.RegistryLoader,
 				ChecklistLoader:              container.ChecklistLoader,
 				DocResolver:                  container.DocResolver,
@@ -79,30 +133,15 @@ Example:
 				TableRenderer:                container.TableRenderer,
 				RunDir:                       container.RunDir,
 			}, requirementsFile, fix)
-
-			stop()
-
-			if err != nil {
-				return fmt.Errorf("build tests: %w", err)
-			}
-
-			return nil
 		},
-	}
-
-	cmd.Flags().String("requirements", "",
-		"Path to the requirements registry YAML "+
-			"(default: documents.scenarios_yaml from true-bdd/true-bdd.yaml)")
-	cmd.Flags().Bool("fix", false, fixFlagDescription)
-
-	return cmd
+	)
 }
 
 func newBuildCodeCmd(provide containerProvider) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "code",
-		Short: "Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
-		Long: `Walk every (service, layer) pair declared in the configured
+	return buildSpecCmd(
+		"code",
+		"Discover failing tests via architecture.yaml and (optionally) drive Claude to fix the production code",
+		`Walk every (service, layer) pair declared in the configured
 architectural spec (documents.architecture_yaml, conventionally
 docs/architecture/architecture.yaml), discover currently-failing tests
 through their framework runner, and walk each failure against the
@@ -115,31 +154,16 @@ Example:
   true-bdd build code
   true-bdd build code --fix
   true-bdd build code --architecture docs/architecture/architecture.yaml`,
-		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			container, err := provide()
-			if err != nil {
-				return fmt.Errorf("initialize container: %w", err)
-			}
-
-			ctx, stop := signal.NotifyContext(context.Background(),
-				os.Interrupt, syscall.SIGTERM)
-			defer stop()
-
-			architectureFile, _ := cmd.Flags().GetString("architecture")
-			// Flags().Changed is the only reliable signal the user passed
-			// the flag; an unset flag means the config decides.
-			if !cmd.Flags().Changed("architecture") {
-				architectureFile, err = container.DocResolver.Resolve(docs.KeyArchitectureYAML)
-				if err != nil {
-					return fmt.Errorf("resolve architectural spec: %w", err)
-				}
-			}
-
-			fix, _ := cmd.Flags().GetBool("fix")
-
-			err = commands.RunBuildCode(ctx, commands.BuildCodeDeps{
-				ArchitectureLoader:          container.ArchitectureLoader,
+		specFlag{
+			name: "architecture",
+			usage: "Path to the architecture.yaml file driving the test scope " +
+				"(default: documents.architecture_yaml from true-bdd/true-bdd.yaml)",
+			docKey: docs.KeyArchitectureYAML,
+			label:  "architectural spec",
+		},
+		provide,
+		func(ctx context.Context, container *bootstrap.Container, architectureFile string, fix bool) error {
+			return commands.RunBuildCode(ctx, commands.BuildCodeDeps{
 				TestRunnerDispatcher:        container.TestRunnerDispatcher,
 				ChecklistLoader:             container.ChecklistLoader,
 				DocResolver:                 container.DocResolver,
@@ -150,21 +174,6 @@ Example:
 				TableRenderer:               container.TableRenderer,
 				RunDir:                      container.RunDir,
 			}, architectureFile, fix)
-
-			stop()
-
-			if err != nil {
-				return fmt.Errorf("build code: %w", err)
-			}
-
-			return nil
 		},
-	}
-
-	cmd.Flags().String("architecture", "",
-		"Path to the architecture.yaml file driving the test scope "+
-			"(default: documents.architecture_yaml from true-bdd/true-bdd.yaml)")
-	cmd.Flags().Bool("fix", false, fixFlagDescription)
-
-	return cmd
+	)
 }

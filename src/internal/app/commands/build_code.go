@@ -34,7 +34,6 @@ var ErrBuildCodeNotConverged = fmt.Errorf(
 // loader (drives scope) and the test-runner dispatcher (executes
 // frameworks and parses their JSON output).
 type BuildCodeDeps struct {
-	ArchitectureLoader          *architecture.Loader
 	TestRunnerDispatcher        *testrunner.Dispatcher
 	ChecklistLoader             *checklist.ChecklistLoader
 	DocResolver                 *docs.Resolver
@@ -99,7 +98,7 @@ func loadFailingTests(
 	architectureFile string,
 ) func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
-		arch, err := deps.ArchitectureLoader.Load(architectureFile)
+		arch, err := architecture.Load(architectureFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load architecture: %w", err)
 		}

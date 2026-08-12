@@ -35,4 +35,4 @@ All state is in-memory (reload resets the files to their seeds).
 
 `clickup-reference.md` — ClickUp interaction patterns measured live (sidebar
 tree, rail/flyouts, Brain docking, edit-in-place computed styles). ClickUp is
-the default UX reference for the workspace per the brief.
+the default UX reference for the workspace, per that document.

@@ -72,20 +72,12 @@ type rawArchitecture struct {
 	Architecture rawDef `yaml:"architecture"`
 }
 
-// Loader reads architecture.yaml into a sorted Architecture struct.
-// Purely path-driven: the cmd layer resolves the path (flag override or
-// documents.architecture_yaml) before calling Load.
-type Loader struct{}
-
-// NewLoader builds a Loader.
-func NewLoader() *Loader {
-	return &Loader{}
-}
-
 // Load reads the YAML architecture file at `path`, decodes only the
 // service.quality_gate.tests blocks the build-code pipeline needs, and
-// returns one Service per architecture entry sorted by name.
-func (l *Loader) Load(path string) (*Architecture, error) {
+// returns one Service per architecture entry sorted by name. Purely
+// path-driven: the cmd layer resolves the path (flag override or
+// documents.architecture_yaml) before calling it.
+func Load(path string) (*Architecture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read architecture file %s: %w", path, err)
