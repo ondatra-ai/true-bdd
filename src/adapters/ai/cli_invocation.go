@@ -17,8 +17,8 @@ const (
 	// cliWaitDelay bounds how long Wait blocks after the process exits
 	// or is killed. crush's embedded shell can leave a grandchild
 	// holding the stdout pipe; without this the turn would hang forever
-	// instead of failing. Mirrors why .claude/scripts/crush-run.sh
-	// tree-kills rather than waiting.
+	// instead of failing — which is also why a caller should tree-kill
+	// rather than wait.
 	cliWaitDelay = 10 * time.Second
 	// transcriptFileMode matches the permissions the generators use for
 	// their prompt/response artifacts.

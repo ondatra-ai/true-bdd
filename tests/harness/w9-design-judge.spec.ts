@@ -75,9 +75,8 @@ test("w9.1 the production workspace frame conforms to the design mockup (codex v
   await page.screenshot({ path: prodPng });
 
   // ── Codex vision verdict ──
-  // Under the Codex artifacts dir (paths.yaml → codex_artifacts, tmp/), but a
-  // per-test label so concurrent/repeat runs never clobber one another's
-  // verdict/trace (Codex r1 #9).
+  // Under the repo's gitignored runtime dir (tmp/), but with a per-test label
+  // so concurrent/repeat runs never clobber one another's verdict/trace.
   const artifactDir = path.join(REPO_ROOT, "tmp", "design-judge");
   const { verdict, verdictPath, tracePath, exitCode } = await runDesignJudge({
     mockupPng,

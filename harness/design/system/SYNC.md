@@ -3,7 +3,7 @@
 - source project id: 147f5da0-fedd-4aaa-b0c2-ccb9f7d7b41e
 - source project: claude.ai/design "S&F Design System"
 - sync date: 2026-08-01
-- synced by: implement-task orchestrator, via the DesignSync tool (per-file `get_file`)
+- synced by: the DesignSync tool (per-file `get_file`)
 
 ## Layout
 

@@ -1,7 +1,7 @@
 /**
- * Design-conformance helpers for the workspace design gate (task
- * `design-conformance-tests`, R1 + R2). The design source of truth lives under
- * `harness/design/` (paths.yaml → design_system): `system/tokens.css` (the S&F
+ * Design-conformance helpers for the workspace design gate (R1 + R2). The
+ * design source of truth lives under
+ * `harness/design/`: `system/tokens.css` (the S&F
  * token palette) and the runnable prototype (`proto-workspace`, the per-screen
  * layout baseline — booted via helpers/proto-baseline.ts). These
  * helpers:
@@ -26,7 +26,7 @@ import type { Page } from "@playwright/test";
 
 import { findRepoRoot, suiteContext } from "./suite-root";
 
-// ── Design-source locations (all under paths.yaml → design_system) ──
+// ── Design-source locations (all under harness/design/) ──
 
 export const REPO_ROOT = findRepoRoot();
 export const DESIGN_ROOT = path.join(REPO_ROOT, "harness", "design");

@@ -19,9 +19,9 @@ Two subcommands:
   case the transcript's tail hasn't been flushed yet. A per-session
   cursor (tmp/history-cursor/<session8>.json, keyed by prompt_id)
   records how many blocks of the current turn are already logged, so
-  a blocking Stop hook (phase_state.py stop-gate) that forces the
-  turn to continue doesn't make the next Stop re-append the whole
-  turn — only the continuation's new blocks land.
+  a blocking Stop hook that forces the turn to continue doesn't make
+  the next Stop re-append the whole turn — only the continuation's
+  new blocks land.
 
 State file: docs/history/hook-state
     A single line: the current task file's name. Nothing else.

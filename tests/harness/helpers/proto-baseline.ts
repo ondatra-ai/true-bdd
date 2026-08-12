@@ -35,7 +35,7 @@ import { REPO_ROOT } from "./design-conformance";
 /** The prototype app directory (its own package.json + lockfile + node_modules). */
 const PROTO_APP_DIR = path.join(REPO_ROOT, "harness", "design", "proto-workspace", "app");
 
-/** Boot/teardown logs land under the Codex artifacts dir (paths.yaml → tmp/). */
+/** Boot/teardown logs land under the repo's gitignored runtime dir, tmp/. */
 export const PROTO_ARTIFACT_DIR = path.join(REPO_ROOT, "tmp", "proto-baseline");
 
 /**

@@ -1,10 +1,8 @@
 # proto-workspace — the file-as-source workspace prototype
 
-Throwaway prototype built during identify-task prototype mode (2026-08-02/03),
-preserved on user request instead of being reverted. **The distilled brief is
-the real product: `docs/tasks/workspace-file-as-source-ui.md`.** Code quality is
-deliberately prototype-grade (Sonnet prototyper, speed over quality) — treat it
-as a living design reference, not a starting codebase.
+Throwaway prototype (2026-08-02/03), preserved on user request instead of being
+reverted. Code quality is deliberately prototype-grade (speed over quality) —
+treat it as a living design reference, not a starting codebase.
 
 ## What it demonstrates
 
