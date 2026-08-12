@@ -94,7 +94,8 @@ Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
 refines, or exits. `build tests` also takes `--requirements <path>`
 and `build code` takes `--architecture <path>` to override the
-default spec locations.
+configured spec locations (`documents.scenarios_yaml` and
+`documents.architecture_yaml` in `true-bdd.yaml`).
 
 ## Install
 
@@ -125,12 +126,14 @@ env -u CLAUDECODE ./bin/true-bdd build code  --fix
 
 The host project supplies a `true-bdd/` directory at its root:
 
-- `true-bdd.yaml` — the model tiers (below), filesystem paths (epics,
-  stories, checklists, tmp), per-command prompt-template paths, and a
-  `documents:` map naming the files a check may cite (`prd`,
-  `architecture_yaml`). Each check in a checklist lists the document
-  keys it needs under `docs:`, and the engine points the prompt at
-  those files.
+- `true-bdd.yaml` — the model tiers (below), filesystem paths under
+  `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`,
+  `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
+  author into), per-command prompt-template paths, and a `documents:`
+  map naming the files a check may cite (`prd`, `architecture_yaml`,
+  `scenarios_yaml` — the scenario registry). Each check in a checklist
+  lists the document keys it needs under `docs:`, and the engine points
+  the prompt at those files.
 - `checklists/` — one checklist per command, named by hyphenating the
   command path (`us create` → `us-create.yaml`, `build tests` →
   `build-tests.yaml`, …).

@@ -1,10 +1,10 @@
 /**
- * w8 — design TOKEN conformance (task `design-conformance-tests`, R1).
+ * w8 — design TOKEN conformance (R1).
  *
  * DETERMINISTIC, never skips. Renders a real production workspace page and
  * asserts every VISIBLE element draws its colours and typography exclusively
- * from the S&F design-system tokens (paths.yaml → design_system,
- * `harness/design/system/tokens.css`) — ad-hoc colours or non-Poppins type
+ * from the S&F design-system tokens
+ * (`harness/design/system/tokens.css`) — ad-hoc colours or non-Poppins type
  * (outside the single scoped `file-view` monospace exception) fail the spec with
  * the offending element + value named.
  *

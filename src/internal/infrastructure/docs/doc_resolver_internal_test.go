@@ -11,10 +11,12 @@ import (
 )
 
 const (
-	prdRel   = "docs/prd/prd.yaml"
-	prdPath  = "./" + prdRel
-	archRel  = "docs/architecture/architecture.yaml"
-	archPath = "./" + archRel
+	prdRel        = "docs/prd/prd.yaml"
+	prdPath       = "./" + prdRel
+	archRel       = "docs/architecture/architecture.yaml"
+	archPath      = "./" + archRel
+	scenariosRel  = "docs/scenarios.yaml"
+	scenariosPath = "./" + scenariosRel
 )
 
 // newTestResolver builds a Resolver over a throwaway project whose
@@ -126,6 +128,44 @@ func TestResolveRejectsDirectory(t *testing.T) {
 
 	if !strings.Contains(err.Error(), archPath) {
 		t.Errorf("error must name the offending path, got %q", err)
+	}
+}
+
+// TestResolveAcceptsScenariosRegistry pins the scenario registry as a
+// first-class documents.* key: the cmd layer resolves the registry path
+// through here, with no hardcoded fallback anywhere in the engine.
+func TestResolveAcceptsScenariosRegistry(t *testing.T) {
+	resolver := newTestResolver(t,
+		map[string]string{KeyScenariosYAML: scenariosPath},
+		[]string{scenariosRel},
+	)
+
+	path, err := resolver.Resolve(KeyScenariosYAML)
+	if err != nil {
+		t.Fatalf("Resolve(scenarios_yaml): unexpected error %v", err)
+	}
+
+	if path != scenariosPath {
+		t.Errorf("Resolve(scenarios_yaml) = %q, want %q", path, scenariosPath)
+	}
+}
+
+// TestResolveScenariosRegistryNotConfigured is the breaking-change
+// contract: a host config without documents.scenarios_yaml refuses to
+// resolve — never a silent fall back to docs/scenarios.yaml.
+func TestResolveScenariosRegistryNotConfigured(t *testing.T) {
+	resolver := newTestResolver(t,
+		map[string]string{KeyPRD: prdPath},
+		[]string{prdRel, scenariosRel},
+	)
+
+	_, err := resolver.Resolve(KeyScenariosYAML)
+	if !errors.Is(err, ErrDocPathNotConfigured) {
+		t.Fatalf("Resolve: error = %v, want ErrDocPathNotConfigured", err)
+	}
+
+	if !strings.Contains(err.Error(), "documents.scenarios_yaml") {
+		t.Errorf("error must name the config key to set, got %q", err)
 	}
 }
 

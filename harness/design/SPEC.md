@@ -1,9 +1,7 @@
 # TrueBDD harness workspace UI — design spec
 
 Status: **design only** (mockups + spec + local design-system mirror). No
-harness production code (`harness/app/`) is part of this task — see the task
-brief `docs/tasks/harness-workspace-ui-design.md` and plan
-`docs/tasks/plans/harness-workspace-ui-design.md`.
+harness production code (`harness/app/`) is part of it.
 
 This document is the short design spec the mockups implement. It covers: the
 layout frame, the sidebar top-level ordering, the token→UI mapping, the full
@@ -117,7 +115,7 @@ than a hardcoded literal.
 > **Baseline moved (2026-08-04):** the static mockup set this section describes
 > was retired and deleted; the runnable prototype
 > (`harness/design/proto-workspace/`) superseded it as the per-screen design
-> baseline (paths.yaml → design_system). The inventory below is retained as the
+> baseline. The inventory below is retained as the
 > historical catalog of screens and their intent; the prototype's routes are the
 > living equivalents.
 

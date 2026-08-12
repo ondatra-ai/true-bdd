@@ -8,7 +8,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/src/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/src/internal/domain/ports"
-	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
@@ -104,7 +103,6 @@ type Container struct {
 	// EditMode so Claude can Write/Edit production source files under
 	// services/* in place. The dispatcher routes test discovery and
 	// per-test reruns to one of the framework-specific runners.
-	ArchitectureLoader          *architecture.Loader
 	TestRunnerDispatcher        *testrunner.Dispatcher
 	BuildCodeEvaluator          *validate.ChecklistEvaluator
 	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
@@ -118,7 +116,7 @@ func NewContainer() (*Container, error) {
 		return nil, pkgerrors.ErrInitializeConfigFailed(err)
 	}
 
-	configureLogging()
+	configureLogging(cfg.GetString("paths.tmp_dir"))
 
 	runDir, err := fs.NewRunDirectory(cfg.GetString("paths.tmp_dir"))
 	if err != nil {
@@ -187,7 +185,6 @@ func NewContainer() (*Container, error) {
 		BuildTestsEvaluator:          buildTestsTrip.evaluator,
 		BuildTestsFixPromptGenerator: buildTestsTrip.fixGenerator,
 		BuildTestsFixApplier:         buildTestsTrip.fixApplier,
-		ArchitectureLoader:           architecture.NewLoader(cfg),
 		TestRunnerDispatcher:         testRunnerDispatcher,
 		BuildCodeEvaluator:           buildCodeTrip.evaluator,
 		BuildCodeFixPromptGenerator:  buildCodeTrip.fixGenerator,

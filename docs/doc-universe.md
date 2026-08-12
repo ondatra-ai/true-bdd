@@ -121,7 +121,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 | # | From | To | How it joins |
 | --- | --- | --- | --- |
-| 1 | prd.yaml | epics/*.yaml | epics are the prd's children — each decomposes the product goal into story seeds; the containment is by location: `docs/prd/epics/`, declared by `epics.path` |
+| 1 | prd.yaml | epics/*.yaml | epics are the prd's children — each decomposes the product goal into story seeds; the containment is by location: the epics dir declared by `paths.epics_dir` (canonically `docs/prd/epics/`) |
 | 2 | epic stories[].id | story file | **us create** expands the short version in the epic into the long version: id `"99.1"` becomes `docs/prd/stories/99.1-<slug>.yaml` |
 | 3 | story as_a | prd personas[].name | the us-create "who" prompt matches `as_a: "Claude User"` against the persona list |
 | 4 | prd vocabulary | AC description + steps | **us refine** rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); vocabulary may also live in architecture.yaml |
@@ -135,7 +135,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 12 | failing test | production source | **build code --fix** edits `src/` until the runner's `LastRunPassed` flips to true |
 | 13 | checklist prompt docs: | true-bdd.yaml documents: | `docs: [prd, architecture_yaml]` are keys — resolved to file paths, contents embedded in the prompt |
 | 14 | command name | checklist file | `paths.checklists_dir` + hyphenation: `us apply` → `checklists/us-apply.yaml` |
-| 15 | true-bdd.yaml documents:/paths: | prd · architecture · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
+| 15 | true-bdd.yaml documents:/paths: | prd · architecture · scenario registry · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
 | 16 | templates.prompts.* | templates/*.prompt.tpl | each engine role (checklist / fix_generator / fix_applier, + `_system`) maps to one template file |
 
 ---

@@ -8,8 +8,6 @@ import (
 	"sort"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/config"
 )
 
 // ErrNoServices signals that the architecture YAML has no
@@ -74,21 +72,12 @@ type rawArchitecture struct {
 	Architecture rawDef `yaml:"architecture"`
 }
 
-// Loader reads architecture.yaml into a sorted Architecture struct.
-type Loader struct {
-	config *config.ViperConfig
-}
-
-// NewLoader builds a Loader. The config is held so callers can fall
-// back to the configured default path when no override is passed.
-func NewLoader(cfg *config.ViperConfig) *Loader {
-	return &Loader{config: cfg}
-}
-
 // Load reads the YAML architecture file at `path`, decodes only the
 // service.quality_gate.tests blocks the build-code pipeline needs, and
-// returns one Service per architecture entry sorted by name.
-func (l *Loader) Load(path string) (*Architecture, error) {
+// returns one Service per architecture entry sorted by name. Purely
+// path-driven: the cmd layer resolves the path (flag override or
+// documents.architecture_yaml) before calling it.
+func Load(path string) (*Architecture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read architecture file %s: %w", path, err)

@@ -38,7 +38,7 @@ func scanDocuments(folder string, cfg resolvedConfig) (map[string]string, map[st
 	record("config", docResult{status: cfg.configStatus, err: cfg.configError})
 	record("prd", yamlDoc(filepath.Join(folder, cfg.prdRel)))
 	record("architecture", architectureDoc(filepath.Join(folder, cfg.architectureRel)))
-	record("registry", registryDoc(filepath.Join(folder, registryRelPath)))
+	record("registry", registryDoc(filepath.Join(folder, cfg.registryRel)))
 	record("stories-dir", dirDoc(filepath.Join(folder, cfg.storiesRel)))
 	record("epics-dir", dirDoc(filepath.Join(folder, cfg.epicsRel)))
 
@@ -137,8 +137,10 @@ func dirDoc(path string) docResult {
 	return docResult{status: StatusPresent}
 }
 
-// registryDoc classifies docs/scenarios.yaml: missing, invalid on a parse
-// error, present_empty when its scenarios map is empty, else present.
+// registryDoc classifies the configured scenario registry
+// (documents.scenarios_yaml, conventionally docs/scenarios.yaml): missing,
+// invalid on a parse error, present_empty when its scenarios map is empty,
+// else present.
 func registryDoc(path string) docResult {
 	data, err := os.ReadFile(path)
 	if err != nil {

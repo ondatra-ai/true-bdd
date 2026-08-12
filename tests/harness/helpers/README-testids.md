@@ -224,7 +224,7 @@ single-check fixture that exceeds a small per-test bound.
 # Workspace UI + API contract (defined by the `w*` specs + a10)
 
 The workspace file-as-source UI (`w1`–`w7`, `a10`) is authored tests-first; this
-section is the binding contract the test-fixer implements to. The typed source of
+section is the binding contract the implementation is written to. The typed source of
 truth is `helpers/ui.ts` (`WTID`, `wsRoutes`, `WorkspaceSection`, locator +
 action helpers) and `helpers/workspace-env.ts` (the env + S1 oracle). It gates
 requirements S1–S2 and P1–P25.

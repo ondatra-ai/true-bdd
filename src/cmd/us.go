@@ -11,12 +11,10 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/src/internal/app/bootstrap"
 	"github.com/ondatra-ai/true-bdd/src/internal/app/commands"
+	"github.com/ondatra-ai/true-bdd/src/internal/infrastructure/docs"
 )
 
-const (
-	defaultRequirementsFile = "docs/scenarios.yaml"
-	fixFlagDescription      = "Enable interactive fix mode to resolve failed checks"
-)
+const fixFlagDescription = "Enable interactive fix mode to resolve failed checks"
 
 // storyRunE is the run shape every `us` subcommand uses after sourcing
 // its lazily-built container, story-number arg, and fix flag.
@@ -139,8 +137,9 @@ func newUSApplyCmd(provide containerProvider) *cobra.Command {
 		"Apply scenarios from a refined user story into the registry",
 		`Walk every acceptance criterion in docs/prd/stories/<story-number>-*.yaml and
 validate each one against the us-apply checklist. With --fix, every failed
-(AC, prompt) cell drives a Claude-mediated edit on a scratch copy of
-docs/scenarios.yaml. The canonical registry file is replaced atomically
+(AC, prompt) cell drives a Claude-mediated edit on a scratch copy of the
+scenario registry configured at documents.scenarios_yaml (conventionally
+docs/scenarios.yaml). The canonical registry file is replaced atomically
 only when every AC passes every prompt; otherwise it is left untouched.
 
 Stories that still use the deprecated scenarios.test_scenarios[] format are
@@ -151,6 +150,11 @@ Example:
   true-bdd us apply 4.1 --fix`,
 		provide,
 		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
+			requirementsFile, err := container.DocResolver.Resolve(docs.KeyScenariosYAML)
+			if err != nil {
+				return fmt.Errorf("resolve scenario registry: %w", err)
+			}
+
 			return commands.RunApply(ctx, commands.ApplyDeps{
 				StoryScenarioParser:     container.StoryScenarioParser,
 				ChecklistLoader:         container.ChecklistLoader,
@@ -161,7 +165,7 @@ Example:
 				UserInputCollector:      container.UserInputCollector,
 				TableRenderer:           container.TableRenderer,
 				RunDir:                  container.RunDir,
-			}, storyNumber, defaultRequirementsFile, fix)
+			}, storyNumber, requirementsFile, fix)
 		},
 	)
 }

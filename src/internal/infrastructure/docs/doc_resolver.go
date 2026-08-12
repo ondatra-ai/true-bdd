@@ -31,9 +31,13 @@ var ErrDocFileMissing = errors.New("document file does not exist")
 var ErrDocNotRegularFile = errors.New("document path is not a regular file")
 
 // Document keys a checklist may name under a prompt's `docs:` list.
+// KeyScenariosYAML doubles as the cmd layer's route to the scenario
+// registry path (`documents.scenarios_yaml`) — the engine has no
+// hardcoded default for it.
 const (
 	KeyPRD              = "prd"
 	KeyArchitectureYAML = "architecture_yaml"
+	KeyScenariosYAML    = "scenarios_yaml"
 )
 
 // keyToConfigPath maps a checklist `docs:` key to the `documents.*`
@@ -45,6 +49,7 @@ func keyToConfigPath() map[string]string {
 	return map[string]string{
 		KeyPRD:              "documents." + KeyPRD,
 		KeyArchitectureYAML: "documents." + KeyArchitectureYAML,
+		KeyScenariosYAML:    "documents." + KeyScenariosYAML,
 	}
 }
 

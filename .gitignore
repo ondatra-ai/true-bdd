@@ -22,9 +22,8 @@
 
 # Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
 # tests/harness/ is the spec, and ALL harness production code + unit tests are
-# regeneratable from it. Everything implement-task writes lives under the single
-# /harness/src/ root (see docs/context/paths.yaml → harness_code_root). Working
-# copies stay on disk but are never tracked.
+# regeneratable from it, under the single /harness/src/ root. Working copies
+# stay on disk but are never tracked.
 /harness/src/
 
 # Self-contained Playwright E2E suite (tests/harness) — deps + artefacts
