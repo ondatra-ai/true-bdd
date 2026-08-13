@@ -1,0 +1,34 @@
+# Story seed for the `us-apply-relocated-registry` BDD fixture.
+#
+# Note where this file lives: `docs/product/stories/`, NOT the
+# conventional `docs/prd/stories/`. The fixture's `true-bdd.yaml` points
+# `paths.stories_dir` here, and `us apply` finds its story by globbing
+# <stories_dir>/<number>-*.yaml — so if that key stops being honoured,
+# the run fails to find story 95.2 at all.
+#
+# One AC only, and the relocated registry has NO entry for it. Against
+# the SHIPPED us-apply checklist the walk goes: "present?" fails, the F:
+# adds the entry to the scratch registry, the re-validation and the
+# "duplicate?" prompt pass, and the outer re-walk confirms the fixpoint
+# before the scratch copy is committed over the relocated canonical
+# file.
+
+story:
+    id: "95.2"
+    title: BDD fixture - us apply relocated registry
+    as_a: Claude User
+    i_want: a synthetic story whose only AC is missing from a registry that does not sit at the conventional path
+    so_that: the BDD harness can assert us apply reads and writes the registry location declared in true-bdd.yaml
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+                - the server exposes a health endpoint at /health
+            - when:
+                - the Claude User sends a GET request to /health
+            - then:
+                - the server returns HTTP 200
+                - and: the response body reports the service status as healthy

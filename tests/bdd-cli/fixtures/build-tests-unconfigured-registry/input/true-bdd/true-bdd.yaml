@@ -1,0 +1,86 @@
+# Host config for the `build-tests-unconfigured-registry` fixture: a
+# host that never declared where its scenario registry lives.
+#
+# THIS IS A FULL COPY OF true-bdd/true-bdd.yaml, ON PURPOSE. The runner
+# overlays `input/` onto the tmpdir as a wholesale per-path file copy —
+# there is no key-by-key merge — so every key the run needs must be
+# restated here. Keep this file in sync with the seed; the only intended
+# delta is the deleted `documents.scenarios_yaml` at the bottom.
+
+engine:
+  # Three named tiers. A checklist asks for a tier by name; this table
+  # decides which CLI runs it and with which model, so retargeting a
+  # role at a different provider is a config edit, not a code change.
+  #
+  # Value format: "<cli>:<model>". Split on the FIRST colon only.
+  #   cli   — claude | crush | codex (each must be on $PATH)
+  #   model — passed through verbatim to that CLI's model flag
+  models:
+    xhigh: "claude:claude-fable-5"
+    high: "claude:claude-opus-4-8"
+    coder: "crush:zhipu-coding/glm-5.2"
+  # Tier per AI role, used when neither a prompt nor its checklist names
+  # one. A checklist overrides any of these in its own `engine:` block.
+  default_prompt_model: high
+  default_fix_model: high
+  # The apply turn is the one that writes files — that is exactly what
+  # the cheap, high-context `coder` tier is for.
+  default_apply_model: coder
+
+templates:
+  prompts:
+    checklist: "./templates/us-checklist.prompt.tpl"
+    checklist_system: "./templates/us-checklist.system.prompt.tpl"
+    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
+    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
+    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
+    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
+    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
+    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
+    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
+    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
+    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
+    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
+    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
+    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
+    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
+    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
+    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
+    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
+    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
+    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
+    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
+    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
+    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
+    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+
+paths:
+  tmp_dir: "./tmp"
+  tmp_glob: "./tmp/**"
+  epics_dir: "./docs/prd/epics"
+  stories_dir: "docs/prd/stories"
+  checklists_dir: "./true-bdd/checklists"
+  # Roots `build tests --fix` may author into. Its applier is told to
+  # write tests here, and ExecutionMode is what the crush guard and
+  # codex sandbox enforce, so this list must cover every root the
+  # build-tests fix-applier prompt names.
+  #
+  # `build code --fix` needs no equivalent key: it takes its write roots
+  # from the service paths declared in architecture.yaml.
+  test_write_globs:
+    - "./tests/**"
+    - "./services/**"
+
+documents:
+  prd: "./docs/prd/prd.yaml"
+  architecture_yaml: "./docs/architecture/architecture.yaml"
+  # DELTA vs the seed: `scenarios_yaml` is DELETED, not blanked.
+  #
+  # The distinction is the whole fixture. Blank and absent both make
+  # GetString return "" today, so both refuse today — but if someone
+  # reintroduces the default as viper.SetDefault(...), an explicit blank
+  # still wins and the fixture would stay green while the silent
+  # fallback is back. With the key absent, that default resolves to the
+  # decoy this fixture ships at ./docs/scenarios.yaml, the walk runs,
+  # and the fixture goes red. Absent is also the shape a real host
+  # config left on the pre-#50 layout actually has.

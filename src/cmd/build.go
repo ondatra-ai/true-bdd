@@ -71,7 +71,7 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 			if !cmd.Flags().Changed(flag.name) {
 				specFile, err = container.DocResolver.Resolve(flag.docKey)
 				if err != nil {
-					return fmt.Errorf("resolve %s: %w", flag.label, err)
+					return refuseUnresolvedDoc("build "+use, flag.label, err)
 				}
 			}
 
