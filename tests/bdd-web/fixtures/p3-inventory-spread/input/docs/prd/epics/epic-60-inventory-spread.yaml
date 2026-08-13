@@ -1,0 +1,47 @@
+# Epic seed for the p3-inventory-spread harness fixture. Three story
+# rows engineer the created/applied spread the P3 test asserts:
+#   row 1 (60.1) — no story file               → created: missing
+#   row 2 (60.2) — story file, 1/2 in registry → applied: 1/2
+#   row 3 (60.3) — story file, 2/2 in registry → applied: 2/2
+
+epic:
+  id: 60
+  name: "Inventory Spread Epic"
+  status: "PLANNED"
+  goal: "Provide a synthetic epic whose stories cover the missing / partial / full apply states for the harness inventory view."
+  context: "Used only by tests/bdd-web/fixtures/p3-inventory-spread. Describes a hypothetical document-summary feature so the docs read plausibly."
+
+stories:
+  - id: "60.1"
+    title: "Summary Length Preference"
+    as_a: "Claude User"
+    i_want: "to choose between a one-line and a paragraph-length document summary"
+    so_that: "I can control how much space a summary takes up in my conversation"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask for a one-line summary of a shared Google Doc, the reply is a single sentence."
+      - id: AC-2
+        description: "When I ask for a paragraph summary of a shared Google Doc, the reply is at most 150 words."
+  - id: "60.2"
+    title: "Summary For Shared Docs"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+    so_that: "I can decide whether the document needs my attention without reading it in full"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude to summarize a shared Google Doc, I receive a summary of 150 words or fewer in the conversation."
+      - id: AC-2
+        description: "When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first."
+  - id: "60.3"
+    title: "Summary Error Messages"
+    as_a: "Claude User"
+    i_want: "clear error messages when a document summary cannot be produced"
+    so_that: "I know whether to retry, share the document, or give up"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When no summary is produced within 30 seconds, I receive the message 'The summary timed out - please try again'."
+      - id: AC-2
+        description: "When the document contains more than 10000 words, Claude states that only the first 10000 words were summarized."

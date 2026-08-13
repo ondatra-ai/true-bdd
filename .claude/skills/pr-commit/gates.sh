@@ -7,7 +7,7 @@ set -euo pipefail
 
 golangci-lint run
 mkdir -p ./bin
-go build -o ./bin/true-bdd ./src
+go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./...
 # The end-to-end BDD fixture suite (real Claude calls, ~30-90 min) is
 # deliberately NOT part of the commit gate. Run it manually with:

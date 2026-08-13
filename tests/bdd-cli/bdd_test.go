@@ -104,11 +104,11 @@ func buildTrueBDD(t *testing.T) string {
 
 	// `go test` runs with cwd = the package dir (tests/bdd-cli). Build the
 	// module by pointing -C up two levels to the repo root; the
-	// binary entry lives under ./src.
+	// binary entry lives under ./services/bdd-cli.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "build", "-C", "../..", "-o", binPath, "./src")
+	cmd := exec.CommandContext(ctx, "go", "build", "-C", "../..", "-o", binPath, "./services/bdd-cli")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

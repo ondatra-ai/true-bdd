@@ -102,7 +102,7 @@ configured spec locations (`documents.scenarios_yaml` and
 Requires Go 1.25 and the `claude` CLI on `$PATH`.
 
 ```bash
-mkdir -p ./bin && go build -o ./bin/true-bdd ./src
+mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 ```
 
 ## Usage

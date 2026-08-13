@@ -1,7 +1,7 @@
 // Command materializer prepares a harness E2E fixture tree inside a
 // target directory and prints a machine-readable description of the
 // result to stdout as JSON. It is invoked by the Playwright harness
-// suite (tests/harness/helpers/materializer.ts) and shares its
+// suite (tests/bdd-web/helpers/materializer.ts) and shares its
 // primitives — engine-layer overlay, tree copy, checklist prompt
 // filtering — with the BDD fixture runner (tests/bdd-cli/runner) instead
 // of re-implementing them in TypeScript.

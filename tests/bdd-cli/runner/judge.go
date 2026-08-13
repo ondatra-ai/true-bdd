@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/src/adapters/ai"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 )
 
 const (

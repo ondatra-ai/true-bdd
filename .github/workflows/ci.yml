@@ -27,7 +27,7 @@ jobs:
           version: v2.12.2
 
       - name: Build
-        run: mkdir -p ./bin && go build -o ./bin/true-bdd ./src
+        run: mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 
       - name: Test
         run: go test ./...
