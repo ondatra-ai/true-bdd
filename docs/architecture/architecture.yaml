@@ -29,6 +29,9 @@ architecture:
         - next.js
         - react
 
+      design_system:
+        path: services/bdd-web/design/system
+
       quality_gate:
         tests:
           # Self-contained Playwright package: protocol (p*), workspace (w*)
