@@ -1,0 +1,83 @@
+# A host that never declared where its scenario registry lives must be
+# refused, never quietly served the conventional path.
+#
+# The engine deliberately has no default for `documents.scenarios_yaml`
+# (see the comment on KeyScenariosYAML in doc_resolver.go: "the engine
+# has no hardcoded default for it"). This fixture is what makes that
+# promise falsifiable end-to-end: the config OMITS the key, and a valid
+# `docs/scenarios.yaml` sits at the conventional path as a decoy. If a
+# default ever comes back — a `viper.SetDefault`, a literal fallback in
+# the cmd layer — the decoy resolves, the walk runs, and this fixture
+# goes red on both its stdout regexes and the judge's rule 3.
+#
+# The companion fixture `us-apply-relocated-registry` proves the key is
+# honoured when present; this one proves nothing takes its place when it
+# is absent.
+#
+# Deliberately cheap: it exits before the first AI call, so unlike most
+# fixtures it costs no model time.
+
+cmd: build tests
+
+input: input
+
+expected:
+  # The resolve fails, cobra reports it, the CLI exits 1.
+  exit_code: 1
+
+  stdout_regex:
+    # The refusal must be attributable on stdout, not only as a cobra
+    # stderr line under a usage dump. `build tests` resolves the
+    # registry in the cmd layer, ahead of the runner's own document
+    # check, so this line comes from refuseUnresolvedDoc.
+    - "Cannot start: resolve scenario registry"
+
+    # And it must name the key the host has to set — a refusal that
+    # says only "not configured" sends the reader hunting.
+    - 'documents\.scenarios_yaml'
+
+  judge: |
+    # Expectations for `true-bdd build tests` with no registry configured
+
+    The fixture's `true-bdd/true-bdd.yaml` omits
+    `documents.scenarios_yaml` entirely, while a valid, walkable
+    registry sits at the conventional `docs/scenarios.yaml`. The engine
+    must refuse to start rather than fall back to that file.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.** In
+       particular `docs/scenarios.yaml` is unchanged, and no test file
+       was created under `tests/` or `services/`.
+    2. The run aborted **before any AI turn was dispatched**. The log
+       artifact `tmp/true-bdd.log.json` is included in the diff below;
+       read it. It MUST contain **zero** records whose `msg` is
+       `"Dispatching AI turn"` and zero whose `msg` is
+       `"AI turn returned"`. This is the core assertion: an empty output
+       diff alone cannot tell "refused at startup" apart from "walked
+       the decoy and happened to write nothing", because `build tests`
+       without `--fix` writes nothing either way.
+    3. The failure is attributable from the log alone:
+       `tmp/true-bdd.log.json` contains an ERROR record naming the
+       unresolvable document — the string `documents.scenarios_yaml`
+       must appear in it. Judge this ONLY on the diff below; the run's
+       stdout is asserted separately by the harness and is not part of
+       what you are given.
+
+    ## What MUST NOT happen
+
+    - The run MUST NOT have walked the decoy registry. Any
+      `Dispatching AI turn` record in `tmp/true-bdd.log.json` means the
+      engine resolved a path the host never declared — exactly the
+      silent fallback this fixture exists to catch.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for rules 2 and 3.
+    - The exact wording of the error message is not fixed. Only the
+      three rules above matter.
+
+    Reply `PASS` if all three hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

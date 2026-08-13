@@ -152,7 +152,7 @@ Example:
 		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			requirementsFile, err := container.DocResolver.Resolve(docs.KeyScenariosYAML)
 			if err != nil {
-				return fmt.Errorf("resolve scenario registry: %w", err)
+				return refuseUnresolvedDoc("us apply", "scenario registry", err)
 			}
 
 			return commands.RunApply(ctx, commands.ApplyDeps{

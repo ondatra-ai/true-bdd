@@ -1,0 +1,36 @@
+# DECOY. This file exists to be ignored.
+#
+# It is a perfectly valid, perfectly walkable registry sitting at the
+# conventional `docs/scenarios.yaml`, and the fixture's `true-bdd.yaml`
+# does not declare `documents.scenarios_yaml` at all. The engine must
+# refuse to run rather than find this file.
+#
+# Without the decoy the fixture would be much weaker: "refused" and
+# "resolved a hardcoded path that happened to be absent" look identical
+# when nothing is there. With it, a reintroduced default resolves HERE,
+# the walk runs, AI turns get dispatched, and both the stdout regexes
+# and the judge's zero-AI-turns rule go red.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture decoy)"
+  version: "2.0"
+  last_updated: "2026-08-13"
+  description: "Decoy registry for build-tests-unconfigured-registry fixture"
+
+scenarios:
+  INT-960:
+    description: "MCP /health endpoint responds 200 to a GET request"
+    service: "mcp-service"
+    requirement: "fixture decoy — must never be walked"
+    last_updated: "2026-08-13"
+    user_stories:
+      - story: "docs/prd/stories/95.2-decoy.yaml"
+        scenario_id: "95.2-001"
+        merge_date: "2026-08-13"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"

@@ -1,0 +1,46 @@
+# Seed registry for the `us-apply-relocated-registry` BDD fixture.
+#
+# Note where this file lives: `docs/specs/requirements.yaml`. There is
+# deliberately NO `docs/scenarios.yaml` anywhere in this fixture — the
+# only thing that can lead the engine here is
+# `documents.scenarios_yaml` in the fixture's own `true-bdd.yaml`.
+#
+# Engineered so `us apply 95.2 --fix` walks its single AC through the
+# SHIPPED us-apply checklist and exercises the add-entry branch:
+#
+#   - "present?" FAILS: nothing here references story
+#     docs/product/stories/95.2-relocated-registry.yaml. The F: adds a
+#     scenario for lineage 95.2-001 to the scratch registry.
+#   - "duplicate?" PASSES: the fix added exactly one entry.
+#
+# The re-walk then finds both prompts clean, the walk converges, and the
+# scratch copy is renamed over THIS file — which is the assertion the
+# fixture exists for. A hardcoded ./docs/scenarios.yaml re-entering the
+# engine cannot seed a scratch copy from here, so the run would die
+# before the first AI turn.
+#
+# E2E-960 is unrelated on purpose: it anchors the "leave every other
+# entry alone" assertion.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-13"
+  description: "Relocated-registry seed for us-apply-relocated-registry fixture"
+
+scenarios:
+  E2E-960:
+    description: "Unrelated scenario that must remain untouched"
+    service: "web-service"
+    last_updated: "2026-08-13"
+    user_stories:
+      - story: "docs/product/stories/90.2-unrelated.yaml"
+        scenario_id: "90.2-001"
+        merge_date: "2026-08-13"
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User opens the settings page"
+      then:
+        - "the settings page renders the account section"
