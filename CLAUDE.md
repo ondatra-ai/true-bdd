@@ -261,6 +261,12 @@ type DataCache struct { /* caching complexity */ }
 
 **Do not use `cd` to change the working directory.** Always run commands from the repository root using absolute paths or `-C <path>` flags. This keeps paths predictable across turns and prevents the working directory from drifting into nested subdirectories.
 
+## Response Style
+
+Lead with the answer or result; drop restatement, framing sentences, and narration of what a tool did. Tables and short bullets over paragraphs. Findings and caveats stay — the prose around them goes.
+
+**How to apply:** One-line result, then only the details that change a decision. No recaps of already-known context, no "what landed / what I verified" sections unless asked. Still report failures and skipped work plainly — brevity is not omission.
+
 ## Notes
 
 - **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.
