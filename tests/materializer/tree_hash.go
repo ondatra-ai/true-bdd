@@ -20,7 +20,7 @@ const runtimeDir = "tmp"
 // HashTree returns a path → sha256(hex) map for every file under
 // root. Keys are slash-separated paths relative to root, so the map
 // is directly comparable with the TypeScript oracle
-// (tests/harness/helpers/tree-hash.ts), which implements the
+// (tests/bdd-web/helpers/tree-hash.ts), which implements the
 // identical algorithm.
 func HashTree(root string) (map[string]string, error) {
 	out := make(map[string]string)

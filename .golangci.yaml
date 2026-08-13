@@ -136,10 +136,10 @@ linters:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
       ignore-package-globs:
-        - "github.com/ondatra-ai/true-bdd/src/internal/*"
+        - "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/*"
         - "*/internal/*"
       ignore-sig-regexps:
-        - 'github\.com/ondatra-ai/true-bdd/src/internal/pkg/errors\.Err.*'
+        - 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors\.Err.*'
     tagliatelle:
       # For internal domain models and application code
       case:
@@ -154,29 +154,29 @@ linters:
     warn-unused: true
     rules:
       # GitHub API structures must use camelCase to match GitHub's API contract
-      - path: src/internal/adapters/github/.*\.go
+      - path: services/bdd-cli/internal/adapters/github/.*\.go
         linters:
           - tagliatelle
-      - path: src/internal/domain/models/thread\.go
+      - path: services/bdd-cli/internal/domain/models/thread\.go
         linters:
           - tagliatelle
       # Test-runner DTOs mirror third-party JSON wire formats
       # (`go test -json` PascalCase, `jest --json` camelCase). The field
       # casing is the wire contract, not ours.
-      - path: src/internal/infrastructure/testrunner/dto/.*\.go
+      - path: services/bdd-cli/internal/infrastructure/testrunner/dto/.*\.go
         linters:
           - tagliatelle
       # Don't require wrapping for internal package returns
       # Our internal/pkg/errors package provides properly wrapped errors
-      - path: (src/internal/.*|src/claudecode/.*|src/adapters/.*)\.go
+      - path: (services/bdd-cli/internal/.*|services/bdd-cli/claudecode/.*|services/bdd-cli/adapters/.*)\.go
         linters:
           - wrapcheck
-        text: 'github\.com/ondatra-ai/true-bdd/src/internal/pkg/errors'
+        text: 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors'
       # Allow dynamic errors in test files for test fixtures
       - path: _test\.go
         linters:
           - err113
       # Allow fmt.Print in console package - it wraps fmt for terminal UI output
-      - path: src/internal/pkg/console/.*\.go
+      - path: services/bdd-cli/internal/pkg/console/.*\.go
         linters:
           - forbidigo

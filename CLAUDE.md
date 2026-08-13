@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`src/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
+This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
 
 ## CLI Subcommands
 
@@ -43,8 +43,8 @@ Each checklist cell runs up to three AI turns, each with its own tier knob in th
 
 Key implementation facts:
 
-- `src/internal/domain/models/provider/` owns the vocabulary (`ModelRef`, `Tier`, `Registry`). The registry is built and validated once in `bootstrap.newAIRouter`.
-- `src/adapters/ai/router.go` is the only `ports.AIPort` implementation; it dispatches on `ModelRef.CLI` to `claude_provider.go` / `crush_provider.go` / `codex_provider.go`.
+- `services/bdd-cli/internal/domain/models/provider/` owns the vocabulary (`ModelRef`, `Tier`, `Registry`). The registry is built and validated once in `bootstrap.newAIRouter`.
+- `services/bdd-cli/adapters/ai/router.go` is the only `ports.AIPort` implementation; it dispatches on `ModelRef.CLI` to `claude_provider.go` / `crush_provider.go` / `codex_provider.go`.
 - `ExecutionMode` is the single permission source for all three CLIs. `WriteGlobs()` / `AllowsBash()` project it onto crush's guard policy and codex's `-s` sandbox, so permissions are declared once.
 - The fix generator and applier never see the prompt, so the evaluator resolves their tiers and carries them on `ValidationResult.FixModelTier` / `ApplyModelTier` — the same channel `Docs` already travels on.
 - **crush gotchas, both verified against the live CLI:** it silently ignores an unknown model pinned in config (so the model is always passed via `-m`), and it fails OPEN when a hook cannot run (so `verifyCrushGuardEnforces` probes the guard before every turn and refuses to proceed if it does not deny).
@@ -55,7 +55,7 @@ Key implementation facts:
 
 ```bash
 # Build (requires Go 1.25 and the `claude` CLI on $PATH)
-mkdir -p ./bin && go build -o ./bin/true-bdd ./src
+mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 
 # Unit tests
 go test ./...
@@ -113,7 +113,7 @@ expected:
 
 The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic prd, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
 
-The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `src/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
+The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `services/bdd-cli/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 
 Tests are gated by a `//go:build bdd` tag so they're invisible to default `go test ./...`. The whole suite skips if the `claude` CLI is not on `$PATH`.
 
@@ -125,19 +125,24 @@ If the fixture's `cmd` spawns long-lived external resources that outlive the CLI
 
 ## Project Structure
 
-- `src/` — the Go module (`github.com/ondatra-ai/true-bdd`). Entry point `src/main.go`; builds to `./bin/true-bdd` (gitignored).
-  - `src/cmd/` — cobra command tree (`root.go`, `us.go`, `build.go`).
-  - `src/claudecode/` — Claude Code subprocess SDK wrapper (client, transport, message parsing).
-  - `src/adapters/ai/` — Claude client adapter and execution modes.
-  - `src/internal/app/` — bootstrap container, command implementations, the checklist engine.
-  - `src/internal/domain/` — story/checklist/registry/architecture models and ports.
-  - `src/internal/infrastructure/` — loaders (config, epic, story, checklist, registry, architecture), template rendering, test runners (go test / jest / playwright), fs, console input.
-  - `src/internal/pkg/` — `console` (terminal UI output), `errors`.
+The repo follows the same `services/<name>/` + `tests/<name>/` layout TrueBDD asks
+of a host project: one directory per service, and a test suite named after the
+service it exercises.
+
+- `services/bdd-cli/` — the Go module (`github.com/ondatra-ai/true-bdd`), i.e. the engine itself. Entry point `services/bdd-cli/main.go`; builds to `./bin/true-bdd` (gitignored). Exercised by `tests/bdd-cli/`.
+  - `services/bdd-cli/cmd/` — cobra command tree (`root.go`, `us.go`, `build.go`).
+  - `services/bdd-cli/claudecode/` — Claude Code subprocess SDK wrapper (client, transport, message parsing).
+  - `services/bdd-cli/adapters/ai/` — Claude client adapter and execution modes.
+  - `services/bdd-cli/internal/app/` — bootstrap container, command implementations, the checklist engine.
+  - `services/bdd-cli/internal/domain/` — story/checklist/registry/architecture models and ports.
+  - `services/bdd-cli/internal/infrastructure/` — loaders (config, epic, story, checklist, registry, architecture), template rendering, test runners (go test / jest / playwright), fs, console input.
+  - `services/bdd-cli/internal/pkg/` — `console` (terminal UI output), `errors`.
+- `services/bdd-web/` — the Next.js relay + UI (a **sentinel nested Go module** so root-level `go`/`golangci-lint` never descend into its `node_modules`). Its `src/` is GENERATED code and is gitignored — `tests/bdd-web/` is the spec. `design/` holds the design system, `SPEC.md`, and the `proto-workspace/` design-truth prototype. Exercised by `tests/bdd-web/`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
 - `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
-- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `harness/src/tests/unit/`):
-  - `tests/bdd-cli/` — the Go BDD-CLI fixture harness: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
-  - `tests/harness/` — the web-harness Playwright E2E suite, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `a*` AI), `helpers/`, `fixtures/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test launches its own harness container via `docker compose` (see `helpers/server-controller.ts`). Run: `cd tests/harness && npx playwright test --project=protocol`.
+- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `services/bdd-web/src/tests/unit/`):
+  - `tests/bdd-cli/` — the Go BDD-CLI fixture harness for `services/bdd-cli`: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
+  - `tests/bdd-web/` — the Playwright E2E suite for `services/bdd-web`, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `w*` workspace, `a*` AI), `helpers/`, `fixtures/`, `goldens/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test builds the app once per invocation and launches its own host `node server.js` (see `helpers/server-controller.ts`). Run: `npx --prefix tests/bdd-web playwright test --config tests/bdd-web/playwright.config.ts --project=protocol`.
   - `tests/materializer/` — the Go fixture materializer (shared with `tests/bdd-cli/runner`), built by the E2E suite to overlay fixtures.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), and the current branch fast-forwarded from origin (the branch is never switched).
@@ -224,7 +229,7 @@ type DataCache struct { /* caching complexity */ }
 - `slog` produces structured logs with timestamps/levels (for debugging, monitoring)
 - `console` produces clean terminal output (for CLI user interface)
 
-**Location**: `src/internal/pkg/console/console.go`
+**Location**: `services/bdd-cli/internal/pkg/console/console.go`
 
 **Linter**: The `console` package is excluded from the `forbidigo` linter in `.golangci.yaml`
 

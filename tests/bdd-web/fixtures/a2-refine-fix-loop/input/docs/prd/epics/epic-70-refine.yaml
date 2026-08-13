@@ -1,0 +1,21 @@
+# Epic for the A2 refine fixture: filename number 70, row 1 declares
+# story id 77.5 so the inventory renders story row 70.1 whose Refine
+# action sends the file-prefix id "77.5". The refined story is loaded
+# from docs/prd/stories/77.5-*.yaml (NOT this epic body).
+epic:
+  id: 70
+  name: "Refine Fix-Loop Epic"
+  status: "PLANNED"
+  goal: "Exercise the harness us refine --fix loop end-to-end."
+  context: "Used only by tests/bdd-web/fixtures/a2-refine-fix-loop."
+
+stories:
+  - id: "77.5"
+    title: "Document Summary On Demand"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+    so_that: "I can decide whether the document needs my attention without reading it in full"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "Claude summarizes a shared Google Doc on request."
