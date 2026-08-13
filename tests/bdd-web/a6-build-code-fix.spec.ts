@@ -1,6 +1,6 @@
 /**
  * A6 (plan §4.3) — `build code --fix` over a Go module. architecture.yaml
- * declares service `calculator` (unit layer, framework go-test, path
+ * declares service `calculator` (e2e layer, framework go-test, path
  * services/calculator). build-code runs `go test -C services/calculator
  * ./...`, discovers the failing TestAdd, and the browser Applies through
  * the fix loop until the engine converges — the applier editing ONLY

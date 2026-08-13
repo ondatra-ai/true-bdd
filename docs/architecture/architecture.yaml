@@ -1,0 +1,42 @@
+# Architectural spec for this repository (the TrueBDD engine itself).
+#
+# Read by `build code`, which walks every (service, layer) pair declared
+# under quality_gate.tests and discovers failing tests through that
+# layer's framework runner. Path resolved from `documents.architecture_yaml`
+# in true-bdd/true-bdd.yaml.
+
+architecture:
+  services:
+    - name: bdd-cli
+      path: services/bdd-cli
+      language: go
+      frameworks:
+        - cobra
+
+      quality_gate:
+        tests:
+          # Fixture harness under tests/bdd-cli/fixtures/. NOTE: the suite
+          # is gated behind `//go:build bdd`, which the go-test runner does
+          # not pass — only the untagged packages here are discoverable.
+          e2e:
+            path: tests/bdd-cli
+            framework: go-test
+
+    - name: bdd-web
+      path: services/bdd-web
+      language: typescript
+      frameworks:
+        - next.js
+        - react
+
+      design_system:
+        path: services/bdd-web/design/system
+
+      quality_gate:
+        tests:
+          # Self-contained Playwright package: protocol (p*), workspace (w*)
+          # and AI (a*) projects, each test booting its own host server.
+          e2e:
+            path: tests/bdd-web
+            framework: playwright
+            config: tests/bdd-web/playwright.config.ts

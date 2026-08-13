@@ -1,6 +1,6 @@
 schema_version: 1
 evidence_quality: reconstructed
-universe_sha256: 1cc36fc51962c9dc061f91d046a32d5801203c7b2d2e45074465a6059b37ec75
+universe_sha256: 214e9ec4e969d56a5e140e64e97e60ed312717012f8d1f870c3f8fb28fb730ba
 covered:
     - id: build-code/test-passes/q1@b171d92d#fail
       q_sha256: b171d92d889b0bc943942ab0e6d78faa2ecf24fbbabf392ae7dadc6660f54830
@@ -82,10 +82,10 @@ covered:
       q_sha256: 8ed91a7d102f8a88eda292cc4277c558b9c8e334a49bae447141849b8af6af4e
     - id: us-refine/acceptance_criteria/q11@8ed91a7d#pass
       q_sha256: 8ed91a7d102f8a88eda292cc4277c558b9c8e334a49bae447141849b8af6af4e
-    - id: us-refine/acceptance_criteria/q12@1bb66518#fail
-      q_sha256: 1bb66518de04ca20fc994edf039b1b9bb7041ba004442a3d71c72bebdd7a28f7
-    - id: us-refine/acceptance_criteria/q12@1bb66518#pass
-      q_sha256: 1bb66518de04ca20fc994edf039b1b9bb7041ba004442a3d71c72bebdd7a28f7
+    - id: us-refine/acceptance_criteria/q12@1fa8ce2c#fail
+      q_sha256: 1fa8ce2cb800fd851b2c32c97d4508d47a6a5cd6841889dea797d10305209616
+    - id: us-refine/acceptance_criteria/q12@1fa8ce2c#pass
+      q_sha256: 1fa8ce2cb800fd851b2c32c97d4508d47a6a5cd6841889dea797d10305209616
     - id: us-refine/acceptance_criteria/q1@895981ea#fail
       q_sha256: 895981ea79a5f5cb29a86524b53d848e086a02d1d8c5b97bf654335ac318e639
     - id: us-refine/acceptance_criteria/q1@895981ea#pass
