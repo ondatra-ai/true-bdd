@@ -50,7 +50,7 @@ expected:
     (`checklist_prompts` keeps only the shipped
     vague-word-in-steps prompt), so the walk evaluates exactly one
     check. The story seed at
-    `docs/prd/stories/96.7-document-summary-step-qualifier.yaml` carries
+    `docs/product/stories/96.7-document-summary-step-qualifier.yaml` carries
     one designed defect: AC-4's then step contains the vague
     qualifiers "quickly" and "user-friendly" (forbidden by the
     fixture's `docs/architecture/architecture.yaml`).
@@ -63,7 +63,7 @@ expected:
     ## What MUST be true after the run
 
     1. The only file created or modified outside `tmp/` is
-       `docs/prd/stories/96.7-document-summary-step-qualifier.yaml`.
+       `docs/product/stories/96.7-document-summary-step-qualifier.yaml`.
     2. The final story file is valid YAML with a top-level `story:` key
        and `id` `"96.7"`, still containing exactly 4 acceptance
        criteria covering the same substance (150-word summary; unshared
@@ -78,7 +78,7 @@ expected:
     ## What MUST NOT happen
 
     - No AC dropped or added.
-    - No edits to `true-bdd/`, `docs/prd/prd.yaml`, or `docs/architecture*`.
+    - No edits to `true-bdd/`, `docs/product/product.yaml`, or `docs/architecture*`.
     - The stdout MUST NOT contain "Hit max apply attempts".
 
     ## Tolerances

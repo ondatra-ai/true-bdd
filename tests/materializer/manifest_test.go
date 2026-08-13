@@ -10,7 +10,7 @@ import (
 
 // Test-tree paths shared across the package's test files.
 const (
-	testPrdPath          = "docs/prd/prd.yaml"
+	testProductPath      = "docs/product/product.yaml"
 	testEngineConfigPath = "true-bdd/true-bdd.yaml"
 )
 
@@ -191,7 +191,7 @@ func TestLoadManifestNormalizesCommands(t *testing.T) {
 
 func TestLoadManifestMinimalHappyPath(t *testing.T) {
 	dir := writeFixture(t, "base: none\ninput: input\n", map[string]string{
-		testPrdPath: "title: x\n",
+		testProductPath: "title: x\n",
 	})
 
 	loaded, err := LoadManifest(dir)

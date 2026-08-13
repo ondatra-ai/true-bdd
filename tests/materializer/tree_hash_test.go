@@ -55,7 +55,7 @@ func TestHashTreeExcludesRootTmpOnly(t *testing.T) {
 		"tmp/runtime.log":     "noise",
 		"tmp/deep/nested.log": "noise",
 		"services/x/tmp/keep": "hashed",
-		testPrdPath:           "title: x",
+		testProductPath:       "title: x",
 	})
 
 	hashes, err := HashTree(root)
@@ -73,7 +73,7 @@ func TestHashTreeExcludesRootTmpOnly(t *testing.T) {
 		t.Fatal("nested tmp dirs must NOT be excluded (only root tmp/**)")
 	}
 
-	if _, present := hashes[testPrdPath]; !present {
+	if _, present := hashes[testProductPath]; !present {
 		t.Fatal("canonical file missing")
 	}
 }

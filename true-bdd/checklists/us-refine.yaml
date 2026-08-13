@@ -25,7 +25,7 @@ sections:
             - "Total ACs: <N>"
         rationale: "<3: underspecified. >7: likely an epic that should be split."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -46,7 +46,7 @@ sections:
                or "AC-3: contains GWT — 'Given a user has shared...'")
         rationale: "AC descriptions must be one-sentence rule statements with must/should keywords; Gherkin steps belong in the steps field."
         docs:
-          - prd
+          - product
         F: |
           Rewrite each AC description as a one-line rule-based statement.
 
@@ -89,7 +89,7 @@ sections:
             - "<AC-id>: <other malformation> — <short note>"
         rationale: "Every AC must have testable Gherkin steps in Given/When/Then format."
         docs:
-          - prd
+          - product
           - architecture_yaml
         F: |
           Add or repair the steps field for each AC. Use the AC description
@@ -137,7 +137,7 @@ sections:
             - "<AC-id>: contains '<word>'[, '<word2>'...]"
         rationale: "Vague words in AC descriptions cannot be tested objectively."
         docs:
-          - prd
+          - product
           - architecture_yaml
         F: |
           Replace each vague word in the description with specific, measurable
@@ -161,7 +161,7 @@ sections:
             - "<AC-id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
         rationale: "Vague words in AC steps cannot be tested objectively."
         docs:
-          - prd
+          - product
           - architecture_yaml
         F: |
           Replace each vague word in the steps with specific, measurable
@@ -185,7 +185,7 @@ sections:
               (e.g. "AC-2: forbidden verb 'parse' in then")
         rationale: "Every step must use concrete, reproducible action verbs. Verbs in the forbidden_actions list do not specify the interaction mechanism and cannot be automated."
         docs:
-          - prd
+          - product
           - architecture_yaml
         F: |
           Rewrite each step that uses a forbidden action verb.
@@ -209,7 +209,7 @@ sections:
               (e.g. "AC-2: implementation — 'POST /docs endpoint returns 201'")
         rationale: "ACs describe observable behavior, not technical implementation."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -225,7 +225,7 @@ sections:
             - "Total happy path ACs: <N> (need ≥1)"
         rationale: "Every story needs a documented success path."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -242,7 +242,7 @@ sections:
             - "Total error scenario ACs: <N> (need ≥2)"
         rationale: "Missing error handling leads to production issues."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -259,7 +259,7 @@ sections:
             - "Totals: <measurable_count>/<total> = <percentage>%"
         rationale: "Measurable criteria enable automated testing."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -276,7 +276,7 @@ sections:
               (e.g. "AC-2: subjective — 'response is helpful' has no objective threshold")
         rationale: "Every AC must be objectively testable."
         docs:
-          - prd
+          - product
           - architecture_yaml
 
       - Q: |
@@ -327,5 +327,5 @@ sections:
             - "Totals: <convertible_count>/<total> = <percentage>%"
         rationale: "Drafting the actual test reveals hidden ambiguity and proves the AC is testable, not just claims to be."
         docs:
-          - prd
+          - product
           - architecture_yaml

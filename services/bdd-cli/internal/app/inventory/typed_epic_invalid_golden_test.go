@@ -49,7 +49,7 @@ func TestGoldenTypedInvalidEpicIsInvalidWithNoRows(t *testing.T) {
 	}
 
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-70-typed-invalid.yaml": typedInvalidEpic,
+		"docs/product/epics/epic-70-typed-invalid.yaml": typedInvalidEpic,
 	})
 
 	epic := gEpicOf(t, scanJSON(t, folder), "epic-70-typed-invalid.yaml")

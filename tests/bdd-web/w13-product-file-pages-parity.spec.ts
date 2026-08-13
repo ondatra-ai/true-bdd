@@ -98,15 +98,15 @@ async function assertFileCard(
   await expect(page.getByTestId(WTID.fileViewEditor)).toBeVisible();
 }
 
-test("w13.1 the product landing renders prd.yaml as a GitHub-style file card (R3)", async ({ page }) => {
+test("w13.1 the product landing renders product.yaml as a GitHub-style file card (R3)", async ({ page }) => {
   env = await WorkspaceEnv.start("w13-product-landing");
   const e = env;
 
   await gotoWorkspace(page, e.baseURL, wsRoutes.product(e.sid));
   await assertFileCard(page, {
     kicker: /02\s*[—-]\s*PRODUCT/i,
-    title: "prd.yaml",
-    docPath: "docs/prd/prd.yaml",
+    title: "product.yaml",
+    docPath: "docs/product/product.yaml",
   });
 
   // Architecture header guard (mockup-parity decision, 2026-08-07): the shared
@@ -129,7 +129,7 @@ test("w13.1 the product landing renders prd.yaml as a GitHub-style file card (R3
   await writeEditor(editor, `${current}\n# ${token}\n`);
   await expect(editor).toContainText(token);
   await expect(saveState(page)).toHaveAttribute("data-save-state", "saved");
-  const bytes = await e.waitForDocOnDisk("docs/prd/prd.yaml", (b) => b.includes(token));
+  const bytes = await e.waitForDocOnDisk("docs/product/product.yaml", (b) => b.includes(token));
   expect(parse(bytes)).toBeTruthy();
 });
 
@@ -167,7 +167,7 @@ test("w13.2 a story page renders kicker + title, a Feature pill, and the deep br
   // picking a seeded feature writes the story's `feature:` to disk.
   await page.getByTestId(WTID.featurePickerInput).fill(seeded);
   await page.locator(`[data-testid="${WTID.featurePickerOption}"][data-feature="${seeded}"]`).click();
-  const bytes = await e.waitForDocOnDisk("docs/prd/stories/60.1-summary-length-preference.yaml", (b) =>
+  const bytes = await e.waitForDocOnDisk("docs/product/stories/60.1-summary-length-preference.yaml", (b) =>
     new RegExp(`feature:\\s*${seeded}`).test(b),
   );
   expect((parse(bytes) as { story: { feature: string } }).story.feature).toBe(seeded);
@@ -193,7 +193,7 @@ test("w13.3 the features page renders features.yaml as a file card (R6)", async 
   await assertFileCard(page, {
     kicker: /02\s*[—-]\s*PRODUCT\s*\/\s*FEATURES/i,
     title: "features.yaml",
-    docPath: "docs/prd/features.yaml",
+    docPath: "docs/product/features.yaml",
   });
 });
 

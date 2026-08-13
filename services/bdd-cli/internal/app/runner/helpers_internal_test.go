@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	testPRDRel   = "docs/prd/prd.yaml"
-	testPRDPath  = "./" + testPRDRel
-	testArchPath = "./docs/architecture/architecture.yaml"
+	testProductRel  = "docs/product/product.yaml"
+	testProductPath = "./" + testProductRel
+	testArchPath    = "./docs/architecture/architecture.yaml"
 )
 
 // seedVersionManager builds a StoryVersionManager with one saved version
@@ -161,12 +161,12 @@ func promptDeclaring(promptDocs, defaultDocs []string) checklistmodels.PromptWit
 // every declared document exists, so the walk is allowed to start.
 func TestValidateRequiredDocsAcceptsSatisfiedChecklist(t *testing.T) {
 	resolver := newDocResolver(t,
-		map[string]string{docs.KeyPRD: testPRDPath},
-		[]string{testPRDRel},
+		map[string]string{docs.KeyProduct: testProductPath},
+		[]string{testProductRel},
 	)
 
 	err := validateRequiredDocs(
-		[]checklistmodels.PromptWithContext{promptDeclaring([]string{docs.KeyPRD}, nil)},
+		[]checklistmodels.PromptWithContext{promptDeclaring([]string{docs.KeyProduct}, nil)},
 		resolver,
 	)
 	if err != nil {
@@ -202,19 +202,19 @@ func TestValidateRequiredDocsRejectsMissingDocument(t *testing.T) {
 // unsatisfiable document, not just the first.
 func TestValidateRequiredDocsReportsAllMissing(t *testing.T) {
 	resolver := newDocResolver(t, map[string]string{
-		docs.KeyPRD:              testPRDPath,
+		docs.KeyProduct:          testProductPath,
 		docs.KeyArchitectureYAML: testArchPath,
 	}, nil)
 
 	err := validateRequiredDocs([]checklistmodels.PromptWithContext{
-		promptDeclaring([]string{docs.KeyPRD}, nil),
+		promptDeclaring([]string{docs.KeyProduct}, nil),
 		promptDeclaring([]string{docs.KeyArchitectureYAML}, nil),
 	}, resolver)
 	if err == nil {
 		t.Fatal("expected an error, got nil")
 	}
 
-	for _, want := range []string{testPRDPath, testArchPath} {
+	for _, want := range []string{testProductPath, testArchPath} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error must name %s, got %q", want, err)
 		}
@@ -227,12 +227,12 @@ func TestValidateRequiredDocsReportsAllMissing(t *testing.T) {
 // too.
 func TestValidateRequiredDocsHonoursDefaultDocs(t *testing.T) {
 	resolver := newDocResolver(t,
-		map[string]string{docs.KeyPRD: testPRDPath},
+		map[string]string{docs.KeyProduct: testProductPath},
 		nil,
 	)
 
 	err := validateRequiredDocs(
-		[]checklistmodels.PromptWithContext{promptDeclaring(nil, []string{docs.KeyPRD})},
+		[]checklistmodels.PromptWithContext{promptDeclaring(nil, []string{docs.KeyProduct})},
 		resolver,
 	)
 	if !errors.Is(err, errUnsatisfiableChecklistDocs) {
@@ -244,8 +244,8 @@ func TestValidateRequiredDocsHonoursDefaultDocs(t *testing.T) {
 // checklist as the startup error it is.
 func TestValidateRequiredDocsRejectsUnknownKey(t *testing.T) {
 	resolver := newDocResolver(t,
-		map[string]string{docs.KeyPRD: testPRDPath},
-		[]string{testPRDRel},
+		map[string]string{docs.KeyProduct: testProductPath},
+		[]string{testProductRel},
 	)
 
 	err := validateRequiredDocs(
@@ -261,7 +261,7 @@ func TestValidateRequiredDocsRejectsUnknownKey(t *testing.T) {
 // inert for checklists that declare none — us-apply and build-tests
 // ship exactly that shape.
 func TestValidateRequiredDocsAllowsChecklistWithoutDocs(t *testing.T) {
-	resolver := newDocResolver(t, map[string]string{docs.KeyPRD: testPRDPath}, nil)
+	resolver := newDocResolver(t, map[string]string{docs.KeyProduct: testProductPath}, nil)
 
 	err := validateRequiredDocs(
 		[]checklistmodels.PromptWithContext{promptDeclaring(nil, nil)},

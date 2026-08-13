@@ -36,7 +36,7 @@ func scanDocuments(folder string, cfg resolvedConfig) (map[string]string, map[st
 	}
 
 	record("config", docResult{status: cfg.configStatus, err: cfg.configError})
-	record("prd", yamlDoc(filepath.Join(folder, cfg.prdRel)))
+	record("product", yamlDoc(filepath.Join(folder, cfg.productRel)))
 	record("architecture", architectureDoc(filepath.Join(folder, cfg.architectureRel)))
 	record("registry", registryDoc(filepath.Join(folder, cfg.registryRel)))
 	record("stories-dir", dirDoc(filepath.Join(folder, cfg.storiesRel)))

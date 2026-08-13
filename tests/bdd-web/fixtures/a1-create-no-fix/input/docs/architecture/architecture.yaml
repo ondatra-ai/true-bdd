@@ -1,6 +1,6 @@
 # Architectural spec for the A1 create fixture (read by us-create's
 # goal/value prompts; the single filtered format prompt needs only the
-# PRD, but a complete host project keeps the inventory honest).
+# product document, but a complete host project keeps the inventory honest).
 
 architecture:
   services:

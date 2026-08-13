@@ -1,5 +1,5 @@
 # Architectural spec for the A3 clarify fixture. The single filtered
-# rule-based-description prompt reads only the PRD; this keeps the host
+# rule-based-description prompt reads only the product document; this keeps the host
 # project complete for the inventory.
 
 architecture:

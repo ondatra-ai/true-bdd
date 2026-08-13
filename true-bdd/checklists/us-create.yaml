@@ -29,7 +29,7 @@ sections:
             - "<clause>: missing"
         rationale: "Standard user story format ensures clarity and consistency."
         docs:
-          - prd
+          - product
 
       - Q: |
           Count total words in the user story statement
@@ -42,7 +42,7 @@ sections:
             - "Word count: <N>"
         rationale: "Must fit on 3x5 index card. Typically 20-50 words maximum."
         docs:
-          - prd
+          - product
 
 
 
@@ -51,21 +51,21 @@ sections:
     description: "The user role - must be an actual human who interacts with the system"
     validation_prompts:
       - Q: |
-          Does the "as_a" clause use a persona defined in the PRD?
+          Does the "as_a" clause use a role defined in the product document?
 
-          Read the personas section in the PRD reference. The role in the
-          story must exactly match one of the named personas.
+          Read the roles section in the product reference. The role in the
+          story must exactly match one of the named roles.
 
-          Pass when the role matches a defined persona from the PRD.
-          Fail when the role does not match any defined persona.
+          Pass when the role matches a defined role from the product document.
+          Fail when the role does not match any defined role.
 
           Context: emit a single line.
-            - "Role '<role>': matches '<persona name>'"
+            - "Role '<role>': matches '<role name>'"
             or
-            - "Role '<role>': not found in PRD — defined personas are <list>"
-        rationale: "Only personas defined in the PRD are valid. This ensures human personas and consistent naming."
+            - "Role '<role>': not found in the product document — defined roles are <list>"
+        rationale: "Only roles defined in the product document are valid. This keeps the actor a human role and the naming consistent."
         docs:
-          - prd
+          - product
 
   - id: what
     name: "User Goal"
@@ -96,7 +96,7 @@ sections:
             - "Prescribes solution — '<quoted phrase>'"
         rationale: "'Log in with Google account' (goal) vs 'OAuth 2.0 authentication' (solution)."
         docs:
-          - prd
+          - product
 
       - Q: |
           Count internal implementation terms in the "I want" clause.
@@ -119,7 +119,7 @@ sections:
             - "<term>: '<quoted phrase in context>'"
         rationale: "User language, not technical language."
         docs:
-          - prd
+          - product
 
   - id: why
     name: "Business Value"
@@ -144,7 +144,7 @@ sections:
             - "System behavior — '<quoted so_that summary>'"
         rationale: "'So that I save time' (benefit) vs 'so that data is stored' (system behavior)."
         docs:
-          - prd
+          - product
 
       - Q: |
           Does the "so that" clause just restate the "I want" clause in
@@ -159,7 +159,7 @@ sections:
             - "Verdict: distinct / redundant"
         rationale: "'Reset password so password is reset' adds no value."
         docs:
-          - prd
+          - product
 
       - Q: |
           Would knowing this WHY (the "so that" clause) change the
@@ -179,7 +179,7 @@ sections:
             - "WHY too generic — '<short explanation>'"
         rationale: "If WHY doesn't inform HOW, it's not a meaningful benefit clause."
         docs:
-          - prd
+          - product
 
       - Q: |
           Count internal implementation terms in the "so that" clause.
@@ -202,4 +202,4 @@ sections:
             - "<term>: '<quoted phrase in context>'"
         rationale: "so_that should describe user value, not technical implementation."
         docs:
-          - prd
+          - product

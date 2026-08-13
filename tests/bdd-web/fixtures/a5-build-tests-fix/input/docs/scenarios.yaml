@@ -15,7 +15,7 @@ scenarios:
     requirement: "fixture seed — expects `build tests` to create a test"
     last_updated: "2026-07-01"
     user_stories:
-      - story: "docs/prd/stories/77.5-apply-summary.yaml"
+      - story: "docs/product/stories/77.5-apply-summary.yaml"
         scenario_id: "88.9-001"
         merge_date: "2026-07-01"
     merged_steps:

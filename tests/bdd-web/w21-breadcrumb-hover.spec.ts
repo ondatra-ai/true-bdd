@@ -28,7 +28,7 @@
  * page-agnostic — it is the GLOBAL `.ws-breadcrumb-link:hover { font-weight:
  * 650 }` rule (services/bdd-web/src/app/globals.css) — so every page with a linkable
  * crumb reproduces it. The product trail `Sessions / Workspace overview /
- * prd.yaml` is chosen because "Workspace overview" is the LONGEST linkable
+ * product.yaml` is chosen because "Workspace overview" is the LONGEST linkable
  * crumb: at the row font-size the font-weight 400→650 reflow widens it ~4px
  * (the visual-sweep probe measured 4.39px on this string), which clears the
  * ≤2px oracle tolerance. The shorter "Home" link the finding was first
@@ -118,7 +118,7 @@ test("w21.1 hovering a breadcrumb link moves no breadcrumb element — geometry 
   await expect(bar).toBeVisible();
 
   // Product trail = "Sessions" (link) / " / " / "Workspace overview" (link, the
-  // longest linkable crumb) / " / " / "prd.yaml" (current). Hovering the long
+  // longest linkable crumb) / " / " / "product.yaml" (current). Hovering the long
   // link is what reliably drives the widening past the 2px tolerance.
   const link = bar.locator(".ws-breadcrumb-link", { hasText: "Workspace overview" });
   // The separator AFTER the hovered link (the 2nd of two on this trail).

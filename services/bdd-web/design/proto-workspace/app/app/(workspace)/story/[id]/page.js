@@ -18,7 +18,7 @@ import FeaturePicker from "../../../../components/FeaturePicker";
 const ANCHORS = [{ id: FILE_TOP_ID, line: 0 }];
 // Fallback path so useFile() always has a stable key to call (hook order
 // must not depend on whether the story was found) — never rendered.
-const MISSING_PATH = "docs/prd/stories/__missing__.yaml";
+const MISSING_PATH = "docs/product/stories/__missing__.yaml";
 
 export default function StoryPage() {
   const params = useParams();
@@ -58,7 +58,7 @@ export default function StoryPage() {
             <span className="section-label">02—Product</span>
             <h1>Story {storyId} not found</h1>
             <p className="page-header__meta">
-              No story file under docs/prd/stories/ has id "{storyId}".{" "}
+              No story file under docs/product/stories/ has id "{storyId}".{" "}
               <Link href="/product">Back to Product</Link>.
             </p>
           </div>

@@ -90,7 +90,7 @@ func readTargetFile(t *testing.T, target, rel string) string {
 
 func TestMaterializeBaseNoneIsInputOnly(t *testing.T) {
 	dir := writeFixture(t, "base: none\ninput: input\n", map[string]string{
-		testPrdPath: "title: bare\n",
+		testProductPath: "title: bare\n",
 	})
 
 	res, target, err := materializeInto(t, dir, makeRepoRoot(t))
@@ -98,7 +98,7 @@ func TestMaterializeBaseNoneIsInputOnly(t *testing.T) {
 		t.Fatalf("materialize: %v", err)
 	}
 
-	if got := readTargetFile(t, target, "docs/prd/prd.yaml"); got != "title: bare\n" {
+	if got := readTargetFile(t, target, "docs/product/product.yaml"); got != "title: bare\n" {
 		t.Fatalf("input file content = %q", got)
 	}
 
@@ -341,7 +341,7 @@ func TestMaterializePrepFailureAborts(t *testing.T) {
 func TestMaterializeBaselineExcludesTmp(t *testing.T) {
 	dir := writeFixture(t, "base: none\ninput: input\n", map[string]string{
 		"tmp/scratch.txt": "runtime noise",
-		testPrdPath:       "title: x\n",
+		testProductPath:   "title: x\n",
 	})
 
 	res, target, err := materializeInto(t, dir, makeRepoRoot(t))
@@ -353,7 +353,7 @@ func TestMaterializeBaselineExcludesTmp(t *testing.T) {
 		t.Fatal("tmp/** must be excluded from the baseline")
 	}
 
-	if _, present := res.Baseline[testPrdPath]; !present {
+	if _, present := res.Baseline[testProductPath]; !present {
 		t.Fatal("canonical file missing from baseline")
 	}
 

@@ -60,9 +60,9 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
-  epics_dir: "./docs/prd/epics"
+  epics_dir: "./docs/product/epics"
   # DELTA vs the seed: relocated. `us apply` globs
-  # <stories_dir>/<number>-*.yaml, so a hardcoded docs/prd/stories would
+  # <stories_dir>/<number>-*.yaml, so a hardcoded docs/product/stories would
   # fail to find the story at all.
   stories_dir: "docs/product/stories"
   checklists_dir: "./true-bdd/checklists"
@@ -78,7 +78,7 @@ paths:
     - "./services/**"
 
 documents:
-  prd: "./docs/prd/prd.yaml"
+  product: "./docs/product/product.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
   # DELTA vs the seed: relocated, and NOT under docs/ at its
   # conventional name. The fixture ships the registry only here — if any

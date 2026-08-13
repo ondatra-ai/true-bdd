@@ -43,10 +43,10 @@ import {
 
 let env: ProtocolEnv | undefined;
 
-const STORY_602_REL = path.join("docs", "prd", "stories", "60.2-summary-shared-docs.yaml");
-const EPIC_60_REL = path.join("docs", "prd", "epics", "epic-60-inventory-spread.yaml");
-const STORY_BROKEN_REL = path.join("docs", "prd", "stories", "70.1-broken.yaml");
-const EPIC_70_REL = path.join("docs", "prd", "epics", "epic-70-inventory.yaml");
+const STORY_602_REL = path.join("docs", "product", "stories", "60.2-summary-shared-docs.yaml");
+const EPIC_60_REL = path.join("docs", "product", "epics", "epic-60-inventory-spread.yaml");
+const STORY_BROKEN_REL = path.join("docs", "product", "stories", "70.1-broken.yaml");
+const EPIC_70_REL = path.join("docs", "product", "epics", "epic-70-inventory.yaml");
 
 test.afterEach(async () => {
   const info = test.info();

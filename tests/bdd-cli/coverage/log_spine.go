@@ -105,7 +105,7 @@ type rawLogLine struct {
 	Msg         string  `json:"msg"`
 	File        string  `json:"file"`
 	Path        string  `json:"path"`
-	SubjectID   string  `json:"subjectID"` //nolint:tagliatelle // upstream slog field name
+	SubjectID   string  `json:"subjectID"`   //nolint:tagliatelle // upstream slog field name
 	PromptIndex float64 `json:"promptIndex"` //nolint:tagliatelle // upstream slog field name
 	Command     string  `json:"command"`
 	Items       float64 `json:"items"`

@@ -49,11 +49,11 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
-  epics_dir: "./docs/prd/epics"
-  stories_dir: "docs/prd/stories"
+  epics_dir: "./docs/product/epics"
+  stories_dir: "docs/product/stories"
   checklists_dir: "./true-bdd/checklists"
 
 documents:
-  prd: "./docs/prd/prd.yaml"
+  product: "./docs/product/product.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
   scenarios_yaml: "./docs/scenarios.yaml"

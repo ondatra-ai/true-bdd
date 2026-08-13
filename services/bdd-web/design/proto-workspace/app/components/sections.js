@@ -53,7 +53,7 @@ export const SECTIONS = [
       p.startsWith("/feature/") ||
       [
         "/product",
-        "/prd-overview",
+        "/product-overview",
         "/epic",
         "/features",
         "/story-detail",
@@ -228,13 +228,13 @@ function ArchitectureTree() {
 }
 
 function ProductTree() {
-  // Same treatment as Architecture: PRD / Features: / Stories: / Scenarios:
+  // Same treatment as Architecture: product document / Features: / Stories: / Scenarios:
   // are the file-backed schema's FIXED, mandatory groups (hardcoded), but
   // every ROW inside them is read live from the current file contents
   // (shared FilesStore) — adding a story/scenario/feature via chat or the
   // new-story form, or editing a file's textarea by hand, makes a row
   // appear here immediately. There is no epic layer: Stories: is a FLAT
-  // list of every docs/prd/stories/*.yaml file (derived straight from the
+  // list of every docs/product/stories/*.yaml file (derived straight from the
   // store, see ProductFiles.deriveStories), direct children of Product.
   // Features: is the new alignment tag — features.yaml only holds
   // id+description, so each row IS the feature's id, linking to its own
@@ -242,7 +242,7 @@ function ProductTree() {
   // story/scenario row navigates to that row's OWN file page and requests
   // an exact-line jump that the target page's FileView picks up once
   // mounted (jumpRequest lives in the provider, which never unmounts
-  // across the navigation). The old form-based pages (/prd-overview,
+  // across the navigation). The old form-based pages (/product-overview,
   // /story-detail, /scenario-detail, /scenarios) still exist and still
   // work, just aren't linked here.
   const { requestJump } = useFiles();
@@ -263,7 +263,7 @@ function ProductTree() {
       <ul className="sidebar-tree">
         <li>
           <NavLink href="/product" scroll={false} onClick={jump(FILE_TOP_ID)}>
-            PRD
+            product document
           </NavLink>
         </li>
       </ul>

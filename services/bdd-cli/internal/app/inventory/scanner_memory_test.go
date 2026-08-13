@@ -59,14 +59,14 @@ func manyLargeStoriesFolder(t *testing.T, storyCount, fileKiB int) string {
 	for index := 1; index <= storyCount; index++ {
 		id := fmt.Sprintf("70.%d", index)
 		fmt.Fprintf(epic, "  - id: %q\n", id)
-		write(fmt.Sprintf("docs/prd/stories/%s-big.yaml", id), fmt.Sprintf(
+		write(fmt.Sprintf("docs/product/stories/%s-big.yaml", id), fmt.Sprintf(
 			"story:\n  id: %q\n  title: Big %d\n  as_a: user\n  i_want: x\n  so_that: y\n"+
 				"  acceptance_criteria:\n    - id: AC-1\n      description: %q\n",
 			id, index, body,
 		))
 	}
 
-	write("docs/prd/epics/epic-70-big.yaml", epic.String())
+	write("docs/product/epics/epic-70-big.yaml", epic.String())
 
 	return root
 }

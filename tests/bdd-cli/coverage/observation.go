@@ -26,7 +26,7 @@ type Observation struct {
 	Session     string
 	Partition   string // partition basename
 	Subject     string
-	PromptIndex int             // run-local flattened index, 0 when unknown
+	PromptIndex int // run-local flattened index, 0 when unknown
 	Kind        ObservationKind
 	Prompt      *UniversePrompt // shipped prompt earning credit, nil otherwise
 	Evidence    string          // path of the primary evidence file

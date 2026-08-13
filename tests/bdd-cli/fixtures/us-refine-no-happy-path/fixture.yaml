@@ -18,7 +18,7 @@ expected:
   judge: |
     # Expectations for `us refine 96.4` (no happy-path AC)
 
-    The story seed at `docs/prd/stories/96.4-summary-error-messages.yaml`
+    The story seed at `docs/product/stories/96.4-summary-error-messages.yaml`
     contains three well-formed ACs that are ALL error scenarios
     (unshared document, timeout, empty document). No AC describes the
     primary success scenario, so the happy-path check must fail while
@@ -31,7 +31,7 @@ expected:
     ## What MUST be true after the run
 
     1. NO file outside `tmp/` is created or modified. In particular
-       `docs/prd/stories/96.4-summary-error-messages.yaml` is unchanged.
+       `docs/product/stories/96.4-summary-error-messages.yaml` is unchanged.
     2. Stdout contains the checklist report with at least one FAIL row
        and an Overall status that is not PASS.
     3. The happy-path check (the prompt asking whether at least one AC

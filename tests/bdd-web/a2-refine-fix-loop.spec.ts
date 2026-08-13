@@ -135,13 +135,13 @@ test("A2: refine fix loop — choice→freetext→choice, converges, defect gone
   budget.assertWithinBudget(AI_CALL_BUDGET, "A2");
 
   // Oracle: only the target story file changed.
-  await expectOnlyPathsChanged(fixture.baseline, fixture.target, ["docs/prd/stories/77.5-*.yaml"]);
+  await expectOnlyPathsChanged(fixture.baseline, fixture.target, ["docs/product/stories/77.5-*.yaml"]);
 
   // Final invariant: AC-1's description is now a must/should rule with
   // no inline Gherkin (the designed defect is gone). Isolate AC-1's
   // description field (id → description → steps struct order).
   const storyText = fs.readFileSync(
-    path.join(fixture.target, "docs", "prd", "stories", "77.5-document-summary.yaml"),
+    path.join(fixture.target, "docs", "product", "stories", "77.5-document-summary.yaml"),
     "utf8",
   );
   const ac1Block = storyText.slice(storyText.indexOf("AC-1"), storyText.indexOf("AC-2"));

@@ -84,7 +84,7 @@ until those tests pass.
 
 | Subcommand | State |
 |---|---|
-| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/prd/stories/`. |
+| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/product/stories/`. |
 | `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing test referencing the scenario id; the registry itself is never modified. |
@@ -130,7 +130,7 @@ The host project supplies a `true-bdd/` directory at its root:
   `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`,
   `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
   author into), per-command prompt-template paths, and a `documents:`
-  map naming the files a check may cite (`prd`, `architecture_yaml`,
+  map naming the files a check may cite (`product`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.
@@ -227,11 +227,13 @@ The host project's documents live under `docs/`:
   scopes `build code` (which `(service, layer)` pairs get walked) and
   carries the BDD `vocabulary:` (allowed action verbs, forbidden
   action verbs, forbidden qualifiers) cited by the `us refine` checks.
-- `docs/prd/prd.yaml` — the PRD, including the `personas:` that
-  `us create` validates story roles against.
-- `docs/prd/epics/*.yaml` — epic files that `us create` extracts
+- `docs/product/product.yaml` — the product document, including the `roles:` that
+  `us create` validates a story's `as_a:` clause against. These are
+  roles (responsibilities), not personas (invented individuals) — one
+  person commonly holds two of them.
+- `docs/product/epics/*.yaml` — epic files that `us create` extracts
   stories from.
-- `docs/prd/stories/*.yaml` — the stories `us create` writes and
+- `docs/product/stories/*.yaml` — the stories `us create` writes and
   `us refine` / `us apply` read.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into
   and `build tests` walks.

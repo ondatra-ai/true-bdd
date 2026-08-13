@@ -1,0 +1,3 @@
+This is a regular file deliberately occupying the canonical stories
+directory path (paths.stories_dir = docs/product/stories). The inventory
+scanner must report the stories directory as not_a_dir.

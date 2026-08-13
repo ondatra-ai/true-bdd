@@ -5,8 +5,8 @@ import { useFiles, STORIES_DIR, SCENARIOS_PATH, FEATURES_PATH, slug, topLevelInd
 
 // Every Product file page only ever needs ONE "top of file" scroll target
 // (unlike Architecture, nothing here jumps to a sub-line WITHIN a page —
-// story/epic/PRD pages are single-purpose; only /requirements has several
-// scenario rows on one page). Reused across prd/epic/each story page since
+// story/epic/product document pages are single-purpose; only /requirements has several
+// scenario rows on one page). Reused across product/epic/each story page since
 // they're never mounted at the same time as each other.
 export const FILE_TOP_ID = "file-top";
 export function scnAnchorId(id) {
@@ -248,7 +248,7 @@ export function appendStoryStub(existingIds, message, defaultFeatureId) {
   const titleGuess = message.replace(/^(please\s+)?add\s+(a\s+)?story\s*(about|for|on)?\s*/i, "").trim();
   const title = titleGuess ? titleGuess.charAt(0).toUpperCase() + titleGuess.slice(1) : `New story ${newId}`;
   const fileSlug = slug(title) || `story-${newId}`;
-  const filePath = `docs/prd/stories/${newId}-${fileSlug}.yaml`;
+  const filePath = `docs/product/stories/${newId}-${fileSlug}.yaml`;
 
   const storyStub = storyYamlFor(newId, title, defaultFeatureId || "(none)", message);
 
@@ -260,7 +260,7 @@ export function appendStoryStub(existingIds, message, defaultFeatureId) {
 export function createStoryFile(existingIds, title, featureId) {
   const newId = nextStoryId(existingIds);
   const fileSlug = slug(title) || `story-${newId}`;
-  const filePath = `docs/prd/stories/${newId}-${fileSlug}.yaml`;
+  const filePath = `docs/product/stories/${newId}-${fileSlug}.yaml`;
   const storyStub = storyYamlFor(newId, title, featureId, "(not captured yet — added via the new-story form)");
   return { filePath, storyStub, newId };
 }

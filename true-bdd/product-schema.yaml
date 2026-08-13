@@ -1,0 +1,40 @@
+# Yamale schema for the PRD (path from `documents.prd` in true-bdd.yaml,
+# conventionally docs/prd/prd.yaml).
+#
+# The engine never parses the PRD — it reaches the checklists as prompt
+# text — so this schema is the only thing pinning its shape. Validate it
+# in the host project's lint step, outside the engine:
+#
+#   yamale -s true-bdd/prd-schema.yaml docs/prd/prd.yaml
+#
+# Every field is required. `not_goals` and `glossary` are the two lists
+# allowed to be empty: a product may rule nothing out and may need no
+# vocabulary of its own, but it must say so deliberately by declaring the
+# key rather than omitting it.
+
+title: str()
+description: include('description')
+roles: list(include('role'), min=1)
+glossary: list(include('glossary_entry'))
+
+---
+description:
+  summary: str()
+  problem: str()
+  goals: list(str(), min=1)
+  targets: list(str(), min=1)
+  not_goals: list(str())
+
+---
+# A role is a responsibility, not a persona: `name` is the closed
+# vocabulary a story's `as_a:` clause must match exactly.
+role:
+  name: str()
+  definition: str()
+  primary_use_case: str()
+  characteristics: list(str(), min=1)
+
+---
+glossary_entry:
+  term: str()
+  means: str()

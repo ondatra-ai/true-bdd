@@ -7,11 +7,11 @@
 # The regression this guards is a SILENT one, and it was live: every
 # `us-create-*` fixture emitted 8-9 `Read(./docs/architecture/architecture.yaml)`
 # instructions for a file none of them ship. The model noticed each
-# time, said so in its reasoning, and answered from the PRD alone. The
+# time, said so in its reasoning, and answered from the product document alone. The
 # suite stayed green. A checklist that quietly validates against half
 # its declared evidence is worse than one that refuses to start.
 #
-# Trigger: this fixture ships the epic but NOT `docs/prd/prd.yaml`,
+# Trigger: this fixture ships the epic but NOT `docs/product/product.yaml`,
 # which the shipped `us-create.yaml` declares on all 9 prompts. The
 # trigger is the omitted file, not any particular checklist line, so
 # the fixture keeps its meaning however the `architecture_yaml`
@@ -31,21 +31,21 @@ expected:
   stdout_regex:
     # The message must name the document that could not be satisfied,
     # not just say "a document is missing".
-    - "docs/prd/prd\\.yaml"
+    - "docs/product/product\\.yaml"
 
   judge: |
     # Expectations for `true-bdd us create 99.1` with a declared document absent
 
-    The fixture ships `docs/prd/epics/epic-99-bdd-test.yaml` but does
-    **not** ship `docs/prd/prd.yaml`. Every validation prompt in the
-    shipped `us-create.yaml` declares `prd` under `docs:`, so the engine
+    The fixture ships `docs/product/epics/epic-99-bdd-test.yaml` but does
+    **not** ship `docs/product/product.yaml`. Every validation prompt in the
+    shipped `us-create.yaml` declares `product` under `docs:`, so the engine
     cannot give those prompts the evidence they ask for and must refuse
     to start.
 
     ## What MUST be true after the run
 
     1. **No file was created or modified anywhere outside `tmp/`.** In
-       particular nothing was written under `docs/prd/stories/` — no
+       particular nothing was written under `docs/product/stories/` — no
        story file was produced.
     2. The run aborted **before any AI turn was dispatched**. The log
        artifact `tmp/true-bdd.log.json` is included in the diff below;
@@ -56,7 +56,7 @@ expected:
        write nothing".
     3. The failure is attributable from the log alone:
        `tmp/true-bdd.log.json` contains a record naming the
-       unsatisfiable document `docs/prd/prd.yaml`. Judge this ONLY on
+       unsatisfiable document `docs/product/product.yaml`. Judge this ONLY on
        the diff below — the run's stdout is asserted separately by the
        harness and is not part of what you are given.
 
@@ -66,7 +66,7 @@ expected:
       turn` record in `tmp/true-bdd.log.json` means the engine proceeded
       with a prompt it could not supply evidence for — exactly the
       failure this fixture exists to catch.
-    - No story file under `docs/prd/stories/`.
+    - No story file under `docs/product/stories/`.
 
     ## Tolerances
 

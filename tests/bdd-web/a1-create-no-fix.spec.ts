@@ -3,7 +3,7 @@
  * identity-engineered. Epic file number 42, document epic.id 99, row-1
  * declared id 77.5. The browser Create action on the position-derived row
  * 42.1 must dispatch "42.1" (create id = <epic-filename-number>.<position>);
- * the engine writes exactly one docs/prd/stories/77.5-*.yaml.
+ * the engine writes exactly one docs/product/stories/77.5-*.yaml.
  *
  * v2 change (critique A1): generation / folder-wide promotion is GONE (there
  * is no cache and no generation — every browser read is a FRESH CLI scan,
@@ -85,7 +85,7 @@ test("A1: Create on row 42.1 writes one 77.5-*.yaml; both live CLIs' fresh reads
   expect(terminal.outcome).toBe("converged");
 
   // Oracle: exactly one new story file under the declared-id prefix.
-  await expectExactlyOneNewFileMatching(fixture.baseline, fixture.target, "docs/prd/stories/77.5-*.yaml");
+  await expectExactlyOneNewFileMatching(fixture.baseline, fixture.target, "docs/product/stories/77.5-*.yaml");
 
   budget.stop();
   budget.assertWithinBudget(AI_CALL_BUDGET, "A1");

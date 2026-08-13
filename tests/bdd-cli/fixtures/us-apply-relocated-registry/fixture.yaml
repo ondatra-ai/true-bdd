@@ -2,7 +2,7 @@
 # `true-bdd.yaml` — never a hardcoded path. Nothing tested that.
 #
 # Every other fixture ships its docs at the conventional locations, so
-# reintroducing a literal `docs/scenarios.yaml` (or `docs/prd/stories`)
+# reintroducing a literal `docs/scenarios.yaml` (or `docs/product/stories`)
 # inside the engine would leave the entire suite green. This fixture is
 # the one that goes red: its host config relocates BOTH the scenario
 # registry (`documents.scenarios_yaml` -> ./docs/specs/requirements.yaml)
@@ -91,7 +91,7 @@ expected:
        `95.2-001`.
     2. That entry records the story path
        `docs/product/stories/95.2-relocated-registry.yaml` — the
-       relocated location, not `docs/prd/stories/...`.
+       relocated location, not `docs/product/stories/...`.
     3. Its `merged_steps` reflect the AC: at minimum a GET to `/health`
        in `when`, and HTTP 200 in `then`.
     4. Exactly ONE scenario references `95.2-001`. Not two.

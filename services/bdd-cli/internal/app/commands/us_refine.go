@@ -17,7 +17,7 @@ type RefineDeps struct {
 	StoryLoader *storyinfra.StoryLoader
 }
 
-// RunRefine drives `us refine`. Loads a story from docs/prd/stories/,
+// RunRefine drives `us refine`. Loads a story from docs/product/stories/,
 // walks the us-refine checklist, and on convergence updates the
 // story file in place.
 func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix bool) error {
@@ -31,7 +31,7 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix boo
 }
 
 // loadStoryFromFile is the LoadItems factory for `us refine`. Loads
-// the story from docs/prd/stories/<id>-*.yaml and seeds the version
+// the story from docs/product/stories/<id>-*.yaml and seeds the version
 // manager.
 func loadStoryFromFile(
 	loader *storyinfra.StoryLoader,

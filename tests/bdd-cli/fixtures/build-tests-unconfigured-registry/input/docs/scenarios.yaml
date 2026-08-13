@@ -24,7 +24,7 @@ scenarios:
     requirement: "fixture decoy — must never be walked"
     last_updated: "2026-08-13"
     user_stories:
-      - story: "docs/prd/stories/95.2-decoy.yaml"
+      - story: "docs/product/stories/95.2-decoy.yaml"
         scenario_id: "95.2-001"
         merge_date: "2026-08-13"
     merged_steps:

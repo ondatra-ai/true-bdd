@@ -19,7 +19,7 @@ sections:
     validation_prompts:
       - Q: "Question two?"
         rationale: "r2"
-        docs: [prd]
+        docs: [product]
         F: "Fix it."
 `
 

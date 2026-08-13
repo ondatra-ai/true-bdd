@@ -11,7 +11,7 @@ expected:
   judge: |
     # Expectations for `us create 98.1` (validation fails, no fix)
 
-    The synthetic epic at `docs/prd/epics/epic-98-bdd-defects.yaml`
+    The synthetic epic at `docs/product/epics/epic-98-bdd-defects.yaml`
     holds a deliberately malformed story 98.1: a verbose (>50 words)
     statement, an undefined role ("Data Scientist"), an i_want clause
     that prescribes a technical solution full of implementation terms
@@ -27,7 +27,7 @@ expected:
     ## What MUST be true after the run
 
     1. NO file outside `tmp/` is created or modified. In particular,
-       nothing is created under `docs/prd/stories/` and the epic file is
+       nothing is created under `docs/product/stories/` and the epic file is
        unchanged.
     2. Stdout contains the checklist report with multiple FAIL rows
        (at least 4) and an Overall status that is not PASS.

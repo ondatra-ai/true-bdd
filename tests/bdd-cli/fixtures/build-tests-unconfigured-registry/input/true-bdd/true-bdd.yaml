@@ -57,8 +57,8 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
-  epics_dir: "./docs/prd/epics"
-  stories_dir: "docs/prd/stories"
+  epics_dir: "./docs/product/epics"
+  stories_dir: "docs/product/stories"
   checklists_dir: "./true-bdd/checklists"
   # Roots `build tests --fix` may author into. Its applier is told to
   # write tests here, and ExecutionMode is what the crush guard and
@@ -72,7 +72,7 @@ paths:
     - "./services/**"
 
 documents:
-  prd: "./docs/prd/prd.yaml"
+  product: "./docs/product/product.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
   # DELTA vs the seed: `scenarios_yaml` is DELETED, not blanked.
   #

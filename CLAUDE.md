@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/prd/prd.yaml` (PRD incl. personas), `docs/prd/epics/*.yaml`, `docs/prd/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
+This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec + BDD vocabulary), `docs/product/product.yaml` (product document incl. the `roles:` vocabulary), `docs/product/epics/*.yaml`, `docs/product/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
 
 ## CLI Subcommands
 
@@ -23,7 +23,7 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 `us` supergroup:
 
 - `us create <id>` — extract a story from its epic and run the `us-create` checklist.
-- `us refine <id>` — load a story from `docs/prd/stories/` and run the `us-refine` checklist.
+- `us refine <id>` — load a story from `docs/product/stories/` and run the `us-refine` checklist.
 - `us apply <id>` — walk every AC in a refined story, validate against `us-apply`, and merge scenarios into the central scenario registry (path from `documents.scenarios_yaml`, conventionally `docs/scenarios.yaml`).
 
 `build` supergroup — Spec-as-Source regeneration steps:
@@ -111,7 +111,7 @@ expected:
     ...
 ```
 
-The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic prd, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
+The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic product doc, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
 
 The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `services/bdd-cli/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 

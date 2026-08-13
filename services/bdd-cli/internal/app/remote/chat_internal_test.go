@@ -206,7 +206,7 @@ func TestNewChatHandlerReadsDriverEnv(t *testing.T) {
 
 func TestEnforceTargetBindingRejectsWrongTarget(t *testing.T) {
 	result, ok := parseChatResult(
-		`{"reply_text": "ok", "edit": {"path": "docs/prd/prd.yaml", "new_content": "title: x\n"}}`,
+		`{"reply_text": "ok", "edit": {"path": "docs/product/product.yaml", "new_content": "title: x\n"}}`,
 	)
 	if !ok {
 		t.Fatalf("expected a well-formed parse")

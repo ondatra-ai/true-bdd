@@ -15,7 +15,7 @@
 //	{
 //	  "documents": {                       // key -> status
 //	    "config":          "present|missing|invalid|present_empty",
-//	    "prd":             "present|missing|invalid",
+//	    "product":             "present|missing|invalid",
 //	    "architecture":    "present|missing|invalid",
 //	    "registry":        "present|missing|invalid|present_empty",
 //	    "stories-dir":     "present|missing|not_a_dir",
