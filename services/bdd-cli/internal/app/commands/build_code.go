@@ -145,7 +145,7 @@ func servicePaths(services []architecture.Service) []string {
 	return paths
 }
 
-// walkServiceLayers iterates the three test layers declared by one
+// walkServiceLayers iterates the two test layers declared by one
 // service, dispatching each to its framework runner and skipping
 // (framework, path, configFile) combinations already discovered through
 // another service entry. Returns the failures collected for this
@@ -160,7 +160,6 @@ func walkServiceLayers(
 		name string
 		cfg  architecture.TestConfig
 	}{
-		{testrunner.LayerUnit, svc.Tests.Unit},
 		{testrunner.LayerIntegration, svc.Tests.Integration},
 		{testrunner.LayerE2E, svc.Tests.E2E},
 	}

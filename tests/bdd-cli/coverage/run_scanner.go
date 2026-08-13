@@ -19,7 +19,11 @@ type FixtureRun struct {
 	Partitions []string // per-invocation artifact dirs tmp/<YYYY-MM-DD-HH-MM>
 }
 
-var partitionRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$`)
+// partitionRe matches the engine's per-invocation artifact dir. The
+// engine names it `2006-01-02-15-04-05-<pid>` (fs.RunDirectory), so the
+// seconds and pid suffixes are required; the older minute-granular form
+// stays accepted for runs retained before that change.
+var partitionRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}(-\d{2}(-\d+)?)?$`)
 
 // configDirNames covers the current and the pre-rename config dir
 // name, both present among retained runs.

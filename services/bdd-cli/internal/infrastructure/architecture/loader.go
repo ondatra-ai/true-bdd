@@ -26,12 +26,12 @@ type TestConfig struct {
 	Pattern    string `yaml:"pattern,omitempty"`
 }
 
-// ServiceTests bundles the three test-layer configs declared under
-// one service's `quality_gate.tests:`.
+// ServiceTests bundles the two test-layer configs declared under
+// one service's `quality_gate.tests:`. Unit tests are implementation
+// detail `build code` generates, never spec, so they have no layer here.
 type ServiceTests struct {
 	E2E         TestConfig `yaml:"e2e"`
 	Integration TestConfig `yaml:"integration"`
-	Unit        TestConfig `yaml:"unit"`
 }
 
 // Service is one entry in `architecture.services[]`.

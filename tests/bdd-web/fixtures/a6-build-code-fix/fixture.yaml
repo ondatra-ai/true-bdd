@@ -1,7 +1,7 @@
 # A6 (plan §4.3): `build code --fix` over a Go module.
 #
 # architecture.yaml declares service `calculator` (path
-# services/calculator) with a unit layer whose framework is `go-test`.
+# services/calculator) with an e2e layer whose framework is `go-test`.
 # build-code runs `go test -C services/calculator ./...`, discovers the
 # one failing test (TestAdd), and walks it against the single build-code
 # prompt. With --fix the applier edits ONLY production source under

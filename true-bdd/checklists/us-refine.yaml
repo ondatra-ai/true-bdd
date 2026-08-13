@@ -285,7 +285,7 @@ sections:
 
           READ docs/architecture/architecture.yaml CAREFULLY. It is the single
           source of truth for both:
-          - the test framework per service and per layer (e2e / integration / unit)
+          - the test framework per service and per layer (e2e / integration)
           - the test helpers available per layer (e.g. McpClient, page fixtures)
 
           Pick the framework whose service+layer best matches what the AC

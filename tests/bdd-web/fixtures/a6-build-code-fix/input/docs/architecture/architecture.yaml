@@ -1,5 +1,5 @@
 # Architecture for the A6 build-code fixture. ONE service `calculator`
-# with a unit test layer whose framework is `go-test` and whose path is
+# with an e2e test layer whose framework is `go-test` and whose path is
 # the Go module root services/calculator. build-code runs
 # `go test -C services/calculator ./...` to discover failing tests.
 architecture:
@@ -9,6 +9,6 @@ architecture:
       language: go
       quality_gate:
         tests:
-          unit:
+          e2e:
             path: services/calculator
             framework: go-test

@@ -9,7 +9,6 @@ import (
 // Layer constants used by FailingTest.Layer. Match the keys under
 // architecture.yaml's `quality_gate.tests:` block.
 const (
-	LayerUnit        = "unit"
 	LayerIntegration = "integration"
 	LayerE2E         = "e2e"
 )
@@ -25,7 +24,7 @@ const FailureOutputCap = 8 * 1024
 type FailingTest struct {
 	ID            string    // "<service>/<layer>/<sanitized framework id>"
 	Service       string    // architecture.yaml service.name
-	Layer         string    // LayerUnit | LayerIntegration | LayerE2E
+	Layer         string    // LayerIntegration | LayerE2E
 	Framework     string    // "go-test" | "playwright" | "jest"
 	TestName      string    // framework-native re-run identifier
 	FilePath      string    // repo-relative path of the test source
