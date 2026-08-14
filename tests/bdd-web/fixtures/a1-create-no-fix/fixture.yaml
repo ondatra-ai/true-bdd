@@ -3,7 +3,7 @@
 # Epic file number 42, document epic.id 99, row 1 declared story id
 # 77.5. The harness Create action for the position-derived row 42.1
 # sends "42.1"; the engine extracts row 1 from epic-42 and writes the
-# new story under docs/prd/stories/ using the DECLARED id (77.5) as the
+# new story under docs/product/stories/ using the DECLARED id (77.5) as the
 # filename prefix.
 #
 # checklist_prompts filters the LIVE us-create checklist to the single

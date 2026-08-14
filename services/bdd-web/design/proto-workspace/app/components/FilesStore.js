@@ -9,9 +9,9 @@ import { createContext, useContext, useState } from "react";
 // files store keyed by path... one shared provider." In-memory only.
 
 export const ARCHITECTURE_PATH = "docs/architecture/architecture.yaml";
-export const PRD_PATH = "docs/prd/prd.yaml";
+export const PRODUCT_PATH = "docs/product/product.yaml";
 export const SCENARIOS_PATH = "docs/scenarios.yaml";
-export const FEATURES_PATH = "docs/prd/features.yaml";
+export const FEATURES_PATH = "docs/product/features.yaml";
 // No epic file/concept anymore — stories are flat, direct children of
 // Product, and the Stories outline derives from the story FILES themselves
 // (see ProductFiles.js's deriveStories) rather than any epic's stories: list.
@@ -22,10 +22,10 @@ export const FEATURES_PATH = "docs/prd/features.yaml";
 // lives ONLY on the referencing side; see ProductFiles.js's
 // parseFeaturesOutline / useFeatureAggregate for the derived view, and
 // setStoryFeature / setScenarioFeature for the picker-driven rewrites.
-export const STORIES_DIR = "docs/prd/stories/";
-export const STORY_60_1_PATH = "docs/prd/stories/60.1-summary-length-preference.yaml";
-export const STORY_60_2_PATH = "docs/prd/stories/60.2-summary-shared-docs.yaml";
-export const STORY_60_3_PATH = "docs/prd/stories/60.3-summary-error-messages.yaml";
+export const STORIES_DIR = "docs/product/stories/";
+export const STORY_60_1_PATH = "docs/product/stories/60.1-summary-length-preference.yaml";
+export const STORY_60_2_PATH = "docs/product/stories/60.2-summary-shared-docs.yaml";
+export const STORY_60_3_PATH = "docs/product/stories/60.3-summary-error-messages.yaml";
 
 // ── shared line-parsing utilities ──────────────────────────────────────
 // Small structural readers tuned to OUR synthetic files' shape (top-level
@@ -107,14 +107,14 @@ docker:
     services reference their own section here via compose_ref.
 `;
 
-// Mirrors the real fixtures' docs/prd/prd.yaml shape (tests/bdd-cli/fixtures/
-// us-create-happy-path/input/docs/prd/prd.yaml) — same title/personas the
-// mockup's /prd-overview page already shows. The epic layer was removed from
-// the model, so the PRD indexes story files directly.
-const PRD_YAML = `title: "MCP Google Docs Editor (harness AI fixture stub)"
-summary: "Synthetic PRD for harness E2E AI fixtures — deliberately minimal."
+// Mirrors the real fixtures' docs/product/product.yaml shape (tests/bdd-cli/fixtures/
+// us-create-happy-path/input/docs/product/product.yaml) — same title/roles the
+// mockup's /product-overview page already shows. The epic layer was removed from
+// the model, so the product document indexes story files directly.
+const PRODUCT_YAML = `title: "MCP Google Docs Editor (harness AI fixture stub)"
+summary: "Synthetic product document for harness E2E AI fixtures — deliberately minimal."
 
-personas:
+roles:
   - name: Claude User
     definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
     primary_use_case: "Document editing through conversational AI interface"
@@ -131,11 +131,11 @@ personas:
 
 stories:
   - id: "60.1"
-    file: docs/prd/stories/60.1-summary-length-preference.yaml
+    file: docs/product/stories/60.1-summary-length-preference.yaml
   - id: "60.2"
-    file: docs/prd/stories/60.2-summary-shared-docs.yaml
+    file: docs/product/stories/60.2-summary-shared-docs.yaml
   - id: "60.3"
-    file: docs/prd/stories/60.3-summary-error-messages.yaml
+    file: docs/product/stories/60.3-summary-error-messages.yaml
 `;
 
 // Minimal by design (steering correction): just id/slug + description, no
@@ -275,21 +275,21 @@ scenarios:
     service: "mcp-service"
     feature: summaries
     user_stories:
-      - story: docs/prd/stories/60.2-summary-shared-docs.yaml
+      - story: docs/product/stories/60.2-summary-shared-docs.yaml
         scenario_id: "60.2-001"
   E2E-602:
     description: "Summary timeout surfaces the timed-out message"
     service: "mcp-service"
     feature: error-handling
     user_stories:
-      - story: docs/prd/stories/60.3-summary-error-messages.yaml
+      - story: docs/product/stories/60.3-summary-error-messages.yaml
         scenario_id: "60.3-001"
   E2E-603:
     description: "Oversized documents state the summarized word range"
     service: "mcp-service"
     feature: error-handling
     user_stories:
-      - story: docs/prd/stories/60.3-summary-error-messages.yaml
+      - story: docs/product/stories/60.3-summary-error-messages.yaml
         scenario_id: "60.3-002"
   INT-901:
     description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
@@ -302,7 +302,7 @@ scenarios:
 
 const INITIAL_FILES = {
   [ARCHITECTURE_PATH]: ARCHITECTURE_YAML,
-  [PRD_PATH]: PRD_YAML,
+  [PRODUCT_PATH]: PRODUCT_YAML,
   [FEATURES_PATH]: FEATURES_YAML,
   [STORY_60_1_PATH]: STORY_60_1_YAML,
   [STORY_60_2_PATH]: STORY_60_2_YAML,

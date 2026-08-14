@@ -200,7 +200,7 @@ func TestGoldenContentHappyFlattensAndAndBut(t *testing.T) {
 	}
 
 	// Raw is the verbatim file (byte-exact) — tied to the file, not duplicated.
-	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "prd", "stories", "60.2-summary-shared-docs.yaml"))
+	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "product", "stories", "60.2-summary-shared-docs.yaml"))
 	if err != nil {
 		t.Fatalf("read story file: %v", err)
 	}
@@ -284,7 +284,7 @@ func TestGoldenSyntaxInvalidStoryCarriesRawAndError(t *testing.T) {
 	}
 
 	// Raw is preserved verbatim even for an unparseable file (the modal Raw tab).
-	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "prd", "stories", "70.1-broken.yaml"))
+	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "product", "stories", "70.1-broken.yaml"))
 	if err != nil {
 		t.Fatalf("read broken story: %v", err)
 	}
@@ -306,9 +306,9 @@ func TestGoldenTypedModelInvalidStoryIsInvalidWithoutContent(t *testing.T) {
 	// step) must be created=invalid with NO content, distinct from a
 	// syntactically-broken file — mirroring us apply's typed decoder.
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-70-probe.yaml": "epic:\n  id: 70\n  name: Probe Epic\nstories:\n  - id: \"70.1\"\n" +
+		"docs/product/epics/epic-70-probe.yaml": "epic:\n  id: 70\n  name: Probe Epic\nstories:\n  - id: \"70.1\"\n" +
 			"    title: Probe\n    as_a: user\n    i_want: x\n    so_that: y\n",
-		"docs/prd/stories/70.1-probe.yaml": "story:\n  id: \"70.1\"\n  acceptance_criteria:\n    - id: AC-1\n" +
+		"docs/product/stories/70.1-probe.yaml": "story:\n  id: \"70.1\"\n  acceptance_criteria:\n    - id: AC-1\n" +
 			"      description: rule\n      steps:\n        - 42\n",
 	})
 
@@ -340,8 +340,8 @@ func TestGoldenRawTruncatedAtUTF8Boundary(t *testing.T) {
 		"  acceptance_criteria:\n    - id: AC-1\n      description: \"" + padding + "\"\n"
 
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-70-probe.yaml": "epic:\n  id: 70\n  name: Probe\nstories:\n  - id: \"70.1\"\n",
-		"docs/prd/stories/70.1-big.yaml":    storyYAML,
+		"docs/product/epics/epic-70-probe.yaml": "epic:\n  id: 70\n  name: Probe\nstories:\n  - id: \"70.1\"\n",
+		"docs/product/stories/70.1-big.yaml":    storyYAML,
 	})
 
 	story := gStoryOf(t, scanJSON(t, folder), "70.1")

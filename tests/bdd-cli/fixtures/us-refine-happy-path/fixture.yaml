@@ -20,7 +20,7 @@ expected:
   judge: |
     # Expectations for `us refine 96.1` (happy path)
 
-    The story seed at `docs/prd/stories/96.1-document-summary-refined.yaml`
+    The story seed at `docs/product/stories/96.1-document-summary-refined.yaml`
     is designed to pass every prompt of the us-refine checklist without
     any fix: 4 rule-based ACs with full Given/When/Then steps, exact
     messages and numeric thresholds, two happy-path and two
@@ -32,7 +32,7 @@ expected:
     ## What MUST be true after the run
 
     1. The only file created or modified outside `tmp/` is
-       `docs/prd/stories/96.1-document-summary-refined.yaml` (the CLI may
+       `docs/product/stories/96.1-document-summary-refined.yaml` (the CLI may
        rewrite it on convergence), OR no file at all is modified if the
        CLI wrote byte-identical content.
     2. If the story file was rewritten, it is valid YAML with a
@@ -53,7 +53,7 @@ expected:
     ## What MUST NOT happen
 
     - No AC is dropped or added.
-    - No edits to `true-bdd/`, `docs/prd/prd.yaml`, `docs/architecture*`, or
+    - No edits to `true-bdd/`, `docs/product/product.yaml`, `docs/architecture*`, or
       any file other than the story file.
 
     ## Tolerances

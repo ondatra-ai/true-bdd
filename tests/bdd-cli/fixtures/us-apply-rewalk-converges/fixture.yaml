@@ -75,7 +75,7 @@ expected:
        `merged_steps` (no duplicates).
     4. Each created scenario's `merged_steps.{given,when,then}` reflects
        the corresponding AC's `steps.{given,when,then}` from
-       `docs/prd/stories/99.3-rewalk-fixture.yaml`.
+       `docs/product/stories/99.3-rewalk-fixture.yaml`.
     5. No files outside `docs/scenarios.yaml` and the per-run `tmp/`
        directory are created or modified.
 

@@ -1,0 +1,24 @@
+title: "MCP Google Docs Editor (harness workspace fixture)"
+summary: "Synthetic product document for the workspace file-as-source E2E suite — deliberately minimal."
+
+roles:
+  - name: Claude User
+    definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
+    primary_use_case: "Document editing through conversational AI interface"
+    characteristics:
+      - "Non-technical users focused on content creation and editing"
+      - "Values seamless integration between Claude AI and Google Docs"
+  - name: Developer/Maintainer
+    definition: "Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system"
+    primary_use_case: "System development, deployment, and operational support"
+    characteristics:
+      - "Technical expertise in Go, MCP protocol, and Google APIs"
+      - "Focused on system reliability, security, and performance"
+
+stories:
+  - id: "60.1"
+    file: docs/product/stories/60.1-summary-length-preference.yaml
+  - id: "60.2"
+    file: docs/product/stories/60.2-summary-shared-docs.yaml
+  - id: "60.3"
+    file: docs/product/stories/60.3-summary-error-messages.yaml

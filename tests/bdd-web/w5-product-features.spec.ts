@@ -45,12 +45,12 @@ test("w5.1 PRD, features, story, scenarios each render as a file page with verba
   env = await WorkspaceEnv.start("w5-file-pages");
   const e = env;
   const cases: Array<[string, string, string]> = [
-    [wsRoutes.product(e.sid), "docs/prd/prd.yaml", e.seedTokenInDoc("docs/prd/prd.yaml")],
-    [wsRoutes.features(e.sid), "docs/prd/features.yaml", e.seedTokenInDoc("docs/prd/features.yaml")],
+    [wsRoutes.product(e.sid), "docs/product/product.yaml", e.seedTokenInDoc("docs/product/product.yaml")],
+    [wsRoutes.features(e.sid), "docs/product/features.yaml", e.seedTokenInDoc("docs/product/features.yaml")],
     [
       wsRoutes.story(e.sid, "60.2"),
-      "docs/prd/stories/60.2-summary-shared-docs.yaml",
-      e.seedTokenInDoc("docs/prd/stories/60.2-summary-shared-docs.yaml"),
+      "docs/product/stories/60.2-summary-shared-docs.yaml",
+      e.seedTokenInDoc("docs/product/stories/60.2-summary-shared-docs.yaml"),
     ],
     [wsRoutes.scenarios(e.sid), "docs/scenarios.yaml", e.seedTokenInDoc("docs/scenarios.yaml")],
   ];
@@ -173,7 +173,7 @@ test("w5.4 feature aggregation shows description + tagged rows; reassign by pick
   const row60_1 = stories.locator(`[data-testid="${WTID.featureStoryRow}"][data-story-id="60.1"]`);
   await pickFeatureIn(row60_1, target);
   await expect(stories.locator(`[data-testid="${WTID.featureStoryRow}"][data-story-id="60.1"]`)).toHaveCount(0);
-  const s1 = await e.waitForDocOnDisk("docs/prd/stories/60.1-summary-length-preference.yaml", (b) =>
+  const s1 = await e.waitForDocOnDisk("docs/product/stories/60.1-summary-length-preference.yaml", (b) =>
     new RegExp(`feature:\\s*${target}`).test(b),
   );
   expect((parse(s1) as { story: { feature: string } }).story.feature).toBe(target);
@@ -187,7 +187,7 @@ test("w5.4 feature aggregation shows description + tagged rows; reassign by pick
   const editor = page.getByTestId(WTID.fileViewEditor);
   const current = await readEditor(editor);
   await writeEditor(editor, current.replace(/feature:\s*summaries/, `feature: ${target}`));
-  const s2 = await e.waitForDocOnDisk("docs/prd/stories/60.2-summary-shared-docs.yaml", (b) =>
+  const s2 = await e.waitForDocOnDisk("docs/product/stories/60.2-summary-shared-docs.yaml", (b) =>
     new RegExp(`feature:\\s*${target}`).test(b),
   );
   expect((parse(s2) as { story: { feature: string } }).story.feature).toBe(target);
@@ -205,8 +205,8 @@ test("w5.4a PRD and features file pages are directly editable, live, and persist
   const e = env;
 
   for (const [route, docPath] of [
-    [wsRoutes.product(e.sid), "docs/prd/prd.yaml"],
-    [wsRoutes.features(e.sid), "docs/prd/features.yaml"],
+    [wsRoutes.product(e.sid), "docs/product/product.yaml"],
+    [wsRoutes.features(e.sid), "docs/product/features.yaml"],
   ] as const) {
     await gotoWorkspace(page, e.baseURL, route);
     const editor = page.getByTestId(WTID.fileViewEditor);
@@ -262,7 +262,7 @@ test("w5.5 new story requires a feature; search-pick FILTERS; create-new appends
   await createFeatureIn(form2, novel);
   await form2.getByTestId(WTID.newStorySubmit).click();
 
-  const feat = await e.waitForDocOnDisk("docs/prd/features.yaml", (b) => b.includes(novel));
+  const feat = await e.waitForDocOnDisk("docs/product/features.yaml", (b) => b.includes(novel));
   const rec = (parse(feat) as { features: Array<{ id: string }> }).features.find((f) => f.id === novel);
   expect(rec && Object.keys(rec).sort()).toEqual(["description", "id"]);
   await e.waitForStoryFile((bytes) => (parse(bytes) as { story?: { feature?: string } })?.story?.feature === novel);
@@ -275,7 +275,7 @@ test("w5.6 changing a story's feature via the searchable picker writes it to the
   await gotoWorkspace(page, e.baseURL, wsRoutes.story(e.sid, "60.2"));
   await pickFeatureIn(page, "error-handling");
 
-  const bytes = await e.waitForDocOnDisk("docs/prd/stories/60.2-summary-shared-docs.yaml", (b) =>
+  const bytes = await e.waitForDocOnDisk("docs/product/stories/60.2-summary-shared-docs.yaml", (b) =>
     /feature:\s*error-handling/.test(b),
   );
   expect((parse(bytes) as { story: { feature: string } }).story.feature).toBe("error-handling");

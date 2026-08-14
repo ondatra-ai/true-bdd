@@ -407,7 +407,7 @@ test("w16.6 the product breadcrumb is a spaced multi-level trail ending in a dis
   await expect(breadcrumb).toBeVisible();
 
   // Multi-level: at least two parent LINKS (baseline: Sessions / Workspace
-  // overview / prd.yaml) — prod currently renders a single "Home" link.
+  // overview / product.yaml) — prod currently renders a single "Home" link.
   const links = breadcrumb.locator("a");
   expect(await links.count(), "the product breadcrumb must offer at least two parent links").toBeGreaterThanOrEqual(2);
 
@@ -451,9 +451,9 @@ test("w16.6 the product breadcrumb is a spaced multi-level trail ending in a dis
 
   // The bare `/product` route IS the PRD file's own page, so its trail is
   // EXACTLY the three baseline crumbs — Sessions / Workspace overview /
-  // prd.yaml — with NO self-referential "Product" parent crumb linking to the
+  // product.yaml — with NO self-referential "Product" parent crumb linking to the
   // current route. The ≥2-link / ≥2-sep checks above would happily accept the
-  // rejected 4-crumb `Sessions / Workspace overview / Product / prd.yaml`
+  // rejected 4-crumb `Sessions / Workspace overview / Product / product.yaml`
   // trail; that exact-shape property lived ONLY in the gitignored unit suite,
   // so a regenerate-from-tests could silently reintroduce the self-ref crumb.
   // Pin it here (reviewer round 1 — durable-spec audit).
@@ -471,7 +471,7 @@ test("w16.6 the product breadcrumb is a spaced multi-level trail ending in a dis
   expect(crumbTexts, "the bare /product breadcrumb must be exactly the three baseline crumbs").toEqual([
     "Sessions",
     "Workspace overview",
-    "prd.yaml",
+    "product.yaml",
   ]);
   const currentHref = new URL(page.url()).pathname;
   const selfRefLinks = await breadcrumb.evaluate((root, current2) => {

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	prdRel        = "docs/prd/prd.yaml"
-	prdPath       = "./" + prdRel
+	productRel    = "docs/product/product.yaml"
+	productPath   = "./" + productRel
 	archRel       = "docs/architecture/architecture.yaml"
 	archPath      = "./" + archRel
 	scenariosRel  = "docs/scenarios.yaml"
@@ -70,17 +70,17 @@ func writeFile(t *testing.T, path, content string) {
 // configured, and actually on disk.
 func TestResolveAcceptsExistingDocument(t *testing.T) {
 	resolver := newTestResolver(t,
-		map[string]string{KeyPRD: prdPath},
-		[]string{prdRel},
+		map[string]string{KeyProduct: productPath},
+		[]string{productRel},
 	)
 
-	path, err := resolver.Resolve(KeyPRD)
+	path, err := resolver.Resolve(KeyProduct)
 	if err != nil {
-		t.Fatalf("Resolve(prd): unexpected error %v", err)
+		t.Fatalf("Resolve(product): unexpected error %v", err)
 	}
 
-	if path != prdPath {
-		t.Errorf("Resolve(prd) = %q, want ./docs/prd/prd.yaml", path)
+	if path != productPath {
+		t.Errorf("Resolve(product) = %q, want ./docs/product/product.yaml", path)
 	}
 }
 
@@ -155,8 +155,8 @@ func TestResolveAcceptsScenariosRegistry(t *testing.T) {
 // resolve — never a silent fall back to docs/scenarios.yaml.
 func TestResolveScenariosRegistryNotConfigured(t *testing.T) {
 	resolver := newTestResolver(t,
-		map[string]string{KeyPRD: prdPath},
-		[]string{prdRel, scenariosRel},
+		map[string]string{KeyProduct: productPath},
+		[]string{productRel, scenariosRel},
 	)
 
 	_, err := resolver.Resolve(KeyScenariosYAML)
@@ -170,8 +170,8 @@ func TestResolveScenariosRegistryNotConfigured(t *testing.T) {
 }
 
 func TestResolveRejectsUnknownKey(t *testing.T) {
-	resolver := newTestResolver(t, map[string]string{KeyPRD: prdPath},
-		[]string{prdRel})
+	resolver := newTestResolver(t, map[string]string{KeyProduct: productPath},
+		[]string{productRel})
 
 	_, err := resolver.Resolve("no_such_doc")
 	if !errors.Is(err, ErrUnknownDocKey) {
@@ -180,9 +180,9 @@ func TestResolveRejectsUnknownKey(t *testing.T) {
 }
 
 func TestResolveRejectsUnconfiguredPath(t *testing.T) {
-	resolver := newTestResolver(t, map[string]string{KeyPRD: ""}, nil)
+	resolver := newTestResolver(t, map[string]string{KeyProduct: ""}, nil)
 
-	_, err := resolver.Resolve(KeyPRD)
+	_, err := resolver.Resolve(KeyProduct)
 	if !errors.Is(err, ErrDocPathNotConfigured) {
 		t.Fatalf("Resolve: error = %v, want ErrDocPathNotConfigured", err)
 	}
@@ -193,16 +193,16 @@ func TestResolveRejectsUnconfiguredPath(t *testing.T) {
 // failure tells you everything you have to fix.
 func TestResolveAllReportsEveryProblem(t *testing.T) {
 	resolver := newTestResolver(t, map[string]string{
-		KeyPRD:              prdPath,
+		KeyProduct:          productPath,
 		KeyArchitectureYAML: archPath,
 	}, nil)
 
-	_, err := resolver.ResolveAll([]string{KeyPRD, KeyArchitectureYAML})
+	_, err := resolver.ResolveAll([]string{KeyProduct, KeyArchitectureYAML})
 	if err == nil {
 		t.Fatal("ResolveAll: expected an error, got nil")
 	}
 
-	for _, want := range []string{prdPath, archPath} {
+	for _, want := range []string{productPath, archPath} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("aggregated error must name %s, got %q", want, err)
 		}
@@ -214,27 +214,27 @@ func TestResolveAllReportsEveryProblem(t *testing.T) {
 // prompt.
 func TestResolveAllDeduplicates(t *testing.T) {
 	resolver := newTestResolver(t,
-		map[string]string{KeyPRD: prdPath},
+		map[string]string{KeyProduct: productPath},
 		nil,
 	)
 
-	_, err := resolver.ResolveAll([]string{KeyPRD, KeyPRD, KeyPRD})
+	_, err := resolver.ResolveAll([]string{KeyProduct, KeyProduct, KeyProduct})
 	if err == nil {
 		t.Fatal("ResolveAll: expected an error, got nil")
 	}
 
-	if strings.Count(err.Error(), prdPath) != 1 {
+	if strings.Count(err.Error(), productPath) != 1 {
 		t.Errorf("duplicate keys must be reported once, got %q", err)
 	}
 }
 
 func TestResolveAllAcceptsSatisfiedSet(t *testing.T) {
 	resolver := newTestResolver(t, map[string]string{
-		KeyPRD:              prdPath,
+		KeyProduct:          productPath,
 		KeyArchitectureYAML: archPath,
-	}, []string{prdRel, archRel})
+	}, []string{productRel, archRel})
 
-	paths, err := resolver.ResolveAll([]string{KeyPRD, KeyArchitectureYAML})
+	paths, err := resolver.ResolveAll([]string{KeyProduct, KeyArchitectureYAML})
 	if err != nil {
 		t.Fatalf("ResolveAll: unexpected error %v", err)
 	}

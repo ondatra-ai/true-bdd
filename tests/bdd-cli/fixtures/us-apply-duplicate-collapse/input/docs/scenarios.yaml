@@ -4,7 +4,7 @@
 # SHIPPED us-apply checklist and exercises the duplicate branch:
 #
 #   - "present?" PASSES: at least one entry references story
-#     docs/prd/stories/95.1-duplicate-collapse.yaml with lineage 95.1-001.
+#     docs/product/stories/95.1-duplicate-collapse.yaml with lineage 95.1-001.
 #   - "duplicate?" FAILS: E2E-900 and E2E-901 BOTH reference lineage
 #     95.1-001. The F: collapses them into a single entry (keep the
 #     lower id, union user_stories and merged_steps, delete the loser).
@@ -28,7 +28,7 @@ scenarios:
     service: "mcp-service"
     last_updated: "2026-07-25"
     user_stories:
-      - story: "docs/prd/stories/95.1-duplicate-collapse.yaml"
+      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
         scenario_id: "95.1-001"
         merge_date: "2026-07-25"
     merged_steps:
@@ -43,7 +43,7 @@ scenarios:
     service: "mcp-service"
     last_updated: "2026-07-25"
     user_stories:
-      - story: "docs/prd/stories/95.1-duplicate-collapse.yaml"
+      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
         scenario_id: "95.1-001"
         merge_date: "2026-07-25"
     merged_steps:
@@ -60,7 +60,7 @@ scenarios:
     service: "web-service"
     last_updated: "2026-07-25"
     user_stories:
-      - story: "docs/prd/stories/90.1-unrelated.yaml"
+      - story: "docs/product/stories/90.1-unrelated.yaml"
         scenario_id: "90.1-001"
         merge_date: "2026-07-25"
     merged_steps:

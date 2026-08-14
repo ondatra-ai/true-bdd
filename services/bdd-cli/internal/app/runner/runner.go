@@ -61,7 +61,7 @@ type Spec[I any] struct {
 	Fix bool
 
 	// LoadItems is the per-command source. For us create it loads
-	// from the epic; us refine from docs/prd/stories/; us apply parses
+	// from the epic; us refine from docs/product/stories/; us apply parses
 	// the refined story into one item per AC plus seeding the
 	// scratch registry.
 	LoadItems func(ctx context.Context) ([]I, error)

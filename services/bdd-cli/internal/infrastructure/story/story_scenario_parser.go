@@ -114,7 +114,7 @@ type rawStoryFile struct {
 	} `yaml:"scenarios"`
 }
 
-// ParseStoryScenarios resolves docs/prd/stories/<storyNumber>-*.yaml,
+// ParseStoryScenarios resolves docs/product/stories/<storyNumber>-*.yaml,
 // validates it uses the canonical AC-with-steps shape, and emits one
 // ScenarioApplyData per AC. The returned slice carries the supplied
 // scratch path on every entry so downstream prompts can reference it.
@@ -182,7 +182,7 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 	return scenarios, storyPath, nil
 }
 
-// resolveStoryPath finds docs/prd/stories/<storyNumber>-*.yaml. Mirrors the
+// resolveStoryPath finds docs/product/stories/<storyNumber>-*.yaml. Mirrors the
 // resolution logic in StoryLoader to keep behavior consistent.
 func (p *StoryScenarioParser) resolveStoryPath(storyNumber string) (string, error) {
 	pattern := filepath.Join(p.storiesDir, storyNumber+"-*.yaml")

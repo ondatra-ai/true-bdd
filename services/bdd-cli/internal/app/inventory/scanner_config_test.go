@@ -85,9 +85,9 @@ func TestScanFallsBackToCanonicalPathsWhenKeysAbsent(t *testing.T) {
 	t.Parallel()
 
 	folder := writeConfigTree(t, map[string]string{
-		configFileRel:                       "paths:\n  stories_dir: \"docs/prd/stories\"\n",
-		"docs/prd/epics/epic-80-canon.yaml": configEpic80,
-		"docs/scenarios.yaml":               configRegistry,
+		configFileRel:                           "paths:\n  stories_dir: \"docs/product/stories\"\n",
+		"docs/product/epics/epic-80-canon.yaml": configEpic80,
+		"docs/scenarios.yaml":                   configRegistry,
 	})
 
 	snapshot := inventory.Scan(folder)
@@ -113,8 +113,8 @@ func TestScanFallsBackToCanonicalPathsOnBlankValues(t *testing.T) {
 documents:
   scenarios_yaml: ""
 `,
-		"docs/prd/epics/epic-80-blank.yaml": configEpic80,
-		"docs/scenarios.yaml":               configRegistry,
+		"docs/product/epics/epic-80-blank.yaml": configEpic80,
+		"docs/scenarios.yaml":                   configRegistry,
 	})
 
 	snapshot := inventory.Scan(folder)

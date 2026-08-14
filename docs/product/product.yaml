@@ -1,0 +1,114 @@
+# Product document for this repository (TrueBDD itself).
+#
+# Read as prompt context by the `us` and `build` checklists — the engine
+# never parses this file, so its shape is free. Every line lands in every
+# AI turn that declares `docs: [product]`, so it stays short.
+#
+# Path resolved from `documents.product` in true-bdd/true-bdd.yaml.
+
+title: "TrueBDD"
+
+description:
+  summary: >-
+    TrueBDD moves the source of truth from the code to the specification, so
+    an agent can rebuild the code from the documentation alone. It is two
+    surfaces over one engine: a Go console harness that walks a project's
+    epics, user stories, and scenarios through checklists, turns each scenario
+    into an executable test, and drives an agent until those tests pass; and a
+    stateless web app that gives the same harness a visual interface and lets
+    it be driven and watched from somewhere other than the terminal it runs
+    in. The harness and the project's files stay on the developer's machine
+    and are the only state. Stack-agnostic. Today it operates one level down
+    from that goal — Spec-Anchored — with the code still committed alongside
+    the spec.
+
+  problem: >-
+    Code has always been the only authoritative record of what a system does.
+    Detail surfaces only while building, third-party limits force
+    workarounds, and UAT feedback lands straight in the code — the written
+    spec quietly diverges and nobody returns to it. Coding agents did not fix
+    this: they drift too, regress features that already worked, and a
+    stakeholder can still ask for a checkbox where a dropdown was specified.
+    So every change still has to be validated by reading code.
+
+  goals:
+    - >-
+      Delete the code, regenerate it from the spec, and have the new build pass
+      every behavioural assertion the spec carries — what survives a rebuild is
+      the observable behaviour and the persistent contracts, not the bytes.
+    - >-
+      Make the specification the artifact worth keeping and the code the
+      artifact that can be thrown away mid-flight.
+    - >-
+      Need the specialist only where a change alters the architecture, not
+      every time a feature the architecture already covers is added.
+    - >-
+      Never let the agent be the judge of its own output — the tests run
+      outside the model, and their result, not the model's opinion, decides
+      whether the work is done.
+    - >-
+      Make the spec tree legible without a terminal — the same run is
+      readable, and drivable, from a screen that is not the one the harness
+      is running on.
+
+  # Adoption, not internals: what usage proves the product works.
+  targets:
+    - "1,000 GitHub stars on ondatra-ai/true-bdd."
+    - "100 developers who have run the CLI against a project of their own."
+    - "25 public repositories carrying a spec tree this engine drives."
+
+  not_goals:
+    - "A hosted platform that owns the work — the web app is stateless and renders a harness running on the developer's own machine; the project's files never leave it, and there is no account or subscription holding them."
+    - "A framework — nothing is imported into the host project; the engine reads its documents and drives its tests from the outside."
+    - "Byte-identical regeneration — two rebuilds from one spec may differ in structure, naming, and internal code paths."
+    - "Describing code structure in the spec — the behavioural spec states user-visible behaviour only."
+    - "Talking to model APIs directly — the engine spawns existing agent CLIs (claude, crush, codex)."
+    - "Minimizing tokens, cost, or wall-clock time — the quality of the generated artifact outranks all three."
+    - "Gherkin as an end in itself — given/when/then is a convenient carrier for behaviour, not the point, and any form that pins the same behaviour could replace it."
+
+# The closed vocabulary for a story's `as_a:` clause. These are roles —
+# responsibilities a person holds — not personas: one human commonly holds
+# two of them, and nothing here depends on personality or headcount.
+roles:
+  - name: Product Owner
+    definition: >-
+      Accountable for the value the product delivers. Owns the product
+      document, the epics, and the user stories, and decides which behaviour
+      the system must exhibit.
+    primary_use_case: "Turning a product goal into registered scenarios — us create, us refine, us apply"
+    characteristics:
+      - "Writes acceptance criteria as observable behaviour, never as implementation"
+      - "Works inside the action vocabulary the System Architect declares"
+      - "Answers each failed check in the --fix loop: apply, refine, or exit"
+      - "May delegate the authoring, but keeps the accountability"
+
+  - name: System Architect
+    definition: >-
+      Defines the technical shape of the system — its services, their
+      interfaces, and the test layers through which behaviour is observed.
+    primary_use_case: "Declaring the architectural contract and running the regeneration loop — build tests, build code"
+    characteristics:
+      - "Owns architecture.yaml: services, quality-gate test layers and frameworks, the BDD vocabulary"
+      - "Designs for testability — every scenario must be observable through a declared layer"
+      - "Pins the contracts that survive regeneration and leaves the rest free to vary"
+      - "Never edits a scenario to make a failing test pass"
+
+  - name: Quality Engineer
+    definition: >-
+      Accountable for the scenario set being complete and executable — that the
+      failure cases are written down and that every step can be automated.
+    primary_use_case: "Hardening scenarios before they reach the registry — us refine"
+    characteristics:
+      - "Asks what could go wrong: permission denied, not found, timeout, boundary values"
+      - "Rejects steps no runner could execute"
+      - "Reads a build tests failure as evidence a scenario is unobservable, not that a test is merely missing"
+      - "Often the same human as the Product Owner; the accountability stays separate"
+
+# Product vocabulary — deliberately empty for now.
+#
+# The key stays declared so the omission is a decision on the record rather
+# than an oversight. Fill it when a `us create` run mis-classifies one of our
+# own words: those checks count "internal implementation terms" in a story's
+# clauses, and a term listed here is asserted to be the user's world, not our
+# implementation.
+glossary: []

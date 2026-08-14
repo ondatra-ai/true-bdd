@@ -209,7 +209,7 @@ test("w10.4 the inventory-health list renders a chip per SessionDetail.inventory
   const statusRe = new RegExp(`^(${INVENTORY_STATUSES.join("|")})$`);
   // File, DIRECTORY, and CHECKLIST entries must ALL render — not only the four doc
   // keys — each with a status chip in the vocabulary (Codex r1 #3).
-  for (const key of ["config", "prd", "architecture", "registry", "stories-dir", "checklist-us-apply"]) {
+  for (const key of ["config", "product", "architecture", "registry", "stories-dir", "checklist-us-apply"]) {
     const row = overviewInventoryRow(page, key);
     await expect(row, `inventory-health row for "${key}"`).toBeVisible(READ);
     const chip = row.getByTestId(WTID.overviewInventoryChip);
@@ -224,7 +224,7 @@ test("w10.4 the inventory-health list renders a chip per SessionDetail.inventory
   await expect(archRow).toContainText("docs/architecture/architecture.yaml");
   await expect(archRow.getByTestId(WTID.overviewInventoryChip)).toHaveAttribute("data-status", "present");
   const storiesRow = overviewInventoryRow(page, "stories-dir");
-  await expect(storiesRow).toContainText("docs/prd/stories");
+  await expect(storiesRow).toContainText("docs/product/stories");
   await expect(storiesRow.getByTestId(WTID.overviewInventoryChip)).toHaveAttribute("data-status", "present");
 });
 

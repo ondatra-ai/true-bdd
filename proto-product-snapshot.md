@@ -25,7 +25,7 @@
           - /url: /product
         - list [ref=f1e27]:
           - listitem [ref=f1e28]:
-            - link "PRD" [ref=f1e29] [cursor=pointer]:
+            - link "product document" [ref=f1e29] [cursor=pointer]:
               - /url: /product
         - group [ref=f1e30]:
           - link "Features:" [ref=f1e32] [cursor=pointer]:
@@ -69,19 +69,19 @@
           - link "Workspace overview" [ref=f1e58] [cursor=pointer]:
             - /url: /workspace-overview
           - generic [ref=f1e59]: /
-          - generic [ref=f1e60]: prd.yaml
+          - generic [ref=f1e60]: product.yaml
         - main [ref=f1e61]:
           - generic [ref=f1e63]:
             - generic [ref=f1e64]: 02—Product
-            - heading "prd.yaml" [level=1] [ref=f1e65]
-            - paragraph [ref=f1e66]: Whole-file view, GitHub-style — PRD goals + personas. Edit directly below, or ask the chat to change it.
+            - heading "product.yaml" [level=1] [ref=f1e65]
+            - paragraph [ref=f1e66]: Whole-file view, GitHub-style — product document goals + roles. Edit directly below, or ask the chat to change it.
           - generic [ref=f1e67]:
             - generic [ref=f1e68]:
-              - generic [ref=f1e69]: docs/prd/prd.yaml
+              - generic [ref=f1e69]: docs/product/product.yaml
               - generic [ref=f1e70]: 26 lines
             - generic [ref=f1e71]:
               - generic [ref=f1e73]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-              - textbox "docs/prd/prd.yaml contents — editable" [ref=f1e74]: "title: \"MCP Google Docs Editor (harness AI fixture stub)\" summary: \"Synthetic PRD for harness E2E AI fixtures — deliberately minimal.\" personas: - name: Claude User definition: \"An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands\" primary_use_case: \"Document editing through conversational AI interface\" characteristics: - \"Non-technical users focused on content creation and editing\" - \"Values seamless integration between Claude AI and Google Docs\" - \"Expects reliable, fast document operations with clear error messaging\" - name: Developer/Maintainer definition: \"Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system\" primary_use_case: \"System development, deployment, and operational support\" characteristics: - \"Technical expertise in Go, Railway CLI, MCP protocol, and Google APIs\" - \"Focused on system reliability, security, and performance\" stories: - id: \"60.1\" file: docs/prd/stories/60.1-summary-length-preference.yaml - id: \"60.2\" file: docs/prd/stories/60.2-summary-shared-docs.yaml - id: \"60.3\" file: docs/prd/stories/60.3-summary-error-messages.yaml"
+              - textbox "docs/product/product.yaml contents — editable" [ref=f1e74]: "title: \"MCP Google Docs Editor (harness AI fixture stub)\" summary: \"Synthetic product document for harness E2E AI fixtures — deliberately minimal.\" roles: - name: Claude User definition: \"An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands\" primary_use_case: \"Document editing through conversational AI interface\" characteristics: - \"Non-technical users focused on content creation and editing\" - \"Values seamless integration between Claude AI and Google Docs\" - \"Expects reliable, fast document operations with clear error messaging\" - name: Developer/Maintainer definition: \"Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system\" primary_use_case: \"System development, deployment, and operational support\" characteristics: - \"Technical expertise in Go, Railway CLI, MCP protocol, and Google APIs\" - \"Focused on system reliability, security, and performance\" stories: - id: \"60.1\" file: docs/product/stories/60.1-summary-length-preference.yaml - id: \"60.2\" file: docs/product/stories/60.2-summary-shared-docs.yaml - id: \"60.3\" file: docs/product/stories/60.3-summary-error-messages.yaml"
       - button "Chat" [ref=f1e76] [cursor=pointer]
   - button "Open Next.js Dev Tools" [ref=f1e82] [cursor=pointer]
   - alert [ref=f1e86]

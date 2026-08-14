@@ -25,17 +25,17 @@ sections:
     validation_prompts:
       - Q: "Question one?"
         rationale: "r1"
-        docs: [prd]
+        docs: [product]
       - Q: "Question two?"
         rationale: "r2"
-        docs: [prd]
+        docs: [product]
         F: "Fix it."
       - Q: "Question three?"
         rationale: "r3"
-        docs: [prd]
+        docs: [product]
       - Q: "Question four, never exercised?"
         rationale: "r4"
-        docs: [prd]
+        docs: [product]
 `
 
 // miniPart is the partition timestamp used across the corpus.

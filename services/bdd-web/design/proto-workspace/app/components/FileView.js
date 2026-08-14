@@ -10,7 +10,7 @@ const GUTTER_TOP_PADDING = 10;
 const FLASH_MS = 900;
 
 // GitHub-file-view-style whole-file rendering, generalized out of
-// /architecture's original page so every Product file page (prd.yaml, the
+// /architecture's original page so every Product file page (product.yaml, the
 // epic file, each story file, scenarios.yaml) can reuse it instead of
 // duplicating the header-bar/gutter/textarea/anchor/flash markup.
 // /architecture itself is left on its own inline implementation

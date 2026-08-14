@@ -55,10 +55,10 @@ test("w14.1 the feature detail page aggregates linked-title rows under three nam
   const seeded = e.seedFeatureOnDisk("reassign"); // unique reassign target (defeats a hardcoded picker)
 
   // Oracles read from the SERVED docs on disk (data-driven, anti-hardcode).
-  const features = (parse(e.readDocOnDisk("docs/prd/features.yaml")) as { features: Array<{ id: string; description: string }> })
+  const features = (parse(e.readDocOnDisk("docs/product/features.yaml")) as { features: Array<{ id: string; description: string }> })
     .features;
   const summariesDescription = features.find((f) => f.id === "summaries")!.description;
-  const storyTitle = (parse(e.readDocOnDisk("docs/prd/stories/60.1-summary-length-preference.yaml")) as {
+  const storyTitle = (parse(e.readDocOnDisk("docs/product/stories/60.1-summary-length-preference.yaml")) as {
     story: { title: string };
   }).story.title;
   const registry = (parse(e.readDocOnDisk("docs/scenarios.yaml")) as {
@@ -142,7 +142,7 @@ test("w14.1 the feature detail page aggregates linked-title rows under three nam
   // row picker prod currently lacks): each picks the seeded feature, persists to
   // disk, and re-buckets the row out of `summaries` live.
   await pickFeatureIn(storyRow, seeded);
-  const storyBytes = await e.waitForDocOnDisk("docs/prd/stories/60.1-summary-length-preference.yaml", (b) =>
+  const storyBytes = await e.waitForDocOnDisk("docs/product/stories/60.1-summary-length-preference.yaml", (b) =>
     new RegExp(`feature:\\s*${seeded}`).test(b),
   );
   expect((parse(storyBytes) as { story: { feature: string } }).story.feature).toBe(seeded);

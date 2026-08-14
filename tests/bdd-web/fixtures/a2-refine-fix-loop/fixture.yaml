@@ -1,7 +1,7 @@
 # A2 (plan §4.3): full `us refine --fix` loop, identity-engineered.
 #
 # Epic file number 70 declares row 1 with story id 77.5; the story FILE
-# docs/prd/stories/77.5-*.yaml carries INTERNAL story.id 88.9. The
+# docs/product/stories/77.5-*.yaml carries INTERNAL story.id 88.9. The
 # harness Refine action on row 70.1 sends the story FILE-PREFIX id
 # "77.5" (refine/apply use the file-prefix, not the position-derived
 # create id).

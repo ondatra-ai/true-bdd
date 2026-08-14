@@ -32,8 +32,8 @@ import (
 const docExistenceAbsent = "absent"
 
 // storyGlobDir is the exclusive-creatable story directory (plan Target
-// state): a NEW `docs/prd/stories/*.yaml` is the only allowed CREATE target.
-const storyGlobDir = "docs/prd/stories/"
+// state): a NEW `docs/product/stories/*.yaml` is the only allowed CREATE target.
+const storyGlobDir = "docs/product/stories/"
 
 // existingFixedDocCount bounds tree()'s slice preallocation (the 4 fixed
 // documents; story files are appended on top).
@@ -49,8 +49,8 @@ const newFilePerm = 0o644
 // shared with the browser, which always addresses the canonical layout.
 const (
 	archYAMLPath      = "docs/architecture/architecture.yaml"
-	prdYAMLPath       = "docs/prd/prd.yaml"
-	featuresYAMLPath  = "docs/prd/features.yaml"
+	productYAMLPath   = "docs/product/product.yaml"
+	featuresYAMLPath  = "docs/product/features.yaml"
 	scenariosYAMLPath = "docs/scenarios.yaml"
 )
 
@@ -58,7 +58,7 @@ const (
 // similarly-named file in the wrong directory is rejected.
 var docExactAllowed = map[string]bool{ //nolint:gochecknoglobals // fixed document allowlist
 	archYAMLPath:      true,
-	prdYAMLPath:       true,
+	productYAMLPath:   true,
 	featuresYAMLPath:  true,
 	scenariosYAMLPath: true,
 }
@@ -67,7 +67,7 @@ var docExactAllowed = map[string]bool{ //nolint:gochecknoglobals // fixed docume
 // the manifest order the doc_tree reply uses.
 var docFixedPaths = []string{ //nolint:gochecknoglobals // fixed document manifest order
 	archYAMLPath,
-	prdYAMLPath,
+	productYAMLPath,
 	featuresYAMLPath,
 	scenariosYAMLPath,
 }
@@ -156,7 +156,7 @@ func newDocStore(folder string) *docStore {
 
 // docAllowed reports whether a CLEAN (path.Clean'd, forward-slash) relative
 // path is in the exact allowlist or matches the exclusive-creatable story
-// glob `docs/prd/stories/*.yaml` (no subdirectories).
+// glob `docs/product/stories/*.yaml` (no subdirectories).
 func docAllowed(clean string) bool {
 	if docExactAllowed[clean] {
 		return true
@@ -327,9 +327,9 @@ func (d *docStore) tree() docTreeResult {
 	return docTreeResult{Docs: nodes}
 }
 
-// storyPaths globs docs/prd/stories/*.yaml directly off disk (no cache).
+// storyPaths globs docs/product/stories/*.yaml directly off disk (no cache).
 func (d *docStore) storyPaths() []string {
-	dir := filepath.Join(d.folder, "docs", "prd", "stories")
+	dir := filepath.Join(d.folder, "docs", "product", "stories")
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -343,7 +343,7 @@ func (d *docStore) storyPaths() []string {
 			continue
 		}
 
-		out = append(out, path.Join("docs/prd/stories", entry.Name()))
+		out = append(out, path.Join("docs/product/stories", entry.Name()))
 	}
 
 	sort.Strings(out)

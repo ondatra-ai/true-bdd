@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { usePathname, useParams } from "next/navigation";
 import { useArchitectureYaml, appendRedisService, appendChatComment } from "./ArchitectureYamlContext";
-import { useFiles, PRD_PATH, SCENARIOS_PATH, FEATURES_PATH } from "./FilesStore";
+import { useFiles, PRODUCT_PATH, SCENARIOS_PATH, FEATURES_PATH } from "./FilesStore";
 import {
   appendStoryStub,
   appendScenarioStub,
@@ -106,10 +106,10 @@ export default function ChatDialog() {
         `It already shows flat under Stories: in the sidebar; open it there ` +
         `or at /story/${storySlugFromId(newId)}.`;
     } else if (isProduct) {
-      filesCtx.setFile(PRD_PATH, (prev) => appendChatComment(prev, text));
+      filesCtx.setFile(PRODUCT_PATH, (prev) => appendChatComment(prev, text));
       replyText =
-        "Noted — I appended a comment recording that to prd.yaml. " +
-        '(This mock doesn\'t do full PRD editing yet — try a message containing ' +
+        "Noted — I appended a comment recording that to product.yaml. " +
+        '(This mock doesn\'t do full product document editing yet — try a message containing ' +
         '"story" to add one, or /requirements with "scenario".)';
     } else if (isStory) {
       if (/story/i.test(text)) {

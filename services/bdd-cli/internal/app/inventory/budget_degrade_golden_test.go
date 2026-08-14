@@ -40,14 +40,14 @@ func bigStoryFolder(t *testing.T, storyCount int) (string, int) {
 	for index := 1; index <= storyCount; index++ {
 		id := fmt.Sprintf("70.%d", index)
 		fmt.Fprintf(epic, "  - id: %q\n", id)
-		files[fmt.Sprintf("docs/prd/stories/%s-big.yaml", id)] = fmt.Sprintf(
+		files[fmt.Sprintf("docs/product/stories/%s-big.yaml", id)] = fmt.Sprintf(
 			"story:\n  id: %q\n  title: Big %d\n  as_a: user\n  i_want: x\n  so_that: y\n"+
 				"  acceptance_criteria:\n    - id: AC-1\n      description: %q\n",
 			id, index, body,
 		)
 	}
 
-	files["docs/prd/epics/epic-70-big.yaml"] = epic.String()
+	files["docs/product/epics/epic-70-big.yaml"] = epic.String()
 
 	return honestyTree(t, files), storyCount
 }
@@ -130,8 +130,8 @@ func TestGoldenOversizedEpicDecodingParity(t *testing.T) {
 	invalidTail := "epic:\n  id: 71\n  name: Oversized Broken\n  context: \"" + pad + "\"\nstories:\n  - id: [unclosed\n"
 
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-70-oversized.yaml":     validOversized,
-		"docs/prd/epics/epic-71-oversized-bad.yaml": invalidTail,
+		"docs/product/epics/epic-70-oversized.yaml":     validOversized,
+		"docs/product/epics/epic-71-oversized-bad.yaml": invalidTail,
 	})
 
 	snap := scanJSON(t, folder)

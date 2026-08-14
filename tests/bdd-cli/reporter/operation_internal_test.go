@@ -243,7 +243,7 @@ sections:
 			fieldSubjectID: "96.3", fieldPromptIndex: 1,
 			fieldSection: "us-refine/acceptance_criteria",
 			"docs": map[string]string{
-				"prd":               "docs/prd/prd.yaml",
+				"product":           "docs/product/product.yaml",
 				"architecture_yaml": "docs/architecture/architecture.yaml",
 			}}),
 		logLine(t, "2026-08-10T23:21:00Z", "Prompt saved", map[string]any{
@@ -266,7 +266,7 @@ sections:
 
 	want := []string{
 		"architecture_yaml → docs/architecture/architecture.yaml",
-		"prd → docs/prd/prd.yaml",
+		"product → docs/product/product.yaml",
 	}
 	if strings.Join(turn.Docs, "|") != strings.Join(want, "|") {
 		t.Errorf("docs = %v, want %v sorted", turn.Docs, want)

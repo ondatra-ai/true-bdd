@@ -12,10 +12,10 @@ import (
 // scanner falls back to these when the host config is missing, invalid,
 // or leaves a key blank — it degrades, never fails.
 const (
-	defaultEpicsDir         = "docs/prd/epics"
-	defaultStoriesDir       = "docs/prd/stories"
+	defaultEpicsDir         = "docs/product/epics"
+	defaultStoriesDir       = "docs/product/stories"
 	defaultChecklistsDir    = "true-bdd/checklists"
-	defaultPRDPath          = "docs/prd/prd.yaml"
+	defaultProductPath      = "docs/product/product.yaml"
 	defaultArchitecturePath = "docs/architecture/architecture.yaml"
 	defaultRegistryPath     = "docs/scenarios.yaml"
 	// configRelPath is the engine config file the ViperConfig loader
@@ -33,7 +33,7 @@ type rawConfig struct {
 		ChecklistsDir string `yaml:"checklists_dir"`
 	} `yaml:"paths"`
 	Documents struct {
-		PRD              string `yaml:"prd"`
+		Product          string `yaml:"product"`
 		ArchitectureYAML string `yaml:"architecture_yaml"`
 		ScenariosYAML    string `yaml:"scenarios_yaml"`
 	} `yaml:"documents"`
@@ -49,7 +49,7 @@ type resolvedConfig struct {
 	epicsRel      string
 	storiesRel    string
 	checklistsRel string
-	prdRel        string
+	productRel    string
 	registryRel   string
 
 	architectureRel      string
@@ -66,7 +66,7 @@ func resolveConfig(folder string) resolvedConfig {
 		epicsRel:        defaultEpicsDir,
 		storiesRel:      defaultStoriesDir,
 		checklistsRel:   defaultChecklistsDir,
-		prdRel:          defaultPRDPath,
+		productRel:      defaultProductPath,
 		registryRel:     defaultRegistryPath,
 		architectureRel: defaultArchitecturePath,
 	}
@@ -97,7 +97,7 @@ func applyConfig(base resolvedConfig, raw rawConfig) resolvedConfig {
 	base.epicsRel = defaultRel(raw.Paths.EpicsDir, defaultEpicsDir)
 	base.storiesRel = defaultRel(raw.Paths.StoriesDir, defaultStoriesDir)
 	base.checklistsRel = defaultRel(raw.Paths.ChecklistsDir, defaultChecklistsDir)
-	base.prdRel = defaultRel(raw.Documents.PRD, defaultPRDPath)
+	base.productRel = defaultRel(raw.Documents.Product, defaultProductPath)
 	base.registryRel = defaultRel(raw.Documents.ScenariosYAML, defaultRegistryPath)
 	base.architectureRel = defaultRel(raw.Documents.ArchitectureYAML, defaultArchitecturePath)
 	base.architectureMismatch = base.architectureRel != defaultArchitecturePath

@@ -21,8 +21,8 @@ import (
 
 // Shared in-code fixture paths (canonical host layout under a tmpdir).
 const (
-	honestyEpicPath  = "docs/prd/epics/epic-70-probe.yaml"
-	honestyStoryPath = "docs/prd/stories/70.1-probe.yaml"
+	honestyEpicPath  = "docs/product/epics/epic-70-probe.yaml"
+	honestyStoryPath = "docs/product/stories/70.1-probe.yaml"
 	honestyRegPath   = "docs/scenarios.yaml"
 )
 
@@ -246,7 +246,7 @@ func TestHonestyEpicCanonicalEncoding(t *testing.T) {
 			t.Parallel()
 
 			folder := honestyTree(t, map[string]string{
-				filepath.Join("docs/prd/epics", testCase.file): "epic:\n  id: 1\n",
+				filepath.Join("docs/product/epics", testCase.file): "epic:\n  id: 1\n",
 			})
 			epic := findEpic(t, inventory.Scan(folder), testCase.file)
 
@@ -262,8 +262,8 @@ func TestHonestyNoncanonicalEpicHasNoAddressableStories(t *testing.T) {
 	t.Parallel()
 
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-7-noncanon.yaml": "epic:\n  id: 7\nstories:\n  - id: \"7.1\"\n",
-		"docs/prd/epics/epic-42-canon.yaml":   "epic:\n  id: 42\nstories:\n  - id: \"42.1\"\n",
+		"docs/product/epics/epic-7-noncanon.yaml": "epic:\n  id: 7\nstories:\n  - id: \"7.1\"\n",
+		"docs/product/epics/epic-42-canon.yaml":   "epic:\n  id: 42\nstories:\n  - id: \"42.1\"\n",
 	})
 
 	snap := inventory.Scan(folder)
@@ -291,8 +291,8 @@ func TestHonestySnapshotWideDuplicateDeclaredID(t *testing.T) {
 	t.Parallel()
 
 	folder := honestyTree(t, map[string]string{
-		"docs/prd/epics/epic-71-a.yaml": "epic:\n  id: 71\nstories:\n  - id: \"99.1\"\n",
-		"docs/prd/epics/epic-72-b.yaml": "epic:\n  id: 72\nstories:\n  - id: \"99.1\"\n",
+		"docs/product/epics/epic-71-a.yaml": "epic:\n  id: 71\nstories:\n  - id: \"99.1\"\n",
+		"docs/product/epics/epic-72-b.yaml": "epic:\n  id: 72\nstories:\n  - id: \"99.1\"\n",
 	})
 
 	snap := inventory.Scan(folder)

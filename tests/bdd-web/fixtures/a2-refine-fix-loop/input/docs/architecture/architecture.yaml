@@ -1,4 +1,4 @@
-# Architectural spec for the A2 refine fixture. Only the PRD is read by
+# Architectural spec for the A2 refine fixture. Only the product document is read by
 # the single filtered rule-based-description prompt; the rest keeps the
 # host project complete for the inventory.
 

@@ -34,14 +34,14 @@ export const WORKSPACE_FIXTURE = "w-workspace-happy";
 
 /**
  * The FIXED documents persistence may touch. The FULL allowlist also includes
- * every `docs/prd/stories/*.yaml` — enumerated dynamically per snapshot (see
+ * every `docs/product/stories/*.yaml` — enumerated dynamically per snapshot (see
  * `allowedDocPaths`) so the negative oracle detects a story-file modification OR
  * a NEW story file created via ANY route (the plan allowlist).
  */
 export const FIXED_DOCS = [
   "docs/architecture/architecture.yaml",
-  "docs/prd/prd.yaml",
-  "docs/prd/features.yaml",
+  "docs/product/product.yaml",
+  "docs/product/features.yaml",
   "docs/scenarios.yaml",
 ] as const;
 
@@ -211,12 +211,12 @@ export class WorkspaceEnv {
 
   /** Every story file currently on disk (repo-relative), for P22 new-file oracles. */
   listStoryFilesOnDisk(): string[] {
-    const dir = path.join(this.fixtureDir, "docs", "prd", "stories");
+    const dir = path.join(this.fixtureDir, "docs", "product", "stories");
     try {
       return fs
         .readdirSync(dir)
         .filter((name) => name.endsWith(".yaml"))
-        .map((name) => `docs/prd/stories/${name}`);
+        .map((name) => `docs/product/stories/${name}`);
     } catch {
       return [];
     }
@@ -286,7 +286,7 @@ export class WorkspaceEnv {
   seedFeatureOnDisk(prefix = "feat"): string {
     const id = `${prefix}-${crypto.randomUUID().slice(0, 12)}`;
     fs.appendFileSync(
-      path.join(this.fixtureDir, "docs/prd/features.yaml"),
+      path.join(this.fixtureDir, "docs/product/features.yaml"),
       `  - id: ${id}\n    description: seeded unique feature\n`,
     );
 

@@ -51,7 +51,7 @@ Top to bottom, every workspace page:
 1. **Workspace overview** (`workspace-overview.html`) — flat link.
 2. **Architecture** (`sidebar-section-architecture`) — expandable, service
    node(s) + a Vocabulary node.
-3. **Product** (`sidebar-section-product`) — expandable, PRD-overview root +
+3. **Product** (`sidebar-section-product`) — expandable, product-overview root +
    epic → story tree.
 4. **Requirements / Scenarios** (`sidebar-section-requirements`) —
    expandable, a FLAT sibling list of scenario rows (no epic/story nesting).
@@ -125,7 +125,7 @@ Historically under `services/bdd-web/design/mockups/`:
 |---|---|
 | `sessions.html` | Pre-workspace sessions list — folder, CLI version, test-connection control per row. |
 | `workspace-overview.html` | Session workspace root — inventory health, build actions, refresh, degraded-state catalog. |
-| `prd-overview.html` | Product section root — PRD title/summary/personas. |
+| `product-overview.html` | Product section root — product document title/summary/roles. |
 | `epic.html` | Epic detail — grouped story table, epic + story identity flags. |
 | `story-detail.html` | Story 60.2 full detail — statement, status/lifecycle chips, ACs with steps, actions, fix toggle, raw file. |
 | `story-ambiguous.html` | Degraded: ambiguous story lookup (match count). |
@@ -188,11 +188,11 @@ Content is fixture-drawn, not invented, so the design "reads true":
   integration tests at `tests/jest.config.ts`, `McpClient` helper) and the
   vocabulary block (`ask Claude`, forbidden qualifiers `properly` /
   `correctly` / `seamless`, forbidden action `handle`).
-- **Product** (`prd-overview.html`, `epic.html`, `story-detail.html`, sidebar
-  Product tree) ← `tests/bdd-web/fixtures/a1-create-no-fix/input/docs/prd/prd.yaml`
-  (title, summary, both personas — Claude User / Developer/Maintainer) +
-  `tests/bdd-web/fixtures/p3-inventory-spread/input/docs/prd/epics/epic-60-inventory-spread.yaml`
-  and `.../docs/prd/stories/60.2-summary-shared-docs.yaml` (epic 60,
+- **Product** (`product-overview.html`, `epic.html`, `story-detail.html`, sidebar
+  Product tree) ← `tests/bdd-web/fixtures/a1-create-no-fix/input/docs/product/product.yaml`
+  (title, summary, both roles — Claude User / Developer/Maintainer) +
+  `tests/bdd-web/fixtures/p3-inventory-spread/input/docs/product/epics/epic-60-inventory-spread.yaml`
+  and `.../docs/product/stories/60.2-summary-shared-docs.yaml` (epic 60,
   stories 60.1/60.2/60.3, lifecycle states missing / applied 1/2 / applied
   2/2).
 - **Requirements/Scenarios** (`scenarios.html`, `scenario-detail.html`,
@@ -235,7 +235,7 @@ offline and self-contained.
   static-mockup idiom, not an information-architecture statement. The real
   implementation routes each record to its own URL.
 - **Breadcrumb section level.** Product-tree pages (epic, story pages) carry a
-  `Product` crumb → `prd-overview.html`; Requirements pages carry a
+  `Product` crumb → `product-overview.html`; Requirements pages carry a
   `Requirements / Scenarios` crumb → `scenarios.html`. Architecture leaf pages
   (`service.html`, `vocabulary.html`) have no section crumb because the
   Architecture section has no root page in this 17-page iteration — the

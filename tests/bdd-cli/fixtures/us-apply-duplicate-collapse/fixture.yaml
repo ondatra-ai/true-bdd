@@ -34,7 +34,7 @@ expected:
 
     The fixture seeds `docs/scenarios.yaml` with THREE scenarios:
     E2E-900 and E2E-901 both reference lineage id `95.1-001` of story
-    `docs/prd/stories/95.1-duplicate-collapse.yaml` (deliberate
+    `docs/product/stories/95.1-duplicate-collapse.yaml` (deliberate
     duplicates), and E2E-950 is unrelated.
 
     Expected behavior with the SHIPPED us-apply checklist:
@@ -50,7 +50,7 @@ expected:
     1. `docs/scenarios.yaml` contains **exactly one** scenario whose
        `user_stories[]` references `scenario_id` `95.1-001`.
     2. That surviving entry still records the story path
-       `docs/prd/stories/95.1-duplicate-collapse.yaml` and its
+       `docs/product/stories/95.1-duplicate-collapse.yaml` and its
        `merged_steps` include the union of the two seeded entries'
        steps (at minimum: HTTP 200 in then, the initialize POST in
        when; deduplication is fine).

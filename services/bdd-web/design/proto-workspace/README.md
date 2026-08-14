@@ -11,7 +11,7 @@ treat it as a living design reference, not a starting codebase.
 - Sidebar rows with split click targets: hover-revealed caret (▸/▾) toggles,
   name navigates; expand/collapse state survives navigation (persistent
   Next.js layout + native `<details>`).
-- File-as-source pages: architecture.yaml and the product docs (prd.yaml,
+- File-as-source pages: architecture.yaml and the product docs (product.yaml,
   story files, features.yaml, scenarios.yaml) as GitHub-style file views with
   seamless edit-in-place (no chrome change on focus) and line-accurate outline
   jumps.

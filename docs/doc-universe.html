@@ -297,9 +297,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="trow"><span class="nm t-cfg">templates/*.prompt.tpl</span><span class="cm">prompt templates (shipped by the engine repo)</span></div>
           <div class="trow"><span class="nm">docs/</span></div>
           <div class="lvl">
-            <div class="trow"><span class="nm">prd/</span></div>
+            <div class="trow"><span class="nm">product/</span></div>
             <div class="lvl">
-              <div class="trow"><span class="nm t-story">prd.yaml</span><span class="cm">product ref + personas + BDD vocabulary</span></div>
+              <div class="trow"><span class="nm t-story">product.yaml</span><span class="cm">product ref + roles + BDD vocabulary</span></div>
               <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
@@ -313,7 +313,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
       </div>
       <div class="legend">
-        <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>prd (incl. the BDD vocabulary) — epic — story</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — epic — story</small></span></div>
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
         <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, dev/prod environment stacks</small></span></div>
         <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
@@ -327,7 +327,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
   <div class="inner wide">
     <p class="slabel">02—Map</p>
     <h2>How the documents join</h2>
-    <p class="sub">The top row is the hierarchy spine — the prd contains epics, an epic seed becomes a story file
+    <p class="sub">The top row is the hierarchy spine — the product document contains epics, an epic seed becomes a story file
     (<code>us create</code>), and the story's refined ACs — its scenarios — merge into the registry
     (<code>us apply</code>). Labelled solid arrows carry data; thin faded arrows are reference joins; dashed
     arrows are configuration wiring. Numbers index into the joins table below.</p>
@@ -349,10 +349,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <header><i class="sw"></i><span class="p">true-bdd/<wbr>true-bdd.yaml</span><small>config</small></header>
           <div class="body">
             <div class="row"><span class="k">engine:</span> <span class="v">model</span></div>
-            <div class="row hl" id="a-cfg-paths"><span class="k">epics.path · paths.*</span></div>
-            <div class="row ind1"><span class="v">stories_dir · checklists_dir · tmp</span></div>
+            <div class="row hl" id="a-cfg-paths"><span class="k">paths:</span></div>
+            <div class="row ind1"><span class="v">epics_dir · stories_dir · checklists_dir · tmp_dir</span></div>
             <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
-            <div class="row ind1"><span class="v">prd · architecture_yaml</span></div>
+            <div class="row ind1"><span class="v">product · architecture_yaml · scenarios_yaml</span></div>
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
           </div>
         </div>
@@ -364,7 +364,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row"><span class="v">build-tests · build-code</span></div>
             <div class="row"><span class="k">sections[].validation_prompts[]:</span></div>
             <div class="row ind1"><span class="k">Q:</span> <span class="v">pass/fail question</span></div>
-            <div class="row ind1 hl" id="a-cl-docs"><span class="k">docs:</span> <span class="v">[prd, architecture_yaml]</span></div>
+            <div class="row ind1 hl" id="a-cl-docs"><span class="k">docs:</span> <span class="v">[product, architecture_yaml]</span></div>
             <div class="row ind1"><span class="k">F:</span> <span class="v">fix prompt (--fix loop)</span></div>
             <div class="row"><span class="k">config:</span> <span class="v">max_apply_attempts</span></div>
           </div>
@@ -381,16 +381,16 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="note">Go <code>text/template</code> + sprig. Renders checklist prompt + subject + referenced docs into each Claude call.</div>
         </div>
 
-        <!-- col 2 · prd — the hierarchy root -->
-        <div class="card c-story" id="card-prd" tabindex="0" style="grid-area:1/2/3/3; align-self:center">
-          <header><i class="sw"></i><span class="p">docs/prd/prd.yaml</span><small>prd</small></header>
+        <!-- col 2 · product — the hierarchy root -->
+        <div class="card c-story" id="card-product" tabindex="0" style="grid-area:1/2/3/3; align-self:center">
+          <header><i class="sw"></i><span class="p">docs/product/product.yaml</span><small>product</small></header>
           <div class="body">
             <div class="row"><span class="k">title · summary</span></div>
-            <div class="row hl" id="a-prd-personas"><span class="k">personas[]:</span></div>
+            <div class="row hl" id="a-product-roles"><span class="k">roles[]:</span></div>
             <div class="row ind1"><span class="k">name:</span> <span class="v">"Claude User"</span></div>
             <div class="row ind1"><span class="v">definition · primary_use_case</span></div>
             <div class="row ind1"><span class="v">characteristics[]</span></div>
-            <div class="row hl" id="a-prd-vocab"><span class="k">vocabulary:</span> <span class="v">the allowed BDD language</span></div>
+            <div class="row hl" id="a-product-vocab"><span class="k">vocabulary:</span> <span class="v">the allowed BDD language</span></div>
             <div class="row ind1"><span class="k">actions[]:</span> <span class="v">"ask Claude" → means …</span></div>
             <div class="row ind1"><span class="k">forbidden_qualifiers[]:</span> <span class="v">"properly", "fast", …</span></div>
             <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
@@ -400,7 +400,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- col 3 · epic -->
         <div class="card c-story" id="card-epic" tabindex="0" style="grid-area:1/3/3/4; align-self:center">
-          <header><i class="sw"></i><span class="p">docs/prd/epics/<wbr>epic-&lt;N&gt;-&lt;slug&gt;.yaml</span><small>epic</small></header>
+          <header><i class="sw"></i><span class="p">docs/product/epics/<wbr>epic-&lt;N&gt;-&lt;slug&gt;.yaml</span><small>epic</small></header>
           <div class="body">
             <div class="row"><span class="k">epic:</span> <span class="v">id · name · status · goal · context</span></div>
             <div class="row hl" id="a-epic-stories"><span class="k">stories[]:</span> <span class="v">the seeds</span></div>
@@ -413,7 +413,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- col 4 · story -->
         <div class="card c-story" id="card-story" tabindex="0" style="grid-area:1/4/3/5; align-self:center">
-          <header id="a-story-head"><i class="sw"></i><span class="p">docs/prd/stories/<wbr>&lt;id&gt;-&lt;slug&gt;.yaml</span><small>story</small></header>
+          <header id="a-story-head"><i class="sw"></i><span class="p">docs/product/stories/<wbr>&lt;id&gt;-&lt;slug&gt;.yaml</span><small>story</small></header>
           <div class="body">
             <div class="row"><span class="k">story:</span></div>
             <div class="row ind1"><span class="k">id:</span> <span class="v">"95.1" · title · status</span></div>
@@ -442,7 +442,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row ind2"><span class="k">description</span></div>
             <div class="row ind2 hl" id="a-scn-service"><span class="k">service:</span> <span class="v">"mcp-service"</span></div>
             <div class="row ind2"><span class="k">user_stories[]:</span> <span class="v">lineage</span></div>
-            <div class="row ind3 hl" id="a-scn-us-story"><span class="k">story:</span> <span class="v">docs/prd/stories/95.1-….yaml</span></div>
+            <div class="row ind3 hl" id="a-scn-us-story"><span class="k">story:</span> <span class="v">docs/product/stories/95.1-….yaml</span></div>
             <div class="row ind3 hl" id="a-scn-us-sid"><span class="k">scenario_id:</span> <span class="v">"95.1-001"</span></div>
             <div class="row ind3"><span class="k">merge_date</span></div>
             <div class="row ind2"><span class="k">merged_steps:</span> <span class="v">given / when / then</span></div>
@@ -519,13 +519,13 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <tbody>
           <tr>
             <td><span class="cmd">us create &lt;id&gt;</span></td>
-            <td>the story seed in its <strong>epic</strong>; <strong>prd</strong> + <strong>architecture</strong> as prompt context</td>
+            <td>the story seed in its <strong>epic</strong>; <strong>product</strong> + <strong>architecture</strong> as prompt context</td>
             <td><span class="cl">us-create.yaml</span></td>
             <td>a new <strong>story file</strong> in <code>paths.stories_dir</code></td>
           </tr>
           <tr>
             <td><span class="cmd">us refine &lt;id&gt;</span></td>
-            <td>the <strong>story</strong>; <strong>prd</strong> personas + vocabulary; <strong>architecture</strong> test layers (for sketches)</td>
+            <td>the <strong>story</strong>; <strong>product</strong> roles + vocabulary; <strong>architecture</strong> test layers (for sketches)</td>
             <td><span class="cl">us-refine.yaml</span></td>
             <td>the same <strong>story file, in place</strong> — ACs gain steps and rule-based descriptions</td>
           </tr>
@@ -562,18 +562,18 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
       <table id="joins">
         <thead><tr><th>#</th><th>From</th><th>To</th><th>How it joins</th></tr></thead>
         <tbody>
-          <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">prd.yaml</td><td class="to">epics/*.yaml</td>
-            <td>epics are the prd's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/prd/epics/</code>, declared by <code>epics.path</code></td></tr>
+          <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">product.yaml</td><td class="to">epics/*.yaml</td>
+            <td>epics are the product document's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/product/epics/</code>, declared by <code>paths.epics_dir</code></td></tr>
           <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">epic stories[].id</td><td class="to">story file</td>
-            <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/prd/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
-          <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">prd personas[].name</td>
-            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the persona list</td></tr>
-          <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">prd vocabulary</td><td class="to">AC description + steps</td>
+            <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/product/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
+          <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
+            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the role list</td></tr>
+          <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">product vocabulary</td><td class="to">AC description + steps</td>
             <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); vocabulary may also live in architecture.yaml</td></tr>
           <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>5</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>
             <td><strong>us apply</strong> bridges the gap between story and registry — it derives the lineage id <code>&lt;story-id&gt;-%03d</code> (AC-1 of story 95.1 → <code>"95.1-001"</code>) and merges the scenario in</td></tr>
           <tr data-edge="6"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>6</td><td class="from">user_stories[].story</td><td class="to">story file path</td>
-            <td>each registry entry names its source stories: <code>docs/prd/stories/95.1-duplicate-collapse.yaml</code></td></tr>
+            <td>each registry entry names its source stories: <code>docs/product/stories/95.1-duplicate-collapse.yaml</code></td></tr>
           <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
             <td><code>service: "mcp-service"</code> must name a declared service</td></tr>
           <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario id</td><td class="to">a spec file</td>
@@ -587,10 +587,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>12</td><td class="from">failing test</td><td class="to">production source</td>
             <td><strong>build code --fix</strong> edits <code>src/</code> until the runner's <code>LastRunPassed</code> flips to true</td></tr>
           <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
-            <td><code>docs: [prd, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
+            <td><code>docs: [product, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
           <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">command name</td><td class="to">checklist file</td>
             <td><code>paths.checklists_dir</code> + hyphenation: <code>us apply</code> → <code>checklists/us-apply.yaml</code></td></tr>
-          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">prd · architecture · epics · stories dirs</td>
+          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · epics · stories dirs</td>
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
           <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
@@ -612,12 +612,12 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
   // n: joins-table index · from/to: anchor element ids · sides: L R T B (+fraction)
   // kind: color family · flow: command-carrying edge (gets a label chip)
   const EDGES = [
-    // hierarchy spine: prd ─contains→ epic ─us create→ story ─us apply→ registry
-    { n: 1,  from: 'card-prd',       fs: 'R', ff: .5, to: 'card-epic',    ts: 'L', tf: .5, kind: 'story', cmd: 'contains' },
+    // hierarchy spine: product ─contains→ epic ─us create→ story ─us apply→ registry
+    { n: 1,  from: 'card-product',       fs: 'R', ff: .5, to: 'card-epic',    ts: 'L', tf: .5, kind: 'story', cmd: 'contains' },
     { n: 2,  from: 'a-epic-stories', fs: 'R',        to: 'a-story-head',   ts: 'L',        kind: 'story', cmd: 'us create' },
-    // reference joins (thin, faded) — personas under the spine, vocabulary over it
-    { n: 3,  from: 'card-story',     fs: 'B', ff: .12, to: 'card-prd',     ts: 'B', tf: .85, kind: 'story', ref: true },
-    { n: 4,  from: 'card-prd',       fs: 'T', ff: .85, to: 'card-story',   ts: 'T', tf: .12, kind: 'story', ref: true },
+    // reference joins (thin, faded) — roles under the spine, vocabulary over it
+    { n: 3,  from: 'card-story',     fs: 'B', ff: .12, to: 'card-product',     ts: 'B', tf: .85, kind: 'story', ref: true },
+    { n: 4,  from: 'card-product',       fs: 'T', ff: .85, to: 'card-story',   ts: 'T', tf: .12, kind: 'story', ref: true },
     { n: 4,  from: 'card-story',     fs: 'T', ff: .34, to: 'card-story',   ts: 'T', tf: .66, kind: 'story', cmd: 'us refine' },
     { n: 5,  from: 'a-story-ac',     fs: 'R',        to: 'a-scn-us-sid',   ts: 'L',        kind: 'reg',   cmd: 'us apply' },
     { n: 6,  from: 'a-scn-us-story', fs: 'L',        to: 'a-story-head',   ts: 'R', tf: .5, kind: 'reg',  ref: true },
@@ -629,7 +629,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     { n: 12, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
     { n: 13, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
     { n: 14, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
-    { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-prd',       ts: 'L', tf: .55, kind: 'cfg' },
+    { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
     { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };

@@ -10,8 +10,8 @@ const (
 	// Names and paths the operation tests assert on, in one place so a
 	// change to a fixture's shape stays a change to one line.
 	testSectionName = "Acceptance Criteria Quality"
-	storyFile       = "docs/prd/stories/99.3-rewalk-fixture.yaml"
-	refineStoryFile = "docs/prd/stories/96.3-summary-service-internals.yaml"
+	storyFile       = "docs/product/stories/99.3-rewalk-fixture.yaml"
+	refineStoryFile = "docs/product/stories/96.3-summary-service-internals.yaml"
 	scratchFile     = "tmp/run/scenarios.yaml"
 	opusModel       = "claude-opus-4-8"
 	crushModel      = "zhipu-coding/glm-5.2"

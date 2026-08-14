@@ -22,9 +22,9 @@ const (
 // short Q hash (content identity — reorder- and rewording-proof), and
 // whether an authored F is required.
 type declaredSelection struct {
-	Stem      string
-	QShort    string
-	RequireF  bool
+	Stem     string
+	QShort   string
+	RequireF bool
 }
 
 // declaredSelections lists every fixture that generates its checklist

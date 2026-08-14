@@ -18,7 +18,7 @@ scenarios:
     service: "mcp-service"
     last_updated: "2026-07-29"
     user_stories:
-      - story: "docs/prd/stories/60.2-summary-shared-docs.yaml"
+      - story: "docs/product/stories/60.2-summary-shared-docs.yaml"
         scenario_id: "60.2-001"
         merge_date: "2026-07-29"
     merged_steps:
@@ -34,7 +34,7 @@ scenarios:
     service: "mcp-service"
     last_updated: "2026-07-29"
     user_stories:
-      - story: "docs/prd/stories/60.3-summary-error-messages.yaml"
+      - story: "docs/product/stories/60.3-summary-error-messages.yaml"
         scenario_id: "60.3-001"
         merge_date: "2026-07-29"
     merged_steps:
@@ -50,7 +50,7 @@ scenarios:
     service: "mcp-service"
     last_updated: "2026-07-29"
     user_stories:
-      - story: "docs/prd/stories/60.3-summary-error-messages.yaml"
+      - story: "docs/product/stories/60.3-summary-error-messages.yaml"
         scenario_id: "60.3-002"
         merge_date: "2026-07-29"
     merged_steps:

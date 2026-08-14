@@ -1,0 +1,13 @@
+# Synthetic product document for the A4 apply fixture (kept for a complete host
+# project / honest inventory; the us-apply "present?" prompt does not
+# read it).
+
+title: "MCP Google Docs Editor (harness AI fixture stub)"
+summary: "Synthetic product document for harness E2E AI fixtures — deliberately minimal."
+
+roles:
+  - name: Claude User
+    definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
+    primary_use_case: "Document editing through conversational AI interface"
+    characteristics:
+      - "Non-technical users focused on content creation and editing"

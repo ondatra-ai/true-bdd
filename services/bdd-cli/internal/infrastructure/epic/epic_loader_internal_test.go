@@ -11,7 +11,7 @@ import (
 // TestLoadStoryFromEpicUsesConfiguredEpicsDir pins the config key the
 // loader reads: paths.epics_dir (the old top-level epics.path is gone).
 // The epic lives at a NON-default directory so a silent fall back to
-// docs/prd/epics would fail the lookup.
+// docs/product/epics would fail the lookup.
 func TestLoadStoryFromEpicUsesConfiguredEpicsDir(t *testing.T) {
 	root := t.TempDir()
 

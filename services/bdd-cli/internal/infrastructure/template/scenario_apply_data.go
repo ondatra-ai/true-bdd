@@ -19,7 +19,7 @@ type MergedSteps struct {
 // prompt) cell input for the apply walk.
 type ScenarioApplyData struct {
 	StoryID                 string      // e.g. "4.1"
-	StoryPath               string      // e.g. "docs/prd/stories/4.1-shared-document-editing.yaml"
+	StoryPath               string      // e.g. "docs/product/stories/4.1-shared-document-editing.yaml"
 	ACID                    string      // e.g. "AC-1"
 	LineageScenarioID       string      // e.g. "4.1-001" — matches user_stories[].scenario_id
 	Description             string      // verbatim AC description

@@ -35,7 +35,7 @@ var ErrDocNotRegularFile = errors.New("document path is not a regular file")
 // registry path (`documents.scenarios_yaml`) — the engine has no
 // hardcoded default for it.
 const (
-	KeyPRD              = "prd"
+	KeyProduct          = "product"
 	KeyArchitectureYAML = "architecture_yaml"
 	KeyScenariosYAML    = "scenarios_yaml"
 )
@@ -47,7 +47,7 @@ const (
 // about what a key means.
 func keyToConfigPath() map[string]string {
 	return map[string]string{
-		KeyPRD:              "documents." + KeyPRD,
+		KeyProduct:          "documents." + KeyProduct,
 		KeyArchitectureYAML: "documents." + KeyArchitectureYAML,
 		KeyScenariosYAML:    "documents." + KeyScenariosYAML,
 	}

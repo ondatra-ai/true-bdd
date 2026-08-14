@@ -33,7 +33,7 @@ import { readFixtureFile, scalarField, storyBlockById } from "./helpers/story-fi
 let env: ProtocolEnv | undefined;
 
 const EPIC_FILE = "epic-60-inventory-spread.yaml";
-const EPIC_REL = path.join("docs", "prd", "epics", EPIC_FILE);
+const EPIC_REL = path.join("docs", "product", "epics", EPIC_FILE);
 
 test.afterEach(async () => {
   // Extend (never overwrite) the shared budget so scoped teardown has
@@ -57,7 +57,7 @@ const REGISTRY_APPEND_602_002 = `  E2E-604:
     service: "mcp-service"
     last_updated: "2026-07-29"
     user_stories:
-      - story: "docs/prd/stories/60.2-summary-shared-docs.yaml"
+      - story: "docs/product/stories/60.2-summary-shared-docs.yaml"
         scenario_id: "60.2-002"
         merge_date: "2026-07-29"
     merged_steps:

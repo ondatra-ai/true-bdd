@@ -34,7 +34,7 @@ const UNRELATED_ENTRY = `  E2E-500:
     service: "mcp-service"
     last_updated: "2026-07-01"
     user_stories:
-      - story: "docs/prd/stories/12.4-unrelated.yaml"
+      - story: "docs/product/stories/12.4-unrelated.yaml"
         scenario_id: "12.4-001"
         merge_date: "2026-07-01"`;
 
@@ -104,6 +104,6 @@ test("A4: apply --fix merges lineage 88.9-001; unrelated entry survives byte-for
   // The new entry carries the exact lineage id, story path, and a step
   // from the AC.
   expect(registry).toContain("88.9-001");
-  expect(registry).toContain("docs/prd/stories/77.5-apply-summary.yaml");
+  expect(registry).toContain("docs/product/stories/77.5-apply-summary.yaml");
   expect(registry).toContain("a summary of 150 words or fewer");
 });

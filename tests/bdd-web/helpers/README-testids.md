@@ -173,7 +173,7 @@ no Test-connection button.
 | `run-history` / `run-row` | `run-row` carries `data-run-id`, `data-command`; its link is session-scoped (P7). |
 | `action-build-tests`, `action-build-code` | Session-level `<button>`s; disabled only for the own active run (P5). |
 | `action-create`, `action-refine`, `action-apply`, `fix-toggle` | Per-story-row action controls (AI specs). |
-| `inventory-doc-<key>` | Status chip; `data-status` ∈ `present`, `missing`, `invalid`, `not_a_dir`, `present_empty`, `ambiguous`, `unknown`. Keys: `config`, `prd`, `architecture`, `registry`, `stories-dir`, `epics-dir`, `checklist-<stem>`. |
+| `inventory-doc-<key>` | Status chip; `data-status` ∈ `present`, `missing`, `invalid`, `not_a_dir`, `present_empty`, `ambiguous`, `unknown`. Keys: `config`, `product`, `architecture`, `registry`, `stories-dir`, `epics-dir`, `checklist-<stem>`. |
 | `inventory-truncated-banner` | Visible when the inventory read was degraded to fit the negotiated reply budget (`snapshot_truncated`, any omission, or `limit_too_small`) — the fit ladder stays, retargeted to the reply envelope (critique §12). |
 | `epic-section` / `epic-toggle` / `epic-title` / `epic-row` / `epic-flag-*` | Epic accordion (unchanged from v1). |
 | `story-row-<create-id>` / `story-title` / `story-created` / `story-applied` / `story-refined` / `story-flag-*` | Story rows + flags (unchanged from v1). |
@@ -261,8 +261,8 @@ requirements S1–S2 and P1–P25.
 - `revision` is **content-derived** (`SHA-256(bytes)` + existence), recomputed
   under the per-document lock — never an in-memory counter.
 - `doc_write` allowlist (exact patterns): `docs/architecture/architecture.yaml`,
-  `docs/prd/prd.yaml`, `docs/prd/features.yaml`, `docs/scenarios.yaml`,
-  `docs/prd/stories/*.yaml` (the last exclusive-creatable for a NEW story).
+  `docs/product/product.yaml`, `docs/product/features.yaml`, `docs/scenarios.yaml`,
+  `docs/product/stories/*.yaml` (the last exclusive-creatable for a NEW story).
 - `doc_write` is a mutation → exact **Origin+Host** enforced before business logic.
 
 ## Navigation (`wsRoutes`; the `(workspace)` route group is elided from the URL)
@@ -272,7 +272,7 @@ requirements S1–S2 and P1–P25.
 | `/` | Sessions list |
 | `/sessions/:sid/home` | Workspace overview (Home landing; no backing file) |
 | `/sessions/:sid/architecture` | architecture.yaml file page |
-| `/sessions/:sid/product` | PRD (prd.yaml) file page = Product root |
+| `/sessions/:sid/product` | PRD (product.yaml) file page = Product root |
 | `/sessions/:sid/product/features` | features.yaml file page |
 | `/sessions/:sid/product/features/:id` | feature aggregation (derived, no file) |
 | `/sessions/:sid/product/stories/:storyId` | story file page |
@@ -377,7 +377,7 @@ from `GET /api/sessions`, and the run-dispatch routes — no new engine endpoint
 | `overview-action-build-tests` / `-build-code` | `<button>`s wired to `POST …/runs` with `command` `build-tests` / `build-code`; disabled per the OWN-active-run rule (same as `action-build-*` on the protocol detail page). |
 | `overview-action-refresh` | `<button>` that triggers an immediate live `session_detail` READ (a fresh scan — not a mutation), like the detail page's `refresh`. |
 | `overview-inventory` | The inventory-health list container, derived from `SessionDetail.inventory`. |
-| `overview-inventory-row` | One row per inventory entry; `+ data-key` (`config`/`prd`/`architecture`/`registry`/`stories-dir`/`epics-dir`/`checklist-<stem>`); renders the entry's path + kind label + status chip. |
+| `overview-inventory-row` | One row per inventory entry; `+ data-key` (`config`/`product`/`architecture`/`registry`/`stories-dir`/`epics-dir`/`checklist-<stem>`); renders the entry's path + kind label + status chip. |
 | `overview-inventory-chip` | The row's status chip; `+ data-status` ∈ `present`, `present_empty`, `missing`, `not_a_dir`, `ambiguous`, `invalid`, `unknown` (the mockup's chip vocabulary). |
 | `overview-banner` | A bordered degraded/flagged-state banner; `+ data-kind` ∈ `inventory_truncated`, `folder_conflict`, `path_mismatch`. Rendered ONLY when `SessionDetail` reports the state; **absent states render nothing** (zero banners on a clean read). |
 
@@ -418,7 +418,7 @@ The bottom `rail-utilities` holds a **Sessions** entry: a `<a>` (accessible name
 | testid | Notes |
 |---|---|
 | `file-view-kicker` | Uppercase kicker (`02—PRODUCT[…]`), structurally ABOVE the title. |
-| `file-view-title` | Display title: `prd.yaml` / `features.yaml` / `<id> — <story title>` (story title read from the served buffer). |
+| `file-view-title` | Display title: `product.yaml` / `features.yaml` / `<id> — <story title>` (story title read from the served buffer). |
 | `file-view-meta` | Muted subtitle: computed `color` == `--text-muted`, positioned BELOW the title. |
 | `file-view-header` | The card header BAR; CONTAINS `file-view-path` (the doc path) + `file-view-line-count`. |
 | `file-view-line-count` | `N lines` counter; N == `editorBuffer.split("\n").length` (the prototype formula — counts the trailing empty segment; NOT a newline count). |

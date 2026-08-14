@@ -55,7 +55,7 @@ expected:
     (`checklist_prompts` keeps only the shipped
     Given/When/Then-steps prompt), so the walk evaluates exactly one
     check. The story seed at
-    `docs/prd/stories/96.5-document-summary-steps.yaml` carries one
+    `docs/product/stories/96.5-document-summary-steps.yaml` carries one
     designed defect: AC-2 has NO steps field (violates the
     Given/When/Then format prompt).
 
@@ -66,7 +66,7 @@ expected:
     ## What MUST be true after the run
 
     1. The only file created or modified outside `tmp/` is
-       `docs/prd/stories/96.5-document-summary-steps.yaml`.
+       `docs/product/stories/96.5-document-summary-steps.yaml`.
     2. The final story file is valid YAML with a top-level `story:` key
        and `id` `"96.5"`, still containing exactly 5 acceptance
        criteria covering the same substance (150-word summary; unshared
@@ -78,7 +78,7 @@ expected:
     ## What MUST NOT happen
 
     - No AC dropped or added.
-    - No edits to `true-bdd/`, `docs/prd/prd.yaml`, or `docs/architecture*`.
+    - No edits to `true-bdd/`, `docs/product/product.yaml`, or `docs/architecture*`.
     - The stdout MUST NOT contain "Hit max apply attempts".
 
     ## Tolerances

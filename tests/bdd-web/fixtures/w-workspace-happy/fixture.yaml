@@ -6,8 +6,8 @@
 # host docs/ in their REAL shapes (mirroring the Established facts):
 #   - docs/architecture/architecture.yaml — mcp-service (custom, endpoints) +
 #     postgres (image, connection info) + terms + docker compose_file.
-#   - docs/prd/prd.yaml, docs/prd/features.yaml (id+description only),
-#     three flat docs/prd/stories/60.x-*.yaml (each carrying `feature:`),
+#   - docs/product/product.yaml, docs/product/features.yaml (id+description only),
+#     three flat docs/product/stories/60.x-*.yaml (each carrying `feature:`),
 #     docs/scenarios.yaml (E2E-601/602/603 aligned, INT-901 unaligned,
 #     E2E-604 dangling `feature: ghost` for P25).
 #

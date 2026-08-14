@@ -73,7 +73,7 @@ func classifyCases() []classifyCase {
 				ExitCode: exit(-1),
 				Failures: []string{
 					failKilled,
-					"judge: the diff shows extensive tmp/ scratch artifacts but no file was created under docs/prd/stories/",
+					"judge: the diff shows extensive tmp/ scratch artifacts but no file was created under docs/product/stories/",
 				},
 			},
 			want:    OutcomeKilled,
@@ -114,7 +114,7 @@ func classifyExitCases() []classifyCase {
 				ExitCode: exit(1),
 				Failures: []string{
 					failExitOne,
-					"judge: The diff shows no new file created under docs/prd/stories/",
+					"judge: The diff shows no new file created under docs/product/stories/",
 				},
 			},
 			want: OutcomeCrashed,
@@ -127,7 +127,7 @@ func classifyExitCases() []classifyCase {
 				Failures: []string{
 					failExitOne,
 					failStdout,
-					"judge: The diff shows no changes to docs/prd/stories/96.7-document-summary-step-qualifier.yaml",
+					"judge: The diff shows no changes to docs/product/stories/96.7-document-summary-step-qualifier.yaml",
 				},
 			},
 			want: OutcomeCrashed,
@@ -139,7 +139,7 @@ func classifyExitCases() []classifyCase {
 				ExitCode: exit(0),
 				Failures: []string{
 					failExitZero,
-					`stdout: 1 regex(es) did not match: docs/prd/prd\.yaml`,
+					`stdout: 1 regex(es) did not match: docs/product/product\.yaml`,
 				},
 			},
 			want:    OutcomeUnexpectedSuccess,

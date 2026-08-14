@@ -30,7 +30,7 @@ type FixPromptData struct {
 	ResultPath  string
 	UserAnswers map[string]string // Answers from user (nil if first iteration)
 	Iteration   int               // Current iteration number
-	DocPaths    map[string]string // Maps doc key to file path (e.g., "prd" -> "docs/prd/prd.yaml")
+	DocPaths    map[string]string // Maps doc key to file path (e.g., "product" -> "docs/product/product.yaml")
 }
 
 // GenerateParams contains parameters for fix prompt generation.

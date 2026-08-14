@@ -397,7 +397,7 @@ export const WTID = {
 
   // GitHub-style file-view page header + card header bar (w13.1/w13.2/w13.3).
   fileViewKicker: "file-view-kicker", // "02—PRODUCT[…]" kicker, structurally ABOVE the title
-  fileViewTitle: "file-view-title", // display title (e.g. "prd.yaml" / "<id> — <story title>")
+  fileViewTitle: "file-view-title", // display title (e.g. "product.yaml" / "<id> — <story title>")
   fileViewMeta: "file-view-meta", // muted subtitle, BELOW the title; color = --text-muted
   fileViewHeader: "file-view-header", // the card header bar; CONTAINS the path + line-count
   fileViewLineCount: "file-view-line-count", // "N lines" counter; N == buffer.split("\n").length

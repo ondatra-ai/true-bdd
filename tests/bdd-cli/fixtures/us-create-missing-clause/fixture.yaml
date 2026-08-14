@@ -12,7 +12,7 @@ expected:
     # Expectations for `us create 97.1` (missing as_a clause)
 
     The synthetic epic at
-    `docs/prd/epics/epic-97-bdd-missing-clause.yaml` holds story 97.1
+    `docs/product/epics/epic-97-bdd-missing-clause.yaml` holds story 97.1
     with NO as_a clause and a so_that ("my work day goes better
     overall") too generic to inform any implementation decision. The
     i_want clause is a clean, short user goal.
@@ -26,7 +26,7 @@ expected:
     ## What MUST be true after the run
 
     1. NO file outside `tmp/` is created or modified. In particular,
-       nothing is created under `docs/prd/stories/` and the epic file is
+       nothing is created under `docs/product/stories/` and the epic file is
        unchanged.
     2. Stdout contains the checklist report with at least one FAIL row
        and an Overall status that is not PASS.

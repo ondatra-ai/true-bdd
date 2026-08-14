@@ -1,7 +1,7 @@
 # Story seed for the `us-apply-relocated-registry` BDD fixture.
 #
 # Note where this file lives: `docs/product/stories/`, NOT the
-# conventional `docs/prd/stories/`. The fixture's `true-bdd.yaml` points
+# conventional `docs/product/stories/`. The fixture's `true-bdd.yaml` points
 # `paths.stories_dir` here, and `us apply` finds its story by globbing
 # <stories_dir>/<number>-*.yaml — so if that key stops being honoured,
 # the run fails to find story 95.2 at all.

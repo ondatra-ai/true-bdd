@@ -16,7 +16,7 @@ const registryAppend602 = `  E2E-604:
     service: "mcp-service"
     last_updated: "2026-07-29"
     user_stories:
-      - story: "docs/prd/stories/60.2-summary-shared-docs.yaml"
+      - story: "docs/product/stories/60.2-summary-shared-docs.yaml"
         scenario_id: "60.2-002"
         merge_date: "2026-07-29"
     merged_steps:
@@ -40,7 +40,7 @@ func TestScanSpreadDocuments(t *testing.T) {
 
 	snap := scanFixture(t, "p3-inventory-spread")
 
-	for _, key := range []string{"config", "prd", "architecture", "registry", "checklist-us-apply"} {
+	for _, key := range []string{"config", "product", "architecture", "registry", "checklist-us-apply"} {
 		wantDoc(t, snap, key, inventory.StatusPresent)
 	}
 }

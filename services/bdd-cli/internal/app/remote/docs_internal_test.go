@@ -27,10 +27,10 @@ func newTestDocStore(t *testing.T) (*docStore, string) {
 
 	folder := t.TempDir()
 	writeFixtureFile(t, folder, archYAMLPath, "version: 1\nterms:\n  - name: A\n")
-	writeFixtureFile(t, folder, prdYAMLPath, "title: t\n")
+	writeFixtureFile(t, folder, productYAMLPath, "title: t\n")
 	writeFixtureFile(t, folder, featuresYAMLPath, "features:\n  - id: a\n    description: d\n")
 	writeFixtureFile(t, folder, scenariosYAMLPath, "scenarios:\n  X-1:\n    description: d\n")
-	writeFixtureFile(t, folder, "docs/prd/stories/60.1-a.yaml", "story:\n  id: \"60.1\"\n")
+	writeFixtureFile(t, folder, "docs/product/stories/60.1-a.yaml", "story:\n  id: \"60.1\"\n")
 
 	return newDocStore(folder), folder
 }
@@ -47,7 +47,7 @@ func TestDocTreeListsFixedDocsAndStoryFiles(t *testing.T) {
 	found := false
 
 	for _, node := range tree.Docs {
-		if node.Path == "docs/prd/stories/60.1-a.yaml" {
+		if node.Path == "docs/product/stories/60.1-a.yaml" {
 			found = true
 
 			if !node.Exists || node.Revision == docExistenceAbsent {
@@ -69,7 +69,7 @@ func TestDocTreeReflectsNewStoryFileLive(t *testing.T) {
 		t.Fatalf("expected 5 docs before, got %d", len(before.Docs))
 	}
 
-	writeFixtureFile(t, folder, "docs/prd/stories/60.2-b.yaml", "story:\n  id: \"60.2\"\n")
+	writeFixtureFile(t, folder, "docs/product/stories/60.2-b.yaml", "story:\n  id: \"60.2\"\n")
 
 	after := store.tree()
 	if len(after.Docs) != 6 {
@@ -93,7 +93,7 @@ func TestDocReadRoundTrip(t *testing.T) {
 func TestDocReadMissingFile(t *testing.T) {
 	store, _ := newTestDocStore(t)
 
-	result, err := store.read("docs/prd/stories/60.9-missing.yaml")
+	result, err := store.read("docs/product/stories/60.9-missing.yaml")
 	if err != nil {
 		t.Fatalf("read of a not-yet-created (but allowed) story path must not error: %v", err)
 	}
@@ -111,11 +111,11 @@ func TestValidatePathRejectsTraversalAbsoluteNULAndWrongDirectory(t *testing.T) 
 		"docs/../../etc/passwd",
 		"/etc/passwd",
 		"docs/architecture/architecture.yaml\x00.evil",
-		"docs/prd/stories/../../../etc/passwd.yaml",
-		"docs/prd/prd.yml",             // wrong extension
-		"docs/prd/stories/sub/x.yaml",  // no subdirectories under stories/
-		"docs/architecture/other.yaml", // similarly-named file, wrong directory
-		"docs/scenarios.yaml.bak",      // not exactly the allowed name
+		"docs/product/stories/../../../etc/passwd.yaml",
+		"docs/product/product.yml",        // wrong extension
+		"docs/product/stories/sub/x.yaml", // no subdirectories under stories/
+		"docs/architecture/other.yaml",    // similarly-named file, wrong directory
+		"docs/scenarios.yaml.bak",         // not exactly the allowed name
 	}
 
 	for _, c := range cases {
@@ -131,11 +131,11 @@ func TestValidatePathAcceptsExactAllowlistAndStoryGlob(t *testing.T) {
 
 	cases := []string{
 		archYAMLPath,
-		prdYAMLPath,
+		productYAMLPath,
 		featuresYAMLPath,
 		scenariosYAMLPath,
-		"docs/prd/stories/60.1-a.yaml",
-		"docs/prd/stories/70.9-brand-new.yaml", // exclusive-creatable — does not yet exist
+		"docs/product/stories/60.1-a.yaml",
+		"docs/product/stories/70.9-brand-new.yaml", // exclusive-creatable — does not yet exist
 	}
 
 	for _, c := range cases {
@@ -158,14 +158,14 @@ func TestValidatePathRejectsSymlinkEscape(t *testing.T) {
 	}
 
 	// Symlink the FINAL TARGET itself (not just a parent) to escape the root.
-	linkPath := filepath.Join(folder, "docs", "prd", "stories", "60.5-evil.yaml")
+	linkPath := filepath.Join(folder, "docs", "product", "stories", "60.5-evil.yaml")
 
 	symlinkErr := os.Symlink(secretPath, linkPath)
 	if symlinkErr != nil {
 		t.Skipf("symlink not supported in this environment: %v", symlinkErr)
 	}
 
-	_, _, err := store.validatePath("docs/prd/stories/60.5-evil.yaml")
+	_, _, err := store.validatePath("docs/product/stories/60.5-evil.yaml")
 	if err == nil {
 		t.Fatalf("a final-target symlink escaping the root must be rejected")
 	}
@@ -254,7 +254,7 @@ func TestIsValidYAMLSingleDocumentAndEmptyStillValid(t *testing.T) {
 	valid := []string{
 		"version: 1\nterms:\n  - name: A\n",
 		"---\nversion: 1\n", // a leading single-document marker is fine
-		"# comment only\n",   // no document ⇒ valid (matches YAML.parse("") ⇒ null)
+		"# comment only\n",  // no document ⇒ valid (matches YAML.parse("") ⇒ null)
 		"",
 		"\n\n",
 	}
@@ -294,7 +294,7 @@ func TestDocWriteExclusiveCreateNewStoryFile(t *testing.T) {
 	store, folder := newTestDocStore(t)
 
 	outcome := store.write(docWritePayload{
-		Path:         "docs/prd/stories/70.1-new.yaml",
+		Path:         "docs/product/stories/70.1-new.yaml",
 		Content:      "story:\n  id: \"70.1\"\n",
 		BaseRevision: docExistenceAbsent,
 	})
@@ -303,7 +303,7 @@ func TestDocWriteExclusiveCreateNewStoryFile(t *testing.T) {
 		t.Fatalf("expected exclusive-create to succeed, got %+v", outcome)
 	}
 
-	_, statErr := os.Stat(filepath.Join(folder, "docs/prd/stories/70.1-new.yaml"))
+	_, statErr := os.Stat(filepath.Join(folder, "docs/product/stories/70.1-new.yaml"))
 	if statErr != nil {
 		t.Fatalf("new story file must exist on disk: %v", statErr)
 	}
@@ -311,7 +311,7 @@ func TestDocWriteExclusiveCreateNewStoryFile(t *testing.T) {
 	// A second create attempt with the SAME absent base_revision must now
 	// conflict (the file exists).
 	second := store.write(docWritePayload{
-		Path:         "docs/prd/stories/70.1-new.yaml",
+		Path:         "docs/product/stories/70.1-new.yaml",
 		Content:      "story:\n  id: \"70.1-changed\"\n",
 		BaseRevision: docExistenceAbsent,
 	})
@@ -393,7 +393,7 @@ func unreadableFileOrSkip(t *testing.T, abs string) {
 func TestDocWriteRejectsUnreadableExistingTargetInsteadOfClobbering(t *testing.T) {
 	store, folder := newTestDocStore(t)
 
-	abs := filepath.Join(folder, prdYAMLPath)
+	abs := filepath.Join(folder, productYAMLPath)
 
 	original, origErr := os.ReadFile(abs)
 	if origErr != nil {
@@ -407,7 +407,7 @@ func TestDocWriteRejectsUnreadableExistingTargetInsteadOfClobbering(t *testing.T
 	// A client that saw the file as "absent" (an EACCES read) and sends
 	// base_revision=absent must NOT be allowed to overwrite the real file.
 	outcome := store.write(docWritePayload{
-		Path:         prdYAMLPath,
+		Path:         productYAMLPath,
 		Content:      "title: clobbered\n",
 		BaseRevision: docExistenceAbsent,
 	})
@@ -435,16 +435,16 @@ func TestDocWriteRejectsUnreadableExistingTargetInsteadOfClobbering(t *testing.T
 func TestDocWritePreservesExistingFileMode(t *testing.T) {
 	store, folder := newTestDocStore(t)
 
-	abs := filepath.Join(folder, prdYAMLPath)
+	abs := filepath.Join(folder, productYAMLPath)
 
 	chmodErr := os.Chmod(abs, 0o640)
 	if chmodErr != nil {
 		t.Fatalf("chmod: %v", chmodErr)
 	}
 
-	initial, _ := store.read(prdYAMLPath)
+	initial, _ := store.read(productYAMLPath)
 	outcome := store.write(docWritePayload{
-		Path:         prdYAMLPath,
+		Path:         productYAMLPath,
 		Content:      "title: updated\n",
 		BaseRevision: initial.Revision,
 	})
