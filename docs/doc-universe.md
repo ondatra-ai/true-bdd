@@ -33,24 +33,25 @@ story scenarios → registry by `us apply`.
 ## What the host project contains
 
 The engine ships `true-bdd/` and `templates/`; the host authors everything under `docs/`,
-`src/`, and `tests/`.
+the service source directories, and `tests/`.
 
 ```text
 host project root
 ├── true-bdd/
 │   ├── true-bdd.yaml            engine config — paths to everything else
+│   ├── <key>-schema.yaml        yamale shape for documents.<key> — host lint, not engine
 │   └── checklists/*.yaml        one per command, resolved by name
 ├── templates/*.prompt.tpl       prompt templates (shipped by the engine repo)
 ├── docs/
 │   ├── product/
-│   │   ├── product.yaml         product ref + roles + BDD vocabulary
+│   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary
 │   │   ├── epics/epic-<N>-<slug>.yaml
 │   │   └── stories/<id>-<slug>.yaml
-│   ├── architecture/architecture.yaml   services + dev/prod environments
+│   ├── architecture/architecture.yaml   services + optional dev/prod environments
 │   └── scenarios.yaml           the central scenario registry
-├── src/<service>/               production source — src/service1, src/service2, …
-├── docker-compose.yaml          prod stack — path declared in architecture.yaml
-├── docker-compose.dev.yaml      dev stack for local runs
+├── services/<service>/          production source — path declared per service in architecture.yaml
+├── docker-compose.yaml          optional prod stack — path declared in architecture.yaml
+├── docker-compose.dev.yaml      optional dev stack for local runs
 └── tests/{integration,e2e}/     executable specs
 ```
 
@@ -58,9 +59,9 @@ host project root
 | --- | --- |
 | **Product docs** | product (incl. the BDD vocabulary) — epic — story |
 | **Scenario registry** | the merge target — single source of truth for behavior |
-| **Architecture** | services, test layers, dev/prod environment stacks |
+| **Architecture** | services, test layers, optional dev/prod environment stacks |
 | **Code artifacts** | specs, production source, compose stacks |
-| **Engine config** | wiring, not data flow |
+| **Engine config** | wiring and document schemas, not data flow |
 
 ## How the documents join
 
@@ -85,9 +86,9 @@ flowchart LR
   PRODUCT -. "④ vocabulary (us refine, in place)" .-> STORY
   REG -. "⑥ user_stories[].story" .-> STORY
 
-  ARCH["docs/architecture/architecture.yaml<br/>services[] · quality_gate · environment"]
+  ARCH["docs/architecture/architecture.yaml<br/>services[] · quality_gate · environment (optional)"]
   TESTS["tests/{integration,e2e}/<br/>test('E2E-900: …')"]
-  SRC["src/&lt;service&gt;/"]
+  SRC["services/&lt;service&gt;/"]
   COMPOSE["docker-compose.yaml ·<br/>docker-compose.dev.yaml"]
 
   REG -- "⑧ build tests" --> TESTS
@@ -99,7 +100,8 @@ flowchart LR
 ```
 
 Engine config (`true-bdd/true-bdd.yaml`, `checklists/`, `templates/`) wires the walk itself:
-joins 13–16 in the table below.
+joins 13–16 in the table below. Join 17 is the one contract the engine does not read —
+the schemas that pin each document's shape for the host's own lint step.
 
 ## Who reads what, who writes what
 
@@ -113,7 +115,7 @@ Claude-mediated loop until the walk is clean.
 | `us refine <id>` | the **story**; **product** roles + vocabulary; **architecture** test layers (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; greps test trees for the id | build-tests.yaml | with `--fix`: missing **specs** under `tests/` referencing the scenario id — the registry is never modified |
-| `build code` | every **(service, layer)** pair in architecture; discovers failing tests via each framework's runner (dev compose stack backs the run) | build-code.yaml | with `--fix`: **production source** under `src/` only — tests and registry are never touched |
+| `build code` | every **(service, layer)** pair in architecture; discovers failing tests via each framework's runner (the dev compose stack, when declared, backs the run) | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
 
 ## Every cross-reference, with real values
 
@@ -130,14 +132,15 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 7 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
 | 8 | scenario id | a spec file | **build tests** passes only if some test references the id literally: `test('E2E-900: …')` |
 | 9 | id prefix INT- / E2E- | quality_gate.tests layer | INT → `tests.integration` (e.g. jest), E2E → `tests.e2e` (playwright) — picks the tree, framework, and runner |
-| 10 | services[].path | src/&lt;name&gt;/ | `path: src/service1` tells **build code** where production source lives |
-| 11 | environment.{dev,prod} | docker-compose files | architecture.yaml declares the stack per environment: `dev → docker-compose.dev.yaml`, `prod → docker-compose.yaml` |
-| 12 | failing test | production source | **build code --fix** edits `src/` until the runner's `LastRunPassed` flips to true |
+| 10 | services[].path | services/&lt;name&gt;/ | `path: services/bdd-cli` tells **build code** where production source lives — any path works; the fixtures use `src/service1` |
+| 11 | environment.{dev,prod} | docker-compose files | optional — architecture.yaml declares the stack per environment (`dev → docker-compose.dev.yaml`, `prod → docker-compose.yaml`); a host without a compose-backed environment omits the key |
+| 12 | failing test | production source | **build code --fix** edits the service's source (its `services[].path`) until the runner's `LastRunPassed` flips to true |
 | 13 | checklist prompt docs: | true-bdd.yaml documents: | `docs: [product, architecture_yaml]` are keys — resolved to file paths, contents embedded in the prompt |
 | 14 | command name | checklist file | `paths.checklists_dir` + hyphenation: `us apply` → `checklists/us-apply.yaml` |
 | 15 | true-bdd.yaml documents:/paths: | product · architecture · scenario registry · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
 | 16 | templates.prompts.* | templates/*.prompt.tpl | each engine role (checklist / fix_generator / fix_applier, + `_system`) maps to one template file |
+| 17 | true-bdd/&lt;key&gt;-schema.yaml | the document at documents.&lt;key&gt; | `product-schema.yaml` pins the shape of `documents.product`. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (`./scripts/validate-schemas.sh`, a CI gate), not by a command |
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-07-28.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-08-14.*

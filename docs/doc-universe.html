@@ -284,7 +284,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
   <div class="inner">
     <p class="slabel">01—Layout</p>
     <h2>What the host project contains</h2>
-    <p class="sub">The engine ships <code>true-bdd/</code> and <code>templates/</code>; the host authors everything under <code>docs/</code>, <code>src/</code>, and <code>tests/</code>.</p>
+    <p class="sub">The engine ships <code>true-bdd/</code> and <code>templates/</code>; the host authors everything under <code>docs/</code>, the service source directories, and <code>tests/</code>.</p>
     <div class="tree-panel">
       <div class="tree">
         <div class="trow"><span class="nm">host project root</span></div>
@@ -292,6 +292,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="trow"><span class="nm t-cfg">true-bdd/</span></div>
           <div class="lvl">
             <div class="trow"><span class="nm t-cfg">true-bdd.yaml</span><span class="cm">engine config — paths to everything else</span></div>
+            <div class="trow"><span class="nm t-cfg">&lt;key&gt;-schema.yaml</span><span class="cm">yamale shape for documents.&lt;key&gt; — host lint, not engine</span></div>
             <div class="trow"><span class="nm t-cfg">checklists/*.yaml</span><span class="cm">one per command, resolved by name</span></div>
           </div>
           <div class="trow"><span class="nm t-cfg">templates/*.prompt.tpl</span><span class="cm">prompt templates (shipped by the engine repo)</span></div>
@@ -299,25 +300,25 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="lvl">
             <div class="trow"><span class="nm">product/</span></div>
             <div class="lvl">
-              <div class="trow"><span class="nm t-story">product.yaml</span><span class="cm">product ref + roles + BDD vocabulary</span></div>
+              <div class="trow"><span class="nm t-story">product.yaml</span><span class="cm">product ref + roles + BDD vocabulary + glossary</span></div>
               <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
-            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + dev/prod environments</span></div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + optional dev/prod environments</span></div>
             <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
           </div>
-          <div class="trow"><span class="nm t-code">src/&lt;service&gt;/</span><span class="cm">production source — src/service1, src/service2, …</span></div>
-          <div class="trow"><span class="nm t-code">docker-compose.yaml</span><span class="cm">prod stack — path declared in architecture.yaml</span></div>
-          <div class="trow"><span class="nm t-code">docker-compose.dev.yaml</span><span class="cm">dev stack for local runs</span></div>
+          <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
+          <div class="trow"><span class="nm t-code">docker-compose.yaml</span><span class="cm">optional prod stack — path declared in architecture.yaml</span></div>
+          <div class="trow"><span class="nm t-code">docker-compose.dev.yaml</span><span class="cm">optional dev stack for local runs</span></div>
           <div class="trow"><span class="nm t-code">tests/{integration,e2e}/</span><span class="cm">executable specs</span></div>
         </div>
       </div>
       <div class="legend">
         <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — epic — story</small></span></div>
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, dev/prod environment stacks</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, optional dev/prod environment stacks</small></span></div>
         <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring, not data flow</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring and document schemas, not data flow</small></span></div>
       </div>
     </div>
   </div>
@@ -354,7 +355,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
             <div class="row ind1"><span class="v">product · architecture_yaml · scenarios_yaml</span></div>
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
+            <div class="row hl" id="a-cfg-schema"><span class="k">&lt;key&gt;-schema.yaml</span> <span class="v">shape of documents.&lt;key&gt;</span></div>
           </div>
+          <div class="note">Schemas are the host's lint contract, not the engine's: <code>./scripts/validate-schemas.sh</code> runs them in CI. The engine never parses the documents they pin.</div>
         </div>
 
         <div class="card c-cfg" id="card-cl" tabindex="0" style="grid-area:2/1">
@@ -385,7 +388,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <div class="card c-story" id="card-product" tabindex="0" style="grid-area:1/2/3/3; align-self:center">
           <header><i class="sw"></i><span class="p">docs/product/product.yaml</span><small>product</small></header>
           <div class="body">
-            <div class="row"><span class="k">title · summary</span></div>
+            <div class="row"><span class="k">title · description:</span> <span class="v">summary · problem · goals · targets · not_goals</span></div>
             <div class="row hl" id="a-product-roles"><span class="k">roles[]:</span></div>
             <div class="row ind1"><span class="k">name:</span> <span class="v">"Claude User"</span></div>
             <div class="row ind1"><span class="v">definition · primary_use_case</span></div>
@@ -394,6 +397,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row ind1"><span class="k">actions[]:</span> <span class="v">"ask Claude" → means …</span></div>
             <div class="row ind1"><span class="k">forbidden_qualifiers[]:</span> <span class="v">"properly", "fast", …</span></div>
             <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
+            <div class="row"><span class="k">glossary[]:</span> <span class="v">terms of the user's world (may be empty)</span></div>
           </div>
           <div class="note">Embedded verbatim into prompts — the engine never parses it. Vocabulary's preferred home is here; keeping it in architecture.yaml also works (the engine fixtures do that today).</div>
         </div>
@@ -464,9 +468,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
 
         <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/6">
-          <header><i class="sw"></i><span class="p">src/&lt;service&gt;/</span><small>source</small></header>
+          <header><i class="sw"></i><span class="p">services/&lt;service&gt;/</span><small>source</small></header>
           <div class="body">
-            <div class="row"><span class="v">src/service1 · src/service2 · …</span></div>
+            <div class="row"><span class="v">path declared per service in architecture.yaml</span></div>
             <div class="row"><span class="v">production code per service</span></div>
           </div>
           <div class="note">Edited by <code>build code --fix</code> until every failing test passes.</div>
@@ -477,17 +481,18 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>services + environments</small></header>
           <div class="body">
             <div>
-              <div class="row hl" id="a-arch-env"><span class="k">environment:</span></div>
+              <div class="row hl" id="a-arch-env"><span class="k">environment:</span> <span class="v">(optional)</span></div>
               <div class="row ind1"><span class="k">dev:</span> <span class="v">compose: docker-compose.dev.yaml</span></div>
               <div class="row ind1"><span class="k">prod:</span> <span class="v">compose: docker-compose.yaml</span></div>
             </div>
             <div>
               <div class="row"><span class="k">services[]:</span></div>
               <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· language · frameworks[]</span></div>
-              <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">src/&lt;name&gt;</span></div>
+              <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">services/&lt;name&gt;</span></div>
+              <div class="row ind1"><span class="k">design_system.path</span> <span class="v">(optional)</span></div>
               <div class="row ind1 hl" id="a-arch-qg"><span class="k">quality_gate.tests.{integration,e2e}:</span></div>
               <div class="row ind2"><span class="v">path · framework · config · helpers[]</span></div>
-              <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[]</span></div>
+              <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
             </div>
           </div>
         </div>
@@ -498,7 +503,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="body">
             <div class="row"><span class="v">one stack per environment — services, ports, volumes</span></div>
           </div>
-          <div class="note">Paths declared in <code>architecture.yaml environment:</code>. The dev stack backs local test runs (e.g. a Playwright <code>webServer</code> bringing up <code>docker compose</code>).</div>
+          <div class="note">Optional — paths declared in <code>architecture.yaml environment:</code>. The dev stack backs local test runs (e.g. a Playwright <code>webServer</code> bringing up <code>docker compose</code>).</div>
         </div>
       </div>
     </div>
@@ -545,7 +550,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">build code</span></td>
             <td>every <strong>(service, layer)</strong> pair in architecture; discovers failing tests via each framework's runner (dev compose stack backs the run)</td>
             <td><span class="cl">build-code.yaml</span></td>
-            <td>with <code>--fix</code>: <strong>production source</strong> under <code>src/</code> only — tests and registry are never touched</td>
+            <td>with <code>--fix</code>: <strong>production source</strong> under the declared service paths only — tests and registry are never touched</td>
           </tr>
         </tbody>
       </table>
@@ -580,12 +585,12 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><strong>build tests</strong> passes only if some test references the id literally: <code>test('E2E-900: …')</code></td></tr>
           <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">id prefix INT- / E2E-</td><td class="to">quality_gate.tests layer</td>
             <td>INT → <code>tests.integration</code> (e.g. jest), E2E → <code>tests.e2e</code> (playwright) — picks the tree, framework, and runner</td></tr>
-          <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">src/&lt;name&gt;/</td>
-            <td><code>path: src/service1</code> tells <strong>build code</strong> where production source lives</td></tr>
+          <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
+            <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>src/service1</code></td></tr>
           <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>11</td><td class="from">environment.{dev,prod}</td><td class="to">docker-compose files</td>
-            <td>architecture.yaml declares the stack per environment: <code>dev → docker-compose.dev.yaml</code>, <code>prod → docker-compose.yaml</code></td></tr>
+            <td>optional — architecture.yaml declares the stack per environment (<code>dev → docker-compose.dev.yaml</code>, <code>prod → docker-compose.yaml</code>); a host without a compose-backed environment omits the key</td></tr>
           <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>12</td><td class="from">failing test</td><td class="to">production source</td>
-            <td><strong>build code --fix</strong> edits <code>src/</code> until the runner's <code>LastRunPassed</code> flips to true</td></tr>
+            <td><strong>build code --fix</strong> edits the service's source (its <code>services[].path</code>) until the runner's <code>LastRunPassed</code> flips to true</td></tr>
           <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
             <td><code>docs: [product, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
           <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">command name</td><td class="to">checklist file</td>
@@ -594,6 +599,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
           <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
+          <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
+            <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/validate-schemas.sh</code>, a CI gate), not by a command</td></tr>
         </tbody>
       </table>
     </div>
@@ -601,7 +608,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd</code> fixture documents — 2026-07-28 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd</code> fixture documents — 2026-08-14 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>
@@ -631,6 +638,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     { n: 14, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
     { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
     { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
+    { n: 17, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
 
