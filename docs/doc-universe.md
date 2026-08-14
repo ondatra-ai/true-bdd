@@ -43,7 +43,7 @@ host project root
 ├── templates/*.prompt.tpl       prompt templates (shipped by the engine repo)
 ├── docs/
 │   ├── product/
-│   │   ├── product.yaml             product ref + roles + BDD vocabulary
+│   │   ├── product.yaml         product ref + roles + BDD vocabulary
 │   │   ├── epics/epic-<N>-<slug>.yaml
 │   │   └── stories/<id>-<slug>.yaml
 │   ├── architecture/architecture.yaml   services + dev/prod environments
@@ -72,17 +72,17 @@ The top row is the hierarchy spine — the product document contains epics, an e
 flowchart LR
   subgraph spine["hierarchy spine"]
     direction LR
-    product document["docs/product/product.yaml<br/>roles · vocabulary"]
+    PRODUCT["docs/product/product.yaml<br/>roles · vocabulary"]
     EPIC["docs/product/epics/epic-&lt;N&gt;-&lt;slug&gt;.yaml<br/>stories[] — the seeds, short version"]
     STORY["docs/product/stories/&lt;id&gt;-&lt;slug&gt;.yaml<br/>acceptance_criteria[] — the scenarios, long form"]
     REG["docs/scenarios.yaml<br/>INT-NNN | E2E-NNN + lineage"]
-    product document -- "① contains" --> EPIC
+    PRODUCT -- "① contains" --> EPIC
     EPIC -- "② us create" --> STORY
     STORY -- "⑤ us apply" --> REG
   end
 
-  STORY -. "③ as_a → roles[].name" .-> product document
-  product document -. "④ vocabulary (us refine, in place)" .-> STORY
+  STORY -. "③ as_a → roles[].name" .-> PRODUCT
+  PRODUCT -. "④ vocabulary (us refine, in place)" .-> STORY
   REG -. "⑥ user_stories[].story" .-> STORY
 
   ARCH["docs/architecture/architecture.yaml<br/>services[] · quality_gate · environment"]

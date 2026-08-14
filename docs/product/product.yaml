@@ -1,4 +1,4 @@
-# Product Requirements Document for this repository (TrueBDD itself).
+# Product document for this repository (TrueBDD itself).
 #
 # Read as prompt context by the `us` and `build` checklists — the engine
 # never parses this file, so its shape is free. Every line lands in every

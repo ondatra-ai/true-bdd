@@ -349,10 +349,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <header><i class="sw"></i><span class="p">true-bdd/<wbr>true-bdd.yaml</span><small>config</small></header>
           <div class="body">
             <div class="row"><span class="k">engine:</span> <span class="v">model</span></div>
-            <div class="row hl" id="a-cfg-paths"><span class="k">epics.path · paths.*</span></div>
-            <div class="row ind1"><span class="v">stories_dir · checklists_dir · tmp</span></div>
+            <div class="row hl" id="a-cfg-paths"><span class="k">paths:</span></div>
+            <div class="row ind1"><span class="v">epics_dir · stories_dir · checklists_dir · tmp_dir</span></div>
             <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
-            <div class="row ind1"><span class="v">product · architecture_yaml</span></div>
+            <div class="row ind1"><span class="v">product · architecture_yaml · scenarios_yaml</span></div>
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
           </div>
         </div>
@@ -563,7 +563,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <thead><tr><th>#</th><th>From</th><th>To</th><th>How it joins</th></tr></thead>
         <tbody>
           <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">product.yaml</td><td class="to">epics/*.yaml</td>
-            <td>epics are the product document's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/product/epics/</code>, declared by <code>epics.path</code></td></tr>
+            <td>epics are the product document's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/product/epics/</code>, declared by <code>paths.epics_dir</code></td></tr>
           <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">epic stories[].id</td><td class="to">story file</td>
             <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/product/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
           <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
@@ -590,7 +590,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><code>docs: [product, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
           <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">command name</td><td class="to">checklist file</td>
             <td><code>paths.checklists_dir</code> + hyphenation: <code>us apply</code> → <code>checklists/us-apply.yaml</code></td></tr>
-          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · epics · stories dirs</td>
+          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · epics · stories dirs</td>
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
           <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>

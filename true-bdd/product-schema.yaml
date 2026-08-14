@@ -1,11 +1,11 @@
-# Yamale schema for the PRD (path from `documents.prd` in true-bdd.yaml,
-# conventionally docs/prd/prd.yaml).
+# Yamale schema for the product document (path from `documents.product`
+# in true-bdd.yaml, conventionally docs/product/product.yaml).
 #
-# The engine never parses the PRD — it reaches the checklists as prompt
-# text — so this schema is the only thing pinning its shape. Validate it
-# in the host project's lint step, outside the engine:
+# The engine never parses the product document — it reaches the checklists
+# as prompt text — so this schema is the only thing pinning its shape.
+# Validate it in the host project's lint step, outside the engine:
 #
-#   yamale -s true-bdd/prd-schema.yaml docs/prd/prd.yaml
+#   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
 # Every field is required. `not_goals` and `glossary` are the two lists
 # allowed to be empty: a product may rule nothing out and may need no
