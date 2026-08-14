@@ -21,6 +21,16 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install yamale
+        run: pip install yamale
+
+      - name: Validate document schemas
+        run: ./scripts/validate-schemas.sh
+
       - name: Lint
         uses: golangci/golangci-lint-action@v8
         with:

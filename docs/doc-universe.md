@@ -39,6 +39,7 @@ the service source directories, and `tests/`.
 host project root
 ├── true-bdd/
 │   ├── true-bdd.yaml            engine config — paths to everything else
+│   ├── <key>-schema.yaml        yamale shape for documents.<key> — host lint, not engine
 │   └── checklists/*.yaml        one per command, resolved by name
 ├── templates/*.prompt.tpl       prompt templates (shipped by the engine repo)
 ├── docs/
@@ -60,7 +61,7 @@ host project root
 | **Scenario registry** | the merge target — single source of truth for behavior |
 | **Architecture** | services, test layers, optional dev/prod environment stacks |
 | **Code artifacts** | specs, production source, compose stacks |
-| **Engine config** | wiring, not data flow |
+| **Engine config** | wiring and document schemas, not data flow |
 
 ## How the documents join
 
@@ -99,7 +100,8 @@ flowchart LR
 ```
 
 Engine config (`true-bdd/true-bdd.yaml`, `checklists/`, `templates/`) wires the walk itself:
-joins 13–16 in the table below.
+joins 13–16 in the table below. Join 17 is the one contract the engine does not read —
+the schemas that pin each document's shape for the host's own lint step.
 
 ## Who reads what, who writes what
 
@@ -137,6 +139,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 14 | command name | checklist file | `paths.checklists_dir` + hyphenation: `us apply` → `checklists/us-apply.yaml` |
 | 15 | true-bdd.yaml documents:/paths: | product · architecture · scenario registry · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
 | 16 | templates.prompts.* | templates/*.prompt.tpl | each engine role (checklist / fix_generator / fix_applier, + `_system`) maps to one template file |
+| 17 | true-bdd/&lt;key&gt;-schema.yaml | the document at documents.&lt;key&gt; | `product-schema.yaml` pins the shape of `documents.product`. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (`./scripts/validate-schemas.sh`, a CI gate), not by a command |
 
 ---
 

@@ -292,6 +292,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="trow"><span class="nm t-cfg">true-bdd/</span></div>
           <div class="lvl">
             <div class="trow"><span class="nm t-cfg">true-bdd.yaml</span><span class="cm">engine config — paths to everything else</span></div>
+            <div class="trow"><span class="nm t-cfg">&lt;key&gt;-schema.yaml</span><span class="cm">yamale shape for documents.&lt;key&gt; — host lint, not engine</span></div>
             <div class="trow"><span class="nm t-cfg">checklists/*.yaml</span><span class="cm">one per command, resolved by name</span></div>
           </div>
           <div class="trow"><span class="nm t-cfg">templates/*.prompt.tpl</span><span class="cm">prompt templates (shipped by the engine repo)</span></div>
@@ -317,7 +318,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
         <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, optional dev/prod environment stacks</small></span></div>
         <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring, not data flow</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring and document schemas, not data flow</small></span></div>
       </div>
     </div>
   </div>
@@ -354,7 +355,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
             <div class="row ind1"><span class="v">product · architecture_yaml · scenarios_yaml</span></div>
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
+            <div class="row hl" id="a-cfg-schema"><span class="k">&lt;key&gt;-schema.yaml</span> <span class="v">shape of documents.&lt;key&gt;</span></div>
           </div>
+          <div class="note">Schemas are the host's lint contract, not the engine's: <code>./scripts/validate-schemas.sh</code> runs them in CI. The engine never parses the documents they pin.</div>
         </div>
 
         <div class="card c-cfg" id="card-cl" tabindex="0" style="grid-area:2/1">
@@ -596,6 +599,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
           <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
+          <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
+            <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/validate-schemas.sh</code>, a CI gate), not by a command</td></tr>
         </tbody>
       </table>
     </div>
@@ -633,6 +638,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     { n: 14, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
     { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
     { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
+    { n: 17, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
 

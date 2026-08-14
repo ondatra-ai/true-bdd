@@ -54,6 +54,12 @@ Key implementation facts:
 ## Development Commands
 
 ```bash
+# Validate every document against its schema (requires yamale: pip install yamale).
+# Pairing is by convention: true-bdd/<key>-schema.yaml validates documents.<key>
+# from true-bdd.yaml, so a new schema needs no script edit. Runs in CI's `gates`
+# job and in .claude/skills/pr-commit/gates.sh.
+./scripts/validate-schemas.sh
+
 # Build (requires Go 1.25 and the `claude` CLI on $PATH)
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 
@@ -139,7 +145,8 @@ service it exercises.
   - `services/bdd-cli/internal/pkg/` — `console` (terminal UI output), `errors`.
 - `services/bdd-web/` — the Next.js relay + UI (a **sentinel nested Go module** so root-level `go`/`golangci-lint` never descend into its `node_modules`). Its `src/` is GENERATED code and is gitignored — `tests/bdd-web/` is the spec. `design/` holds the design system, `SPEC.md`, and the `proto-workspace/` design-truth prototype. Exercised by `tests/bdd-web/`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
-- `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer.
+- `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`, `<key>-schema.yaml`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer. The schemas are host lint contracts, not engine inputs: the engine never parses the documents they pin, so only `scripts/validate-schemas.sh` enforces them.
+- `scripts/` — repo tooling invoked by CI and the commit gates; `validate-schemas.sh` is the schema gate described under Development Commands.
 - `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `services/bdd-web/src/tests/unit/`):
   - `tests/bdd-cli/` — the Go BDD-CLI fixture harness for `services/bdd-cli`: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
   - `tests/bdd-web/` — the Playwright E2E suite for `services/bdd-web`, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `w*` workspace, `a*` AI), `helpers/`, `fixtures/`, `goldens/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test builds the app once per invocation and launches its own host `node server.js` (see `helpers/server-controller.ts`). Run: `npx --prefix tests/bdd-web playwright test --config tests/bdd-web/playwright.config.ts --project=protocol`.

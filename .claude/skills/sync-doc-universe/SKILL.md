@@ -21,11 +21,21 @@ picked up automatically:
 | Side | Resolved from |
 | --- | --- |
 | **Documents** | every file under `documents:` (product, architecture_yaml, scenarios_yaml); every document directory under `paths:` (epics_dir, stories_dir, checklists_dir); every template file under `templates.prompts:` |
+| **Schemas** | `true-bdd/*-schema.yaml` — each pins the shape of the document at `documents.<key>` (`product-schema.yaml` → `documents.product`) |
 | **Universe** | `docs/doc-universe.md`, `docs/doc-universe.html` |
 
 Exclude the runtime paths (`tmp_dir`, `tmp_glob`, `test_write_globs`) —
 they hold artifacts and code trees, not documents. `true-bdd.yaml` itself
 is in scope too: the universe describes its keys (joins 13–16).
+
+The schemas are a **third side**, not decoration: a document can satisfy
+the universe's prose and still violate its schema. Check each schema
+against both its document and the universe's account of that document —
+a field the universe describes but the schema forbids (or omits) is an
+inconsistency, and so is a schema constraint no longer true of the
+document. `./scripts/validate-schemas.sh` (also a CI gate) settles the
+document-vs-schema half mechanically; run it first and treat any failure
+as a finding to ask about.
 
 The two universe files are two renderings of the same content (the html
 adds the hoverable join map — cards like `card-product`, anchor rows like
@@ -55,19 +65,23 @@ and meaning intact are **not** inconsistencies — do not flag them.
 
 1. **Resolve the scope.** Read `true-bdd/true-bdd.yaml` and collect the
    in-scope paths per the table above.
-2. **Inventory the universe's claims.** Read both universe files and list
+2. **Validate documents against schemas.** Run
+   `./scripts/validate-schemas.sh`. Every failure is an inconsistency for
+   step 6 — do not fix it silently, and do not skip this because CI also
+   runs it; the point is to catch it before the push.
+3. **Inventory the universe's claims.** Read both universe files and list
    every checkable claim: named paths, per-document field lists, the
    command read/write table, the numbered joins.
-3. **Universe → documents.** Verify each claim against what actually
+4. **Universe → documents.** Verify each claim against what actually
    exists: the files, their fields, the config keys, the templates.
-4. **Documents → universe.** Walk each in-scope document's actual
+5. **Documents → universe.** Walk each in-scope document's actual
    structure and check the universe's description of that document still
    covers it — a field or file the universe's account of that document
    omits or contradicts is an inconsistency.
-5. **md ↔ html.** Compare the two renderings' content claim by claim;
+6. **md ↔ html.** Compare the two renderings' content claim by claim;
    any content present or stated differently in only one is an
    inconsistency.
-6. **Ask about every inconsistency.** Use AskUserQuestion — one question
+7. **Ask about every inconsistency.** Use AskUserQuestion — one question
    per inconsistency (batch up to 4 per call), quoting the exact text on
    both sides. Every option label must state the direction explicitly:
    **what is truth → what gets updated**. The standard options:
@@ -81,10 +95,10 @@ and meaning intact are **not** inconsistencies — do not flag them.
      omission is a legitimate empty or optional instance.
    - **Custom** — the built-in "Other" free-text answer; the user writes
      how to approach it. Follow that instruction exactly.
-7. **Apply the chosen resolutions.** Keep md and html telling the same
+8. **Apply the chosen resolutions.** Keep md and html telling the same
    story; in the html, remember the join map (card anchors, `#joins`
    table, the SVG edges) may also encode the claim being fixed.
-8. **Report** the list of inconsistencies and how each one was resolved
+9. **Report** the list of inconsistencies and how each one was resolved
    (or `doc universe: consistent` when none were found). No staging
    needed when run from pr-commit — its commit step stages everything.
 
