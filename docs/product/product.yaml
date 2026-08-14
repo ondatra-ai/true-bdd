@@ -74,7 +74,7 @@ roles:
     primary_use_case: "Turning a product goal into registered scenarios — us create, us refine, us apply"
     characteristics:
       - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
-      - "Works inside the action vocabulary the System Architect declares"
+      - "Works inside the action vocabulary the product document declares"
       - "Answers each failed check in the --fix loop: apply, refine, or exit"
       - "May hand the writing to someone else, but keeps the accountability"
 
@@ -84,7 +84,7 @@ roles:
       interfaces, and the test layers used to observe behaviour.
     primary_use_case: "Declaring the architectural contract and running the regeneration loop — build tests, build code"
     characteristics:
-      - "Owns architecture.yaml: services, quality-gate test layers and frameworks, the BDD vocabulary"
+      - "Owns architecture.yaml: services, quality-gate test layers and frameworks"
       - "Designs so behaviour can be tested — every scenario must be observable through a declared layer"
       - "Fixes the contracts that must survive regeneration and leaves the rest free to change"
       - "Never edits a scenario to make a failing test pass"
@@ -101,7 +101,47 @@ roles:
       - "Reads a build tests failure as a sign that a scenario cannot be observed, not just that a test is missing"
       - "Often the same person as the Product Owner; the accountability stays separate"
 
-# Product vocabulary — empty on purpose for now.
+# The allowed BDD language for stories and scenarios. Read by `us refine`:
+# every step must use a declared action, and the forbidden lists reject
+# vague wording. Its preferred home is here in the product document; a
+# host may keep it in architecture.yaml instead (the fixtures do).
+vocabulary:
+  # Allowed action verbs with their concrete meaning.
+  actions:
+    - name: "runs <command>"
+      means: "invokes the true-bdd CLI with that subcommand in a terminal"
+    - name: "answers the prompt"
+      means: "types a choice (apply / refine / exit) into the --fix loop"
+    - name: "opens the run report"
+      means: "loads the report server page in a browser"
+
+  # Vague words that must not appear in AC descriptions or steps.
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - appropriate
+    - appropriately
+    - user-friendly
+    - fast
+    - quickly
+    - easily
+    - seamless
+    - intuitive
+
+  # Action verbs too abstract to automate: they hide the interaction
+  # mechanism.
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "process"
+      reason: "Does not specify the interaction mechanism or the visible outcome."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "parse"
+      reason: "Describes internal mechanics, not user-observable behavior."
+      replacement: "Describe the visible result of reading the input."
+
+# Product glossary — empty on purpose for now.
 #
 # The key stays declared so the empty list is a recorded decision, not an
 # oversight. Fill it when a `us create` run mis-classifies one of our own
