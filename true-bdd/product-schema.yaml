@@ -7,22 +7,23 @@
 #
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
-# Every field is required. `not_goals` and `glossary` are the two lists
-# allowed to be empty: a product may rule nothing out and may need no
-# vocabulary of its own, but it must say so deliberately by declaring the
-# key rather than omitting it.
+# Every field is required. Only `roles` and the vocabulary's own lists
+# must carry an entry; `goals`, `targets`, `not_goals` and `glossary` may
+# be empty, but the key must be declared rather than omitted, so an empty
+# list reads as a decision on the record instead of an oversight.
 
 title: str()
 description: include('description')
 roles: list(include('role'), min=1)
+vocabulary: include('vocabulary')
 glossary: list(include('glossary_entry'))
 
 ---
 description:
   summary: str()
   problem: str()
-  goals: list(str(), min=1)
-  targets: list(str(), min=1)
+  goals: list(str())
+  targets: list(str())
   not_goals: list(str())
 
 ---
@@ -33,6 +34,26 @@ role:
   definition: str()
   primary_use_case: str()
   characteristics: list(str(), min=1)
+
+---
+# The allowed BDD language `us refine` enforces on steps and AC
+# descriptions. Its preferred home is the product document; a host may
+# keep the same block in architecture.yaml instead.
+vocabulary:
+  actions: list(include('action'), min=1)
+  forbidden_qualifiers: list(str(), min=1)
+  forbidden_actions: list(include('forbidden_action'), min=1)
+
+---
+action:
+  name: str()
+  means: str()
+
+---
+forbidden_action:
+  name: str()
+  reason: str()
+  replacement: str()
 
 ---
 glossary_entry:
