@@ -74,6 +74,23 @@
       "verdicts": {
         "fix": 3
       }
+    },
+    {
+      "at": "2026-08-15T21:22:12Z",
+      "sha": "a78b1b2",
+      "branch": "feat/test-commands-from-architecture",
+      "pr": null,
+      "source": "coderabbit-github",
+      "found": 8,
+      "by_severity": {
+        "minor": 5,
+        "major": 3
+      },
+      "verdicts": {
+        "fix": 4,
+        "defer": 1,
+        "reject": 3
+      }
     }
   ],
   "totals": {
@@ -86,12 +103,12 @@
       "precision": 0.917
     },
     "coderabbit-github": {
-      "rounds": 1,
-      "found": 6,
-      "fixed": 5,
-      "deferred": 1,
-      "rejected": 0,
-      "precision": 1.0
+      "rounds": 3,
+      "found": 14,
+      "fixed": 13,
+      "deferred": 3,
+      "rejected": 6,
+      "precision": 0.727
     }
   }
 }

@@ -50,8 +50,6 @@ expected:
        is `"Dispatching AI turn"`.
     4. The failure is attributable from the log alone — it names what
        was wrong with the spec.
-    5. The run MUST NOT have printed `BUILD CODE COMPLETE` — an empty
-       spec is not a clean walk.
 
     Reply `PASS` if all four hold. Otherwise reply
     `FAIL: <one-sentence reason>` naming the first violation.

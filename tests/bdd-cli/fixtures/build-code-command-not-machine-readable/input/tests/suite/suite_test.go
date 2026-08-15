@@ -1,15 +1,15 @@
 // Package suite_test is the fixture host project's test layer. It is
-// present, runnable, and holds a failing test — so that "no failure was
-// reported" cannot be mistaken for "there was nothing to find". The
-// spec is incomplete, so the engine must refuse before it ever runs
-// this package.
+// present, runnable, and holds a failing test — which is the whole
+// point: the layer's command omits `-json`, so a run that went ahead
+// would read this failure as prose, find nothing in it, and report
+// success. The failure has to exist for that false green to be possible.
 package suite_test
 
 import "testing"
 
-// TestRed fails unconditionally. Any run that reaches it has walked a
-// layer whose command the spec never finished declaring.
+// TestRed fails unconditionally. Any run that reaches it is one the
+// engine let proceed with output it cannot parse.
 func TestRed(t *testing.T) {
 	t.Parallel()
-	t.Fatal("TestRed ran: the engine walked a layer with an incomplete commands: block")
+	t.Fatal("TestRed ran: the engine executed a command whose output it cannot parse")
 }
