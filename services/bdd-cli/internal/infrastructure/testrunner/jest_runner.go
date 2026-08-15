@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -50,10 +49,14 @@ func (r *JestRunner) Discover(
 	cfg Config,
 	service, layer string,
 ) ([]*FailingTest, error) {
-	cwd, configArg, pathArg := jestPaths(cfg)
+	argv, err := SplitCommand(cfg.Command)
+	if err != nil {
+		return nil, fmt.Errorf("jest command for %s/%s: %w", service, layer, err)
+	}
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, "--json",
-		"--config", configArg, pathArg)
+	cwd := CommandDir(cfg)
+
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("jest discovery under %s failed: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -75,28 +78,39 @@ func (r *JestRunner) Discover(
 	return failures, nil
 }
 
-// RunOne re-executes one failing Jest assertion via
-// `--testNamePattern` (anchored to the escaped fullName) plus the spec
-// file positional argument.
+// RunOne re-executes one failing Jest assertion by appending
+// `--testNamePattern` (anchored to the escaped fullName) to the layer's
+// own command. Only the pattern is appended, never the spec file: Jest
+// treats bare positionals as an OR-ed set of path patterns, so a file
+// added next to the path the command already carries would widen the
+// rerun instead of isolating it. `--testNamePattern` is ANDed with the
+// paths and narrows correctly.
+//
+// It narrows which tests RUN, not which files are loaded: Jest still
+// transforms every file the command's own path patterns select. Scoping
+// that down would mean rewriting the host's positionals rather than
+// appending to them — `--runTestsByPath` changes how ALL positionals are
+// interpreted, so it cannot simply be added — and a command the engine
+// rewrites is no longer the command the spec declared.
 func (r *JestRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
 ) (bool, string, error) {
-	file, fullName, err := splitJestName(failingTest.TestName)
+	_, fullName, err := splitJestName(failingTest.TestName)
 	if err != nil {
 		return false, "", err
 	}
 
-	cfg := failingTest.RunnerConfig
-	if cfg.ConfigFile == "" {
-		cfg = Config{Path: file, ConfigFile: jestConfigGuess(file)}
+	argv, err := commandArgv(failingTest)
+	if err != nil {
+		return false, "", err
 	}
 
-	cwd, configArg, _ := jestPaths(cfg)
+	cwd := CommandDir(failingTest.RunnerConfig)
 	pattern := "^" + jestRegexMeta.ReplaceAllString(fullName, `\$0`) + "$"
+	argv = append(argv, "--testNamePattern", pattern)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, "--json",
-		"--config", configArg, "--testNamePattern", pattern, file)
+	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("jest rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -109,6 +123,11 @@ func (r *JestRunner) RunOne(
 		return false, stdout.String(), nil
 	}
 
+	if jestRanNothing(report) {
+		return false, stdout.String(), fmt.Errorf("%w: jest --testNamePattern %q matched no test for %s",
+			ErrRerunSelectedNoTests, pattern, failingTest.TestName)
+	}
+
 	for _, failure := range jestReportToFailingTests(report, "", "", cwd) {
 		if failure.TestName == failingTest.TestName {
 			return false, failure.FailureOutput, nil
@@ -118,87 +137,39 @@ func (r *JestRunner) RunOne(
 	return true, "", nil
 }
 
-// exec runs `npx jest ...` with the supplied args. cwd is set so `npx`
-// resolves the local Jest install. phase labels the invocation in the
-// log and in the captured output's filename. Non-zero exit codes are
-// expected on test failure.
+// jestRanNothing reports whether the rerun executed no assertion at
+// all. A pattern that matches nothing produces a report with no
+// failures in it — the same shape as a test that passed — so without
+// this the engine would read a mistyped filter as a successful fix.
+func jestRanNothing(report *dto.JestReport) bool {
+	for _, testResult := range report.TestResults {
+		if len(testResult.AssertionResults) > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// exec runs the layer's command with the supplied argv. cwd is the
+// directory holding the layer's config so `npx` resolves the local Jest
+// install. phase labels the invocation in the log and in the captured
+// output's filename. Non-zero exit codes are expected on test failure.
 func (r *JestRunner) exec(
 	ctx context.Context,
 	cwd, phase string,
-	args ...string,
+	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	allArgs := append([]string{"jest"}, args...)
-	cmd := exec.CommandContext(ctx, "npx", allArgs...)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = cwd
 
 	return runLogged(cmd, spawnMeta{
-		binary:    "npx",
-		args:      allArgs,
+		binary:    argv[0],
+		args:      argv[1:],
 		framework: FrameworkJest,
 		phase:     phase,
 		artifacts: r.artifacts,
 	})
-}
-
-// jestPaths derives the (cwd, --config arg, positional path arg) triple
-// from a Config. cwd is the directory containing the Jest config so
-// `npx jest` resolves the local install; arguments are made relative.
-func jestPaths(cfg Config) (string, string, string) {
-	cwd := "."
-	if cfg.ConfigFile != "" {
-		cwd = filepath.Dir(cfg.ConfigFile)
-	}
-
-	configArg := cfg.ConfigFile
-	pathArg := cfg.Path
-
-	if cwd == "." {
-		return cwd, configArg, pathArg
-	}
-
-	relConfig, relConfigErr := filepath.Rel(cwd, cfg.ConfigFile)
-	if relConfigErr == nil {
-		configArg = relConfig
-	}
-
-	relPath, relPathErr := filepath.Rel(cwd, cfg.Path)
-	if relPathErr == nil {
-		pathArg = relPath
-	}
-
-	return cwd, configArg, pathArg
-}
-
-// jestConfigGuess infers the Jest config path from a spec file. Walks
-// up looking for the closest jest.config.{js,cjs,mjs,ts,json}. Falls
-// back to the file's directory if no marker is found.
-func jestConfigGuess(specPath string) string {
-	candidates := []string{
-		"jest.config.js", "jest.config.cjs", "jest.config.mjs",
-		"jest.config.ts", "jest.config.json",
-	}
-
-	dir := filepath.Dir(specPath)
-
-	for {
-		for _, name := range candidates {
-			candidate := filepath.Join(dir, name)
-
-			_, statErr := os.Stat(candidate)
-			if statErr == nil {
-				return candidate
-			}
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-
-		dir = parent
-	}
-
-	return filepath.Join(filepath.Dir(specPath), "jest.config.js")
 }
 
 // splitJestName parses "<file>::<fullName>" into its parts, returning
@@ -277,6 +248,12 @@ func jestReportToFailingTests(
 // jestRepoRelative rebases the absolute path Jest emits into a path
 // relative to the supplied cwd, falling back to the absolute path if
 // the relative computation fails.
+//
+// A layer that declares no `config:` has no cwd to rebase against —
+// filepath.Rel cannot make an absolute path relative to a relative one
+// — so its paths stay absolute and reach the prompt that way. Fixing
+// that means resolving the engine's own working directory, which is a
+// change to what the prompt says and wants its own test.
 func jestRepoRelative(cwd, absolutePath string) string {
 	if !filepath.IsAbs(absolutePath) {
 		return absolutePath

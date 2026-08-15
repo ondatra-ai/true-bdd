@@ -60,24 +60,55 @@
         "fix": 2,
         "reject": 1
       }
+    },
+    {
+      "at": "2026-08-15T20:11:15Z",
+      "sha": "254fa82",
+      "branch": "feat/test-commands-from-architecture",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 3,
+      "by_severity": {
+        "major": 3
+      },
+      "verdicts": {
+        "fix": 3
+      }
+    },
+    {
+      "at": "2026-08-15T21:22:12Z",
+      "sha": "a78b1b2",
+      "branch": "feat/test-commands-from-architecture",
+      "pr": null,
+      "source": "coderabbit-github",
+      "found": 8,
+      "by_severity": {
+        "minor": 5,
+        "major": 3
+      },
+      "verdicts": {
+        "fix": 4,
+        "defer": 1,
+        "reject": 3
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 3,
-      "found": 21,
-      "fixed": 19,
+      "rounds": 4,
+      "found": 24,
+      "fixed": 22,
       "deferred": 0,
       "rejected": 2,
-      "precision": 0.905
+      "precision": 0.917
     },
     "coderabbit-github": {
-      "rounds": 1,
-      "found": 6,
-      "fixed": 5,
-      "deferred": 1,
-      "rejected": 0,
-      "precision": 1.0
+      "rounds": 2,
+      "found": 14,
+      "fixed": 9,
+      "deferred": 2,
+      "rejected": 3,
+      "precision": 0.786
     }
   }
 }

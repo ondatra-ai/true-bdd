@@ -1,0 +1,19 @@
+# The e2e layer names a framework the engine cannot route to. There is
+# no runner for `rspec`, so there is nothing for the declared command to
+# be run BY — the spec must be refused before anything is spawned.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: rspec
+            commands:
+              record: "bundle exec rspec --format json"
+              replay: "bundle exec rspec --format json"
+              live: "bundle exec rspec --format json"

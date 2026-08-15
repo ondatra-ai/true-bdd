@@ -1,0 +1,25 @@
+# Architectural spec for the fixture's host project.
+#
+# The `commands:` block is the subject under test. The e2e layer holds
+# two tests in one package; only the REPLAY command carries the
+# `-run '^TestGreen$'` filter that keeps the failing one out of scope.
+# `record` and `live` deliberately name the unfiltered command, so a run
+# that reaches for the wrong mode discovers TestRed and the fixture goes
+# red — the same way it goes red if the engine substitutes an invocation
+# of its own or drops part of the one it was given.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              replay: "go test -json -count=1 -run '^TestGreen$' ./tests/suite/..."
+              live: "go test -json -count=1 ./tests/suite/..."

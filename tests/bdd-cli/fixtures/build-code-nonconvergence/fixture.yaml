@@ -1,0 +1,65 @@
+# A walk that ends with a test still failing must exit non-zero.
+#
+# This is `build code`'s own failure verdict — ErrBuildCodeNotConverged
+# — and the only exit-1 path that comes AFTER a full walk rather than
+# instead of one. Every other negative fixture refuses before the walk;
+# this one runs the command, discovers a real failure, evaluates it
+# against the checklist, and then reports that nothing fixed it.
+#
+# Run without `--fix`, so the engine cannot even attempt a repair: the
+# single failing cell is evaluated once and the walk stops NOT
+# converged. Costs exactly one AI turn — the validation turn that
+# mirrors the runner's verdict.
+
+cmd: build code
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - "Running calc/e2e tests via go-test"
+    - '1 failure\(s\) in calc/e2e'
+    - "Total failing tests across architecture: 1"
+    - "BUILD CODE COMPLETE"
+
+  judge: |
+    # Expectations for `true-bdd build code` on a walk that cannot converge
+
+    The e2e layer's suite holds one test, `TestUnfixable`, that fails
+    unconditionally. The command is correct and the walk runs; without
+    `--fix` nothing can move the failure, so the run must end NOT
+    converged and the CLI must exit non-zero.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules above.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.**
+       Without `--fix` there is no applier turn, so the run must not
+       have edited a single project file — least of all the failing
+       test.
+    2. The walk actually happened. Read `tmp/true-bdd.log.json` in the
+       diff below: it MUST contain a `Spawning test runner` record for
+       the declared `go test` command, and exactly one record whose
+       `msg` is `"Dispatching AI turn"` — the validation turn for the
+       one failing test. A run with zero AI turns never reached the
+       checklist and is failing for some earlier reason.
+    3. The log MUST NOT contain a turn whose role is the fix applier.
+       `--fix` was not passed; a run that wrote anything would mean the
+       flag stopped gating the repair.
+
+    Reply `PASS` if all three hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

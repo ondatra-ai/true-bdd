@@ -47,7 +47,7 @@ host project root
 │   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary
 │   │   ├── epics/epic-<N>-<slug>.yaml
 │   │   └── stories/<id>-<slug>.yaml
-│   ├── architecture/architecture.yaml   services + optional dev/prod environments
+│   ├── architecture/architecture.yaml   services + test-layer commands + optional environments
 │   └── scenarios.yaml           the central scenario registry
 ├── services/<service>/          production source — path declared per service in architecture.yaml
 ├── docker-compose.yaml          optional prod stack — path declared in architecture.yaml
@@ -94,7 +94,7 @@ flowchart LR
   PRODUCT -. "④ vocabulary (us refine, in place)" .-> STORY
   REG -. "⑥ user_stories[].story" .-> STORY
 
-  ARCH["docs/architecture/architecture.yaml<br/>services[] · dependencies · quality_gate · environment (optional)"]
+  ARCH["docs/architecture/architecture.yaml<br/>services[] · dependencies · quality_gate (tests + commands) · environment (optional)"]
   TESTS["tests/{integration,e2e}/<br/>test('E2E-900: …')"]
   SRC["services/&lt;service&gt;/"]
   COMPOSE["docker-compose.yaml ·<br/>docker-compose.dev.yaml"]
@@ -103,13 +103,15 @@ flowchart LR
   TESTS -- "⑫ build code" --> SRC
   REG -. "⑦ service:" .-> ARCH
   ARCH -. "⑨ quality_gate.tests" .-> TESTS
+  ARCH -. "⑱ commands.replay" .-> TESTS
   ARCH -. "⑩ services[].path" .-> SRC
   ARCH -. "⑪ environment" .-> COMPOSE
 ```
 
 Engine config (`true-bdd/true-bdd.yaml`, `checklists/`, `templates/`) wires the walk itself:
 joins 13–16 in the table below. Join 17 is the one contract the engine does not read —
-the schemas that pin each document's shape for the host's own lint step.
+the schemas that pin each document's shape for the host's own lint step. Join 18 is how a
+test layer says what running it actually means.
 
 ## Who reads what, who writes what
 
@@ -123,7 +125,7 @@ Claude-mediated loop until the walk is clean.
 | `us refine <id>` | the **story**; **product** roles + vocabulary; **architecture** test layers (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; greps test trees for the id | build-tests.yaml | with `--fix`: missing **specs** under `tests/` referencing the scenario id — the registry is never modified |
-| `build code` | every **(service, layer)** pair in architecture; discovers failing tests via each framework's runner (the dev compose stack, when declared, backs the run) | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
+| `build code` | every **(service, layer)** pair in architecture; discovers failing tests by running the layer's own declared `commands.replay` (the dev compose stack, when declared, backs the run) | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
 
 ## Every cross-reference, with real values
 
@@ -148,7 +150,8 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 15 | true-bdd.yaml documents:/paths: | product · architecture · scenario registry · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
 | 16 | templates.prompts.* | templates/*.prompt.tpl | each engine role (checklist / fix_generator / fix_applier, + `_system`) maps to one template file |
 | 17 | true-bdd/&lt;key&gt;-schema.yaml | the document at documents.&lt;key&gt; | `product-schema.yaml` pins the shape of `documents.product`. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (`./scripts/validate-schemas.sh`, a CI gate), not by a command |
+| 18 | quality_gate.tests.&lt;layer&gt;.commands | the suite that actually runs | all three of `record` / `replay` / `live` are mandatory and complete, machine-readable flag included (`-json` / `--json` / `--reporter=json`); **build code** runs `replay`. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default |
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-08-14.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-08-15.*

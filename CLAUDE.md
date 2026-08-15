@@ -29,7 +29,10 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 `build` supergroup — Spec-as-Source regeneration steps:
 
 - `build tests` — walks every scenario in the requirements registry (path from `documents.scenarios_yaml` in `true-bdd.yaml`) against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated test-authoring loop that writes the missing test referencing the scenario id; the registry is never modified by the run. Takes `--requirements <path>` to override the configured registry location.
-- `build code` — walks every `(service, layer)` pair declared in the architectural spec (path from `documents.architecture_yaml`, override with `--architecture`), discovers currently-failing tests via each framework's runner (go test / jest / playwright), and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
+- `build code` — walks every `(service, layer)` pair declared in the architectural spec (path from `documents.architecture_yaml`, override with `--architecture`), discovers currently-failing tests by running **the command that layer declares**, and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
+  - Every declared layer carries a mandatory `commands: {record, replay, live}` block; `build code` runs `replay`, and `record`/`live` are reserved. There is **no built-in invocation left** — an incomplete block is a startup refusal (`Cannot start:` on stdout), never a substituted default. Each command is complete and framework-native including its machine-readable flag (`-json` / `--json` / `--reporter=json`), runs from the directory holding the layer's `config:` (or, with no `config:`, whatever directory the CLI was invoked from), and gets only a name filter appended when one test is re-run. Splitting honours quotes and nothing else — see `internal/infrastructure/testrunner/command.go`.
+  - Everything checkable is checked in one pre-pass before the first subprocess: the framework routes to a runner, the command splits, the command is machine-readable. What a static check cannot reach — the binary not existing — surfaces as `Cannot run <service>/<layer>:` on stdout when the spawn fails. Both refusals also go to slog, because the BDD judge reads the log, not the terminal.
+  - Negative coverage lives in `tests/bdd-cli/fixtures/build-code-*`: `missing-layer-command`, `unknown-framework`, `command-not-machine-readable`, `unterminated-quote`, `command-not-executable`, `no-services`, `malformed-spec` (all refusals, zero AI calls) and `nonconvergence` (a full walk that ends `not_fixed` and exits 1, one AI turn). Each plants a *failing* test in the fixture tree, so "reported no failures" can never be confused with "had nothing to find".
 
 Every command accepts `--fix` for an interactive loop in which Claude proposes edits for each failed check and the user applies, refines, or exits.
 
@@ -56,8 +59,11 @@ Key implementation facts:
 ```bash
 # Validate every document against its schema (requires yamale: pip install yamale).
 # Pairing is by convention: true-bdd/<key>-schema.yaml validates documents.<key>
-# from true-bdd.yaml, so a new schema needs no script edit. Runs in CI's `gates`
-# job and in .claude/skills/pr-commit/gates.sh.
+# from true-bdd.yaml, so a new schema needs no script edit. The key is the whole
+# name, underscores included — `architecture_yaml-schema.yaml`, not
+# `architecture-schema.yaml`; a schema whose key names no document HARD-FAILS the
+# gate rather than sitting unused. Runs in CI's `gates` job and in
+# .claude/skills/pr-commit/gates.sh.
 ./scripts/validate-schemas.sh
 
 # Build (requires Go 1.25 and the `claude` CLI on $PATH)
@@ -136,6 +142,8 @@ expected:
 ```
 
 The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic product doc, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
+
+**A fixture input tree carrying `.go` files must also carry a sentinel `go.mod`.** Run dirs live at `tmp/test_run/…` INSIDE the repo module, so without a module boundary the root `go test ./...` and golangci-lint compile whatever a past run left there — including the deliberately-failing tests the `build code` fixtures plant, which would turn the repo's own gates red for reasons no one wrote.
 
 The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `services/bdd-cli/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 

@@ -1,0 +1,21 @@
+# The replay command is a perfectly good `go test` invocation that
+# happens to omit `-json`. Nothing about it fails: it runs, it exits
+# non-zero on the planted failure, and the runner reads its human output
+# and finds no failures in it. That is the one shape of wrong that looks
+# exactly like success, so it is refused before it can happen.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              replay: "go test -count=1 ./tests/suite/..."
+              live: "go test -json -count=1 ./tests/suite/..."

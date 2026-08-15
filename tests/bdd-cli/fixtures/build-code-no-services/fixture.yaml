@@ -1,0 +1,55 @@
+# An architectural spec that declares no services at all must be
+# refused, not walked to a trivial success.
+#
+# This is the quietest failure in the command: a walk over zero services
+# discovers zero failing tests, converges, prints BUILD CODE COMPLETE
+# and exits 0. "You declared nothing" would read as "everything passes".
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: build code
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - "Cannot start:"
+    - 'no services to walk'
+
+  judge: |
+    # Expectations for `true-bdd build code` with an empty services list
+
+    The spec's `architecture.services` is an empty list. `build code`
+    must refuse rather than converge trivially over nothing.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules above.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.**
+    2. The run aborted **before any test runner was spawned**. Read
+       `tmp/true-bdd.log.json` in the diff below: it MUST contain zero
+       records whose `msg` is `"Spawning test runner"`. The fixture
+       plants a failing test at `tests/suite/`, so a run that fell back
+       to some other invocation would have found it. A run that spawned
+       nothing did not fall back.
+    3. The run aborted **before any AI turn**: zero records whose `msg`
+       is `"Dispatching AI turn"`.
+    4. The failure is attributable from the log alone — it names what
+       was wrong with the spec.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

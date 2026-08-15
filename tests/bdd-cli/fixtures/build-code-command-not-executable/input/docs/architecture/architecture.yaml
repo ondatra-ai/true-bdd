@@ -1,0 +1,21 @@
+# The replay command is well-formed and carries `-json`, so it passes
+# every check the spec can make on its own — but the binary it names
+# does not exist. The failure can only surface when the command is
+# actually spawned, which is why this fixture exists separately from the
+# ones a static check catches.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "true-bdd-no-such-runner -json ./tests/suite/..."
+              replay: "true-bdd-no-such-runner -json ./tests/suite/..."
+              live: "true-bdd-no-such-runner -json ./tests/suite/..."

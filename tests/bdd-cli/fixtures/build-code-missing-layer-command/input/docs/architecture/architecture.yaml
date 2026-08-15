@@ -1,0 +1,24 @@
+# Architectural spec for the fixture's host project, deliberately
+# incomplete: the e2e layer declares a framework and a `commands:` block
+# but never says how to run it in replay — the one mode `build code`
+# uses.
+#
+# `record` and `live` ARE present, so this tests the rule that all three
+# modes are mandatory, not merely that the block exists. A spec that
+# names the modes it happens to not use today, and omits the one it
+# does, must be refused rather than half-honoured.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              live: "go test -json -count=1 ./tests/suite/..."

@@ -35,12 +35,19 @@ architecture:
 
       quality_gate:
         tests:
-          # Fixture harness under tests/bdd-cli/fixtures/. NOTE: the suite
-          # is gated behind `//go:build bdd`, which the go-test runner does
-          # not pass — only the untagged packages here are discoverable.
+          # Fixture harness under tests/bdd-cli/fixtures/. The suite is
+          # gated behind `//go:build bdd` and takes its AI mode from a
+          # `-mode` flag, neither of which any engine default could have
+          # guessed — which is why `commands:` exists. All three modes are
+          # mandatory; `build code` runs `replay`, the only one that
+          # spawns no model and costs nothing.
           e2e:
             path: tests/bdd-cli
             framework: go-test
+            commands:
+              record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
+              replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
+              live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
 
     # Temporarily disabled: only bdd-cli is an active build target for now.
     # Uncomment to bring the web relay back into `build code`.
@@ -74,3 +81,16 @@ architecture:
     #         path: tests/bdd-web
     #         framework: playwright
     #         config: tests/bdd-web/playwright.config.ts
+    #         # Commands run from the directory holding `config:`, which
+    #         # is what lets `npx` resolve this package's own install.
+    #         #
+    #         # All three are identical, and no --project is pinned: of
+    #         # the suite's three projects only a* talks to a model, and
+    #         # it has no record/replay wiring yet, so there is nothing
+    #         # for the modes to differ ON. Pinning one project would
+    #         # silently drop the other two from the build — a narrower
+    #         # gate that still reports as a full one.
+    #         commands:
+    #           record: "npx playwright test --reporter=json"
+    #           replay: "npx playwright test --reporter=json"
+    #           live: "npx playwright test --reporter=json"

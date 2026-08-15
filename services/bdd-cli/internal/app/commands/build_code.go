@@ -3,7 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -100,7 +102,12 @@ func loadFailingTests(
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 		arch, err := architecture.Load(architectureFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load architecture: %w", err)
+			return nil, refuseUnrunnableSpec(fmt.Errorf("failed to load architecture: %w", err))
+		}
+
+		err = validateLayers(deps.TestRunnerDispatcher, arch.Services)
+		if err != nil {
+			return nil, refuseUnrunnableSpec(err)
 		}
 
 		// The applier may write exactly the production roots the
@@ -131,6 +138,71 @@ func loadFailingTests(
 	}
 }
 
+// refuseUnrunnableSpec reports a spec the walk cannot start from, on
+// both channels — the same shape cmd.refuseUnresolvedDoc uses for an
+// unresolvable document, and for the same reason. Left alone, a
+// LoadItems error surfaces only as a cobra stderr line under a usage
+// dump: the output shape for "you typed the flags wrong", not for "your
+// architectural spec is incomplete". Nothing reaches stdout or the log,
+// and a refusal nobody can attribute is barely better than the silent
+// fallback that mandatory commands replaced.
+func refuseUnrunnableSpec(err error) error {
+	slog.Error("Refusing to start: architectural spec is not runnable",
+		"command", "build code",
+		"error", err,
+	)
+	console.Println("Cannot start: " + err.Error())
+
+	return err
+}
+
+// validateLayers checks every declared layer before the first
+// subprocess is spawned: that its framework routes to a runner, and
+// that its replay command is one that runner can act on.
+//
+// A pre-pass rather than a check at each layer's turn: discovery runs a
+// whole test suite per layer, so finding the second layer unrunnable
+// after the first has already run costs minutes for a verdict the spec
+// could have given immediately — and leaves behind a run that did half
+// its work. The framework check belongs here for a second reason: at
+// its turn, the walk has already printed "Running calc/e2e tests via
+// rspec...", claiming work that cannot start.
+func validateLayers(dispatcher *testrunner.Dispatcher, services []architecture.Service) error {
+	for _, svc := range services {
+		for _, layer := range svc.Tests.Layers() {
+			if layer.Config.Framework == "" {
+				continue
+			}
+
+			err := validateLayer(dispatcher, layer.Config)
+			if err != nil {
+				return fmt.Errorf("%s/%s: %w", svc.Name, layer.Name, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateLayer reports the first thing that makes one declared layer
+// unrunnable.
+func validateLayer(dispatcher *testrunner.Dispatcher, cfg architecture.TestConfig) error {
+	_, err := dispatcher.For(cfg.Framework)
+	if err != nil {
+		return err
+	}
+
+	return testrunner.ValidateCommand(cfg.Framework, replayCommand(cfg))
+}
+
+// replayCommand picks the mode `build code` runs under. Hardcoded:
+// `record` and `live` are declared and validated by the loader but no
+// command reaches them yet, so naming replay here — once — is the whole
+// of the mode selection.
+func replayCommand(cfg architecture.TestConfig) string {
+	return cfg.Commands.Replay
+}
+
 // servicePaths collects each declared service's source root, skipping
 // services that declare none.
 func servicePaths(services []architecture.Service) []string {
@@ -156,31 +228,33 @@ func walkServiceLayers(
 	svc architecture.Service,
 	seen map[string]bool,
 ) ([]*testrunner.FailingTest, error) {
-	layers := []struct {
-		name string
-		cfg  architecture.TestConfig
-	}{
-		{testrunner.LayerIntegration, svc.Tests.Integration},
-		{testrunner.LayerE2E, svc.Tests.E2E},
-	}
-
 	out := make([]*testrunner.FailingTest, 0)
 
-	for _, layer := range layers {
-		if layer.cfg.Framework == "" {
+	for _, layer := range svc.Tests.Layers() {
+		if layer.Config.Framework == "" {
 			continue
 		}
 
-		dedupKey := layer.cfg.Framework + "\x00" + layer.cfg.Path + "\x00" + layer.cfg.ConfigFile
+		// The command joins the key because it is what actually runs:
+		// two layers agreeing on framework, path and config but
+		// declaring different commands are different work, and
+		// collapsing them would silently drop one suite.
+		dedupKey := strings.Join([]string{
+			layer.Config.Framework,
+			layer.Config.Path,
+			layer.Config.ConfigFile,
+			replayCommand(layer.Config),
+		}, "\x00")
+
 		if seen[dedupKey] {
-			console.Println(fmt.Sprintf("Skipping %s/%s (already covered by another service)", svc.Name, layer.name))
+			console.Println(fmt.Sprintf("Skipping %s/%s (already covered by another service)", svc.Name, layer.Name))
 
 			continue
 		}
 
 		seen[dedupKey] = true
 
-		failures, runErr := runLayerDiscovery(ctx, dispatcher, svc.Name, layer.name, layer.cfg)
+		failures, runErr := runLayerDiscovery(ctx, dispatcher, svc.Name, layer.Name, layer.Config)
 		if runErr != nil {
 			return nil, runErr
 		}
@@ -212,10 +286,25 @@ func runLayerDiscovery(
 		Framework:  cfg.Framework,
 		ConfigFile: cfg.ConfigFile,
 		Pattern:    cfg.Pattern,
+		Command:    replayCommand(cfg),
 	}
 
 	failures, err := runnerImpl.Discover(ctx, rcfg, service, layer)
 	if err != nil {
+		// Reported here, on both channels, because this is the one
+		// failure in the command path no validation can reach: the spec
+		// can be complete, splittable and parseable and the binary
+		// still absent. Left to cobra it would surface as a stderr
+		// traceback under a usage dump, right after a progress line
+		// saying the layer was running.
+		slog.Error("Cannot run test layer",
+			"service", service,
+			"layer", layer,
+			"command", rcfg.Command,
+			"error", err,
+		)
+		console.Println(fmt.Sprintf("Cannot run %s/%s: %s", service, layer, err.Error()))
+
 		return nil, fmt.Errorf("discover %s/%s: %w", service, layer, err)
 	}
 

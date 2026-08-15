@@ -1,0 +1,142 @@
+# Yamale schema for the architectural spec (path from
+# `documents.architecture_yaml` in true-bdd.yaml, conventionally
+# docs/architecture/architecture.yaml).
+#
+# The filename is not free: scripts/validate-schemas.sh pairs
+# `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
+# `architecture_yaml`. A file named `architecture-schema.yaml` would
+# resolve no document and fail the gate rather than validate anything.
+#
+#   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
+#
+# The engine decodes only `services[].{name,path,language}` and
+# `services[].quality_gate.tests`; everything else here is spec a host
+# writes for its own readers and for the checklists' prompts. Which is
+# exactly why it needs a schema: nothing else would notice a typo in it.
+#
+# Yamale is strict by default — an unlisted key is an error — so a host
+# adding a block to its architectural spec adds it here too.
+
+architecture: include('architecture')
+# The BDD vocabulary `us refine` enforces on steps and AC descriptions.
+# Its preferred home is the product document, but a host may keep it
+# here instead — the engine's own fixtures do — so it is optional in
+# both schemas rather than required in neither.
+vocabulary: include('vocabulary', required=False)
+
+---
+architecture:
+  services: list(include('service'), min=1)
+
+---
+service:
+  name: str()
+  path: str()
+  language: str()
+  # Free-form classification (`cli`, `web:frontend`, `service`, …). Not
+  # a closed vocabulary: nothing in the engine branches on it.
+  type: str(required=False)
+  frameworks: list(str(), required=False)
+  dependencies: list(include('dependency'), required=False)
+  patterns: map(include('pattern'), required=False)
+  design_system: include('design_system', required=False)
+  quality_gate: include('quality_gate')
+
+---
+# What a service talks to at runtime. `scope` decides how a build treats
+# it: self_hosted gets the real thing, third_party gets mocked
+# (record/replay), internal is another service in this same document.
+dependency:
+  name: str()
+  protocol: str()
+  scope: enum('internal', 'self_hosted', 'third_party')
+
+---
+pattern:
+  description: str()
+  rules: list(str(), min=1)
+
+---
+design_system:
+  path: str()
+
+---
+quality_gate:
+  code: list(include('code_gate'), required=False)
+  tests: include('tests')
+
+---
+code_gate:
+  name: str()
+  config: str()
+
+---
+# The test layers `build code` walks. Both are optional — a service may
+# declare only the layer it has — but a layer that IS declared must be
+# complete, because a half-declared layer is one the engine would have
+# to guess about. Unit tests are implementation detail `build code`
+# generates, never spec, so they have no layer here.
+tests:
+  integration: include('test_layer', required=False)
+  e2e: include('test_layer', required=False)
+
+---
+test_layer:
+  path: str()
+  framework: enum('go-test', 'jest', 'playwright')
+  # Framework config file. Doubles as the working directory the layer's
+  # commands run in (its containing directory); a layer without one runs
+  # from wherever the engine was invoked.
+  config: str(required=False)
+  pattern: str(required=False)
+  # The test helpers available in this layer. `us refine` reads these
+  # when it sketches a scenario's steps — its checklist tells the model
+  # to "use only what is declared in architecture.yaml", so a host that
+  # omits them gets invented ones.
+  helpers: list(include('helper'), required=False)
+  commands: include('commands')
+
+---
+# How to run this layer's suite, per AI-dependency mode. There is no
+# engine default to fall back on — an invocation the spec does not state
+# is one no reader can audit — so all three are mandatory even though
+# `build code` runs only `replay` today.
+#
+# Each is a complete, framework-native command line INCLUDING the flag
+# that makes its output machine-readable (`-json` for go-test, `--json`
+# for jest, `--reporter=json` for playwright); without it the runner
+# parses prose, finds no failures, and the walk goes falsely green. The
+# engine appends only a name filter when it re-runs a single test.
+commands:
+  # Real AI CLIs, recording their calls for later replay.
+  record: str()
+  # Recorded calls served back: no model, no cost. What `build code` runs.
+  replay: str()
+  # Real AI CLIs, nothing recorded.
+  live: str()
+
+---
+helper:
+  name: str()
+  description: str()
+
+---
+# Mirrors the `vocabulary` block in product-schema.yaml. Duplicated
+# rather than shared because yamale has no cross-file include and the
+# block may legitimately live in either document — but the two must stay
+# in step, since one checklist reads whichever one the host wrote.
+vocabulary:
+  actions: list(include('action'), min=1)
+  forbidden_qualifiers: list(str(), min=1)
+  forbidden_actions: list(include('forbidden_action'), min=1)
+
+---
+action:
+  name: str()
+  means: str()
+
+---
+forbidden_action:
+  name: str()
+  reason: str()
+  replacement: str()
