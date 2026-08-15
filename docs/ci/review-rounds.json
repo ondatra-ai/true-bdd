@@ -103,12 +103,12 @@
       "precision": 0.917
     },
     "coderabbit-github": {
-      "rounds": 3,
+      "rounds": 2,
       "found": 14,
-      "fixed": 13,
-      "deferred": 3,
-      "rejected": 6,
-      "precision": 0.727
+      "fixed": 9,
+      "deferred": 2,
+      "rejected": 3,
+      "precision": 0.786
     }
   }
 }
