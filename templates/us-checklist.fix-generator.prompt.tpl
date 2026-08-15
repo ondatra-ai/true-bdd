@@ -18,8 +18,30 @@ Read the following documents to understand context before generating fixes:
 
 ## Current Acceptance Criteria
 
+Each criterion is shown with the steps it ALREADY has. An AC that
+already carries Given/When/Then is not missing them, and rewriting it
+would replace work that is already correct.
+
 {{- range $i, $ac := .Subject.AcceptanceCriteria }}
 {{ add $i 1 }}. **{{ $ac.ID }}:** {{ $ac.Description }}
+{{- if $ac.Steps }}
+   Existing steps:
+```yaml
+{{- range $step := $ac.Steps }}
+{{- range $g := $step.Given }}
+- given: "{{ $g.Statement }}"{{ if $g.Type }} ({{ $g.Type }}){{ end }}
+{{- end }}
+{{- range $w := $step.When }}
+- when: "{{ $w.Statement }}"{{ if $w.Type }} ({{ $w.Type }}){{ end }}
+{{- end }}
+{{- range $t := $step.Then }}
+- then: "{{ $t.Statement }}"{{ if $t.Type }} ({{ $t.Type }}){{ end }}
+{{- end }}
+{{- end }}
+```
+{{- else }}
+   Existing steps: NONE — this criterion has no Given/When/Then yet.
+{{- end }}
 {{- end }}
 
 ## Validation Failure
@@ -85,10 +107,17 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
 {{- range $i, $ac := .Subject.AcceptanceCriteria }}
-{{ add $i 1 }}. {{ $ac.ID }}: {{ $ac.Description }}
+{{ add $i 1 }}. {{ $ac.ID }}: {{ $ac.Description }}{{ if $ac.Steps }} [has steps]{{ else }} [no steps]{{ end }}
 {{- end }}
 
 ## Required Changes
+
+Change ONLY what the failed check requires. A criterion the check does
+not fault is reproduced exactly as it stands — same description, same
+steps, word for word. Do not "improve" a passing criterion while you are
+in the file: a fix that repairs one AC and quietly rewrites four others
+loses work nobody asked you to touch, and the qualifiers it drops are
+usually the ones that made the criterion testable.
 
 ### Change #N: [AC-ID]
 **Before:** <original description>
@@ -108,7 +137,11 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Complete Fixed Acceptance Criteria
 
-<List ALL ACs after applying changes, ready to copy-paste into story file>
+<List ALL ACs after applying changes, ready to copy-paste into the story
+file. "All" means the changed ones AND the untouched ones — the block
+replaces the whole list, so an omitted criterion is a deleted criterion.
+Every AC shown with existing steps above must reappear with those steps
+byte for byte unless the failed check is about that criterion.>
 
 ```yaml
 - ac_id: AC-1

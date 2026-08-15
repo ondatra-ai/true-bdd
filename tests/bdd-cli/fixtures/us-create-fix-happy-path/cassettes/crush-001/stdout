@@ -3,34 +3,34 @@ id: "99.1"
 title: "Document Summary On Demand"
 as_a: "Claude User"
 i_want: "Claude to give me a short summary of a Google Doc when I ask"
-so_that: "I can get a quick gist without downloading the document or copy pasting large sections of it into another app"
+so_that: "I do not have to download the document or copy paste large sections of it into a separate tool just to get a quick gist"
 status: "PLANNED"
 acceptance_criteria:
   - id: "AC-1"
-    description: "When the Claude User asks Claude to summarize a shared Google Doc, Claude must return a paragraph-length summary in the conversation."
+    description: "When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation."
     steps:
       - given:
-          - "The Claude User has shared a Google Doc with Claude"
+          - "A Google Doc has been shared with Claude"
       - when:
-          - "The Claude User asks Claude to summarize that Google Doc"
+          - "I ask Claude to summarize the shared Google Doc"
       - then:
-          - "Claude returns a paragraph-length summary of the document in the conversation"
+          - "I receive a paragraph-length summary in the conversation"
   - id: "AC-2"
-    description: "When the Claude User asks Claude to summarize a document they have not shared, Claude must return a message explaining the document needs to be shared first."
+    description: "When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first."
     steps:
       - given:
-          - "The Claude User has not shared the requested Google Doc with Claude"
+          - "A document has not been shared with Claude"
       - when:
-          - "The Claude User asks Claude to summarize that Google Doc"
+          - "I ask Claude to summarize the document"
       - then:
-          - "Claude returns a clear message explaining the Claude User needs to share the document first"
+          - "I receive a clear message explaining I need to share it first"
   - id: "AC-3"
-    description: "When the document is too long for Claude to summarize confidently, Claude must return a message stating it only read part of the document."
+    description: "When the document is too long to summarize confidently, I receive a message telling me Claude only read part of it."
     steps:
       - given:
-          - "The Claude User has shared a Google Doc that is too long to summarize confidently"
+          - "The document is too long for Claude to summarize confidently"
       - when:
-          - "The Claude User asks Claude to summarize that Google Doc"
+          - "I ask Claude to summarize the document"
       - then:
-          - "Claude returns a message telling the Claude User it only read part of the document"
+          - "I receive a message telling me Claude only read part of it"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.1-iter1-result.yaml ===

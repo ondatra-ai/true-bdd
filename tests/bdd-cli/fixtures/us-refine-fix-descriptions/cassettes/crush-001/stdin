@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-16-45-41-99831/apply-96.2-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-15-17-51-02-65768/apply-96.2-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-15-16-45-41-99831/apply-96.2-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-15-17-51-02-65768/apply-96.2-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -105,47 +105,42 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
-1. AC-1: Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.
-2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
-3. AC-3: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-5. AC-5: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline.
-
-## Validation Analysis (per AC)
-- AC-1: contains GWT + missing must/should — "Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays..."
-- AC-2: ok
-- AC-3: ok
-- AC-4: ok
-- AC-5: ok
+1. AC-1: Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation. [has steps]
+2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. [has steps]
+3. AC-3: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds. [has steps]
+4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words. [has steps]
+5. AC-5: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline. [has steps]
 
 ## Required Changes
 
+Only AC-1 fails the check. Its description is written as Gherkin Given/When/Then and carries no `must`/`should` keyword. All other AC descriptions already follow the rule-based format and are reproduced unchanged, steps included, byte for byte.
+
 ### Change #1: AC-1
 **Before:** Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.
-**Issue:** Description is written in Gherkin (Given/When/Then belongs in the steps field, not the description) and lacks the "must"/"should" keyword required by the rule-based format.
-**After (description):** Claude must display a summary of 150 words or fewer when the Claude User asks for a summary of a shared Google Doc.
-**After (steps):**
+**Issue:** Contains Gherkin Given/When/Then text in the description (belongs in the steps field) and is missing the keyword "must"/"should".
+**After (description):** Claude must display a summary of 150 words or fewer when a Claude User asks for a summary of a Google Doc shared with their account.
+**After (steps):** unchanged — the existing steps already carry the Gherkin structure.
 ```yaml
 - given:
-    - "A Google Doc is shared with the Claude User's account"
+    - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
 - when:
-    - "The Claude User asks for a summary"
+    - "the Claude User asks Claude to summarize the document"
 - then:
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-> AC-2, AC-3, AC-4, and AC-5 descriptions already satisfy the rule-based format and are left unchanged; only their `steps` fields are added below to complete the story.
+No new ACs are needed — the failed check is purely about the description format of AC-1.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
 - ac_id: AC-1
-  description: "Claude must display a summary of 150 words or fewer when the Claude User asks for a summary of a shared Google Doc."
+  description: "Claude must display a summary of 150 words or fewer when a Claude User asks for a summary of a Google Doc shared with their account."
   steps:
     - given:
-        - "A Google Doc is shared with the Claude User's account"
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when:
-        - "The Claude User asks for a summary"
+        - "the Claude User asks Claude to summarize the document"
     - then:
         - "Claude displays a summary of 150 words or fewer in the conversation"
 
@@ -153,9 +148,9 @@ Apply the following changes to the acceptance criteria for this story.
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
     - given:
-        - "A Google Doc is not shared with the Claude User's account"
+        - "a Google Doc exists that is not shared with the Claude User's account"
     - when:
-        - "The Claude User asks for a summary of that document"
+        - "the Claude User asks Claude to summarize that document"
     - then:
         - "Claude displays the message 'This document is not shared with your account'"
 
@@ -163,9 +158,10 @@ Apply the following changes to the acceptance criteria for this story.
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
     - given:
-        - "A Google Doc is shared with the Claude User's account"
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
     - when:
-        - "The Claude User asks for a summary and no summary is produced within 30 seconds"
+        - "the Claude User asks Claude to summarize the document"
     - then:
         - "Claude displays the message 'The summary timed out - please try again'"
 
@@ -173,21 +169,22 @@ Apply the following changes to the acceptance criteria for this story.
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
     - given:
-        - "A shared Google Doc contains more than 10000 words"
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
-        - "The Claude User asks for a summary"
+        - "the Claude User asks Claude to summarize the document"
     - then:
+        - "Claude displays a summary of the first 10000 words"
         - "Claude states that only the first 10000 words were summarized"
 
 - ac_id: AC-5
-  description: "Claude must list every section heading of a shared Google Doc when the Claude User asks for the document outline."
+  description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
   steps:
     - given:
-        - "A Google Doc is shared with the Claude User's account"
+        - "a Google Doc with at least three section headings is shared with the Claude User's account"
     - when:
-        - "The Claude User asks for the document outline"
+        - "the Claude User asks Claude for the document outline"
     - then:
-        - "Claude lists every section heading in the conversation"
+        - "Claude displays each section heading in its original order"
 ```
 
 ---
@@ -203,7 +200,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-15-16-45-41-99831/apply-96.2-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-15-17-51-02-65768/apply-96.2-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-15-16-45-41-99831/apply-96.2-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-15-17-51-02-65768/apply-96.2-iter1-result.yaml ===

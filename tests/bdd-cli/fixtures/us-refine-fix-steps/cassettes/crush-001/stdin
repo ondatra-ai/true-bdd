@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-16-57-34-7044/apply-96.5-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-15-17-59-52-71014/apply-96.5-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-15-16-57-34-7044/apply-96.5-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-15-17-59-52-71014/apply-96.5-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -105,92 +105,28 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 Apply the following changes to the acceptance criteria for this story.
 
 ## Original Acceptance Criteria
-1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
-3. AC-3: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-5. AC-5: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline.
+1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
+2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. [no steps]
+3. AC-3: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds. [has steps]
+4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words. [has steps]
+5. AC-5: Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline. [has steps]
 
 ## Required Changes
 
-The failed check is `us-refine/acceptance_criteria`: every AC's `steps` field must be present and contain at least one Given, one When, and one Then step. The AC `description` texts are already valid rule-based statements (`must` + observable outcome) and are left unchanged. The fix adds the missing `steps` for AC-2 and normalizes Given/When/Then for every AC so all pass.
-
-Per-AC expectation resolution:
-- AC-1: ok
-- AC-2: missing steps field — added below (primary reported failure)
-- AC-3: ok
-- AC-4: ok
-- AC-5: ok
+Only AC-2 is faulted by the `us-refine/acceptance_criteria` check (missing `steps` field). Every other criterion is reproduced exactly as it stands.
 
 ### Change #1: AC-2
 **Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
-**Issue:** `steps` field is missing — no Given/When/Then, so the AC has no executable specification.
-**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+**Issue:** The `steps` field is missing entirely — no Given, When, or Then, so the criterion has no Given/When/Then structure to validate against.
+**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. *(unchanged — only the steps are added)*
 **After (steps):**
 ```yaml
-- given:
-    - "a Google Doc is not shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude displays the message 'This document is not shared with your account'"
+- given: "a Google Doc is not shared with the Claude User's account"
+- when: "the Claude User asks Claude to summarize the document"
+- then: "Claude displays the message 'This document is not shared with your account'"
 ```
 
-### Change #2: AC-1 (normalize steps)
-**Before:** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**Issue:** ensure a complete Given/When/Then `steps` field is present.
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**After (steps):**
-```yaml
-- given:
-    - "a Google Doc is shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize the shared Google Doc"
-- then:
-    - "Claude displays a summary of 150 words or fewer in the conversation"
-```
-
-### Change #3: AC-3 (normalize steps)
-**Before:** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**Issue:** ensure a complete Given/When/Then `steps` field is present.
-**After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**After (steps):**
-```yaml
-- given:
-    - "the Claude User has asked Claude to summarize a shared Google Doc"
-- when:
-    - "no summary is produced within 30 seconds"
-- then:
-    - "Claude displays the message 'The summary timed out - please try again'"
-```
-
-### Change #4: AC-4 (normalize steps)
-**Before:** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-**Issue:** ensure a complete Given/When/Then `steps` field is present.
-**After (description):** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-**After (steps):**
-```yaml
-- given:
-    - "a shared Google Doc contains more than 10000 words"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude states that only the first 10000 words were summarized"
-```
-
-### Change #5: AC-5 (normalize steps)
-**Before:** Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline.
-**Issue:** ensure a complete Given/When/Then `steps` field is present.
-**After (description):** Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline.
-**After (steps):**
-```yaml
-- given:
-    - "a Google Doc with section headings is shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude for the document outline"
-- then:
-    - "Claude lists every section heading of the shared Google Doc in the conversation"
-```
+No new ACs are needed. No merges or removals.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -198,52 +134,39 @@ Per-AC expectation resolution:
 - ac_id: AC-1
   description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
-    - given:
-        - "a Google Doc is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the shared Google Doc"
-    - then:
-        - "Claude displays a summary of 150 words or fewer in the conversation"
+    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of 150 words or fewer in the conversation"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given:
-        - "a Google Doc is not shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays the message 'This document is not shared with your account'"
+    - given: "a Google Doc is not shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'This document is not shared with your account'"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
-    - given:
-        - "the Claude User has asked Claude to summarize a shared Google Doc"
-    - when:
-        - "no summary is produced within 30 seconds"
-    - then:
-        - "Claude displays the message 'The summary timed out - please try again'"
+    - given: "a Google Doc is shared with the Claude User's account"
+    - given: "the summary backend does not respond within 30 seconds"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
-    - given:
-        - "a shared Google Doc contains more than 10000 words"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude states that only the first 10000 words were summarized"
+    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of the first 10000 words"
+    - then: "Claude states that only the first 10000 words were summarized"
 
 - ac_id: AC-5
   description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
   steps:
-    - given:
-        - "a Google Doc with section headings is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude for the document outline"
-    - then:
-        - "Claude lists every section heading of the shared Google Doc in the conversation"
+    - given: "a Google Doc with at least three section headings is shared with the Claude User's account"
+    - when: "the Claude User asks Claude for the document outline"
+    - then: "Claude displays each section heading in its original order"
 ```
 
 ---
@@ -259,7 +182,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-15-16-57-34-7044/apply-96.5-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-15-17-59-52-71014/apply-96.5-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-15-16-57-34-7044/apply-96.5-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-15-17-59-52-71014/apply-96.5-iter1-result.yaml ===
