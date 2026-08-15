@@ -26,7 +26,9 @@ func mapRunSummary(run *Run) RunSummary {
 	return RunSummary{
 		ID:           run.ID,
 		Complete:     run.Complete,
+		Mode:         run.Mode,
 		Fixtures:     run.Totals.Fixtures,
+		Planned:      run.Planned,
 		Passed:       run.Totals.Passed,
 		Failed:       run.Totals.Failed,
 		Skipped:      run.Totals.Skipped,
@@ -72,6 +74,7 @@ func mapTestSummary(fixture *reporter.Fixture) TestSummary {
 	if fixture.Record != nil {
 		summary.ExitCode = fixture.Record.ExitCode
 		summary.DiffCount = len(fixture.Record.Diff)
+		summary.Mode = fixture.Record.Mode
 	}
 
 	return summary

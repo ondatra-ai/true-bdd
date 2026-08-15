@@ -38,6 +38,15 @@ type Totals struct {
 type Run struct {
 	ID  string
 	Dir string
+	// Mode is how this session reached the models: live, record or
+	// replay. Empty means the session predates the record — unknown, not
+	// live.
+	Mode string
+	// Planned is how many fixtures the invocation set out to run. It is
+	// the honest denominator for "passed": the fixtures on disk are only
+	// the ones that have finished, so counting those says how much of
+	// what is done is green, never how much of the run is left.
+	Planned int
 	// Complete is true when every fixture in the run has a harness
 	// record. That record is the last byte written into a fixture
 	// directory, so a complete run can never change again — which is what
@@ -61,9 +70,19 @@ func newRun(session *reporter.Session) *Run {
 	run := &Run{
 		ID:       session.Name,
 		Dir:      session.Dir,
+		Mode:     session.Mode,
+		Planned:  len(session.Planned),
 		Tests:    session.Fixtures,
 		Complete: true,
 		byName:   make(map[string]*reporter.Fixture, len(session.Fixtures)),
+	}
+
+	// A session with no record of what it planned — anything recorded
+	// before the harness wrote one — falls back to what it can see. That
+	// is the old, growing denominator, but it is never smaller than the
+	// truth and it keeps those runs renderable.
+	if run.Planned == 0 {
+		run.Planned = len(session.Fixtures)
 	}
 
 	for _, fixture := range session.Fixtures {

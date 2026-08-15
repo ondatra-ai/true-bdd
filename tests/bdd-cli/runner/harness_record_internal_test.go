@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/tests/internal/fstree"
 )
 
 // TestRecordSurvivesGoexit pins the reason Finish is wired through
@@ -16,7 +18,7 @@ import (
 // is most valuable exactly then.
 func TestRecordSurvivesGoexit(t *testing.T) {
 	session := t.TempDir()
-	rec := NewHarnessRecorder(session, "fx", nil)
+	rec := NewHarnessRecorder(session, "fx", ProxyModeLive, nil)
 
 	done := make(chan struct{})
 
@@ -64,12 +66,12 @@ func TestPostRunWriteIsNotInDiff(t *testing.T) {
 		t.Fatalf("seed tree: %v", err)
 	}
 
-	before, err := snapshotTree(tmpDir)
+	before, err := fstree.Snapshot(tmpDir)
 	if err != nil {
 		t.Fatalf("snapshot before: %v", err)
 	}
 
-	after, err := snapshotTree(tmpDir)
+	after, err := fstree.Snapshot(tmpDir)
 	if err != nil {
 		t.Fatalf("snapshot after: %v", err)
 	}
@@ -88,7 +90,7 @@ func TestPostRunWriteIsNotInDiff(t *testing.T) {
 	})
 	writeHarnessRecord(logDir, HarnessRecord{Fixture: "fx"})
 
-	diff := computeDiffFromSnapshots(before, after)
+	diff := fstree.Diff(before, after)
 	if len(diff) != 0 {
 		t.Errorf("post-run harness writes polluted the judge diff: %+v", diff)
 	}
@@ -149,7 +151,7 @@ func TestUsageOutsideJudgeWindowIsNotBilled(t *testing.T) {
 	}
 
 	// A fixture that never reached its judge has a zero window.
-	rec := NewHarnessRecorder(t.TempDir(), "fx", sink)
+	rec := NewHarnessRecorder(t.TempDir(), "fx", ProxyModeLive, sink)
 	rec.billJudge()
 
 	if rec.record.Judge.CostUSD != 0 {

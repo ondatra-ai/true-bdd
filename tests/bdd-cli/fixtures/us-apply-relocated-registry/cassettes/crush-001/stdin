@@ -1,0 +1,146 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Merge Editor applying fixes to the requirements
+registry (the scratch copy of `docs/scenarios.yaml` for this run).
+
+**Your Task:**
+1. Read the current state of the scratch registry file.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Edit tool on the
+   scratch registry file path. Do NOT touch the canonical
+   `docs/scenarios.yaml`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the scratch file before editing.
+- Use Edit to mutate the scratch file in place.
+- Do not write to any other path.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<scratch path>"` (QUOTED)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other registry entries — only mutate what the fix prompt
+  specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-15-16-14-07-75394/apply-95.2-001-iter1-result.yaml ===
+applied: true
+target: "<scratch path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/2026-08-15-16-14-07-75394/apply-95.2-001-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify entries beyond what the fix prompt
+  specifies.
+- Edit the scratch file directly during this turn — the confirmation
+  block is informational only.
+
+
+### TASK
+
+## Subject — Acceptance Criterion
+
+**Story ID:** 95.2
+**Story Path:** docs/product/stories/95.2-relocated-registry.yaml
+**AC ID:** AC-1
+**Lineage Scenario ID:** 95.2-001
+**Description:** The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
+**Scratch Registry Path:** tmp/2026-08-15-16-14-07-75394/scenarios.yaml
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+  - the server exposes a health endpoint at /health
+When:
+  - the Claude User sends a GET request to /health
+Then:
+  - the server returns HTTP 200
+  - and the response body reports the service status as healthy
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for AC 95.2-001: The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
+
+## Target
+Apply the change to: `tmp/2026-08-15-16-14-07-75394/scenarios.yaml`
+
+## Context
+The `us-apply/merge` check failed: no entry under `scenarios:` has a `user_stories[]` element carrying BOTH the subject story path `docs/product/stories/95.2-relocated-registry.yaml` AND the lineage scenario id `95.2-001`. The only existing scenario, `E2E-960`, is unrelated and must remain byte-for-byte untouched. Fix by appending exactly ONE new scenario entry.
+
+## Required Changes
+
+### Change #1: Add a new scenario for AC 95.2-001
+**Issue:** AC 95.2-001 (lineage 95.2-001) is not present in the registry — no scenario references its story path and lineage id.
+
+**Action:** Use the Edit tool on the target file with the exact `old_string` and `new_string` below. This appends a new `E2E-961` scenario immediately after the existing `E2E-960` block. `E2E-961` is the next free id following the existing `E2E-960` numbering; no id is reused. Preserve the two-space indentation exactly as shown. Do not modify the `E2E-960` entry.
+
+**old_string:**
+```
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User opens the settings page"
+      then:
+        - "the settings page renders the account section"
+```
+**new_string:**
+```
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User opens the settings page"
+      then:
+        - "the settings page renders the account section"
+
+  E2E-961:
+    description: "MCP server returns HTTP 200 and a JSON body reporting healthy status on GET /health"
+    service: ""
+    last_updated: "2026-08-15"
+    user_stories:
+      - story: "docs/product/stories/95.2-relocated-registry.yaml"
+        scenario_id: "95.2-001"
+        merge_date: "2026-08-15"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+        - "the server exposes a health endpoint at /health"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"
+        - "and the response body reports the service status as healthy"
+```
+
+## Verification
+After applying:
+- A scenario `E2E-961` exists whose `user_stories[]` contains `story: docs/product/stories/95.2-relocated-registry.yaml` and `scenario_id: 95.2-001` → the `merge` check now reports: `AC AC-1 (lineage 95.2-001): present in E2E-961`.
+- `E2E-960` is unchanged.
+- Exactly one new entry was added (satisfies the follow-up "duplicate?" check).
+
+---
+
+## Instructions
+
+1. Use the Read tool to load `tmp/2026-08-15-16-14-07-75394/scenarios.yaml` and
+   inspect its current state.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above by invoking the Edit tool on
+   `tmp/2026-08-15-16-14-07-75394/scenarios.yaml`. Do NOT touch any other path.
+3. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/2026-08-15-16-14-07-75394/apply-95.2-001-iter1-result.yaml ===
+applied: true
+target: "tmp/2026-08-15-16-14-07-75394/scenarios.yaml"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/2026-08-15-16-14-07-75394/apply-95.2-001-iter1-result.yaml ===

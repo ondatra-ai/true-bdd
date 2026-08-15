@@ -59,9 +59,17 @@ host project root
 | --- | --- |
 | **Product docs** | product (incl. the BDD vocabulary) — epic — story |
 | **Scenario registry** | the merge target — single source of truth for behavior |
-| **Architecture** | services, test layers, optional dev/prod environment stacks |
+| **Architecture** | services (incl. `type` and runtime `dependencies`), test layers, optional dev/prod environment stacks |
 | **Code artifacts** | specs, production source, compose stacks |
 | **Engine config** | wiring and document schemas, not data flow |
+
+Each service also declares what it is (`type:` — e.g. `"cli"`, `"web:frontend"`) and what it
+talks to at runtime (`dependencies[]: name · protocol · scope`). `protocol` is the connection
+mechanism — cli / http / redis / …. `scope` places the dependency: `internal` (another service
+declared in this file), `self_hosted` (we run the instance — redis, postgres, kafka), or
+`third_party` (a vendor's service behind it, wherever the binary lives — crush is installed
+locally but GLM's API is not). The scope drives dependency mocking during builds:
+`third_party` gets record/replay doubles, everything else runs live.
 
 ## How the documents join
 
@@ -86,7 +94,7 @@ flowchart LR
   PRODUCT -. "④ vocabulary (us refine, in place)" .-> STORY
   REG -. "⑥ user_stories[].story" .-> STORY
 
-  ARCH["docs/architecture/architecture.yaml<br/>services[] · quality_gate · environment (optional)"]
+  ARCH["docs/architecture/architecture.yaml<br/>services[] · dependencies · quality_gate · environment (optional)"]
   TESTS["tests/{integration,e2e}/<br/>test('E2E-900: …')"]
   SRC["services/&lt;service&gt;/"]
   COMPOSE["docker-compose.yaml ·<br/>docker-compose.dev.yaml"]

@@ -1,0 +1,7 @@
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Collapsed E2E-901 into E2E-900 (unioned merged_steps, deleted loser); E2E-950 untouched"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+```

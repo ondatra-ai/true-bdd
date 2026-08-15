@@ -135,6 +135,29 @@ tbody tr:hover { background: var(--code); }
 .chip.skip { background: var(--chg-bg); color: var(--skip); }
 .chip.none { background: var(--track); color: var(--muted); }
 
+/* Mode reads as a property of the run, not a verdict about it, so it
+   borrows the chip shape but never the pass/fail palette. Replay is the
+   quiet one — it is the default a hermetic suite runs in; live and
+   record are the ones that spend money and are marked accordingly. */
+.chip.mode { background: var(--track); color: var(--muted); font-weight: 600; }
+.chip.mode.live { background: var(--chg-bg); color: var(--skip); }
+.chip.mode.record { background: var(--del-bg); color: var(--fail); }
+.chip.mode.unknown { opacity: .7; font-style: italic; }
+
+/* Three numbers, one glance: passed / failed / planned. Tabular figures
+   so the columns line up down the run list. */
+.triple { font-variant-numeric: tabular-nums; }
+
+/* The mode under a matrix column header, small enough to skim past and
+   present enough to stop a live column being read as a replayed one. */
+.colmode {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
 .tag {
   display: inline-block;
   padding: 0 6px;
@@ -499,3 +522,31 @@ button.copy {
   z-index: 1;
 }
 .artifact > details > summary { padding-right: 90px; }
+
+/* A replayed cost was paid once, by the recording. Muted and struck
+   through so a reader cannot mistake it for this run's bill. */
+.recorded { color: var(--muted); font-style: italic; text-decoration: line-through; }
+
+/* Mode banner: the one thing on a run or test page that has to be read
+   before anything else, because it says what the numbers under it mean.
+   Coloured by how much the run cost and how much it proves — replay is
+   calm, record and live are marked as spending real money. */
+.banner {
+  margin: 12px 0 4px;
+  padding: 10px 14px;
+  border-left: 4px solid var(--muted);
+  border-radius: 0 8px 8px 0;
+  background: var(--code);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.banner strong { letter-spacing: .06em; }
+
+.banner.mode-replay { border-left-color: var(--accent); }
+.banner.mode-replay strong { color: var(--accent); }
+.banner.mode-record { border-left-color: var(--fail); background: var(--del-bg); }
+.banner.mode-record strong { color: var(--fail); }
+.banner.mode-live { border-left-color: var(--skip); background: var(--chg-bg); }
+.banner.mode-live strong { color: var(--skip); }
+.banner.mode-unknown { font-style: italic; color: var(--muted); }

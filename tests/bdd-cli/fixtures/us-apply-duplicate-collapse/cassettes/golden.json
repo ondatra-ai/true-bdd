@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-apply-duplicate-collapse",
+  "files": [
+    {
+      "path": "docs/scenarios.yaml",
+      "kind": "modified",
+      "size": 2178,
+      "sha256": "72d14ecb3a1d1978db1f0ea592d3be8bbccfe486dc4f9a3b544ec7e2da76e85d",
+      "text": "# Seed registry for the `us-apply-duplicate-collapse` BDD fixture.\n#\n# Engineered so `us apply 95.1 --fix` walks its single AC through the\n# SHIPPED us-apply checklist and exercises the duplicate branch:\n#\n#   - \"present?\" PASSES: at least one entry references story\n#     docs/product/stories/95.1-duplicate-collapse.yaml with lineage 95.1-001.\n#   - \"duplicate?\" FAILS: E2E-900 and E2E-901 BOTH reference lineage\n#     95.1-001. The F: collapses them into a single entry (keep the\n#     lower id, union user_stories and merged_steps, delete the loser).\n#\n# After the collapse fix the walker restarts, both prompts pass, the\n# outer re-walk confirms the fixpoint, and the scratch registry is\n# committed over this file.\n#\n# E2E-950 is unrelated on purpose: it anchors the \"leave every other\n# entry alone\" assertion.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-07-25\"\n  description: \"Duplicate-entry seed for us-apply-duplicate-collapse fixture\"\n\nscenarios:\n  E2E-900:\n    description: \"MCP /mcp endpoint responds 200 to a valid initialize POST\"\n    service: \"mcp-service\"\n    last_updated: \"2026-07-25\"\n    user_stories:\n      - story: \"docs/product/stories/95.1-duplicate-collapse.yaml\"\n        scenario_id: \"95.1-001\"\n        merge_date: \"2026-07-25\"\n    merged_steps:\n      given:\n        - \"the MCP server is running on its configured port\"\n        - \"the server accepts JSON-RPC over HTTP POST at /mcp\"\n      when:\n        - \"the Claude User posts a valid JSON-RPC initialize request to /mcp\"\n      then:\n        - \"the server returns HTTP 200\"\n        - \"the response body is a well-formed JSON-RPC envelope referencing the request id\"\n  E2E-950:\n    description: \"Unrelated scenario that must remain untouched\"\n    service: \"web-service\"\n    last_updated: \"2026-07-25\"\n    user_stories:\n      - story: \"docs/product/stories/90.1-unrelated.yaml\"\n        scenario_id: \"90.1-001\"\n        merge_date: \"2026-07-25\"\n    merged_steps:\n      given:\n        - \"the web app is running\"\n      when:\n        - \"the Claude User navigates to the home page\"\n      then:\n        - \"the home page renders a welcome banner\"\n"
+    }
+  ]
+}

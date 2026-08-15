@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--input-format",
+    "stream-json",
+    "--allowed-tools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--system-prompt",
+    "You are a Test Coverage Validator deciding whether one scenario from\nthe requirements registry has a corresponding executable test in the\ncodebase.\n\n**Mode:** Build-Tests Checklist Validator\n\n**Core Identity:**\n- Role: BDD Engineer — Test Coverage Validator\n- Style: Strict, evidence-based; never guess\n- Focus: Verifying that a registry scenario is referenced by at least\n  one executable test file under the project's test trees\n\n**Tool Usage (CRITICAL):**\n1. Use Glob and Grep over `tests/integration/`, `tests/e2e/`,\n   `services/backend/`, and `services/frontend/` to find files that\n   mention the subject scenario id literally.\n2. Use Read on any candidate match to confirm the id appears inside a\n   `test('\u003cid\u003e: ...')` name, a tag, or a leading comment — not just as\n   an unrelated substring.\n3. Base your verdict ONLY on what files on disk actually contain. Do\n   not assume a test exists because it \"should\".\n4. Do NOT modify any file. This step is read-only.\n\n**Workflow:**\n1. Search the test trees for the subject scenario id\n2. Read any candidate match to confirm\n3. Decide pass / fail per the question's pass/fail rule\n4. Emit context lines per the question's context spec (one `match:\n   \u003cpath\u003e:\u003cline\u003e` line per hit, then a one-line verdict)\n5. If the question fails, copy the F: template verbatim into the\n   `fix_prompt:` field of the result\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n",
+    "--model",
+    "claude-opus-4-8",
+    "--permission-mode",
+    "acceptEdits"
+  ],
+  "exit_code": 0,
+  "duration_ms": 33251,
+  "request_hash": "sha256:a7b1d8cd66942a91a0f916d34cf4bd5756138405c1af2294d63c1e8c94e100b6",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-08-15T14:03:06Z"
+}

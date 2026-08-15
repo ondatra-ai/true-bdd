@@ -236,3 +236,68 @@ func TestNeighboursWalkRunsInOrder(t *testing.T) {
 		t.Errorf("newest run has next %q, want none", next)
 	}
 }
+
+// The report server assembles its own Session so it can reuse sealed
+// fixtures across scans, which means it does NOT go through
+// reporter.LoadSession. That divergence already cost one silently
+// empty mode column; this pins the store's own path.
+func TestStoreReadsSessionMeta(t *testing.T) {
+	t.Parallel()
+
+	runsDir := t.TempDir()
+	writeFixture(t, runsDir, "2026-08-15_08-19-12", "fx", true)
+
+	err := runner.WriteSessionMeta(filepath.Join(runsDir, "2026-08-15_08-19-12"),
+		runner.ProxyModeReplay, []string{"fx", "not-started-yet"})
+	if err != nil {
+		t.Fatalf("write session meta: %v", err)
+	}
+
+	store, _ := newTestStore(t, runsDir)
+
+	snapshot, err := store.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+
+	run, ok := snapshot.Run("2026-08-15_08-19-12")
+	if !ok {
+		t.Fatal("run not found")
+	}
+
+	if run.Mode != runner.ProxyModeReplay {
+		t.Fatalf("mode = %q, want %q", run.Mode, runner.ProxyModeReplay)
+	}
+
+	// Planned counts what the invocation set out to run, not what has
+	// finished — the whole reason it is recorded up front.
+	if run.Planned != 2 {
+		t.Fatalf("planned = %d, want 2", run.Planned)
+	}
+}
+
+// A session written before the record existed must read as unknown, not
+// as live: a replayed run and a live one prove different things.
+func TestStoreToleratesMissingSessionMeta(t *testing.T) {
+	t.Parallel()
+
+	runsDir := t.TempDir()
+	writeFixture(t, runsDir, "2026-08-10_10-00-00", "fx", true)
+
+	store, _ := newTestStore(t, runsDir)
+
+	snapshot, err := store.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+
+	run, _ := snapshot.Run("2026-08-10_10-00-00")
+	if run.Mode != "" {
+		t.Fatalf("mode = %q, want empty (unknown)", run.Mode)
+	}
+
+	// With nothing recorded, the only honest denominator is what is here.
+	if run.Planned != 1 {
+		t.Fatalf("planned = %d, want 1 (fallback to observed)", run.Planned)
+	}
+}

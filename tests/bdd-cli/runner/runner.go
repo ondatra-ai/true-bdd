@@ -16,9 +16,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/tests/internal/fstree"
 )
 
 const (
@@ -100,13 +101,10 @@ func FindRepoRoot() (string, error) {
 }
 
 // FileChange describes one file's diff between the fixture's input/ and
-// the post-run state of the tmpdir.
-type FileChange struct {
-	Path   string // path relative to tmpdir
-	Kind   string // "created", "modified", "deleted"
-	Before []byte // empty for "created"
-	After  []byte // empty for "deleted"
-}
+// the post-run state of the tmpdir. It is an alias for the shared
+// fstree.Change so the aiproxy shim's per-call diffs and the runner's
+// per-run diffs are the same type.
+type FileChange = fstree.Change
 
 // Fixture represents one scenario folder loaded from disk.
 type Fixture struct {
@@ -214,11 +212,18 @@ func LoadFixture(dir string) (*Fixture, error) {
 // tmpdir build and the pre-run snapshot cannot eat into it — on the
 // playwright fixture that snapshot reads the whole tree, node_modules
 // included, and charging it to the CLI would fail a run that behaved.
+//
+// extraEnv entries are appended AFTER the inherited environment, so
+// they win on duplicate keys (os/exec keeps the last value). This is
+// how the harness activates the aiproxy shim: a PATH override plus the
+// TRUE_BDD_AIPROXY_* contract, applied to the CLI subprocess alone —
+// the judge, running in the test process, keeps a clean environment.
 func Execute(
 	ctx context.Context,
 	fixture *Fixture,
 	binPath, sessionRoot string,
 	runTimeout time.Duration,
+	extraEnv ...string,
 ) (*RunResult, error) {
 	tmpDir, err := prepareRunDir(fixture, sessionRoot)
 	if err != nil {
@@ -232,7 +237,7 @@ func Execute(
 		return &RunResult{TmpDir: tmpDir}, err
 	}
 
-	before, err := snapshotTree(tmpDir)
+	before, err := fstree.Snapshot(tmpDir, runSnapshotSkipDirs()...)
 	if err != nil {
 		return &RunResult{TmpDir: tmpDir}, fmt.Errorf("snapshot pre-run: %w", err)
 	}
@@ -244,7 +249,8 @@ func Execute(
 
 	cmd := exec.CommandContext(runCtx, binPath, args...)
 	cmd.Dir = tmpDir
-	cmd.Env = envWithoutClaudeCode(os.Environ())
+
+	cmd.Env = append(envWithoutClaudeCode(os.Environ()), extraEnv...)
 
 	if fixture.Stdin != nil {
 		cmd.Stdin = bytes.NewReader(fixture.Stdin)
@@ -259,7 +265,7 @@ func Execute(
 
 	exitCode := cmd.ProcessState.ExitCode()
 
-	after, snapErr := snapshotTree(tmpDir)
+	after, snapErr := fstree.Snapshot(tmpDir, runSnapshotSkipDirs()...)
 
 	// Persist the CLI's own streams, after the post-run snapshot so the
 	// transcript never lands in the diff the judge grades.
@@ -282,7 +288,7 @@ func Execute(
 		ExitCode:   exitCode,
 		Stdout:     stdout.String(),
 		Stderr:     stderr.String(),
-		Diff:       computeDiffFromSnapshots(before, after),
+		Diff:       fstree.Diff(before, after),
 		TmpDir:     tmpDir,
 		StdoutFile: stdoutFile,
 		StderrFile: stderrFile,
@@ -529,73 +535,16 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-// computeDiffFromSnapshots compares two filesystem snapshots
-// (path → content) and returns the list of created/modified/deleted
-// entries. Callers are responsible for taking the snapshots — this
-// lets Execute() snapshot the tmpdir at the right moments (after
-// prep, after run) without an extra round of file IO.
-func computeDiffFromSnapshots(before, after map[string][]byte) []FileChange {
-	var changes []FileChange
+// Snapshotting and diffing live in tests/internal/fstree, shared with
+// the aiproxy record/replay shim.
 
-	for path, beforeBytes := range before {
-		afterBytes, present := after[path]
-		if !present {
-			changes = append(changes, FileChange{
-				Path: path, Kind: "deleted", Before: beforeBytes,
-			})
-
-			continue
-		}
-
-		if !bytes.Equal(beforeBytes, afterBytes) {
-			changes = append(changes, FileChange{
-				Path: path, Kind: "modified", Before: beforeBytes, After: afterBytes,
-			})
-		}
-	}
-
-	for path, afterBytes := range after {
-		if _, present := before[path]; !present {
-			changes = append(changes, FileChange{
-				Path: path, Kind: "created", After: afterBytes,
-			})
-		}
-	}
-
-	sort.Slice(changes, func(i, j int) bool { return changes[i].Path < changes[j].Path })
-
-	return changes
-}
-
-func snapshotTree(root string) (map[string][]byte, error) {
-	out := make(map[string][]byte)
-
-	walkErr := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if entry.IsDir() {
-			return nil
-		}
-
-		rel, relErr := filepath.Rel(root, path)
-		if relErr != nil {
-			return fmt.Errorf("filepath rel: %w", relErr)
-		}
-
-		data, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return fmt.Errorf("read %s: %w", path, readErr)
-		}
-
-		out[rel] = data
-
-		return nil
-	})
-	if walkErr != nil {
-		return nil, fmt.Errorf("walk %s: %w", root, walkErr)
-	}
-
-	return out, nil
+// runSnapshotSkipDirs are subtrees the run diff excludes.
+//
+// They are installed by `prep:` — npm's node_modules above all — so they
+// exist before the pre-run snapshot and are never part of what the run
+// did. Excluding them keeps the judge's diff about the fixture, and
+// keeps the snapshot away from trees full of symlinks and hard links
+// into a package cache, which the tree model refuses on purpose.
+func runSnapshotSkipDirs() []string {
+	return []string{".git", "node_modules", ".next"}
 }

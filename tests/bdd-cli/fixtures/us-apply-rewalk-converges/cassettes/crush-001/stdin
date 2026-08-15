@@ -1,0 +1,130 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Merge Editor applying fixes to the requirements
+registry (the scratch copy of `docs/scenarios.yaml` for this run).
+
+**Your Task:**
+1. Read the current state of the scratch registry file.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Edit tool on the
+   scratch registry file path. Do NOT touch the canonical
+   `docs/scenarios.yaml`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the scratch file before editing.
+- Use Edit to mutate the scratch file in place.
+- Do not write to any other path.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<scratch path>"` (QUOTED)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other registry entries — only mutate what the fix prompt
+  specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+applied: true
+target: "<scratch path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify entries beyond what the fix prompt
+  specifies.
+- Edit the scratch file directly during this turn — the confirmation
+  block is informational only.
+
+
+### TASK
+
+## Subject — Acceptance Criterion
+
+**Story ID:** 99.3
+**Story Path:** docs/product/stories/99.3-rewalk-fixture.yaml
+**AC ID:** AC-1
+**Lineage Scenario ID:** 99.3-001
+**Description:** The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+**Scratch Registry Path:** tmp/2026-08-15-16-17-54-77977/scenarios.yaml
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+  - the server accepts JSON-RPC over HTTP POST at /mcp
+When:
+  - the Claude User posts a valid JSON-RPC initialize request to /mcp
+Then:
+  - the server returns HTTP 200
+  - and the response body is a well-formed JSON-RPC envelope referencing the request id
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for AC 99.3-001: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+
+## Target
+Apply the change to: `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`
+
+## Context
+The `scenarios:` map is currently empty (`scenarios: {}`). No entry references lineage id `99.3-001`, so the `us-apply/merge` "present?" check fails. Add a new scenario entry that links the subject story path and lineage id.
+
+Chosen id: `INT-001` — this AC exercises the MCP server's HTTP `/mcp` endpoint (request → 200 + JSON-RPC envelope), an integration-layer behavior. It is the first entry in an empty registry, so there is no id collision.
+
+## Required Changes
+### Change #1: Replace the empty `scenarios` map with a populated one containing INT-001
+**Issue:** No `scenarios:` entry has a `user_stories[]` member matching story `docs/product/stories/99.3-rewalk-fixture.yaml` AND lineage `scenario_id: 99.3-001`, so the merge check reports "not present".
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below.
+**old_string:**
+```
+scenarios: {}
+```
+**new_string:**
+```
+scenarios:
+  INT-001:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid /mcp initialize request"
+    service: ""
+    last_updated: "2026-08-15"
+    user_stories:
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-001
+        merge_date: "2026-08-15"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+        - the server accepts JSON-RPC over HTTP POST at /mcp
+      when:
+        - the Claude User posts a valid JSON-RPC initialize request to /mcp
+      then:
+        - the server returns HTTP 200
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
+```
+
+## Verification
+After applying, the registry must contain a `scenarios.INT-001` entry whose `user_stories[]` includes `{ story: docs/product/stories/99.3-rewalk-fixture.yaml, scenario_id: 99.3-001 }`. The merge check should then emit:
+`AC AC-1 (lineage 99.3-001): present in INT-001`
+
+---
+
+## Instructions
+
+1. Use the Read tool to load `tmp/2026-08-15-16-17-54-77977/scenarios.yaml` and
+   inspect its current state.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above by invoking the Edit tool on
+   `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`. Do NOT touch any other path.
+3. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+applied: true
+target: "tmp/2026-08-15-16-17-54-77977/scenarios.yaml"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===

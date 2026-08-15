@@ -1,0 +1,45 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.6-iter1-result.yaml ===
+id: "96.6"
+title: "Document Summary On Demand"
+as_a: "Claude User"
+i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+so_that: "I can decide whether the document needs my attention without reading it in full"
+status: "PLANNED"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
+    steps:
+      - given:
+          - "A Google Doc is shared with the Claude User's account"
+      - when:
+          - "The Claude User asks Claude for a summary of that shared Google Doc"
+      - then:
+          - "Claude displays a summary of 150 words or fewer in the conversation"
+  - id: "AC-2"
+    description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
+    steps:
+      - given:
+          - "A Google Doc is not shared with the Claude User's account"
+      - when:
+          - "The Claude User asks Claude for a summary of that document"
+      - then:
+          - "Claude displays the exact message 'This document is not shared with your account' in the conversation"
+  - id: "AC-3"
+    description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
+    steps:
+      - given:
+          - "A Claude User has asked Claude for a summary of a shared Google Doc"
+      - when:
+          - "No summary is produced within 30 seconds of the request"
+      - then:
+          - "Claude displays the exact message 'The summary timed out - please try again' in the conversation"
+  - id: "AC-4"
+    description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
+    steps:
+      - given:
+          - "A shared Google Doc contains more than 10000 words"
+      - when:
+          - "The Claude User asks Claude for a summary of that document"
+      - then:
+          - "Claude states that only the first 10000 words were summarized"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.6-iter1-result.yaml ===

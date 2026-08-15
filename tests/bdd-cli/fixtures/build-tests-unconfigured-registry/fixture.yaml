@@ -44,6 +44,15 @@ expected:
     registry sits at the conventional `docs/scenarios.yaml`. The engine
     must refuse to start rather than fall back to that file.
 
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: it is a before/after comparison of the
+    whole working tree, so every file the run created, modified or
+    deleted appears in it. A path that is absent from the diff was not
+    touched. Absence is therefore evidence, and a rule about a file
+    staying unchanged is verified by that file not appearing — not by
+    looking for proof that is not there.
+
     ## What MUST be true after the run
 
     1. **No file was created or modified anywhere outside `tmp/`.** In

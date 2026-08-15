@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-refine-fix-desc-qualifier",
+  "files": [
+    {
+      "path": "docs/product/stories/96.6-document-summary-desc-qualifier.yaml",
+      "kind": "modified",
+      "size": 2334,
+      "sha256": "8fe382dd71d5ccdddc5de0628386ae9c34ddacf1e9a24ef6185d14b6c346c62e",
+      "text": "story:\n    id: \"96.6\"\n    title: Document Summary On Demand\n    as_a: Claude User\n    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one\n    so_that: I can decide whether the document needs my attention without reading it in full\n    status: PLANNED\n    acceptance_criteria:\n        - id: AC-1\n          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.\n          steps:\n            - given:\n                - A Google Doc is shared with the Claude User's account\n            - when:\n                - The Claude User asks Claude for a summary of that shared Google Doc\n            - then:\n                - Claude displays a summary of 150 words or fewer in the conversation\n        - id: AC-2\n          description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.\n          steps:\n            - given:\n                - A Google Doc is not shared with the Claude User's account\n            - when:\n                - The Claude User asks Claude for a summary of that document\n            - then:\n                - Claude displays the exact message 'This document is not shared with your account' in the conversation\n        - id: AC-3\n          description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.\n          steps:\n            - given:\n                - A Claude User has asked Claude for a summary of a shared Google Doc\n            - when:\n                - No summary is produced within 30 seconds of the request\n            - then:\n                - Claude displays the exact message 'The summary timed out - please try again' in the conversation\n        - id: AC-4\n          description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.\n          steps:\n            - given:\n                - A shared Google Doc contains more than 10000 words\n            - when:\n                - The Claude User asks Claude for a summary of that document\n            - then:\n                - Claude states that only the first 10000 words were summarized\n"
+    }
+  ]
+}

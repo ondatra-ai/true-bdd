@@ -8,10 +8,30 @@
 architecture:
   services:
     - name: bdd-cli
+      type: "cli"
       path: services/bdd-cli
       language: go
       frameworks:
         - cobra
+      # What this service talks to at runtime. `protocol` is the
+      # connection mechanism (cli = spawned subprocess over argv/stdio,
+      # http, ws, sql, redis, …). `scope` places the dependency:
+      #   internal    — another service declared in this file
+      #   self_hosted — we run the instance (redis, postgres, kafka);
+      #                 builds use the real thing
+      #   third_party — a vendor's service is behind it, wherever the
+      #                 binary lives (crush is local, GLM's API is not);
+      #                 builds mock these (record/replay)
+      dependencies:
+        - name: claude
+          protocol: cli
+          scope: third_party
+        - name: crush
+          protocol: cli
+          scope: third_party
+        - name: codex
+          protocol: cli
+          scope: third_party
 
       quality_gate:
         tests:
@@ -24,6 +44,7 @@ architecture:
 
     - name: bdd-web
       path: services/bdd-web
+      type: "web:frontend"
       language: typescript
       frameworks:
         - next.js
@@ -31,6 +52,17 @@ architecture:
 
       design_system:
         path: services/bdd-web/design/system
+
+      dependencies:
+        # The remotes (`true-bdd remote --server <url>`) register with
+        # and poll this relay over its HTTP API — bdd-web never spawns
+        # the CLI itself.
+        - name: bdd-cli
+          protocol: http
+          scope: internal
+        - name: redis
+          protocol: redis
+          scope: self_hosted
 
       quality_gate:
         tests:

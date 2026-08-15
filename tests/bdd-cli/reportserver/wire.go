@@ -25,9 +25,17 @@ type StateResponse struct {
 
 // RunSummary is one session as the run list shows it.
 type RunSummary struct {
-	ID           string  `json:"id"`
-	Complete     bool    `json:"complete"`
+	ID       string `json:"id"`
+	Complete bool   `json:"complete"`
+	// Mode is live | record | replay, or "" for a session that predates
+	// the record. The client must render the empty case as unknown — a
+	// replayed run and a live one cost and prove very different things.
+	Mode string `json:"mode"`
+	// Fixtures is how many left a directory; Planned is how many the
+	// invocation set out to run. Passed/Failed are counted against
+	// Planned, which is why the two are not the same number mid-run.
 	Fixtures     int     `json:"fixtures"`
+	Planned      int     `json:"planned"`
 	Passed       int     `json:"passed"`
 	Failed       int     `json:"failed"`
 	Skipped      int     `json:"skipped"`
@@ -58,6 +66,10 @@ type TestSummary struct {
 	Name    string `json:"name"`
 	Verdict string `json:"verdict"`
 	Command string `json:"command"`
+	// Mode is this fixture's own AI-CLI mode, read from its harness
+	// record rather than inherited from the run, so a test page states
+	// how ITS turns were served.
+	Mode string `json:"mode"`
 	// HasRecord distinguishes "the harness recorded nothing" from "the
 	// run genuinely did nothing", which look identical in the numbers.
 	HasRecord         bool     `json:"has_record"`

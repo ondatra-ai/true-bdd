@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "us-create-happy-path",
+  "files": [
+    {
+      "path": "docs/product/stories/99.1-document-summary-on-demand.yaml",
+      "kind": "created",
+      "size": 809,
+      "sha256": "ccceaa309496530557149c1930f696ff2ee4e782170b190b0f6ce17c39942b85",
+      "text": "story:\n    id: \"99.1\"\n    title: Document Summary On Demand\n    as_a: Claude User\n    i_want: Claude to give me a short summary of a Google Doc when I ask\n    so_that: I do not have to download the document or copy paste large sections of it into a separate tool just to get a quick gist\n    status: PLANNED\n    acceptance_criteria:\n        - id: AC-1\n          description: When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation.\n        - id: AC-2\n          description: When I ask Claude to summarize a document I have not shared, I receive a clear message explaining I need to share it first.\n        - id: AC-3\n          description: When the document is too long to summarize confidently, I receive a message telling me Claude only read part of it.\n"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+No existing tests tree and no INT-900 test under the search roots — creating the new spec as instructed.=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "tests/integration/mcp-service-mcp-endpoint.spec.ts"
+summary: "Created new Playwright integration spec with a single INT-900 test posting a JSON-RPC initialize request to /mcp and asserting HTTP 200"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

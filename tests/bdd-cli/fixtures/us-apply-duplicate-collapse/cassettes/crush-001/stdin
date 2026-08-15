@@ -1,0 +1,153 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Merge Editor applying fixes to the requirements
+registry (the scratch copy of `docs/scenarios.yaml` for this run).
+
+**Your Task:**
+1. Read the current state of the scratch registry file.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Edit tool on the
+   scratch registry file path. Do NOT touch the canonical
+   `docs/scenarios.yaml`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the scratch file before editing.
+- Use Edit to mutate the scratch file in place.
+- Do not write to any other path.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<scratch path>"` (QUOTED)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other registry entries — only mutate what the fix prompt
+  specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-15-16-06-41-71240/apply-95.1-001-iter1-result.yaml ===
+applied: true
+target: "<scratch path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/2026-08-15-16-06-41-71240/apply-95.1-001-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify entries beyond what the fix prompt
+  specifies.
+- Edit the scratch file directly during this turn — the confirmation
+  block is informational only.
+
+
+### TASK
+
+## Subject — Acceptance Criterion
+
+**Story ID:** 95.1
+**Story Path:** docs/product/stories/95.1-duplicate-collapse.yaml
+**AC ID:** AC-1
+**Lineage Scenario ID:** 95.1-001
+**Description:** The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+**Scratch Registry Path:** tmp/2026-08-15-16-06-41-71240/scenarios.yaml
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+  - the server accepts JSON-RPC over HTTP POST at /mcp
+When:
+  - the Claude User posts a valid JSON-RPC initialize request to /mcp
+Then:
+  - the server returns HTTP 200
+  - and the response body is a well-formed JSON-RPC envelope referencing the request id
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for AC 95.1-001: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+
+## Target
+Apply the change to: `tmp/2026-08-15-16-06-41-71240/scenarios.yaml`
+
+## Duplicate Analysis
+- match: E2E-900 — 'MCP /mcp endpoint responds 200 to a valid initialize POST'
+- match: E2E-901 — 'Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope'
+- Verdict: duplicate (2 entries)
+
+Both entries reference `docs/product/stories/95.1-duplicate-collapse.yaml` / scenario `95.1-001`, both target service `mcp-service`, and their `merged_steps` describe the same observable behavior. **Winner: `E2E-900`** (lower-numbered id; both are `E2E-` layer, so the INT-over-E2E rule does not apply). `E2E-901` is the loser and gets deleted. `E2E-950` is unrelated and must stay untouched.
+
+## Required Changes
+
+### Change #1: Collapse E2E-901 into E2E-900 (union steps, delete loser)
+**Issue:** Two entries (`E2E-900`, `E2E-901`) reference lineage scenario `95.1-001`, violating the "exactly one entry per AC" rule.
+
+**Action:** Use the Edit tool on the target file with the exact `old_string` and `new_string` below. This does three things at once:
+1. `user_stories[]` — no change needed: both entries carry the identical `(story: docs/product/stories/95.1-duplicate-collapse.yaml, scenario_id: 95.1-001)` item, so the union deduplicates to the single item already present in `E2E-900`.
+2. Unions `merged_steps` into the winner — adds the `given` step "the server accepts JSON-RPC over HTTP POST at /mcp" and the `then` step "the response body is a well-formed JSON-RPC envelope referencing the request id" from `E2E-901` onto `E2E-900`, preserving order and deduplicating.
+3. Deletes the entire `E2E-901` entry. `E2E-950` is left in place and unchanged. No ids are renumbered.
+
+**old_string:**
+```
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+  E2E-901:
+    description: "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
+    service: "mcp-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
+        scenario_id: "95.1-001"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+        - "the server accepts JSON-RPC over HTTP POST at /mcp"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+        - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+  E2E-950:
+```
+**new_string:**
+```
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+        - "the server accepts JSON-RPC over HTTP POST at /mcp"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+        - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+  E2E-950:
+```
+
+## Post-Fix Expected State
+After this edit the registry contains exactly one entry (`E2E-900`) referencing lineage `95.1-001`, with the fully unioned `merged_steps`, plus the untouched `E2E-950`. Re-running the `us-apply/merge` check yields: `Verdict: unique`.
+
+---
+
+## Instructions
+
+1. Use the Read tool to load `tmp/2026-08-15-16-06-41-71240/scenarios.yaml` and
+   inspect its current state.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above by invoking the Edit tool on
+   `tmp/2026-08-15-16-06-41-71240/scenarios.yaml`. Do NOT touch any other path.
+3. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/2026-08-15-16-06-41-71240/apply-95.1-001-iter1-result.yaml ===
+applied: true
+target: "tmp/2026-08-15-16-06-41-71240/scenarios.yaml"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/2026-08-15-16-06-41-71240/apply-95.1-001-iter1-result.yaml ===

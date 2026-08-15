@@ -103,7 +103,15 @@ h2 {
 }
 .tree { flex: 1 1 480px; font-size: 14px; line-height: 1.5; min-width: 0; }
 .tree .trow { display: flex; justify-content: space-between; gap: 20px; padding: 2px 0; }
-.tree .trow .nm { white-space: nowrap; color: var(--text-body); }
+/* :where() so this contributes NO specificity. As a plain
+   `.tree .trow .nm` it outranked the single-class family colours below,
+   and every row carrying its colour ON the .nm span — scenarios.yaml,
+   product.yaml, the whole config and code families — rendered body-black
+   while the legend promised otherwise. Only rows that wrapped their leaf
+   in a nested span escaped, which is what made the tree look
+   half-coloured rather than plainly broken. */
+:where(.tree .trow .nm) { color: var(--text-body); }
+.tree .trow .nm { white-space: nowrap; }
 .tree .trow .cm { color: var(--text-muted); text-align: right; min-width: 0; }
 .tree .lvl { border-left: 1px solid var(--border-hairline); margin-left: 6px; padding-left: 20px; }
 .t-story { color: var(--c-story); font-weight: 700; }
@@ -487,14 +495,16 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             </div>
             <div>
               <div class="row"><span class="k">services[]:</span></div>
-              <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· language · frameworks[]</span></div>
+              <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· type · language · frameworks[]</span></div>
               <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">services/&lt;name&gt;</span></div>
               <div class="row ind1"><span class="k">design_system.path</span> <span class="v">(optional)</span></div>
+              <div class="row ind1"><span class="k">dependencies[]:</span> <span class="v">name · protocol · scope</span></div>
               <div class="row ind1 hl" id="a-arch-qg"><span class="k">quality_gate.tests.{integration,e2e}:</span></div>
               <div class="row ind2"><span class="v">path · framework · config · helpers[]</span></div>
               <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
             </div>
           </div>
+          <div class="note">Runtime <code>dependencies</code>: <code>protocol</code> = cli / http / redis / …; <code>scope</code> = <code>internal</code> (a service declared here) / <code>self_hosted</code> (we run the instance) / <code>third_party</code> (a vendor's service behind it, wherever the binary lives). Scope drives build-time mocking: <code>third_party</code> gets record/replay doubles, everything else runs live.</div>
         </div>
 
         <!-- row 4 · environment stacks -->

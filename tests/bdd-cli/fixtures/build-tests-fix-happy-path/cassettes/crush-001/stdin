@@ -1,0 +1,166 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Test Authoring Editor applying fixes that add a missing
+executable test for one scenario from the requirements registry.
+
+**Your Task:**
+1. Read the relevant existing test file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new test file or the Edit tool to extend an existing one,
+   under one of the four allowed roots.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file at one of the allowed roots.
+- Use Edit to mutate an existing file at one of the allowed roots.
+- Do NOT touch `docs/scenarios.yaml`.
+- Do NOT write to any path outside the four allowed roots.
+
+**Allowed Roots:**
+- `tests/integration/`
+- `tests/e2e/`
+- `services/backend/`
+- `services/frontend/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the new
+  test block the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate an existing test for the same scenario id.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** INT-900
+**Description:** MCP /mcp endpoint responds 200 to a valid initialize POST
+**Service:** mcp-service
+**Requirement:** fixture seed — expects `build tests` to create a test
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+When:
+  - the Claude User posts a valid JSON-RPC initialize request to /mcp
+Then:
+  - the server returns HTTP 200
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
+
+## Context
+- **Scenario id:** `INT-900` (level `INT-*` → integration tree → `tests/integration/`, Playwright **Request API**, no browser).
+- **Service:** `mcp-service`.
+- **Layout reality:** the fixture workspace ships **no `tests/` tree and no `services/` tree yet** — the four search roots are all empty. There is no existing spec to extend and no existing `<service>-*.spec.ts` to duplicate, so this is a **new-file Write**, not an Edit.
+- **Naming pattern:** `tests/integration/<service>-*.spec.ts` → `tests/integration/mcp-service-mcp-endpoint.spec.ts`.
+- **Guardrails:** write only under the four search roots. Do **not** create or modify `docs/scenarios.yaml`, `true-bdd/`, or `templates/`.
+
+## Required Changes
+
+### Change #1: Create the integration spec that covers INT-900
+**File:** `tests/integration/mcp-service-mcp-endpoint.spec.ts`
+**Action:** Use the **Write** tool to create this new file with the exact content below. (New file — no `old_string`.) The parent directory `tests/integration/` does not exist yet; Write creates it.
+**Content:**
+```ts
+import { test, expect } from '@playwright/test';
+
+// INT-900 — MCP /mcp endpoint responds 200 to a valid initialize POST
+// Service: mcp-service
+// Given: the MCP server is running on its configured port
+// When:  the Claude User posts a valid JSON-RPC initialize request to /mcp
+// Then:  the server returns HTTP 200
+
+// Given: the MCP server is running on its configured port.
+// The base URL is taken from the environment so the test binds to whatever
+// port the server was configured with, falling back to a conventional local port.
+const MCP_BASE_URL = process.env.MCP_BASE_URL ?? 'http://127.0.0.1:3000';
+
+test('INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST', async ({ request }) => {
+  // Given: the MCP server is running on its configured port
+  const endpoint = `${MCP_BASE_URL}/mcp`;
+
+  // When: the Claude User posts a valid JSON-RPC initialize request to /mcp
+  const response = await request.post(endpoint, {
+    headers: {
+      'Content-Type': 'application/json',
+      // MCP Streamable HTTP requires the client to accept both content types.
+      Accept: 'application/json, text/event-stream',
+    },
+    data: {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'claude-user', version: '1.0.0' },
+      },
+    },
+  });
+
+  // Then: the server returns HTTP 200
+  expect(response.status()).toBe(200);
+});
+```
+
+## Verification after applying
+1. The file `tests/integration/mcp-service-mcp-endpoint.spec.ts` exists under a valid search root.
+2. It contains exactly one `test(...)` whose name's first line begins with `INT-900: ` so the `build-tests/implementation` re-walk finds the literal id.
+3. `docs/scenarios.yaml` is unchanged; no other test files were touched (there were none).
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new test file when the fix prompt says so.
+   - Use Edit to extend an existing test file when the fix prompt says
+     so.
+3. You MAY only modify files under these roots:
+   - `tests/integration/`
+   - `tests/e2e/`
+   - `services/backend/`
+   - `services/frontend/`
+4. You MUST NOT touch `docs/scenarios.yaml` or any path outside the
+   four roots above.
+5. The test you add MUST be named `test('INT-900: <short
+   description>', ...)` (or the equivalent in the chosen framework) so
+   the next validation walk finds it by scenario id.
+6. Do not duplicate an existing test for this scenario id.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===

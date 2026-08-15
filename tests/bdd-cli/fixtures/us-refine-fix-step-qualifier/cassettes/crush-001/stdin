@@ -1,0 +1,208 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Technical Scrum Master applying fixes to a user story.
+
+**Your Task:**
+1. Read the current story and the fix prompt instructions.
+2. Apply the changes EXACTLY as specified in the fix prompt — they may
+   target any field of the story (`title`, `as_a`, `i_want`, `so_that`,
+   `status`, `acceptance_criteria`, …), not only acceptance criteria.
+3. Output the COMPLETE updated story body in YAML form.
+
+**Output Requirements:**
+- Output every field of the current story, with the fix prompt's
+  changes applied. Fields not mentioned by the fix prompt MUST be
+  preserved verbatim — do not invent, drop, or reorder unrelated
+  fields.
+- The `acceptance_criteria` array MUST always be present, even when
+  the fix only touches a top-level field; preserve all ACs unless the
+  fix prompt explicitly modifies them.
+- Each acceptance criterion must have an `id`, `description`, and
+  `steps` field. The `description` is a one-line rule-based statement
+  using must/should (NO Gherkin in `description`). The `steps` field
+  holds the Gherkin scenario as a structured given/when/then list.
+- Wrap the output with FILE_START/FILE_END markers.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-15-16-54-15-4953/apply-96.7-iter1-result.yaml ===
+id: "<story id>"
+title: "<story title>"
+as_a: "<role>"
+i_want: "<desire>"
+so_that: "<benefit>"
+status: "<status>"
+acceptance_criteria:
+  - id: "AC-1"
+    description: "One-line rule-based statement with must/should"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+          - and: "additional outcome"
+  - id: "AC-2"
+    description: "Another one-line rule-based statement"
+    steps:
+      - given:
+          - "precondition"
+      - when:
+          - "action"
+      - then:
+          - "outcome"
+=== FILE_END: tmp/2026-08-15-16-54-15-4953/apply-96.7-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Output the WHOLE story body — top-level fields AND
+  `acceptance_criteria`. Never output just one section.
+- Do NOT add, remove, or rename fields beyond what the fix prompt
+  specifies.
+- Preserve the exact wording from the fix prompt's "After" sections.
+- The `description` must NEVER contain Given/When/Then — those belong
+  in `steps`.
+
+
+### TASK
+
+## Current Story
+
+**ID:** 96.7
+**Title:** Document Summary On Demand
+**As a:** Claude User
+**I want:** Claude to give me a short summary of a shared Google Doc when I ask for one
+**So that:** I can decide whether the document needs my attention without reading it in full
+**Status:** PLANNED
+
+### Current Acceptance Criteria
+
+**AC-1:**
+Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+
+**AC-2:**
+Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+
+**AC-3:**
+Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+
+**AC-4:**
+Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Story 96.7: Document Summary On Demand
+
+## Instructions
+Apply the following changes to the acceptance criteria for this story.
+
+## Original Acceptance Criteria
+1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+3. AC-3: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+4. AC-4: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+
+## Required Changes
+
+### Change #1: AC-4
+**Before (then step):** `Claude quickly displays a user-friendly notice that only the first 10000 words were summarized`
+
+**Issue:** The `then` step contains two forbidden qualifiers from `docs/architecture/architecture.yaml` → `forbidden_qualifiers`:
+- **`quickly`** — non-measurable latency; there is no observable time budget to test against.
+- **`user-friendly`** — subjective; the exact, observable notice text is not specified, so the outcome cannot be objectively asserted.
+
+**After (description):** unchanged — `Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.` (the description is already rule-based and qualifier-free; only the steps failed).
+
+**After (steps):**
+```yaml
+- given:
+    - "a Google Doc with more than 10000 words is shared with the Claude User's account"
+- when:
+    - "the Claude User asks Claude to summarize the document"
+- then:
+    - "Claude displays the message 'Only the first 10000 words were summarized' within 2 seconds"
+```
+
+**How each qualifier was resolved:**
+- `quickly` → concrete, observable latency bound: **`within 2 seconds`**.
+- `user-friendly` → exact, assertable notice text: **`'Only the first 10000 words were summarized'`**.
+
+AC-1, AC-2, and AC-3 already pass the vague-word check (no forbidden qualifiers in any Given/When/Then) and are left unchanged.
+
+Per-AC check result:
+- AC-1: ok
+- AC-2: ok
+- AC-3: ok
+- AC-4: contains 'quickly', 'user-friendly' in then → fixed
+
+No new ACs are needed; the four scenarios already cover the happy path, the two error paths, and the truncation edge case.
+
+## Complete Fixed Acceptance Criteria
+
+```yaml
+- ac_id: AC-1
+  description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
+  steps:
+    - given:
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when:
+        - "the Claude User asks Claude to summarize the document"
+    - then:
+        - "Claude displays a summary of 150 words or fewer in the conversation"
+        - and: "the summary names the document title"
+
+- ac_id: AC-2
+  description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
+  steps:
+    - given:
+        - "a Google Doc exists that is not shared with the Claude User's account"
+    - when:
+        - "the Claude User asks Claude to summarize that document"
+    - then:
+        - "Claude displays the message 'This document is not shared with your account'"
+        - and: "Claude does not display any content from the document"
+
+- ac_id: AC-3
+  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
+  steps:
+    - given:
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
+    - when:
+        - "the Claude User asks Claude to summarize the document"
+    - then:
+        - "Claude displays the message 'The summary timed out - please try again'"
+
+- ac_id: AC-4
+  description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
+  steps:
+    - given:
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when:
+        - "the Claude User asks Claude to summarize the document"
+    - then:
+        - "Claude displays the message 'Only the first 10000 words were summarized' within 2 seconds"
+```
+
+---
+
+## Instructions
+
+Apply the changes described in the "Fix Prompt to Apply" section above.
+The fix may target any field of the story — top-level (`title`,
+`as_a`, `i_want`, `so_that`, `status`) or `acceptance_criteria` —
+so output the COMPLETE updated story body. Preserve every field that
+the fix prompt does not touch.
+
+Output the complete updated story body using FILE_START/FILE_END
+markers:
+
+=== FILE_START: tmp/2026-08-15-16-54-15-4953/apply-96.7-iter1-result.yaml ===
+(Complete story body YAML here — every top-level field plus
+`acceptance_criteria`)
+=== FILE_END: tmp/2026-08-15-16-54-15-4953/apply-96.7-iter1-result.yaml ===
