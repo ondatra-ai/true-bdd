@@ -42,33 +42,35 @@ architecture:
             path: tests/bdd-cli
             framework: go-test
 
-    - name: bdd-web
-      path: services/bdd-web
-      type: "web:frontend"
-      language: typescript
-      frameworks:
-        - next.js
-        - react
-
-      design_system:
-        path: services/bdd-web/design/system
-
-      dependencies:
-        # The remotes (`true-bdd remote --server <url>`) register with
-        # and poll this relay over its HTTP API — bdd-web never spawns
-        # the CLI itself.
-        - name: bdd-cli
-          protocol: http
-          scope: internal
-        - name: redis
-          protocol: redis
-          scope: self_hosted
-
-      quality_gate:
-        tests:
-          # Self-contained Playwright package: protocol (p*), workspace (w*)
-          # and AI (a*) projects, each test booting its own host server.
-          e2e:
-            path: tests/bdd-web
-            framework: playwright
-            config: tests/bdd-web/playwright.config.ts
+    # Temporarily disabled: only bdd-cli is an active build target for now.
+    # Uncomment to bring the web relay back into `build code`.
+    # - name: bdd-web
+    #   path: services/bdd-web
+    #   type: "web:frontend"
+    #   language: typescript
+    #   frameworks:
+    #     - next.js
+    #     - react
+    #
+    #   design_system:
+    #     path: services/bdd-web/design/system
+    #
+    #   dependencies:
+    #     # The remotes (`true-bdd remote --server <url>`) register with
+    #     # and poll this relay over its HTTP API — bdd-web never spawns
+    #     # the CLI itself.
+    #     - name: bdd-cli
+    #       protocol: http
+    #       scope: internal
+    #     - name: redis
+    #       protocol: redis
+    #       scope: self_hosted
+    #
+    #   quality_gate:
+    #     tests:
+    #       # Self-contained Playwright package: protocol (p*), workspace (w*)
+    #       # and AI (a*) projects, each test booting its own host server.
+    #       e2e:
+    #         path: tests/bdd-web
+    #         framework: playwright
+    #         config: tests/bdd-web/playwright.config.ts
