@@ -19,7 +19,7 @@ func ExtractFileContent(response, path string) string {
 		endIdx := strings.Index(response[contentStart:], endMarker)
 
 		if endIdx != -1 {
-			return strings.TrimSpace(response[contentStart : contentStart+endIdx])
+			return stripCodeFence(strings.TrimSpace(response[contentStart : contentStart+endIdx]))
 		}
 	}
 
@@ -50,5 +50,36 @@ func ExtractFileContent(response, path string) string {
 		return ""
 	}
 
-	return strings.TrimSpace(remaining[:endLoc[0]])
+	return stripCodeFence(strings.TrimSpace(remaining[:endLoc[0]]))
+}
+
+// fencedBlock matches content wrapped ENTIRELY in one markdown code
+// fence: backticks or tildes, three or more, with an optional language
+// tag, closed by the same character. CommonMark allows all of those, and
+// a model that opens with ````yaml is doing nothing unusual — matching
+// only three backticks would leave that fence in the payload and put the
+// YAML parse back where it started.
+var fencedBlock = regexp.MustCompile(
+	"(?s)\\A(?:```+|~~~+)[a-zA-Z0-9_+-]*[ \\t]*\\r?\\n(.*?)\\r?\\n?(?:```+|~~~+)[ \\t]*\\z")
+
+// stripCodeFence removes a markdown fence wrapping the whole block.
+//
+// The markers already say what the block is and where it goes, so a
+// fence inside them carries no information — but the engine writes the
+// content to a file and parses it, and a stray ``` is a YAML syntax
+// error that takes the entire command down with "found character that
+// cannot start any token". A coder model emitting fenced output is
+// normal, occasional, and not worth failing a run over; this is the same
+// tolerance the marker matching above already extends.
+//
+// Only a fence around the WHOLE block is removed. A fence in the middle
+// belongs to the content — a fix prompt legitimately contains example
+// YAML — and removing those would corrupt it.
+func stripCodeFence(content string) string {
+	match := fencedBlock.FindStringSubmatch(content)
+	if match == nil {
+		return content
+	}
+
+	return strings.TrimSpace(match[1])
 }

@@ -45,16 +45,31 @@
       "verdicts": {
         "fix": 10
       }
+    },
+    {
+      "at": "2026-08-15T17:18:28Z",
+      "sha": "uncommitted-on-2c5395a",
+      "branch": "fix/refine-fix-prompt-keeps-existing-steps",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 3,
+      "by_severity": {
+        "minor": 3
+      },
+      "verdicts": {
+        "fix": 2,
+        "reject": 1
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 2,
-      "found": 18,
-      "fixed": 17,
+      "rounds": 3,
+      "found": 21,
+      "fixed": 19,
       "deferred": 0,
-      "rejected": 1,
-      "precision": 0.944
+      "rejected": 2,
+      "precision": 0.905
     },
     "coderabbit-github": {
       "rounds": 1,

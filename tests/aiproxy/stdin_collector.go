@@ -18,8 +18,20 @@ import (
 // arrives; the hash check right after turns every short read into a
 // loud stale-cassette failure instead of a hang.
 const (
-	stdinReadTimeout  = 30 * time.Second
-	stdinQuietPeriod  = 2 * time.Second
+	stdinReadTimeout = 30 * time.Second
+	// stdinQuietPeriod is the fallback for a request that never reaches
+	// the recorded byte count, and that is the COMMON case rather than
+	// the exception: the recorded length counts the recording machine's
+	// paths, and the live request carries the replaying machine's. A
+	// run directory named after a 4-digit pid where the recording had 5
+	// makes the request one byte shorter per mention — enough to miss
+	// `size >= want` forever and pay this wait on every single turn.
+	//
+	// So it is short. It only has to outlast the gap between chunks of
+	// one burst, which is sub-millisecond in practice; the request hash
+	// right after is what actually decides whether the bytes were right,
+	// and a truncated read fails there loudly rather than passing.
+	stdinQuietPeriod  = 400 * time.Millisecond
 	stdinStablePeriod = 200 * time.Millisecond
 	stdinPollPeriod   = 50 * time.Millisecond
 

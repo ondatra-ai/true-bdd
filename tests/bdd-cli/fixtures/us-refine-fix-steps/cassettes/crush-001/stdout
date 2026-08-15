@@ -10,9 +10,9 @@ acceptance_criteria:
     description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
     steps:
       - given:
-          - "a Google Doc is shared with the Claude User's account"
+          - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
       - when:
-          - "the Claude User asks Claude to summarize the shared Google Doc"
+          - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of 150 words or fewer in the conversation"
   - id: "AC-2"
@@ -28,27 +28,31 @@ acceptance_criteria:
     description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
     steps:
       - given:
-          - "the Claude User has asked Claude to summarize a shared Google Doc"
+          - "a Google Doc is shared with the Claude User's account"
+      - given:
+          - "the summary backend does not respond within 30 seconds"
       - when:
-          - "no summary is produced within 30 seconds"
+          - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays the message 'The summary timed out - please try again'"
   - id: "AC-4"
     description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
     steps:
       - given:
-          - "a shared Google Doc contains more than 10000 words"
+          - "a Google Doc with more than 10000 words is shared with the Claude User's account"
       - when:
           - "the Claude User asks Claude to summarize the document"
+      - then:
+          - "Claude displays a summary of the first 10000 words"
       - then:
           - "Claude states that only the first 10000 words were summarized"
   - id: "AC-5"
     description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
     steps:
       - given:
-          - "a Google Doc with section headings is shared with the Claude User's account"
+          - "a Google Doc with at least three section headings is shared with the Claude User's account"
       - when:
           - "the Claude User asks Claude for the document outline"
       - then:
-          - "Claude lists every section heading of the shared Google Doc in the conversation"
+          - "Claude displays each section heading in its original order"
 === FILE_END: tmp/{{RUN_DIR}}/apply-96.5-iter1-result.yaml ===

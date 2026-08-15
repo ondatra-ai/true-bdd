@@ -1,6 +1,7 @@
 package validate_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -75,5 +76,72 @@ func TestExtractFileContent(t *testing.T) {
 				t.Errorf("expected '- id: AC-1' but got: %s", result)
 			}
 		})
+	}
+}
+
+// The applier occasionally wraps its whole result in a markdown fence.
+// The markers already say what the block is, so the fence carries no
+// information — but it reaches a YAML parser, and `yaml: found character
+// that cannot start any token` failed an entire `us create --fix` run.
+func TestExtractFileContentStripsWholeBlockFence(t *testing.T) {
+	t.Parallel()
+
+	const path = "tmp/run/apply-result.yaml"
+
+	response := "=== FILE_START: " + path + " ===\n" +
+		"```yaml\nid: \"99.1\"\ntitle: \"Document Summary\"\n```\n" +
+		"=== FILE_END: " + path + " ==="
+
+	got := validate.ExtractFileContent(response, path)
+
+	// The WHOLE block, not a prefix: a fence-stripper that ate the last
+	// line would satisfy a prefix check and still corrupt the file.
+	want := "id: \"99.1\"\ntitle: \"Document Summary\""
+	if got != want {
+		t.Fatalf("extraction = %q, want %q", got, want)
+	}
+}
+
+// CommonMark fences are not always three backticks. A model that opens
+// with ````yaml or ~~~ is doing nothing unusual, and an unmatched fence
+// puts the YAML parse back where it started.
+func TestExtractFileContentStripsTildeAndLongFences(t *testing.T) {
+	t.Parallel()
+
+	const path = "tmp/run/apply-result.yaml"
+
+	for name, fence := range map[string][2]string{
+		"tilde":       {"~~~yaml", "~~~"},
+		"long ticks":  {"````yaml", "````"},
+		"no language": {"```", "```"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			response := "=== FILE_START: " + path + " ===\n" +
+				fence[0] + "\nid: \"99.1\"\n" + fence[1] + "\n" +
+				"=== FILE_END: " + path + " ==="
+
+			if got := validate.ExtractFileContent(response, path); got != "id: \"99.1\"" {
+				t.Fatalf("extraction = %q, want the unfenced content", got)
+			}
+		})
+	}
+}
+
+// A fence INSIDE the block belongs to the content: a fix prompt is
+// markdown and legitimately shows example YAML.
+func TestExtractFileContentKeepsInnerFences(t *testing.T) {
+	t.Parallel()
+
+	const path = "tmp/run/fix.md"
+
+	body := "# Fix Prompt\n\nApply this:\n\n```yaml\n- ac_id: AC-1\n```\n\nThen re-check."
+	response := "=== FILE_START: " + path + " ===\n" + body + "\n=== FILE_END: " + path + " ==="
+
+	got := validate.ExtractFileContent(response, path)
+
+	if !strings.Contains(got, "```yaml") {
+		t.Fatalf("an inner fence was stripped, corrupting the content:\n%s", got)
 	}
 }
