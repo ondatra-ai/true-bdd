@@ -1,0 +1,10 @@
+# An architectural spec with an empty services list. Syntactically
+# valid, semantically nothing: there is no service to walk, so `build
+# code` has no scope at all.
+#
+# The failure mode this guards is the quiet one — a walk over zero
+# services converges trivially and reports success, so an empty spec
+# would read as "all tests pass" rather than "you declared nothing".
+
+architecture:
+  services: []

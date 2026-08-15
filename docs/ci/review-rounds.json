@@ -60,16 +60,30 @@
         "fix": 2,
         "reject": 1
       }
+    },
+    {
+      "at": "2026-08-15T20:11:15Z",
+      "sha": "254fa82",
+      "branch": "feat/test-commands-from-architecture",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 3,
+      "by_severity": {
+        "major": 3
+      },
+      "verdicts": {
+        "fix": 3
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 3,
-      "found": 21,
-      "fixed": 19,
+      "rounds": 4,
+      "found": 24,
+      "fixed": 22,
       "deferred": 0,
       "rejected": 2,
-      "precision": 0.905
+      "precision": 0.917
     },
     "coderabbit-github": {
       "rounds": 1,

@@ -89,5 +89,5 @@ func stdoutExtension(framework string) string {
 		return "jsonl"
 	}
 
-	return "json"
+	return jsonToken
 }

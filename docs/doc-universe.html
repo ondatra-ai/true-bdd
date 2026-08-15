@@ -312,7 +312,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
-            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + optional dev/prod environments</span></div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + test-layer commands + optional dev/prod environments</span></div>
             <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
           </div>
           <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
@@ -486,7 +486,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- row 3 · architecture -->
         <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/7">
-          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>services + environments</small></header>
+          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>services + commands + environments</small></header>
           <div class="body">
             <div>
               <div class="row hl" id="a-arch-env"><span class="k">environment:</span> <span class="v">(optional)</span></div>
@@ -501,6 +501,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="row ind1"><span class="k">dependencies[]:</span> <span class="v">name · protocol · scope</span></div>
               <div class="row ind1 hl" id="a-arch-qg"><span class="k">quality_gate.tests.{integration,e2e}:</span></div>
               <div class="row ind2"><span class="v">path · framework · config · helpers[]</span></div>
+              <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live</span></div>
               <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
             </div>
           </div>
@@ -558,7 +559,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </tr>
           <tr>
             <td><span class="cmd">build code</span></td>
-            <td>every <strong>(service, layer)</strong> pair in architecture; discovers failing tests via each framework's runner (dev compose stack backs the run)</td>
+            <td>every <strong>(service, layer)</strong> pair in architecture; discovers failing tests by running the layer's own declared <code>commands.replay</code> (the dev compose stack, when declared, backs the run)</td>
             <td><span class="cl">build-code.yaml</span></td>
             <td>with <code>--fix</code>: <strong>production source</strong> under the declared service paths only — tests and registry are never touched</td>
           </tr>
@@ -611,6 +612,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
           <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
             <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/validate-schemas.sh</code>, a CI gate), not by a command</td></tr>
+          <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">quality_gate.tests.&lt;layer&gt;.commands</td><td class="to">the suite that actually runs</td>
+            <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default</td></tr>
         </tbody>
       </table>
     </div>
@@ -618,7 +621,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd</code> fixture documents — 2026-08-14 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd</code> fixture documents — 2026-08-15 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>
@@ -649,6 +652,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
     { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
     { n: 17, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
+    { n: 18, from: 'a-arch-cmds',    fs: 'T', ff: .45, to: 'card-tests',   ts: 'B', tf: .35, kind: 'arch' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
 

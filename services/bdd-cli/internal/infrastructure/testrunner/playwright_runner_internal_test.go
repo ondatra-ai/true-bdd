@@ -1,6 +1,11 @@
 package testrunner
 
-import "testing"
+import (
+	"regexp"
+	"testing"
+
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner/dto"
+)
 
 // startupReportJSON is the report Playwright 1.62 writes when its
 // webServer command exits before the suite starts — captured verbatim
@@ -75,5 +80,64 @@ func TestParsePlaywrightReportPassingRun(t *testing.T) {
 
 	if report.Stats.Expected != 4 {
 		t.Errorf("stats.expected = %d, want 4", report.Stats.Expected)
+	}
+}
+
+// Playwright matches --grep against the test's whole title PATH — root,
+// project, file, describes, title — joined with SPACES
+// (Suite._grepTitleWithTags). The chain the JSON report gives us is a
+// suffix of that path with " > " separators, so the pattern must be
+// respaced and left unanchored. `^chain$`, the obvious-looking form,
+// matches nothing at all — and a rerun that selects nothing reports no
+// failures, which the walk would read as a fix that worked.
+func TestPlaywrightGrepMatchesTheRealTitlePath(t *testing.T) {
+	t.Parallel()
+
+	chain := "integration/home.spec.ts > checkout > pays (fast)"
+	grep := playwrightGrep(chain)
+
+	pattern, err := regexp.Compile(grep)
+	if err != nil {
+		t.Fatalf("compile %q: %v", grep, err)
+	}
+
+	// What Playwright actually greps against: leading root title (""),
+	// project, file, describes, title.
+	actual := " chromium integration/home.spec.ts checkout pays (fast)"
+	if !pattern.MatchString(actual) {
+		t.Errorf("grep %q does not match Playwright's title path %q", grep, actual)
+	}
+
+	// The metacharacters in the title are escaped, not honoured.
+	if pattern.MatchString(" chromium integration/home.spec.ts checkout pays fast") {
+		t.Errorf("grep %q treated the title's parens as a regex group", grep)
+	}
+
+	// The anchored form this replaced could never match.
+	anchored := regexp.MustCompile("^" + regexp.QuoteMeta(chain) + "$")
+	if anchored.MatchString(actual) {
+		t.Error("anchored chain unexpectedly matched; the regression this guards is gone")
+	}
+}
+
+// A rerun that selected no test is not a passing test. Playwright emits
+// its stats block either way, so the all-zero block is what separates
+// them.
+func TestPlaywrightRanNothing(t *testing.T) {
+	t.Parallel()
+
+	empty := &dto.PlaywrightReport{}
+	if !playwrightRanNothing(empty) {
+		t.Error("a report with no executed test must not read as a run")
+	}
+
+	ran := &dto.PlaywrightReport{Stats: dto.PlaywrightStats{Expected: 1}}
+	if playwrightRanNothing(ran) {
+		t.Error("a report with one expected test did run")
+	}
+
+	skipped := &dto.PlaywrightReport{Stats: dto.PlaywrightStats{Skipped: 1}}
+	if playwrightRanNothing(skipped) {
+		t.Error("a skipped test was still selected by the filter")
 	}
 }

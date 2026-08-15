@@ -7,9 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -68,10 +66,12 @@ func (r *PlaywrightRunner) Discover(
 	cfg Config,
 	service, layer string,
 ) ([]*FailingTest, error) {
-	cwd, configArg, pathArg := playwrightPaths(cfg)
+	argv, err := SplitCommand(cfg.Command)
+	if err != nil {
+		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, layer, err)
+	}
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, "test", "--reporter=json",
-		"--config", configArg, pathArg)
+	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("playwright discovery under %s failed: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -118,12 +118,17 @@ func newPlaywrightStartupFailure(
 	}
 }
 
-// RunOne re-executes a single failing test in isolation via `--grep`
-// regex (anchored to the escaped title) plus the spec file positional
-// argument. For the synthetic startup-marker FailingTest, RunOne
-// instead re-runs the whole suite — the test title is not a real
-// Playwright test name — and reports passed iff the rerun emits zero
-// per-test failures with a clean exit.
+// RunOne re-executes a single failing test in isolation by appending a
+// `--grep` regex to the layer's own command. Only `--grep` is appended,
+// never the spec file: Playwright ORs positional path filters, so a
+// file argument alongside the path the command already carries would
+// WIDEN the rerun rather than isolate it. `--grep` is ANDed with the
+// paths.
+//
+// For the synthetic startup-marker FailingTest, RunOne instead re-runs
+// the whole suite — the test title is not a real Playwright test name —
+// and reports passed iff the rerun emits zero per-test failures with a
+// clean exit.
 func (r *PlaywrightRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -132,22 +137,20 @@ func (r *PlaywrightRunner) RunOne(
 		return r.runOneStartup(ctx, failingTest)
 	}
 
-	file, title, err := splitPlaywrightName(failingTest.TestName)
+	_, title, err := splitPlaywrightName(failingTest.TestName)
 	if err != nil {
 		return false, "", err
 	}
 
-	cfg := failingTest.RunnerConfig
-	if cfg.ConfigFile == "" {
-		cfg = Config{Path: file, ConfigFile: playwrightConfigGuess(file)}
+	argv, err := commandArgv(failingTest)
+	if err != nil {
+		return false, "", err
 	}
 
-	cwd, configArg, _ := playwrightPaths(cfg)
+	grep := playwrightGrep(title)
+	argv = append(argv, "--grep", grep)
 
-	grep := "^" + playwrightRegexMeta.ReplaceAllString(title, `\$0`) + "$"
-
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, "test", "--reporter=json",
-		"--config", configArg, "--grep", grep, file)
+	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -164,6 +167,11 @@ func (r *PlaywrightRunner) RunOne(
 
 	logPlaywrightReport(PhaseRerun, report, len(rerunFailures))
 
+	if playwrightRanNothing(report) {
+		return false, stdout.String(), fmt.Errorf("%w: playwright --grep %q matched no test for %s",
+			ErrRerunSelectedNoTests, grep, failingTest.TestName)
+	}
+
 	for _, failure := range rerunFailures {
 		if failure.TestName == failingTest.TestName {
 			return false, failure.FailureOutput, nil
@@ -173,6 +181,37 @@ func (r *PlaywrightRunner) RunOne(
 	return true, "", nil
 }
 
+// playwrightGrep builds the `--grep` pattern for one test's title chain.
+//
+// Two things about Playwright's matching decide the shape, both read off
+// its own source (`Suite._grepTitleWithTags`): the pattern is tested
+// against the test's whole title PATH — root, project, file, describes,
+// title, plus tags — and that path is joined with SPACES.
+//
+// So the chain's own `" > "` separators have to become spaces, and the
+// pattern must not be anchored: `^…$` could only match if we
+// reconstructed the project and root segments too, which the JSON report
+// does not give us. An unanchored, escaped chain is a substring of the
+// real path and matches exactly the intended test — while `^chain$`, the
+// obvious-looking form, matches nothing at all and makes every rerun
+// look like a pass.
+func playwrightGrep(titleChain string) string {
+	spaced := strings.ReplaceAll(titleChain, playwrightTitleSeparator, " ")
+
+	return playwrightRegexMeta.ReplaceAllString(spaced, `\$0`)
+}
+
+// playwrightRanNothing reports whether the rerun executed no test at
+// all. Playwright emits its stats block even then, so an all-zero block
+// separates "the filter selected nothing" from "the test passed" —
+// which otherwise both arrive as a report with no failures in it, and
+// the first would be reported to the engine as a fix that worked.
+func playwrightRanNothing(report *dto.PlaywrightReport) bool {
+	stats := report.Stats
+
+	return stats.Expected+stats.Unexpected+stats.Flaky+stats.Skipped == 0
+}
+
 // runOneStartup is the synthetic-marker branch of RunOne. Re-runs the
 // whole Playwright suite (no --grep, no file filter) and reports passed
 // iff the new run had no per-test failures AND the exec exited zero.
@@ -180,11 +219,12 @@ func (r *PlaywrightRunner) runOneStartup(
 	ctx context.Context,
 	failingTest *FailingTest,
 ) (bool, string, error) {
-	cfg := failingTest.RunnerConfig
-	cwd, configArg, pathArg := playwrightPaths(cfg)
+	argv, err := commandArgv(failingTest)
+	if err != nil {
+		return false, "", err
+	}
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseStartupRerun, "test", "--reporter=json",
-		"--config", configArg, pathArg)
+	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseStartupRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright startup rerun failed: %w", runErr)
 	}
@@ -212,77 +252,22 @@ func (r *PlaywrightRunner) runOneStartup(
 	return false, TruncateTail(output, FailureOutputCap), nil
 }
 
-// playwrightConfigGuess infers the Playwright config path from a spec
-// file path. Used by RunOne when only the file is known. Walks up from
-// the spec's directory looking for a `playwright.config.ts` file on
-// disk; falls back to the file's own directory if no marker is found.
-func playwrightConfigGuess(specPath string) string {
-	dir := filepath.Dir(specPath)
-	for {
-		candidate := filepath.Join(dir, "playwright.config.ts")
-
-		_, statErr := os.Stat(candidate)
-		if statErr == nil {
-			return candidate
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-
-		dir = parent
-	}
-
-	return filepath.Join(filepath.Dir(specPath), "playwright.config.ts")
-}
-
-// playwrightPaths derives the (cwd, --config argument, positional path
-// argument) triple from a Config. cwd is the directory containing the
-// Playwright config (so `npx playwright` finds the local node_modules);
-// the config and path args are made relative to cwd.
-func playwrightPaths(cfg Config) (string, string, string) {
-	cwd := "."
-	if cfg.ConfigFile != "" {
-		cwd = filepath.Dir(cfg.ConfigFile)
-	}
-
-	configArg := cfg.ConfigFile
-	pathArg := cfg.Path
-
-	if cwd == "." {
-		return cwd, configArg, pathArg
-	}
-
-	relConfig, relConfigErr := filepath.Rel(cwd, cfg.ConfigFile)
-	if relConfigErr == nil {
-		configArg = relConfig
-	}
-
-	relPath, relPathErr := filepath.Rel(cwd, cfg.Path)
-	if relPathErr == nil {
-		pathArg = relPath
-	}
-
-	return cwd, configArg, pathArg
-}
-
-// exec runs `npx playwright ...` with the supplied args. cwd is set so
-// `npx` resolves the local Playwright install. phase labels the
-// invocation in the log and in the captured output's filename.
-// Non-zero exit codes are expected on test failure.
+// exec runs the layer's command with the supplied argv. cwd is the
+// directory holding the layer's config so `npx` resolves the local
+// Playwright install. phase labels the invocation in the log and in the
+// captured output's filename. Non-zero exit codes are expected on test
+// failure.
 func (r *PlaywrightRunner) exec(
 	ctx context.Context,
 	cwd, phase string,
-	args ...string,
+	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	allArgs := append([]string{"playwright"}, args...)
-	cmd := exec.CommandContext(ctx, "npx", allArgs...)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = cwd
 
 	return runLogged(cmd, spawnMeta{
-		binary:    "npx",
-		args:      allArgs,
+		binary:    argv[0],
+		args:      argv[1:],
 		framework: FrameworkPlaywright,
 		phase:     phase,
 		artifacts: r.artifacts,

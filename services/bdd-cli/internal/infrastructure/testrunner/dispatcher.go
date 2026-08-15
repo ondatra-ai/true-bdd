@@ -34,6 +34,13 @@ type Config struct {
 	Framework  string // matches one of the Framework* constants
 	ConfigFile string // repo-relative config (e.g. "tests/playwright.config.ts")
 	Pattern    string // framework-specific filename glob (informational)
+
+	// Command is the complete command line this layer's suite runs
+	// under, verbatim from the spec's `commands:` block. Only the
+	// selected mode's string is carried here, so this package never
+	// learns the record/replay/live vocabulary — picking one is the
+	// caller's decision, at the LoadItems boundary.
+	Command string
 }
 
 // Runner is the framework-agnostic primitive every per-framework runner

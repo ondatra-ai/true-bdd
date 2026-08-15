@@ -224,9 +224,10 @@ the response text rather than from a file the model wrote.
 The host project's documents live under `docs/`:
 
 - `docs/architecture/architecture.yaml` — the architectural spec that
-  scopes `build code` (which `(service, layer)` pairs get walked) and
-  carries the BDD `vocabulary:` (allowed action verbs, forbidden
-  action verbs, forbidden qualifiers) cited by the `us refine` checks.
+  scopes `build code` (which `(service, layer)` pairs get walked, and
+  how each one runs — see below) and carries the BDD `vocabulary:`
+  (allowed action verbs, forbidden action verbs, forbidden qualifiers)
+  cited by the `us refine` checks.
 - `docs/product/product.yaml` — the product document, including the `roles:` that
   `us create` validates a story's `as_a:` clause against. These are
   roles (responsibilities), not personas (invented individuals) — one
@@ -240,6 +241,47 @@ The host project's documents live under `docs/`:
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
+
+### How a test layer runs
+
+`build code` does not know how to run your tests — the spec says. Each
+declared layer under `quality_gate.tests:` carries a `commands:` block
+with one complete command line per AI-dependency mode:
+
+```yaml
+quality_gate:
+  tests:
+    e2e:
+      path: tests/bdd-cli
+      framework: go-test          # go-test | jest | playwright
+      commands:
+        record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=record"
+        replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=replay"
+        live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/..."
+```
+
+The rules, all enforced at startup rather than discovered mid-run:
+
+- **All three modes are mandatory.** The engine carries no built-in
+  invocation to fall back on: a command the spec does not state is one
+  no reader can audit. `build code` runs `replay` — no model, no cost;
+  `record` and `live` are reserved for commands that do not exist yet.
+- **Each command is complete and framework-native**, including the flag
+  that makes its output machine-readable (`-json` for go-test, `--json`
+  for jest, `--reporter=json` for playwright). Omit it and the runner
+  parses prose, finds no failures, and the walk goes falsely green —
+  so a command without it is refused.
+- **Quoting is honoured, nothing else.** `-run '^TestGreen$'` survives
+  as one argument; there is no expansion, substitution or piping. A
+  command needing a shell belongs in a script the spec then names.
+- **The working directory** is the one holding the layer's `config:`
+  file — which is what lets `npx` resolve a suite's own local install.
+  A layer that declares no `config:` inherits the directory `true-bdd`
+  itself was run from, so its command should be written relative to the
+  repo root and the CLI run from there.
+- **Re-running one test** appends only a name filter (`-run`,
+  `--testNamePattern`, `--grep`) to that same command, so a rerun keeps
+  the build tags and flags that made the test discoverable.
 
 ## Testing
 

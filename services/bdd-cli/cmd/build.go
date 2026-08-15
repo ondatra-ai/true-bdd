@@ -54,7 +54,19 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 		Use:   use,
 		Short: short,
 		Long:  long,
-		Args:  cobra.NoArgs,
+		Args:  argsWithUsage(cobra.NoArgs),
+		// Every failure these commands RETURN is a failure of the run,
+		// not of the invocation: an unresolvable document, a spec that
+		// will not load, a walk that did not converge. Cobra's default
+		// is to print the full help text after any error, which reads
+		// as "you typed the flags wrong" and buries the line that
+		// actually says what happened.
+		//
+		// Its switch is all-or-nothing though, so silencing usage here
+		// silences it for a mistyped argument too — the one case where
+		// the help text IS the answer. argsWithUsage carries it back on
+		// that path only.
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			container, err := provide()
 			if err != nil {

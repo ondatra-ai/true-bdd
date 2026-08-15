@@ -21,6 +21,10 @@ import (
 // never `::`.
 const goTestNameSeparator = "::"
 
+// goTestRunFlag is the flag that narrows a `go test` invocation to a
+// single test. Appended to the layer's own command on a rerun.
+const goTestRunFlag = "-run"
+
 // goBuildFailureMarker is the synthetic test-name suffix used when a Go
 // package fails to compile (no individual test failed because nothing
 // could run). RunOne branches on this suffix to skip the `-run` filter.
@@ -45,15 +49,23 @@ func NewGoTestRunner(artifacts *Artifacts) *GoTestRunner {
 	return &GoTestRunner{artifacts: artifacts}
 }
 
-// Discover runs `go test -C cfg.Path -json -count=1 ./...` and returns
-// one FailingTest per failed test plus one synthetic entry per
-// non-test-bearing package failure (typically compile errors).
+// Discover runs the layer's declared command and returns one
+// FailingTest per failed test plus one synthetic entry per
+// non-test-bearing package failure (typically compile errors). The
+// command comes from the spec verbatim — build tags, package selectors
+// and test-binary flags included — because which tests exist is the
+// host's statement, not the engine's guess.
 func (r *GoTestRunner) Discover(
 	ctx context.Context,
 	cfg Config,
 	service, layer string,
 ) ([]*FailingTest, error) {
-	stdout, stderr, runErr := r.exec(ctx, PhaseDiscover, "-C", cfg.Path, "-json", "-count=1", "./...")
+	argv, err := SplitCommand(cfg.Command)
+	if err != nil {
+		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, layer, err)
+	}
+
+	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("go test discovery failed under %s: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -75,11 +87,13 @@ func (r *GoTestRunner) Discover(
 	return failures, nil
 }
 
-// RunOne re-executes a single failing Go test by its TestName id, in
-// the same module root Discover used (threaded through as `-C
-// failingTest.RunnerConfig.Path`). For build-failure synthetic entries
-// (TestName suffix `::<build>`) it instead re-runs the whole package
-// and looks for any remaining failure.
+// RunOne re-executes a single failing Go test by its TestName id, under
+// the same command Discover used so the rerun inherits the build tags
+// and test-binary flags that made the test discoverable in the first
+// place — a rerun assembled from scratch would compile a different set
+// of packages and never reproduce the failure. For build-failure
+// synthetic entries (TestName suffix `::<build>`) it re-runs the
+// command unfiltered and lets the compile be the verdict.
 func (r *GoTestRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -89,9 +103,14 @@ func (r *GoTestRunner) RunOne(
 		return false, "", err
 	}
 
-	args := buildGoRunOneArgs(failingTest.RunnerConfig.Path, pkg, test)
+	argv, err := commandArgv(failingTest)
+	if err != nil {
+		return false, "", err
+	}
 
-	stdout, stderr, runErr := r.exec(ctx, PhaseRerun, args...)
+	args := appendGoRunFilter(argv, test)
+
+	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseRerun, args)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("go test rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -108,45 +127,49 @@ func (r *GoTestRunner) RunOne(
 	return passed, output, nil
 }
 
-// exec runs `go test` with the supplied args and captures
+// exec runs the layer's command with the supplied argv and captures
 // stdout/stderr. phase labels the invocation in the log and in the
 // captured output's filename. `go test` exits non-zero on test failure
 // — that is not an infrastructure error.
 func (r *GoTestRunner) exec(
 	ctx context.Context,
-	phase string,
-	args ...string,
+	cwd, phase string,
+	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	allArgs := append([]string{"test"}, args...)
-	cmd := exec.CommandContext(ctx, "go", allArgs...)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	// Empty cwd means "inherit the engine's own working directory",
+	// which is what a layer declaring no `config:` file asks for.
+	cmd.Dir = cwd
 
-	// Unlike the jest and playwright runners, this one sets no cmd.Dir:
-	// the package selector is threaded through as `-C <dir>` instead, so
-	// the process inherits the engine's own working directory.
 	return runLogged(cmd, spawnMeta{
-		binary:    "go",
-		args:      allArgs,
+		binary:    argv[0],
+		args:      argv[1:],
 		framework: FrameworkGoTest,
 		phase:     phase,
 		artifacts: r.artifacts,
 	})
 }
 
-// buildGoRunOneArgs assembles the `go test` invocation for re-running a
-// single test. The dir is threaded through as `-C <dir>` to match the
-// module/cwd used by Discover — in a multi-module repo (each service
-// with its own go.mod), running from the wrong root would silently fail
-// to resolve the package and the fix loop would never converge.
-// Build-failure synthetic entries use no `-run` filter so the package's
-// compile is the verdict.
-func buildGoRunOneArgs(dir, pkg, test string) []string {
+// appendGoRunFilter narrows the layer's command to a single test.
+// Appended rather than inserted because `go test` accepts its own flags
+// after the package list, and appending is the only position that
+// cannot land in front of a package selector the spec put there.
+//
+// A `-run` the spec already declared stays in place: the last one wins
+// in Go's flag parsing, so the narrower filter this adds is the one
+// that takes effect. Build-failure synthetic entries get no filter at
+// all, so the package's compile is the verdict.
+func appendGoRunFilter(base []string, test string) []string {
 	if test == goBuildFailureMarker {
-		return []string{"-C", dir, "-json", "-count=1", pkg}
+		return base
 	}
 
-	runFilter := buildGoRunFilter(test)
+	filter := []string{goTestRunFlag, buildGoRunFilter(test)}
 
-	return []string{"-C", dir, "-json", "-count=1", "-run", runFilter, pkg}
+	args := make([]string, 0, len(base)+len(filter))
+	args = append(args, base...)
+
+	return append(args, filter...)
 }
 
 // buildGoRunFilter assembles the `-run` regex for one (possibly nested)

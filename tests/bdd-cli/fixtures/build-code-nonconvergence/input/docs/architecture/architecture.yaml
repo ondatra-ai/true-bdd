@@ -1,0 +1,20 @@
+# A layer whose suite holds a test that cannot pass. Run without
+# `--fix`, nothing can move it, so the walk ends NOT converged — the
+# path that makes `build code` exit non-zero after a full walk rather
+# than before one.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              replay: "go test -json -count=1 ./tests/suite/..."
+              live: "go test -json -count=1 ./tests/suite/..."

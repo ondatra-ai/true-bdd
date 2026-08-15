@@ -1,0 +1,24 @@
+# A spec that is not YAML at all past the first key: the `commands`
+# mapping is opened and then given a sequence item, which no parser can
+# reconcile.
+#
+# The failure this guards is shape, not content — a document the loader
+# cannot decode must be refused with the file named, rather than
+# decoded into a zero-value Architecture that walks nothing and
+# converges.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json ./tests/suite/..."
+             - replay
+              live: "go test -json ./tests/suite/..."

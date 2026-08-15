@@ -1,0 +1,61 @@
+# A command the spec states correctly but the machine cannot run must
+# fail loudly, and on stdout.
+#
+# Every static check passes here: the block is complete, the command
+# splits, it carries `-json`. Only spawning it reveals that the binary
+# does not exist. That is the one failure in this path no validation can
+# reach, so it is the one that most needs to be legible when it happens
+# — naming the layer and the command, not a bare traceback.
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: build code
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - "Cannot run calc/e2e:"
+    - 'true-bdd-no-such-runner'
+    - 'discovery failed'
+
+  judge: |
+    # Expectations for `true-bdd build code` with an unrunnable command
+
+    The e2e layer's replay command names a binary that does not exist.
+    The spec is well-formed, so the failure can only surface when the
+    command is spawned.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules above.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.**
+    2. The engine DID try to run the declared command. Read
+       `tmp/true-bdd.log.json` in the diff below: it MUST contain a
+       `Spawning test runner` record whose `binary` is
+       `true-bdd-no-such-runner`. This is the assertion that separates
+       "could not run what the spec declared" from "quietly ran
+       something else".
+    3. No OTHER command was spawned in its place — there must be no
+       `Spawning test runner` record naming `go`, `npx`, or any binary
+       the spec did not declare.
+    4. The run made **no AI call**: zero records whose `msg` is
+       `"Dispatching AI turn"`. A layer that could not be discovered
+       yields no items to walk.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

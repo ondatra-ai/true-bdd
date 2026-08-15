@@ -1,0 +1,20 @@
+# The replay command opens a quote it never closes. Splitting it on
+# whitespace instead would silently produce `-run` and `^TestGreen$'` as
+# two arguments — a command that runs, exits zero, and reports a
+# different set of tests than the spec asked for. Refused instead.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              replay: "go test -json -count=1 -run '^TestGreen$ ./tests/suite/..."
+              live: "go test -json -count=1 ./tests/suite/..."
