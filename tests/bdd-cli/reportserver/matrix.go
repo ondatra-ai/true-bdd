@@ -7,7 +7,12 @@ type MatrixRun struct {
 	ID string `json:"id"`
 	// Label is the run's start time as a reader says it out loud,
 	// "2026-08-10 23:02:40", rather than the directory's underscored form.
-	Label    string `json:"label"`
+	Label string `json:"label"`
+	// Mode is the column's AI-CLI mode, "" when unknown. A replayed
+	// column proves the engine still behaves as recorded; a live one
+	// proves the models still do. Reading the grid without it compares
+	// two different claims.
+	Mode     string `json:"mode"`
 	Fixtures int    `json:"fixtures"`
 	Complete bool   `json:"complete"`
 	// Partial marks a session that ran only a fraction of the suite —
@@ -94,6 +99,7 @@ func matrixRuns(snapshot *Snapshot) []MatrixRun {
 		runs = append(runs, MatrixRun{
 			ID:       run.ID,
 			Label:    runLabel(run.ID),
+			Mode:     run.Mode,
 			Fixtures: run.Totals.Fixtures,
 			Complete: run.Complete,
 			Partial:  largest > 0 && float64(run.Totals.Fixtures) < float64(largest)*partialThreshold,

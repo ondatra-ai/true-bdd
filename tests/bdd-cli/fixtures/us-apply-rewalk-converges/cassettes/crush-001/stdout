@@ -1,0 +1,7 @@
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Added scenarios.INT-001 linking story 99.3-rewalk-fixture.yaml with lineage scenario_id 99.3-001 and merged GWT steps"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
+```

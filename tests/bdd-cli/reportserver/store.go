@@ -174,6 +174,8 @@ func (s *Store) loadRun(name string, fresh map[string]sealed) (*Run, error) {
 
 	session := &reporter.Session{Name: name, Dir: dir}
 
+	reporter.ApplySessionMeta(session)
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue

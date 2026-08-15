@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "rounds": [
+    {
+      "at": "2026-08-15T14:05:37Z",
+      "sha": "5895c36",
+      "branch": "test/aiproxy-record-replay-cassettes",
+      "pr": 60,
+      "source": "coderabbit-cli",
+      "found": 8,
+      "by_severity": {
+        "major": 6,
+        "critical": 1,
+        "minor": 1
+      },
+      "verdicts": {
+        "fix": 7,
+        "reject": 1
+      }
+    },
+    {
+      "at": "2026-08-15T14:05:43Z",
+      "sha": "5895c36",
+      "branch": "test/aiproxy-record-replay-cassettes",
+      "pr": 60,
+      "source": "coderabbit-github",
+      "found": 6,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 5,
+        "defer": 1
+      }
+    },
+    {
+      "at": "2026-08-15T15:34:10Z",
+      "sha": "uncommitted-on-5895c36",
+      "branch": "test/aiproxy-record-replay-cassettes",
+      "pr": 60,
+      "source": "coderabbit-cli",
+      "found": 10,
+      "by_severity": {
+        "major": 9,
+        "minor": 1
+      },
+      "verdicts": {
+        "fix": 10
+      }
+    }
+  ],
+  "totals": {
+    "coderabbit-cli": {
+      "rounds": 2,
+      "found": 18,
+      "fixed": 17,
+      "deferred": 0,
+      "rejected": 1,
+      "precision": 0.944
+    },
+    "coderabbit-github": {
+      "rounds": 1,
+      "found": 6,
+      "fixed": 5,
+      "deferred": 1,
+      "rejected": 0,
+      "precision": 1.0
+    }
+  }
+}

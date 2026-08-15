@@ -74,6 +74,67 @@ const verdictChip = (verdict) => {
   return h('span', { class: `chip ${cls}` }, verdict || '—');
 };
 
+// How the run reached the models. It belongs beside every verdict: the
+// same green means "the models did this again" in live, "the engine
+// still does this to a recording" in replay, and "these recordings are
+// new" in record. Unknown is its own state — sessions from before the
+// harness recorded a mode must not read as live.
+const MODE_TITLES = {
+  live: 'live — real AI CLIs, every turn billed',
+  record: 'record — real AI CLIs, cassettes written for a passing run',
+  replay: 'replay — turns served from cassettes, no AI CLI spawned',
+};
+
+const modeChip = (mode) => h('span', {
+  class: `chip mode ${mode || 'unknown'}`,
+  title: MODE_TITLES[mode] || 'mode unknown — this session predates the record',
+}, mode || 'unknown');
+
+// On a run or test page the mode is not a detail among others: it
+// decides what the whole page MEANS. The same green verdict is a claim
+// about the models in live and a claim about the engine in replay, and
+// the numbers below it are money spent in one and money remembered in
+// the other. So it gets a banner, not a tile someone has to go looking
+// for.
+const MODE_BANNERS = {
+  replay: 'Every AI turn was served from a cassette — no model ran. '
+    + 'Cost and token counts below belong to the recording, not to this run. '
+    + 'Graded by comparing the recorded outcome, not by the judge.',
+  record: 'Real AI CLIs ran and were billed. Cassettes and the recorded outcome '
+    + 'are published to the fixture only if it passed.',
+  live: 'Real AI CLIs ran and were billed, and a claude judge graded the result '
+    + 'against the fixture rubric.',
+};
+
+const modeBanner = (mode) => h('div', { class: `banner mode-${mode || 'unknown'}` },
+  h('strong', {}, (mode || 'unknown').toUpperCase()),
+  ' — ',
+  MODE_BANNERS[mode]
+    || 'This session was recorded before the harness wrote down which mode it ran in, '
+      + 'so how it reached the models is unknown.');
+
+// Money a replay run appears to have spent was spent by the RECORDING:
+// the engine reads cost and tokens out of each CLI response, and in
+// replay those responses come from cassettes. Rendering it as an
+// ordinary charge would bill a free run for work someone already paid
+// for, so it is marked as recorded and never adds up to a claim about
+// this run.
+const cost = (value, mode) => (mode !== 'replay'
+  ? money(value)
+  : h('span', {
+    class: 'recorded',
+    title: 'recorded cost — replayed from cassettes, this run spent nothing',
+  }, money(value)));
+
+// The run's score as three numbers: passed, failed, and how many
+// fixtures the invocation set out to run. The last is the point — a
+// denominator counting only what has finished can never say how much of
+// the run is left.
+const outcomeTriple = (run) => h('span', {
+  class: 'triple',
+  title: `${run.passed} passed / ${run.failed} failed / ${run.planned} planned`,
+}, `${run.passed} / ${run.failed} / ${run.planned}`);
+
 const delta = (value, render = secs) => {
   if (!value) return h('span', { class: 'delta zero' }, '—');
   const cls = value > 0 ? 'up' : 'down';
@@ -150,13 +211,12 @@ async function renderRunList() {
     }))),
     h('td', {}, h('a', { href: `#/run/${run.id}` }, shortID(run.id)),
       run.complete ? null : h('span', { class: 'tag warn', style: 'margin-left:6px' }, 'in progress')),
-    h('td', { class: 'num' }, run.fixtures),
-    h('td', {}, verdictChip(run.failed ? 'FAIL' : 'PASS'),
-      ` ${run.passed}/${run.fixtures}`,
+    h('td', {}, modeChip(run.mode)),
+    h('td', {}, verdictChip(run.failed ? 'FAIL' : 'PASS'), ' ', outcomeTriple(run),
       run.skipped ? h('span', { class: 'tag', style: 'margin-left:6px' }, `${run.skipped} skipped`) : null),
     h('td', { class: 'num' }, secs(run.wall_seconds)),
     h('td', { class: 'num' }, run.turns),
-    h('td', { class: 'num' }, money(run.cost_usd + run.judge_cost_usd)),
+    h('td', { class: 'num' }, cost(run.cost_usd + run.judge_cost_usd, run.mode)),
   ));
 
   const compareBtn = h('button', {
@@ -168,7 +228,7 @@ async function renderRunList() {
   return h('div', {},
     h('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:12px' }, compareBtn),
     wrap(table(
-      ['', 'Run', { label: 'Fixtures', num: true }, 'Outcome',
+      ['', 'Run', 'Mode', { label: 'Outcome — passed / failed / planned' },
         { label: 'Wall', num: true }, { label: 'Turns', num: true }, { label: 'Cost', num: true }],
       rows)),
     await renderMatrix());
@@ -225,10 +285,10 @@ async function renderMatrix() {
     h('th', { class: 'name' }, 'Test'),
     visible.map((r) => h('th', {
       class: r.partial ? 'col-partial' : null,
-      title: `${r.label} — ${r.fixtures} fixture(s)`
+      title: `${r.label} — ${r.fixtures} fixture(s), ${r.mode || 'mode unknown'}`
         + `${r.partial ? ', partial run — only some fixtures ran' : ''}`
         + `${r.complete ? '' : ', still running'}`,
-    }, r.label)),
+    }, r.label, h('span', { class: 'colmode' }, r.mode || '?'))),
     h('th', { class: 'num' }, 'passed'));
 
   const body = m.tests.map((row) => matrixRow(row, from, to));
@@ -299,12 +359,10 @@ async function renderRun(runID) {
 
   const t = data.run;
   const tiles = h('div', { class: 'tiles' },
-    tile('Fixtures', t.fixtures),
-    tile('Passed', t.passed),
-    tile('Failed', t.failed),
+    tile('Passed / failed / planned', outcomeTriple(t)),
     tile('Wall clock', secs(t.wall_seconds)),
     tile('AI turns', t.turns),
-    tile('Engine cost', money(t.cost_usd)),
+    tile('Engine cost', cost(t.cost_usd, t.mode)),
     tile('Judge cost', money(t.judge_cost_usd)),
   );
 
@@ -313,7 +371,7 @@ async function renderRun(runID) {
     h('td', {}, verdictChip(test.verdict)),
     h('td', { class: 'num' }, secs(test.wall_seconds, test.has_wall)),
     h('td', { class: 'num' }, test.turns || '—'),
-    h('td', { class: 'num' }, money(test.cost_usd)),
+    h('td', { class: 'num' }, cost(test.cost_usd, t.mode)),
     h('td', { class: 'num' }, count(test.tokens)),
     h('td', { class: 'num' }, test.exit_code === null ? '—' : test.exit_code),
     h('td', { class: 'num' }, test.diff_count || '—'),
@@ -322,7 +380,7 @@ async function renderRun(runID) {
     h('td', { class: 'num' }, test.has_wall ? secs(test.drift_seconds) : '—'),
   ));
 
-  return h('div', {}, nav, tiles,
+  return h('div', {}, nav, modeBanner(t.mode), tiles,
     h('h2', {}, 'Fixtures'),
     wrap(table(
       ['Fixture', 'Verdict', { label: 'Wall', num: true }, { label: 'Turns', num: true },
@@ -343,12 +401,13 @@ async function renderTest(runID, name) {
         'the fixture\u2019s working directory, relative to the repo root'),
       copyBtn('copy prompt', () => testPrompt(d),
         'a ready-to-paste description of this run: what it was, what it did, and where its files are')),
+    modeBanner(d.summary.mode),
     h('div', { class: 'tiles' },
       tile('Verdict', verdictChip(d.summary.verdict)),
       tile('Wall clock', secs(d.summary.wall_seconds, d.summary.has_wall)),
       tile('Turns', d.summary.turns),
       tile('Model time', secs(d.summary.model_seconds)),
-      tile('Cost', money(d.summary.cost_usd)),
+      tile('Cost', cost(d.summary.cost_usd, d.summary.mode)),
       tile('Files changed', d.files.length)),
     expectedVsActual(d),
     turnList(runID, name, d),
@@ -370,6 +429,9 @@ function testPrompt(d) {
   lines.push(`Outcome: ${s.verdict}` +
     (s.exit_code === null ? ' (never exited)' : ` (exit ${s.exit_code})`) +
     `, ${secs(s.wall_seconds, s.has_wall)} wall, ${s.turns} AI turn(s), ${money(s.cost_usd)}.`);
+  // Without this a reader cannot tell a run that exercised the models
+  // from one that replayed a recording of them.
+  lines.push(`AI mode: ${s.mode || 'unknown (session predates the record)'}`);
   lines.push(`Command: true-bdd ${d.expected.command || s.command}`);
 
   if (d.expected.exit_code !== undefined) {
@@ -420,9 +482,14 @@ function testPrompt(d) {
 // expectedVsActual pairs what the fixture declared against what the run
 // produced, per assertion, so a reader sees the two side by side rather
 // than inferring the expectation from the failure text.
+// A failure line from the deep check that replaces the judge in replay:
+// the golden comparison, or the cassette census.
+const gradedFailure = (line) => line.startsWith('golden:') || line.startsWith('cassettes:');
+
 function expectedVsActual(d) {
   const e = d.expected;
   const a = d.actual;
+  const replayed = d.summary.mode === 'replay';
 
   const badge = {
     snapshot: h('span', { class: 'tag' }, 'this run’s manifest'),
@@ -438,8 +505,16 @@ function expectedVsActual(d) {
         a.failures.some((f) => f.startsWith('stdout:') && f.includes(rx)) ? 'not found' : 'matched',
         !a.failures.some((f) => f.startsWith('stdout:') && f.includes(rx))))
       : [row('stdout checks', 'none declared', '—', true)]),
-    row('judge rubric', e.judge_spec ? `${e.judge_spec.split('\n').length} line rubric` : 'none',
-      judgeVerdictText(a), !a.failures.some((f) => f.startsWith('judge:'))),
+    // What actually graded the deep check. In replay the judge was
+    // never asked, so claiming its rubric passed would credit a check
+    // that did not run.
+    ...(replayed
+      ? [row('recorded outcome',
+        'byte-identical to the recording, every cassette consumed',
+        a.failures.some(gradedFailure) ? 'differs' : 'matched',
+        !a.failures.some(gradedFailure))]
+      : [row('judge rubric', e.judge_spec ? `${e.judge_spec.split('\n').length} line rubric` : 'none',
+        judgeVerdictText(a), !a.failures.some((f) => f.startsWith('judge:')))]),
   ];
 
   function row(label, expected, actual, ok) {
@@ -451,7 +526,10 @@ function expectedVsActual(d) {
   }
 
   const rubric = e.judge_spec
-    ? h('details', {}, h('summary', {}, 'Judge rubric (what the run was graded against)'),
+    ? h('details', {}, h('summary', {},
+      replayed
+        ? 'Judge rubric (declared by the fixture — NOT used in this run; replay grades against the recording)'
+        : 'Judge rubric (what the run was graded against)'),
       h('div', { class: 'body' }, h('pre', { class: 'text' }, e.judge_spec)))
     : null;
 
@@ -783,7 +861,7 @@ function judgeBody(d) {
     e.teardown?.length ? commandList('teardown commands', e.teardown) : null,
     h('p', { class: 'crumb' },
       `This span also covers the post-run snapshot and diff — ${d.files.length} ` +
-      'changed file(s), listed below — and the judge rubric shown under ' +
+      'changed file(s), listed below — and the deep check shown under ' +
       '“Expected vs actual”.'));
 }
 

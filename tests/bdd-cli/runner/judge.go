@@ -184,26 +184,62 @@ func clipBody(body []byte, totalSoFar int) (string, int) {
 	return string(body[:limit]) + "\n…(truncated)…", totalSoFar + limit
 }
 
+// parseJudgeVerdict extracts the judge's verdict from its reply.
+//
+// The LAST verdict-shaped line wins, not the first. The rubric asks for
+// a bare "PASS" or "FAIL: <reason>", but a model that works through the
+// rubric point by point states its conclusion at the END — and reading
+// only the first line turned those replies into "malformed response",
+// failing fixtures whose runs were correct and whose judge agreed.
+// Scanning from the end also resolves a reply that quotes one verdict
+// while reaching the other ("...would FAIL if X ... PASS") in favour of
+// the conclusion, which is what the words mean.
+//
+// A line only counts as a verdict when it is EXACTLY the word (after
+// stripping markdown emphasis) or opens with "FAIL:". Prose that merely
+// contains the word does not qualify — that is what keeps this
+// tolerance from becoming a coin flip.
 func parseJudgeVerdict(resp string) (bool, string, error) {
-	line := strings.TrimSpace(resp)
+	lines := strings.Split(resp, "\n")
 
-	// Take the first non-empty line — Claude sometimes emits trailing
-	// whitespace or an explanation line despite instructions.
-	if idx := strings.IndexByte(line, '\n'); idx >= 0 {
-		line = strings.TrimSpace(line[:idx])
-	}
+	for index := len(lines) - 1; index >= 0; index-- {
+		line := trimVerdictDecoration(lines[index])
 
-	switch {
-	case line == VerdictPass:
-		return true, "", nil
-	case strings.HasPrefix(line, "FAIL:"):
-		reason := strings.TrimSpace(strings.TrimPrefix(line, "FAIL:"))
+		if strings.EqualFold(line, VerdictPass) {
+			return true, "", nil
+		}
+
+		if !hasFailPrefix(line) {
+			continue
+		}
+
+		reason := strings.TrimSpace(line[len("FAIL:"):])
 		if reason == "" {
 			return false, "", fmt.Errorf("%w: response=%q", ErrJudgeEmptyFailReason, resp)
 		}
 
 		return false, reason, nil
-	default:
-		return false, "", fmt.Errorf("%w: got=%q", ErrJudgeMalformedResponse, resp)
 	}
+
+	return false, "", fmt.Errorf("%w: got=%q", ErrJudgeMalformedResponse, resp)
+}
+
+// trimVerdictDecoration strips what a model puts around a verdict when
+// it is writing prose rather than answering a form: markdown emphasis,
+// code ticks, list bullets, and a trailing full stop.
+func trimVerdictDecoration(line string) string {
+	line = strings.TrimLeft(strings.TrimSpace(line), "-*#_` ")
+
+	// Right side takes the full stop too, and in the same pass: emphasis
+	// closes AFTER it in "**PASS**." but BEFORE it in "**PASS.**", and
+	// two ordered trims can only ever handle one of those.
+	return strings.TrimRight(line, "*_`. ")
+}
+
+// hasFailPrefix reports whether a line opens with the FAIL verdict, in
+// any case the model chose to write it.
+func hasFailPrefix(line string) bool {
+	const prefix = "FAIL:"
+
+	return len(line) >= len(prefix) && strings.EqualFold(line[:len(prefix)], prefix)
 }

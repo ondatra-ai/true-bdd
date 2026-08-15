@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-tests-fix-happy-path",
+  "files": [
+    {
+      "path": "tests/integration/mcp-service-mcp-endpoint.spec.ts",
+      "kind": "created",
+      "size": 1466,
+      "sha256": "c367180d5680291ff1b1aebc8ed24a51de6adcba62ac5859efcd86cd66241dff",
+      "text": "import { test, expect } from '@playwright/test';\n\n// INT-900 — MCP /mcp endpoint responds 200 to a valid initialize POST\n// Service: mcp-service\n// Given: the MCP server is running on its configured port\n// When:  the Claude User posts a valid JSON-RPC initialize request to /mcp\n// Then:  the server returns HTTP 200\n\n// Given: the MCP server is running on its configured port.\n// The base URL is taken from the environment so the test binds to whatever\n// port the server was configured with, falling back to a conventional local port.\nconst MCP_BASE_URL = process.env.MCP_BASE_URL ?? 'http://127.0.0.1:3000';\n\ntest('INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST', async ({ request }) =\u003e {\n  // Given: the MCP server is running on its configured port\n  const endpoint = `${MCP_BASE_URL}/mcp`;\n\n  // When: the Claude User posts a valid JSON-RPC initialize request to /mcp\n  const response = await request.post(endpoint, {\n    headers: {\n      'Content-Type': 'application/json',\n      // MCP Streamable HTTP requires the client to accept both content types.\n      Accept: 'application/json, text/event-stream',\n    },\n    data: {\n      jsonrpc: '2.0',\n      id: 1,\n      method: 'initialize',\n      params: {\n        protocolVersion: '2025-06-18',\n        capabilities: {},\n        clientInfo: { name: 'claude-user', version: '1.0.0' },\n      },\n    },\n  });\n\n  // Then: the server returns HTTP 200\n  expect(response.status()).toBe(200);\n});\n"
+    }
+  ]
+}

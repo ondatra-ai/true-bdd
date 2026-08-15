@@ -17,7 +17,8 @@ const HarnessRecordFile = "harness.json"
 // guessed at.
 //
 // 2 added the judge transcript and the manifest snapshot.
-const harnessSchema = 2
+// 3 added the AI-CLI mode the fixture ran under.
+const harnessSchema = 3
 
 // The sidecar files the recorder writes beside the record, all inside
 // SpawnLogDir.
@@ -85,8 +86,14 @@ type JudgeRecord struct {
 // the engine cannot see: what the harness decided, how long the whole
 // fixture took, what changed on disk, and what the judge spent.
 type HarnessRecord struct {
-	Schema    int       `json:"schema"`
-	Fixture   string    `json:"fixture"`
+	Schema  int    `json:"schema"`
+	Fixture string `json:"fixture"`
+	// Mode is the AI-CLI mode this fixture ran under: live, record or
+	// replay. Empty for a session recorded before the shim existed.
+	// Carried per fixture as well as per session so a test page still
+	// states how the run reached the models when the session record is
+	// missing — and so the two can be seen to disagree if they ever do.
+	Mode      string    `json:"mode,omitempty"`
 	Verdict   string    `json:"verdict"`
 	StartedAt time.Time `json:"started_at"`
 	EndedAt   time.Time `json:"ended_at"`
@@ -151,11 +158,11 @@ type HarnessRecorder struct {
 // than taken from RunResult.TmpDir, because a fixture that fails inside
 // prepareRunDir returns an empty TmpDir — and that is precisely a run
 // worth recording.
-func NewHarnessRecorder(sessionRoot, name string, usage *UsageSink) *HarnessRecorder {
+func NewHarnessRecorder(sessionRoot, name, mode string, usage *UsageSink) *HarnessRecorder {
 	started := time.Now()
 
 	return &HarnessRecorder{
-		record:   HarnessRecord{Schema: harnessSchema, Fixture: name, StartedAt: started},
+		record:   HarnessRecord{Schema: harnessSchema, Fixture: name, Mode: mode, StartedAt: started},
 		started:  started,
 		dir:      filepath.Join(RunDir(sessionRoot, name), SpawnLogDir),
 		usage:    usage,

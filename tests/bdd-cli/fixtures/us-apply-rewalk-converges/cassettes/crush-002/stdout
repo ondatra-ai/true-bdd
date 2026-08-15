@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Appended new scenario entry INT-002 referencing lineage 99.3-002 (AC-2) for the GET /mcp 405 behavior"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===

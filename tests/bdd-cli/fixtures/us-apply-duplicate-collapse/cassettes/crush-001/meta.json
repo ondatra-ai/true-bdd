@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 100151,
+  "request_hash": "sha256:a92536aadfd32861a14e4f6b460678c512bc18f868df339c131dcf1b9d512eea",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "tmp/{{RUN_DIR}}/scenarios.yaml"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-08-15T14:09:51Z"
+}

@@ -33,6 +33,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
 )
 
 // ErrNoSessions is returned when there is nothing to report on.
@@ -63,6 +65,15 @@ type Session struct {
 	Dir string
 	// Fixtures is every fixture that left a trace, in directory order.
 	Fixtures []*Fixture
+	// Mode is the AI-CLI mode the whole invocation ran under — live,
+	// record or replay. Empty for a session recorded before the harness
+	// wrote a session record, which a reader must show as unknown rather
+	// than assume was live.
+	Mode string
+	// Planned is the fixtures this invocation set out to run, whether or
+	// not they have finished. Empty for the same older sessions; a reader
+	// then has nothing better than the fixtures it can see.
+	Planned []string
 }
 
 // ListSessions returns the session directory names under runsDir,
@@ -98,6 +109,8 @@ func LoadSession(dir, repoRoot string) (*Session, error) {
 
 	session := &Session{Name: filepath.Base(dir), Dir: dir}
 
+	ApplySessionMeta(session)
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -117,6 +130,29 @@ func LoadSession(dir, repoRoot string) (*Session, error) {
 	}
 
 	return session, nil
+}
+
+// ApplySessionMeta folds the session record — the AI mode and the
+// planned fixture list — into a Session.
+//
+// Exported and separate because a Session is assembled in two places:
+// LoadSession here, and the report server's own store, which builds one
+// incrementally so it can reuse sealed fixtures across scans. Reading
+// the record in only one of them is exactly the drift this function
+// exists to prevent.
+//
+// Absent is not an error: sessions predating the record, and a session
+// whose first fixture has not started yet, simply report an unknown
+// mode — which a reader must show as unknown rather than assume was
+// live.
+func ApplySessionMeta(session *Session) {
+	meta, err := runner.ReadSessionMeta(session.Dir)
+	if err != nil || meta == nil {
+		return
+	}
+
+	session.Mode = meta.Mode
+	session.Planned = meta.Planned
 }
 
 // IsFixtureDir reports whether a directory holds a reportable fixture

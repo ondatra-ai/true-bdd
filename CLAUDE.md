@@ -69,6 +69,18 @@ go test ./...
 # End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture.
 go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 
+# Hermetic record/replay of the fixtures' AI calls (the -mode flag must
+# come after the package path). replay serves per-fixture cassettes/ via
+# the tests/aiproxy PATH shim and spawns NO model at all — not even the
+# judge; a fixture without cassettes or without a recorded outcome FAILS.
+# The whole suite replays in well under a minute for zero cost.
+# record runs the real CLIs, grades with the judge, and publishes the
+# recording ONLY if the fixture passes: a failed run's cassettes stay in
+# the session's .cassettes-staging/ and the previous good ones are left
+# alone.
+go test -tags bdd ./tests/bdd-cli/ -mode=replay
+go test -tags bdd -run 'TestBDDFixtures/<fixture>' ./tests/bdd-cli/ -mode=record
+
 # Browse the run report — every session, live. Rescans tmp/test_run every
 # 15s, so a suite still running streams into an open page.
 go run ./tests/bdd-cli/cmd/report-server     # http://127.0.0.1:7331
@@ -89,7 +101,13 @@ env -u CLAUDECODE ./bin/true-bdd us create 4.1
 
 ## BDD Fixture Harness
 
-Fixtures live under `tests/bdd-cli/fixtures/<scenario>/`. Each fixture is a folder containing exactly two things: `fixture.yaml` (the manifest) and the input directory it references (conventionally `input/`, designed test content).
+Fixtures live under `tests/bdd-cli/fixtures/<scenario>/`. Each fixture is a folder containing `fixture.yaml` (the manifest), the input directory it references (conventionally `input/`, designed test content), and `cassettes/` — the recording that lets the fixture run hermetically under `-mode=replay`: one directory per AI call plus `golden.json`, the outcome those calls produced. Every fixture is recorded; a fixture without a recording fails in replay rather than skipping.
+
+The record/replay proxy is `tests/aiproxy/`: one binary installed as `claude`/`crush`/`codex` in a shim dir the harness prepends to the CLI subprocess's PATH (the engine is unmodified). A cassette per call stores argv, stdin, the output streams, exit code, and the working-tree fs-diff — with run-volatile paths normalized (`{{CWD}}`, `{{RUN_DIR}}`, `{{HOME}}`) in paths, contents, AND stdout, because the engine parses result files out of the response via `FILE_START: tmp/<run-dir>/…` markers. Replay matches cassettes by sequence per binary, verifies a normalized request hash (mismatch = loud "stale cassette" failure, exit 86 — never a silent fall-through to real CLIs), applies the fs-diff before emitting output, and lingers until the engine closes stdin (exiting earlier truncates the response mid-pipe).
+
+**Recordings are sanitized before they are written.** Cassettes are committed to a public repository, so the shim drops the agent CLI's `system`/`init` inventory — the tool schemas, connected MCP servers, skills, plugins, slash commands and memory paths — and rewrites the recording machine's home directory to `{{HOME}}`. The engine reads none of it (`adapters/ai/claude_provider.go` answers a system message with two `slog.Debug` calls), and it was 47% of the bytes. `.claude/skills/pr-commit/scan-recordings.sh` re-checks the committed recordings for home paths, session inventory, credentials and e-mail addresses; a hit means fix the shim and re-record, never hand-edit a cassette.
+
+**A run is graded one of two ways, never both.** Live and record call the **judge** (`judge:` in `fixture.yaml`), because the model output is new and only a reader can say whether it satisfies the rubric. Replay compares the **recording** — `cassettes/golden.json`, the run's diff outside `tmp/`, written by a passing record run and compared byte-for-byte — because in replay every AI-written file was materialised from a cassette, so grading them re-grades a fixed artefact. What can still move is the engine: which cells it walks, how it parses each response, and the files it writes itself (the registry merge above all). Replay therefore asserts, all deterministically and for free: the request hash per call (prompt drift → exit 86), **every cassette consumed** (`runner.CheckCassettesConsumed` — the one divergence a hash cannot see, since a call that never arrives matches nothing), the golden tree in **both directions** (a missing file and an unexpected new file are equally a failure), the exit code, and the `stdout_regex` list. Residual gap, stated plainly: a change that alters only `tmp/` scratch and neither stdout nor an output file is not caught. `tmp/` is excluded because its paths carry a per-run timestamp, so pinning them would fail every future run rather than any regression.
 
 `fixture.yaml` declares what to run and what to assert:
 
@@ -121,7 +139,7 @@ The runner builds each run's tmpdir in two layers: first it pre-populates the re
 
 The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `services/bdd-cli/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 
-Tests are gated by a `//go:build bdd` tag so they're invisible to default `go test ./...`. The whole suite skips if the `claude` CLI is not on `$PATH`.
+Tests are gated by a `//go:build bdd` tag so they're invisible to default `go test ./...`. In live and record the suite skips when `claude` — or any CLI a model tier names — is not on `$PATH`. Replay skips for nothing: it spawns no model at all, so a missing CLI is not a reason to stay silent about whether the engine still behaves.
 
 If the fixture's `cmd` invokes `--fix` (the interactive fix loop), set `answers:` to a literal block scalar. Its contents are piped verbatim to the subprocess's stdin. Each line answers one prompt: `1`/`2`/`3` (or `apply`/`refine`/`exit`) for the choice prompt; a single line for clarifying-question answers; multi-line free text terminated by a blank line for refinement feedback. Surplus lines are harmless (EOF on stdin causes the CLI to exit cleanly).
 
@@ -149,6 +167,8 @@ service it exercises.
 - `scripts/` — repo tooling invoked by CI and the commit gates; `validate-schemas.sh` is the schema gate described under Development Commands.
 - `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `services/bdd-web/src/tests/unit/`):
   - `tests/bdd-cli/` — the Go BDD-CLI fixture harness for `services/bdd-cli`: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
+  - `tests/aiproxy/` — the record/replay PATH shim for the AI CLIs (see BDD Fixture Harness); built by the harness when `-mode` is not `live`.
+  - `tests/internal/fstree/` — shared tree snapshot/diff, used by both the runner's per-run diff and the shim's per-call fs-diff.
   - `tests/bdd-web/` — the Playwright E2E suite for `services/bdd-web`, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `w*` workspace, `a*` AI), `helpers/`, `fixtures/`, `goldens/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test builds the app once per invocation and launches its own host `node server.js` (see `helpers/server-controller.ts`). Run: `npx --prefix tests/bdd-web playwright test --config tests/bdd-web/playwright.config.ts --project=protocol`.
   - `tests/materializer/` — the Go fixture materializer (shared with `tests/bdd-cli/runner`), built by the E2E suite to overlay fixtures.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
@@ -159,7 +179,9 @@ service it exercises.
   - `bdd-cli-logs/manifest.json` — the fixture manifest **as this run resolved it**. `fixture.yaml` is never copied into the tmpdir, so without this snapshot a report shows today's expectations against an old run's actuals, and comparing "expected" across runs is meaningless.
   - `tmp/true-bdd.log.json` — the engine's own slog: every AI turn's role, model, duration, cost and tokens.
   - `harness.log.json` at the session root is the *test process's* slog, not run data — no fixture names, no verdicts. Only the judge's `AI turn usage` records matter, and the recorder already folds those into `harness.json`.
-- **Run report** — served, not generated. `go run ./tests/bdd-cli/cmd/report-server` reads every session under `tmp/test_run`, rescans on a 15s interval, and serves a single-page UI at `127.0.0.1:7331`: run list, per-run fixtures, per-test expected-vs-actual with the phase timeline, and comparison of any two runs — test by test, then turn by turn. Comparison uses a real Myers diff (`znkr.io/diff`), aligning turns on `(checklist cell, role)` rather than turn number, so a run that needed an extra retry shows one insertion instead of shifting every later row. Loaders live in `tests/bdd-cli/reporter/` (parse only); the store, JSON API, diff layer and embedded UI in `tests/bdd-cli/reportserver/`.
+  - `session.json` at the session root — what is true of the whole invocation rather than any one fixture: the `-mode` it ran under and the fixtures it *planned* to run (discovery minus the `-run`/`-skip` filters, computed by `runner.PlannedFixtures`). Written before the first fixture starts, which is what lets a live report say "6 / 0 / 19" instead of a denominator that grows as the run proceeds. Both facts are absent for older sessions and must render as unknown, never as `live`.
+  - `.cassettes-staging/<fixture>/` at the session root — record mode's in-flight cassettes plus the `golden.json` written from the run's own diff, promoted into `fixtures/<name>/cassettes/` only when the fixture passes. At the session root, not inside the run dir, because anything written there lands in the graded diff.
+- **Run report** — served, not generated. `go run ./tests/bdd-cli/cmd/report-server` reads every session under `tmp/test_run`, rescans on a 15s interval, and serves a single-page UI at `127.0.0.1:7331`: run list, per-run fixtures, per-test expected-vs-actual with the phase timeline, and comparison of any two runs — test by test, then turn by turn. Every surface states the AI mode (run list column, run tiles, test tile, matrix column) — a green replay run and a green live run prove different things — and scores a run as **passed / failed / planned**. Comparison uses a real Myers diff (`znkr.io/diff`), aligning turns on `(checklist cell, role)` rather than turn number, so a run that needed an extra retry shows one insertion instead of shifting every later row. Loaders live in `tests/bdd-cli/reporter/` (parse only); the store, JSON API, diff layer and embedded UI in `tests/bdd-cli/reportserver/`.
 
 ## Architecture Principles
 
