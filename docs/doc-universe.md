@@ -121,7 +121,7 @@ Claude-mediated loop until the walk is clean.
 
 | Command | Reads | Checklist | Writes |
 | --- | --- | --- | --- |
-| `us create <id>` | the story seed in its **epic**; **product** + **architecture** as prompt context | us-create.yaml | a new **story file** in `paths.stories_dir` |
+| `us create <id>` | the story seed in its **epic**; **product** as prompt context | us-create.yaml | a new **story file** in `paths.stories_dir` |
 | `us refine <id>` | the **story**; **product** roles + vocabulary; **architecture** test layers (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; greps test trees for the id | build-tests.yaml | with `--fix`: missing **specs** under `tests/` referencing the scenario id — the registry is never modified |
@@ -154,4 +154,4 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-08-15.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and `tests/bdd-cli` fixture documents — 2026-08-16.*

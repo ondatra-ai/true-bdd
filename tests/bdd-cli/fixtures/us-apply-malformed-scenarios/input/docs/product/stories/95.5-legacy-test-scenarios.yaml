@@ -1,0 +1,47 @@
+# Story seed for `us-apply-malformed-scenarios`.
+#
+# A story refined under the older layout: a TOP-LEVEL `scenarios:` block
+# holding `test_scenarios[]`, a sibling of `story:` rather than steps
+# embedded in each acceptance criterion. `us apply` requires the newer
+# shape and rejects this one — a promise the command's own help text
+# makes, and which nothing tested until now.
+#
+# The acceptance_criteria below are VALID and complete, on purpose. With
+# both shapes present only the deprecated-format check can fire, so this
+# fixture pins the ORDER as well as the message: a change that moved the
+# empty-AC check ahead of it would alter the refusal and go red here.
+#
+# The upgrade path is the use case — someone carries a story forward
+# from an older engine and needs to be told what to convert, not handed
+# a walk over a block the engine no longer reads.
+
+story:
+    id: "95.5"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+
+scenarios:
+    test_scenarios:
+        - id: "95.5-001"
+          level: integration
+          priority: P1
+          description: "Legacy scenario block — the shape us apply no longer accepts"
+          given:
+            - "a Google Doc is shared with the Claude User's account"
+          when:
+            - "the Claude User asks Claude to summarize the document"
+          then:
+            - "the server returns a summary of 150 words or fewer"

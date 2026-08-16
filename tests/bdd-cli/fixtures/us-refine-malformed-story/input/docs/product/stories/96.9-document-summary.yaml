@@ -1,0 +1,39 @@
+# Story seed for `us-refine-malformed-story`.
+#
+# AC-2's description carries an UNQUOTED colon-space inside a block
+# mapping value — the single most common way a hand-edited story file
+# stops being YAML. The writer is quoting a message the product shows,
+# and the quote marks around the message do not help because the colon
+# sits outside them.
+#
+# yaml.v3 rejects it with "mapping values are not allowed in this
+# context". The run must name the file and pass the parser's own
+# complaint through, because "failed to parse" alone sends the reader
+# back to a document that looks fine to them.
+
+story:
+    id: "96.9"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation
+        - id: AC-2
+          description: Claude must display the message: 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+          steps:
+            - given:
+                - a Google Doc is not shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays the message 'This document is not shared with your account'

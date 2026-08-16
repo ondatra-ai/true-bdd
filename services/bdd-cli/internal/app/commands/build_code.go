@@ -102,12 +102,12 @@ func loadFailingTests(
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 		arch, err := architecture.Load(architectureFile)
 		if err != nil {
-			return nil, refuseUnrunnableSpec(fmt.Errorf("failed to load architecture: %w", err))
+			return nil, fmt.Errorf("failed to load architecture: %w", err)
 		}
 
 		err = validateLayers(deps.TestRunnerDispatcher, arch.Services)
 		if err != nil {
-			return nil, refuseUnrunnableSpec(err)
+			return nil, err
 		}
 
 		// The applier may write exactly the production roots the
@@ -136,24 +136,6 @@ func loadFailingTests(
 
 		return failures, nil
 	}
-}
-
-// refuseUnrunnableSpec reports a spec the walk cannot start from, on
-// both channels — the same shape cmd.refuseUnresolvedDoc uses for an
-// unresolvable document, and for the same reason. Left alone, a
-// LoadItems error surfaces only as a cobra stderr line under a usage
-// dump: the output shape for "you typed the flags wrong", not for "your
-// architectural spec is incomplete". Nothing reaches stdout or the log,
-// and a refusal nobody can attribute is barely better than the silent
-// fallback that mandatory commands replaced.
-func refuseUnrunnableSpec(err error) error {
-	slog.Error("Refusing to start: architectural spec is not runnable",
-		"command", "build code",
-		"error", err,
-	)
-	console.Println("Cannot start: " + err.Error())
-
-	return err
 }
 
 // validateLayers checks every declared layer before the first
@@ -305,7 +287,12 @@ func runLayerDiscovery(
 		)
 		console.Println(fmt.Sprintf("Cannot run %s/%s: %s", service, layer, err.Error()))
 
-		return nil, fmt.Errorf("discover %s/%s: %w", service, layer, err)
+		// Marked as reported so the generic startup refusal stays quiet:
+		// this failure is already on both channels with a more specific
+		// diagnosis, and it happened after the run started, so a second
+		// line headlined "Refusing to start" would contradict the
+		// progress line printed just above.
+		return nil, runner.Reported(fmt.Errorf("discover %s/%s: %w", service, layer, err))
 	}
 
 	console.Println(fmt.Sprintf("  %d failure(s) in %s/%s", len(failures), service, layer))

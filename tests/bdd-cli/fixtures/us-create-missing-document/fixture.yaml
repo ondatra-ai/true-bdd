@@ -33,6 +33,20 @@ expected:
     # not just say "a document is missing".
     - "docs/product/product\\.yaml"
 
+    # The path alone could appear anywhere in the output — including in
+    # a prompt the run went ahead and dispatched. This pins the refusal
+    # LINE: the run stopped, and said so on stdout rather than only on
+    # cobra's stderr under a usage dump.
+    - 'Cannot start: checklist declares documents that cannot be provided'
+
+    # The structured record, as slog's console handler renders it on
+    # stdout. The judge reads `tmp/true-bdd.log.json` instead, and
+    # replay reads neither — so this assertion is what carries the
+    # attribution into replay. `checklist=` is emitted only by this
+    # refusal, which is what distinguishes it from the generic startup
+    # refusal the sibling fixtures assert.
+    - 'level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us create" checklist=us-create'
+
   judge: |
     # Expectations for `true-bdd us create 99.1` with a declared document absent
 

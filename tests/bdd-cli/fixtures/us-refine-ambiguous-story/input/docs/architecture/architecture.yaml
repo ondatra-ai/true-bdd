@@ -1,0 +1,69 @@
+# Architectural spec for the us-refine BDD fixtures (shared).
+#
+# Read by the us-refine acceptance_criteria test-sketch prompt, which
+# must discover the test framework and helpers HERE (never from code).
+# Declares one integration layer (jest + McpClient) and one e2e layer
+# (playwright + chatPage) so every conversation-level AC has an obvious
+# home for a runnable sketch.
+
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp
+      language: go
+      frameworks:
+        - net/http
+      quality_gate:
+        tests:
+          integration:
+            path: tests/integration
+            framework: jest
+            config: tests/jest.config.ts
+            helpers:
+              - name: McpClient
+                description: "Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses"
+          e2e:
+            path: tests/e2e
+            framework: playwright
+            config: tests/playwright.config.ts
+            helpers:
+              - name: chatPage
+                description: "Playwright fixture that opens the Claude chat UI, submits a prompt, and reads the rendered reply"
+      dependencies: []
+
+# BDD scenario vocabulary (folded from the retired terms.yaml).
+# Read by the us-refine vague-word and forbidden-verb prompts.
+vocabulary:
+  # Allowed action verbs with their concrete meaning.
+  actions:
+    - name: "ask Claude"
+      means: "write a prompt in Claude chat"
+    - name: "navigates to <page>"
+      means: "opens or browses to a specific page in the web app"
+
+  # Vague words that must not appear in AC descriptions or steps.
+  # Checked by the us-refine acceptance_criteria vague-word prompts.
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - appropriate
+    - appropriately
+    - user-friendly
+    - fast
+    - quickly
+    - easily
+    - seamless
+    - intuitive
+
+  # Action verbs too abstract to automate: they hide the interaction
+  # mechanism. Checked by the us-refine forbidden-verb prompt.
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "process"
+      reason: "Does not specify the interaction mechanism or the visible outcome."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "parse"
+      reason: "Describes internal mechanics, not user-observable behavior."
+      replacement: "Describe the visible result of reading the input."

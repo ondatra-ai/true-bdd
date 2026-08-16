@@ -1,0 +1,24 @@
+# One of TWO files claiming epic 92 in this fixture.
+#
+# The pair is the point: `us create 92.1` must refuse rather than pick
+# one. Story 92.1 exists in BOTH files and describes different work in
+# each — so "just take the first match" does not merely pick a file, it
+# silently picks a different story than the user meant.
+
+epic:
+  id: 92
+  name: "Document Intelligence"
+  status: "PLANNED"
+  goal: "Give a Claude User useful, low-effort answers about documents they already have."
+  context: "Synthetic epic for tests/bdd-cli/fixtures/us-create-ambiguous-epic. Half of a deliberate id collision."
+
+stories:
+  - id: "92.1"
+    title: "Document Summary On Demand"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+    so_that: "I can decide whether the document needs my attention without reading it in full"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation."

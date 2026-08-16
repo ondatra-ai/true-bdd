@@ -1,0 +1,22 @@
+# Story seed for `us-apply-story-without-acs`.
+#
+# A story exactly as `us create` leaves it: narrative clauses, a status,
+# and no acceptance criteria yet. `us apply` walks acceptance criteria,
+# so there is nothing here to apply — the user skipped `us refine`.
+#
+# The failure this guards is a silent one: a walk over zero ACs
+# converges immediately, and the command would commit an unchanged
+# registry and report success, telling someone who forgot a whole step
+# that their story is applied.
+#
+# No top-level `scenarios:` key, deliberately. That would trip the
+# deprecated-format check first and this fixture would be pinning the
+# wrong refusal.
+
+story:
+    id: "95.3"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED

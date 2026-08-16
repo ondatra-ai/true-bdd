@@ -1,0 +1,77 @@
+# `us apply` on a story that was created but never refined must be
+# refused, not walked to a trivial success.
+#
+# This is the missing-step use case: `us create` writes narrative
+# clauses, `us refine` adds acceptance criteria with embedded steps, and
+# `us apply` merges those steps into the registry. Skip the middle
+# command and there is nothing to apply.
+#
+# The failure this guards is a false green. A walk over zero acceptance
+# criteria converges immediately, so the command would commit an
+# unchanged registry and report success — telling someone who forgot an
+# entire step that their story is applied.
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: us apply 95.3
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - 'US APPLY — Story 95\.3'
+    - 'msg="Seeded scratch registry"'
+
+    - 'Cannot start: .*story has no acceptance_criteria entries to apply'
+
+    # Names the file the reader has to open. With several stories in a
+    # host repo, "a story" is not enough to act on.
+    - 'docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
+
+    - 'level=ERROR msg="Refusing to start" command="us apply"'
+
+  judge: |
+    # Expectations for `true-bdd us apply 95.3` on an unrefined story
+
+    The fixture's story carries narrative clauses and no
+    `acceptance_criteria` — the shape `us create` leaves behind. The run
+    must refuse rather than converge on an empty walk.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules below.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.** In
+       particular `docs/scenarios.yaml` is byte-identical: the run seeds
+       a scratch copy before reading the story, and a refusal must never
+       commit that copy back over the canonical registry.
+    2. **The story file is unmodified.** `us apply` must not invent
+       acceptance criteria to give itself something to walk.
+    3. The run aborted **before any AI turn was dispatched**: zero
+       records in `tmp/true-bdd.log.json` whose `msg` is
+       `"Dispatching AI turn"`. A story with no acceptance criteria is
+       detectable without a model.
+    4. The failure is attributable from the log alone: a record names
+       the story file and says it has no acceptance criteria.
+
+    ## What MUST NOT happen
+
+    - The run MUST NOT report success. Converging over zero acceptance
+      criteria and committing the registry is the exact false green this
+      fixture exists to catch.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

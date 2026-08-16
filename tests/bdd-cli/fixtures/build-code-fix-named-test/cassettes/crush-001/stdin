@@ -1,0 +1,135 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/2026-08-16-11-01-28-84718/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/2026-08-16-11-01-28-84718/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** calc/e2e/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+**Service:** calc
+**Layer:** e2e
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
+**Source File:** fixture/buildcodefix/tests/suite
+
+### Last Failure Output
+```
+=== RUN   TestAddSumsItsArguments
+    add_test.go:19: Add(2, 3) = -1, want 5
+--- FAIL: TestAddSumsItsArguments (0.00s)
+
+```
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test calc/e2e/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+
+## Root Cause
+`services/calc/calc.go` implements `Add` with the wrong operator — it returns `a - b`. The test `TestAddSumsItsArguments` asserts `Add(2, 3) == 5`, but the current code yields `2 - 3 = -1`, matching the failure output `Add(2, 3) = -1, want 5`. The planted production defect is the subtraction; the assertion is correct and must not change.
+
+## Target
+Apply the change under `services/*` only. The test at `tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go`, or anything under `docs/`.
+
+## Required Changes
+### Change #1: Correct the operator in `Add` from subtraction to addition
+**File:** `services/calc/calc.go`
+**Action:** Use the Edit tool on the existing file.
+**old_string:**
+```
+func Add(a, b int) int {
+	return a - b
+}
+```
+**new_string:**
+```
+func Add(a, b int) int {
+	return a + b
+}
+```
+
+## Why this is the smallest correct change
+- Only the operator token `-` becomes `+` inside the existing `Add` body; the signature, package, and doc comment are untouched.
+- With `a + b`, `Add(2, 3)` returns `5`, satisfying `got != 5` → false, so `t.Fatalf` is never reached and the test passes.
+- No assertion is weakened, skipped, or removed; no test file, `docs/`, or `true-bdd/` file is modified.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/2026-08-16-11-01-28-84718/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/2026-08-16-11-01-28-84718/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

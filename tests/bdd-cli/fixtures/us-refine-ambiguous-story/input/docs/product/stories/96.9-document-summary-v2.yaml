@@ -1,0 +1,24 @@
+# The SECOND file claiming id 96.9 — what a half-finished rename leaves
+# behind when the old file is never deleted.
+#
+# It differs from its twin only in the slug and this comment. That is
+# deliberate: the engine must refuse on the id collision alone, without
+# needing to compare contents or guess which copy is newer.
+
+story:
+    id: "96.9"
+    title: Document Summary On Demand
+    as_a: Claude User
+    i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+    so_that: I can decide whether the document needs my attention without reading it in full
+    status: PLANNED
+    acceptance_criteria:
+        - id: AC-1
+          description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+          steps:
+            - given:
+                - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+            - when:
+                - the Claude User asks Claude to summarize the document
+            - then:
+                - Claude displays a summary of 150 words or fewer in the conversation

@@ -1,0 +1,91 @@
+# Two files claiming the same story id must be refused, not silently
+# resolved by picking one.
+#
+# What a half-finished rename leaves behind: `96.9-document-summary.yaml`
+# and `96.9-document-summary-v2.yaml`, both id 96.9. The loader was
+# written to refuse rather than take the first glob match, and nothing
+# proved it still does — a regression to "pick one" would refine one
+# copy, leave the other stale, and never say which it chose.
+#
+# The refusal must NOT tell the user to run `us create`. That advice is
+# only true when the story is absent; here it exists twice, and creating
+# a third copy is the opposite of the fix. `us refine` used to attach it
+# to every loader failure, so the assertion below pins the corrected
+# wrapper — `failed to load story <id>` — which is what proves the
+# not-found advice was not reattached.
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: us refine 96.9
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - 'US REFINE — Story 96\.9'
+
+    # The loader's structured record, including the count — the fact
+    # that turns "ambiguous" into something the reader can act on.
+    - 'level=ERROR msg="Multiple story files found" story_number=96\.9 count=2'
+
+    # The generic loader wrapper, NOT the not-found advice. `us refine`
+    # attaches "run `true-bdd us create <id>` first" only when the story
+    # is genuinely missing; seeing it here would mean the engine had
+    # gone back to telling people to create a third copy.
+    - 'Cannot start: failed to load items: failed to load story 96\.9:'
+
+    - 'multiple story files found for story 96\.9'
+
+    # BOTH candidates must be named. Naming one would leave the reader
+    # guessing which pair collided, and deleting the wrong file is
+    # worse than the error.
+    - '96\.9-document-summary\.yaml'
+    - '96\.9-document-summary-v2\.yaml'
+
+    - 'level=ERROR msg="Refusing to start" command="us refine"'
+
+  judge: |
+    # Expectations for `true-bdd us refine 96.9` with two matching files
+
+    The fixture ships two story files that both claim id 96.9. The run
+    must refuse and name both, rather than pick one.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules below.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **Neither story file was modified or deleted.** Both
+       `docs/product/stories/96.9-document-summary.yaml` and
+       `docs/product/stories/96.9-document-summary-v2.yaml` must be
+       absent from the diff. This is the core assertion: an engine that
+       resolved the ambiguity by picking one would have refined that one
+       and left the other stale, with nothing recording the choice.
+    2. **No file was created or modified anywhere outside `tmp/`.**
+    3. The run aborted **before any AI turn was dispatched**: zero
+       records in `tmp/true-bdd.log.json` whose `msg` is
+       `"Dispatching AI turn"`. Two files matching one id is detectable
+       without a model.
+    4. The failure is attributable from the log alone: a record names
+       story 96.9, the count of matches, and both paths.
+
+    ## What MUST NOT happen
+
+    - The engine MUST NOT choose between the two files by any rule —
+      first match, newest mtime, longest name. Ambiguity in the input is
+      the user's to resolve.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

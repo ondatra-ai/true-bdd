@@ -124,13 +124,13 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	if spec.StoryNumber != "" {
 		err := validateStoryNumber(spec.StoryNumber)
 		if err != nil {
-			return fmt.Errorf("invalid story number: %w", err)
+			return refuseStartup(spec.Name, fmt.Errorf("invalid story number: %w", err))
 		}
 	}
 
 	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
 	if err != nil {
-		return fmt.Errorf("failed to load checklist: %w", err)
+		return refuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
 	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
@@ -157,7 +157,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 
 	items, err := spec.LoadItems(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load items: %w", err)
+		return refuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
 	}
 
 	maxAttempts := 0

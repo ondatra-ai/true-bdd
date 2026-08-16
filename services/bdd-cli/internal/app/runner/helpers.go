@@ -44,7 +44,12 @@ func validateStoryNumber(storyNumber string) error {
 	}
 
 	if !matched {
-		return errInvalidStoryNumberFormat
+		// Name the offending argument. "invalid story number format" on
+		// its own tells the reader what kind of thing is wrong but not
+		// which thing, and this message is now the user-facing refusal
+		// rather than an internal error a wrapper would elaborate.
+		return fmt.Errorf("%w: expected <epic>.<story>, got %q",
+			errInvalidStoryNumberFormat, storyNumber)
 	}
 
 	return nil
@@ -91,6 +96,61 @@ func validateRequiredDocs(
 	}
 
 	return nil
+}
+
+// reported wraps an error whose diagnosis has already been printed by
+// the code that produced it. Error() and Unwrap() pass straight through,
+// so the message, the wrapping chain and every errors.Is match are
+// unchanged — the marker is invisible to everything except refuseStartup.
+type reported struct{ error }
+
+// Unwrap keeps errors.Is/As working through the marker.
+func (r reported) Unwrap() error { return r.error }
+
+// Reported marks an error as already diagnosed, so the generic startup
+// refusal stays silent about it.
+//
+// It exists for one shape: a command whose LoadItems does real work
+// rather than only loading. `build code` spawns test runners inside
+// LoadItems, so a spawn failure arrives at the same return as a
+// malformed spec — but it has already printed `Cannot run <svc>/<layer>:`
+// with the specific diagnosis, and by then the run has started. Letting
+// the generic refusal speak too would print the same failure a second
+// time under the headline "Refusing to start", which is false: it did
+// start, and said so on the line above.
+func Reported(err error) error { return reported{err} }
+
+// refuseStartup reports a precondition failure on both channels, the way
+// validateRequiredDocs reports an unsatisfiable document and
+// cmd.refuseUnresolvedDoc reports an unresolvable one.
+//
+// Every command reaches its subject through Spec.LoadItems: the epic
+// story for `us create`, the story file for `us refine`, the acceptance
+// criteria for `us apply`, the registry for `build tests`, the
+// architectural spec for `build code`. When that subject is absent,
+// ambiguous or malformed, the error used to surface only as a cobra
+// stderr line under a usage dump — the output shape for "you typed the
+// flags wrong", not for "the document you named is not there". Nothing
+// reached stdout or the log, so whoever ran the command saw the right
+// text in the wrong shape, and a harness, a CI scrape or the BDD judge
+// saw nothing at all.
+//
+// The error is returned exactly as the caller built it, so wrapping,
+// exit code and cobra behaviour are unchanged; only the reporting is
+// added.
+func refuseStartup(command string, err error) error {
+	var alreadyReported reported
+	if errors.As(err, &alreadyReported) {
+		return err
+	}
+
+	slog.Error("Refusing to start",
+		"command", command,
+		"error", err,
+	)
+	console.Println("Cannot start: " + err.Error())
+
+	return err
 }
 
 // slugify converts a title string into a URL-friendly slug for use

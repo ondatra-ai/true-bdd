@@ -1,0 +1,7 @@
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Changed Add's operator from subtraction to addition so Add(2, 3) returns 5"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+```

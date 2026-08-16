@@ -1,0 +1,82 @@
+# A story number that is not `<epic>.<story>` must be refused before
+# anything is read.
+#
+# `us create 4` is the commonest typo in the workflow — the user names
+# the epic and forgets the story. The check runs first, ahead of the
+# checklist load and the document check, so a malformed argument costs
+# nothing at all.
+#
+# WHAT THIS COVERS: the story-number format guard in the runner, not the
+# epic loader's own parse. The regex gate in front of it means `abc`,
+# `4` and `4.1.2` never reach the loader, so its parse arm is
+# unreachable from the CLI in practice.
+#
+# The epic and product document are both shipped and both valid. That is
+# what makes the refusal attributable: the run stopped on the argument,
+# not on anything missing from the tree. There is deliberately NO header
+# line in the expected output — this refusal fires before the banner is
+# printed, which is itself the evidence that nothing was loaded first.
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: us create 4
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    # Until the refusal helper existed this reached only cobra's stderr,
+    # buried under a usage dump — the output shape for a flag mistake,
+    # which is exactly the wrong frame for "that is not a story number".
+    - 'Cannot start: invalid story number: invalid story number format'
+
+    # The message must name the OFFENDING ARGUMENT and the shape it
+    # should have had. "invalid story number format" alone says what
+    # kind of thing is wrong but not which thing, and this line is the
+    # user-facing refusal — there is no later prose to elaborate it.
+    - 'expected <epic>\.<story>, got "4"'
+
+    - 'level=ERROR msg="Refusing to start" command="us create"'
+
+  judge: |
+    # Expectations for `true-bdd us create 4` — a malformed story number
+
+    The argument names an epic but no story. The run must refuse before
+    reading anything.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules below.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.** In
+       particular no story file under `docs/product/stories/`: the
+       engine must not interpret `4` as "story 1 of epic 4", or as
+       "epic 4, pick something".
+    2. **The epic file `docs/product/epics/epic-99-bdd-test.yaml` is
+       unmodified.** Judge this from its absence in the diff. Do NOT try
+       to decide whether it was *read* — reading leaves no trace in
+       either the diff or the log, so that is not a claim the evidence
+       you are given can settle.
+    3. The run aborted **before any AI turn was dispatched**: zero
+       records in `tmp/true-bdd.log.json` whose `msg` is
+       `"Dispatching AI turn"`.
+    4. The log shows the run stopped on the ARGUMENT, not on missing
+       content: the fixture ships a valid product document and a valid
+       epic, so any failure naming those instead would mean the format
+       check did not run first.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.
