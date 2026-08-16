@@ -1,0 +1,36 @@
+# Epic seed for `us-create-story-out-of-range`.
+#
+# Exactly two stories. `us create 94.7` asks for the seventh.
+#
+# The epic parses cleanly and the file is found, so everything except
+# the index is right — which is what makes the refusal worth testing.
+# The number the user typed is the only wrong thing, and the message has
+# to carry both it and the count so they can see why.
+
+epic:
+  id: 94
+  name: "Document Intelligence"
+  status: "PLANNED"
+  goal: "Give a Claude User useful, low-effort answers about documents they already have."
+  context: "Synthetic epic for tests/bdd-cli/fixtures/us-create-story-out-of-range. Two stories, deliberately."
+
+stories:
+  - id: "94.1"
+    title: "Document Summary On Demand"
+    as_a: "Claude User"
+    i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
+    so_that: "I can decide whether the document needs my attention without reading it in full"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude to summarize a shared Google Doc, I receive a paragraph-length summary in the conversation."
+
+  - id: "94.2"
+    title: "Document Change Digest"
+    as_a: "Claude User"
+    i_want: "Claude to tell me what changed in a shared Google Doc since I last read it"
+    so_that: "I do not have to re-read a document to find the edits"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude what changed in a shared Google Doc, I receive a list of the edits made since my last read."

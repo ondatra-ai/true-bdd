@@ -1,0 +1,20 @@
+# Registry seed for `build-tests-empty-registry`.
+#
+# The exact state a host is in before its first `us apply`: the file
+# exists, is configured, parses cleanly, and has an empty `scenarios:`
+# map. `build tests` walks scenarios, so there is nothing here to walk.
+#
+# The failure this guards is a false green: a walk over zero items
+# converges trivially and would report that every scenario has a test,
+# which is true and useless. An empty registry is a refusal, not a pass.
+#
+# A `metadata:`-only file with no `scenarios:` key at all refuses
+# identically — the loader tests the length, not the key's presence.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-16"
+  description: "Empty seed — nothing has been applied yet"
+
+scenarios: {}

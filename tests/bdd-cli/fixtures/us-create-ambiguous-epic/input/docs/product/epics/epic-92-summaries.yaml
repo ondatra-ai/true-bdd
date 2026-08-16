@@ -1,0 +1,25 @@
+# The SECOND file claiming epic 92 — what splitting an epic in two and
+# forgetting to renumber leaves behind.
+#
+# Its story 92.1 is DIFFERENT work from the 92.1 in its twin. That is
+# deliberate: if the engine ever resolved the collision by taking the
+# first glob match, it would extract a story the user did not ask for
+# and nothing in the output would say so.
+
+epic:
+  id: 92
+  name: "Summaries"
+  status: "PLANNED"
+  goal: "Summarize documents a Claude User already has access to."
+  context: "Synthetic epic for tests/bdd-cli/fixtures/us-create-ambiguous-epic. Half of a deliberate id collision."
+
+stories:
+  - id: "92.1"
+    title: "Document Change Digest"
+    as_a: "Claude User"
+    i_want: "Claude to tell me what changed in a shared Google Doc since I last read it"
+    so_that: "I do not have to re-read a document to find the edits"
+    status: "PLANNED"
+    acceptance_criteria:
+      - id: AC-1
+        description: "When I ask Claude what changed in a shared Google Doc, I receive a list of the edits made since my last read."

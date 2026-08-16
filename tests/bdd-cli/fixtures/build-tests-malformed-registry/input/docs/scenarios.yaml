@@ -1,0 +1,30 @@
+# Registry seed for `build-tests-malformed-registry`.
+#
+# `scenarios:` is written as a SEQUENCE rather than a mapping keyed by
+# scenario id — the mistake this document invites, since every other
+# list in the doc universe is a sequence and the entries carry an `id:`
+# of their own.
+#
+# Deliberately a TYPE mismatch rather than a syntax error: the file is
+# well-formed YAML, so nothing catches it before the decoder tries to
+# put a list into a map. That is the shape a host actually produces by
+# hand, and the one where "it looks fine" is most tempting.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-16"
+  description: "Registry whose scenarios block is a list instead of a map"
+
+scenarios:
+  - id: INT-950
+    description: "MCP /health endpoint responds 200 to a GET request"
+    service: "mcp-service"
+    last_updated: "2026-08-16"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"

@@ -1,0 +1,28 @@
+# The replay command is present, non-blank, and still names no program.
+#
+# `''` is what a shell-style template leaves behind when the variable it
+# interpolated expanded to nothing. It survives the blank check in
+# architecture/loader.go — which trims and would have rejected `""` or
+# `"   "` as a MISSING command — and only the splitter can see that its
+# single token is an empty argument. Left to run, that hands exec an
+# empty program name.
+#
+# So this is the last gap in the layer-command pre-pass: the sibling
+# fixtures cover a command that is absent, unterminated, unparseable and
+# unspawnable; this one covers present-and-empty.
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+      quality_gate:
+        tests:
+          e2e:
+            path: tests
+            framework: go-test
+            commands:
+              record: "go test -json -count=1 ./tests/suite/..."
+              replay: "''"
+              live: "go test -json -count=1 ./tests/suite/..."

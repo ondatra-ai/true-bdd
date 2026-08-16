@@ -91,16 +91,33 @@
         "defer": 1,
         "reject": 3
       }
+    },
+    {
+      "at": "2026-08-16T12:01:00Z",
+      "sha": "316630e",
+      "branch": "feat/bdd-refusal-fixtures",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 5,
+      "by_severity": {
+        "minor": 3,
+        "major": 2
+      },
+      "verdicts": {
+        "fix": 2,
+        "defer": 0,
+        "reject": 3
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 4,
-      "found": 24,
-      "fixed": 22,
+      "rounds": 5,
+      "found": 29,
+      "fixed": 24,
       "deferred": 0,
-      "rejected": 2,
-      "precision": 0.917
+      "rejected": 5,
+      "precision": 0.828
     },
     "coderabbit-github": {
       "rounds": 2,

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-fix-named-test",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 495,
+      "sha256": "5654ce3f0300822fd1694b456075d97468f8250b169f07ca442b1b3e61aef074",
+      "text": "// Package calc is the fixture host project's production source. The\n// build-code fix loop is allowed to edit exactly this tree.\npackage calc\n\n// Add returns the sum of a and b.\n//\n// It does not: the operator is wrong, deliberately. This is the planted\n// defect the fix loop has to correct, and it is in PRODUCTION source —\n// the test asserting 5 is right, and repairing the code rather than the\n// assertion is the whole contract of `build code`.\nfunc Add(a, b int) int {\n\treturn a + b\n}\n"
+    },
+    {
+      "path": "tests/suite/suite-runs.log",
+      "kind": "created",
+      "size": 10,
+      "sha256": "cd544ed84242df9f2098e2406383b20c8a8266bd430e7a9a4c63728bb3ae931c",
+      "text": "suite ran\n"
+    }
+  ]
+}

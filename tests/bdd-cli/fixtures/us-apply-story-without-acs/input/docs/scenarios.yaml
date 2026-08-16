@@ -1,0 +1,35 @@
+# Decoy registry for `us-apply-story-without-acs`.
+#
+# Present, configured, valid and NON-EMPTY on purpose. `us apply`
+# resolves and stats the registry before the runner is entered, so it
+# has to exist at all; making it non-empty is what keeps this fixture's
+# failure unambiguous. If the registry were empty, "refused because the
+# story has no acceptance criteria" and "refused because there was
+# nothing to apply into" would produce the same exit code and a reader
+# could not tell which one the engine actually did.
+#
+# Nothing here references the story under test. It is the control: after
+# a refusal it must come back byte-identical.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-16"
+  description: "Non-empty decoy registry for the us-apply refusal fixtures"
+
+scenarios:
+  INT-950:
+    description: "MCP /health endpoint responds 200 to a GET request"
+    service: "mcp-service"
+    last_updated: "2026-08-16"
+    user_stories:
+      - story: "docs/product/stories/90.1-unrelated.yaml"
+        scenario_id: "90.1-001"
+        merge_date: "2026-08-16"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"

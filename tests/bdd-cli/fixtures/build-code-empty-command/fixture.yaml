@@ -1,0 +1,82 @@
+# A layer command that is present but names no program must be refused.
+#
+# `replay: "''"` is what a templated command leaves behind when the
+# variable it interpolated expanded to nothing. It is NOT blank, so the
+# loader's trim check — which rejects an absent or whitespace-only
+# command as MISSING — lets it through. Only the splitter can see that
+# the one token it produced is an empty argument, which would hand exec
+# an empty program name.
+#
+# The sibling fixtures cover a command that is absent, unterminated,
+# unparseable and unspawnable. This is the remaining shape:
+# present-and-empty, refused by the same pre-pass, before any subprocess.
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: build code
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - "Cannot start:"
+    # Names the layer, so a spec with several says which one.
+    - 'calc/e2e: test layer command is empty'
+    # And echoes the command verbatim. The whole point is that a token
+    # count called it a command while its only argument is empty, so the
+    # refusal has to show the reader the thing that looked fine.
+    - "test layer command is empty: \"''\""
+    # The structured record, as slog's console handler renders it on
+    # stdout. NOT `tmp/true-bdd.log.json` — that is the judge's channel
+    # and replay never reads it. Asserting it here pins that the refusal
+    # carries structured attributes at all, which is what a CI scrape
+    # keys on; the coupling to slog's text rendering is the price.
+    - 'level=ERROR msg="Refusing to start" command="build code"'
+
+  judge: |
+    # Expectations for `true-bdd build code` with a present-but-empty layer command
+
+    The e2e layer declares `replay: "''"`. It is not blank, so it passes
+    the loader's missing-command check; its single token is an empty
+    argument, which names no program. The spec must be refused at
+    startup, before any subprocess is spawned.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules below.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **No file was created or modified anywhere outside `tmp/`.**
+    2. The run aborted **before any test runner was spawned**. Read
+       `tmp/true-bdd.log.json` in the diff below: it MUST contain zero
+       records whose `msg` is `"Spawning test runner"`. The fixture
+       plants a failing test at `tests/suite/`, so a run that fell back
+       to some other invocation would have found it. A run that spawned
+       nothing did not fall back — and a run that tried to spawn `''`
+       would have recorded the attempt.
+    3. The run aborted **before any AI turn**: zero records whose `msg`
+       is `"Dispatching AI turn"`.
+    4. The failure is attributable from the log alone — it names the
+       service/layer whose command was empty.
+
+    ## What MUST NOT happen
+
+    - The engine MUST NOT substitute a default command. There is no
+      built-in invocation left; an unusable command block is a refusal,
+      never a fallback. A `"Spawning test runner"` record is exactly
+      that regression.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.

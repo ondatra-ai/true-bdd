@@ -1,0 +1,72 @@
+# An epic number with no file must be refused, and the refusal must show
+# the filename pattern that found nothing.
+#
+# That pattern is the whole value of the message. Epic files are matched
+# by a zero-padded glob, so `epic-93-*.yaml` matches while `epic-9-*` and
+# `epic-093-*` do not — a naming mistake nobody guesses from "not found".
+# Printing the glob turns the refusal into the instruction for what to
+# name the file.
+#
+# A decoy epic sits at 99. It is the control: the engine must not fall
+# back to "the only epic it could find".
+#
+# Deliberately cheap: it exits before the first AI call.
+
+cmd: us create 93.1
+
+input: input
+
+expected:
+  exit_code: 1
+
+  stdout_regex:
+    - 'US CREATE — Story 93\.1'
+
+    # LINE 1 of the refusal — the rest is on following lines, joined by
+    # newlines that Go's `.` will not cross.
+    - 'Cannot start: failed to load items: failed to load story:'
+
+    # LINE 2: which epic.
+    - 'failed to load epic 93'
+
+    # LINE 3: the glob that matched nothing. The zero padding is the
+    # part that has to survive — it is the detail a reader cannot infer.
+    - 'no epic file found matching pattern docs/product/epics/epic-93-\*\.yaml'
+
+    - 'level=ERROR msg="Refusing to start" command="us create"'
+
+  judge: |
+    # Expectations for `true-bdd us create 93.1` with no epic 93
+
+    The fixture ships a decoy epic at 99 and nothing for 93. The run must
+    refuse and name the glob it tried.
+
+    ## How to read the diff
+
+    The diff below is EXHAUSTIVE: a before/after comparison of the whole
+    working tree, so a path absent from it was not touched. Absence is
+    evidence.
+
+    ## Tolerances
+
+    - Files inside `tmp/` are scratch artifacts. Ignore their presence
+      entirely — EXCEPT `tmp/true-bdd.log.json`, whose CONTENT is the
+      evidence for the rules below.
+    - The exact wording of the error message is not fixed.
+
+    ## What MUST be true after the run
+
+    1. **The decoy epic `docs/product/epics/epic-99-bdd-test.yaml` is
+       unmodified and was not walked.** This is the core assertion: an
+       engine that fell back to the only epic present would have
+       extracted a story from work the user never named.
+    2. **No file was created under `docs/product/stories/`**, and no file
+       was created or modified anywhere outside `tmp/`.
+    3. The run aborted **before any AI turn was dispatched**: zero
+       records in `tmp/true-bdd.log.json` whose `msg` is
+       `"Dispatching AI turn"`. A missing file needs no model to detect.
+    4. The failure is attributable from the log alone: a record names
+       epic 93 and the pattern that matched nothing.
+
+    Reply `PASS` if all four hold. Otherwise reply
+    `FAIL: <one-sentence reason>` naming the first violation.
