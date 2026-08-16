@@ -11,18 +11,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    - "failed to parse architecture file"
-    - 'docs/architecture/architecture\.yaml'
-
   judge: |
     # Expectations for `true-bdd build code` with an undecodable spec
 

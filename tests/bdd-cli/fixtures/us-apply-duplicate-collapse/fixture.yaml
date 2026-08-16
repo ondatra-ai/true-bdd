@@ -1,4 +1,3 @@
-cmd: us apply 95.1 --fix
 input: input
 
 answers: |
@@ -14,21 +13,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    # The single AC is walked.
-    - 'AC 1/1:'
-
-    # A re-walk fires because the duplicate-collapse fix was applied
-    # during walk #1. `2/` matches regardless of the cap value (5 in
-    # the shipped checklist).
-    - 'RE-WALK 2/'
-
-    # Final convergence: clean walk, canonical commit.
-    - "ALL CHECKS PASSED!"
-    - "APPLY COMPLETE"
-
   judge: |
     # Expectations for `us apply 95.1 --fix` (duplicate collapse)
 

@@ -9,8 +9,8 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `services[].{name,path,language}` and
-# `services[].quality_gate.tests`; everything else here is spec a host
+# The engine decodes only `testing.suites[]` and
+# `services[].{name,path,language}`; everything else here is spec a host
 # writes for its own readers and for the checklists' prompts. Which is
 # exactly why it needs a schema: nothing else would notice a typo in it.
 #
@@ -25,8 +25,45 @@ architecture: include('architecture')
 vocabulary: include('vocabulary', required=False)
 
 ---
+# One `testing:` section for the whole repository, beside the services
+# it exercises. Test suites are a property of the project, not of any
+# one service: a suite is named once, says how it runs, and names the
+# service whose source `build code` may edit when it fails.
 architecture:
+  testing: include('testing')
   services: list(include('service'), min=1)
+
+---
+# The suites `build code` walks and `build tests` writes into. At least
+# one, because a spec that declares no way to run its tests describes a
+# project no build pipeline can act on.
+testing:
+  suites: list(include('suite'), min=1)
+
+---
+suite:
+  # Suite name. Appears in progress lines and in every failing test's id.
+  name: str()
+  # The one service this suite exercises. Must name an entry in
+  # `services[]`; `build code` takes that service's `path:` as the only
+  # root its fix applier may write. A suite covering two services is two
+  # suites — otherwise a failure names no single place to fix.
+  service: str()
+  # Repo-relative root the suite's specs live under. `build tests`
+  # authors missing tests here.
+  path: str()
+  framework: enum('go-test', 'jest', 'playwright')
+  # Framework config file. Doubles as the working directory the suite's
+  # commands run in (its containing directory); a suite without one runs
+  # from wherever the engine was invoked.
+  config: str(required=False)
+  pattern: str(required=False)
+  # The test helpers available in this suite. `us refine` reads these
+  # when it sketches a scenario's steps — its checklist tells the model
+  # to "use only what is declared in architecture.yaml", so a host that
+  # omits them gets invented ones.
+  helpers: list(include('helper'), required=False)
+  commands: include('commands')
 
 ---
 service:
@@ -40,7 +77,9 @@ service:
   dependencies: list(include('dependency'), required=False)
   patterns: map(include('pattern'), required=False)
   design_system: include('design_system', required=False)
-  quality_gate: include('quality_gate')
+  # Non-test gates a host runs against this service (linters, type
+  # checkers). Declared for its own readers; the engine reads none of it.
+  quality_gate: include('quality_gate', required=False)
 
 ---
 # What a service talks to at runtime. `scope` decides how a build treats
@@ -63,7 +102,6 @@ design_system:
 ---
 quality_gate:
   code: list(include('code_gate'), required=False)
-  tests: include('tests')
 
 ---
 code_gate:
@@ -71,35 +109,9 @@ code_gate:
   config: str()
 
 ---
-# The test layers `build code` walks. Both are optional — a service may
-# declare only the layer it has — but a layer that IS declared must be
-# complete, because a half-declared layer is one the engine would have
-# to guess about. Unit tests are implementation detail `build code`
-# generates, never spec, so they have no layer here.
-tests:
-  integration: include('test_layer', required=False)
-  e2e: include('test_layer', required=False)
-
----
-test_layer:
-  path: str()
-  framework: enum('go-test', 'jest', 'playwright')
-  # Framework config file. Doubles as the working directory the layer's
-  # commands run in (its containing directory); a layer without one runs
-  # from wherever the engine was invoked.
-  config: str(required=False)
-  pattern: str(required=False)
-  # The test helpers available in this layer. `us refine` reads these
-  # when it sketches a scenario's steps — its checklist tells the model
-  # to "use only what is declared in architecture.yaml", so a host that
-  # omits them gets invented ones.
-  helpers: list(include('helper'), required=False)
-  commands: include('commands')
-
----
-# How to run this layer's suite, per AI-dependency mode. There is no
-# engine default to fall back on — an invocation the spec does not state
-# is one no reader can audit — so all three are mandatory even though
+# How to run this suite, per AI-dependency mode. There is no engine
+# default to fall back on — an invocation the spec does not state is one
+# no reader can audit — so all three are mandatory even though
 # `build code` runs only `replay` today.
 #
 # Each is a complete, framework-native command line INCLUDING the flag

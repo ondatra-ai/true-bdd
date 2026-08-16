@@ -171,7 +171,6 @@ var (
 	ErrNoWhenStep           = errors.New("scenario must have at least one 'When' step")
 	ErrNoThenStep           = errors.New("scenario must have at least one 'Then' step")
 	ErrNoExamples           = errors.New("scenario outline must have at least one example")
-	ErrInvalidLevel         = errors.New("level must be integration or e2e")
 	ErrInvalidPriority      = errors.New("priority must be P0, P1, P2, or P3")
 	ErrUncoveredCriterion   = errors.New("acceptance criterion is not covered by any test scenario")
 	ErrNoStatements         = errors.New("step must have at least one statement")

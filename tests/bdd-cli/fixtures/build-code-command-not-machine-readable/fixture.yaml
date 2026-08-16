@@ -9,23 +9,13 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    - 'must emit machine-readable output'
-    - 'is missing -json'
-    - 'calc/e2e'
-
   judge: |
     # Expectations for `true-bdd build code` with a command that emits no machine-readable output
 
-    The e2e layer's replay command omits `-json`, so the go-test runner
+    The e2e suite's replay command omits `-json`, so the go-test runner
     would parse prose, find no failures, and converge on zero items. The
     spec must be refused at startup rather than produce that false green.
 

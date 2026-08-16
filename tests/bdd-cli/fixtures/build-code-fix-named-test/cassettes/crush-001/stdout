@@ -1,7 +1,7 @@
-```
+Edit applied to `services/calc/calc.go:12` — `Add` now returns `a + b`, so `Add(2, 3) == 5`. (Shell verification blocked by the guard hook; the edit itself succeeded.)
+
 === FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed Add's operator from subtraction to addition so Add(2, 3) returns 5"
+summary: "Changed Add's return from a - b to a + b so it sums its arguments"
 === FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
-```

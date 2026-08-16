@@ -1,7 +1,7 @@
 # `build code` must run the command its architectural spec declares —
 # and specifically the `replay` one.
 #
-# The layer's suite holds two tests, TestGreen and TestRed, in a single
+# The suite's suite holds two tests, TestGreen and TestRed, in a single
 # package. Only `commands.replay` carries the `-run '^TestGreen$'` filter
 # that keeps TestRed out of scope; `record` and `live` name the
 # unfiltered command on purpose. So there are four distinct ways for the
@@ -9,7 +9,7 @@
 # the assertions below red:
 #
 #   - inventing its own invocation (the pre-`commands:` behaviour, which
-#     walked `./...` under the layer's path)
+#     walked `./...` under the suite's path)
 #   - dropping the quoted `-run` argument while splitting the command
 #   - ignoring the `-run` filter but honouring the package selector
 #   - selecting the record or live command instead of replay
@@ -19,34 +19,17 @@
 # The fixture costs nothing to replay and nothing to record beyond the
 # judge's own turn.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    # The layer was reached at all — dispatched by its declared framework.
-    - "Running calc/e2e tests via go-test"
-
-    # And it found nothing: TestRed was never in scope. This is the
-    # assertion the whole fixture turns on.
-    - '0 failure\(s\) in calc/e2e'
-    - "Total failing tests across architecture: 0"
-
-    # The walk ran to completion rather than exiting early on an error
-    # that happened to leave the failure count at zero.
-    - "BUILD CODE COMPLETE"
-
   judge: |
     # Expectations for `true-bdd build code` with a spec-declared command
 
     The fixture seeds a host project whose architectural spec declares
-    one service `calc` with an e2e test layer, `framework: go-test`, and
+    one service `calc` with an e2e test suite, `framework: go-test`, and
     a `commands:` block naming a command line per AI-dependency mode.
 
-    The layer's package `tests/suite/` holds two tests:
+    The suite's package `tests/suite/` holds two tests:
     - `TestGreen`, which passes.
     - `TestRed`, which fails unconditionally.
 

@@ -22,7 +22,7 @@ import (
 const goTestNameSeparator = "::"
 
 // goTestRunFlag is the flag that narrows a `go test` invocation to a
-// single test. Appended to the layer's own command on a rerun.
+// single test. Appended to the suite's own command on a rerun.
 const goTestRunFlag = "-run"
 
 // goBuildFailureMarker is the synthetic test-name suffix used when a Go
@@ -49,7 +49,7 @@ func NewGoTestRunner(artifacts *Artifacts) *GoTestRunner {
 	return &GoTestRunner{artifacts: artifacts}
 }
 
-// Discover runs the layer's declared command and returns one
+// Discover runs the suite's declared command and returns one
 // FailingTest per failed test plus one synthetic entry per
 // non-test-bearing package failure (typically compile errors). The
 // command comes from the spec verbatim — build tags, package selectors
@@ -58,11 +58,11 @@ func NewGoTestRunner(artifacts *Artifacts) *GoTestRunner {
 func (r *GoTestRunner) Discover(
 	ctx context.Context,
 	cfg Config,
-	service, layer string,
+	service, suite string,
 ) ([]*FailingTest, error) {
 	argv, err := SplitCommand(cfg.Command)
 	if err != nil {
-		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, layer, err)
+		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, suite, err)
 	}
 
 	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
@@ -76,7 +76,7 @@ func (r *GoTestRunner) Discover(
 		slog.Warn("go test JSON stream had unparseable lines", "error", parseErr)
 	}
 
-	failures := events.toFailingTests(service, layer)
+	failures := events.toFailingTests(service, suite)
 
 	for _, failure := range failures {
 		failure.RunnerConfig = cfg
@@ -127,7 +127,7 @@ func (r *GoTestRunner) RunOne(
 	return passed, output, nil
 }
 
-// exec runs the layer's command with the supplied argv and captures
+// exec runs the suite's command with the supplied argv and captures
 // stdout/stderr. phase labels the invocation in the log and in the
 // captured output's filename. `go test` exits non-zero on test failure
 // — that is not an infrastructure error.
@@ -138,7 +138,7 @@ func (r *GoTestRunner) exec(
 ) (bytes.Buffer, bytes.Buffer, error) {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	// Empty cwd means "inherit the engine's own working directory",
-	// which is what a layer declaring no `config:` file asks for.
+	// which is what a suite declaring no `config:` file asks for.
 	cmd.Dir = cwd
 
 	return runLogged(cmd, spawnMeta{
@@ -150,7 +150,7 @@ func (r *GoTestRunner) exec(
 	})
 }
 
-// appendGoRunFilter narrows the layer's command to a single test.
+// appendGoRunFilter narrows the suite's command to a single test.
 // Appended rather than inserted because `go test` accepts its own flags
 // after the package list, and appending is the only position that
 // cannot land in front of a package selector the spec put there.
@@ -304,15 +304,15 @@ func (s *goEventStream) outputFor(pkg, test string) string {
 }
 
 // toFailingTests projects the stream into a slice of FailingTest values
-// tagged with the supplied service + layer. Per-test failures take
+// tagged with the supplied service + suite. Per-test failures take
 // precedence over package-level failures; a package whose failure is
 // already explained by per-test entries is omitted from the output.
-func (s *goEventStream) toFailingTests(service, layer string) []*FailingTest {
+func (s *goEventStream) toFailingTests(service, suite string) []*FailingTest {
 	out := make([]*FailingTest, 0, len(s.testFailed)+len(s.packageFailed))
 
 	for key := range s.testFailed {
 		pkg, test, _ := strings.Cut(key, "\x00")
-		out = append(out, s.testToFailingTest(service, layer, pkg, test))
+		out = append(out, s.testToFailingTest(service, suite, pkg, test))
 	}
 
 	for pkg := range s.packageFailed {
@@ -320,7 +320,7 @@ func (s *goEventStream) toFailingTests(service, layer string) []*FailingTest {
 			continue
 		}
 
-		out = append(out, s.packageToFailingTest(service, layer, pkg))
+		out = append(out, s.packageToFailingTest(service, suite, pkg))
 	}
 
 	return out
@@ -342,13 +342,13 @@ func (s *goEventStream) packageHasExplainedFailure(pkg string) bool {
 }
 
 // testToFailingTest builds one FailingTest from a per-test failure.
-func (s *goEventStream) testToFailingTest(service, layer, pkg, test string) *FailingTest {
+func (s *goEventStream) testToFailingTest(service, suite, pkg, test string) *FailingTest {
 	name := pkg + goTestNameSeparator + test
 
 	return &FailingTest{
-		ID:            BuildID(service, layer, FrameworkGoTest, name),
+		ID:            BuildID(service, suite, FrameworkGoTest, name),
 		Service:       service,
-		Layer:         layer,
+		Suite:         suite,
 		Framework:     FrameworkGoTest,
 		TestName:      name,
 		FilePath:      pkg,
@@ -358,13 +358,13 @@ func (s *goEventStream) testToFailingTest(service, layer, pkg, test string) *Fai
 
 // packageToFailingTest builds the synthetic FailingTest used when a
 // package failed to compile or otherwise produced no per-test failures.
-func (s *goEventStream) packageToFailingTest(service, layer, pkg string) *FailingTest {
+func (s *goEventStream) packageToFailingTest(service, suite, pkg string) *FailingTest {
 	name := pkg + goTestNameSeparator + goBuildFailureMarker
 
 	return &FailingTest{
-		ID:            BuildID(service, layer, FrameworkGoTest, name),
+		ID:            BuildID(service, suite, FrameworkGoTest, name),
 		Service:       service,
-		Layer:         layer,
+		Suite:         suite,
 		Framework:     FrameworkGoTest,
 		TestName:      name,
 		FilePath:      pkg,

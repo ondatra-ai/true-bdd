@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-// Layer constants used by FailingTest.Layer. Match the keys under
-// architecture.yaml's `quality_gate.tests:` block.
-const (
-	LayerIntegration = "integration"
-	LayerE2E         = "e2e"
-)
-
 // FailureOutputCap is the maximum number of bytes of failure output
 // retained on a FailingTest. Output is tail-truncated so the most
 // recent failure context survives.
@@ -22,9 +15,9 @@ const FailureOutputCap = 8 * 1024
 // Runner's Discover; refreshed in-place by RunOne during the engine's
 // PostFix hook.
 type FailingTest struct {
-	ID            string    // "<service>/<layer>/<sanitized framework id>"
-	Service       string    // architecture.yaml service.name
-	Layer         string    // LayerIntegration | LayerE2E
+	ID            string    // "<service>/<suite>/<sanitized framework id>"
+	Service       string    // architecture.yaml service.name — the suite's `service:`
+	Suite         string    // architecture.yaml testing.suites[].name
 	Framework     string    // "go-test" | "playwright" | "jest"
 	TestName      string    // framework-native re-run identifier
 	FilePath      string    // repo-relative path of the test source
@@ -49,11 +42,11 @@ func Subject(item *FailingTest) (string, string) {
 // inputs that together uniquely identify a failing test in a build-code
 // walk. Slashes inside the framework-native id are folded to `.` so the
 // result can be spliced into tmp file paths without escaping.
-func BuildID(service, layer, framework, frameworkID string) string {
+func BuildID(service, suite, framework, frameworkID string) string {
 	safe := strings.ReplaceAll(frameworkID, "/", ".")
 	safe = strings.ReplaceAll(safe, " ", "_")
 
-	return service + "/" + layer + "/" + framework + ":" + safe
+	return service + "/" + suite + "/" + framework + ":" + safe
 }
 
 // TruncateTail returns the last `maxBytes` bytes of `payload`, leaving

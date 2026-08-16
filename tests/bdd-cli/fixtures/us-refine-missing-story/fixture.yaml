@@ -11,33 +11,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us refine 96.9
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    # The run got past the document checks — product.yaml and
-    # architecture.yaml are both shipped — so the story is the only
-    # thing missing.
-    - 'US REFINE — Story 96\.9'
-
-    # The loader's own record. This family already logged before the
-    # refusal helper existed; pinning it keeps a future refactor from
-    # quietly dropping the structured fields.
-    - 'level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml'
-
-    # The refusal on stdout, with the advice that makes it actionable.
-    - 'Cannot start: .*run `true-bdd us create 96\.9` first'
-
-    # Names the directory searched and the filename shape expected.
-    - 'no story file found for story 96\.9 in docs/product/stories'
-    - '\(expected format: 96\.9-<slug>\.yaml\)'
-
-    - 'level=ERROR msg="Refusing to start" command="us refine"'
-
   judge: |
     # Expectations for `true-bdd us refine 96.9` with no such story
 

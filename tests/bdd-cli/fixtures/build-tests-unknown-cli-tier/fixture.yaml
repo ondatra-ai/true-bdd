@@ -13,14 +13,9 @@
 # Deliberately cheap: it exits before the first AI call, so unlike the
 # other fixtures it costs no model time.
 
-cmd: build tests
-
 input: input
 
 expected:
-  # Container construction fails, cobra reports it, the CLI exits 1.
-  exit_code: 1
-
   judge: |
     # Expectations for `true-bdd build tests` with an unroutable model tier
 

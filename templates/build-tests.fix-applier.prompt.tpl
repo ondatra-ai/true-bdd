@@ -21,23 +21,23 @@
 ## Instructions
 
 1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the file(s) the fix prompt targets.
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above:
-   - Use Write to create a new test file when the fix prompt says so.
-   - Use Edit to extend an existing test file when the fix prompt says
-     so.
-3. You MAY only modify files under these roots:
-   - `tests/integration/`
-   - `tests/e2e/`
-   - `services/backend/`
-   - `services/frontend/`
-4. You MUST NOT touch `docs/scenarios.yaml` or any path outside the
-   four roots above.
-5. The test you add MUST be named `test('{{.Subject.ID}}: <short
-   description>', ...)` (or the equivalent in the chosen framework) so
-   the next validation walk finds it by scenario id.
-6. Do not duplicate an existing test for this scenario id.
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
 7. After the changes succeed, output the confirmation block below.
 
 === FILE_START: {{.ResultPath}} ===

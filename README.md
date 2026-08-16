@@ -87,8 +87,8 @@ until those tests pass.
 | `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/product/stories/`. |
 | `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
-| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing test referencing the scenario id; the registry itself is never modified. |
-| `build code` | **Working** — walks every `(service, layer)` pair declared in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
+| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; the registry itself is never modified. |
+| `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
 
 Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
@@ -224,8 +224,9 @@ the response text rather than from a file the model wrote.
 The host project's documents live under `docs/`:
 
 - `docs/architecture/architecture.yaml` — the architectural spec that
-  scopes `build code` (which `(service, layer)` pairs get walked, and
-  how each one runs — see below) and carries the BDD `vocabulary:`
+  scopes `build code` (which test suites get walked, and how each one
+  runs — see below), tells `build tests` which suite owns a scenario,
+  and carries the BDD `vocabulary:`
   (allowed action verbs, forbidden action verbs, forbidden qualifiers)
   cited by the `us refine` checks.
 - `docs/product/product.yaml` — the product document, including the `roles:` that
@@ -236,28 +237,37 @@ The host project's documents live under `docs/`:
   stories from.
 - `docs/product/stories/*.yaml` — the stories `us create` writes and
   `us refine` / `us apply` read.
-- `docs/scenarios.yaml` — the scenario registry `us apply` merges into
-  and `build tests` walks.
+- `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
+  `build tests` walks, and the test suites RUN: each scenario is a test,
+  its steps bound to code by the suite that owns it.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
 
-### How a test layer runs
+### How a test suite runs
 
-`build code` does not know how to run your tests — the spec says. Each
-declared layer under `quality_gate.tests:` carries a `commands:` block
-with one complete command line per AI-dependency mode:
+The architectural spec has one `testing:` section for the whole project,
+beside the services it exercises — how a project runs its tests is a
+property of the project, not of any one service. `build code` does not
+know how to run your tests; the spec says. Each declared suite carries a
+`commands:` block with one complete command line per AI-dependency mode:
 
 ```yaml
-quality_gate:
-  tests:
-    e2e:
-      path: tests/bdd-cli
-      framework: go-test          # go-test | jest | playwright
-      commands:
-        record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=record"
-        replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=replay"
-        live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/..."
+architecture:
+  testing:
+    suites:
+      - name: bdd-cli
+        service: bdd-cli          # must name an entry in services[]
+        path: tests/bdd-cli
+        framework: go-test        # go-test | jest | playwright
+        commands:
+          record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=record"
+          replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=replay"
+          live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=live"
+  services:
+    - name: bdd-cli
+      path: services/bdd-cli
+      language: go
 ```
 
 The rules, all enforced at startup rather than discovered mid-run:
@@ -274,11 +284,16 @@ The rules, all enforced at startup rather than discovered mid-run:
 - **Quoting is honoured, nothing else.** `-run '^TestGreen$'` survives
   as one argument; there is no expansion, substitution or piping. A
   command needing a shell belongs in a script the spec then names.
-- **The working directory** is the one holding the layer's `config:`
+- **The working directory** is the one holding the suite's `config:`
   file — which is what lets `npx` resolve a suite's own local install.
-  A layer that declares no `config:` inherits the directory `true-bdd`
+  A suite that declares no `config:` inherits the directory `true-bdd`
   itself was run from, so its command should be written relative to the
   repo root and the CLI run from there.
+- **`service:` names one entry in `services[]`**, and that service's
+  `path:` is the only root `build code --fix` may write. A name that
+  resolves to nothing grants nothing, so it is refused at startup rather
+  than discovered as a fix that never lands. A suite covering two
+  services is two suites.
 - **Re-running one test** appends only a name filter (`-run`,
   `--testNamePattern`, `--grep`) to that same command, so a rerun keeps
   the build tags and flags that made the test discoverable.
@@ -289,11 +304,16 @@ The rules, all enforced at startup rather than discovered mid-run:
 # unit tests
 go test ./...
 
-# end-to-end BDD fixtures — real Claude calls, ~3–5 min per fixture
+# end-to-end BDD scenarios — real Claude calls, ~3–5 min per scenario
 go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 ```
 
-Fixtures under `tests/bdd-cli/fixtures/<scenario>/` are folders containing
+The suite's contents come from `docs/scenarios.yaml`: every scenario the
+architectural spec assigns to it becomes a Go subtest, its steps bound by
+regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's Given
+step names the fixture tree it drives.
+
+Fixture trees under `tests/bdd-cli/fixtures/<name>/` are folders containing
 a `fixture.yaml` manifest and the referenced input directory tree
 (conventionally `input/`, holding designed host-project content —
 `docs/` at minimum, plus project sources, a per-fixture `CLAUDE.md`,

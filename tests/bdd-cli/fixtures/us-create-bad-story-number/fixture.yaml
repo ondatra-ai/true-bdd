@@ -19,27 +19,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us create 4
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    # Until the refusal helper existed this reached only cobra's stderr,
-    # buried under a usage dump — the output shape for a flag mistake,
-    # which is exactly the wrong frame for "that is not a story number".
-    - 'Cannot start: invalid story number: invalid story number format'
-
-    # The message must name the OFFENDING ARGUMENT and the shape it
-    # should have had. "invalid story number format" alone says what
-    # kind of thing is wrong but not which thing, and this line is the
-    # user-facing refusal — there is no later prose to elaborate it.
-    - 'expected <epic>\.<story>, got "4"'
-
-    - 'level=ERROR msg="Refusing to start" command="us create"'
-
   judge: |
     # Expectations for `true-bdd us create 4` — a malformed story number
 

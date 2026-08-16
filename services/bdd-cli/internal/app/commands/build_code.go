@@ -48,11 +48,10 @@ type BuildCodeDeps struct {
 }
 
 // RunBuildCode drives `build code`. Loads architecture.yaml, discovers
-// failing tests across every declared (service, layer) pair, and walks
-// each through the build-code checklist. With fix=true, each failing
-// cell's Claude turn edits production source under services/* until the
-// engine converges. Exits non-zero if any test is still failing after
-// the walk.
+// failing tests across every declared test suite, and walks each
+// through the build-code checklist. With fix=true, each failing cell's
+// Claude turn edits production source under services/* until the engine
+// converges. Exits non-zero if any test is still failing after the walk.
 func RunBuildCode(
 	ctx context.Context,
 	deps BuildCodeDeps,
@@ -91,10 +90,10 @@ func RunBuildCode(
 }
 
 // loadFailingTests is the LoadItems factory for `build code`. Loads
-// architecture.yaml, iterates every (service, layer) block,
-// deduplicates by (framework, path, configFile), dispatches each block
-// to its framework runner, and returns the union of failures sorted by
-// id for deterministic walk order.
+// architecture.yaml, dispatches every declared test suite to its
+// framework runner, deduplicates suites that run the same command over
+// the same tree, and returns the union of failures sorted by id for
+// deterministic walk order.
 func loadFailingTests(
 	deps BuildCodeDeps,
 	architectureFile string,
@@ -105,7 +104,7 @@ func loadFailingTests(
 			return nil, fmt.Errorf("failed to load architecture: %w", err)
 		}
 
-		err = validateLayers(deps.TestRunnerDispatcher, arch.Services)
+		err = validateSuites(deps.TestRunnerDispatcher, arch.Suites)
 		if err != nil {
 			return nil, err
 		}
@@ -116,16 +115,9 @@ func loadFailingTests(
 		// same document that defines where production source lives.
 		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
 
-		seen := make(map[string]bool)
-		failures := make([]*testrunner.FailingTest, 0)
-
-		for _, svc := range arch.Services {
-			batch, walkErr := walkServiceLayers(ctx, deps.TestRunnerDispatcher, svc, seen)
-			if walkErr != nil {
-				return nil, walkErr
-			}
-
-			failures = append(failures, batch...)
+		failures, err := walkSuites(ctx, deps.TestRunnerDispatcher, arch)
+		if err != nil {
+			return nil, err
 		}
 
 		sort.Slice(failures, func(i, j int) bool {
@@ -138,51 +130,45 @@ func loadFailingTests(
 	}
 }
 
-// validateLayers checks every declared layer before the first
+// validateSuites checks every declared suite before the first
 // subprocess is spawned: that its framework routes to a runner, and
 // that its replay command is one that runner can act on.
 //
-// A pre-pass rather than a check at each layer's turn: discovery runs a
-// whole test suite per layer, so finding the second layer unrunnable
+// A pre-pass rather than a check at each suite's turn: discovery runs a
+// whole test suite at a time, so finding the second suite unrunnable
 // after the first has already run costs minutes for a verdict the spec
 // could have given immediately — and leaves behind a run that did half
 // its work. The framework check belongs here for a second reason: at
-// its turn, the walk has already printed "Running calc/e2e tests via
+// its turn, the walk has already printed "Running calc tests via
 // rspec...", claiming work that cannot start.
-func validateLayers(dispatcher *testrunner.Dispatcher, services []architecture.Service) error {
-	for _, svc := range services {
-		for _, layer := range svc.Tests.Layers() {
-			if layer.Config.Framework == "" {
-				continue
-			}
-
-			err := validateLayer(dispatcher, layer.Config)
-			if err != nil {
-				return fmt.Errorf("%s/%s: %w", svc.Name, layer.Name, err)
-			}
+func validateSuites(dispatcher *testrunner.Dispatcher, suites []architecture.Suite) error {
+	for _, suite := range suites {
+		err := validateSuite(dispatcher, suite)
+		if err != nil {
+			return fmt.Errorf("%s: %w", suite.Label(), err)
 		}
 	}
 
 	return nil
 }
 
-// validateLayer reports the first thing that makes one declared layer
+// validateSuite reports the first thing that makes one declared suite
 // unrunnable.
-func validateLayer(dispatcher *testrunner.Dispatcher, cfg architecture.TestConfig) error {
-	_, err := dispatcher.For(cfg.Framework)
+func validateSuite(dispatcher *testrunner.Dispatcher, suite architecture.Suite) error {
+	_, err := dispatcher.For(suite.Framework)
 	if err != nil {
 		return err
 	}
 
-	return testrunner.ValidateCommand(cfg.Framework, replayCommand(cfg))
+	return testrunner.ValidateCommand(suite.Framework, replayCommand(suite))
 }
 
 // replayCommand picks the mode `build code` runs under. Hardcoded:
 // `record` and `live` are declared and validated by the loader but no
 // command reaches them yet, so naming replay here — once — is the whole
 // of the mode selection.
-func replayCommand(cfg architecture.TestConfig) string {
-	return cfg.Commands.Replay
+func replayCommand(suite architecture.Suite) string {
+	return suite.Commands.Replay
 }
 
 // servicePaths collects each declared service's source root, skipping
@@ -199,44 +185,38 @@ func servicePaths(services []architecture.Service) []string {
 	return paths
 }
 
-// walkServiceLayers iterates the two test layers declared by one
-// service, dispatching each to its framework runner and skipping
-// (framework, path, configFile) combinations already discovered through
-// another service entry. Returns the failures collected for this
-// service's layers.
-func walkServiceLayers(
+// walkSuites dispatches every declared suite to its framework runner,
+// skipping a suite whose (framework, path, config, command) another
+// suite already ran. Returns the union of their failures.
+func walkSuites(
 	ctx context.Context,
 	dispatcher *testrunner.Dispatcher,
-	svc architecture.Service,
-	seen map[string]bool,
+	arch *architecture.Architecture,
 ) ([]*testrunner.FailingTest, error) {
+	seen := make(map[string]bool)
 	out := make([]*testrunner.FailingTest, 0)
 
-	for _, layer := range svc.Tests.Layers() {
-		if layer.Config.Framework == "" {
-			continue
-		}
-
+	for _, suite := range arch.Suites {
 		// The command joins the key because it is what actually runs:
-		// two layers agreeing on framework, path and config but
+		// two suites agreeing on framework, path and config but
 		// declaring different commands are different work, and
-		// collapsing them would silently drop one suite.
+		// collapsing them would silently drop one of them.
 		dedupKey := strings.Join([]string{
-			layer.Config.Framework,
-			layer.Config.Path,
-			layer.Config.ConfigFile,
-			replayCommand(layer.Config),
+			suite.Framework,
+			suite.Path,
+			suite.ConfigFile,
+			replayCommand(suite),
 		}, "\x00")
 
 		if seen[dedupKey] {
-			console.Println(fmt.Sprintf("Skipping %s/%s (already covered by another service)", svc.Name, layer.Name))
+			console.Println(fmt.Sprintf("Skipping %s (already covered by another suite)", suite.Label()))
 
 			continue
 		}
 
 		seen[dedupKey] = true
 
-		failures, runErr := runLayerDiscovery(ctx, dispatcher, svc.Name, layer.Name, layer.Config)
+		failures, runErr := runSuiteDiscovery(ctx, dispatcher, suite)
 		if runErr != nil {
 			return nil, runErr
 		}
@@ -247,55 +227,54 @@ func walkServiceLayers(
 	return out, nil
 }
 
-// runLayerDiscovery dispatches one layer's test config to its framework
-// runner, printing progress and converting the architecture-level config
-// shape into the testrunner-level Config shape.
-func runLayerDiscovery(
+// runSuiteDiscovery dispatches one suite's config to its framework
+// runner, printing progress and converting the architecture-level shape
+// into the testrunner-level Config shape.
+func runSuiteDiscovery(
 	ctx context.Context,
 	dispatcher *testrunner.Dispatcher,
-	service, layer string,
-	cfg architecture.TestConfig,
+	suite architecture.Suite,
 ) ([]*testrunner.FailingTest, error) {
-	console.Println(fmt.Sprintf("Running %s/%s tests via %s...", service, layer, cfg.Framework))
+	console.Println(fmt.Sprintf("Running %s tests via %s...", suite.Label(), suite.Framework))
 
-	runnerImpl, err := dispatcher.For(cfg.Framework)
+	runnerImpl, err := dispatcher.For(suite.Framework)
 	if err != nil {
-		return nil, fmt.Errorf("dispatch %s/%s: %w", service, layer, err)
+		return nil, fmt.Errorf("dispatch %s: %w", suite.Label(), err)
 	}
 
 	rcfg := testrunner.Config{
-		Path:       cfg.Path,
-		Framework:  cfg.Framework,
-		ConfigFile: cfg.ConfigFile,
-		Pattern:    cfg.Pattern,
-		Command:    replayCommand(cfg),
+		Path:       suite.Path,
+		Framework:  suite.Framework,
+		ConfigFile: suite.ConfigFile,
+		Pattern:    suite.Pattern,
+		Command:    replayCommand(suite),
 	}
 
-	failures, err := runnerImpl.Discover(ctx, rcfg, service, layer)
+	failures, err := runnerImpl.Discover(ctx, rcfg, suite.Service, suite.Name)
 	if err != nil {
 		// Reported here, on both channels, because this is the one
 		// failure in the command path no validation can reach: the spec
 		// can be complete, splittable and parseable and the binary
 		// still absent. Left to cobra it would surface as a stderr
 		// traceback under a usage dump, right after a progress line
-		// saying the layer was running.
-		slog.Error("Cannot run test layer",
-			"service", service,
-			"layer", layer,
+		// saying the suite was running.
+		slog.Error("Cannot run test suite",
+			"suite", suite.Name,
+			"service", suite.Service,
 			"command", rcfg.Command,
 			"error", err,
 		)
-		console.Println(fmt.Sprintf("Cannot run %s/%s: %s", service, layer, err.Error()))
+		console.Println(fmt.Sprintf("Cannot run %s: %s", suite.Label(), err.Error()))
 
 		// Marked as reported so the generic startup refusal stays quiet:
 		// this failure is already on both channels with a more specific
 		// diagnosis, and it happened after the run started, so a second
 		// line headlined "Refusing to start" would contradict the
 		// progress line printed just above.
-		return nil, runner.Reported(fmt.Errorf("discover %s/%s: %w", service, layer, err))
+		return nil, runner.Reported(fmt.Errorf("discover %s: %w", suite.Label(), err))
 	}
 
-	console.Println(fmt.Sprintf("  %d failure(s) in %s/%s", len(failures), service, layer))
+	console.Println(fmt.Sprintf("  %d failure(s) in %s", len(failures), suite.Label()))
 
 	return failures, nil
 }

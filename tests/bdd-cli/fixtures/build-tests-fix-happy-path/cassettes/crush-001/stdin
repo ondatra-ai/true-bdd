@@ -1,28 +1,25 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Test Authoring Editor applying fixes that add a missing
-executable test for one scenario from the requirements registry.
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
 
 **Your Task:**
-1. Read the relevant existing test file(s) named in the fix prompt.
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
 2. Read the fix prompt instructions.
 3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new test file or the Edit tool to extend an existing one,
-   under one of the four allowed roots.
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
 4. Emit a short YAML confirmation block.
 
 **Tool Usage:**
 - Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file at one of the allowed roots.
-- Use Edit to mutate an existing file at one of the allowed roots.
-- Do NOT touch `docs/scenarios.yaml`.
-- Do NOT write to any path outside the four allowed roots.
-
-**Allowed Roots:**
-- `tests/integration/`
-- `tests/e2e/`
-- `services/backend/`
-- `services/frontend/`
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
 
 **Output Requirements:**
 - After your Write/Edit calls succeed, output a YAML confirmation
@@ -30,23 +27,28 @@ executable test for one scenario from the requirements registry.
   - `applied: true` (or `false` on failure)
   - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
   - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only add the new
-  test block the fix prompt specifies.
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-16-21-13-55-16563/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-16-21-13-55-16563/apply-INT-900-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
 - Apply changes EXACTLY as described in the fix prompt.
 - Do NOT add, remove, or modify content beyond what the fix prompt
   specifies.
-- Do NOT duplicate an existing test for the same scenario id.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
 - Make all file changes during this turn — the confirmation block is
   informational only.
 
@@ -58,7 +60,7 @@ summary: "<one-line summary>"
 **Scenario ID:** INT-900
 **Description:** MCP /mcp endpoint responds 200 to a valid initialize POST
 **Service:** mcp-service
-**Requirement:** fixture seed — expects `build tests` to create a test
+**Requirement:** fixture seed — expects `build tests` to write the step definitions
 
 ### Steps
 Given:
@@ -75,92 +77,151 @@ Then:
 
 # Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
 
-## Context
-- **Scenario id:** `INT-900` (level `INT-*` → integration tree → `tests/integration/`, Playwright **Request API**, no browser).
-- **Service:** `mcp-service`.
-- **Layout reality:** the fixture workspace ships **no `tests/` tree and no `services/` tree yet** — the four search roots are all empty. There is no existing spec to extend and no existing `<service>-*.spec.ts` to duplicate, so this is a **new-file Write**, not an Edit.
-- **Naming pattern:** `tests/integration/<service>-*.spec.ts` → `tests/integration/mcp-service-mcp-endpoint.spec.ts`.
-- **Guardrails:** write only under the four search roots. Do **not** create or modify `docs/scenarios.yaml`, `true-bdd/`, or `templates/`.
+## Suite resolution
+From `docs/architecture/architecture.yaml`, `architecture.testing.suites[]`
+has one entry whose `service:` equals this scenario's Service
+(`mcp-service`):
+
+```
+- name: mcp
+  service: mcp-service
+  path: tests/mcp
+```
+
+So the suite root is `tests/mcp` and the only writable tree is
+**`tests/mcp/steps/`**. That package does not exist yet — no step
+definitions, no `Register` function, no sibling state type. This fix
+**establishes the package**: it creates the state type and the suite's
+single `Register` function, then binds all three of the scenario's
+steps in it. Do not write outside `tests/mcp/steps/`, and do not touch
+`docs/scenarios.yaml`.
+
+## Step binding plan
+| Keyword | Step text | Pattern | Capture |
+|---|---|---|---|
+| Given | the MCP server is running on its configured port | `^the MCP server is running on its configured port$` | none — no varying token in this precondition, so an anchored literal is the honest pattern |
+| When | the Claude User posts a valid JSON-RPC initialize request to /mcp | `^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$` | method + path — serves `tools/list … to /mcp`, etc. |
+| Then | the server returns HTTP 200 | `^the server returns HTTP (\d+)$` | status code — serves 404, 500, … |
+
+Each step matches exactly one pattern and no pattern overlaps another →
+the re-walk sees `Verdict: executable`.
 
 ## Required Changes
 
-### Change #1: Create the integration spec that covers INT-900
-**File:** `tests/integration/mcp-service-mcp-endpoint.spec.ts`
-**Action:** Use the **Write** tool to create this new file with the exact content below. (New file — no `old_string`.) The parent directory `tests/integration/` does not exist yet; Write creates it.
+### Change #1: create the suite state type
+**File:** `tests/mcp/steps/state.go`
+**Action:** Use the **Write** tool to create this new file (the `steps`
+package does not exist yet).
 **Content:**
-```ts
-import { test, expect } from '@playwright/test';
+```go
+package steps
 
-// INT-900 — MCP /mcp endpoint responds 200 to a valid initialize POST
-// Service: mcp-service
-// Given: the MCP server is running on its configured port
-// When:  the Claude User posts a valid JSON-RPC initialize request to /mcp
-// Then:  the server returns HTTP 200
+import "net/http"
 
-// Given: the MCP server is running on its configured port.
-// The base URL is taken from the environment so the test binds to whatever
-// port the server was configured with, falling back to a conventional local port.
-const MCP_BASE_URL = process.env.MCP_BASE_URL ?? 'http://127.0.0.1:3000';
-
-test('INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST', async ({ request }) => {
-  // Given: the MCP server is running on its configured port
-  const endpoint = `${MCP_BASE_URL}/mcp`;
-
-  // When: the Claude User posts a valid JSON-RPC initialize request to /mcp
-  const response = await request.post(endpoint, {
-    headers: {
-      'Content-Type': 'application/json',
-      // MCP Streamable HTTP requires the client to accept both content types.
-      Accept: 'application/json, text/event-stream',
-    },
-    data: {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: { name: 'claude-user', version: '1.0.0' },
-      },
-    },
-  });
-
-  // Then: the server returns HTTP 200
-  expect(response.status()).toBe(200);
-});
+// State is the per-scenario state the mcp suite keeps: the base URL the
+// MCP server is reachable at (prepared by the Given step), and the most
+// recent HTTP response the When step produced for the Then step to
+// assert against.
+type State struct {
+	BaseURL  string
+	Response *http.Response
+}
 ```
 
-## Verification after applying
-1. The file `tests/integration/mcp-service-mcp-endpoint.spec.ts` exists under a valid search root.
-2. It contains exactly one `test(...)` whose name's first line begins with `INT-900: ` so the `build-tests/implementation` re-walk finds the literal id.
-3. `docs/scenarios.yaml` is unchanged; no other test files were touched (there were none).
+### Change #2: create the suite's single Register function and bind all three steps
+**File:** `tests/mcp/steps/steps.go`
+**Action:** Use the **Write** tool to create this new file. This is the
+one call site that lists everything the suite binds; any future
+definition for this suite is added here, not in a second `Register`.
+**Content:**
+```go
+package steps
+
+import (
+	"bytes"
+	"fmt"
+	"net/http"
+
+	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+)
+
+// Register binds every step the mcp suite's scenarios use. Given
+// prepares, When acts, Then asserts — each Then error names what was
+// expected and what actually happened, because that error IS the test
+// failure a reader gets.
+func Register(suite *bddgo.Suite[*State]) {
+	// Given — precondition. No varying token in the wording, so the
+	// pattern is an anchored literal rather than a forced capture group.
+	suite.Step(`^the MCP server is running on its configured port$`, func(s *State, m []string) error {
+		if s.BaseURL == "" {
+			s.BaseURL = "http://127.0.0.1:8080"
+		}
+		return nil
+	})
+
+	// When — act. Method and path vary between phrasings, so both are
+	// captured: `initialize … /mcp`, `tools/list … /mcp`, …
+	suite.Step(`^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$`, func(s *State, m []string) error {
+		method, path := m[1], m[2]
+		body := fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":{}}`, method)
+		resp, err := http.Post(s.BaseURL+path, "application/json", bytes.NewBufferString(body))
+		if err != nil {
+			return fmt.Errorf("POST %s%s (%s) failed: %w", s.BaseURL, path, method, err)
+		}
+		s.Response = resp
+		return nil
+	})
+
+	// Then — assert. Status code varies, so it is captured.
+	suite.Step(`^the server returns HTTP (\d+)$`, func(s *State, m []string) error {
+		want := m[1]
+		if s.Response == nil {
+			return fmt.Errorf("expected HTTP %s but no response was recorded — did the When step run?", want)
+		}
+		if got := fmt.Sprintf("%d", s.Response.StatusCode); got != want {
+			return fmt.Errorf("expected HTTP %s, got HTTP %s", want, got)
+		}
+		return nil
+	})
+}
+```
+
+## Notes for the applier
+- Both files are new; use **Write**, not Edit. There is no existing
+  `Register` to extend — this fix creates it.
+- Register all three definitions in the single `Register` function
+  above; do not split them across multiple registration functions.
+- Do not weaken or broaden these patterns later to absorb a different
+  step — add a new `suite.Step(...)` line instead.
+- Write nothing outside `tests/mcp/steps/`; never modify
+  `docs/scenarios.yaml`.
 
 ---
 
 ## Instructions
 
 1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the file(s) the fix prompt targets.
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above:
-   - Use Write to create a new test file when the fix prompt says so.
-   - Use Edit to extend an existing test file when the fix prompt says
-     so.
-3. You MAY only modify files under these roots:
-   - `tests/integration/`
-   - `tests/e2e/`
-   - `services/backend/`
-   - `services/frontend/`
-4. You MUST NOT touch `docs/scenarios.yaml` or any path outside the
-   four roots above.
-5. The test you add MUST be named `test('INT-900: <short
-   description>', ...)` (or the equivalent in the chosen framework) so
-   the next validation walk finds it by scenario id.
-6. Do not duplicate an existing test for this scenario id.
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
 7. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-16-21-13-55-16563/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-15-16-02-32-67464/apply-INT-900-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-16-21-13-55-16563/apply-INT-900-iter1-result.yaml ===

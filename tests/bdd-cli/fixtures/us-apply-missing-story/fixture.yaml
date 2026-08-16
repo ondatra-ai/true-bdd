@@ -15,30 +15,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us apply 95.4
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    # The run got past every precondition and seeded its scratch copy —
-    # so the only thing wrong is the story, not the config.
-    - 'US APPLY — Story 95\.4'
-    - 'msg="Seeded scratch registry"'
-
-    # The refusal is on stdout, which is the only channel a replay
-    # fixture can assert: the judge does not run in replay, and cobra's
-    # stderr is never matched.
-    - 'Cannot start: .*no story file found for story 95\.4'
-
-    # Names the directory searched AND the filename shape expected. Those
-    # two facts are what turn a refusal into an instruction.
-    - 'in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
-
-    - 'level=ERROR msg="Refusing to start" command="us apply"'
-
   judge: |
     # Expectations for `true-bdd us apply 95.4` with no such story
 

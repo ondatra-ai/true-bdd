@@ -11,7 +11,7 @@ import (
 // shapes the query handler PRODUCES as JSON. The relay carries the query /
 // dispatch / answer work items to the CLI and relays the CLI's reply body
 // back to the browser verbatim, so these projection shapes must match
-// tests/bdd-web/helpers/api-client.ts exactly.
+// tests/legacy/bdd-web-playwright/helpers/api-client.ts exactly.
 
 // ── Agent protocol (plan §2) ──
 

@@ -1,4 +1,3 @@
-cmd: us create 99.1 --fix
 input: input
 
 # A full us-create walk is 9 sequential validation turns plus a fix
@@ -31,8 +30,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
   judge: |
     # Expectations for `us create 99.1 --fix`
 

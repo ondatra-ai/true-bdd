@@ -1,4 +1,4 @@
-# A layer command that is present but names no program must be refused.
+# A suite command that is present but names no program must be refused.
 #
 # `replay: "''"` is what a templated command leaves behind when the
 # variable it interpolated expanded to nothing. It is NOT blank, so the
@@ -13,32 +13,13 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    # Names the layer, so a spec with several says which one.
-    - 'calc/e2e: test layer command is empty'
-    # And echoes the command verbatim. The whole point is that a token
-    # count called it a command while its only argument is empty, so the
-    # refusal has to show the reader the thing that looked fine.
-    - "test layer command is empty: \"''\""
-    # The structured record, as slog's console handler renders it on
-    # stdout. NOT `tmp/true-bdd.log.json` — that is the judge's channel
-    # and replay never reads it. Asserting it here pins that the refusal
-    # carries structured attributes at all, which is what a CI scrape
-    # keys on; the coupling to slog's text rendering is the price.
-    - 'level=ERROR msg="Refusing to start" command="build code"'
-
   judge: |
-    # Expectations for `true-bdd build code` with a present-but-empty layer command
+    # Expectations for `true-bdd build code` with a present-but-empty suite command
 
-    The e2e layer declares `replay: "''"`. It is not blank, so it passes
+    The e2e suite declares `replay: "''"`. It is not blank, so it passes
     the loader's missing-command check; its single token is an empty
     argument, which names no program. The spec must be refused at
     startup, before any subprocess is spawned.
@@ -69,7 +50,7 @@ expected:
     3. The run aborted **before any AI turn**: zero records whose `msg`
        is `"Dispatching AI turn"`.
     4. The failure is attributable from the log alone — it names the
-       service/layer whose command was empty.
+       service/suite whose command was empty.
 
     ## What MUST NOT happen
 

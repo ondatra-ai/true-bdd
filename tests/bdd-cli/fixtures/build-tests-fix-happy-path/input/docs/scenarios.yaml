@@ -1,22 +1,26 @@
 # Seed registry for the `build-tests-fix-happy-path` BDD fixture.
 #
-# One scenario (INT-900). The `build tests --fix` happy path: the walk
-# finds no test referencing the scenario id, drives the fix-generator +
-# fix-applier loop, writes a test file under `tests/integration/` or a
-# sibling root, re-walks, converges, exits 0.
+# One scenario (INT-900) whose three steps bind to nothing: the suite
+# that owns it — `mcp`, rooted at `tests/mcp` per
+# docs/architecture/architecture.yaml — has no `steps/` package at all.
+#
+# The `build tests --fix` happy path: the walk finds every step unbound,
+# drives the fix-generator + fix-applier loop, the applier writes the
+# step definitions under `tests/mcp/steps/`, the re-walk converges, the
+# CLI exits 0.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
-  last_updated: "2026-05-18"
+  last_updated: "2026-08-16"
   description: "Seed for build-tests-fix-happy-path fixture"
 
 scenarios:
   INT-900:
     description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
     service: "mcp-service"
-    requirement: "fixture seed — expects `build tests` to create a test"
-    last_updated: "2026-05-14"
+    requirement: "fixture seed — expects `build tests` to write the step definitions"
+    last_updated: "2026-08-16"
     user_stories:
       - story: "docs/product/stories/99.3-fixture.yaml"
         scenario_id: "99.3-001"

@@ -7,17 +7,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    - 'no services to walk'
-
   judge: |
     # Expectations for `true-bdd build code` with an empty services list
 

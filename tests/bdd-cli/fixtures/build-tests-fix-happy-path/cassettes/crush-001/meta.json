@@ -10,14 +10,15 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 46344,
-  "request_hash": "sha256:b0c93ec770908ebad38ff11c5db1cbba1aa60ff7c32d99eea24d866cf18fd7d2",
+  "duration_ms": 31471,
+  "request_hash": "sha256:29c8684084cb81c9e208d2389851ce307ada85d9da1ab8efe7abbce522a64029",
   "fsdiff": {
     "created": [
-      "tests/integration/mcp-service-mcp-endpoint.spec.ts"
+      "tests/mcp/steps/state.go",
+      "tests/mcp/steps/steps.go"
     ],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-15T14:05:25Z"
+  "recorded_at": "2026-08-16T19:18:40Z"
 }

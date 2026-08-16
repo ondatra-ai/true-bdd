@@ -9,30 +9,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us create 92.1
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - 'US CREATE — Story 92\.1'
-
-    - 'Cannot start: failed to load items: failed to load story:'
-
-    - 'failed to load epic 92'
-
-    - 'multiple epic files found matching pattern docs/product/epics/epic-92-\*\.yaml'
-
-    # BOTH candidates, in the order the glob returned them. Naming one
-    # would leave the reader to find the other themselves, and the whole
-    # difficulty of this failure is that the second file is the one you
-    # forgot about.
-    - '\[docs/product/epics/epic-92-document-intelligence\.yaml docs/product/epics/epic-92-summaries\.yaml\]'
-
-    - 'level=ERROR msg="Refusing to start" command="us create"'
-
   judge: |
     # Expectations for `true-bdd us create 92.1` with two epic-92 files
 

@@ -7,22 +7,13 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    - 'unterminated quote'
-    - 'calc/e2e'
-
   judge: |
     # Expectations for `true-bdd build code` with an unterminated quote in a command
 
-    The e2e layer's replay command opens a single quote it never closes.
+    The e2e suite's replay command opens a single quote it never closes.
     Guessing where the argument ends would silently change which tests
     run, so the spec must be refused at startup.
 

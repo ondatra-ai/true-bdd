@@ -1,4 +1,3 @@
-cmd: build code --fix
 input: input
 
 # The CLI run itself builds a Next.js Docker image and re-runs the
@@ -26,12 +25,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    - "frontend/integration tests via playwright"
-    - "BUILD CODE COMPLETE"
-
   judge: |
     # Expectations for `true-bdd build code --fix`
 

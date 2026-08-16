@@ -1,5 +1,7 @@
-No existing tests tree and no INT-900 test under the search roots — creating the new spec as instructed.=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+The `tests/mcp` package doesn't exist yet, as the fix prompt states. Let me verify the module path and suite resolution before writing.Suite resolution confirmed (`tests/mcp`, service `mcp-service`), and the package doesn't exist yet — both files are new. Writing them exactly as specified.Both files created. The `tests/mcp/steps` package now exists with the state type and the single `Register` function binding all three steps; nothing was written outside it and the registry is untouched.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
-target: "tests/integration/mcp-service-mcp-endpoint.spec.ts"
-summary: "Created new Playwright integration spec with a single INT-900 test posting a JSON-RPC initialize request to /mcp and asserting HTTP 200"
+target: "tests/mcp/steps/steps.go"
+summary: "Established tests/mcp/steps package: state.go with State type and steps.go with single Register binding all three INT-900 steps (Given/When/Then) via anchored patterns."
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

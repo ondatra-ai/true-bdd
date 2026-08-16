@@ -1,13 +1,6 @@
-cmd: us create 98.1
 input: input
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    - "Validation failed. Use --fix flag to enter interactive fix mode."
-    - "CREATE COMPLETE"
-
   judge: |
     # Expectations for `us create 98.1` (validation fails, no fix)
 

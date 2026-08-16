@@ -42,10 +42,11 @@ type BuildTestsDeps struct {
 
 // RunBuildTests drives `build tests`. Walks every scenario in the
 // requirements registry against the build-tests checklist. Each cell's
-// fix asks Claude to author the missing test directly under
-// `tests/integration/`, `tests/e2e/`, `services/backend/`, or
-// `services/frontend/`. Exits non-zero if any scenario is still
-// uncovered after the walk.
+// fix asks Claude to author the missing step definition under the
+// `path:` of the suite that owns the scenario — the entry in
+// `architecture.testing.suites[]` whose `service:` matches the
+// scenario's. Exits non-zero if any scenario is still uncovered after
+// the walk.
 func RunBuildTests(
 	ctx context.Context,
 	deps BuildTestsDeps,

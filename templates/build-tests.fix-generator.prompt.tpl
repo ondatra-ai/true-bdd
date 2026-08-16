@@ -1,18 +1,23 @@
-# Generate Fix Prompt for Missing Test
-
-## Search Roots
-- `tests/integration/`
-- `tests/e2e/`
-- `services/backend/`
-- `services/frontend/`
-
-Use Glob, Grep, and Read on these trees to understand the existing
-test layout and pick the right file to extend (or create).
+# Generate Fix Prompt for an Unbound Scenario Step
 
 ## Reference Documentation
 {{- range $key, $path := .DocPaths }}
 - Read(`{{ $path }}`) — {{ $key }}
 {{- end }}
+
+## Where the fix goes
+
+Read the architectural spec above and find the
+`architecture.testing.suites[]` entry whose `service:` equals the
+subject's **Service**. That entry's `path:` is the suite root, and the
+only tree the applier may write:
+
+    <suite path>/steps/
+
+Glob and Read every file already there before proposing anything. The
+definitions in it share one state type and a set of helpers; a fix that
+re-implements what a sibling already does is the drift this command
+exists to prevent.
 
 ## Subject — Registry Scenario
 
@@ -82,31 +87,28 @@ Using the user's clarifications above, generate a complete fix prompt.
 Analyze if you have enough context to generate a confident fix.
 {{- end }}
 
-**If you can generate a confident fix**, output a fix prompt that the
-applier can execute. The applier is allowed to Write new test files
-and Edit existing ones, but ONLY under the four search roots above.
-The fix MUST:
-- Pick the right tree: `tests/integration/` for `INT-*` scenarios
-  (Playwright Request API, no browser), `tests/e2e/` for `E2E-*`
-  scenarios (Playwright Browser/Page API).
-- Either extend an existing spec file most aligned with the scenario's
-  service or create a new one following the naming pattern
-  `<service>-*.spec.ts`.
-- Add a single `test('{{.Subject.ID}}: <short description>', ...)`
-  whose body translates the subject's Given / When / Then into
-  executable assertions.
-- Never modify `docs/scenarios.yaml`.
-- Never duplicate an existing test.
+**If you can generate a confident fix**, output a fix prompt the applier
+can execute. It may Write a new file or Edit an existing one under
+`<suite path>/steps/` and nowhere else. The fix MUST:
+- Register one definition per unbound step:
+  `suite.Step(`^<anchored regexp>$`, <func>)`, added to the suite's
+  existing `Register` function rather than a new one.
+- Put a capture group where the step's text varies — a quoted run, a
+  number — so the definition serves every scenario phrasing it that
+  way. A pattern that is a literal copy of one scenario's line is a
+  definition that will never match a second scenario.
+- Implement the function against the state type the sibling definitions
+  already use: Given prepares, When acts, Then asserts and returns an
+  error naming what it expected and what it got.
+- Never weaken an existing definition so this step matches it.
+- Never modify the scenario registry.
 
 === FILE_START: {{.ResultPath}} ===
 # Fix Prompt for Scenario {{.SubjectID}}: {{.Subject.Description}}
 
 ## Target
-Apply the change under one of:
-- `tests/integration/<service>-*.spec.ts`
-- `tests/e2e/<service>-*.spec.ts`
-- `services/backend/...` (only if the natural test location is here)
-- `services/frontend/...` (only if the natural test location is here)
+`<suite path>/steps/<file>.go` — the suite resolved from the
+architectural spec for service `{{.Subject.Service}}`.
 
 ## Required Changes
 ### Change #N: [description]
@@ -115,11 +117,11 @@ Apply the change under one of:
 existing) with the exact content below.
 **Content / new_string:**
 ```
-<paste the exact test block here>
+<paste the exact registration and function here>
 ```
 **old_string** (only for Edit on an existing file):
 ```
-<verbatim slice the new test should append after>
+<verbatim slice the new code should replace or append after>
 ```
 === FILE_END: {{.ResultPath}} ===
 

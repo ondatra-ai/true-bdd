@@ -47,11 +47,11 @@ func NewJestRunner(artifacts *Artifacts) *JestRunner {
 func (r *JestRunner) Discover(
 	ctx context.Context,
 	cfg Config,
-	service, layer string,
+	service, suite string,
 ) ([]*FailingTest, error) {
 	argv, err := SplitCommand(cfg.Command)
 	if err != nil {
-		return nil, fmt.Errorf("jest command for %s/%s: %w", service, layer, err)
+		return nil, fmt.Errorf("jest command for %s/%s: %w", service, suite, err)
 	}
 
 	cwd := CommandDir(cfg)
@@ -67,7 +67,7 @@ func (r *JestRunner) Discover(
 		return nil, fmt.Errorf("jest report parse failed: %w", parseErr)
 	}
 
-	failures := jestReportToFailingTests(report, service, layer, cwd)
+	failures := jestReportToFailingTests(report, service, suite, cwd)
 
 	for _, failure := range failures {
 		failure.RunnerConfig = cfg
@@ -79,7 +79,7 @@ func (r *JestRunner) Discover(
 }
 
 // RunOne re-executes one failing Jest assertion by appending
-// `--testNamePattern` (anchored to the escaped fullName) to the layer's
+// `--testNamePattern` (anchored to the escaped fullName) to the suite's
 // own command. Only the pattern is appended, never the spec file: Jest
 // treats bare positionals as an OR-ed set of path patterns, so a file
 // added next to the path the command already carries would widen the
@@ -151,8 +151,8 @@ func jestRanNothing(report *dto.JestReport) bool {
 	return true
 }
 
-// exec runs the layer's command with the supplied argv. cwd is the
-// directory holding the layer's config so `npx` resolves the local Jest
+// exec runs the suite's command with the supplied argv. cwd is the
+// directory holding the suite's config so `npx` resolves the local Jest
 // install. phase labels the invocation in the log and in the captured
 // output's filename. Non-zero exit codes are expected on test failure.
 func (r *JestRunner) exec(
@@ -212,12 +212,12 @@ func parseJestReport(payload []byte) (*dto.JestReport, error) {
 
 // jestReportToFailingTests walks the testResults tree and collects one
 // FailingTest per failed assertion, tagging each with the supplied
-// service and layer. The file path is rebased on cwd to keep it
+// service and suite. The file path is rebased on cwd to keep it
 // repo-relative for prompt display. Free function rather than a method
 // on dto.JestReport so the dto package stays passive.
 func jestReportToFailingTests(
 	report *dto.JestReport,
-	service, layer, cwd string,
+	service, suite, cwd string,
 ) []*FailingTest {
 	out := make([]*FailingTest, 0)
 
@@ -231,9 +231,9 @@ func jestReportToFailingTests(
 
 			name := filePath + jestNameSeparator + assertion.FullName
 			out = append(out, &FailingTest{
-				ID:            BuildID(service, layer, FrameworkJest, name),
+				ID:            BuildID(service, suite, FrameworkJest, name),
 				Service:       service,
-				Layer:         layer,
+				Suite:         suite,
 				Framework:     FrameworkJest,
 				TestName:      name,
 				FilePath:      filePath,
@@ -249,7 +249,7 @@ func jestReportToFailingTests(
 // relative to the supplied cwd, falling back to the absolute path if
 // the relative computation fails.
 //
-// A layer that declares no `config:` has no cwd to rebase against —
+// A suite that declares no `config:` has no cwd to rebase against —
 // filepath.Rel cannot make an absolute path relative to a relative one
 // — so its paths stay absolute and reach the prompt that way. Fixing
 // that means resolving the engine's own working directory, which is a

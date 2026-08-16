@@ -24,8 +24,6 @@
 # layer actually carrying the resolved path through a walk and an
 # atomic commit. That is this fixture's job.
 
-cmd: us apply 95.2 --fix
-
 input: input
 
 # 10m, not the default 5m. One AC against the two shipped prompts takes
@@ -50,28 +48,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    # The single AC is walked — proof the story was found under the
-    # relocated stories_dir.
-    - 'AC 1/1:'
-
-    # A re-walk fires because the add-entry fix was applied during walk
-    # #1. `2/` matches regardless of the cap value (5 in the shipped
-    # checklist).
-    - 'RE-WALK 2/'
-
-    # Final convergence, then the canonical commit.
-    - "ALL CHECKS PASSED!"
-    - "APPLY COMPLETE"
-
-    # THE LOAD-BEARING ONE. `commitApplyWalk` prints the path it
-    # actually renamed the scratch copy onto. A reintroduced hardcode
-    # would print docs/scenarios.yaml here and this regex would fail
-    # even if every other assertion still passed.
-    - 'docs/specs/requirements\.yaml updated from scratch'
-
   judge: |
     # Expectations for `us apply 95.2 --fix` against a relocated registry
 

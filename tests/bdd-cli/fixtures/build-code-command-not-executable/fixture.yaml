@@ -5,26 +5,17 @@
 # splits, it carries `-json`. Only spawning it reveals that the binary
 # does not exist. That is the one failure in this path no validation can
 # reach, so it is the one that most needs to be legible when it happens
-# — naming the layer and the command, not a bare traceback.
+# — naming the suite and the command, not a bare traceback.
 #
 # Deliberately cheap: it exits before the first AI call.
-
-cmd: build code
 
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot run calc/e2e:"
-    - 'true-bdd-no-such-runner'
-    - 'discovery failed'
-
   judge: |
     # Expectations for `true-bdd build code` with an unrunnable command
 
-    The e2e layer's replay command names a binary that does not exist.
+    The e2e suite's replay command names a binary that does not exist.
     The spec is well-formed, so the failure can only surface when the
     command is spawned.
 
@@ -54,7 +45,7 @@ expected:
        `Spawning test runner` record naming `go`, `npx`, or any binary
        the spec did not declare.
     4. The run made **no AI call**: zero records whose `msg` is
-       `"Dispatching AI turn"`. A layer that could not be discovered
+       `"Dispatching AI turn"`. A suite that could not be discovered
        yields no items to walk.
 
     Reply `PASS` if all four hold. Otherwise reply

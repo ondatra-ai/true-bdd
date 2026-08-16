@@ -113,13 +113,13 @@ func newBuildTestsCmd(provide containerProvider) *cobra.Command {
 		"Walk the requirements registry and check every scenario has an executable test",
 		`Walk every scenario in the configured scenario registry
 (documents.scenarios_yaml, conventionally docs/scenarios.yaml) against the
-build-tests checklist. The checklist asks whether each scenario id is
-referenced by an executable test under tests/integration/, tests/e2e/,
-services/backend/, or services/frontend/. With --fix, every failed
-(scenario, prompt) cell drives a Claude-mediated test-authoring turn that
-Writes or Edits a test file under the allowed roots; the registry is never
-touched. The CLI exits non-zero if any scenario is still uncovered after
-the walk.
+build-tests checklist. The checklist asks whether every step of the
+scenario resolves to a step definition in the suite that owns it — the
+entry under architecture.testing.suites[] whose service: matches the
+scenario's service:. With --fix, every failed (scenario, prompt) cell
+drives a Claude-mediated test-authoring turn that Writes or Edits a step
+definition under that suite's path:; the registry is never touched. The
+CLI exits non-zero if any scenario is still uncovered after the walk.
 
 Example:
   true-bdd build tests

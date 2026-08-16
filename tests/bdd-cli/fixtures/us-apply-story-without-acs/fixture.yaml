@@ -13,25 +13,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us apply 95.3
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - 'US APPLY — Story 95\.3'
-    - 'msg="Seeded scratch registry"'
-
-    - 'Cannot start: .*story has no acceptance_criteria entries to apply'
-
-    # Names the file the reader has to open. With several stories in a
-    # host repo, "a story" is not enough to act on.
-    - 'docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
-
-    - 'level=ERROR msg="Refusing to start" command="us apply"'
-
   judge: |
     # Expectations for `true-bdd us apply 95.3` on an unrefined story
 

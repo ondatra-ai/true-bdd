@@ -5,53 +5,65 @@ package bdd_test
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/runner"
+	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/steps"
+	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// -mode selects how fixtures reach the AI CLIs (design:
-// tmp/ai-proxy-design.md). Usage:
+// -mode selects how scenarios reach the AI CLIs. Usage:
 //
-//	go test -tags bdd ./tests/bdd-cli/... -mode=replay
+//	go test -tags bdd ./tests/bdd-cli/ -mode=replay
 //
 // live (default) — real claude/crush, no shim, today's behavior.
 // record — real CLIs behind the aiproxy shim; cassettes are (re)written
 // under each selected fixture's cassettes/ dir. Filter with -run.
 // replay — cassettes served by the shim; real AI CLIs not required
-// (the judge still runs on real claude). A fixture without cassettes
-// FAILS: silence about an un-recorded fixture would let the suite go
-// green while covering less than it claims.
+// (the judge does not run at all). A scenario without cassettes FAILS:
+// silence about an un-recorded scenario would let the suite go green
+// while covering less than it claims.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var proxyMode = flag.String("mode", runner.ProxyModeLive,
-	"AI CLI mode for fixtures: live, record, or replay")
+	"AI CLI mode for scenarios: live, record, or replay")
 
 const (
-	// fixtureTimeout caps the CLI run alone — prep and teardown have
-	// their own budgets. Deliberately tight: past five minutes a
-	// fixture is not slow, it is wrong — a fix prompt that cannot land,
-	// or a cell whose verdict no fix can move. The engine now bounds
-	// its own fix loop and fails on an applier that wrote nothing, so a
-	// run that still overruns this is a bug worth failing fast on
-	// rather than paying thirty minutes to confirm. A fixture whose CLI
-	// invocation legitimately does heavy external work (building a
-	// Docker image, re-running a browser suite) overrides it with
-	// `timeout:` in its manifest.
-	fixtureTimeout = 5 * time.Minute
-	// judgeTimeout caps the post-run judge call. The judge gets its
-	// own fresh context so it can still produce a verdict when the CLI
-	// run hits fixtureTimeout (otherwise the same expired context would
+	// scenarioTimeout caps the CLI run alone — prep and teardown have
+	// their own budgets. Deliberately tight: past five minutes a run is
+	// not slow, it is wrong — a fix prompt that cannot land, or a cell
+	// whose verdict no fix can move. The engine bounds its own fix loop
+	// and fails on an applier that wrote nothing, so a run that still
+	// overruns this is a bug worth failing fast on rather than paying
+	// thirty minutes to confirm. A fixture whose invocation legitimately
+	// does heavy external work (building a Docker image, re-running a
+	// browser suite) overrides it with `timeout:` in its manifest.
+	scenarioTimeout = 5 * time.Minute
+	// judgeTimeout caps the post-run judge call. The judge gets its own
+	// fresh context so it can still produce a verdict when the CLI run
+	// hit scenarioTimeout (otherwise the same expired context would
 	// short-circuit the judge with "context deadline exceeded" and mask
 	// the real "CLI was killed" failure).
 	judgeTimeout = 5 * time.Minute
+	// fixturesDir holds the project tree each scenario's Given step
+	// names, relative to this package.
+	fixturesDir = "fixtures"
 )
 
+// TestBDDFixtures runs every scenario in docs/scenarios.yaml that the
+// architectural spec assigns to the bdd-cli suite.
+//
+// The name is unchanged, and so is each subtest's: a scenario is named
+// after the project tree it drives, which is what every `-run` filter in
+// this repo's gates, CI job and record hints already types. What moved
+// is where the suite's contents come from — the registry, not a
+// directory listing.
 func TestBDDFixtures(t *testing.T) {
 	mode := *proxyMode
 	if mode != runner.ProxyModeLive && mode != runner.ProxyModeRecord && mode != runner.ProxyModeReplay {
@@ -64,7 +76,7 @@ func TestBDDFixtures(t *testing.T) {
 	// installed an agent CLI — so it must NOT skip for a missing one.
 	if mode != runner.ProxyModeReplay {
 		// The judge runs on claude regardless of which CLIs the engine
-		// config routes the fixture's own turns to.
+		// config routes a scenario's own turns to.
 		_, err := exec.LookPath("claude")
 		if err != nil {
 			t.Skipf("`claude` CLI not on $PATH; skipping BDD suite: %v", err)
@@ -73,12 +85,52 @@ func TestBDDFixtures(t *testing.T) {
 		requireConfiguredCLIs(t)
 	}
 
+	harness := buildHarness(t, mode)
+
+	repoRoot, err := runner.FindRepoRoot()
+	if err != nil {
+		t.Fatalf("find repo root: %v", err)
+	}
+
+	suite := bddgo.New[steps.State](t, steps.Options(repoRoot))
+	suite.Init(steps.NewState(harness))
+	steps.Register(suite)
+
+	scenarios, err := suite.Scenarios()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	names := scenarioNames(scenarios)
+
+	checkTreesArePaired(t, names)
+
+	// Written before the first scenario starts: the report's denominator
+	// is what this invocation set out to run, not what it has finished.
+	planned, err := runner.PlannedFixtures("TestBDDFixtures", names,
+		flagValue("test.run"), flagValue("test.skip"))
+	if err != nil {
+		t.Fatalf("resolve planned scenarios: %v", err)
+	}
+
+	err = runner.WriteSessionMeta(harness.SessionRoot, mode, planned)
+	if err != nil {
+		t.Fatalf("write session meta: %v", err)
+	}
+
+	suite.RunScenarios(scenarios)
+}
+
+// buildHarness assembles what every scenario shares: the binary, the
+// session root, the shim, the judge, and the harness process's own log
+// sink.
+func buildHarness(t *testing.T, mode string) *steps.Harness {
+	t.Helper()
+
 	var shimDir string
 	if mode != runner.ProxyModeLive {
 		shimDir = installShimDir(t)
 	}
-
-	binPath := buildTrueBDD(t)
 
 	judge, err := runner.NewClaudeJudge()
 	if err != nil {
@@ -102,50 +154,68 @@ func TestBDDFixtures(t *testing.T) {
 
 	t.Cleanup(closeLog)
 
-	fixtures, err := discoverFixtures()
+	return &steps.Harness{
+		BinPath:      buildTrueBDD(t),
+		SessionRoot:  sessionRoot,
+		ShimDir:      shimDir,
+		Mode:         mode,
+		Judge:        judge,
+		FixturesDir:  fixturesDir,
+		Timeout:      scenarioTimeout,
+		JudgeTimeout: judgeTimeout,
+		Usage:        usage,
+	}
+}
+
+// scenarioNames is the subtest name of each scenario, in run order.
+func scenarioNames(scenarios []bddgo.Scenario) []string {
+	names := make([]string, 0, len(scenarios))
+	for _, scenario := range scenarios {
+		names = append(names, steps.FixtureName(scenario))
+	}
+
+	return names
+}
+
+// checkTreesArePaired refuses a run in which the registry and the
+// fixtures directory disagree.
+//
+// Both directions, because both are silent. A scenario naming a tree
+// that does not exist fails loudly on its own — but a TREE with no
+// scenario does not: it simply stops being run, and a directory nobody
+// executes looks exactly like a directory that passes. Renaming a
+// fixture without updating the registry is the way that happens.
+func checkTreesArePaired(t *testing.T, named []string) {
+	t.Helper()
+
+	entries, err := os.ReadDir(fixturesDir)
 	if err != nil {
-		t.Fatalf("discover fixtures: %v", err)
+		t.Fatalf("read fixtures dir: %v", err)
 	}
 
-	if len(fixtures) == 0 {
-		t.Fatal("no fixtures found under tests/bdd-cli/fixtures/")
+	claimed := make(map[string]bool, len(named))
+	for _, name := range named {
+		claimed[name] = true
 	}
 
-	names := make([]string, 0, len(fixtures))
-	for _, dir := range fixtures {
-		names = append(names, filepath.Base(dir))
+	var orphans []string
+
+	for _, entry := range entries {
+		if !entry.IsDir() || claimed[entry.Name()] {
+			continue
+		}
+
+		orphans = append(orphans, entry.Name())
 	}
 
-	// Written before the first fixture starts: the report's denominator
-	// is what this invocation set out to run, not what it has finished.
-	planned, err := runner.PlannedFixtures("TestBDDFixtures", names,
-		flagValue("test.run"), flagValue("test.skip"))
-	if err != nil {
-		t.Fatalf("resolve planned fixtures: %v", err)
+	if len(orphans) == 0 {
+		return
 	}
 
-	err = runner.WriteSessionMeta(sessionRoot, mode, planned)
-	if err != nil {
-		t.Fatalf("write session meta: %v", err)
-	}
-
-	for _, dir := range fixtures {
-		name := filepath.Base(dir)
-
-		t.Run(name, func(t *testing.T) {
-			// Registered FIRST so it runs LAST: t.Cleanup is LIFO, and
-			// this has to bracket every other cleanup to measure the
-			// span `go test` reports. A cleanup rather than a defer
-			// because it then also fires under t.Fatalf's runtime.Goexit
-			// and under a panic — the two cases a statement at the end
-			// of runFixture would miss, and the two a report is most
-			// needed for.
-			rec := runner.NewHarnessRecorder(sessionRoot, name, mode, usage)
-			t.Cleanup(func() { rec.Finish(t.Failed(), t.Skipped()) })
-
-			runFixture(t, dir, binPath, sessionRoot, judge, rec, mode, shimDir)
-		})
-	}
+	sort.Strings(orphans)
+	t.Fatalf("%d fixture tree(s) no scenario names, so nothing runs them: %s\n"+
+		"add a scenario to docs/scenarios.yaml for each, or delete the tree",
+		len(orphans), strings.Join(orphans, ", "))
 }
 
 // installShimDir builds the aiproxy shim and installs it as claude /
@@ -167,7 +237,7 @@ func installShimDir(t *testing.T) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "go", "build", "-C", "../..", "-o", proxyPath, "./tests/aiproxy")
+	cmd := exec.CommandContext(ctx, "go", "build", "-C", "../..", "-o", proxyPath, "./tests/libraries/aiproxy")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -184,76 +254,6 @@ func installShimDir(t *testing.T) string {
 	}
 
 	return shimDir
-}
-
-// proxySetup is one fixture's recording context: where the shim reads or
-// writes cassettes, where its cursors live, and — in replay — the
-// recorded outcome the run will be graded against.
-type proxySetup struct {
-	Env []string
-	// Cassettes is the directory the shim uses this run: the fixture's
-	// own in replay, the staging directory in record.
-	Cassettes string
-	StateDir  string
-	// Staging is non-empty in record mode only, and is what a passing
-	// run publishes.
-	Staging string
-	// Golden is the recorded outcome, loaded in replay mode only.
-	Golden *runner.GoldenTree
-}
-
-// aiProxyEnv resolves one fixture's proxy setup.
-//
-// Live returns the zero value (no shim, no env — byte-for-byte today's
-// run). Replay FAILS a fixture that has no cassettes or no recorded
-// outcome: an un-recorded fixture is an un-run fixture, and a skip is
-// the one outcome a green suite can hide. Record writes to staging and
-// publishes only on a passing verdict — see promoteCassettes.
-func aiProxyEnv(
-	t *testing.T,
-	mode, shimDir string,
-	fixture *runner.Fixture,
-	sessionRoot string,
-) proxySetup {
-	t.Helper()
-
-	if mode == runner.ProxyModeLive {
-		return proxySetup{}
-	}
-
-	setup := proxySetup{Cassettes: cassetteDir(t, fixture.Dir)}
-
-	if mode == runner.ProxyModeReplay {
-		_, statErr := os.Stat(setup.Cassettes)
-		if statErr != nil {
-			t.Fatalf("no cassettes for %s: %v\n%s", fixture.Name, statErr, recordHint(fixture.Name))
-		}
-
-		golden, err := runner.ReadGolden(setup.Cassettes)
-		if err != nil {
-			t.Fatalf("no recorded outcome for %s: %v\n%s", fixture.Name, err, recordHint(fixture.Name))
-		}
-
-		setup.Golden = golden
-	}
-
-	if mode == runner.ProxyModeRecord {
-		setup.Staging = prepareStaging(t, sessionRoot, fixture.Name)
-		setup.Cassettes = setup.Staging
-	}
-
-	// Cursor state lives under the run's engine-scratch tmp/ — inside
-	// the snapshot window but excluded from the graded diff, and wiped
-	// with the run dir.
-	setup.StateDir = filepath.Join(runner.RunDir(sessionRoot, fixture.Name), "tmp", "aiproxy-state")
-	setup.Env = runner.AIProxyEnv(mode, shimDir, setup.Cassettes, setup.StateDir)
-
-	return setup
-}
-
-func recordHint(fixture string) string {
-	return fmt.Sprintf("record it with: go test -tags bdd -run 'TestBDDFixtures/%s' ./tests/bdd-cli/ -mode=record",
-		fixture)
 }
 
 func buildTrueBDD(t *testing.T) string {
@@ -289,177 +289,6 @@ func flagValue(name string) string {
 	}
 
 	return found.Value.String()
-}
-
-func discoverFixtures() ([]string, error) {
-	entries, err := os.ReadDir("fixtures")
-	if err != nil {
-		return nil, fmt.Errorf("read fixtures dir: %w", err)
-	}
-
-	var dirs []string
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		dirs = append(dirs, filepath.Join("fixtures", entry.Name()))
-	}
-
-	return dirs, nil
-}
-
-func runFixture(
-	t *testing.T,
-	dir, binPath, sessionRoot string,
-	judge runner.Judge,
-	rec *runner.HarnessRecorder,
-	mode, shimDir string,
-) {
-	t.Helper()
-
-	fixture, err := runner.LoadFixture(dir)
-	if err != nil {
-		rec.AddFailure("load fixture: " + err.Error())
-		t.Fatalf("load fixture: %v", err)
-	}
-
-	// Snapshotted now, while this run's manifest is in hand. fixture.yaml
-	// never reaches the tmpdir, so a report built later would otherwise
-	// show today's expectations against this run's actuals.
-	rec.ObserveFixture(fixture)
-
-	proxy := aiProxyEnv(t, mode, shimDir, fixture, sessionRoot)
-
-	timeout := fixtureTimeout
-	if fixture.Timeout > 0 {
-		timeout = fixture.Timeout
-	}
-
-	t.Logf("running %q (%s, timeout %s) — this can take several minutes",
-		fixture.Cmd, fixture.Name, timeout)
-
-	// The deadline is applied inside Execute, around the CLI exec alone —
-	// the tmpdir build and the pre-run snapshot must not spend it.
-	res, err := runner.Execute(context.Background(), fixture, binPath, sessionRoot, timeout, proxy.Env...)
-
-	// Before the branch: a run that errored still has a diff worth
-	// recording, and the tmpdir path is what makes it findable.
-	rec.ObserveRun(res, err)
-
-	if err != nil {
-		rec.AddFailure("execute: " + err.Error())
-		dumpRun(t, res)
-		t.Fatalf("execute: %v", err)
-	}
-
-	verdict := grade(t, mode, fixture, res, judge, proxy)
-	rec.ObserveVerdict(verdict)
-
-	if verdict.Pass() {
-		t.Logf("PASS %s (exit=%d, %d file change(s)) — dir: %s",
-			fixture.Name, res.ExitCode, len(res.Diff), res.TmpDir)
-
-		if proxy.Staging != "" {
-			recordOutcome(t, fixture, res, proxy.Staging)
-			promoteCassettes(t, fixture.Dir, proxy.Staging)
-		}
-
-		return
-	}
-
-	if proxy.Staging != "" {
-		t.Logf("cassettes NOT recorded — the run failed; the rejected recording is at %s "+
-			"and %s is unchanged", proxy.Staging, cassetteDir(t, fixture.Dir))
-	}
-
-	dumpRun(t, res)
-
-	for _, msg := range verdict.Failures {
-		t.Errorf("  - %s", msg)
-	}
-
-	t.Fatalf("fixture %s failed (%d check(s))", fixture.Name, len(verdict.Failures))
-}
-
-// grade picks how this run is judged. Replay compares the recording —
-// deterministic, free, and strictly more specific than a rubric, since
-// every AI-written file in a replayed run came out of a cassette to
-// begin with. Live and record ask the judge, which is where a rubric
-// earns its keep: the output is new.
-func grade(
-	t *testing.T,
-	mode string,
-	fixture *runner.Fixture,
-	res *runner.RunResult,
-	judge runner.Judge,
-	proxy proxySetup,
-) runner.Verdict {
-	t.Helper()
-
-	if mode == runner.ProxyModeReplay {
-		return runner.EvaluateRecorded(fixture, res, proxy.Golden, proxy.Cassettes, proxy.StateDir)
-	}
-
-	judgeCtx, judgeCancel := context.WithTimeout(context.Background(), judgeTimeout)
-	defer judgeCancel()
-
-	return runner.Evaluate(judgeCtx, fixture, res, judge)
-}
-
-// recordOutcome writes the run's resulting tree beside its cassettes, so
-// a later replay has something deterministic to be graded against.
-func recordOutcome(t *testing.T, fixture *runner.Fixture, res *runner.RunResult, staging string) {
-	t.Helper()
-
-	golden := runner.NewGoldenTree(fixture.Name, res.Diff)
-
-	err := runner.WriteGolden(staging, golden)
-	if err != nil {
-		t.Fatalf("write golden tree: %v", err)
-	}
-
-	t.Logf("recorded outcome: %d file(s) outside tmp/", len(golden.Files))
-}
-
-func dumpRun(t *testing.T, result *runner.RunResult) {
-	t.Helper()
-
-	if result == nil {
-		return
-	}
-
-	t.Logf("tmpdir preserved at: %s", result.TmpDir)
-	t.Logf("exit code: %d", result.ExitCode)
-
-	// The clipped stderr below is a convenience; these two files hold
-	// the streams in full and outlive the test process.
-	if result.StdoutFile != "" {
-		t.Logf("cli stdout: %s (%d bytes)", result.StdoutFile, len(result.Stdout))
-	}
-
-	if result.StderrFile != "" {
-		t.Logf("cli stderr: %s (%d bytes)", result.StderrFile, len(result.Stderr))
-	}
-
-	if result.Stderr != "" {
-		t.Logf("stderr (first 4KB):\n%s", clip(result.Stderr, 4096))
-	}
-
-	t.Logf("file diff (%d entries):", len(result.Diff))
-
-	for _, change := range result.Diff {
-		t.Logf("  %s %s (%d bytes)", change.Kind, change.Path, len(change.After))
-	}
-}
-
-func clip(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-
-	return s[:n] + "…(truncated)…"
 }
 
 // requireConfiguredCLIs skips the suite when a CLI the engine's seed

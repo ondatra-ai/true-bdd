@@ -1,19 +1,6 @@
-cmd: --help
 input: input
 
 expected:
-  exit_code: 0
-
-  # Root help banner: short description, usage line, both subcommand groups, help flag.
-  stdout_regex:
-    - "TrueBDD CLI"
-    - "Usage:"
-    - 'true-bdd \[command\]'
-    - "Available Commands:"
-    - '\bbuild\b'
-    - '\bus\b'
-    - "-h, --help"
-
   judge: |
     # Expectations for `true-bdd --help`
 

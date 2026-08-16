@@ -15,27 +15,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us apply 95.5
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - 'US APPLY — Story 95\.5'
-    - 'msg="Seeded scratch registry"'
-
-    - 'Cannot start: .*story uses deprecated scenarios\.test_scenarios format'
-
-    # The refusal must say what to do, not only what is wrong. This is
-    # an upgrade path: the reader needs the target shape named.
-    - 'us apply requires acceptance_criteria with embedded steps'
-
-    - 'docs/product/stories/95\.5-legacy-test-scenarios\.yaml'
-
-    - 'level=ERROR msg="Refusing to start" command="us apply"'
-
   judge: |
     # Expectations for `true-bdd us apply 95.5` on a legacy-format story
 

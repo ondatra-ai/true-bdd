@@ -1,0 +1,711 @@
+# The scenario registry: every behaviour this repository is held to.
+#
+# Path from `documents.scenarios_yaml` in true-bdd/true-bdd.yaml.
+#
+# `build tests` walks it and asks whether each scenario's steps resolve to
+# a step definition in the suite that owns it — the entry in
+# architecture.testing.suites[] whose `service:` matches the scenario's.
+# tests/libraries/bddgo then RUNS it: one Go subtest per scenario, steps
+# bound by regexp to the definitions under that suite's path.
+#
+# Derived once from the tests/bdd-cli fixtures, which already were these
+# scenarios in every respect but name. Hand-owned since; `us apply` is
+# the writer for anything new.
+
+metadata:
+  title: Scenario registry
+  version: '1.0'
+  last_updated: '2026-08-16'
+  description: Every behaviour the TrueBDD engine is held to, one entry per scenario. Derived once from the tests/bdd-cli fixtures; hand-owned since, with `us apply` as the writer for new entries.
+scenarios:
+  E2E-001:
+    description: A command the spec states correctly but the machine cannot run must fail loudly, and on stdout
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-command-not-executable" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot run calc/e2e:'
+        - stdout matches true-bdd-no-such-runner
+        - stdout matches discovery failed
+  E2E-002:
+    description: A command that runs fine but cannot be parsed must be refused
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-command-not-machine-readable" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches must emit machine-readable output
+        - stdout matches is missing -json
+        - stdout matches calc/e2e
+  E2E-003:
+    description: '`build code` must run the command its architectural spec declares — and specifically the `replay` one'
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-commands-from-spec" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 0
+        - stdout matches Running calc/e2e tests via go-test
+        - stdout matches 0 failure\(s\) in calc/e2e
+        - 'stdout matches Total failing tests across architecture: 0'
+        - stdout matches BUILD CODE COMPLETE
+  E2E-004:
+    description: A suite command that is present but names no program must be refused
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-empty-command" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - 'stdout matches calc/e2e: test suite command is empty'
+        - 'stdout matches test suite command is empty: "''''"'
+        - stdout matches level=ERROR msg="Refusing to start" command="build code"
+  E2E-005:
+    description: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-fix-named-test" project tree
+        - the System Architect answers each failed check
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches Running calc/e2e tests via go-test
+        - stdout matches 1 failure\(s\) in calc/e2e
+        - 'stdout matches Total failing tests across architecture: 1'
+        - stdout matches Fix applied — re-running this test in isolation
+        - stdout matches BUILD CODE COMPLETE
+  E2E-006:
+    description: A spec the loader cannot decode must be refused with the file named
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-malformed-spec" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches failed to parse architecture file
+        - stdout matches docs/architecture/architecture\.yaml
+  E2E-007:
+    description: A test suite that does not say how to run itself must be refused, not run some other way
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-missing-suite-command" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches commands\.replay
+        - stdout matches architecture\.testing\.suites\[e2e\]
+  E2E-008:
+    description: An architectural spec that declares no services at all must be refused, not walked to a trivial success
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-no-services" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches no services to walk
+  E2E-009:
+    description: An architectural spec that declares no test suites must be refused, not walked to a trivial success
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-no-suites" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches no test suites to walk
+  E2E-010:
+    description: A walk that ends with a test still failing must exit non-zero
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-nonconvergence" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - stdout matches Running calc/e2e tests via go-test
+        - stdout matches 1 failure\(s\) in calc/e2e
+        - 'stdout matches Total failing tests across architecture: 1'
+        - stdout matches BUILD CODE COMPLETE
+  E2E-011:
+    description: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-playwright-nextjs" project tree
+        - the System Architect answers each failed check
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches frontend/integration tests via playwright
+        - stdout matches BUILD CODE COMPLETE
+  E2E-012:
+    description: A framework the engine cannot route to must be refused, not walked
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-unknown-framework" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches unknown test framework
+        - stdout matches rspec
+        - stdout matches calc/e2e
+  E2E-013:
+    description: A suite whose `service:` names no declared service must be refused
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-unknown-suite-service" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches architecture\.testing\.suites\[e2e\]
+        - stdout matches service "calulator"
+        - stdout matches names a service the architecture does not declare
+  E2E-014:
+    description: A command whose quoting never closes must be refused, not guessed
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-code-unterminated-quote" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start:'
+        - stdout matches unterminated quote
+        - stdout matches calc/e2e
+  E2E-015:
+    description: A registry that parses but holds no scenarios must be refused, never walked to a trivial success
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-empty-registry" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches BUILD TESTS
+        - 'stdout matches Cannot start: .*requirements registry has no scenarios to walk'
+        - 'stdout matches docs/scenarios\.yaml: requirements registry has no scenarios to walk'
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+  E2E-016:
+    description: A registry scenario with no test must drive the fix loop until a test referencing it exists
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-fix-happy-path" project tree
+        - the System Architect answers each failed check
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+  E2E-017:
+    description: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-malformed-registry" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches BUILD TESTS
+        - 'stdout matches Cannot start: .*failed to parse requirements registry .*docs/scenarios\.yaml: yaml: unmarshal errors:'
+        - stdout matches cannot unmarshal !!seq into map\[string\]
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+  E2E-018:
+    description: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-unconfigured-registry" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start: resolve scenario registry'
+        - stdout matches documents\.scenarios_yaml
+  E2E-019:
+    description: Multi-provider routing must fail LOUDLY, never quietly
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-unknown-cli-tier" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+  E2E-020:
+    description: --help must print the command tree and change nothing on disk
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "help-flag" project tree
+      when:
+        - the System Architect runs "--help"
+      then:
+        - the command exits with code 0
+        - stdout matches TrueBDD CLI
+        - 'stdout matches Usage:'
+        - stdout matches true-bdd \[command\]
+        - 'stdout matches Available Commands:'
+        - stdout matches \bbuild\b
+        - stdout matches \bus\b
+        - stdout matches -h, --help
+        - no file outside "tmp" changed
+  E2E-021:
+    description: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-duplicate-collapse" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us apply 95.1 --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches AC 1/1:'
+        - stdout matches RE-WALK 2/
+        - stdout matches ALL CHECKS PASSED!
+        - stdout matches APPLY COMPLETE
+  E2E-022:
+    description: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-malformed-scenarios" project tree
+      when:
+        - the Product Owner runs "us apply 95.5"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story 95\.5
+        - stdout matches msg="Seeded scratch registry"
+        - 'stdout matches Cannot start: .*story uses deprecated scenarios\.test_scenarios format'
+        - stdout matches us apply requires acceptance_criteria with embedded steps
+        - stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+  E2E-023:
+    description: '`us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for'
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-missing-story" project tree
+      when:
+        - the Product Owner runs "us apply 95.4"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story 95\.4
+        - stdout matches msg="Seeded scratch registry"
+        - 'stdout matches Cannot start: .*no story file found for story 95\.4'
+        - 'stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+  E2E-024:
+    description: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-relocated-registry" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us apply 95.2 --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches AC 1/1:'
+        - stdout matches RE-WALK 2/
+        - stdout matches ALL CHECKS PASSED!
+        - stdout matches APPLY COMPLETE
+        - stdout matches docs/specs/requirements\.yaml updated from scratch
+  E2E-025:
+    description: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-rewalk-converges" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us apply 99.3 --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches AC 1/2:'
+        - 'stdout matches AC 2/2:'
+        - stdout matches RE-WALK 2/
+        - stdout matches ALL CHECKS PASSED!
+        - stdout matches APPLY COMPLETE
+  E2E-026:
+    description: '`us apply` on a story that was created but never refined must be refused, not walked to a trivial success'
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-story-without-acs" project tree
+      when:
+        - the Product Owner runs "us apply 95.3"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story 95\.3
+        - stdout matches msg="Seeded scratch registry"
+        - 'stdout matches Cannot start: .*story has no acceptance_criteria entries to apply'
+        - 'stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+  E2E-027:
+    description: Two files claiming the same epic number must be refused, not silently resolved by taking the first glob match
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-ambiguous-epic" project tree
+      when:
+        - the Product Owner runs "us create 92.1"
+      then:
+        - the command exits with code 1
+        - stdout matches US CREATE — Story 92\.1
+        - 'stdout matches Cannot start: failed to load items: failed to load story:'
+        - stdout matches failed to load epic 92
+        - stdout matches multiple epic files found matching pattern docs/product/epics/epic-92-\*\.yaml
+        - stdout matches \[docs/product/epics/epic-92-document-intelligence\.yaml docs/product/epics/epic-92-summaries\.yaml\]
+        - stdout matches level=ERROR msg="Refusing to start" command="us create"
+  E2E-028:
+    description: A story number that is not `<epic>.<story>` must be refused before anything is read
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-bad-story-number" project tree
+      when:
+        - the Product Owner runs "us create 4"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start: invalid story number: invalid story number format'
+        - stdout matches expected <epic>\.<story>, got "4"
+        - stdout matches level=ERROR msg="Refusing to start" command="us create"
+  E2E-029:
+    description: An implementation term in a story seed's so_that clause must drive the fix loop until the clause states a user outcome
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-fix-happy-path" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us create 99.1 --fix"
+      then:
+        - the command exits with code 0
+  E2E-030:
+    description: A story seed that passes every check must be written to the stories directory as one new file
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-happy-path" project tree
+      when:
+        - the Product Owner runs "us create 99.1"
+      then:
+        - the command exits with code 0
+  E2E-031:
+    description: A story seed with no as_a clause and a generic so_that must fail both checks and write no story file
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-missing-clause" project tree
+      when:
+        - the Product Owner runs "us create 97.1"
+      then:
+        - the command exits with code 0
+        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
+        - stdout matches CREATE COMPLETE
+  E2E-032:
+    description: A checklist prompt may only ask for evidence the engine can actually hand it
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-missing-document" project tree
+      when:
+        - the Product Owner runs "us create 99.1"
+      then:
+        - the command exits with code 1
+        - stdout matches docs/product/product\.yaml
+        - 'stdout matches Cannot start: checklist declares documents that cannot be provided'
+        - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us create" checklist=us-create'
+  E2E-033:
+    description: An epic number with no file must be refused, and the refusal must show the filename pattern that found nothing
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-missing-epic" project tree
+      when:
+        - the Product Owner runs "us create 93.1"
+      then:
+        - the command exits with code 1
+        - stdout matches US CREATE — Story 93\.1
+        - 'stdout matches Cannot start: failed to load items: failed to load story:'
+        - stdout matches failed to load epic 93
+        - stdout matches no epic file found matching pattern docs/product/epics/epic-93-\*\.yaml
+        - stdout matches level=ERROR msg="Refusing to start" command="us create"
+  E2E-034:
+    description: Asking for a story index the epic does not have must be refused with both numbers in the message
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-story-out-of-range" project tree
+      when:
+        - the Product Owner runs "us create 94.7"
+      then:
+        - the command exits with code 1
+        - stdout matches US CREATE — Story 94\.7
+        - 'stdout matches Cannot start: failed to load items: failed to load story:'
+        - stdout matches story index 7 out of bounds for epic 94 \(has 2 stories\)
+        - stdout matches level=ERROR msg="Refusing to start" command="us create"
+  E2E-035:
+    description: A story seed defective in every checked dimension must report each failure and write no story file
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-create-validation-fails" project tree
+      when:
+        - the Product Owner runs "us create 98.1"
+      then:
+        - the command exits with code 0
+        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
+        - stdout matches CREATE COMPLETE
+  E2E-036:
+    description: Two files claiming the same story id must be refused, not silently resolved by picking one
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-ambiguous-story" project tree
+      when:
+        - the Product Owner runs "us refine 96.9"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story 96\.9
+        - stdout matches level=ERROR msg="Multiple story files found" story_number=96\.9 count=2
+        - 'stdout matches Cannot start: failed to load items: failed to load story 96\.9:'
+        - stdout matches multiple story files found for story 96\.9
+        - stdout matches 96\.9-document-summary\.yaml
+        - stdout matches 96\.9-document-summary-v2\.yaml
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+  E2E-037:
+    description: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-desc-qualifier" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us refine 96.6 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-038:
+    description: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-descriptions" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us refine 96.2 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-039:
+    description: A forbidden action verb in a step must drive the fix loop until the step names an observable action
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-forbidden-verb" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us refine 96.8 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-040:
+    description: A vague qualifier in a step must drive the fix loop until the step is measurable
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-step-qualifier" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us refine 96.7 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-041:
+    description: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-steps" project tree
+        - the Product Owner answers each failed check
+      when:
+        - the Product Owner runs "us refine 96.5 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-042:
+    description: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-happy-path" project tree
+      when:
+        - the Product Owner runs "us refine 96.1"
+      then:
+        - the command exits with code 0
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches Story saved to:'
+        - stdout matches REFINE COMPLETE
+  E2E-043:
+    description: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-malformed-story" project tree
+      when:
+        - the Product Owner runs "us refine 96.9"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story 96\.9
+        - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml
+        - 'stdout matches Cannot start: failed to load items: failed to load story 96\.9:'
+        - stdout matches failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml
+        - stdout matches mapping values are not allowed in this context
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+  E2E-044:
+    description: '`us refine` on a story that was never created must be refused, and the refusal must tell the user which command makes the file'
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-missing-story" project tree
+      when:
+        - the Product Owner runs "us refine 96.9"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story 96\.9
+        - stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml
+        - 'stdout matches Cannot start: .*run `true-bdd us create 96\.9` first'
+        - stdout matches no story file found for story 96\.9 in docs/product/stories
+        - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+  E2E-045:
+    description: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-no-happy-path" project tree
+      when:
+        - the Product Owner runs "us refine 96.4"
+      then:
+        - the command exits with code 0
+        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
+        - stdout matches REFINE COMPLETE
+  E2E-046:
+    description: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
+    service: bdd-cli
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-validation-fails" project tree
+      when:
+        - the Product Owner runs "us refine 96.3"
+      then:
+        - the command exits with code 0
+        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
+        - stdout matches REFINE COMPLETE
+  E2E-047:
+    description: The relay's landing page names the product and says what the list below it holds
+    service: bdd-web
+    user_stories: []
+    merged_steps:
+      given:
+        - the relay is running
+      when:
+        - the Product Owner opens "/"
+      then:
+        - the page title is "TrueBDD"
+        - the page shows "Workspaces connected to this relay"

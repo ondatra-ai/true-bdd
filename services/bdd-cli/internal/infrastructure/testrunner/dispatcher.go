@@ -25,7 +25,7 @@ const (
 	statusTimedOut = "timedOut"
 )
 
-// Config is one test-layer block consumed by a Runner. Field shape
+// Config is one test-suite block consumed by a Runner. Field shape
 // mirrors architecture.TestConfig; conversion happens at the LoadItems
 // boundary in commands/build_code.go to keep this package free of any
 // dependency on the architecture loader.
@@ -35,7 +35,7 @@ type Config struct {
 	ConfigFile string // repo-relative config (e.g. "tests/playwright.config.ts")
 	Pattern    string // framework-specific filename glob (informational)
 
-	// Command is the complete command line this layer's suite runs
+	// Command is the complete command line this suite's suite runs
 	// under, verbatim from the spec's `commands:` block. Only the
 	// selected mode's string is carried here, so this package never
 	// learns the record/replay/live vocabulary — picking one is the
@@ -50,10 +50,10 @@ type Config struct {
 type Runner interface {
 	// Discover runs every test under cfg and returns one FailingTest per
 	// failure. The runner is responsible for tagging each entry with
-	// the supplied service + layer + the dispatcher's framework name.
+	// the supplied service + suite + the dispatcher's framework name.
 	// Returns a non-nil error only on infrastructure problems (missing
 	// binary, unparseable output) — test failures are values, not errors.
-	Discover(ctx context.Context, cfg Config, service, layer string) ([]*FailingTest, error)
+	Discover(ctx context.Context, cfg Config, service, suite string) ([]*FailingTest, error)
 
 	// RunOne re-executes a single failing test in isolation by its
 	// framework-native TestName. Returns whether the test now passes,

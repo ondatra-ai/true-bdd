@@ -8,14 +8,14 @@ import (
 	"strings"
 )
 
-// ErrEmptyCommand signals a test-layer command that split to no tokens
+// ErrEmptyCommand signals a test-suite command that split to no tokens
 // at all — an empty or whitespace-only string reaching a runner.
-var ErrEmptyCommand = errors.New("test layer command is empty")
+var ErrEmptyCommand = errors.New("test suite command is empty")
 
 // ErrUnterminatedQuote signals a command whose quoting never closed.
 // Refused rather than guessed: a half-quoted `-run '^Test` would
 // otherwise silently become two arguments and quietly change what runs.
-var ErrUnterminatedQuote = errors.New("unterminated quote in test layer command")
+var ErrUnterminatedQuote = errors.New("unterminated quote in test suite command")
 
 // ErrRerunSelectedNoTests signals a per-test rerun whose filter matched
 // nothing. Reported rather than swallowed because the alternative is
@@ -29,7 +29,7 @@ var ErrRerunSelectedNoTests = errors.New("test rerun selected no tests")
 // converges on zero items — a false green, which is the one failure
 // mode worth a startup error.
 var ErrCommandNotMachineReadable = errors.New(
-	"test layer command must emit machine-readable output")
+	"test suite command must emit machine-readable output")
 
 // The flag each framework needs so its runner parses results rather
 // than prose.
@@ -173,7 +173,7 @@ func (s *commandSplitter) finish(command string) ([]string, error) {
 	return s.args, nil
 }
 
-// ValidateCommand checks one layer's command before anything is
+// ValidateCommand checks one suite's command before anything is
 // spawned: it must split, and it must carry its framework's
 // machine-readable output flag.
 func ValidateCommand(framework, command string) error {
@@ -231,7 +231,7 @@ func carriesOutputFlag(args []string, flag outputFlag) bool {
 	return false
 }
 
-// CommandDir reports the directory a layer's command runs in: the
+// CommandDir reports the directory a suite's command runs in: the
 // directory holding its `config:` file when it declares one, and
 // otherwise the empty string, which exec reads as "inherit the engine's
 // own working directory".
@@ -245,7 +245,7 @@ func carriesOutputFlag(args []string, flag outputFlag) bool {
 // used to hardcode. The config directory matters because `npx` resolves
 // the local install by walking up from the working directory: a jest or
 // playwright command run from the repo root would miss node_modules and
-// fetch a different version from the registry. A go-test layer declares
+// fetch a different version from the registry. A go-test suite declares
 // no config and so runs where the engine does, which is what its `-C`
 // flag used to arrange.
 func CommandDir(cfg Config) string {
@@ -258,7 +258,7 @@ func CommandDir(cfg Config) string {
 
 // commandArgv splits a FailingTest's recorded command for a rerun,
 // naming the test in the error so a malformed command found on the
-// rerun path is still attributable to the layer that declared it.
+// rerun path is still attributable to the suite that declared it.
 func commandArgv(ft *FailingTest) ([]string, error) {
 	argv, err := SplitCommand(ft.RunnerConfig.Command)
 	if err != nil {
