@@ -17,25 +17,9 @@
 # Deliberately cheap: it exits before the first AI call, so unlike most
 # fixtures it costs no model time.
 
-cmd: build tests
-
 input: input
 
 expected:
-  # The resolve fails, cobra reports it, the CLI exits 1.
-  exit_code: 1
-
-  stdout_regex:
-    # The refusal must be attributable on stdout, not only as a cobra
-    # stderr line under a usage dump. `build tests` resolves the
-    # registry in the cmd layer, ahead of the runner's own document
-    # check, so this line comes from refuseUnresolvedDoc.
-    - "Cannot start: resolve scenario registry"
-
-    # And it must name the key the host has to set — a refusal that
-    # says only "not configured" sends the reader hunting.
-    - 'documents\.scenarios_yaml'
-
   judge: |
     # Expectations for `true-bdd build tests` with no registry configured
 

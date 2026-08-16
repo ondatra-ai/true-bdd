@@ -7,22 +7,23 @@
 # single token is an empty argument. Left to run, that hands exec an
 # empty program name.
 #
-# So this is the last gap in the layer-command pre-pass: the sibling
+# So this is the last gap in the suite-command pre-pass: the sibling
 # fixtures cover a command that is absent, unterminated, unparseable and
 # unspawnable; this one covers present-and-empty.
 
 architecture:
+  testing:
+    suites:
+      - name: e2e
+        service: calc
+        path: tests
+        framework: go-test
+        commands:
+          record: "go test -json -count=1 ./tests/suite/..."
+          replay: "''"
+          live: "go test -json -count=1 ./tests/suite/..."
+
   services:
     - name: calc
       path: services/calc
       language: go
-
-      quality_gate:
-        tests:
-          e2e:
-            path: tests
-            framework: go-test
-            commands:
-              record: "go test -json -count=1 ./tests/suite/..."
-              replay: "''"
-              live: "go test -json -count=1 ./tests/suite/..."

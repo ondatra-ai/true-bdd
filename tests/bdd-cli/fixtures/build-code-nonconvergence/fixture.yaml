@@ -11,23 +11,13 @@
 # converged. Costs exactly one AI turn — the validation turn that
 # mirrors the runner's verdict.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Running calc/e2e tests via go-test"
-    - '1 failure\(s\) in calc/e2e'
-    - "Total failing tests across architecture: 1"
-    - "BUILD CODE COMPLETE"
-
   judge: |
     # Expectations for `true-bdd build code` on a walk that cannot converge
 
-    The e2e layer's suite holds one test, `TestUnfixable`, that fails
+    The e2e suite's suite holds one test, `TestUnfixable`, that fails
     unconditionally. The command is correct and the walk runs; without
     `--fix` nothing can move the failure, so the run must end NOT
     converged and the CLI must exit non-zero.

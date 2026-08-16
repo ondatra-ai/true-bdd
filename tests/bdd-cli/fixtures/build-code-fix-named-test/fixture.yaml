@@ -28,8 +28,6 @@
 # judge and by the architecture's write root, which grants the applier
 # `services/calc` and nothing else.
 
-cmd: build code --fix
-
 input: input
 
 answers: |
@@ -41,22 +39,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    # Discovery ran the layer under the command the spec declares and
-    # found exactly one failure — the canary passed and was never walked.
-    - 'Running calc/e2e tests via go-test'
-    - '1 failure\(s\) in calc/e2e'
-    - 'Total failing tests across architecture: 1'
-
-    # THE LOAD-BEARING LINE. It is printed immediately before RunOne, so
-    # its presence is what proves the run reached the named-rerun path at
-    # all rather than converging some other way.
-    - 'Fix applied — re-running this test in isolation'
-
-    - 'BUILD CODE COMPLETE'
-
   judge: |
     # Expectations for `true-bdd build code --fix` re-running one named test
 

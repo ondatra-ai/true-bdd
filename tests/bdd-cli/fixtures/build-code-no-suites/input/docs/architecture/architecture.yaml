@@ -1,0 +1,14 @@
+# An architectural spec that declares services but no test suites.
+# Syntactically valid, semantically nothing to run: `architecture.testing`
+# is absent entirely, so no command exists for `build code` to execute.
+#
+# Sibling of `build-code-no-services`, which covers the other half of the
+# same emptiness. Both guard the quiet failure: a walk over zero suites
+# discovers zero failing tests, converges, and reports success — so
+# "you declared no tests" would read as "all your tests pass".
+
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go

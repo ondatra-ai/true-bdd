@@ -1,4 +1,19 @@
 architecture:
+  testing:
+    suites:
+      - name: integration
+        service: frontend
+        path: tests/integration
+        framework: playwright
+        config: tests/playwright.config.ts
+        # Run from the directory holding `config:` (here `tests/`), so
+        # `npx` resolves this fixture's own Playwright install and the
+        # paths below stay relative to it.
+        commands:
+          record: "npx playwright test --reporter=json --config playwright.config.ts integration"
+          replay: "npx playwright test --reporter=json --config playwright.config.ts integration"
+          live: "npx playwright test --reporter=json --config playwright.config.ts integration"
+
   services:
     - name: frontend
       path: services/frontend
@@ -18,17 +33,5 @@ architecture:
         code:
           - name: typescript
             config: services/frontend/tsconfig.json
-        tests:
-          integration:
-            path: tests/integration
-            framework: playwright
-            config: tests/playwright.config.ts
-            # Run from the directory holding `config:` (here `tests/`),
-            # so `npx` resolves this fixture's own Playwright install and
-            # the paths below stay relative to it.
-            commands:
-              record: "npx playwright test --reporter=json --config playwright.config.ts integration"
-              replay: "npx playwright test --reporter=json --config playwright.config.ts integration"
-              live: "npx playwright test --reporter=json --config playwright.config.ts integration"
 
       dependencies: []

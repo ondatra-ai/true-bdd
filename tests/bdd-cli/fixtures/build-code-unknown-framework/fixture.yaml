@@ -1,6 +1,6 @@
 # A framework the engine cannot route to must be refused, not walked.
 #
-# `rspec` has no runner registered, so there is nothing for the layer's
+# `rspec` has no runner registered, so there is nothing for the suite's
 # declared command to be run by. The refusal has to come before the walk
 # prints its progress line and before any subprocess: "Running calc/e2e
 # tests via rspec..." followed by a stderr traceback claims work that
@@ -8,23 +8,13 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build code
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - "Cannot start:"
-    - 'unknown test framework'
-    - 'rspec'
-    - 'calc/e2e'
-
   judge: |
     # Expectations for `true-bdd build code` with an unroutable framework
 
-    The e2e layer declares `framework: rspec`, which no runner in the
+    The e2e suite declares `framework: rspec`, which no runner in the
     engine implements. The spec must be refused at startup.
 
     ## How to read the diff

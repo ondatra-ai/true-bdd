@@ -318,13 +318,13 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
           <div class="trow"><span class="nm t-code">docker-compose.yaml</span><span class="cm">optional prod stack — path declared in architecture.yaml</span></div>
           <div class="trow"><span class="nm t-code">docker-compose.dev.yaml</span><span class="cm">optional dev stack for local runs</span></div>
-          <div class="trow"><span class="nm t-code">tests/{integration,e2e}/</span><span class="cm">executable specs</span></div>
+          <div class="trow"><span class="nm t-code">tests/&lt;suite&gt;/steps/</span><span class="cm">the code a scenario's steps bind to</span></div>
         </div>
       </div>
       <div class="legend">
         <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — epic — story</small></span></div>
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>services, test layers, optional dev/prod environment stacks</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>one testing section (the suites), services, optional dev/prod environment stacks</small></span></div>
         <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
         <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring and document schemas, not data flow</small></span></div>
       </div>
@@ -466,13 +466,13 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- col 6 · code -->
         <div class="card c-code" id="card-tests" tabindex="0" style="grid-area:1/6">
-          <header><i class="sw"></i><span class="p">tests/<wbr>{integration,e2e}/</span><small>specs</small></header>
+          <header><i class="sw"></i><span class="p">tests/<wbr>&lt;suite&gt;/steps/</span><small>step definitions</small></header>
           <div class="body">
-            <div class="row hl" id="a-tests-ref"><span class="k">test('E2E-900: …')</span></div>
-            <div class="row ind1"><span class="v">scenario id referenced literally</span></div>
+            <div class="row hl" id="a-tests-ref"><span class="k">suite.Step(`^…$`, fn)</span></div>
+            <div class="row ind1"><span class="v">one regexp per step wording</span></div>
             <div class="row"><span class="k">runners:</span> <span class="v">go test · jest · playwright</span></div>
           </div>
-          <div class="note">Authored by <code>build tests --fix</code>; strictly read-only for <code>build code</code>.</div>
+          <div class="note">The scenario is not copied here — the suite reads the registry and runs it. Authored by <code>build tests --fix</code>; strictly read-only for <code>build code</code>.</div>
         </div>
 
         <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/6">
@@ -486,7 +486,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- row 3 · architecture -->
         <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/7">
-          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>services + commands + environments</small></header>
+          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services + environments</small></header>
           <div class="body">
             <div>
               <div class="row hl" id="a-arch-env"><span class="k">environment:</span> <span class="v">(optional)</span></div>
@@ -494,14 +494,14 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="row ind1"><span class="k">prod:</span> <span class="v">compose: docker-compose.yaml</span></div>
             </div>
             <div>
+              <div class="row"><span class="k">testing.suites[]:</span></div>
+              <div class="row ind1 hl" id="a-arch-qg"><span class="k">name · service · path · framework · config · helpers[]</span></div>
+              <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live</span></div>
               <div class="row"><span class="k">services[]:</span></div>
               <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· type · language · frameworks[]</span></div>
               <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">services/&lt;name&gt;</span></div>
               <div class="row ind1"><span class="k">design_system.path</span> <span class="v">(optional)</span></div>
               <div class="row ind1"><span class="k">dependencies[]:</span> <span class="v">name · protocol · scope</span></div>
-              <div class="row ind1 hl" id="a-arch-qg"><span class="k">quality_gate.tests.{integration,e2e}:</span></div>
-              <div class="row ind2"><span class="v">path · framework · config · helpers[]</span></div>
-              <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live</span></div>
               <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
             </div>
           </div>
@@ -541,7 +541,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </tr>
           <tr>
             <td><span class="cmd">us refine &lt;id&gt;</span></td>
-            <td>the <strong>story</strong>; <strong>product</strong> roles + vocabulary; <strong>architecture</strong> test layers (for sketches)</td>
+            <td>the <strong>story</strong>; <strong>product</strong> roles + vocabulary; <strong>architecture</strong> test suites (for sketches)</td>
             <td><span class="cl">us-refine.yaml</span></td>
             <td>the same <strong>story file, in place</strong> — ACs gain steps and rule-based descriptions</td>
           </tr>
@@ -553,13 +553,13 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </tr>
           <tr>
             <td><span class="cmd">build tests</span></td>
-            <td>every <strong>registry scenario</strong>; greps test trees for the id</td>
+            <td>every <strong>registry scenario</strong>; the suite that owns it, and the step definitions under that suite's <code>path:</code></td>
             <td><span class="cl">build-tests.yaml</span></td>
-            <td>with <code>--fix</code>: missing <strong>specs</strong> under <code>tests/</code> referencing the scenario id — the registry is never modified</td>
+            <td>with <code>--fix</code>: the missing <strong>step definition</strong> in that suite — the registry is never modified</td>
           </tr>
           <tr>
             <td><span class="cmd">build code</span></td>
-            <td>every <strong>(service, layer)</strong> pair in architecture; discovers failing tests by running the layer's own declared <code>commands.replay</code> (the dev compose stack, when declared, backs the run)</td>
+            <td>every <strong>suite</strong> under <code>architecture.testing.suites[]</code>; discovers failing tests by running the suite's own declared <code>commands.replay</code> (the dev compose stack, when declared, backs the run)</td>
             <td><span class="cl">build-code.yaml</span></td>
             <td>with <code>--fix</code>: <strong>production source</strong> under the declared service paths only — tests and registry are never touched</td>
           </tr>
@@ -592,10 +592,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>each registry entry names its source stories: <code>docs/product/stories/95.1-duplicate-collapse.yaml</code></td></tr>
           <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
             <td><code>service: "mcp-service"</code> must name a declared service</td></tr>
-          <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario id</td><td class="to">a spec file</td>
-            <td><strong>build tests</strong> passes only if some test references the id literally: <code>test('E2E-900: …')</code></td></tr>
-          <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">id prefix INT- / E2E-</td><td class="to">quality_gate.tests layer</td>
-            <td>INT → <code>tests.integration</code> (e.g. jest), E2E → <code>tests.e2e</code> (playwright) — picks the tree, framework, and runner</td></tr>
+          <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario steps</td><td class="to">step definitions</td>
+            <td><strong>build tests</strong> passes only if every Given/When/Then step binds to exactly one <code>suite.Step(`regexp`, …)</code> in the owning suite's <code>steps/</code> package. The scenario is not copied into a test — the suite READS it and runs it</td></tr>
+          <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
+            <td>the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code</td></tr>
           <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
             <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>src/service1</code></td></tr>
           <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>11</td><td class="from">environment.{dev,prod}</td><td class="to">docker-compose files</td>
@@ -612,7 +612,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
           <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
             <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/validate-schemas.sh</code>, a CI gate), not by a command</td></tr>
-          <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">quality_gate.tests.&lt;layer&gt;.commands</td><td class="to">the suite that actually runs</td>
+          <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
             <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default</td></tr>
         </tbody>
       </table>

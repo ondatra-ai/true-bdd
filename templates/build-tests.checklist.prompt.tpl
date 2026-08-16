@@ -1,27 +1,27 @@
 
-# Test Coverage Validation
+# Step Coverage Validation
 
 ## Purpose
-Evaluate whether one scenario from `docs/scenarios.yaml` is covered
-by an executable test in the codebase.
+Evaluate whether one scenario from the scenario registry is executable:
+whether every one of its steps binds to a step definition in the suite
+that owns it.
 
 ## Instructions
-1. Search the project's test trees for any file that references the
-   subject scenario id literally.
-2. Read any reference documentation listed.
-3. Answer the validation question against what you find on disk.
-4. Always explain your reasoning BEFORE the answer block.
+1. Read the architectural spec listed under Reference Documentation and
+   find the `architecture.testing.suites[]` entry whose `service:`
+   equals the subject's **Service**. That entry's `path:` is the suite
+   root; its step definitions live under `<path>/steps/`.
+2. Glob and Read every file under `<suite path>/steps/` and collect the
+   registered patterns — each is the first argument of a
+   `suite.Step(`<regexp>`, …)` call.
+3. Match each of the subject's steps against those patterns, using the
+   step TEXT only: the Given/When/Then/And keyword is not part of what a
+   definition binds.
+4. Answer the validation question against what you found on disk.
+5. Always explain your reasoning BEFORE the answer block.
 
-## Search Roots
-Look under these paths only:
-- `tests/integration/`
-- `tests/e2e/`
-- `services/backend/`
-- `services/frontend/`
-
-Use Glob and Grep to find files that mention the scenario id
-(`{{.Subject.ID}}`) — typically inside a `test('<id>: ...')` name,
-a tag, or a leading comment. Use Read to confirm the match in context.
+Do not assume a definition exists because one plainly should. A pattern
+you did not read is a pattern that is not there.
 {{- if .Docs }}
 
 ## Reference Documentation

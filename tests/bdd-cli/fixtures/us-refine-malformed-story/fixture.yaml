@@ -21,37 +21,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us refine 96.9
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - 'US REFINE — Story 96\.9'
-
-    # The loader's structured record names the file it could not read.
-    - 'level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml'
-
-    # LINE 1 of the console refusal. It ends at the wrapper's own text
-    # because errors.Join puts the parser's complaint on the NEXT line,
-    # and Go's `.` does not match a newline — a single pattern spanning
-    # both would never match however correct the run.
-    # The generic loader wrapper, NOT the not-found advice — seeing the
-    # latter here would mean the engine was again telling someone with a
-    # syntax error to re-create the file they are repairing.
-    - 'Cannot start: failed to load items: failed to load story 96\.9:'
-
-    - 'failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml'
-
-    # LINE 2: the parser's own complaint, which is the actionable half.
-    # The line number is deliberately not pinned — editing the comment
-    # header above would shift it, and that is not a regression.
-    - 'mapping values are not allowed in this context'
-
-    - 'level=ERROR msg="Refusing to start" command="us refine"'
-
   judge: |
     # Expectations for `true-bdd us refine 96.9` on an unparseable story
 

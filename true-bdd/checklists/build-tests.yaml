@@ -1,14 +1,18 @@
 # Checklist for `true-bdd build tests`.
-# Walk every scenario in docs/scenarios.yaml and confirm each one
-# has an executable test in the codebase. The fix loop asks Claude to
-# implement the missing test from the scenario's merged_steps.
 #
-# Intentionally minimal (1 prompt) to seed the build-tests engine.
-# Will be expanded with richer correctness checks once the engine is
-# wired and walking scenarios.
+# Walk every scenario in the registry and confirm it is executable: that
+# every one of its Given/When/Then steps resolves to a step definition in
+# the suite that owns it. The fix loop asks Claude to author the missing
+# definition.
+#
+# The older contract — "some test file mentions the scenario id" — died
+# with the feature file. A scenario is no longer copied into a spec that
+# names it; it IS the spec, read at run time by the suite's runner, and
+# what can be missing is the code its steps bind to. Grepping for the id
+# would now pass on the registry itself.
 
-version: "1.0"
-last_updated: "2026-05-13"
+version: "2.0"
+last_updated: "2026-08-16"
 
 # Model tier per AI role. Names refer to `engine.models` in
 # true-bdd.yaml, never to a model id. Omit a role to inherit that
@@ -16,56 +20,62 @@ last_updated: "2026-05-13"
 # `default_fix_model` / `default_apply_model`); an individual prompt
 # can override any of these with `model:` / `fix_model:` / `apply_model:`.
 engine:
-  # Writing the missing test file is a writing job, not a reasoning one.
+  # Writing the missing step definition is a writing job, not a
+  # reasoning one.
   apply_model: coder
 
 sections:
   - id: implementation
-    name: "Test Implementation"
-    description: "Every registry scenario must have a real executable test referencing it by id."
+    name: "Step Coverage"
+    description: "Every step of every registry scenario must bind to a step definition in the suite that owns the scenario."
     validation_prompts:
       - Q: |
-          Does this registry scenario have a corresponding test in the
-          codebase?
+          Does every step of this scenario resolve to a step definition
+          in the suite that owns it?
 
-          A test "exists" for the subject scenario when at least one
-          file under the project's test trees references the scenario
-          id literally — typically inside a `test('<id>: ...')` name,
-          a tag, or a leading comment. Search these roots:
-            - `tests/integration/`
-            - `tests/e2e/`
-            - `services/backend/`
-            - `services/frontend/`
+          First find the suite. Read the architectural spec listed under
+          Reference Documentation and look through
+          `architecture.testing.suites[]` for the entry whose `service:`
+          equals this scenario's **Service**. That entry's `path:` is
+          the suite's root; its step definitions live under
+          `<path>/steps/`.
 
-          Pass when one or more such references are found.
-          Fail when no file references the id.
+          Then bind each step. A step definition is a call of the form
+          `suite.Step(`<regexp>`, <func>)`. A step RESOLVES when exactly
+          one registered regexp matches its text — the text alone, with
+          the Given/When/Then/And keyword stripped, because a definition
+          is bound by wording and not by which block a step sits in.
 
-          Context: emit one line per match, then a verdict.
-            - "match: <relative path>:<line>"
-            - "Verdict: implemented / missing"
-        rationale: "Every tracked scenario must map to an executable test; otherwise the registry drifts from reality."
+          Pass when every step of the scenario resolves.
+          Fail when any step resolves to none, or to more than one.
+
+          Context: emit one line per step, then a verdict.
+            - "step: <step text> -> <matching pattern, or UNDEFINED>"
+            - "Verdict: executable / <N> step(s) unbound"
+        rationale: "A scenario no step definition binds is behaviour written down and never run; the registry would claim coverage the suite does not have."
+        docs:
+          - architecture_yaml
         F: |
-          Implement a test for this scenario.
-
-          Use the appropriate test tree based on the subject's level:
-            - `integration` → `tests/integration/<service>-*.spec.ts`
-              using Playwright's Request API (no browser).
-            - `e2e`         → `tests/e2e/<service>-*.spec.ts` using
-              Playwright's Browser/Page API.
+          Author the missing step definition(s) in the suite that owns
+          this scenario.
 
           Steps:
-            1. Pick the existing spec file most aligned with the
-               subject's `service`, or create a new spec following the
-               naming pattern above. Do not duplicate an existing test.
-            2. Add a single `test('<scenario id>: <short description>', ...)`
-               whose body translates the subject's `merged_steps` into
-               executable assertions:
-                 - `given`  → setup / preconditions
-                 - `when`   → the action being tested
-                 - `then`   → assertions
-               Use exact step text where reasonable; do not invent
-               behavior beyond what the steps describe.
-            3. The first line of the test name MUST start with the
-               scenario id followed by `: ` so the validation prompt
-               above can find it. Example: `INT-007: ...`.
-            4. Do not modify other tests. Do not edit the registry.
+            1. Read the architectural spec and find the
+               `architecture.testing.suites[]` entry whose `service:`
+               matches this scenario's. Its `path:` is the suite root.
+            2. Read the existing definitions under `<suite path>/steps/`
+               to learn the state type they share and the helpers
+               already available. REUSE them — a new definition that
+               re-implements what a sibling already does is the drift
+               this command exists to prevent.
+            3. For each unbound step, register one definition:
+               `suite.Step(`^<anchored regexp>$`, <func>)`. Put a
+               capture group where the step's text varies — a quoted
+               run, a number — so one definition serves every scenario
+               phrasing it that way, and do not write a definition whose
+               pattern is a literal copy of one scenario's line.
+            4. Implement the function against the suite's state type.
+               Given prepares, When acts, Then asserts and returns an
+               error naming what it expected and what it got.
+            5. Do not weaken an existing definition to make this step
+               match. Do not edit the registry.

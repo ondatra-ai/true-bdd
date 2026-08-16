@@ -30,7 +30,7 @@ Use Read, Glob, and Grep to inspect:
 
 **Test ID:** {{.Subject.ID}}
 **Service:** {{.Subject.Service}}
-**Layer:** {{.Subject.Layer}}
+**Suite:** {{.Subject.Suite}}
 **Framework:** {{.Subject.Framework}}
 **Test Name:** {{.Subject.TestName}}
 **Source File:** {{.Subject.FilePath}}

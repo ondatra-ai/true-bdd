@@ -16,36 +16,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: us refine 96.9
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    - 'US REFINE — Story 96\.9'
-
-    # The loader's structured record, including the count — the fact
-    # that turns "ambiguous" into something the reader can act on.
-    - 'level=ERROR msg="Multiple story files found" story_number=96\.9 count=2'
-
-    # The generic loader wrapper, NOT the not-found advice. `us refine`
-    # attaches "run `true-bdd us create <id>` first" only when the story
-    # is genuinely missing; seeing it here would mean the engine had
-    # gone back to telling people to create a third copy.
-    - 'Cannot start: failed to load items: failed to load story 96\.9:'
-
-    - 'multiple story files found for story 96\.9'
-
-    # BOTH candidates must be named. Naming one would leave the reader
-    # guessing which pair collided, and deleting the wrong file is
-    # worse than the error.
-    - '96\.9-document-summary\.yaml'
-    - '96\.9-document-summary-v2\.yaml'
-
-    - 'level=ERROR msg="Refusing to start" command="us refine"'
-
   judge: |
     # Expectations for `true-bdd us refine 96.9` with two matching files
 

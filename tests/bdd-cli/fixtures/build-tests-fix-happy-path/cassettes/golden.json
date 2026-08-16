@@ -3,11 +3,18 @@
   "fixture": "build-tests-fix-happy-path",
   "files": [
     {
-      "path": "tests/integration/mcp-service-mcp-endpoint.spec.ts",
+      "path": "tests/mcp/steps/state.go",
       "kind": "created",
-      "size": 1466,
-      "sha256": "c367180d5680291ff1b1aebc8ed24a51de6adcba62ac5859efcd86cd66241dff",
-      "text": "import { test, expect } from '@playwright/test';\n\n// INT-900 — MCP /mcp endpoint responds 200 to a valid initialize POST\n// Service: mcp-service\n// Given: the MCP server is running on its configured port\n// When:  the Claude User posts a valid JSON-RPC initialize request to /mcp\n// Then:  the server returns HTTP 200\n\n// Given: the MCP server is running on its configured port.\n// The base URL is taken from the environment so the test binds to whatever\n// port the server was configured with, falling back to a conventional local port.\nconst MCP_BASE_URL = process.env.MCP_BASE_URL ?? 'http://127.0.0.1:3000';\n\ntest('INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST', async ({ request }) =\u003e {\n  // Given: the MCP server is running on its configured port\n  const endpoint = `${MCP_BASE_URL}/mcp`;\n\n  // When: the Claude User posts a valid JSON-RPC initialize request to /mcp\n  const response = await request.post(endpoint, {\n    headers: {\n      'Content-Type': 'application/json',\n      // MCP Streamable HTTP requires the client to accept both content types.\n      Accept: 'application/json, text/event-stream',\n    },\n    data: {\n      jsonrpc: '2.0',\n      id: 1,\n      method: 'initialize',\n      params: {\n        protocolVersion: '2025-06-18',\n        capabilities: {},\n        clientInfo: { name: 'claude-user', version: '1.0.0' },\n      },\n    },\n  });\n\n  // Then: the server returns HTTP 200\n  expect(response.status()).toBe(200);\n});\n"
+      "size": 331,
+      "sha256": "f51ec63d05616fa96cf2c8f6bb8108285208359ff114818c393a8edb0be06bb6",
+      "text": "package steps\n\nimport \"net/http\"\n\n// State is the per-scenario state the mcp suite keeps: the base URL the\n// MCP server is reachable at (prepared by the Given step), and the most\n// recent HTTP response the When step produced for the Then step to\n// assert against.\ntype State struct {\n\tBaseURL  string\n\tResponse *http.Response\n}\n"
+    },
+    {
+      "path": "tests/mcp/steps/steps.go",
+      "kind": "created",
+      "size": 1749,
+      "sha256": "a5e95fa2efb447d8545bc39563506d627db5092e80b68322fe79869b3ce586d5",
+      "text": "package steps\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"net/http\"\n\n\t\"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo\"\n)\n\n// Register binds every step the mcp suite's scenarios use. Given\n// prepares, When acts, Then asserts — each Then error names what was\n// expected and what actually happened, because that error IS the test\n// failure a reader gets.\nfunc Register(suite *bddgo.Suite[*State]) {\n\t// Given — precondition. No varying token in the wording, so the\n\t// pattern is an anchored literal rather than a forced capture group.\n\tsuite.Step(`^the MCP server is running on its configured port$`, func(s *State, m []string) error {\n\t\tif s.BaseURL == \"\" {\n\t\t\ts.BaseURL = \"http://127.0.0.1:8080\"\n\t\t}\n\t\treturn nil\n\t})\n\n\t// When — act. Method and path vary between phrasings, so both are\n\t// captured: `initialize … /mcp`, `tools/list … /mcp`, …\n\tsuite.Step(`^the Claude User posts a valid JSON-RPC (\\S+) request to (\\S+)$`, func(s *State, m []string) error {\n\t\tmethod, path := m[1], m[2]\n\t\tbody := fmt.Sprintf(`{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":%q,\"params\":{}}`, method)\n\t\tresp, err := http.Post(s.BaseURL+path, \"application/json\", bytes.NewBufferString(body))\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"POST %s%s (%s) failed: %w\", s.BaseURL, path, method, err)\n\t\t}\n\t\ts.Response = resp\n\t\treturn nil\n\t})\n\n\t// Then — assert. Status code varies, so it is captured.\n\tsuite.Step(`^the server returns HTTP (\\d+)$`, func(s *State, m []string) error {\n\t\twant := m[1]\n\t\tif s.Response == nil {\n\t\t\treturn fmt.Errorf(\"expected HTTP %s but no response was recorded — did the When step run?\", want)\n\t\t}\n\t\tif got := fmt.Sprintf(\"%d\", s.Response.StatusCode); got != want {\n\t\t\treturn fmt.Errorf(\"expected HTTP %s, got HTTP %s\", want, got)\n\t\t}\n\t\treturn nil\n\t})\n}\n"
     }
   ]
 }

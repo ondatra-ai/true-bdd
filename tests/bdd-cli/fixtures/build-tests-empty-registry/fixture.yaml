@@ -16,31 +16,9 @@
 #
 # Deliberately cheap: it exits before the first AI call.
 
-cmd: build tests
-
 input: input
 
 expected:
-  exit_code: 1
-
-  stdout_regex:
-    # The run got as far as the banner — it did not fail on config.
-    - 'BUILD TESTS'
-
-    # The refusal is attributable on stdout, not only as a cobra stderr
-    # line: stdout_regex matches stdout alone, and the judge is not run
-    # in replay, so this is the channel that carries the diagnosis.
-    - 'Cannot start: .*requirements registry has no scenarios to walk'
-
-    # And it names the file, so the reader knows which registry was
-    # empty — a host may have relocated it.
-    - 'docs/scenarios\.yaml: requirements registry has no scenarios to walk'
-
-    # The structured record, as slog's console handler renders it on
-    # stdout — not `tmp/true-bdd.log.json`, which is the judge's channel
-    # and is invisible to replay.
-    - 'level=ERROR msg="Refusing to start" command="build tests"'
-
   judge: |
     # Expectations for `true-bdd build tests` against an empty registry
 

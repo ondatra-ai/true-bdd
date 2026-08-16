@@ -1,4 +1,3 @@
-cmd: us refine 96.5 --fix
 input: input
 
 # Generate a single-prompt checklist from the live shipped
@@ -41,13 +40,6 @@ answers: |
   1
 
 expected:
-  exit_code: 0
-
-  stdout_regex:
-    - "ALL CHECKS PASSED!"
-    - "Story saved to:"
-    - "REFINE COMPLETE"
-
   judge: |
     # Expectations for `us refine 96.5 --fix` (missing-steps fix)
 

@@ -69,8 +69,8 @@ func yamlDoc(path string) docResult {
 }
 
 // rawArchitectureShape mirrors architecture.Loader's decode shape: the
-// legacy `architecture.services:` list build code walks. Only presence of
-// the list matters for the chip.
+// `architecture.services:` list whose entries name the source roots
+// build code may edit. Only presence of the list matters for the chip.
 type rawArchitectureShape struct {
 	Architecture struct {
 		Services []yaml.Node `yaml:"services"`

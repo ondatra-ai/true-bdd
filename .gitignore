@@ -21,16 +21,18 @@
 /services/bdd-web/next-env.d.ts
 
 # Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
-# tests/bdd-web/ is the spec, and ALL bdd-web production code + unit tests are
+# The bdd-web test suite is the spec, and ALL bdd-web production code + unit tests are
 # regeneratable from it, under the single /services/bdd-web/src/ root. Working
 # copies stay on disk but are never tracked.
 /services/bdd-web/src/
 
-# Self-contained Playwright E2E suite (tests/bdd-web) — deps + artefacts
-/tests/bdd-web/node_modules/
-/tests/bdd-web/test-results/
-/tests/bdd-web/playwright-report/
-/tests/bdd-web/.tmp/
+# Parked Playwright E2E suite (tests/legacy/bdd-web-playwright) — deps +
+# artefacts. Kept until the Go suite at tests/bdd-web/ covers it.
+/tests/legacy/bdd-web-playwright/node_modules/
+/tests/legacy/bdd-web-playwright/test-results/
+/tests/legacy/bdd-web-playwright/playwright-report/
+/tests/legacy/bdd-web-playwright/.tmp/
+/tests/legacy/bdd-web-playwright/tmp/
 
 # Conversation history captured by .claude/hooks/history.py
 /docs/history/
@@ -52,7 +54,7 @@ __pycache__/
 .env
 .env.local
 
-# Design gold-standard screenshots (tests/bdd-web/goldens, incl. the
+# Design gold-standard screenshots (the parked suite's goldens, incl. the
 # per-component crops/ subdir) MUST be tracked — the user-level
 # ~/.gitignore_global ignores *.png, so re-include them here.
-!tests/bdd-web/goldens/**/*.png
+!tests/legacy/bdd-web-playwright/goldens/**/*.png

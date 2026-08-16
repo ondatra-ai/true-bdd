@@ -1,0 +1,71 @@
+# Yamale schema for the scenario registry (path from
+# `documents.scenarios_yaml` in true-bdd.yaml, conventionally
+# docs/scenarios.yaml).
+#
+# The filename is not free: scripts/validate-schemas.sh pairs
+# `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
+# `scenarios_yaml` — the `_yaml` suffix included.
+#
+#   yamale -s true-bdd/scenarios_yaml-schema.yaml docs/scenarios.yaml
+#
+# Unlike the other two documents, this one IS parsed by the engine
+# (`build tests` walks it) and by the test harness
+# (tests/libraries/bddgo runs it). So the schema's job is narrower than
+# usual: it pins the shape those two readers already require, and its
+# value is catching a hand-edit before a walk does.
+#
+# Three load-time rules the engine enforces that a schema cannot, worth
+# knowing while editing this file:
+#   - `scenarios:` must be a MAP keyed by id, never a list. A list is
+#     well-formed YAML and fails only at decode.
+#   - An empty map is a refusal, not a pass.
+#   - A step is either a plain string or a one-key `{and: …}` / `{but: …}`
+#     mapping; the modifier form is flattened to "and <text>".
+
+metadata: include('metadata')
+scenarios: map(include('scenario'), min=1)
+
+---
+metadata:
+  title: str()
+  version: str()
+  description: str()
+  last_updated: str(required=False)
+
+---
+scenario:
+  # One sentence naming the behaviour, in the product document's action
+  # vocabulary. What a reader sees first in `build tests` output and in
+  # the run report.
+  description: str()
+  # Must name a service declared in architecture.yaml. It is also the
+  # join that decides which test suite owns the scenario: the entry
+  # under architecture.testing.suites[] whose `service:` matches.
+  service: str()
+  # Free-form note on where the behaviour comes from. Optional.
+  requirement: str(required=False)
+  # Optional grouping label. Read by the workspace UI, never by the
+  # engine.
+  feature: str(required=False)
+  last_updated: str(required=False)
+  # Lineage back to the stories this scenario was merged from, written
+  # by `us apply`. An empty list is valid and says so on the record: the
+  # scenario exists and no story claims it yet.
+  user_stories: list(include('user_story'))
+  merged_steps: include('merged_steps')
+
+---
+user_story:
+  story: str()
+  scenario_id: str()
+  merge_date: str(required=False)
+
+---
+# All three blocks are optional in shape but a scenario with no step at
+# all is one no test can execute; that is left to `build tests` to
+# report against the suite, since which blocks a scenario needs depends
+# on the behaviour rather than on the document.
+merged_steps:
+  given: list(any(str(), map(str())), required=False)
+  when: list(any(str(), map(str())), required=False)
+  then: list(any(str(), map(str())), required=False)

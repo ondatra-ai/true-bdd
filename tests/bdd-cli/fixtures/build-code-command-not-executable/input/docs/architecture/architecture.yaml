@@ -5,17 +5,18 @@
 # ones a static check catches.
 
 architecture:
+  testing:
+    suites:
+      - name: e2e
+        service: calc
+        path: tests
+        framework: go-test
+        commands:
+          record: "true-bdd-no-such-runner -json ./tests/suite/..."
+          replay: "true-bdd-no-such-runner -json ./tests/suite/..."
+          live: "true-bdd-no-such-runner -json ./tests/suite/..."
+
   services:
     - name: calc
       path: services/calc
       language: go
-
-      quality_gate:
-        tests:
-          e2e:
-            path: tests
-            framework: go-test
-            commands:
-              record: "true-bdd-no-such-runner -json ./tests/suite/..."
-              replay: "true-bdd-no-such-runner -json ./tests/suite/..."
-              live: "true-bdd-no-such-runner -json ./tests/suite/..."

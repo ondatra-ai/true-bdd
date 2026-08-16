@@ -1,11 +1,52 @@
 # Architectural spec for this repository (the TrueBDD engine itself).
 #
-# Read by `build code`, which walks every (service, layer) pair declared
-# under quality_gate.tests and discovers failing tests through that
-# layer's framework runner. Path resolved from `documents.architecture_yaml`
-# in true-bdd/true-bdd.yaml.
+# Two sections, both read by the build pipeline:
+#   testing:  — the suites `build code` walks and `build tests` writes
+#               into. One section for the whole repository, because how
+#               a project runs its tests is a property of the project,
+#               not of any one service.
+#   services: — the production source roots `build code --fix` may edit.
+#
+# Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
+#
+# This repository tests in Go and only in Go: `go-test` for everything,
+# with playwright-go driving the browser inside the bdd-web suite. The
+# engine still supports `jest` and `playwright` for host projects that
+# want them; this repo declares neither.
 
 architecture:
+  testing:
+    suites:
+      # Scenario-driven fixture harness under tests/bdd-cli/. Scenarios
+      # come from docs/scenarios.yaml; each one's steps resolve against
+      # the step definitions in tests/bdd-cli/steps/. The suite is gated
+      # behind `//go:build bdd` and takes its AI mode from a `-mode`
+      # flag, neither of which any engine default could have guessed —
+      # which is why `commands:` exists. All three modes are mandatory;
+      # `build code` runs `replay`, the only one that spawns no model
+      # and costs nothing.
+      - name: bdd-cli
+        service: bdd-cli
+        path: tests/bdd-cli
+        framework: go-test
+        commands:
+          record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
+          replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
+          live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
+
+      # The web relay's suite, same runner, same registry — the step
+      # definitions drive a browser through playwright-go instead of a
+      # subprocess. Its specs live in the root Go module; the parked
+      # TypeScript suite it replaces is at tests/legacy/bdd-web-playwright/.
+      - name: bdd-web
+        service: bdd-web
+        path: tests/bdd-web
+        framework: go-test
+        commands:
+          record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=record"
+          replay: "go test -tags bdd -json -count=1 -timeout=30m ./tests/bdd-web/ -mode=replay"
+          live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=live"
+
   services:
     - name: bdd-cli
       type: "cli"
@@ -33,64 +74,24 @@ architecture:
           protocol: cli
           scope: third_party
 
-      quality_gate:
-        tests:
-          # Fixture harness under tests/bdd-cli/fixtures/. The suite is
-          # gated behind `//go:build bdd` and takes its AI mode from a
-          # `-mode` flag, neither of which any engine default could have
-          # guessed — which is why `commands:` exists. All three modes are
-          # mandatory; `build code` runs `replay`, the only one that
-          # spawns no model and costs nothing.
-          e2e:
-            path: tests/bdd-cli
-            framework: go-test
-            commands:
-              record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
-              replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
-              live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
+    - name: bdd-web
+      path: services/bdd-web
+      type: "web:frontend"
+      language: typescript
+      frameworks:
+        - next.js
+        - react
 
-    # Temporarily disabled: only bdd-cli is an active build target for now.
-    # Uncomment to bring the web relay back into `build code`.
-    # - name: bdd-web
-    #   path: services/bdd-web
-    #   type: "web:frontend"
-    #   language: typescript
-    #   frameworks:
-    #     - next.js
-    #     - react
-    #
-    #   design_system:
-    #     path: services/bdd-web/design/system
-    #
-    #   dependencies:
-    #     # The remotes (`true-bdd remote --server <url>`) register with
-    #     # and poll this relay over its HTTP API — bdd-web never spawns
-    #     # the CLI itself.
-    #     - name: bdd-cli
-    #       protocol: http
-    #       scope: internal
-    #     - name: redis
-    #       protocol: redis
-    #       scope: self_hosted
-    #
-    #   quality_gate:
-    #     tests:
-    #       # Self-contained Playwright package: protocol (p*), workspace (w*)
-    #       # and AI (a*) projects, each test booting its own host server.
-    #       e2e:
-    #         path: tests/bdd-web
-    #         framework: playwright
-    #         config: tests/bdd-web/playwright.config.ts
-    #         # Commands run from the directory holding `config:`, which
-    #         # is what lets `npx` resolve this package's own install.
-    #         #
-    #         # All three are identical, and no --project is pinned: of
-    #         # the suite's three projects only a* talks to a model, and
-    #         # it has no record/replay wiring yet, so there is nothing
-    #         # for the modes to differ ON. Pinning one project would
-    #         # silently drop the other two from the build — a narrower
-    #         # gate that still reports as a full one.
-    #         commands:
-    #           record: "npx playwright test --reporter=json"
-    #           replay: "npx playwright test --reporter=json"
-    #           live: "npx playwright test --reporter=json"
+      design_system:
+        path: services/bdd-web/design/system
+
+      dependencies:
+        # The remotes (`true-bdd remote --server <url>`) register with
+        # and poll this relay over its HTTP API — bdd-web never spawns
+        # the CLI itself.
+        - name: bdd-cli
+          protocol: http
+          scope: internal
+        - name: redis
+          protocol: redis
+          scope: self_hosted

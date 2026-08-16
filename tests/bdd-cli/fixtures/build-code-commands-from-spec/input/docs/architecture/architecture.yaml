@@ -1,6 +1,6 @@
 # Architectural spec for the fixture's host project.
 #
-# The `commands:` block is the subject under test. The e2e layer holds
+# The `commands:` block is the subject under test. The e2e suite holds
 # two tests in one package; only the REPLAY command carries the
 # `-run '^TestGreen$'` filter that keeps the failing one out of scope.
 # `record` and `live` deliberately name the unfiltered command, so a run
@@ -9,17 +9,18 @@
 # of its own or drops part of the one it was given.
 
 architecture:
+  testing:
+    suites:
+      - name: e2e
+        service: calc
+        path: tests
+        framework: go-test
+        commands:
+          record: "go test -json -count=1 ./tests/suite/..."
+          replay: "go test -json -count=1 -run '^TestGreen$' ./tests/suite/..."
+          live: "go test -json -count=1 ./tests/suite/..."
+
   services:
     - name: calc
       path: services/calc
       language: go
-
-      quality_gate:
-        tests:
-          e2e:
-            path: tests
-            framework: go-test
-            commands:
-              record: "go test -json -count=1 ./tests/suite/..."
-              replay: "go test -json -count=1 -run '^TestGreen$' ./tests/suite/..."
-              live: "go test -json -count=1 ./tests/suite/..."

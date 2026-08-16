@@ -35,11 +35,11 @@ one failing test passes — without modifying the test itself.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-17-21-00-31673/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-16-21-22-28-21952/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-15-17-21-00-31673/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-16-21-22-28-21952/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -59,7 +59,7 @@ summary: "<one-line summary>"
 
 **Test ID:** frontend/integration/playwright:<startup>
 **Service:** frontend
-**Layer:** integration
+**Suite:** integration
 **Framework:** playwright
 **Test Name:** <startup>
 **Source File:** tests/integration
@@ -75,70 +75,65 @@ summary: "<one-line summary>"
 
 # Fix Prompt for Failing Test frontend/integration/playwright:<startup>
 
+LastRunPassed=false for frontend/integration/playwright:<startup>
+
 ## Root Cause
-`LastRunPassed=false` for frontend/integration/playwright:<startup>
+The Playwright suite fails at `<startup>`: its `webServer` command
+`docker compose up --build frontend` (see `tests/playwright.config.ts`)
+cannot boot because `docker-compose.yaml` builds `./services/frontend`,
+and that directory does not exist. No production frontend service has
+been created yet.
 
-The test `tests/integration/frontend-home.spec.ts` navigates to `/` and asserts
-`page.locator('h1')` has exact text `Hello world`. Playwright's `webServer` boots the
-app with `docker compose up --build frontend`, whose compose service builds
-`./services/frontend` and publishes container port 3000 → host 3000.
-
-**No `services/frontend/` directory exists.** The Docker build has nothing to build,
-so the server never comes up and the test fails. The fix is to create a minimal
-Next.js App Router service that builds in Docker and renders `<h1>Hello world</h1>`
-at `/` on port 3000. Everything below lives under `services/*` — no test, doc, or
-config file is touched.
+The test contract (`tests/integration/frontend-home.spec.ts`, READ-ONLY):
+```ts
+await page.goto('/');
+await expect(page.locator('h1')).toHaveText('Hello world');
+```
+So the service must serve, on port **3000**, a page at `/` whose single
+`<h1>` reads exactly `Hello world`.
 
 ## Target
-Apply the change(s) under `services/*` only. The test at `tests/integration`
-and `docs/architecture/architecture.yaml` are the contract; do NOT modify them.
+Create the Next.js (App Router) production service under
+`services/frontend/` ONLY. Do NOT touch anything under `tests/`,
+`docs/`, or `true-bdd/`. Do NOT modify the test.
+
+Create each file below with the **Write** tool (all are new files).
 
 ## Required Changes
 
-### Change #1: Next.js service manifest
-**File:** services/frontend/package.json
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
-```
+### Change #1: Node/package manifest
+**File:** `services/frontend/package.json`
+**Action:** Write (new file).
+**Content:**
+```json
 {
   "name": "frontend",
-  "version": "0.1.0",
   "private": true,
+  "version": "0.1.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3000"
+    "start": "next start -p 3000 -H 0.0.0.0"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "next": "14.2.23",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "typescript": "^5.4.5",
-    "@types/node": "^20.14.0",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18"
   }
 }
 ```
 
-### Change #2: Next.js config
-**File:** services/frontend/next.config.js
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
-```
-/** @type {import('next').NextConfig} */
-const nextConfig = {};
-
-module.exports = nextConfig;
-```
-
-### Change #3: TypeScript config (referenced by the architecture quality gate)
-**File:** services/frontend/tsconfig.json
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
-```
+### Change #2: TypeScript config (referenced by the architecture quality gate)
+**File:** `services/frontend/tsconfig.json`
+**Action:** Write (new file).
+**Content:**
+```json
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -162,28 +157,26 @@ module.exports = nextConfig;
 }
 ```
 
-### Change #4: Next TypeScript ambient declarations
-**File:** services/frontend/next-env.d.ts
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
-```
-/// <reference types="next" />
-/// <reference types="next/image-types/global" />
+### Change #3: Minimal Next.js config
+**File:** `services/frontend/next.config.mjs`
+**Action:** Write (new file).
+**Content:**
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {};
 
-// NOTE: This file should not be edited
-// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+export default nextConfig;
 ```
 
-### Change #5: Root layout (App Router requires it)
-**File:** services/frontend/app/layout.tsx
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
-```
+### Change #4: Root layout (App Router requires an html/body root)
+**File:** `services/frontend/app/layout.tsx`
+**Action:** Write (new file).
+**Content:**
+```tsx
 import type { ReactNode } from 'react';
 
 export const metadata = {
   title: 'Frontend',
-  description: 'Frontend home page',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -195,36 +188,30 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 }
 ```
 
-### Change #6: Home page — the exact assertion target
-**File:** services/frontend/app/page.tsx
-**Action:** Use the Write tool (new file) with the exact content below.
-This server component renders exactly one `<h1>` whose text is `Hello world`,
-satisfying `expect(page.locator('h1')).toHaveText('Hello world')`.
-**Content / new_string:**
-```
+### Change #5: Home page — the single `h1` the test asserts
+**File:** `services/frontend/app/page.tsx`
+**Action:** Write (new file).
+**Content:**
+```tsx
 export default function Home() {
   return <h1>Hello world</h1>;
 }
 ```
+NOTE: This page must render exactly ONE `<h1>` and its full text content
+must be `Hello world` (Playwright's `toHaveText('Hello world')` normalizes
+whitespace but matches the whole element and fails if more than one `h1`
+exists). Do not add extra `h1` elements or surrounding text.
 
-### Change #7: Dockerfile — build + serve on port 3000
-**File:** services/frontend/Dockerfile
-**Action:** Use the Write tool (new file) with the exact content below.
-Notes for reliability:
-- `node:20-slim` (Debian) avoids musl/glibc edge cases.
-- Do NOT set `NODE_ENV=production` before install — that would skip
-  `typescript`/`@types`, breaking the TypeScript `next build`. `next start`
-  runs in production mode on its own.
-- `-H 0.0.0.0` (via the `start` script) binds all interfaces so the published
-  `3000:3000` mapping is reachable at `http://127.0.0.1:3000`.
-**Content / new_string:**
-```
-FROM node:20-slim
+### Change #6: Dockerfile that builds and serves on port 3000
+**File:** `services/frontend/Dockerfile`
+**Action:** Write (new file).
+**Content:**
+```dockerfile
+FROM node:20-alpine
+
 WORKDIR /app
 
-ENV NEXT_TELEMETRY_DISABLED=1
-
-COPY package.json package-lock.json* ./
+COPY package.json ./
 RUN npm install
 
 COPY . .
@@ -233,25 +220,32 @@ RUN npm run build
 EXPOSE 3000
 CMD ["npm", "run", "start"]
 ```
+NOTE: `docker-compose.yaml` sets `build.context: ./services/frontend`, so
+the Dockerfile must live at `services/frontend/Dockerfile` (its default
+location). `next start -p 3000 -H 0.0.0.0` binds all interfaces so the
+`3000:3000` port mapping reaches it and the Playwright `webServer` URL
+`http://127.0.0.1:3000` responds.
 
-### Change #8: Docker build ignore (hygiene)
-**File:** services/frontend/.dockerignore
-**Action:** Use the Write tool (new file) with the exact content below.
-**Content / new_string:**
+### Change #7: Docker ignore (keep host artifacts out of the image build)
+**File:** `services/frontend/.dockerignore`
+**Action:** Write (new file).
+**Content:**
 ```
 node_modules
 .next
 npm-debug.log
-Dockerfile
-.dockerignore
 ```
 
-## Verification Expectation
-After the applier writes these files, the runner re-executes the Playwright suite:
-`docker compose up --build frontend` builds `services/frontend`, `next start` serves
-`http://127.0.0.1:3000`, GET `/` returns HTML containing a single
-`<h1>Hello world</h1>`, and `frontend-home.spec.ts` passes. No test assertion is
-weakened, skipped, or removed, and nothing outside `services/frontend/` is modified.
+## Why this passes
+1. `docker compose up --build frontend` now finds `services/frontend/Dockerfile`,
+   installs deps, runs `next build`, and starts `next start` on `0.0.0.0:3000`.
+2. Compose maps container `3000` → host `3000`; Playwright's `webServer`
+   waits on `http://127.0.0.1:3000` and proceeds once it responds.
+3. `GET /` serves the App Router home page whose only `<h1>` is
+   `Hello world`, satisfying `expect(page.locator('h1')).toHaveText('Hello world')`.
+
+No test assertion is weakened, skipped, or removed; every change is under
+`services/frontend/`.
 
 ---
 
@@ -275,8 +269,8 @@ weakened, skipped, or removed, and nothing outside `services/frontend/` is modif
    The test is the contract; the production code must conform to it.
 6. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-15-17-21-00-31673/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-16-21-22-28-21952/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-15-17-21-00-31673/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-16-21-22-28-21952/apply-frontend-integration-playwright-startup--iter1-result.yaml ===

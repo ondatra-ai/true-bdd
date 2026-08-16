@@ -14,7 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to Spec-as-Source) that drives Claude-mediated checklists over user stories. Extracted from the `awesome-claude-mcp` monorepo into this standalone repo. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
 
-This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD fixture test harness (`tests/bdd-cli/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec; may also carry the BDD vocabulary — the fixtures do), `docs/product/product.yaml` (product document incl. the `roles:` list and the BDD `vocabulary:` — its preferred home), `docs/product/epics/*.yaml`, `docs/product/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
+**This repository tests in Go, and only in Go.** `go-test` for every suite, with `playwright-go` driving the browser inside the web suite — no jest, no `@playwright/test`, no third test framework arriving through the side door. The engine still *supports* `jest` and `playwright` as `framework:` values a host project may declare, and the `build-code-playwright-nextjs` fixture keeps that path covered; this repo declares neither. The parked TypeScript suite at `tests/legacy/bdd-web-playwright/` is the one exception, and it exists to be deleted.
+
+This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD test harness (`tests/`). A *host project* consuming the engine supplies its own `true-bdd/` configuration directory (`true-bdd.yaml`, `checklists/`, schemas) plus the five project documents under `docs/`: `docs/architecture/architecture.yaml` (architectural spec; may also carry the BDD vocabulary — the fixtures do), `docs/product/product.yaml` (product document incl. the `roles:` list and the BDD `vocabulary:` — its preferred home), `docs/product/epics/*.yaml`, `docs/product/stories/*.yaml`, and `docs/scenarios.yaml` (the scenario registry). Those are the conventional defaults the seed config declares — every location is driven by `true-bdd.yaml` (`documents:` for the file paths, `paths:` for the directories), so a host may relocate any of them. The engine repo's own root `true-bdd/` is a harness seed — canonical config and checklists that the BDD runner pre-copies into fixture tmpdirs, not a complete host configuration (fixtures supply their `docs/` tree under `input/docs/`, and may override any seed file via `input/true-bdd/`).
 
 ## CLI Subcommands
 
@@ -28,12 +30,17 @@ Commands are organized into two supergroups: `us` (story workflow) and `build` (
 
 `build` supergroup — Spec-as-Source regeneration steps:
 
-- `build tests` — walks every scenario in the requirements registry (path from `documents.scenarios_yaml` in `true-bdd.yaml`) against the `build-tests` checklist and exits non-zero if any scenario lacks an executable test. With `--fix`, failed cells drive a Claude-mediated test-authoring loop that writes the missing test referencing the scenario id; the registry is never modified by the run. Takes `--requirements <path>` to override the configured registry location.
-- `build code` — walks every `(service, layer)` pair declared in the architectural spec (path from `documents.architecture_yaml`, override with `--architecture`), discovers currently-failing tests by running **the command that layer declares**, and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
-  - Every declared layer carries a mandatory `commands: {record, replay, live}` block; `build code` runs `replay`, and `record`/`live` are reserved. There is **no built-in invocation left** — an incomplete block is a startup refusal (`Cannot start:` on stdout), never a substituted default. Each command is complete and framework-native including its machine-readable flag (`-json` / `--json` / `--reporter=json`), runs from the directory holding the layer's `config:` (or, with no `config:`, whatever directory the CLI was invoked from), and gets only a name filter appended when one test is re-run. Splitting honours quotes and nothing else — see `internal/infrastructure/testrunner/command.go`.
-  - Everything checkable is checked in one pre-pass before the first subprocess: the framework routes to a runner, the command splits, the command is machine-readable. What a static check cannot reach — the binary not existing — surfaces as `Cannot run <service>/<layer>:` on stdout when the spawn fails, and *only* that: it is marked `runner.Reported` so the generic startup refusal stays silent, because by then the run has started and a second line headlined `Refusing to start` would contradict the progress line above it. Both refusals also go to slog, because the BDD judge reads the log, not the terminal.
-  - Negative coverage lives in `tests/bdd-cli/fixtures/build-code-*`: `missing-layer-command`, `unknown-framework`, `command-not-machine-readable`, `unterminated-quote`, `command-not-executable`, `empty-command` (a command that is present and non-blank but whose only token is an empty argument — the shape the loader's trim check cannot see), `no-services`, `malformed-spec` (all refusals, zero AI calls) and `nonconvergence` (a full walk that ends `not_fixed` and exits 1, one AI turn). Each plants a *failing* test in the fixture tree, so "reported no failures" can never be confused with "had nothing to find".
+- `build tests` — walks every scenario in the requirements registry (path from `documents.scenarios_yaml` in `true-bdd.yaml`) against the `build-tests` checklist and exits non-zero if any scenario is not executable. With `--fix`, failed cells drive a Claude-mediated loop that authors the missing **step definition**; the registry is never modified by the run. Takes `--requirements <path>` to override the configured registry location.
+  - "Executable" means every one of the scenario's Given/When/Then steps binds to exactly one step definition in the suite that owns it. Which suite owns it is one join: the `architecture.testing.suites[]` entry whose `service:` equals the scenario's `service:`; its `path:` is where the definitions live, under `<path>/steps/`. The checklist declares `docs: [architecture_yaml]` so the spec reaches the turn — nothing hardcodes a test tree any more.
+  - This replaced "some test file mentions the scenario id", which died with the feature file. A scenario is no longer copied into a spec that names it; it IS the spec, read at run time by `tests/libraries/bddgo`, and what can be missing is the code its steps bind to. Grepping for the id would now pass on the registry itself.
+- `build code` — walks every suite declared under `architecture.testing.suites[]` (path from `documents.architecture_yaml`, override with `--architecture`), discovers currently-failing tests by running **the command that suite declares**, and walks each failure against the `build-code` checklist, exiting non-zero if any test still fails. With `--fix`, each failed cell drives a Claude-mediated turn that edits production source until the failing test passes; test files and the registry are never modified by the run.
+  - **The spec has one `testing:` section for the whole repository**, beside `services:` — how a project runs its tests is a property of the project, not of any one service. A suite names the single `service:` it exercises, and that name is what grants the fix applier its write root. A suite covering two services is two suites: a failure that names no single source root is a failure no fix prompt can be pointed at.
+  - Every declared suite carries a mandatory `commands: {record, replay, live}` block; `build code` runs `replay`, and `record`/`live` are reserved. There is **no built-in invocation left** — an incomplete block is a startup refusal (`Cannot start:` on stdout), never a substituted default. Each command is complete and framework-native including its machine-readable flag (`-json` / `--json` / `--reporter=json`), runs from the directory holding the suite's `config:` (or, with no `config:`, whatever directory the CLI was invoked from), and gets only a name filter appended when one test is re-run. Splitting honours quotes and nothing else — see `internal/infrastructure/testrunner/command.go`.
+  - Everything checkable is checked in one pre-pass before the first subprocess: every suite names a declared service, its framework routes to a runner, its command splits, its command is machine-readable. What a static check cannot reach — the binary not existing — surfaces as `Cannot run <service>/<suite>:` on stdout when the spawn fails, and *only* that: it is marked `runner.Reported` so the generic startup refusal stays silent, because by then the run has started and a second line headlined `Refusing to start` would contradict the progress line above it. Both refusals also go to slog, because the BDD judge reads the log, not the terminal.
+  - Negative coverage lives in `tests/bdd-cli/fixtures/build-code-*`: `missing-suite-command`, `unknown-framework`, `command-not-machine-readable`, `unterminated-quote`, `command-not-executable`, `empty-command` (a command that is present and non-blank but whose only token is an empty argument — the shape the loader's trim check cannot see), `no-services`, `no-suites`, `unknown-suite-service` (a suite whose `service:` is one letter off a declared one, so the fix applier would be granted no root at all), `malformed-spec` (all refusals, zero AI calls) and `nonconvergence` (a full walk that ends `not_fixed` and exits 1, one AI turn). Each plants a *failing* test in the fixture tree, so "reported no failures" can never be confused with "had nothing to find".
   - `build-code-fix-named-test` covers the post-fix rerun being narrowed to the test that was fixed. Its assertion is a canary test that appends a line every time the whole suite runs: discovery runs it once, so a correctly narrowed rerun leaves ONE line and an unfiltered one leaves two — a golden-tree difference caught in replay with no model involved. Exit code alone cannot see it, since an unfiltered rerun also reports success.
+
+**Known, deliberate inconsistency:** the `us-refine-*` fixtures still ship an `architecture.yaml` in the OLD `quality_gate.tests.{integration,e2e}` shape, and `true-bdd/checklists/us-refine.yaml` still asks the model to cite "the framework per service and per layer". Nothing parses those documents — they reach the prompt as text — so the fixtures' cassettes stay valid and the suite stays green. Aligning both means re-recording eleven fixtures at ~5 minutes of real model time each, which belongs in its own commit; until then, do not read those fixtures as the current spec shape.
 
 **Every command reports a startup refusal as `Cannot start: …` on stdout, plus a `Refusing to start` slog record.** The precondition failures are a malformed story number, an unloadable checklist, an unsatisfiable `docs:` declaration, and anything the command's `LoadItems` cannot load (the epic for `us create`, the story for `us refine`, the acceptance criteria for `us apply`, the registry for `build tests`, the architectural spec for `build code`). All but one go through `runner.refuseStartup`; the `docs:` check reports inline instead, because it carries an extra `checklist=` attribute on its slog record and its own `msg`. Left to cobra they would surface only as a stderr line under a usage dump, which reads as "you typed the flags wrong" and is invisible to the fixture harness: `stdout_regex` matches stdout alone, and in replay the judge does not run at all. An error already diagnosed by the code that produced it is wrapped in `runner.Reported` so it is not announced twice.
 
@@ -75,13 +82,19 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 # Unit tests
 go test ./...
 
-# End-to-end BDD fixtures — real Claude calls, ~3-5 min per fixture.
+# End-to-end BDD scenarios — real Claude calls, ~3-5 min per scenario.
 go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 
-# Hermetic record/replay of the fixtures' AI calls (the -mode flag must
+# The web suite: builds services/bdd-web, boots it on a free loopback
+# port, drives chromium through playwright-go. Out of every gate on
+# purpose — it needs node, a build, and a browser.
+go test -tags bdd -timeout=25m ./tests/bdd-web/
+
+# Hermetic record/replay of the scenarios' AI calls (the -mode flag must
 # come after the package path). replay serves per-fixture cassettes/ via
-# the tests/aiproxy PATH shim and spawns NO model at all — not even the
-# judge; a fixture without cassettes or without a recorded outcome FAILS.
+# the tests/libraries/aiproxy PATH shim and spawns NO model at all — not
+# even the judge; a scenario without cassettes or without a recorded
+# outcome FAILS.
 # The whole suite replays in well under a minute for zero cost.
 # record runs the real CLIs, grades with the judge, and publishes the
 # recording ONLY if the fixture passes: a failed run's cassettes stay in
@@ -92,7 +105,8 @@ go test -tags bdd -run 'TestBDDFixtures/<fixture>' ./tests/bdd-cli/ -mode=record
 
 # Browse the run report — every session, live. Rescans tmp/test_run every
 # 15s, so a suite still running streams into an open page.
-go run ./tests/bdd-cli/cmd/report-server     # http://127.0.0.1:7331
+go run ./tests/libraries/cmd/report-server   # http://127.0.0.1:7331
+# -addr 0.0.0.0:7331 to reach it from another machine (e.g. over Tailscale)
 
 # Lint
 golangci-lint run
@@ -108,22 +122,29 @@ env -u CLAUDECODE ./bin/true-bdd us create 4.1
 
 `us refine` drives many sequential Claude calls and typically takes **about 5 minutes** end-to-end. Do not abort early; poll or wait rather than killing the process.
 
-## BDD Fixture Harness
+## BDD Harness
 
-Fixtures live under `tests/bdd-cli/fixtures/<scenario>/`. Each fixture is a folder containing `fixture.yaml` (the manifest), the input directory it references (conventionally `input/`, designed test content), and `cassettes/` — the recording that lets the fixture run hermetically under `-mode=replay`: one directory per AI call plus `golden.json`, the outcome those calls produced. Every fixture is recorded; a fixture without a recording fails in replay rather than skipping.
+**The registry drives the suite.** `docs/scenarios.yaml` says what the engine must do; `tests/libraries/bddgo` runs it. There are no feature files and no per-scenario test functions: a suite registers step definitions, and every registry scenario the architectural spec assigns it becomes a Go subtest whose steps are bound by regexp. A scenario with a step no definition matches FAILS — it is not skipped and not silently absent, and that failure is exactly the gap `build tests --fix` closes.
 
-The record/replay proxy is `tests/aiproxy/`: one binary installed as `claude`/`crush`/`codex` in a shim dir the harness prepends to the CLI subprocess's PATH (the engine is unmodified). A cassette per call stores argv, stdin, the output streams, exit code, and the working-tree fs-diff — with run-volatile paths normalized (`{{CWD}}`, `{{RUN_DIR}}`, `{{HOME}}`) in paths, contents, AND stdout, because the engine parses result files out of the response via `FILE_START: tmp/<run-dir>/…` markers. Replay matches cassettes by sequence per binary, verifies a normalized request hash (mismatch = loud "stale cassette" failure, exit 86 — never a silent fall-through to real CLIs), applies the fs-diff before emitting output, and lingers until the engine closes stdin (exiting earlier truncates the response mid-pipe).
+`tests/libraries/bddgo` is generic over the state a suite keeps, so it serves both surfaces: `tests/bdd-cli/steps` keeps a subprocess and a working tree, `tests/bdd-web/steps` keeps a browser page. Its own refusals are worth knowing — a suite the spec does not declare, a suite whose service no scenario names (it would pass trivially), a step matched by two definitions (which one runs would depend on registration order). Its `Undefined()` answers "is every written-down behaviour executable?" without running anything, which is what makes that question affordable to ask on every `build tests` walk.
+
+The bdd-cli suite's scenarios each drive a **fixture tree**: a folder under `tests/bdd-cli/fixtures/<name>/` holding `fixture.yaml` (the manifest), the input directory it references (conventionally `input/`, designed test content), and `cassettes/` — the recording that lets the run go hermetically under `-mode=replay`: one directory per AI call plus `golden.json`, the outcome those calls produced. The scenario's Given step names the tree. Every one is recorded; a scenario without a recording fails in replay rather than skipping, and **a tree no scenario names fails the whole run** — a directory nobody executes looks exactly like a directory that passes.
+
+The record/replay proxy is `tests/libraries/aiproxy/`: one binary installed as `claude`/`crush`/`codex` in a shim dir the harness prepends to the CLI subprocess's PATH (the engine is unmodified). A cassette per call stores argv, stdin, the output streams, exit code, and the working-tree fs-diff — with run-volatile paths normalized (`{{CWD}}`, `{{RUN_DIR}}`, `{{HOME}}`) in paths, contents, AND stdout, because the engine parses result files out of the response via `FILE_START: tmp/<run-dir>/…` markers. Replay matches cassettes by sequence per binary, verifies a normalized request hash (mismatch = loud "stale cassette" failure, exit 86 — never a silent fall-through to real CLIs), applies the fs-diff before emitting output, and lingers until the engine closes stdin (exiting earlier truncates the response mid-pipe).
 
 **Recordings are sanitized before they are written.** Cassettes are committed to a public repository, so the shim drops the agent CLI's `system`/`init` inventory — the tool schemas, connected MCP servers, skills, plugins, slash commands and memory paths — and rewrites the recording machine's home directory to `{{HOME}}`. The engine reads none of it (`adapters/ai/claude_provider.go` answers a system message with two `slog.Debug` calls), and it was 47% of the bytes. `.claude/skills/pr-commit/scan-recordings.sh` re-checks the committed recordings for home paths, session inventory, credentials and e-mail addresses; a hit means fix the shim and re-record, never hand-edit a cassette.
 
-**A run is graded one of two ways, never both.** Live and record call the **judge** (`judge:` in `fixture.yaml`), because the model output is new and only a reader can say whether it satisfies the rubric. Replay compares the **recording** — `cassettes/golden.json`, the run's diff outside `tmp/`, written by a passing record run and compared byte-for-byte — because in replay every AI-written file was materialised from a cassette, so grading them re-grades a fixed artefact. What can still move is the engine: which cells it walks, how it parses each response, and the files it writes itself (the registry merge above all). Replay therefore asserts, all deterministically and for free: the request hash per call (prompt drift → exit 86), **every cassette consumed** (`runner.CheckCassettesConsumed` — the one divergence a hash cannot see, since a call that never arrives matches nothing), the golden tree in **both directions** (a missing file and an unexpected new file are equally a failure), the exit code, and the `stdout_regex` list. Residual gap, stated plainly: a change that alters only `tmp/` scratch and neither stdout nor an output file is not caught. `tmp/` is excluded because its paths carry a per-run timestamp, so pinning them would fail every future run rather than any regression.
+**A run is graded at three levels, and each owns something the others cannot say.**
 
-`fixture.yaml` declares what to run and what to assert:
+1. **The scenario's own Then steps** — the exit code and the stdout patterns — asserted by the suite's step definitions on every run, in every mode. These are behaviour, so they live in the registry.
+2. **The recording**, in replay only: `cassettes/golden.json`, the run's diff outside `tmp/`, written by a passing record run and compared byte-for-byte, plus **every cassette consumed** (`runner.CheckCassettesConsumed` — the one divergence a request hash cannot see, since a call that never arrives matches nothing) and the request hash per call (prompt drift → exit 86). In replay every AI-written file was materialised from a cassette, so grading its content re-grades a fixed artefact; what can still move is the engine — which cells it walks, how it parses each response, and the files it writes itself, the registry merge above all.
+3. **The judge** (`judge:` in `fixture.yaml`), in live and record only, because the model output is new and only a reader can say whether it satisfies the rubric.
+
+Residual gap, stated plainly: a change that alters only `tmp/` scratch and neither stdout nor an output file is not caught. `tmp/` is excluded because its paths carry a per-run timestamp, so pinning them would fail every future run rather than any regression.
+
+`fixture.yaml` declares the DATA a scenario runs against, and the rubric for output no recording covers. What the run DOES — the invocation, the exit code, the stdout — is not here; that is behaviour, it lives in the scenario, and a manifest that also declared it would be a second place to change it:
 
 ```yaml
-# Required. Single-line invocation passed verbatim as arguments to true-bdd.
-cmd: us apply 99.3 --fix
-
 # Required. Path (relative to the fixture's own dir) of the directory
 # tree overlaid onto the runner's tmpdir. Conventionally "input".
 input: input
@@ -134,15 +155,31 @@ answers: |
   1
   1
 
-# Required. Assertion strategies applied after the CLI exits.
 expected:
-  exit_code: 0          # Optional. Defaults to 0.
-  stdout_regex:         # Optional. Go regexp patterns asserted against stdout.
-    - "ALL CHECKS PASSED!"
   judge: |              # Required. Markdown rubric handed to the Claude judge.
     # Expectations
     ...
 ```
+
+and the scenario that drives it, in `docs/scenarios.yaml`:
+
+```yaml
+E2E-029:
+  description: An implementation term in a story seed's so_that clause must drive the fix loop until the clause states a user outcome
+  service: bdd-cli
+  user_stories: []
+  merged_steps:
+    given:
+      - the "us-create-fix-happy-path" project tree
+      - the Product Owner answers each failed check
+    when:
+      - the Product Owner runs "us create 99.1 --fix"
+    then:
+      - the command exits with code 0
+      - stdout matches ALL CHECKS PASSED!
+```
+
+The stdout pattern runs to the end of the line, undelimited: several of them carry double quotes of their own (`msg="Refusing to start"`), and any quoting scheme would push escaping into a document meant to be read.
 
 The runner builds each run's tmpdir in two layers: first it pre-populates the repo-layer engine ingredients (the tracked `true-bdd/` config seed and `templates/`) so fixtures exercise the live prompt templates; then it overlays the fixture's input tree on top, which holds the designed host-project content — `docs/` at minimum (synthetic product doc, architecture, epic, story, seeded requirements registry), plus, when the scenario needs them, project sources and tests, a per-fixture `CLAUDE.md`/`.claude/`, or engine-config overrides under `true-bdd/`. Files inside the input tree win over the pre-populated layer, so a fixture may deliberately ship a per-fixture variant of a checklist or config.
 
@@ -152,21 +189,22 @@ The runner builds each run's tmpdir in two layers: first it pre-populates the re
 
 The runner snapshots the tmpdir after prep but before the run, so the diff fed to the judge only contains files the run itself created or modified. After the CLI exits, the runner asks Claude (via the `services/bdd-cli/claudecode/` wrapper) to compare the diff against the `judge:` rubric and return PASS / FAIL.
 
-Tests are gated by a `//go:build bdd` tag so they're invisible to default `go test ./...`. In live and record the suite skips when `claude` — or any CLI a model tier names — is not on `$PATH`. Replay skips for nothing: it spawns no model at all, so a missing CLI is not a reason to stay silent about whether the engine still behaves.
+Tests are gated by a `//go:build bdd` tag so they're invisible to default `go test ./...`. The entry point is still called `TestBDDFixtures` and its subtests are still named after the fixture tree, so every `-run` filter in the gates, the CI job and the record hints keeps working verbatim; what moved is where the suite's contents come from. In live and record the suite skips when `claude` — or any CLI a model tier names — is not on `$PATH`. Replay skips for nothing: it spawns no model at all, so a missing CLI is not a reason to stay silent about whether the engine still behaves.
 
 **Replay runs in both gates** — `.claude/skills/pr-commit/gates.sh` and CI's `gates` job — because it is the only check that watches the engine run end to end, and it costs about a minute and no money. A gate failure says which kind: `stale cassette` (exit 86) means a prompt, template or engine change altered a request and the affected fixtures need re-recording; a golden mismatch means the run produced different files than the recording, which is the regression signal and worth reading before re-recording. The live suite stays manual.
 
-If the fixture's `cmd` invokes `--fix` (the interactive fix loop), set `answers:` to a literal block scalar. Its contents are piped verbatim to the subprocess's stdin. Each line answers one prompt: `1`/`2`/`3` (or `apply`/`refine`/`exit`) for the choice prompt; a single line for clarifying-question answers; multi-line free text terminated by a blank line for refinement feedback. Surplus lines are harmless (EOF on stdin causes the CLI to exit cleanly).
+If the scenario runs `--fix` (the interactive fix loop), set `answers:` to a literal block scalar. Its contents are piped verbatim to the subprocess's stdin. Each line answers one prompt: `1`/`2`/`3` (or `apply`/`refine`/`exit`) for the choice prompt; a single line for clarifying-question answers; multi-line free text terminated by a blank line for refinement feedback. Surplus lines are harmless (EOF on stdin causes the CLI to exit cleanly).
 
-If the fixture's `cmd` needs the tmpdir to have project dependencies installed (e.g. `build code` shells out to `npx playwright test`), declare a `prep:` list. Each entry is a shell command executed via `bash -c` in the tmpdir, run after the input overlay and before the pre-run snapshot — so the side effects of `npm install`, `playwright install`, etc., do not pollute the diff handed to the judge. A non-zero exit aborts the fixture.
+If the fixture tree needs project dependencies installed (e.g. `build code` shells out to `npx playwright test`), declare a `prep:` list. Each entry is a shell command executed via `bash -c` in the tmpdir, run after the input overlay and before the pre-run snapshot — so the side effects of `npm install`, `playwright install`, etc., do not pollute the diff handed to the judge. A non-zero exit aborts the fixture.
 
-If the fixture's `cmd` spawns long-lived external resources that outlive the CLI process (e.g. Playwright's `webServer` brings up a `docker compose` stack), declare a `teardown:` list. Each entry runs via `bash -c` in the tmpdir AFTER the post-run snapshot and AFTER the CLI exits — regardless of success, failure, or timeout — against a fresh 2-minute context. Failures are logged but never mask the primary verdict; teardown is best-effort hygiene.
+If the run spawns long-lived external resources that outlive the CLI process (e.g. Playwright's `webServer` brings up a `docker compose` stack), declare a `teardown:` list. Each entry runs via `bash -c` in the tmpdir AFTER the post-run snapshot and AFTER the CLI exits — regardless of success, failure, or timeout — against a fresh 2-minute context. Failures are logged but never mask the primary verdict; teardown is best-effort hygiene.
 
 ## Project Structure
 
 The repo follows the same `services/<name>/` + `tests/<name>/` layout TrueBDD asks
 of a host project: one directory per service, and a test suite named after the
-service it exercises.
+service it exercises — plus `tests/libraries/` for everything both suites share,
+and `tests/legacy/` for what is on its way out.
 
 - `services/bdd-cli/` — the Go module (`github.com/ondatra-ai/true-bdd`), i.e. the engine itself. Entry point `services/bdd-cli/main.go`; builds to `./bin/true-bdd` (gitignored). Exercised by `tests/bdd-cli/`.
   - `services/bdd-cli/cmd/` — cobra command tree (`root.go`, `us.go`, `build.go`).
@@ -175,17 +213,24 @@ service it exercises.
   - `services/bdd-cli/internal/app/` — bootstrap container, command implementations, the checklist engine.
   - `services/bdd-cli/internal/domain/` — story/checklist/registry/architecture models and ports.
   - `services/bdd-cli/internal/infrastructure/` — loaders (config, epic, story, checklist, registry, architecture), template rendering, test runners (go test / jest / playwright), fs, console input.
+    - `architecture/loader.go` decodes exactly two things: `architecture.testing.suites[]` and the `name`/`path`/`language` of each `architecture.services[]` entry. Everything else a host writes under `architecture:` — dependencies, patterns, design systems, non-test quality gates — is spec for its own readers and stays undecoded, which is why `true-bdd/architecture_yaml-schema.yaml` is the only thing that would notice a typo in it.
   - `services/bdd-cli/internal/pkg/` — `console` (terminal UI output), `errors`.
-- `services/bdd-web/` — the Next.js relay + UI (a **sentinel nested Go module** so root-level `go`/`golangci-lint` never descend into its `node_modules`). Its `src/` is GENERATED code and is gitignored — `tests/bdd-web/` is the spec. `design/` holds the design system, `SPEC.md`, and the `proto-workspace/` design-truth prototype. Exercised by `tests/bdd-web/`.
+- `services/bdd-web/` — the Next.js relay + UI (a **sentinel nested Go module** so root-level `go`/`golangci-lint` never descend into its `node_modules`). Its `src/` is GENERATED code and is gitignored — the scenarios and the suite that runs them are the spec. `design/` holds the design system, `SPEC.md`, and the `proto-workspace/` design-truth prototype. Exercised by `tests/bdd-web/`.
 - `templates/` — prompt templates (Go `text/template` with sprig), named `<command>.<role>.prompt.tpl`.
 - `true-bdd/` — the engine's canonical config seed (`true-bdd.yaml`, `checklists/`, `<key>-schema.yaml`); pre-copied together with `templates/` into every BDD fixture tmpdir as the repo layer. The schemas are host lint contracts, not engine inputs: the engine never parses the documents they pin, so only `scripts/validate-schemas.sh` enforces them.
 - `scripts/` — repo tooling invoked by CI and the commit gates; `validate-schemas.sh` is the schema gate described under Development Commands.
-- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `services/bdd-web/src/tests/unit/`):
-  - `tests/bdd-cli/` — the Go BDD-CLI fixture harness for `services/bdd-cli`: `bdd_test.go`, `runner/`, `coverage/`, `fixtures/<scenario>/`.
-  - `tests/aiproxy/` — the record/replay PATH shim for the AI CLIs (see BDD Fixture Harness); built by the harness when `-mode` is not `live`.
-  - `tests/internal/fstree/` — shared tree snapshot/diff, used by both the runner's per-run diff and the shim's per-call fs-diff.
-  - `tests/bdd-web/` — the Playwright E2E suite for `services/bdd-web`, a **self-contained npm package** (own `package.json` + `node_modules`, sentinel `go.mod` to keep Go tooling out of its deps): specs (`p*` protocol, `w*` workspace, `a*` AI), `helpers/`, `fixtures/`, `goldens/`, `reporters/`, `playwright.config.ts`, global setup/teardown. Each test builds the app once per invocation and launches its own host `node server.js` (see `helpers/server-controller.ts`). Run: `npx --prefix tests/bdd-web playwright test --config tests/bdd-web/playwright.config.ts --project=protocol`.
-  - `tests/materializer/` — the Go fixture materializer (shared with `tests/bdd-cli/runner`), built by the E2E suite to overlay fixtures.
+- `tests/` — all end-to-end / BDD tests live here (unit tests stay with their code, e.g. `services/bdd-web/src/tests/unit/`). One directory per SUITE, one for the libraries they share:
+  - `tests/bdd-cli/` — the suite for `services/bdd-cli`: `bdd_test.go` (entry point), `steps/` (the six step definitions the whole suite runs on), `fixtures/<name>/` (the project trees its scenarios drive, each with its manifest and cassettes).
+  - `tests/bdd-web/` — the suite for `services/bdd-web`: `bdd_test.go`, `steps/` (browser verbs on `playwright-go`, plus the harness that builds the app, boots it on a free loopback port, and assembles the Playwright driver from npm because the library's own CDN is dead).
+  - `tests/libraries/` — everything neither suite owns alone:
+    - `bddgo/` — the registry-driven scenario runner (see BDD Harness). Generic over the state a suite keeps, so it knows nothing about subprocesses or browsers.
+    - `runner/` — fixture manifests, tmpdir assembly, the CLI invocation, the per-run diff, the judge, goldens, the harness recorder, session metadata.
+    - `aiproxy/` — the record/replay PATH shim for the AI CLIs (see BDD Harness); built by the harness when `-mode` is not `live`.
+    - `fstree/` — shared tree snapshot/diff, used by both the runner's per-run diff and the shim's per-call fs-diff.
+    - `reporter/` — parse-only loaders for a session's on-disk artefacts. `reportserver/` — the store, JSON API, diff layer and embedded UI.
+    - `materializer/` — the Go fixture materializer, built by the parked suite to overlay fixtures.
+    - `cmd/report-server/`, `cmd/coverage/` — the two binaries (`go run ./tests/libraries/cmd/...`).
+  - `tests/legacy/bdd-web-playwright/` — the PARKED TypeScript Playwright suite: 60 specs and its own `node_modules`, behind a sentinel `go.mod`. It is what `tests/bdd-web/` replaces, kept only until the Go suite covers it, and deleted then. Do not add to it.
 - `tmp/` — runtime working dir for prompt/response artifacts (gitignored).
 - `docs/history/` — conversation history captured by the `.claude/hooks/history.py` hook (`<UTC-ts>-<session8>-<slug>.md`), gitignored. `docs/history/hook-state` holds a single line — the current file's name — shared across sessions so a new session continues the same file. `/new-task` (`.claude/commands/new-task.sh`) deletes it so the next prompt opens a fresh file, and also resets the repo to a clean state: local changes discarded, untracked files removed (ignored files kept), and the current branch fast-forwarded from origin (the branch is never switched).
 - `tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/<fixture-name>/` — per-fixture working dir created by the BDD test harness. Predictable, never auto-cleaned; wipe manually when you want to reclaim disk. Everything the report reads lives here. The `bdd-cli-logs/` files below are recorder **sidecars**, written from the recorder's `t.Cleanup` so they survive a `t.Fatalf` and land strictly after both snapshots, never entering the judge's diff. `tmp/true-bdd.log.json` is not one of them — the engine writes it from its own process, during the run:
@@ -196,7 +241,7 @@ service it exercises.
   - `harness.log.json` at the session root is the *test process's* slog, not run data — no fixture names, no verdicts. Only the judge's `AI turn usage` records matter, and the recorder already folds those into `harness.json`.
   - `session.json` at the session root — what is true of the whole invocation rather than any one fixture: the `-mode` it ran under and the fixtures it *planned* to run (discovery minus the `-run`/`-skip` filters, computed by `runner.PlannedFixtures`). Written before the first fixture starts, which is what lets a live report say "6 / 0 / 19" instead of a denominator that grows as the run proceeds. Both facts are absent for older sessions and must render as unknown, never as `live`.
   - `.cassettes-staging/<fixture>/` at the session root — record mode's in-flight cassettes plus the `golden.json` written from the run's own diff, promoted into `fixtures/<name>/cassettes/` only when the fixture passes. At the session root, not inside the run dir, because anything written there lands in the graded diff.
-- **Run report** — served, not generated. `go run ./tests/bdd-cli/cmd/report-server` reads every session under `tmp/test_run`, rescans on a 15s interval, and serves a single-page UI at `127.0.0.1:7331`: run list, per-run fixtures, per-test expected-vs-actual with the phase timeline, and comparison of any two runs — test by test, then turn by turn. Every surface states the AI mode (run list column, run tiles, test tile, matrix column) — a green replay run and a green live run prove different things — and scores a run as **passed / failed / planned**. Comparison uses a real Myers diff (`znkr.io/diff`), aligning turns on `(checklist cell, role)` rather than turn number, so a run that needed an extra retry shows one insertion instead of shifting every later row. Loaders live in `tests/bdd-cli/reporter/` (parse only); the store, JSON API, diff layer and embedded UI in `tests/bdd-cli/reportserver/`.
+- **Run report** — served, not generated. `go run ./tests/libraries/cmd/report-server` reads every session under `tmp/test_run`, rescans on a 15s interval, and serves a single-page UI at `127.0.0.1:7331`: run list, per-run fixtures, per-test expected-vs-actual with the phase timeline, and comparison of any two runs — test by test, then turn by turn. Every surface states the AI mode (run list column, run tiles, test tile, matrix column) — a green replay run and a green live run prove different things — and scores a run as **passed / failed / planned**. Comparison uses a real Myers diff (`znkr.io/diff`), aligning turns on `(checklist cell, role)` rather than turn number, so a run that needed an extra retry shows one insertion instead of shifting every later row. Loaders live in `tests/libraries/reporter/` (parse only); the store, JSON API, diff layer and embedded UI in `tests/libraries/reportserver/`.
 
 ## Architecture Principles
 

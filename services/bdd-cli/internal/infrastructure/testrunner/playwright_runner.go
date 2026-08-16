@@ -64,11 +64,11 @@ func NewPlaywrightRunner(artifacts *Artifacts) *PlaywrightRunner {
 func (r *PlaywrightRunner) Discover(
 	ctx context.Context,
 	cfg Config,
-	service, layer string,
+	service, suite string,
 ) ([]*FailingTest, error) {
 	argv, err := SplitCommand(cfg.Command)
 	if err != nil {
-		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, layer, err)
+		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, suite, err)
 	}
 
 	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
@@ -82,12 +82,12 @@ func (r *PlaywrightRunner) Discover(
 		return nil, fmt.Errorf("playwright report parse failed: %w", err)
 	}
 
-	failures := playwrightReportToFailingTests(report, service, layer)
+	failures := playwrightReportToFailingTests(report, service, suite)
 
 	logPlaywrightReport(PhaseDiscover, report, len(failures))
 
 	if runErr != nil && len(failures) == 0 {
-		failures = append(failures, newPlaywrightStartupFailure(service, layer, cfg, stderr.String()))
+		failures = append(failures, newPlaywrightStartupFailure(service, suite, cfg, stderr.String()))
 	}
 
 	for _, failure := range failures {
@@ -103,14 +103,14 @@ func (r *PlaywrightRunner) Discover(
 // startup-failure case. The TestName is the well-known marker so RunOne
 // can dispatch to the whole-suite rerun branch.
 func newPlaywrightStartupFailure(
-	service, layer string,
+	service, suite string,
 	cfg Config,
 	stderrText string,
 ) *FailingTest {
 	return &FailingTest{
-		ID:            BuildID(service, layer, FrameworkPlaywright, playwrightStartupMarker),
+		ID:            BuildID(service, suite, FrameworkPlaywright, playwrightStartupMarker),
 		Service:       service,
-		Layer:         layer,
+		Suite:         suite,
 		Framework:     FrameworkPlaywright,
 		TestName:      playwrightStartupMarker,
 		FilePath:      cfg.Path,
@@ -119,7 +119,7 @@ func newPlaywrightStartupFailure(
 }
 
 // RunOne re-executes a single failing test in isolation by appending a
-// `--grep` regex to the layer's own command. Only `--grep` is appended,
+// `--grep` regex to the suite's own command. Only `--grep` is appended,
 // never the spec file: Playwright ORs positional path filters, so a
 // file argument alongside the path the command already carries would
 // WIDEN the rerun rather than isolate it. `--grep` is ANDed with the
@@ -252,8 +252,8 @@ func (r *PlaywrightRunner) runOneStartup(
 	return false, TruncateTail(output, FailureOutputCap), nil
 }
 
-// exec runs the layer's command with the supplied argv. cwd is the
-// directory holding the layer's config so `npx` resolves the local
+// exec runs the suite's command with the supplied argv. cwd is the
+// directory holding the suite's config so `npx` resolves the local
 // Playwright install. phase labels the invocation in the log and in the
 // captured output's filename. Non-zero exit codes are expected on test
 // failure.
@@ -348,13 +348,13 @@ func playwrightErrorMessages(errs []dto.PlaywrightError) []string {
 
 // playwrightReportToFailingTests walks the suite tree and collects one
 // FailingTest per failed result, tagging each with the supplied service
-// and layer. Free function rather than a method on dto.PlaywrightReport
+// and suite. Free function rather than a method on dto.PlaywrightReport
 // so the dto package stays passive.
 func playwrightReportToFailingTests(
 	report *dto.PlaywrightReport,
-	service, layer string,
+	service, suite string,
 ) []*FailingTest {
-	collector := &playwrightCollector{service: service, layer: layer}
+	collector := &playwrightCollector{service: service, suite: suite}
 	for _, suite := range report.Suites {
 		collector.walk(suite, "", suite.File)
 	}
@@ -367,7 +367,7 @@ func playwrightReportToFailingTests(
 // the slice through every call.
 type playwrightCollector struct {
 	service string
-	layer   string
+	suite   string
 	out     []*FailingTest
 }
 
@@ -399,9 +399,9 @@ func (c *playwrightCollector) collectSpec(spec dto.PlaywrightSpec, titleChain, f
 
 		name := file + playwrightNameSeparator + fullTitle
 		c.out = append(c.out, &FailingTest{
-			ID:            BuildID(c.service, c.layer, FrameworkPlaywright, name),
+			ID:            BuildID(c.service, c.suite, FrameworkPlaywright, name),
 			Service:       c.service,
-			Layer:         c.layer,
+			Suite:         c.suite,
 			Framework:     FrameworkPlaywright,
 			TestName:      name,
 			FilePath:      file,

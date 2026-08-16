@@ -12,110 +12,112 @@ import (
 )
 
 // ErrNoServices signals that the architecture YAML has no
-// `architecture.services:` list to walk.
+// `architecture.services:` list — nothing for a fix to write into.
 var ErrNoServices = errors.New(
 	"architecture file has no services to walk",
 )
 
-// ErrMissingLayerCommand signals that a declared test layer left one of
-// the three mandatory `commands:` entries empty. The engine has no
-// built-in invocation to fall back on — how a suite runs is spec, not
-// an engine default — so an incomplete block is a startup error, never
-// a silent substitution.
-var ErrMissingLayerCommand = errors.New("test layer command is required")
+// ErrNoTestSuites signals that the architecture YAML declares no
+// `architecture.testing.suites:`. A spec that never says how its tests
+// run describes a project no build pipeline can act on, so it is a
+// startup refusal rather than a walk over zero items reported as green.
+var ErrNoTestSuites = errors.New(
+	"architecture file has no test suites to walk",
+)
 
-// LayerCommands is the `commands:` block on one test layer: the command
+// ErrUnknownSuiteService signals a suite whose `service:` names no entry
+// in `services[]`. Caught here because that name is what decides which
+// source root the fix applier may write: a typo would otherwise grant
+// nothing and the walk would look like a fix that never lands.
+var ErrUnknownSuiteService = errors.New(
+	"test suite names a service the architecture does not declare",
+)
+
+// ErrMissingSuiteCommand signals that a declared suite left one of the
+// three mandatory `commands:` entries empty. The engine has no built-in
+// invocation to fall back on — how a suite runs is spec, not an engine
+// default — so an incomplete block is a startup error, never a silent
+// substitution.
+var ErrMissingSuiteCommand = errors.New("test suite command is required")
+
+// SuiteCommands is the `commands:` block on one test suite: the command
 // line to run that suite in each of the three AI-dependency modes.
 // `build code` executes Replay today; Record and Live are declared and
 // validated but not yet reachable from any command.
 //
 // All three are mandatory so a spec can never half-declare how its
-// tests run: a layer that names only the mode it happens to use today
-// is a layer whose other modes silently do not exist.
-type LayerCommands struct {
+// tests run: a suite that names only the mode it happens to use today
+// is a suite whose other modes silently do not exist.
+type SuiteCommands struct {
 	Record string `yaml:"record"`
 	Replay string `yaml:"replay"`
 	Live   string `yaml:"live"`
 }
 
-// TestConfig is one `quality_gate.tests.<layer>` block from
-// architecture.yaml. Mirrors the testrunner.Config shape; converted at
-// the LoadItems boundary.
-type TestConfig struct {
+// Suite is one entry under `architecture.testing.suites[]`. Mirrors the
+// testrunner.Config shape; converted at the LoadItems boundary.
+//
+// Service names the one service this suite exercises. A suite covering
+// two services is two suites: a failure that names no single source
+// root is a failure no fix prompt can be pointed at.
+type Suite struct {
+	Name       string        `yaml:"name"`
+	Service    string        `yaml:"service"`
 	Path       string        `yaml:"path"`
 	Framework  string        `yaml:"framework"`
 	ConfigFile string        `yaml:"config,omitempty"`
 	Pattern    string        `yaml:"pattern,omitempty"`
-	Commands   LayerCommands `yaml:"commands"`
+	Commands   SuiteCommands `yaml:"commands"`
 }
 
-// ServiceTests bundles the two test-layer configs declared under
-// one service's `quality_gate.tests:`. Unit tests are implementation
-// detail `build code` generates, never spec, so they have no layer here.
-type ServiceTests struct {
-	E2E         TestConfig `yaml:"e2e"`
-	Integration TestConfig `yaml:"integration"`
+// Label is how a suite is named in progress lines and refusals:
+// `<service>/<suite>`. Both halves, because a repository with two
+// suites over one service and one suite over two services are both
+// legible only when the pair is printed.
+func (s Suite) Label() string {
+	return s.Service + "/" + s.Name
 }
 
-// Layer names, mirroring the YAML keys under `quality_gate.tests:`.
-// Deliberately duplicated from testrunner's constants of the same name
-// rather than imported: the dependency runs the other way (testrunner
-// knows nothing about this loader) and these are YAML keys, which the
-// document defines and the runner only carries.
-const (
-	LayerIntegration = "integration"
-	LayerE2E         = "e2e"
-)
-
-// Layer pairs a test layer's YAML key with its config. Returned by
-// Layers so every caller — the loader's own validation and the
-// build-code walk alike — enumerates layers from one place.
-type Layer struct {
-	Name   string
-	Config TestConfig
-}
-
-// Layers returns both test layers in walk order. A layer with no
-// `framework:` is undeclared: callers skip it, and the loader's command
-// validation does not apply to it.
-func (t ServiceTests) Layers() []Layer {
-	return []Layer{
-		{Name: LayerIntegration, Config: t.Integration},
-		{Name: LayerE2E, Config: t.E2E},
-	}
-}
-
-// Service is one entry in `architecture.services[]`.
+// Service is one entry in `architecture.services[]`. Only the three
+// fields the build pipeline reads are decoded — `path` above all, since
+// it is the one root a fix applier is granted.
 type Service struct {
-	Name     string
-	Path     string
-	Language string
-	Tests    ServiceTests
+	Name     string `yaml:"name"`
+	Path     string `yaml:"path"`
+	Language string `yaml:"language"`
 }
 
 // Architecture is the loaded view of architecture.yaml — only the
-// fields the build-code pipeline needs are decoded.
+// fields the build pipeline needs are decoded.
 type Architecture struct {
+	Suites   []Suite
 	Services []Service
 }
 
-// rawQualityGate mirrors the `quality_gate:` block under one service
-// in architecture.yaml. Only `tests:` is decoded.
-type rawQualityGate struct {
-	Tests ServiceTests `yaml:"tests"`
+// ServicePath returns the declared source root of the named service.
+// Used to point a suite's failures at the one tree a fix may edit.
+func (a *Architecture) ServicePath(name string) (string, bool) {
+	for _, svc := range a.Services {
+		if svc.Name == name {
+			return svc.Path, true
+		}
+	}
+
+	return "", false
 }
 
-// rawService mirrors one entry under `architecture.services[]`.
-type rawService struct {
-	Name        string         `yaml:"name"`
-	Path        string         `yaml:"path"`
-	Language    string         `yaml:"language"`
-	QualityGate rawQualityGate `yaml:"quality_gate"`
+// rawTesting mirrors the `architecture.testing:` block — the single
+// place a repository states how its tests run.
+type rawTesting struct {
+	Suites []Suite `yaml:"suites"`
 }
 
-// rawDef mirrors the top-level `architecture:` block.
+// rawDef mirrors the top-level `architecture:` block. Every other key a
+// host writes under it — dependencies, patterns, design systems — is
+// spec for its own readers and stays undecoded.
 type rawDef struct {
-	Services []rawService `yaml:"services"`
+	Testing  rawTesting `yaml:"testing"`
+	Services []Service  `yaml:"services"`
 }
 
 // rawArchitecture mirrors the top-level shape of architecture.yaml.
@@ -123,11 +125,11 @@ type rawArchitecture struct {
 	Architecture rawDef `yaml:"architecture"`
 }
 
-// Load reads the YAML architecture file at `path`, decodes only the
-// service.quality_gate.tests blocks the build-code pipeline needs, and
-// returns one Service per architecture entry sorted by name. Purely
-// path-driven: the cmd layer resolves the path (flag override or
-// documents.architecture_yaml) before calling it.
+// Load reads the YAML architecture file at `path`, decodes the testing
+// suites and the service source roots the build pipeline needs, and
+// returns both sorted by name. Purely path-driven: the cmd layer
+// resolves the path (flag override or documents.architecture_yaml)
+// before calling it.
 func Load(path string) (*Architecture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -145,55 +147,60 @@ func Load(path string) (*Architecture, error) {
 		return nil, fmt.Errorf("%s: %w", path, ErrNoServices)
 	}
 
-	services := make([]Service, 0, len(raw.Architecture.Services))
-
-	for _, entry := range raw.Architecture.Services {
-		services = append(services, Service{
-			Name:     entry.Name,
-			Path:     entry.Path,
-			Language: entry.Language,
-			Tests:    entry.QualityGate.Tests,
-		})
+	if len(raw.Architecture.Testing.Suites) == 0 {
+		return nil, fmt.Errorf("%s: %w", path, ErrNoTestSuites)
 	}
 
-	sort.Slice(services, func(i, j int) bool {
-		return services[i].Name < services[j].Name
+	arch := &Architecture{
+		Suites:   append([]Suite(nil), raw.Architecture.Testing.Suites...),
+		Services: append([]Service(nil), raw.Architecture.Services...),
+	}
+
+	sort.Slice(arch.Suites, func(i, j int) bool {
+		return arch.Suites[i].Name < arch.Suites[j].Name
+	})
+	sort.Slice(arch.Services, func(i, j int) bool {
+		return arch.Services[i].Name < arch.Services[j].Name
 	})
 
-	err = validateLayerCommands(path, services)
+	err = validateSuites(path, arch)
 	if err != nil {
 		return nil, err
 	}
 
 	slog.Info("Loaded architecture",
 		"file", path,
-		"services", len(services),
+		"services", len(arch.Services),
+		"suites", len(arch.Suites),
 	)
 
-	return &Architecture{Services: services}, nil
+	return arch, nil
 }
 
-// validateLayerCommands refuses a spec in which any declared test layer
-// left one of the three `commands:` entries empty. Checked here rather
-// than at first use so the whole document is judged before the first
-// subprocess is spawned: a run that discovers one layer's tests and
-// only then finds the next layer unrunnable has already cost minutes
-// for a verdict the spec could have given immediately.
+// validateSuites refuses a spec whose suites cannot be walked: one
+// naming a service that does not exist, or one that left a `commands:`
+// entry empty. Checked here rather than at first use so the whole
+// document is judged before the first subprocess is spawned: a run that
+// discovers one suite's tests and only then finds the next unrunnable
+// has already cost minutes for a verdict the spec could have given
+// immediately.
 //
-// The message names the full YAML path — service, layer, key — because
-// a spec with two services and two layers has four places this could be
-// wrong and "commands.replay is required" alone names none of them.
-func validateLayerCommands(path string, services []Service) error {
-	for _, svc := range services {
-		for _, layer := range svc.Tests.Layers() {
-			if layer.Config.Framework == "" {
-				continue
-			}
+// The message names the full YAML path — suite and key — because a spec
+// with several suites has several places this could be wrong and
+// "commands.replay is required" alone names none of them.
+func validateSuites(path string, arch *Architecture) error {
+	for _, suite := range arch.Suites {
+		_, known := arch.ServicePath(suite.Service)
+		if !known {
+			return fmt.Errorf(
+				"%s: architecture.testing.suites[%s]: service %q: %w",
+				path, suite.Name, suite.Service, ErrUnknownSuiteService,
+			)
+		}
 
-			err := layer.Config.Commands.validate(path, svc.Name, layer.Name)
-			if err != nil {
-				return err
-			}
+		err := suite.Commands.validate(path, suite.Name)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -202,7 +209,7 @@ func validateLayerCommands(path string, services []Service) error {
 
 // validate reports the first empty command in the block, named by the
 // key a host has to fill in.
-func (c LayerCommands) validate(path, service, layer string) error {
+func (c SuiteCommands) validate(path, suite string) error {
 	modes := []struct {
 		key     string
 		command string
@@ -218,8 +225,8 @@ func (c LayerCommands) validate(path, service, layer string) error {
 		}
 
 		return fmt.Errorf(
-			"%s: services[%s].quality_gate.tests.%s: commands.%s: %w",
-			path, service, layer, mode.key, ErrMissingLayerCommand,
+			"%s: architecture.testing.suites[%s]: commands.%s: %w",
+			path, suite, mode.key, ErrMissingSuiteCommand,
 		)
 	}
 

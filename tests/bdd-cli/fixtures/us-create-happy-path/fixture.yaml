@@ -1,9 +1,6 @@
-cmd: us create 99.1
 input: input
 
 expected:
-  exit_code: 0
-
   judge: |
     # Expectations for `us create 99.1`
 

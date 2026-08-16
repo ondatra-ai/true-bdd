@@ -108,16 +108,31 @@
         "defer": 0,
         "reject": 3
       }
+    },
+    {
+      "at": "2026-08-16T20:00:24Z",
+      "sha": "526564c",
+      "branch": "feat/go-test-everywhere",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 2,
+      "by_severity": {
+        "minor": 2
+      },
+      "verdicts": {
+        "fix": 1,
+        "reject": 1
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 5,
-      "found": 29,
-      "fixed": 24,
+      "rounds": 6,
+      "found": 31,
+      "fixed": 25,
       "deferred": 0,
-      "rejected": 5,
-      "precision": 0.828
+      "rejected": 6,
+      "precision": 0.806
     },
     "coderabbit-github": {
       "rounds": 2,
