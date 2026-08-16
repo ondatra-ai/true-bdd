@@ -66,7 +66,10 @@ expected:
        engine must not interpret `4` as "story 1 of epic 4", or as
        "epic 4, pick something".
     2. **The epic file `docs/product/epics/epic-99-bdd-test.yaml` is
-       unmodified and was not read for a fallback.**
+       unmodified.** Judge this from its absence in the diff. Do NOT try
+       to decide whether it was *read* — reading leaves no trace in
+       either the diff or the log, so that is not a claim the evidence
+       you are given can settle.
     3. The run aborted **before any AI turn was dispatched**: zero
        records in `tmp/true-bdd.log.json` whose `msg` is
        `"Dispatching AI turn"`.

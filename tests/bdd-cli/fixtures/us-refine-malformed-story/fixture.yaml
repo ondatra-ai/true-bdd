@@ -13,11 +13,11 @@
 # That detail arrives on its own output line, which is why the patterns
 # below are split.
 #
-# KNOWN DEFECT, deliberately not asserted: the refusal is prefixed with
-# "story file not found — run `true-bdd us create 96.9` first" because
-# us_refine.go wraps every loader error with it. The story is not
-# missing — it is unparseable — and re-running `us create` would not fix
-# it. Patterns pin only the accurate half. Tracked as ClickUp 86cb5tnnt.
+# The refusal must NOT tell the user to run `us create`. The story is
+# not missing — it is unparseable — and re-running `us create` would
+# overwrite the file they are trying to repair. `us refine` used to
+# attach that advice to every loader failure, so the assertion below
+# pins the corrected wrapper as the evidence it was not reattached.
 #
 # Deliberately cheap: it exits before the first AI call.
 
@@ -38,7 +38,12 @@ expected:
     # because errors.Join puts the parser's complaint on the NEXT line,
     # and Go's `.` does not match a newline — a single pattern spanning
     # both would never match however correct the run.
-    - 'Cannot start: .*failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml'
+    # The generic loader wrapper, NOT the not-found advice — seeing the
+    # latter here would mean the engine was again telling someone with a
+    # syntax error to re-create the file they are repairing.
+    - 'Cannot start: failed to load items: failed to load story 96\.9:'
+
+    - 'failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml'
 
     # LINE 2: the parser's own complaint, which is the actionable half.
     # The line number is deliberately not pinned — editing the comment

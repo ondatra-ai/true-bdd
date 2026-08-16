@@ -57,9 +57,12 @@ expected:
     ## What MUST be true after the run
 
     1. **The decoy epic `docs/product/epics/epic-99-bdd-test.yaml` is
-       unmodified and was not walked.** This is the core assertion: an
-       engine that fell back to the only epic present would have
-       extracted a story from work the user never named.
+       unmodified, and no story was extracted from it.** This is the core
+       assertion: an engine that fell back to the only epic present would
+       have written a story file from work the user never named, so rule
+       2's "no file under `docs/product/stories/`" is what settles it.
+       Judge from the diff and the log only — whether the file was
+       *read* leaves no trace in either and is not yours to decide.
     2. **No file was created under `docs/product/stories/`**, and no file
        was created or modified anywhere outside `tmp/`.
     3. The run aborted **before any AI turn was dispatched**: zero

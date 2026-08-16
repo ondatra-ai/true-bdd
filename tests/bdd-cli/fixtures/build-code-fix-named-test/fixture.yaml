@@ -83,11 +83,14 @@ expected:
 
     1. **`services/calc/calc.go` is modified so `Add` returns the sum**
        of its arguments.
-    2. **No file under `tests/` was modified.** Neither `add_test.go` nor
-       `canary_test.go` may be edited, and no assertion may be weakened,
-       skipped or deleted. The failing assertion is the specification;
-       repairing the test instead of the code is the precise failure
-       `build code` exists to prevent.
+    2. **No test SOURCE file under `tests/` was modified.** Neither
+       `add_test.go` nor `canary_test.go` may be edited, and no assertion
+       may be weakened, skipped or deleted. The failing assertion is the
+       specification; repairing the test instead of the code is the
+       precise failure `build code` exists to prevent.
+       The generated `tests/suite/suite-runs.log` is the one exception —
+       it is written by the canary test when it runs, not by the fix
+       loop, and rule 3 below requires it to appear.
     3. **`tests/suite/suite-runs.log` exists and contains EXACTLY ONE
        line.** This is the core assertion. Discovery ran the whole suite
        once. The post-fix rerun must have been narrowed to the failing

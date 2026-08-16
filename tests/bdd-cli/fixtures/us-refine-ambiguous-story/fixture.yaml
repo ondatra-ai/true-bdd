@@ -7,13 +7,12 @@
 # proved it still does — a regression to "pick one" would refine one
 # copy, leave the other stale, and never say which it chose.
 #
-# KNOWN DEFECT, deliberately not asserted: the refusal is prefixed with
-# "story file not found — run `true-bdd us create 96.9` first", because
-# us_refine.go wraps every loader error with that sentence. Here it is
-# wrong twice over — the story is not missing, it exists twice, and
-# creating a third copy is the opposite of the fix. The patterns below
-# pin only the accurate half. Tracked as ClickUp 86cb5tnnt; when that
-# lands, tighten this fixture to assert the corrected wording.
+# The refusal must NOT tell the user to run `us create`. That advice is
+# only true when the story is absent; here it exists twice, and creating
+# a third copy is the opposite of the fix. `us refine` used to attach it
+# to every loader failure, so the assertion below pins the corrected
+# wrapper — `failed to load story <id>` — which is what proves the
+# not-found advice was not reattached.
 #
 # Deliberately cheap: it exits before the first AI call.
 
@@ -31,7 +30,13 @@ expected:
     # that turns "ambiguous" into something the reader can act on.
     - 'level=ERROR msg="Multiple story files found" story_number=96\.9 count=2'
 
-    - 'Cannot start: .*multiple story files found for story 96\.9'
+    # The generic loader wrapper, NOT the not-found advice. `us refine`
+    # attaches "run `true-bdd us create <id>` first" only when the story
+    # is genuinely missing; seeing it here would mean the engine had
+    # gone back to telling people to create a third copy.
+    - 'Cannot start: failed to load items: failed to load story 96\.9:'
+
+    - 'multiple story files found for story 96\.9'
 
     # BOTH candidates must be named. Naming one would leave the reader
     # guessing which pair collided, and deleting the wrong file is
