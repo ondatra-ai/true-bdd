@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "ioredis": "^5.4.1",
-    "next": "15.5.22",
+    "next": "16.3.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "yaml": "^2.9.0"
