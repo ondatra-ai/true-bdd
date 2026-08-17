@@ -11,6 +11,14 @@ mkdir -p ./bin
 go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./...
 
+# The bdd-tagged tree is invisible to `go vet ./...` and to
+# golangci-lint, which sets no build tags — so the suite shims, the
+# TestMain bootstraps and every generated test file would go unchecked.
+# That gap is not theoretical: vet is what catches a generated function
+# named `Testfoo`, which compiles, is never run by `go test`, and still
+# satisfies every coverage check.
+go vet -tags bdd ./tests/...
+
 # The BDD fixtures, replayed. Every AI turn is served from a committed
 # cassette, so this spawns no model, costs nothing, needs no agent CLI
 # installed, and finishes in under a minute — the three reasons the
@@ -32,3 +40,24 @@ go test ./...
 # The live suite (real models, ~30-90 min, real money) stays manual:
 #   go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 go test -tags bdd -timeout=20m ./tests/bdd-cli/ -mode=replay
+
+# The web suite's guards, and only its guards. The suite itself needs
+# node, a Next.js build and a browser and stays manual — but "does every
+# bdd-web scenario have a generated test?" needs none of those and
+# answers in milliseconds. Without this the web half of the registry
+# could go stale for weeks and the only thing that would notice is a
+# deliberate run nobody makes.
+#
+# TestStepCoverage is deliberately NOT here yet: tests/bdd-web/steps
+# registers four definitions against 244 scenarios, so it reports ~1680
+# unbound steps and would make this gate unsatisfiable rather than
+# failing — blocking every PR in the repo, not just the port's own. Add it
+# back to this line, and to the CI step that mirrors it, in the change
+# that lands the web step definitions:
+#
+#   https://app.clickup.com/t/86cb6fjwy
+#
+# The question is not lost meanwhile: `build tests` asks it through the
+# suite's `commands.coverage`, and one command still answers it —
+#   go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-web/
+go test -tags bdd -count=1 -run '^TestScenarioCoverage$' ./tests/bdd-web/

@@ -126,6 +126,24 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
+  # Reports which registry steps bind to no step definition, WITHOUT
+  # running a scenario, by writing JSON to the file named in
+  # $TRUEBDD_COVERAGE_REPORT. `build tests` runs this before it walks
+  # anything and hands the walk only the scenarios with gaps, so a
+  # converged repository costs no AI turn.
+  #
+  # The report is `{schema, suite, examined[], unbound[], ambiguous[],
+  # failure?}`. `examined` is what makes an empty `unbound` mean
+  # anything: a scenario the suite never looked at is walked rather
+  # than assumed bound.
+  #
+  # The one optional command. A suite that declares none falls back to
+  # `build tests` asking a model the same question in prose, so adding
+  # this key is an upgrade a host takes rather than a break when it
+  # does not. Its exit status is ignored — a coverage check
+  # legitimately fails when it finds gaps — but a missing report file
+  # is a refusal: "could not answer" is not "nothing to report".
+  coverage: str(required=False)
 
 ---
 helper:

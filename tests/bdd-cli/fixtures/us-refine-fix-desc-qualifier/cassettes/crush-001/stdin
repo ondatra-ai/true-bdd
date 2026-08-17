@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-17-47-48-63821/apply-96.6-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-17-17-04-25-18690/apply-96.6-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-15-17-47-48-63821/apply-96.6-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-17-17-04-25-18690/apply-96.6-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -109,24 +109,20 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-3 is faulted by the failed check. AC-1, AC-2, and AC-4 contain no forbidden qualifier and are reproduced exactly as they stand — same description, same steps, word for word.
+Only AC-3 is faulted by the check. AC-1, AC-2, and AC-4 pass and are
+reproduced word for word — descriptions and steps unchanged.
 
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**Issue:** The description contains the forbidden qualifier **'properly'** (from `forbidden_qualifiers` in `docs/architecture/architecture.yaml`). "Properly" cannot be tested objectively — an observer cannot measure whether a message was displayed "properly." The observable behavior is that the exact message is displayed; the word adds nothing testable and must be removed.
+**Issue:** The description contains the forbidden qualifier "properly" (listed in `forbidden_qualifiers` in docs/architecture/architecture.yaml). It adds no testable meaning — displaying the exact message string is already the measurable behavior.
 **After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**After (steps):** (unchanged — already correct)
+**After (steps):** unchanged — the steps do not contain a forbidden qualifier.
 ```yaml
-- given:
-    - "a Google Doc is shared with the Claude User's account"
-    - "the summary backend does not respond within 30 seconds"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude displays the message 'The summary timed out - please try again'"
+- given: "a Google Doc is shared with the Claude User's account"
+- given: "the summary backend does not respond within 30 seconds"
+- when: "the Claude User asks Claude to summarize the document"
+- then: "Claude displays the message 'The summary timed out - please try again'"
 ```
-
-No new ACs are needed — the four criteria already cover the happy path, the access-denied case, the timeout case, and the truncation case, each with distinct behavior.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -134,46 +130,34 @@ No new ACs are needed — the four criteria already cover the happy path, the ac
 - ac_id: AC-1
   description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
-    - given:
-        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of 150 words or fewer in the conversation"
-        - "the summary names the document title"
+    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of 150 words or fewer in the conversation"
+    - then: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given:
-        - "a Google Doc exists that is not shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize that document"
-    - then:
-        - "Claude displays the message 'This document is not shared with your account'"
-        - "Claude does not display any content from the document"
+    - given: "a Google Doc exists that is not shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize that document"
+    - then: "Claude displays the message 'This document is not shared with your account'"
+    - then: "Claude does not display any content from the document"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
-    - given:
-        - "a Google Doc is shared with the Claude User's account"
-        - "the summary backend does not respond within 30 seconds"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays the message 'The summary timed out - please try again'"
+    - given: "a Google Doc is shared with the Claude User's account"
+    - given: "the summary backend does not respond within 30 seconds"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
-    - given:
-        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of the first 10000 words"
-        - "Claude states that only the first 10000 words were summarized"
+    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of the first 10000 words"
+    - then: "Claude states that only the first 10000 words were summarized"
 ```
 
 ---
@@ -189,7 +173,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-15-17-47-48-63821/apply-96.6-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-17-17-04-25-18690/apply-96.6-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-15-17-47-48-63821/apply-96.6-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-17-17-04-25-18690/apply-96.6-iter1-result.yaml ===

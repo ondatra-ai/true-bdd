@@ -1,0 +1,5 @@
+# Which prompts of the shipped checklist this fixture's run walks.
+# The story in input/ carries exactly one designed defect; narrowing the
+# checklist is what makes the walk evaluate exactly the check it trips.
+us-refine:
+- whether its description field follows the rule-based format

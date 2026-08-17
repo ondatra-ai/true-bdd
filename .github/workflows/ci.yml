@@ -51,5 +51,27 @@ jobs:
       # A stale-cassette failure (exit 86) means a prompt or template
       # changed without the fixtures being re-recorded; a golden mismatch
       # means the run produced different files than the recording.
+      # `go vet ./...` and golangci-lint both skip the bdd-tagged tree,
+      # so without this the suite shims, the TestMain bootstraps and
+      # every generated test file go unchecked — including a generated
+      # function named `Testfoo`, which compiles, never runs, and still
+      # satisfies every coverage check.
+      - name: Vet the BDD tree
+        run: go vet -tags bdd ./tests/...
+
       - name: BDD fixtures (replay)
         run: go test -tags bdd -timeout=20m ./tests/bdd-cli/ -mode=replay
+
+      # The web suite's guard, and only its guard: every bdd-web scenario
+      # has a generated test. It needs no node, no build and no browser,
+      # so it answers in milliseconds — the suite itself stays manual.
+      #
+      # TestStepCoverage is deliberately NOT here yet: tests/bdd-web/steps
+      # registers four definitions against 244 scenarios, so it reports
+      # ~1680 unbound steps and would make this job unsatisfiable rather
+      # than failing — blocking every PR in the repo, not just the port's
+      # own. Add it back here, and to the matching line in
+      # .claude/skills/pr-commit/gates.sh, in the change that lands the
+      # web step definitions: https://app.clickup.com/t/86cb6fjwy
+      - name: BDD web coverage guards
+        run: go test -tags bdd -count=1 -run '^TestScenarioCoverage$' ./tests/bdd-web/

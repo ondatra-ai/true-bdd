@@ -126,7 +126,8 @@ func TestSidecarsRecordOnlyWhatLanded(t *testing.T) {
 	}
 
 	// A judge that was never reached contributes no empty files.
-	if got := writeSidecars(dir, map[string]string{}); got != nil {
+	got := writeSidecars(dir, map[string]string{})
+	if got != nil {
 		t.Errorf("empty sidecar set wrote %v, want nil", got)
 	}
 }

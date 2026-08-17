@@ -76,11 +76,18 @@ func (c *corpus) write(path, content string) {
 	}
 }
 
-// addFixture registers a fixture manifest and returns the run dir.
+// addFixture creates a fixture's input tree and returns its run dir.
+//
+// It writes no manifest: the invocation a fixture ran under is behaviour
+// and lives in the scenario registry, so the only place this tool can read
+// it back from a retained run directory is the run's own log. cmd is kept
+// in the signature because it is what each caller is describing.
 func (c *corpus) addFixture(session, fixture, cmd string) string {
 	c.t.Helper()
 
-	c.write(filepath.Join(c.FixturesDir, fixture, "fixture.yaml"), "cmd: "+cmd+"\ninput: input\n")
+	_ = cmd
+
+	c.write(filepath.Join(c.FixturesDir, fixture, "input", ".keep"), "")
 
 	runDir := filepath.Join(c.Root, session, fixture)
 

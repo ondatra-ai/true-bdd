@@ -55,18 +55,25 @@ func buildFullCorpus(t *testing.T) *corpus {
 	corp.write(run+"/tmp/"+miniPart+"/"+
 		strings.Replace(resultName(1), "-result.yaml", "-response.txt", 1),
 		"no markers here at all")
+	corp.logLines(run, lineLoaded())
 
-	// S5: two failed prompts, one apply, no log → unattributed.
+	// S5: two failed prompts and one apply, with no fix/apply evidence in
+	// the log → the apply is unattributed. The log still carries its
+	// "Loaded prompts" line, because the engine writes that before it
+	// evaluates anything: a run with result files and no log at all is a
+	// state the engine cannot reach.
 	run = corp.addFixture("S5", "mini-twofail", "us mini 9.9")
 	corp.withChecklist(run, miniChecklist)
 	corp.evalCell(run, 1, "fail")
 	corp.evalCell(run, 3, "fail")
 	corp.applyResult(run)
+	corp.logLines(run, lineLoaded())
 
 	// S6: overridden checklist whose first prompt differs → non-shipped.
 	run = corp.addFixture("S6", "mini-override", "us mini 9.9")
 	corp.withChecklist(run, strings.Replace(miniChecklist, "Question one?", "Question ONE modified?", 1))
 	corp.evalCell(run, 1, "pass")
+	corp.logLines(run, lineLoaded())
 
 	addTailScenarios(corp)
 	addAdversarialScenarios(corp)
@@ -100,6 +107,7 @@ func addAdversarialScenarios(corp *corpus) {
 	corp.withChecklist(run, miniChecklist)
 	corp.evalCell(run, 3, "pass")
 	corp.overwriteResult(run, 3, "fail")
+	corp.logLines(run, lineLoaded())
 
 	// S10: complete fix chain but a protocol WARN lands after the last
 	// apply — the post-apply walk is not clean, so no fix credit.

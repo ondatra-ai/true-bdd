@@ -30,7 +30,18 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 
 // buildRunE is the run shape both `build` subcommands use after sourcing
 // their lazily-built container, resolved spec path, and fix flag.
-type buildRunE func(ctx context.Context, container *bootstrap.Container, specFile string, fix bool) error
+//
+// It receives the cobra command as well, because `build tests` needs a
+// SECOND document — it renders its test files from the registry and the
+// architectural spec together — and only the command knows whether the
+// user passed the flag or left the host config to decide.
+type buildRunE func(
+	ctx context.Context,
+	cmd *cobra.Command,
+	container *bootstrap.Container,
+	specFile string,
+	fix bool,
+) error
 
 // specFlag describes the spec-path override flag a `build` subcommand
 // exposes, and the `documents.*` key that decides the path when the
@@ -77,19 +88,14 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 				os.Interrupt, syscall.SIGTERM)
 			defer stop()
 
-			specFile, _ := cmd.Flags().GetString(flag.name)
-			// Flags().Changed is the only reliable signal the user passed
-			// the flag; an unset flag means the config decides.
-			if !cmd.Flags().Changed(flag.name) {
-				specFile, err = container.DocResolver.Resolve(flag.docKey)
-				if err != nil {
-					return refuseUnresolvedDoc("build "+use, flag.label, err)
-				}
+			specFile, err := resolveSpec(cmd, container, flag.name, flag.docKey, flag.label, "build "+use)
+			if err != nil {
+				return err
 			}
 
 			fix, _ := cmd.Flags().GetBool("fix")
 
-			err = run(ctx, container, specFile, fix)
+			err = run(ctx, cmd, container, specFile, fix)
 
 			stop()
 
@@ -108,7 +114,7 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 }
 
 func newBuildTestsCmd(provide containerProvider) *cobra.Command {
-	return buildSpecCmd(
+	cmd := buildSpecCmd(
 		"tests",
 		"Walk the requirements registry and check every scenario has an executable test",
 		`Walk every scenario in the configured scenario registry
@@ -133,7 +139,22 @@ Example:
 			label:  "scenario registry",
 		},
 		provide,
-		func(ctx context.Context, container *bootstrap.Container, requirementsFile string, fix bool) error {
+		func(
+			ctx context.Context,
+			cmd *cobra.Command,
+			container *bootstrap.Container,
+			requirementsFile string,
+			fix bool,
+		) error {
+			// Resolved after the registry, deliberately: a host that
+			// declared neither document must hear about the registry
+			// first, since that is the one `build tests` is named for.
+			architectureFile, err := resolveSpec(cmd, container, "architecture",
+				docs.KeyArchitectureYAML, "architectural spec", "build tests")
+			if err != nil {
+				return err
+			}
+
 			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
 				RegistryLoader:               container.RegistryLoader,
 				ChecklistLoader:              container.ChecklistLoader,
@@ -144,9 +165,36 @@ Example:
 				UserInputCollector:           container.UserInputCollector,
 				TableRenderer:                container.TableRenderer,
 				RunDir:                       container.RunDir,
-			}, requirementsFile, fix)
+			}, requirementsFile, architectureFile, fix)
 		},
 	)
+
+	cmd.Flags().String("architecture", "",
+		"Path to the architectural spec naming the test suites "+
+			"(default: documents.architecture_yaml from true-bdd/true-bdd.yaml)")
+
+	return cmd
+}
+
+// resolveSpec reads a document-path flag, falling back to the host
+// config when the user did not pass it. Flags().Changed is the only
+// reliable signal: an unset flag means the config decides.
+func resolveSpec(
+	cmd *cobra.Command,
+	container *bootstrap.Container,
+	flagName, docKey, label, command string,
+) (string, error) {
+	value, _ := cmd.Flags().GetString(flagName)
+	if cmd.Flags().Changed(flagName) {
+		return value, nil
+	}
+
+	resolved, err := container.DocResolver.Resolve(docKey)
+	if err != nil {
+		return "", refuseUnresolvedDoc(command, label, err)
+	}
+
+	return resolved, nil
 }
 
 func newBuildCodeCmd(provide containerProvider) *cobra.Command {
@@ -174,7 +222,13 @@ Example:
 			label:  "architectural spec",
 		},
 		provide,
-		func(ctx context.Context, container *bootstrap.Container, architectureFile string, fix bool) error {
+		func(
+			ctx context.Context,
+			_ *cobra.Command,
+			container *bootstrap.Container,
+			architectureFile string,
+			fix bool,
+		) error {
 			return commands.RunBuildCode(ctx, commands.BuildCodeDeps{
 				TestRunnerDispatcher:        container.TestRunnerDispatcher,
 				ChecklistLoader:             container.ChecklistLoader,

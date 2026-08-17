@@ -123,16 +123,30 @@
         "fix": 1,
         "reject": 1
       }
+    },
+    {
+      "at": "2026-08-17T21:15:39Z",
+      "sha": "1e3de6b",
+      "branch": "test/bdd-web-scenario-port",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 1,
+      "by_severity": {
+        "minor": 1
+      },
+      "verdicts": {
+        "fix": 1
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 6,
-      "found": 31,
-      "fixed": 25,
+      "rounds": 7,
+      "found": 32,
+      "fixed": 26,
       "deferred": 0,
       "rejected": 6,
-      "precision": 0.806
+      "precision": 0.812
     },
     "coderabbit-github": {
       "rounds": 2,

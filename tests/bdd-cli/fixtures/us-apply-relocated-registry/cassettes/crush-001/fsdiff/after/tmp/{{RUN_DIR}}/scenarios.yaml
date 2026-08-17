@@ -46,13 +46,13 @@ scenarios:
         - "the settings page renders the account section"
 
   E2E-961:
-    description: "MCP server returns HTTP 200 and a JSON body reporting healthy status on GET /health"
+    description: "The MCP server returns HTTP 200 with a JSON body reporting the service as healthy for a GET request to /health"
     service: ""
-    last_updated: "2026-08-15"
+    last_updated: "2026-08-17"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-08-15"
+        merge_date: "2026-08-17"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"

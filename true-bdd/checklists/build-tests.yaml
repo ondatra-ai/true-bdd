@@ -46,11 +46,18 @@ sections:
           the Given/When/Then/And keyword stripped, because a definition
           is bound by wording and not by which block a step sits in.
 
+          One exception, and it is not a loophole: a step whose text
+          opens with `llm:` or `judge:` is run by a MODEL rather than by
+          a step definition. It always resolves and it must never be
+          given one — a definition matching `judge: …` would bind a
+          clause written precisely because no pattern could settle it.
+          Mark such a step MODEL-RUN and move on.
+
           Pass when every step of the scenario resolves.
           Fail when any step resolves to none, or to more than one.
 
           Context: emit one line per step, then a verdict.
-            - "step: <step text> -> <matching pattern, or UNDEFINED>"
+            - "step: <step text> -> <matching pattern, MODEL-RUN, or UNDEFINED>"
             - "Verdict: executable / <N> step(s) unbound"
         rationale: "A scenario no step definition binds is behaviour written down and never run; the registry would claim coverage the suite does not have."
         docs:
@@ -79,3 +86,7 @@ sections:
                error naming what it expected and what it got.
             5. Do not weaken an existing definition to make this step
                match. Do not edit the registry.
+            6. Never write a definition for a step whose text opens with
+               `llm:` or `judge:`. Those are run by a model by the
+               scenario author's explicit choice, and a pattern that
+               captured one would take that choice back.

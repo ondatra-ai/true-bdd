@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -8,6 +9,8 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
 // Paths relative to this package directory (the `go test` cwd).
@@ -185,10 +188,12 @@ func TestOverridePromptsMatchShipped(t *testing.T) {
 	}
 }
 
-// manifestSelection is the slice of fixture.yaml this guard reads.
+// manifestSelection is a fixture's checklist selection plus where its
+// input tree lives. Both were fixture.yaml fields; the selection now has
+// its own file and the input directory is a convention.
 type manifestSelection struct {
-	Input            string              `yaml:"input"`
-	ChecklistPrompts map[string][]string `yaml:"checklist_prompts"`
+	Input            string
+	ChecklistPrompts map[string][]string
 }
 
 // TestDeclaredSelectionsResolveToPinnedPrompts requires each
@@ -270,20 +275,27 @@ func assertSnippetResolves(
 	}
 }
 
-// loadManifestSelection reads a fixture.yaml's checklist_prompts.
+// loadManifestSelection reads a fixture's checklist-prompts.yaml. A
+// fixture that ships none selects nothing, which is the common case and
+// not an error — only the handful narrowing a checklist have the file.
 func loadManifestSelection(t *testing.T, fixture string) manifestSelection {
 	t.Helper()
 
-	data, err := os.ReadFile(filepath.Join(fixturesRootDir, fixture, "fixture.yaml"))
-	if err != nil {
-		t.Fatalf("%s: reading fixture.yaml: %v", fixture, err)
+	selection := manifestSelection{Input: runner.DefaultInputDir}
+
+	data, err := os.ReadFile(
+		filepath.Join(fixturesRootDir, fixture, runner.ChecklistPromptsFile))
+	if errors.Is(err, os.ErrNotExist) {
+		return selection
 	}
 
-	var selection manifestSelection
-
-	err = yaml.Unmarshal(data, &selection)
 	if err != nil {
-		t.Fatalf("%s: parsing fixture.yaml: %v", fixture, err)
+		t.Fatalf("%s: reading %s: %v", fixture, runner.ChecklistPromptsFile, err)
+	}
+
+	err = yaml.Unmarshal(data, &selection.ChecklistPrompts)
+	if err != nil {
+		t.Fatalf("%s: parsing %s: %v", fixture, runner.ChecklistPromptsFile, err)
 	}
 
 	return selection

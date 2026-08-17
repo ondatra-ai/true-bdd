@@ -453,6 +453,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row ind1 hl" id="a-scn-id"><span class="k">INT-NNN | E2E-NNN:</span></div>
             <div class="row ind2"><span class="k">description</span></div>
             <div class="row ind2 hl" id="a-scn-service"><span class="k">service:</span> <span class="v">"mcp-service"</span></div>
+            <div class="row ind2"><span class="k">path:</span> <span class="v">tests/mcp/mcp_test.go</span></div>
+            <div class="row ind2"><span class="k">timeout:</span> <span class="v">"10m" (optional)</span></div>
+            <div class="row ind2"><span class="k">feature:</span> <span class="v">grouping label (optional) — read by the workspace UI, never by the engine</span></div>
+            <div class="row ind2"><span class="k">requirement:</span> <span class="v">free-form provenance note (optional)</span></div>
             <div class="row ind2"><span class="k">user_stories[]:</span> <span class="v">lineage</span></div>
             <div class="row ind3 hl" id="a-scn-us-story"><span class="k">story:</span> <span class="v">docs/product/stories/95.1-….yaml</span></div>
             <div class="row ind3 hl" id="a-scn-us-sid"><span class="k">scenario_id:</span> <span class="v">"95.1-001"</span></div>
@@ -471,8 +475,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-tests-ref"><span class="k">suite.Step(`^…$`, fn)</span></div>
             <div class="row ind1"><span class="v">one regexp per step wording</span></div>
             <div class="row"><span class="k">runners:</span> <span class="v">go test · jest · playwright</span></div>
+            <div class="row"><span class="k">&lt;family&gt;_test.go</span> <span class="v">GENERATED — one func Test&lt;Id&gt; per scenario</span></div>
           </div>
-          <div class="note">The scenario is not copied here — the suite reads the registry and runs it. Authored by <code>build tests --fix</code>; strictly read-only for <code>build code</code>.</div>
+          <div class="note">Two mechanisms, one directory. The TEST is rendered from the scenario's <code>path:</code> by <code>build tests</code> — deterministic codegen, verified by regenerating and comparing. The step DEFINITIONS are authored by <code>build tests --fix</code>, because turning a sentence into a regexp is not mechanical. Both are strictly read-only for <code>build code</code>.</div>
         </div>
 
         <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/6">
@@ -496,7 +501,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div>
               <div class="row"><span class="k">testing.suites[]:</span></div>
               <div class="row ind1 hl" id="a-arch-qg"><span class="k">name · service · path · framework · config · helpers[]</span></div>
-              <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live</span></div>
+              <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live · coverage (optional)</span></div>
               <div class="row"><span class="k">services[]:</span></div>
               <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· type · language · frameworks[]</span></div>
               <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">services/&lt;name&gt;</span></div>
@@ -555,7 +560,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">build tests</span></td>
             <td>every <strong>registry scenario</strong>; the suite that owns it, and the step definitions under that suite's <code>path:</code></td>
             <td><span class="cl">build-tests.yaml</span></td>
-            <td>with <code>--fix</code>: the missing <strong>step definition</strong> in that suite — the registry is never modified</td>
+            <td>with <code>--fix</code> only: the <strong>generated test file</strong> each scenario's <code>path:</code> names, rendered deterministically, and the missing <strong>step definition</strong> in that suite. Without <code>--fix</code> nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way</td>
           </tr>
           <tr>
             <td><span class="cmd">build code</span></td>
@@ -593,7 +598,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
             <td><code>service: "mcp-service"</code> must name a declared service</td></tr>
           <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario steps</td><td class="to">step definitions</td>
-            <td><strong>build tests</strong> passes only if every Given/When/Then step binds to exactly one <code>suite.Step(`regexp`, …)</code> in the owning suite's <code>steps/</code> package. The scenario is not copied into a test — the suite READS it and runs it</td></tr>
+            <td><strong>build tests</strong> passes only if every Given/When/Then step binds to exactly one <code>suite.Step(`regexp`, …)</code> in the owning suite's <code>steps/</code> package. It asks the suite that question through <code>commands.coverage</code> and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's <code>path:</code> names the generated <code>func Test&lt;Id&gt;</code> that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: <code>--fix</code> writes it, and without <code>--fix</code> the same renderer verifies the tree by regenerating and comparing</td></tr>
           <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
             <td>the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code</td></tr>
           <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
@@ -621,7 +626,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-16 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-17 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>

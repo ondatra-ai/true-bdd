@@ -5,44 +5,44 @@
     {
       "path": "services/frontend/.dockerignore",
       "kind": "created",
-      "size": 33,
-      "sha256": "f48647861bcc526caa65f0b247425dc6c2ce6eb0a20ef76d0457157f52664dd5",
-      "text": "node_modules\n.next\nnpm-debug.log\n"
+      "size": 58,
+      "sha256": "ebf9eb0044b9c8756ee06d102de843b56a13ac9ff2e612a783fe39e69d88042e",
+      "text": "node_modules\n.next\nnpm-debug.log\nDockerfile\n.dockerignore\n"
     },
     {
       "path": "services/frontend/Dockerfile",
       "kind": "created",
-      "size": 141,
-      "sha256": "a678a3a11c92a2e7aa4632eeb52d630522e96a693ea1d5e47becd32b1be78a70",
-      "text": "FROM node:20-alpine\n\nWORKDIR /app\n\nCOPY package.json ./\nRUN npm install\n\nCOPY . .\nRUN npm run build\n\nEXPOSE 3000\nCMD [\"npm\", \"run\", \"start\"]\n"
+      "size": 448,
+      "sha256": "f8bb37a463ecf61727bf74208a65cbc38661dc563009305be09d202de1a7bf64",
+      "text": "# syntax=docker/dockerfile:1\n\nFROM node:20-alpine AS builder\nWORKDIR /app\nCOPY package.json ./\nRUN npm install\nCOPY . .\nRUN npm run build\n\nFROM node:20-alpine AS runner\nWORKDIR /app\nENV NODE_ENV=production\nCOPY --from=builder /app/package.json ./package.json\nCOPY --from=builder /app/node_modules ./node_modules\nCOPY --from=builder /app/.next ./.next\nCOPY --from=builder /app/next.config.js ./next.config.js\nEXPOSE 3000\nCMD [\"npm\", \"run\", \"start\"]\n"
     },
     {
       "path": "services/frontend/app/layout.tsx",
       "kind": "created",
-      "size": 249,
-      "sha256": "3d04636801b9a19f8afe36a7062f97dcbe32fabcd560be045b58cc32c3d850a1",
-      "text": "import type { ReactNode } from 'react';\n\nexport const metadata = {\n  title: 'Frontend',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
+      "size": 284,
+      "sha256": "4d5c7cdc0abc18ade394825b1f3347a5533778a4d95d60ec1e3235cccb27cc33",
+      "text": "import type { ReactNode } from 'react';\n\nexport const metadata = {\n  title: 'Frontend',\n  description: 'Frontend service',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
     },
     {
       "path": "services/frontend/app/page.tsx",
       "kind": "created",
-      "size": 66,
-      "sha256": "c1cac38c00ec53a33f1629cde45d53b8084be73bd96e82181d0b70434b468f85",
-      "text": "export default function Home() {\n  return \u003ch1\u003eHello world\u003c/h1\u003e;\n}\n"
+      "size": 70,
+      "sha256": "614930a5a5bec04ed15cfa4b4ee83ad35705924b69ad5cc5196e089058e09611",
+      "text": "export default function HomePage() {\n  return \u003ch1\u003eHello world\u003c/h1\u003e;\n}\n"
     },
     {
-      "path": "services/frontend/next.config.mjs",
+      "path": "services/frontend/next.config.js",
       "kind": "created",
-      "size": 92,
-      "sha256": "1e3206cb200e264fdddb4dbb2e4772daebc839fdbc94b78316d74892a0de6fa2",
-      "text": "/** @type {import('next').NextConfig} */\nconst nextConfig = {};\n\nexport default nextConfig;\n"
+      "size": 94,
+      "sha256": "549704cecfddd6f6c20e181566bbabb2e390f729be865edf881a4464ff50f50d",
+      "text": "/** @type {import('next').NextConfig} */\nconst nextConfig = {};\n\nmodule.exports = nextConfig;\n"
     },
     {
       "path": "services/frontend/package.json",
       "kind": "created",
-      "size": 427,
-      "sha256": "17c962d9aa8a20178fa197c9d965d04192143ae6b40905834415b8c71ce9276e",
-      "text": "{\n  \"name\": \"frontend\",\n  \"private\": true,\n  \"version\": \"0.1.0\",\n  \"scripts\": {\n    \"dev\": \"next dev -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -p 3000 -H 0.0.0.0\"\n  },\n  \"dependencies\": {\n    \"next\": \"14.2.23\",\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.4.5\",\n    \"@types/node\": \"^20\",\n    \"@types/react\": \"^18\",\n    \"@types/react-dom\": \"^18\"\n  }\n}\n"
+      "size": 428,
+      "sha256": "1315ce7e1335a265b2def3f56d64d6e7aa222d569e5f9bd1da4be9780d929d9f",
+      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"14.2.15\",\n    \"react\": \"18.3.1\",\n    \"react-dom\": \"18.3.1\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"5.6.3\",\n    \"@types/node\": \"20.16.11\",\n    \"@types/react\": \"18.3.11\",\n    \"@types/react-dom\": \"18.3.0\"\n  }\n}\n"
     },
     {
       "path": "services/frontend/tsconfig.json",
@@ -50,13 +50,6 @@
       "size": 562,
       "sha256": "1519b3e409b0059442adaf1c0c663021214e914c0f80b40cbba705e378aa4537",
       "text": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2017\",\n    \"lib\": [\"dom\", \"dom.iterable\", \"esnext\"],\n    \"allowJs\": true,\n    \"skipLibCheck\": true,\n    \"strict\": true,\n    \"noEmit\": true,\n    \"esModuleInterop\": true,\n    \"module\": \"esnext\",\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"jsx\": \"preserve\",\n    \"incremental\": true,\n    \"plugins\": [{ \"name\": \"next\" }],\n    \"paths\": { \"@/*\": [\"./*\"] }\n  },\n  \"include\": [\"next-env.d.ts\", \"**/*.ts\", \"**/*.tsx\", \".next/types/**/*.ts\"],\n  \"exclude\": [\"node_modules\"]\n}\n"
-    },
-    {
-      "path": "tests/test-results/.last-run.json",
-      "kind": "created",
-      "size": 45,
-      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
-      "text": "{\n  \"status\": \"passed\",\n  \"failedTests\": []\n}"
     }
   ]
 }

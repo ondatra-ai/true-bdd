@@ -4,10 +4,16 @@
 # that owns it — `mcp`, rooted at `tests/mcp` per
 # docs/architecture/architecture.yaml — has no `steps/` package at all.
 #
-# The `build tests --fix` happy path: the walk finds every step unbound,
+# The `build tests --fix` happy path: the engine renders the scenario's
+# Go test into the `path:` below, the walk finds every step unbound,
 # drives the fix-generator + fix-applier loop, the applier writes the
 # step definitions under `tests/mcp/steps/`, the re-walk converges, the
 # CLI exits 0.
+#
+# Two files are produced, by two different mechanisms, and the scenario
+# asserts both: the TEST is generated deterministically from this
+# document, and the step DEFINITIONS are authored by a model because
+# turning a sentence into a regexp and a body is not mechanical.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
@@ -19,6 +25,7 @@ scenarios:
   INT-900:
     description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
     service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
     requirement: "fixture seed — expects `build tests` to write the step definitions"
     last_updated: "2026-08-16"
     user_stories:

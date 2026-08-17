@@ -1,7 +1,7 @@
-`services/` doesn't exist yet. Creating all 7 files now.All 7 files created under `services/frontend/` (package.json, tsconfig.json, next.config.mjs, app/layout.tsx, app/page.tsx, Dockerfile, .dockerignore). No forbidden paths touched.
+`services/` doesn't exist yet. Creating all seven files now.All seven files created under `services/frontend/`.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
 applied: true
-target: "services/frontend/package.json"
-summary: "Created the Next.js App Router frontend service under services/frontend (manifest, configs, root layout, home page with single 'Hello world' h1, Dockerfile, .dockerignore) so docker compose can build and serve it on port 3000."
+target: "services/frontend"
+summary: "Created minimal Next.js App Router service (package.json, next.config.js, tsconfig.json, app/layout.tsx, app/page.tsx, .dockerignore, Dockerfile) that serves <h1>Hello world</h1> on 0.0.0.0:3000"
 === FILE_END: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
