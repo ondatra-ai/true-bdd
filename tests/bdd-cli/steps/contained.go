@@ -42,12 +42,58 @@ func (s *State) containedPath(rel string) (string, error) {
 	joined := filepath.Join(s.Result.TmpDir, rel)
 
 	// Absent, rather than escaping: hand the path back and let the caller
-	// say so in its own words.
+	// say so in its own words — but only once the part of it that DOES
+	// exist is known to be inside the tree.
 	if !present(joined) {
-		return joined, nil
+		return s.missingInside(rel, joined)
 	}
 
 	return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
+}
+
+// missingInside vets a path that does not exist yet.
+//
+// Returning an unresolved path because its last component is missing is a
+// hole, not a shortcut: with `escape` a symlink out of the tree,
+// `escape/missing` does not exist, so a check on the leaf says nothing —
+// and the caller's own os.Stat or os.ReadFile then follows `escape`
+// straight out. So the nearest ancestor that DOES exist is resolved and
+// required to be inside; only then is the joined path handed back.
+//
+// This is check-then-use, so a path created between the two is not
+// covered. That is inherent to answering about a file by name, and the
+// names here come from docs/scenarios.yaml rather than from anything
+// racing us.
+func (s *State) missingInside(rel, joined string) (string, error) {
+	root, err := filepath.EvalSymlinks(s.Result.TmpDir)
+	if err != nil {
+		return "", s.fail("resolve the run directory: %w", err)
+	}
+
+	for dir := filepath.Dir(joined); ; dir = filepath.Dir(dir) {
+		resolved, resolveErr := filepath.EvalSymlinks(dir)
+		if resolveErr == nil {
+			if !within(root, resolved) {
+				return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
+			}
+
+			return joined, nil
+		}
+
+		// Climbed to the filesystem root without finding anything that
+		// exists, which cannot be a path inside the run directory.
+		if parent := filepath.Dir(dir); parent == dir {
+			return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
+		}
+	}
+}
+
+// within reports whether resolved sits inside root, both already
+// symlink-resolved.
+func within(root, resolved string) bool {
+	inside, err := filepath.Rel(root, resolved)
+
+	return err == nil && inside != ".." && !strings.HasPrefix(inside, ".."+string(filepath.Separator))
 }
 
 // containedDir is containedPath for a directory, which
@@ -66,17 +112,13 @@ func (s *State) containedDir(rel string) (string, error) {
 	}
 
 	if !present(joined) {
-		// Absent: the caller reports it against the path it asked for.
-		return joined, nil
+		// Absent: the caller reports it against the path it asked for, once
+		// the existing part of the path is known to be inside the tree.
+		return s.missingInside(rel, joined)
 	}
 
 	resolved, err := filepath.EvalSymlinks(joined)
-	if err != nil {
-		return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
-	}
-
-	inside, err := filepath.Rel(root, resolved)
-	if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
+	if err != nil || !within(root, resolved) {
 		return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
 	}
 
