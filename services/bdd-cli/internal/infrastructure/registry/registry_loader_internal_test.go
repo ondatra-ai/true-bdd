@@ -108,3 +108,26 @@ func TestLoadRefusesAnEmptyModifierKey(t *testing.T) {
 		t.Fatalf("want ErrMalformedStepModifier, got %v", err)
 	}
 }
+
+// A non-scalar VALUE is refused too. `node.Value` is empty for a sequence,
+// so reading it would set the step's text to "" — a step rendering as
+// `s.And("")`, binding to nothing, and reporting as a step the author
+// wrote rather than as the malformed one it is.
+func TestLoadRefusesANonScalarModifierValue(t *testing.T) {
+	t.Parallel()
+
+	for name, step := range map[string]string{
+		"sequence": "        - and: [one, two]\n",
+		"mapping":  "        - and: {nested: value}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewRegistryLoader().Load(writeRegistry(t, "        - a thing\n"+step))
+
+			if !errors.Is(err, ErrMalformedStepModifier) {
+				t.Fatalf("want ErrMalformedStepModifier, got %v", err)
+			}
+		})
+	}
+}

@@ -92,7 +92,10 @@ func assertFileUnchanged(state *State, args []string) error {
 		}
 	}
 
-	full := filepath.Join(state.Result.TmpDir, path)
+	full, containErr := state.containedPath(path)
+	if containErr != nil {
+		return containErr
+	}
 
 	_, err := os.Stat(full)
 	if err != nil {
@@ -121,7 +124,10 @@ func assertFileLineCount(state *State, args []string) error {
 		return state.fail("line count %q is not a number: %w", args[1], err)
 	}
 
-	full := filepath.Join(state.Result.TmpDir, path)
+	full, containErr := state.containedPath(path)
+	if containErr != nil {
+		return containErr
+	}
 
 	content, readErr := os.ReadFile(full)
 	if readErr != nil {
@@ -157,7 +163,10 @@ func assertFileMatches(state *State, args []string) error {
 		return state.fail("file-match pattern %q does not compile: %w", args[1], err)
 	}
 
-	full := filepath.Join(state.Result.TmpDir, path)
+	full, containErr := state.containedPath(path)
+	if containErr != nil {
+		return containErr
+	}
 
 	content, readErr := os.ReadFile(full)
 	if readErr != nil {

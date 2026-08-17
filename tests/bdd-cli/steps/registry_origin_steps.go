@@ -3,7 +3,6 @@ package steps
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -85,7 +84,10 @@ func groupByStepText(entries map[string]yaml.Node, ids []string) (map[string][]s
 // its own failure rather than yielding an empty map that would pass a
 // "zero scenarios" count for the wrong reason.
 func loadRegistryScenarios(state *State, registryRel string) (map[string]yaml.Node, error) {
-	full := filepath.Join(state.Result.TmpDir, registryRel)
+	full, containErr := state.containedPath(registryRel)
+	if containErr != nil {
+		return nil, containErr
+	}
 
 	data, err := os.ReadFile(full)
 	if err != nil {

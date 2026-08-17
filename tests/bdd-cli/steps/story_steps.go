@@ -65,6 +65,22 @@ type storyData struct {
 // choose, so the scenario can only name the story by glob; a glob that
 // matches nothing or more than one file is named in its own failure
 // rather than yielding a silently-picked or empty story.
+// readMatchedStory reads the one file a story glob resolved to, refusing a
+// match that leaves the run directory through a symlink.
+func (s *State) readMatchedStory(glob, match string) ([]byte, error) {
+	full, err := s.containedMatch(glob, match)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(full)
+	if err != nil {
+		return nil, s.fail("reading story %q: %w", glob, err)
+	}
+
+	return data, nil
+}
+
 func loadStory(state *State, glob string) (storyData, error) {
 	if state.Result == nil {
 		return storyData{}, state.fail("%w", ErrNoRun)
@@ -86,9 +102,9 @@ func loadStory(state *State, glob string) (storyData, error) {
 			glob, len(matches), relToTmp(state.Result.TmpDir, matches))
 	}
 
-	data, readErr := os.ReadFile(matches[0])
+	data, readErr := state.readMatchedStory(glob, matches[0])
 	if readErr != nil {
-		return storyData{}, state.fail("reading story %q: %w", glob, readErr)
+		return storyData{}, readErr
 	}
 
 	var file struct {

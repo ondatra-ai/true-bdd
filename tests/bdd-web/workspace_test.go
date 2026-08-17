@@ -533,7 +533,7 @@ func TestE2E162(t *testing.T) {
 	s.Given(`the workspace is connected`)
 	s.And(`the Product Owner has the workspace "product" open`)
 	s.And(`the Product Owner has opened the new-story form`)
-	s.When(`the Product Owner creates a story titled "Story without a feature" under the feature "error-handling"`)
+	s.When(`the Product Owner creates a story titled "A story that names its feature" under the feature "error-handling"`)
 	s.Then(`exactly 1 file matching "docs/product/stories/*.yaml" is created`)
 	s.And(`the created story has feature "error-handling"`)
 	s.Done()

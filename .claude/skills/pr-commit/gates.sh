@@ -48,12 +48,14 @@ go test -tags bdd -timeout=20m ./tests/bdd-cli/ -mode=replay
 # could go stale for weeks and the only thing that would notice is a
 # deliberate run nobody makes.
 #
-# TestStepCoverage is deliberately NOT here yet: tests/bdd-web/steps
-# registers four definitions against 244 scenarios, so it reports ~1680
-# unbound steps and would make this gate unsatisfiable rather than
-# failing — blocking every PR in the repo, not just the port's own. Add it
-# back to this line, and to the CI step that mirrors it, in the change
-# that lands the web step definitions:
+# TestStepCoverage is deliberately NOT here yet. The suite owns 244
+# scenarios: the 243 ported from the legacy Playwright suite, plus the one
+# landing scenario whose steps DO bind. tests/bdd-web/steps registers four
+# definitions, so the guard reports ~1680 unbound steps across those 243 —
+# it would not fail this gate, it would make it unsatisfiable, blocking
+# every PR in the repo rather than only the port's own. Add it back to this
+# line, and to the CI step that mirrors it, in the change that lands the
+# web step definitions:
 #
 #   https://app.clickup.com/t/86cb6fjwy
 #

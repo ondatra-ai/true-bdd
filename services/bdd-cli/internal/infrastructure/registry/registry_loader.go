@@ -146,6 +146,18 @@ func (s *rawStatement) UnmarshalYAML(node *yaml.Node) error {
 		}
 
 		key := node.Content[0].Value
+
+		// The VALUE has to be a scalar too. `node.Value` is empty for a
+		// sequence or a mapping, so `- and: [A, B]` would otherwise set the
+		// step's text to "" — a step that renders as `s.And("")`, binds to
+		// nothing, and reports as a step the author wrote rather than as the
+		// malformed one it is. Same class as the arity check above: the
+		// silent drop is worse than the refusal.
+		if node.Content[1].Kind != yaml.ScalarNode {
+			return fmt.Errorf("%w: %q takes a scalar, got kind=%d near line %d",
+				ErrMalformedStepModifier, key, node.Content[1].Kind, node.Content[1].Line)
+		}
+
 		val := node.Content[1].Value
 
 		// `and` and `but` and nothing else, matching bddgo's own decoder

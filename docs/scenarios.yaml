@@ -3045,7 +3045,7 @@ scenarios:
         - and: the Product Owner has the workspace "product" open
         - and: the Product Owner has opened the new-story form
       when:
-        - the Product Owner creates a story titled "Story without a feature" under the feature "error-handling"
+        - the Product Owner creates a story titled "A story that names its feature" under the feature "error-handling"
       then:
         - exactly 1 file matching "docs/product/stories/*.yaml" is created
         - and: the created story has feature "error-handling"

@@ -66,11 +66,13 @@ jobs:
       # has a generated test. It needs no node, no build and no browser,
       # so it answers in milliseconds — the suite itself stays manual.
       #
-      # TestStepCoverage is deliberately NOT here yet: tests/bdd-web/steps
-      # registers four definitions against 244 scenarios, so it reports
-      # ~1680 unbound steps and would make this job unsatisfiable rather
-      # than failing — blocking every PR in the repo, not just the port's
-      # own. Add it back here, and to the matching line in
+      # TestStepCoverage is deliberately NOT here yet. The suite owns 244
+      # scenarios: the 243 ported from the legacy Playwright suite, plus the
+      # one landing scenario whose steps DO bind. tests/bdd-web/steps
+      # registers four definitions, so the guard reports ~1680 unbound steps
+      # across those 243 — it would not fail this job, it would make it
+      # unsatisfiable, blocking every PR in the repo rather than only the
+      # port's own. Add it back here, and to the matching line in
       # .claude/skills/pr-commit/gates.sh, in the change that lands the
       # web step definitions: https://app.clickup.com/t/86cb6fjwy
       - name: BDD web coverage guards

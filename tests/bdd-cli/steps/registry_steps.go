@@ -43,7 +43,12 @@ func assertScenarioStepsMatched(state *State, args []string) error {
 	registryRel := args[1]
 	stepsDirRel := args[2]
 
-	scenarios, err := bddgo.LoadRegistry(filepath.Join(state.Result.TmpDir, registryRel))
+	registryPath, err := state.containedPath(registryRel)
+	if err != nil {
+		return err
+	}
+
+	scenarios, err := bddgo.LoadRegistry(registryPath)
 	if err != nil {
 		return state.fail("reading registry %q: %w", registryRel, err)
 	}
@@ -53,7 +58,12 @@ func assertScenarioStepsMatched(state *State, args []string) error {
 		return state.fail("registry %q declares no scenario %q", registryRel, scenarioID)
 	}
 
-	patterns, err := extractStepPatterns(filepath.Join(state.Result.TmpDir, stepsDirRel))
+	stepsDir, err := state.containedDir(stepsDirRel)
+	if err != nil {
+		return err
+	}
+
+	patterns, err := extractStepPatterns(stepsDir)
 	if err != nil {
 		return state.fail("reading step definitions under %q: %w", stepsDirRel, err)
 	}
