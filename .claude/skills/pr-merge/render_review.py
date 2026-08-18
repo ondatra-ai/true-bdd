@@ -331,6 +331,12 @@ def cmd_list(args):
     unresolved = [t for t in threads if not t["isResolved"]]
     shown = threads if args.all else unresolved
 
+    if args.json:
+        # Machine-readable for triage.py. The reconciliation still runs and
+        # still decides the exit code — a caller must not be able to get a
+        # clean-looking payload out of a page that did not add up.
+        return _emit_json(repo, pr, threads, body_findings, reviews)
+
     for thread in shown:
         head = thread["comments"]["nodes"][0]
         replies = len(thread["comments"]["nodes"]) - 1
@@ -358,10 +364,8 @@ def cmd_list(args):
         print(finding["text"])
 
     print(RULE)
-    bot_threads = [t for t in threads if is_bot(author_of(t["comments"]["nodes"][0]))]
+    gaps, claimed, bot_threads = reconcile(threads, body_findings, reviews)
     human_threads = len(threads) - len(bot_threads)
-    claimed = claimed_counts(reviews)
-    claimed_body = sum(claimed[s] for s in BODY_ONLY_SECTIONS)
 
     # TOTAL counts every thread, human ones included: they all need a row
     # in the triage table. Only the reconciliation below narrows to the
@@ -387,15 +391,6 @@ def cmd_list(args):
         )
     )
 
-    gaps = []
-    if len(bot_threads) != claimed["actionable"]:
-        gaps.append(
-            "actionable: %d thread(s) found, %d claimed" % (len(bot_threads), claimed["actionable"])
-        )
-    if len(body_findings) != claimed_body:
-        gaps.append(
-            "body-only: %d extracted, %d claimed" % (len(body_findings), claimed_body)
-        )
     if gaps:
         print("✗ MISMATCH — %s" % "; ".join(gaps))
         print(
@@ -408,6 +403,60 @@ def cmd_list(args):
     if not args.all and len(threads) != len(unresolved):
         print("(%d resolved thread(s) hidden — pass --all to print them)" % (len(threads) - len(unresolved)))
     return 0
+
+
+def reconcile(threads, body_findings, reviews):
+    """(gaps, claimed) — the same arithmetic both output modes are judged on."""
+    bot_threads = [t for t in threads if is_bot(author_of(t["comments"]["nodes"][0]))]
+    claimed = claimed_counts(reviews)
+    claimed_body = sum(claimed[s] for s in BODY_ONLY_SECTIONS)
+    gaps = []
+    if len(bot_threads) != claimed["actionable"]:
+        gaps.append(
+            "actionable: %d thread(s) found, %d claimed" % (len(bot_threads), claimed["actionable"])
+        )
+    if len(body_findings) != claimed_body:
+        gaps.append("body-only: %d extracted, %d claimed" % (len(body_findings), claimed_body))
+    return gaps, claimed, bot_threads
+
+
+def _emit_json(repo, pr, threads, body_findings, reviews):
+    gaps, claimed, bot_threads = reconcile(threads, body_findings, reviews)
+    payload = {
+        "repo": repo,
+        "pr": pr,
+        "threads": [
+            {
+                "thread_id": t["id"],
+                "comment_id": t["comments"]["nodes"][0]["databaseId"],
+                "author": author_of(t["comments"]["nodes"][0]),
+                "path": t["path"],
+                "line": t["line"],
+                "resolved": t["isResolved"],
+                "outdated": t["isOutdated"],
+                "replies": len(t["comments"]["nodes"]) - 1,
+                "body": clean(t["comments"]["nodes"][0]["body"] or ""),
+            }
+            for t in threads
+        ],
+        "body_only": [
+            {"section": f["section"], "review": f["review"], "path": f["path"],
+             "lines": f["lines"], "text": f["text"]}
+            for f in body_findings
+        ],
+        "counts": {
+            "threads": len(threads),
+            "unresolved": len([t for t in threads if not t["isResolved"]]),
+            "bot_threads": len(bot_threads),
+            "body_only": len(body_findings),
+            "total": len(threads) + len(body_findings),
+            "claimed": claimed,
+        },
+        "reconciled": not gaps,
+        "gaps": gaps,
+    }
+    print(json.dumps(payload, indent=2))
+    return 2 if gaps else 0
 
 
 def cmd_status(args):
@@ -484,6 +533,7 @@ def main():
     lister = sub.add_parser("list")
     lister.add_argument("--pr")
     lister.add_argument("--all", action="store_true", help="print resolved threads too")
+    lister.add_argument("--json", action="store_true", help="machine-readable, for triage.py")
     lister.set_defaults(func=cmd_list)
 
     status = sub.add_parser("status")

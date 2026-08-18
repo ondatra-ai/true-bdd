@@ -226,16 +226,34 @@
       "verdicts": {
         "fix": 5
       }
+    },
+    {
+      "at": "2026-08-18T10:23:43Z",
+      "sha": "uncommitted-on-14e327a",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 15,
+      "by_severity": {
+        "major": 12,
+        "minor": 1,
+        "critical": 2
+      },
+      "verdicts": {
+        "fix": 12,
+        "defer": 1,
+        "reject": 2
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 9,
-      "found": 41,
-      "fixed": 34,
-      "deferred": 0,
-      "rejected": 7,
-      "precision": 0.829
+      "rounds": 10,
+      "found": 56,
+      "fixed": 46,
+      "deferred": 1,
+      "rejected": 9,
+      "precision": 0.839
     },
     "coderabbit-github": {
       "rounds": 7,

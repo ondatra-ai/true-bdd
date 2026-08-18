@@ -429,7 +429,56 @@ Lead with the answer or result; drop restatement, framing sentences, and narrati
 ## Commit / Merge Skills
 
 `.claude/skills/` holds the commit-and-merge workflow, plus `lib/` for what
-more than one skill needs.
+more than one skill needs. **`./start.sh` is how a session begins** — it
+sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
+`CLICKUP_API_TOKEN` reach the scripts; a key sourced mid-session does not.
+
+- **`pr-merge` is ONE command** — `./.claude/skills/pr-merge/run.sh [pr]`,
+  which execs `orchestrate.py`. The SKILL.md invokes it and reports what it
+  printed; it does not drive the steps. The previous design handed the agent
+  a seven-step checklist, and every hand-off was somewhere to skip a step or
+  improvise one — which is what PR #76 did, four times.
+  - **Four rounds.** 1-2 review and fix, **3 reviews and triages only**, 4
+    approves and merges. Round 3 changing no code is load-bearing: the
+    commit it reviewed is the commit round 4 approves. `@coderabbitai
+    approve` analyses *nothing* — it resolves every thread and approves, and
+    is exempt from the rate limit precisely because it does no work. On PR #76 it approved
+    `14e327a`, a commit no review was ever pinned to. `orchestrate.py`
+    refuses to approve unless a review with a **non-empty body** is pinned
+    to HEAD; state is not enough, since the rubber stamp is an `APPROVED`
+    with `body_len=0` while a real review is a 9 KB `COMMENTED`.
+  - **Banded by consequence**: 9-10 fixed inline, 6-8 → ClickUp tagged
+    `fix-now`, 1-5 recorded and dropped. Of PR #76's 16 findings only 2 were
+    worth blocking a merge on. `triage.py collect|score|band` is the engine;
+    only `score` spends a model.
+  - **A fix owns gate-greenness.** Each fix-now finding gets one
+    `claude -p --permission-mode acceptEdits` with a scoped Bash allowlist,
+    told to fix it *and* run `gates.sh` until green, repairing code or test
+    as appropriate. A fix leaving gates red is not a fix. `pr-commit`'s own
+    gates run afterwards is a verification that should never fail. One call
+    per finding, so a bad fix is isolated; one that cannot converge has only
+    its own files reverted and becomes a ticket.
+  - **The loop always reaches a merge.** A red preflight at the end is
+    recorded as an anomaly, not obeyed. Exit 3 means a round did not
+    complete — **state is saved in `tmp/merge/state.json`, re-run to
+    resume**; a full loop takes the better part of an hour and has to
+    survive a dropped connection or a rate limit.
+  - `postmortem.sh` fires on any anomaly or past `MERGE_POSTMORTEM_SECONDS`
+    (default 600), filing to ClickUp tagged `merge-improvements`.
+  - `fix-queue` is the other half — it works the `fix-now` tickets back into
+    merged changes, one ticket per PR, each merge on its own command.
+- **`.coderabbit.yaml` — `auto_review` is OFF, deliberately.** With it on,
+  every push spends a review, so an eight-commit branch exhausts the hourly
+  quota before anyone asks for a verdict; that is exactly how PR #76 ran
+  out. With it off, pushes are free and each of `orchestrate.py`'s three
+  rounds buys one `@coderabbitai full review` when the branch is ready. It also makes that
+  command *correct* — the docs scope it to paused auto-review. Consequence
+  to know: the required `CodeRabbit` status check does not exist until a
+  review is requested, so `land` requests one if it is missing.
+  `request_changes_workflow: true` is what makes `@coderabbitai approve`
+  work and the bot flip its own verdict to Approve once threads resolve.
+  `path_filters` keep cassettes, generated tests and `doc-universe.html` out
+  of review entirely.
 
 - **`main` is protected by the "Main Protection" ruleset** (id `20972312`),
   modelled on the one in `speedandfunction/website`. Classic branch

@@ -5,6 +5,8 @@
 #   threads.sh status [pr]           what is blocking, plus stale-verdict evidence
 #   threads.sh await-review [s] [pr] wait, bounded, for a NEW review object
 #   threads.sh preflight [pr]        can this merge? names the missing precondition
+#   threads.sh answer <comment-id> <thread-id> fixed|deferred|ignored "<detail>" [pr]
+#                                    reply with the disposition, then resolve
 #   threads.sh reply <id> <text>     reply to one review comment
 #   threads.sh resolve <thread>      resolve ONE thread by its node id
 #
@@ -170,6 +172,40 @@ preflight)
   done <<< "$REQUIRED"
   [ "$BLOCKED" -eq 0 ] && echo "preflight: ok — approved, threads resolved, gates green."
   exit "$BLOCKED"
+  ;;
+
+answer)
+  # Reply with the finding's disposition, THEN resolve — one verb, so a
+  # thread cannot be resolved without saying what happened to it. Resolving
+  # is a claim that the comment was answered; a bare resolve makes that
+  # claim silently, and that is how PR #70 merged past 12 unread findings.
+  #
+  #   answer <comment-id> <thread-id> fixed|deferred|ignored "<detail>" [pr]
+  shift
+  COMMENT_ID="${1:?comment id}"; THREAD_ID="${2:?thread id}"
+  DISPOSITION="${3:?fixed|deferred|ignored}"; DETAIL="${4:?detail}"
+  PR=$(resolve_pr "${5:-}")
+
+  case "$DISPOSITION" in
+    fixed)    PREFIX="**Fixed on this branch.**" ;;
+    deferred) PREFIX="**Valid, deferred to a ticket.**" ;;
+    ignored)  PREFIX="**Not actioned.**" ;;
+    *) echo "disposition must be fixed | deferred | ignored" >&2; exit 2 ;;
+  esac
+
+  # `deferred` without a destination is the silent drop the triage taxonomy
+  # exists to prevent, so the detail has to name one.
+  if [ "$DISPOSITION" = "deferred" ] && ! printf '%s' "$DETAIL" | grep -qiE 'clickup\.com|task |#[0-9]+'; then
+    echo "A deferral must name where it went — put the ClickUp URL or task id in the detail." >&2
+    exit 2
+  fi
+
+  gh api -X POST "repos/$REPO/pulls/$PR/comments/$COMMENT_ID/replies" \
+    -f body="$PREFIX $DETAIL" --jq '.id' >/dev/null
+  gh api graphql -f query='
+    mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread{ isResolved } } }' \
+    -F id="$THREAD_ID" --jq '.data.resolveReviewThread.thread.isResolved' >/dev/null
+  echo "answered ($DISPOSITION) and resolved: comment $COMMENT_ID"
   ;;
 
 reply)
