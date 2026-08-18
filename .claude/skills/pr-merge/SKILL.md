@@ -30,8 +30,11 @@ Three rounds, then the merge:
 | 1, 2 | yes | score ≥ 9 | score 6-8 |
 | 3 | yes | **none** | score ≥ 6 |
 
-Round 3 fixing nothing is the point: it commits nothing, so the commit it
-reviewed is the commit it approves. Everything below 6 is recorded to
+Round 3 fixing nothing is the point: `commit()` refuses outright on the last
+round, so the commit it reviewed is the commit it approves. If anything did
+write to the tree, it says what it is and leaves it there rather than
+sweeping it into a commit the review never saw. Everything below 6 is
+recorded to
 `tmp/merge/round-N/ignored.json` and dropped. Every thread is answered and
 resolved at the end of every round.
 
@@ -43,8 +46,24 @@ buys the review that pins the approval to HEAD.
 
 It stops, it does not improvise. Any of these exits non-zero with a reason:
 
-- A fix left the gates red, or failed. Its files are reverted; nothing is
-  committed. A finding scored ≥ 9 that cannot be fixed needs a person.
+- **The working tree is dirty, the branch has no upstream, origin does not
+  have HEAD, or local HEAD is not the PR's head commit.** It names what to
+  run and stops. It will not commit or push on your behalf — publishing
+  work you did not decide to publish is not something a merge command gets
+  to do.
+- **The last round left the worktree dirty.** It fixes nothing, so nothing
+  should have written there. Stopping matters because the merge that would
+  follow ends in `git checkout main`, which refuses on a dirty tree *after*
+  the PR is squashed and the branch deleted — stranding the checkout on a
+  branch that no longer exists.
+- **The commit to be approved is not the commit that was reviewed.**
+  Checked against the review record immediately before approving, because
+  `@coderabbitai approve` analyses nothing and stamps whatever HEAD is.
+- A fix left the gates red, or failed. **Nothing is reverted and nothing is
+  committed** — the worktree keeps the round's work, the failed fix
+  included, and the message lists it. A fix that could not converge is the
+  one case where a person has to look, and what they need is the evidence.
+  A finding scored ≥ 9 that cannot be fixed needs a person.
 - The gates are red at commit time although every fix reported them green.
 - Scoring returned no verdict for a finding, or an unparseable answer.
 - CodeRabbit accepted a review request and never posted the review.

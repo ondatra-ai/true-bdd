@@ -450,12 +450,21 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     anomalies, a red preflight, and a `merge.sh` that failed afterwards. The
     complexity was the defect.
   - **Three rounds, then the merge.** 1-2 review and fix; **3 reviews and
-    files tickets only**. Round 3 changing no code is load-bearing: it
-    commits nothing, so the commit it reviewed is the commit it approves.
+    files tickets only**. Round 3 changing no code is load-bearing, so
+    `commit()` **refuses on the last round** rather than merely finding
+    nothing to do: the commit round 3 reviewed has to be the commit it
+    approves, and anything that wrote to the tree meanwhile is reported and
+    left in place instead of swept into a commit no review saw.
     `@coderabbitai approve` analyses *nothing* — it resolves every thread and
     approves, and is exempt from the rate limit precisely because it does no
     work. On PR #76 it approved `14e327a`, a commit no review was ever
-    pinned to.
+    pinned to. So `merge()` **checks** rather than assumes: `reviewed_sha()`
+    reads back the last CodeRabbit review carrying a non-empty body (the
+    rubber stamp is an `APPROVED` with `body_len=0`; a real review is a 9 KB
+    `COMMENTED`) and refuses unless its `commit_id` is the current head.
+    A dirty tree in the last round is likewise a stop, not a note: the merge
+    ends in `git checkout main`, which refuses on a dirty tree *after* the
+    squash and the branch deletion — PR #76's `merge-err.txt` verbatim.
   - **Banded by consequence**: ≥9 fixed inline (rounds 1-2 only), 6-8 →
     ClickUp tagged `fix-now`, ≤5 recorded to `tmp/merge/round-N/ignored.json`
     and dropped. Round 3 files everything ≥6. A **body-only finding is never
@@ -463,13 +472,19 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     position, so the fix could not be reported back. One model call per round
     scores every finding at once; a finding the model returns no verdict for
     is a stop, never a default.
-  - **It stops instead of improvising.** A fix that fails or leaves the gates
-    red has its files reverted and ends the run — a finding scored ≥9 that
-    cannot be fixed needs a person, and continuing would spend a review round
-    on a tree that is already wrong. So do: red gates at commit time although
-    every fix reported green, an unparseable scoring answer, a review that is
-    accepted and never posted, and a ticket-filing failure (a thread cannot
-    be answered with a destination that does not exist).
+  - **It stops instead of improvising, and stopping means leaving state
+    alone.** A fix that fails or leaves the gates red ends the run with
+    **nothing reverted and nothing committed**; the message lists what the
+    worktree now holds. A fix that could not converge is the one case where
+    a person has to look, and what they need is what the agent actually did
+    — half a fix that is nearly right beats a clean tree and no evidence,
+    and reverting would also discard every fix that already succeeded that
+    round. Same principle as `check_pushed` refusing to push and `commit()`
+    refusing on the last round: this script never mutates its way out of a
+    problem. Also stops: red gates at commit time although every fix
+    reported green, an unparseable scoring answer, a review that is accepted
+    and never posted, and a ticket-filing failure (a thread cannot be
+    answered with a destination that does not exist).
   - **`Review rate limited` is the one thing that waits, not fails.** The bot
     answers a review request with either `✅ Action performed` /
     `Full review triggered.` or `⚠️ Action not completed` /
@@ -496,11 +511,15 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     gap as fatal made the guard unsatisfiable and stalled that merge
     permanently. A gap can mean a missed finding OR a bot over-count; both
     are printed, neither stops.
-  - **No round requests a review of a commit origin does not have.**
-    `ensure_pushed` runs first. Two paths used to say yes silently: a failed
-    commit left the tree dirty, and `git log @{u}..HEAD` on a branch with no
-    upstream exits non-zero with empty stdout — indistinguishable from
-    "nothing to push".
+  - **No round requests a review of a commit origin does not have, and it
+    does not make that true either.** `check_pushed` runs first and only
+    ever answers: a dirty tree, a branch with no upstream, or an unpushed
+    HEAD each name the command to run and end the run. It will not commit
+    or push on the caller's behalf — publishing work nobody decided to
+    publish is not something a merge command gets to do. Two of those three
+    say no silently and must not be collapsed: `git log @{u}..HEAD` on a
+    branch with no upstream exits non-zero with empty stdout,
+    indistinguishable from "nothing to push".
   - **The post-mortem reads the session history rather than the PR.** It
     takes the current file named by `docs/history/hook-state` (tens of MB, so
     never fed whole to a model), keeps the turns this script made — they are
