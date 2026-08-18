@@ -449,12 +449,12 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     reached one on PR #76 after 7 hours and 13 commits, with eight recorded
     anomalies, a red preflight, and a `merge.sh` that failed afterwards. The
     complexity was the defect.
-  - **Three rounds, then the merge.** 1-2 review and fix; **3 reviews and
-    files tickets only**. Round 3 changing no code is load-bearing, so
-    `commit()` **refuses on the last round** rather than merely finding
-    nothing to do: the commit round 3 reviewed has to be the commit it
-    approves, and anything that wrote to the tree meanwhile is reported and
-    left in place instead of swept into a commit no review saw.
+  - **Up to three rounds, then the merge.** 1-2 review and fix; **3 reviews
+    and files tickets only**. Round 3 changing no code is load-bearing: the
+    commit it reviewed has to be the commit it approves. That is now
+    structural rather than guarded — `split_comments` empties the fix band
+    on the last round, so the loop leaves before `commit()` is ever called,
+    and `commit()` carries no round check of its own.
     `@coderabbitai approve` analyses *nothing* — it resolves every thread and
     approves, and is exempt from the rate limit precisely because it does no
     work. On PR #76 it approved `14e327a`, a commit no review was ever
@@ -462,9 +462,10 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     reads back the last CodeRabbit review carrying a non-empty body (the
     rubber stamp is an `APPROVED` with `body_len=0`; a real review is a 9 KB
     `COMMENTED`) and refuses unless its `commit_id` is the current head.
-    A dirty tree in the last round is likewise a stop, not a note: the merge
-    ends in `git checkout main`, which refuses on a dirty tree *after* the
-    squash and the branch deletion — PR #76's `merge-err.txt` verbatim.
+    A dirty tree is checked in the same place and for the same reason — as a
+    merge precondition rather than a property of any round: the merge ends
+    in `git checkout main`, which refuses on a dirty tree *after* the squash
+    and the branch deletion — PR #76's `merge-err.txt` verbatim.
   - **Banded by consequence**: ≥9 fixed inline (rounds 1-2 only), 6-8 →
     ClickUp tagged `fix-now`, ≤5 recorded to `tmp/merge/round-N/ignored.json`
     and dropped. Round 3 files everything ≥6. A **body-only finding is never
@@ -479,9 +480,11 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     a person has to look, and what they need is what the agent actually did
     — half a fix that is nearly right beats a clean tree and no evidence,
     and reverting would also discard every fix that already succeeded that
-    round. Same principle as `check_pushed` refusing to push and `commit()`
-    refusing on the last round: this script never mutates its way out of a
-    problem. Also stops: red gates at commit time although every fix
+    round. Same principle as `check_pushed` refusing to push rather than
+    pushing for you: this script never mutates its way out of a problem.
+    Also stops: a dirty worktree when the merge is reached (the merge ends
+    in `git checkout main`, which refuses on one *after* the squash and the
+    branch deletion), red gates at commit time although every fix
     reported green, an unparseable scoring answer, a review that is accepted
     and never posted, and a ticket-filing failure (a thread cannot be
     answered with a destination that does not exist).
@@ -501,14 +504,37 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     and then blocked the full 900s for a review that was never coming, which
     is why `await_review` re-reads that comment on every poll and treats a
     late edit as the rate limit it is.
-  - **Three rounds run, always.** No early exit, no resume, no `--only`
-    phase. `main()` is the loop and nothing else — request, read, triage,
-    split, fix/file/ignore in parallel, resolve, commit — and everything a
-    round also has to *arrange* (the push, the banner, the score file, the
-    band table) lives inside the function it belongs to. `REPO` and `PR` are
-    module-level because `start()` sets them once; the round number is
-    passed, because a value that changes every iteration is one a reader has
-    to trace.
+  - **A round that fixed nothing ends the loop**, which is capped at three.
+    `if not to_fix: break` — one reason, stated in `main()`. Measured need:
+    on PR #77 all three rounds bought a full review of the same commit
+    `089c2af` and found nothing to fix in any of them, a quarter of the
+    hourly quota each.
+  - **`fix()` is bracketed by two assertions**, which is what lets the loop
+    condition be a single test. Going in, the worktree must be clean —
+    otherwise a path dirty afterwards cannot be told from a fix. Coming out,
+    every path the agents reported in `files_changed` must be one git
+    reports as changed, and a fix that named none is a fix that changed
+    nothing. Both are stops. Asking a fixer to fix something and getting no
+    edit is not an outcome to absorb: `resolve_conversations` answers the
+    thread `**Fixed on this branch.**` moments later, which would be false,
+    and the merge would proceed on it. Triage scored the finding 9-10 —
+    *wrong behaviour reachable by a real invocation* — and the fixer says
+    otherwise; a scorer and a fixer that disagree is something a person
+    settles. The fix prompt says so too, so the agent knows a no-op ends the
+    run and does not make a token edit to dodge it. Neither `commit()` nor
+    `main()` carries a "nothing changed" path any more — that path is where
+    the reason a run stopped early went to hide, decided inside a function
+    whose name says it commits and reported only as a return value.
+    Deliberately NOT a per-fix before/after comparison: `git status` names
+    files rather than contents, so two fixes touching one file print the
+    same listing and the second reads as a no-op.
+    No resume and no `--only` phase. `main()` is the loop and nothing else —
+    request, read, triage, split, fix/file/ignore in parallel, resolve,
+    commit — and everything a round also has to *arrange* (the push, the
+    banner, the score file, the band table) lives inside the function it
+    belongs to. `REPO` and `PR` are module-level because `start()` sets them
+    once; the round number is passed, because a value that changes every
+    iteration is one a reader has to trace.
   - **Every thread is answered and resolved at the end of every round**,
     including a final sweep of anything still open — a human's thread, or one
     whose finding deduped away. `main` requires conversation resolution, so a
