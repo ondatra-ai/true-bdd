@@ -59,12 +59,15 @@ const (
 // Manifest rather than an error — the run still happened, and its
 // timings are still worth reporting.
 //
-// The repo fallback carries no command, exit code or stdout checks, and
-// that is deliberate rather than missing. Those are the SCENARIO's, not
-// the fixture's, and the only place they exist per-run is the snapshot.
-// Reading today's registry for a run recorded before it would answer the
-// question with a number this run was never held to — the exact lie the
-// snapshot exists to prevent, told one document further along.
+// The repo fallback carries no command, exit code, stdout checks,
+// answers or judge rubric, and that is deliberate rather than missing.
+// Every one of those is the SCENARIO's now, not the fixture's, and the
+// only place they exist per-run is the snapshot. Reading today's registry
+// for a run recorded before it would answer the question with something
+// this run was never held to — the exact lie the snapshot exists to
+// prevent, told one document further along. Leaving them BLANK while
+// still reporting Loaded would tell the same lie the other way, as
+// "this run had no rubric" rather than "this source cannot say".
 func loadManifest(repoRoot, name, dir string) *Manifest {
 	manifest := manifestFromSnapshot(dir)
 	if manifest != nil {
@@ -77,10 +80,8 @@ func loadManifest(repoRoot, name, dir string) *Manifest {
 	}
 
 	return &Manifest{
-		Answers:      string(fixture.Stdin),
 		PrepCmds:     fixture.PrepCmds,
 		TeardownCmds: fixture.TeardownCmds,
-		JudgeSpec:    fixture.JudgeSpec,
 		InputPath:    fixture.InputPath,
 		Loaded:       true,
 		Source:       ManifestRepo,

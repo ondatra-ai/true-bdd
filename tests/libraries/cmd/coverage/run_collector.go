@@ -42,21 +42,30 @@ func CollectRun(run FixtureRun, uni *Universe, fixturesDir string) ([]Observatio
 		diagnostics = append(diagnostics, *logDiag)
 	}
 
-	stem, err := DiscoverChecklistStem(fixturesDir, run.Fixture, segments)
-	if err != nil {
-		return nil, append(diagnostics,
-			Diagnostic{Fixture: run.Fixture, Hard: true, Message: err.Error()})
-	}
+	stem := stemFromLog(segments)
 
 	if stem == "" {
 		if partitionsHaveFiles(run) {
 			return nil, append(diagnostics, Diagnostic{Fixture: run.Fixture, Hard: true,
-				Message: "artifacts present but no command evidence (manifest or log)"})
+				Message: "artifacts present but no command evidence in the run log"})
 		}
 
-		if !manifestExists(fixturesDir, run.Fixture) && len(segments) == 0 {
+		if !fixtureExists(fixturesDir, run.Fixture) && len(segments) == 0 {
 			return nil, append(diagnostics, Diagnostic{Fixture: run.Fixture, Hard: false,
-				Message: "no manifest and no log — run skipped, not identifiable as a help run"})
+				Message: "no command evidence in the run log — run skipped, not identifiable as a help run"})
+		}
+
+		// A help run produces NO segments at all. Segments without a stem
+		// mean the log carried relevant records — parseLogSpine emits one
+		// for "Result file saved" even where "Loaded prompts" never
+		// appeared — so this is a run that did something the spine could
+		// not name. Returning silently here drops it and hides the gap,
+		// which is the one outcome a coverage tool must not produce.
+		if len(segments) > 0 {
+			return nil, append(diagnostics, Diagnostic{Fixture: run.Fixture, Hard: false,
+				Message: fmt.Sprintf(
+					"%d log segment(s) but no command stem — the run is not identifiable as a help run",
+					len(segments))})
 		}
 
 		return nil, diagnostics // no checklist command (help-flag): zero observations
@@ -104,11 +113,13 @@ func loadSegments(run FixtureRun) ([]logSegment, bool, *Diagnostic) {
 	return segments, false, nil
 }
 
-// manifestExists reports whether the fixture's source manifest exists.
-func manifestExists(fixturesDir, fixtureName string) bool {
-	_, err := os.Stat(filepath.Join(fixturesDir, fixtureName, "fixture.yaml"))
+// fixtureExists reports whether the run names a fixture that is still in
+// the source tree. It used to ask whether the fixture's manifest existed;
+// a fixture is a directory now, so the directory is the question.
+func fixtureExists(fixturesDir, fixtureName string) bool {
+	info, err := os.Stat(filepath.Join(fixturesDir, fixtureName))
 
-	return err == nil
+	return err == nil && info.IsDir()
 }
 
 // partitionsHaveFiles reports whether any partition contains entries.

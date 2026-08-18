@@ -24,9 +24,12 @@ var ErrJudgeMalformedResponse = errors.New("judge response did not match PASS or
 
 // JudgeRequest is the input to a single judge call.
 type JudgeRequest struct {
-	Cmd       string
-	JudgeSpec string
-	Diff      []FileChange
+	Cmd string
+	// Clauses are the scenario's `judge:` clauses, in registry order.
+	// One call carries all of them: a verdict is taken on the run as a
+	// whole, and every clause reads the same diff.
+	Clauses []string
+	Diff    []FileChange
 }
 
 // JudgeOutcome is one judge call: its decision, and the exact text the
@@ -117,15 +120,57 @@ func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (JudgeOutco
 	return outcome, nil
 }
 
+// judgeScope tells the judge what is NOT its job.
+//
+// Every clause that reaches it survived a step definition's failure to
+// express it, so the run's exit code, its output and which files it
+// touched were all asserted mechanically before this call was made. Left
+// unsaid, a model re-derives them from the diff and fails a run for a
+// file the suite already approved.
+const judgeScope = `Rules 1..%d below are this run's judged clauses — the assertions no
+comparison could make. Everything else about the run has already been
+checked mechanically by the test suite: its exit code, its output, and
+which files it created, modified or left alone. Do not re-derive those
+and do not fail the run for anything outside the numbered rules.`
+
+// judgeTolerances is the noise policy, identical for every scenario.
+//
+// It was per-fixture prose in all 46 rubrics and near-identical in all
+// 46 — which made it 46 places to update when the harness started
+// excluding a new directory, and 46 chances for one of them to say
+// something slightly different from the others.
+const judgeTolerances = `Ignore in every case, and never fail a run for:
+  - anything under ` + "`tmp/`" + ` — per-run scratch, excluded by design
+  - ` + "`node_modules/`, `.next/`" + `, and any other build or dependency cache
+  - test-runner output: ` + "`test-results/`, `playwright-report/`, `.last-run.json`" + `,
+    coverage reports, and anything else a runner writes about a run rather
+    than as part of the project
+  - lockfiles (` + "`go.sum`, `package-lock.json`" + `) and generated type stubs
+Wording, ordering, ids and formatting are free unless a rule pins them.`
+
 func buildJudgeUserPrompt(req JudgeRequest) string {
 	var buf strings.Builder
 
 	fmt.Fprintf(&buf, "## Command\n\n```\ntrue-bdd %s\n```\n\n", req.Cmd)
-	fmt.Fprintf(&buf, "## Specification\n\n%s\n\n", strings.TrimSpace(req.JudgeSpec))
+	buf.WriteString("## Specification\n\n")
+	writeSpecification(&buf, req)
 	buf.WriteString("## File diff\n\n")
 	writeDiffSummary(&buf, req.Diff)
 
 	return buf.String()
+}
+
+// writeSpecification renders the clauses into the numbered rubric the
+// judge is given. There is no other source: a run with no clauses never
+// reaches a judge at all.
+func writeSpecification(buf *strings.Builder, req JudgeRequest) {
+	fmt.Fprintf(buf, judgeScope+"\n\n", len(req.Clauses))
+
+	for index, clause := range req.Clauses {
+		fmt.Fprintf(buf, "%d. %s\n", index+1, strings.TrimSpace(clause))
+	}
+
+	fmt.Fprintf(buf, "\n## Tolerances\n\n%s\n\n", judgeTolerances)
 }
 
 func writeDiffSummary(buf *strings.Builder, diff []FileChange) {

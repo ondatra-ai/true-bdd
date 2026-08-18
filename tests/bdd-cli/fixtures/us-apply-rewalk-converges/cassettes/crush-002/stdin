@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-2
 **Lineage Scenario ID:** 99.3-002
 **Description:** The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
-**Scratch Registry Path:** tmp/2026-08-15-16-17-54-77977/scenarios.yaml
+**Scratch Registry Path:** tmp/2026-08-17-19-46-26-38113/scenarios.yaml
 
 ### Steps
 Given:
@@ -70,47 +70,39 @@ Then:
 # Fix Prompt for AC 99.3-002: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`
+Apply the change to: `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`
+
+## Context
+The `us-apply/merge` check failed for AC-2 (lineage `99.3-002`): no `scenarios:` entry lists BOTH the story path `docs/product/stories/99.3-rewalk-fixture.yaml` AND the lineage id `99.3-002`. The registry currently holds a single scenario, `E2E-001` (lineage `99.3-001`). AC-2 must be added as a NEW scenario.
+
+- **New id:** `E2E-002` — the next free id in the existing `E2E-NNN` sequence; this is an e2e-layer MCP server behavior, matching `E2E-001`.
+- **`path:` reuse:** `tests/mcp/mcp_server_test.go` — the same file `E2E-001` uses. AC-2 is the same feature family (MCP `/mcp` endpoint HTTP behavior), so the two scenarios share one test file on purpose.
+- Steps are copied verbatim from the AC's Given/When/Then.
 
 ## Required Changes
-
-### Change #1: Add AC-2 as a new scenario entry `INT-002`
-**Issue:** No entry under `scenarios:` has a `user_stories[]` element whose `story` is `docs/product/stories/99.3-rewalk-fixture.yaml` AND whose `scenario_id` is `99.3-002`. The only existing entry, `INT-001`, references lineage `99.3-001` (AC-1), so the `us-apply/merge` check for AC-2 fails ("AC AC-2 (lineage 99.3-002): not present").
-
-**Action:** Use the Edit tool on the target file. Append a new `INT-002` entry immediately after the existing `INT-001` block, at the end of the file. `INT-002` is the next free integration-layer id following `INT-001`; do not reuse or modify `INT-001`. Preserve the existing 2-space indentation for scenario ids and 4/6/8-space nesting for their fields.
-
+### Change #1: Append the new `E2E-002` scenario after `E2E-001`
+**Issue:** AC-2 (lineage `99.3-002`) is not present in the registry.
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends the new entry immediately after the last line of `E2E-001`, leaving that entry and all indentation untouched.
 **old_string:**
 ```
-    merged_steps:
-      given:
-        - the MCP server is running on its configured port
-        - the server accepts JSON-RPC over HTTP POST at /mcp
-      when:
-        - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
-
 **new_string:**
 ```
-    merged_steps:
-      given:
-        - the MCP server is running on its configured port
-        - the server accepts JSON-RPC over HTTP POST at /mcp
-      when:
-        - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
-  INT-002:
-    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
+  E2E-002:
+    description: MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp
     service: ""
-    last_updated: "2026-08-15"
+    path: tests/mcp/mcp_server_test.go
+    last_updated: "2026-08-17"
     user_stories:
       - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: 99.3-002
-        merge_date: "2026-08-15"
+        merge_date: "2026-08-17"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -125,15 +117,15 @@ Apply the change to: `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-15-16-17-54-77977/scenarios.yaml` and
+1. Use the Read tool to load `tmp/2026-08-17-19-46-26-38113/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
 applied: true
-target: "tmp/2026-08-15-16-17-54-77977/scenarios.yaml"
+target: "tmp/2026-08-17-19-46-26-38113/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===

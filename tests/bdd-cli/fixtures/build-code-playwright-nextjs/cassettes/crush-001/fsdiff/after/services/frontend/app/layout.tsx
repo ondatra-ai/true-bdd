@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 export const metadata = {
   title: 'Frontend',
+  description: 'Frontend service',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

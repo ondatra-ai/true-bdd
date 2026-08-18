@@ -309,27 +309,32 @@ go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 ```
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
-architectural spec assigns to it becomes a Go subtest, its steps bound by
-regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's Given
-step names the fixture tree it drives.
+architectural spec assigns to it gets one top-level Go test named after
+its id (`TestE2E016`), written into the file the scenario's `path:` names
+by `true-bdd build tests --fix` and by nothing else. Its steps are bound
+by regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's
+Given step names the fixture tree it drives.
 
-Fixture trees under `tests/bdd-cli/fixtures/<name>/` are folders containing
-a `fixture.yaml` manifest and the referenced input directory tree
-(conventionally `input/`, holding designed host-project content —
-`docs/` at minimum, plus project sources, a per-fixture `CLAUDE.md`,
-or engine-config overrides under `true-bdd/` when the scenario needs
-them). The
-manifest declares `cmd`, `input`, optional `answers` (stdin for
-`--fix` runs), optional `prep` (shell commands run in the tmpdir
-before the pre-run snapshot, e.g. `npm install`), optional `teardown`
-(best-effort cleanup run after the post-run snapshot, e.g. stopping a
-compose stack), and an `expected:` sub-block with the assertion
-strategies (`exit_code`, `stdout_regex`, `judge`). The runner builds
-the CLI, pre-populates a tmpdir with the live engine ingredients
-(checklists and prompt templates), overlays the fixture's input tree,
-snapshots, executes `cmd`, and asks Claude to score the resulting
-diff against the `judge:` rubric. The whole suite skips if `claude`
-is not on `$PATH`.
+**A fixture is a directory, not a document — there is no manifest.**
+Trees under `tests/bdd-cli/fixtures/<name>/` hold the designed
+host-project content under `input/` (`docs/` at minimum, plus project
+sources, a per-fixture `CLAUDE.md`, or engine-config overrides under
+`true-bdd/` when the scenario needs them) and the recording under
+`cassettes/`. What the run DOES — the invocation, the exit code, the
+stdout patterns, the interactive answers, the clauses it is judged
+against — all comes from the scenario. Three optional files sit at the
+fixture root beside `input/`: `prep.sh` (run in the tmpdir before the
+pre-run snapshot, e.g. `npm install`), `teardown.sh` (best-effort
+cleanup after the post-run snapshot, e.g. stopping a compose stack), and
+`checklist-prompts.yaml` (which prompts of a shipped checklist the walk
+evaluates). The runner builds the CLI, pre-populates a tmpdir with the
+live engine ingredients (checklists and prompt templates), overlays the
+fixture's input tree, snapshots, runs what the scenario's When step
+names, and — in live and record only — asks Claude to score the
+resulting diff against the scenario's `judge:` clauses. In live and
+record a scenario skips when `claude`, or any CLI a model tier names, is
+not on `$PATH`; under `-mode=replay` nothing skips, because no model is
+spawned at all.
 
 ## How it compares
 

@@ -155,6 +155,7 @@ func TestCrossChecklistNoCreditBleed(t *testing.T) {
 	run := corp.addFixture("S1", "mini-pass", "us mini 9.9")
 	corp.withChecklist(run, miniChecklist)
 	corp.evalCell(run, 1, "pass")
+	corp.logLines(run, lineLoaded())
 
 	_, profile := scanCorpus(t, corp)
 

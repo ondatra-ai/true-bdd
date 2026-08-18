@@ -48,11 +48,14 @@ host project root
 │   │   ├── epics/epic-<N>-<slug>.yaml
 │   │   └── stories/<id>-<slug>.yaml
 │   ├── architecture/architecture.yaml   testing.suites[] + services + optional environments
-│   └── scenarios.yaml           the central scenario registry
+│   └── scenarios.yaml           the central scenario registry (each entry names the test file it
+│                                renders into, and may name its own run `timeout:`)
 ├── services/<service>/          production source — path declared per service in architecture.yaml
 ├── docker-compose.yaml          optional prod stack — path declared in architecture.yaml
 ├── docker-compose.dev.yaml      optional dev stack for local runs
-└── tests/<suite>/steps/         the code a scenario's steps bind to
+└── tests/<suite>/
+    ├── <family>_test.go         GENERATED — one func Test<Id> per scenario, from its path:
+    └── steps/                   the code a scenario's steps bind to
 ```
 
 | Category | Documents |
@@ -95,11 +98,14 @@ flowchart LR
   REG -. "⑥ user_stories[].story" .-> STORY
 
   ARCH["docs/architecture/architecture.yaml<br/>testing.suites[] (service · path · commands) · services[] · dependencies · environment (optional)"]
+  GEN["tests/&lt;suite&gt;/&lt;family&gt;_test.go<br/>generated: func Test&lt;Id&gt;"]
   TESTS["tests/&lt;suite&gt;/steps/<br/>suite.Step(`^…$`, fn)"]
   SRC["services/&lt;service&gt;/"]
   COMPOSE["docker-compose.yaml ·<br/>docker-compose.dev.yaml"]
 
   REG -- "⑧ build tests" --> TESTS
+  REG -- "⑧b build tests (codegen)" --> GEN
+  GEN -- "runs" --> TESTS
   TESTS -- "⑫ build code" --> SRC
   REG -. "⑦ service:" .-> ARCH
   ARCH -. "⑨ testing.suites[].service" .-> TESTS
@@ -124,7 +130,7 @@ Claude-mediated loop until the walk is clean.
 | `us create <id>` | the story seed in its **epic**; **product** as prompt context | us-create.yaml | a new **story file** in `paths.stories_dir` |
 | `us refine <id>` | the **story**; **product** roles + vocabulary; **architecture** test suites (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
-| `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:` | build-tests.yaml | with `--fix`: the missing **step definition** in that suite — the registry is never modified |
+| `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:` | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` (the dev compose stack, when declared, backs the run) | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
 
 ## Every cross-reference, with real values
@@ -140,7 +146,8 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 5 | AC position in story | user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-%03d` (AC-1 of story 95.1 → `"95.1-001"`) and merges the scenario in |
 | 6 | user_stories[].story | story file path | each registry entry names its source stories: `docs/product/stories/95.1-duplicate-collapse.yaml` |
 | 7 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
-| 8 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package. The scenario is not copied into a test — the suite READS it and runs it |
+| 8 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package. It asks the suite that question through `commands.coverage` and walks only the scenarios with gaps, so a converged repository spends no model at all |
+| 8b | scenario `path:` | generated `<suite>/<family>_test.go` | **build tests** renders one `func Test<Id>` per scenario into the file its `path:` names, with the steps stated literally. Deterministic codegen, not a model turn — `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing. Several scenarios may share a file and are emitted in id order |
 | 9 | scenario service: | testing.suites[].service | the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code |
 | 10 | services[].path | services/&lt;name&gt;/ | `path: services/bdd-cli` tells **build code** where production source lives — any path works; the fixtures use `src/service1` |
 | 11 | environment.{dev,prod} | docker-compose files | optional — architecture.yaml declares the stack per environment (`dev → docker-compose.dev.yaml`, `prod → docker-compose.yaml`); a host without a compose-backed environment omits the key |
@@ -150,8 +157,8 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 15 | true-bdd.yaml documents:/paths: | product · architecture · scenario registry · epics · stories dirs | all document locations are declared here; nothing else hardcodes a path |
 | 16 | templates.prompts.* | templates/*.prompt.tpl | each engine role (checklist / fix_generator / fix_applier, + `_system`) maps to one template file |
 | 17 | true-bdd/&lt;key&gt;-schema.yaml | the document at documents.&lt;key&gt; | `product-schema.yaml` pins the shape of `documents.product`. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (`./scripts/validate-schemas.sh`, a CI gate), not by a command |
-| 18 | testing.suites[].commands | the suite that actually runs | all three of `record` / `replay` / `live` are mandatory and complete, machine-readable flag included (`-json` / `--json` / `--reporter=json`); **build code** runs `replay`. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default |
+| 18 | testing.suites[].commands | the suite that actually runs | all three of `record` / `replay` / `live` are mandatory and complete, machine-readable flag included (`-json` / `--json` / `--reporter=json`); **build code** runs `replay`. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default. A fourth key, `coverage`, is the one optional one: **build tests** runs it to learn which steps bind (writing JSON to `$TRUEBDD_COVERAGE_REPORT`), and a suite declaring none falls back to a model reading the source in prose |
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-16.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-17.*

@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-001-iter1-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-001-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-1
 **Lineage Scenario ID:** 99.3-001
 **Description:** The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
-**Scratch Registry Path:** tmp/2026-08-15-16-17-54-77977/scenarios.yaml
+**Scratch Registry Path:** tmp/2026-08-17-19-46-26-38113/scenarios.yaml
 
 ### Steps
 Given:
@@ -71,17 +71,19 @@ Then:
 # Fix Prompt for AC 99.3-001: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`
+Apply the change to: `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`
 
 ## Context
-The `scenarios:` map is currently empty (`scenarios: {}`). No entry references lineage id `99.3-001`, so the `us-apply/merge` "present?" check fails. Add a new scenario entry that links the subject story path and lineage id.
-
-Chosen id: `INT-001` — this AC exercises the MCP server's HTTP `/mcp` endpoint (request → 200 + JSON-RPC envelope), an integration-layer behavior. It is the first entry in an empty registry, so there is no id collision.
+The registry currently holds `scenarios: {}` (an empty map). AC-1 (lineage `99.3-001`) of story `docs/product/stories/99.3-rewalk-fixture.yaml` is not present, so it must be added as the first scenario entry. There is no existing entry to match against and nothing to reuse, so this is a clean insert using the template defaults:
+- **id:** `E2E-001` — empty registry, numbering starts fresh; e2e-layer preferred when unsure. Not a reuse of any existing id.
+- **service:** `""` per the merge template.
+- **path:** No existing `path:` to reuse (registry is empty). Invented a family file for the MCP-server behaviour so AC-2 of the same story can share it.
 
 ## Required Changes
-### Change #1: Replace the empty `scenarios` map with a populated one containing INT-001
-**Issue:** No `scenarios:` entry has a `user_stories[]` member matching story `docs/product/stories/99.3-rewalk-fixture.yaml` AND lineage `scenario_id: 99.3-001`, so the merge check reports "not present".
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below.
+
+### Change #1: Insert the new scenario `E2E-001` under `scenarios:`
+**Issue:** No entry under `scenarios:` lists both story `docs/product/stories/99.3-rewalk-fixture.yaml` and lineage `scenario_id: 99.3-001`, so the merge "present?" check fails.
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This replaces the empty map with a single populated entry; no other lines are touched.
 **old_string:**
 ```
 scenarios: {}
@@ -89,14 +91,15 @@ scenarios: {}
 **new_string:**
 ```
 scenarios:
-  INT-001:
-    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid /mcp initialize request"
+  E2E-001:
+    description: MCP server returns HTTP 200 and a well-formed JSON-RPC envelope for a valid initialize POST to /mcp
     service: ""
-    last_updated: "2026-08-15"
+    path: tests/mcp/mcp_server_test.go
+    last_updated: "2026-08-17"
     user_stories:
       - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: 99.3-001
-        merge_date: "2026-08-15"
+        merge_date: "2026-08-17"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -109,22 +112,25 @@ scenarios:
 ```
 
 ## Verification
-After applying, the registry must contain a `scenarios.INT-001` entry whose `user_stories[]` includes `{ story: docs/product/stories/99.3-rewalk-fixture.yaml, scenario_id: 99.3-001 }`. The merge check should then emit:
-`AC AC-1 (lineage 99.3-001): present in INT-001`
+After the edit, the registry must contain an entry under `scenarios:` whose `user_stories[]` includes an item with `story: docs/product/stories/99.3-rewalk-fixture.yaml` and `scenario_id: 99.3-001`. Expected merge check line:
+
+```
+AC AC-1 (lineage 99.3-001): present in E2E-001
+```
 
 ---
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-15-16-17-54-77977/scenarios.yaml` and
+1. Use the Read tool to load `tmp/2026-08-17-19-46-26-38113/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-15-16-17-54-77977/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-001-iter1-result.yaml ===
 applied: true
-target: "tmp/2026-08-15-16-17-54-77977/scenarios.yaml"
+target: "tmp/2026-08-17-19-46-26-38113/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-15-16-17-54-77977/apply-99.3-001-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-001-iter1-result.yaml ===

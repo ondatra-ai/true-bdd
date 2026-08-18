@@ -33,6 +33,12 @@ architecture:
           record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
           replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
           live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
+          # Asked by `build tests` before it walks anything: which
+          # registry steps bind to no step definition. Deterministic and
+          # under a second, so a converged repository costs no AI turn
+          # at all. It brings no harness up — no binary, no shim, no
+          # session — because the question is about two files on disk.
+          coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-cli/"
 
       # The web relay's suite, same runner, same registry — the step
       # definitions drive a browser through playwright-go instead of a
@@ -46,6 +52,10 @@ architecture:
           record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=record"
           replay: "go test -tags bdd -json -count=1 -timeout=30m ./tests/bdd-web/ -mode=replay"
           live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=live"
+          # Answers without node, without a build and without a browser,
+          # which is the whole reason it is a separate command from the
+          # three above.
+          coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-web/"
 
   services:
     - name: bdd-cli

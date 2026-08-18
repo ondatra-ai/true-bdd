@@ -86,18 +86,18 @@ func EvaluateRecorded(
 	return verdict
 }
 
-// Evaluate asks the judge whether the run's diff satisfies the
-// fixture's rubric. The call may take several seconds.
-func Evaluate(ctx context.Context, fixture *Fixture, result *RunResult, judge Judge) Verdict {
+// Evaluate asks the judge to rule on a run. The call may take several
+// seconds.
+//
+// The request is built by the caller rather than derived from a Fixture,
+// because what a judge rules on is now the scenario's clauses — and the
+// scenario is something the runner has never had a handle on.
+func Evaluate(ctx context.Context, req JudgeRequest, judge Judge) Verdict {
 	verdict := Verdict{GoldenOK: true}
 
 	verdict.JudgeStartedAt = time.Now()
 
-	outcome, err := judge.Verdict(ctx, JudgeRequest{
-		Cmd:       fixture.Cmd,
-		JudgeSpec: fixture.JudgeSpec,
-		Diff:      result.Diff,
-	})
+	outcome, err := judge.Verdict(ctx, req)
 
 	// Stamped before the branch: a judge that errored may still have
 	// burned tokens, and an unstamped window would bill them to nobody.

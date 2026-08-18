@@ -10,23 +10,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// writeTestFixture materializes a loadable fixture directory: a
-// fixture.yaml with the given extra manifest lines and an input tree
-// populated by the caller's paths (path -> content).
-func writeTestFixture(t *testing.T, manifestExtra string, inputFiles map[string]string) string {
+// writeTestFixture materializes a loadable fixture directory: the
+// checklist selection the caller passes (the body of
+// checklist-prompts.yaml, empty for none) and an input tree populated by
+// the caller's paths (path -> content).
+func writeTestFixture(t *testing.T, selection string, inputFiles map[string]string) string {
 	t.Helper()
 
 	dir := t.TempDir()
 
-	manifest := "input: input\n" + manifestExtra +
-		"expected:\n  judge: |\n    stub rubric\n"
-
-	err := os.WriteFile(filepath.Join(dir, "fixture.yaml"), []byte(manifest), 0o644)
-	if err != nil {
-		t.Fatalf("write fixture.yaml: %v", err)
+	if selection != "" {
+		err := os.WriteFile(
+			filepath.Join(dir, ChecklistPromptsFile), []byte(selection), 0o644)
+		if err != nil {
+			t.Fatalf("write %s: %v", ChecklistPromptsFile, err)
+		}
 	}
 
-	err = os.MkdirAll(filepath.Join(dir, "input"), 0o755)
+	err := os.MkdirAll(filepath.Join(dir, "input"), 0o755)
 	if err != nil {
 		t.Fatalf("mkdir input: %v", err)
 	}
@@ -88,7 +89,7 @@ func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
 	t.Parallel()
 
 	dir := writeTestFixture(t,
-		"checklist_prompts:\n  us-refine:\n    - \"whether its steps field follows the Given/When/Then format\"\n",
+		"us-refine:\n  - \"whether its steps field follows the Given/When/Then format\"\n",
 		nil)
 
 	fixture, err := LoadFixture(dir)
@@ -198,28 +199,28 @@ func TestLoadFixtureRejectsBadFilterDeclarations(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name          string
-		manifestExtra string
-		inputFiles    map[string]string
-		wantErr       error
+		name       string
+		selection  string
+		inputFiles map[string]string
+		wantErr    error
 	}{
 		{
-			name:          "stem does not match cmd",
-			manifestExtra: "checklist_prompts:\n  us-create:\n    - \"a snippet\"\n",
-			wantErr:       ErrFilterStemMismatch,
+			name:      "stem does not match cmd",
+			selection: "us-create:\n  - \"a snippet\"\n",
+			wantErr:   ErrFilterStemMismatch,
 		},
 		{
-			name:          "declaration plus input override",
-			manifestExtra: "checklist_prompts:\n  us-refine:\n    - \"a snippet\"\n",
+			name:      "declaration plus input override",
+			selection: "us-refine:\n  - \"a snippet\"\n",
 			inputFiles: map[string]string{
 				"true-bdd/checklists/us-refine.yaml": "version: \"1.0\"\nsections: []\n",
 			},
 			wantErr: ErrFilterConflict,
 		},
 		{
-			name:          "empty snippet list",
-			manifestExtra: "checklist_prompts:\n  us-refine: []\n",
-			wantErr:       ErrSnippetEmpty,
+			name:      "empty snippet list",
+			selection: "us-refine: []\n",
+			wantErr:   ErrSnippetEmpty,
 		},
 	}
 
@@ -227,7 +228,7 @@ func TestLoadFixtureRejectsBadFilterDeclarations(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			dir := writeTestFixture(t, testCase.manifestExtra, testCase.inputFiles)
+			dir := writeTestFixture(t, testCase.selection, testCase.inputFiles)
 
 			fixture, err := LoadFixture(dir)
 			if err != nil {
@@ -381,12 +382,12 @@ func TestFilterChecklistFileExcludesSkippedPrompts(t *testing.T) {
 func TestLoadFixtureRejectsEmptyFilterDeclaration(t *testing.T) {
 	t.Parallel()
 
-	for _, extra := range []string{"checklist_prompts: {}\n", "checklist_prompts:\n"} {
+	for _, extra := range []string{"{}\n", "\n"} {
 		dir := writeTestFixture(t, extra, nil)
 
 		_, err := LoadFixture(dir)
 		if !errors.Is(err, ErrFilterDeclaredEmpty) {
-			t.Errorf("manifest extra %q: want ErrFilterDeclaredEmpty, got %v", extra, err)
+			t.Errorf("selection %q: want ErrFilterDeclaredEmpty, got %v", extra, err)
 		}
 	}
 }

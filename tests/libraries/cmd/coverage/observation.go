@@ -1,7 +1,5 @@
 package main
 
-import "errors"
-
 // ObservationKind labels what one piece of evidence proves.
 type ObservationKind string
 
@@ -40,7 +38,3 @@ type Diagnostic struct {
 	Hard    bool
 	Message string
 }
-
-// errCommandConflict signals disagreeing command evidence between the
-// fixture manifest and the log.
-var errCommandConflict = errors.New("conflicting command evidence")

@@ -49,6 +49,7 @@ sections:
             2. Insert a new entry under `scenarios:` with:
                   description: <short summary derived from the AC description>
                   service: ""
+                  path: <see below>
                   last_updated: "<today, YYYY-MM-DD>"
                   user_stories:
                     - story: <story file path from subject>
@@ -58,7 +59,16 @@ sections:
                     given: <verbatim from the AC's steps.given>
                     when:  <verbatim from the AC's steps.when>
                     then:  <verbatim from the AC's steps.then>
-            3. Preserve existing file ordering and indentation. Do not
+            3. `path:` names the generated test file this scenario's Go
+               test is written into. REUSE an existing `path:` from a
+               scenario of the same command or feature family — several
+               scenarios share one file on purpose, so related
+               behaviours are read together. Invent a new one only when
+               no existing file fits, and then make it
+               `<suite path>/<family>_test.go`, where <suite path> is
+               the `path:` of the architecture.testing.suites[] entry
+               whose `service:` matches this scenario's.
+            4. Preserve existing file ordering and indentation. Do not
                touch any other entry.
 
       - Q: |

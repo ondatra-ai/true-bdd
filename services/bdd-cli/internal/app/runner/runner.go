@@ -65,6 +65,17 @@ type Spec[I any] struct {
 	// the refined story into one item per AC plus seeding the
 	// scratch registry.
 	LoadItems func(ctx context.Context) ([]I, error)
+	// Prepare, if non-nil, runs after the items load and before the
+	// first AI turn. It may refuse the run, and it may narrow the item
+	// set it returns.
+	//
+	// The narrowing is the point: `build tests` answers most of its own
+	// question deterministically — which steps bind is a regexp match,
+	// not a judgement — and hands the walk only the scenarios that
+	// genuinely need one. A converged repository then costs no AI turn
+	// at all, which is what makes the command affordable to run on
+	// every commit rather than once a quarter.
+	Prepare func(ctx context.Context, items []I) ([]I, error)
 	// PostFix is invoked after the FixApplier returns. For us
 	// create/refine it unmarshals the new ACs and stores a new
 	// version; for us apply the mutation is already on disk via the
@@ -155,9 +166,9 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	// Execution phase.
 	console.Header(headerLine(spec.Name, spec.StoryNumber), SeparatorWidth)
 
-	items, err := spec.LoadItems(ctx)
+	items, err := loadAndPrepare(ctx, spec)
 	if err != nil {
-		return refuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
+		return err
 	}
 
 	maxAttempts := 0
@@ -196,6 +207,30 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	emitRunResult(result.Reason, finErr)
 
 	return finErr
+}
+
+// loadAndPrepare sources the items and lets the command narrow or refuse
+// them, reporting either failure as a startup refusal.
+//
+// Both are preconditions on the run: an unloadable subject and a
+// repository whose generated tests do not match its registry are equally
+// reasons the walk about to start would measure the wrong thing.
+func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
+	items, err := spec.LoadItems(ctx)
+	if err != nil {
+		return nil, refuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
+	}
+
+	if spec.Prepare == nil {
+		return items, nil
+	}
+
+	items, err = spec.Prepare(ctx, items)
+	if err != nil {
+		return nil, refuseStartup(spec.Name, err)
+	}
+
+	return items, nil
 }
 
 // emitRunResult publishes the terminal result event AFTER finalization

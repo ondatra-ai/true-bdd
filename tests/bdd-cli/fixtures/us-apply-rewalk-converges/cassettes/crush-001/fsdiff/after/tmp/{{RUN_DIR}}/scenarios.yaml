@@ -25,14 +25,15 @@ metadata:
   description: "Empty seed for us-apply re-walk converges fixture"
 
 scenarios:
-  INT-001:
-    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid /mcp initialize request"
+  E2E-001:
+    description: MCP server returns HTTP 200 and a well-formed JSON-RPC envelope for a valid initialize POST to /mcp
     service: ""
-    last_updated: "2026-08-15"
+    path: tests/mcp/mcp_server_test.go
+    last_updated: "2026-08-17"
     user_stories:
       - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: 99.3-001
-        merge_date: "2026-08-15"
+        merge_date: "2026-08-17"
     merged_steps:
       given:
         - the MCP server is running on its configured port

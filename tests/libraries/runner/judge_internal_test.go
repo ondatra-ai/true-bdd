@@ -2,6 +2,7 @@ package runner
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -119,5 +120,48 @@ func TestParseJudgeVerdictRejects(t *testing.T) {
 				t.Fatalf("err = %v, want %v", err, testCase.wantErr)
 			}
 		})
+	}
+}
+
+// The clauses a scenario collected become the numbered rubric the judge
+// was always handed. Checked because nothing else does: replay never calls
+// the judge, so a rendering bug would only ever surface in a live run.
+func TestBuildJudgeUserPromptRendersClauses(t *testing.T) {
+	t.Parallel()
+
+	prompt := buildJudgeUserPrompt(JudgeRequest{
+		Cmd:     "us refine 96.1",
+		Clauses: []string{"the clauses keep their meaning", "no numeric threshold changed"},
+	})
+
+	for _, want := range []string{
+		"true-bdd us refine 96.1",
+		"1. the clauses keep their meaning",
+		"2. no numeric threshold changed",
+		"## Tolerances",
+		"Rules 1..2",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("prompt is missing %q\n---\n%s", want, prompt)
+		}
+	}
+}
+
+// A judge told only "here are two rules" re-derives the rest from the diff
+// and fails runs for files the suite already approved. The scope paragraph
+// is what prevents that, so it has to actually say so.
+func TestBuildJudgeUserPromptDisclaimsWhatWasCheckedMechanically(t *testing.T) {
+	t.Parallel()
+
+	prompt := buildJudgeUserPrompt(JudgeRequest{Cmd: "us refine 96.1", Clauses: []string{"one"}})
+
+	// Whitespace-normalised: the scope paragraph is prose and wraps, so a
+	// literal match would break on a reflow that changed nothing.
+	flat := strings.Join(strings.Fields(prompt), " ")
+
+	for _, want := range []string{"exit code", "already been checked mechanically"} {
+		if !strings.Contains(flat, want) {
+			t.Errorf("prompt must tell the judge what is not its job; missing %q", want)
+		}
 	}
 }

@@ -1,0 +1,259 @@
+package bddgo
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// declare records a block or modifier call the way a generated file
+// makes them, so a test can build the file's half of the cross-check
+// without a *testing.T to fail on.
+func declare(run *Run[testState], keyword, text string) {
+	switch keyword {
+	case KeywordGiven, KeywordWhen, KeywordThen:
+		run.block = keyword
+		run.declared = append(run.declared,
+			declaredStep{keyword: keyword, block: keyword, text: text})
+	default:
+		run.declared = append(run.declared,
+			declaredStep{keyword: keyword, block: run.block, text: text})
+	}
+}
+
+// newRun builds a Run whose registry half is the given steps.
+func newRun(registry []Step) *Run[testState] {
+	return &Run[testState]{registry: Scenario{ID: firstScenario, Steps: registry}}
+}
+
+// A generated file that says what the registry says runs. This is the
+// ordinary case and the one every other test here is a deviation from.
+func TestCrossCheckAcceptsAFaithfulTranscription(t *testing.T) {
+	t.Parallel()
+
+	run := newRun([]Step{
+		{Keyword: KeywordGiven, Text: stepATree},
+		{Keyword: KeywordWhen, Text: stepCLIRuns},
+		{Keyword: KeywordThen, Text: stepItWorked},
+		{Keyword: KeywordAnd, Mode: ModeRule, Text: clauseWording},
+	})
+
+	declare(run, KeywordGiven, stepATree)
+	declare(run, KeywordWhen, stepCLIRuns)
+	declare(run, KeywordThen, stepItWorked)
+	declare(run, KeywordAnd, "judge: the wording survived")
+
+	steps, err := run.classify()
+	if err != nil {
+		t.Fatalf("classify: %v", err)
+	}
+
+	err = run.checkAgainstRegistry(steps)
+	if err != nil {
+		t.Fatalf("want the transcription accepted, got %v", err)
+	}
+}
+
+// A file whose step text drifted from the registry is refused, and the
+// refusal shows BOTH sides of the step that differs — the whole reason
+// to keep the text in the file is that a reader can see it, so a drift
+// report that only says "they differ" wastes that.
+func TestCrossCheckReportsTheFirstDifferingStep(t *testing.T) {
+	t.Parallel()
+
+	run := newRun([]Step{
+		{Keyword: KeywordGiven, Text: stepATree},
+		{Keyword: KeywordThen, Text: "stdout matches discovery FAILED"},
+	})
+
+	declare(run, KeywordGiven, stepATree)
+	declare(run, KeywordThen, "stdout matches discovery failed")
+
+	steps, err := run.classify()
+	if err != nil {
+		t.Fatalf("classify: %v", err)
+	}
+
+	err = run.checkAgainstRegistry(steps)
+	if !errors.Is(err, ErrScenarioDrift) {
+		t.Fatalf("want ErrScenarioDrift, got %v", err)
+	}
+
+	for _, want := range []string{"step 2", "discovery failed", "discovery FAILED", regenerate} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the drift report must contain %q, got:\n%s", want, err)
+		}
+	}
+}
+
+// A file one step short is drift too, and the missing side has to say so
+// rather than being silently compared against nothing.
+func TestCrossCheckReportsAMissingStep(t *testing.T) {
+	t.Parallel()
+
+	run := newRun([]Step{
+		{Keyword: KeywordGiven, Text: stepATree},
+		{Keyword: KeywordThen, Text: stepItWorked},
+	})
+
+	declare(run, KeywordGiven, stepATree)
+
+	steps, err := run.classify()
+	if err != nil {
+		t.Fatalf("classify: %v", err)
+	}
+
+	err = run.checkAgainstRegistry(steps)
+	if !errors.Is(err, ErrScenarioDrift) {
+		t.Fatalf("want ErrScenarioDrift, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "(no step)") {
+		t.Errorf("the report must name the side that ran out, got:\n%s", err)
+	}
+}
+
+// The mode a step runs in is decided by the BLOCK it sits under, not by
+// the And/But it spelled — which is exactly what the registry loader
+// does, and why a generated file records the block it was declared in.
+func TestClassifyResolvesModifiersAgainstTheirBlock(t *testing.T) {
+	t.Parallel()
+
+	run := newRun(nil)
+
+	declare(run, KeywordWhen, stepCLIRuns)
+	declare(run, KeywordAnd, "llm: do the thing")
+	declare(run, KeywordThen, stepItWorked)
+	declare(run, KeywordBut, "judge: nothing else moved")
+
+	steps, err := run.classify()
+	if err != nil {
+		t.Fatalf("classify: %v", err)
+	}
+
+	want := []StepMode{ModeDeterministic, ModeAct, ModeDeterministic, ModeRule}
+	for index, mode := range want {
+		if steps[index].Mode != mode {
+			t.Errorf("step %d: mode %d, want %d (%s)", index+1, steps[index].Mode, mode, steps[index].Text)
+		}
+	}
+}
+
+// A prefix in the wrong block is refused here for the same reason the
+// loader refuses it: a step that swapped engines depending on where it
+// was pasted would be one no reader could predict.
+func TestClassifyRefusesAPrefixInTheWrongBlock(t *testing.T) {
+	t.Parallel()
+
+	run := newRun(nil)
+
+	declare(run, KeywordThen, "llm: close the dialog")
+
+	_, err := run.classify()
+	if !errors.Is(err, ErrPrefixWrongBlock) {
+		t.Fatalf("want ErrPrefixWrongBlock, got %v", err)
+	}
+}
+
+// generatedFile is a generated test file as the renderer emits one: two
+// scenarios sharing a path, and a helper that must NOT be mistaken for
+// one.
+const generatedFile = `//go:build bdd
+
+// Code generated by ` + "`true-bdd build tests`" + `. DO NOT EDIT.
+
+package bddcli_test
+
+import "testing"
+
+func TestE2E001(t *testing.T) {
+	s := scenarios.New(t, "E2E-001")
+	s.Given(` + "`a tree`" + `)
+	s.Done()
+}
+
+func TestE2E002(t *testing.T) {
+	s := scenarios.New(t, "E2E-002")
+	s.Done()
+}
+
+func helper(t *testing.T) { other.New(t, "E2E-999") }
+`
+
+// The scan finds one call per generated test and nothing else — a call
+// outside a Test function is not a scenario, and counting it would make
+// the coverage answer disagree with what `go test` actually runs.
+func TestScanScenarioCallsFindsOnePerTest(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+
+	err := os.WriteFile(filepath.Join(dir, "build_code_test.go"), []byte(generatedFile), 0o600)
+	if err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	calls, err := ScanScenarioCalls(dir)
+	if err != nil {
+		t.Fatalf("ScanScenarioCalls: %v", err)
+	}
+
+	if len(calls) != 2 {
+		t.Fatalf("want 2 calls, got %+v", calls)
+	}
+
+	if calls[0].ID != "E2E-001" || calls[0].Func != "TestE2E001" {
+		t.Errorf("first call = %+v", calls[0])
+	}
+
+	if calls[1].ID != "E2E-002" || calls[1].Func != "TestE2E002" {
+		t.Errorf("second call = %+v", calls[1])
+	}
+}
+
+// A file that will not parse is an error rather than a file to skip: the
+// scenarios it declares would otherwise vanish from the answer, and the
+// gap would read as "none".
+func TestScanScenarioCallsRefusesAnUnparseableFile(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+
+	err := os.WriteFile(filepath.Join(dir, "broken_test.go"), []byte("package p\nfunc {"), 0o600)
+	if err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	_, err = ScanScenarioCalls(dir)
+	if err == nil {
+		t.Fatal("want a parse error, got nil")
+	}
+}
+
+// The marker is only the marker in the leading comment block, which is
+// where Go's convention puts it and the only place a tool looks.
+func TestHasGeneratedMarker(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		source string
+		want   bool
+	}{
+		"leading block":  {generatedFile, true},
+		"absent":         {"//go:build bdd\n\npackage p\n", false},
+		"below the code": {"package p\n\n// Code generated by x. DO NOT EDIT.\n", false},
+	}
+
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := hasGeneratedMarker([]byte(testCase.source))
+			if got != testCase.want {
+				t.Errorf("hasGeneratedMarker() = %v, want %v", got, testCase.want)
+			}
+		})
+	}
+}

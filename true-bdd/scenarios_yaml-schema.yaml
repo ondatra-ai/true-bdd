@@ -21,6 +21,15 @@
 #   - An empty map is a refusal, not a pass.
 #   - A step is either a plain string or a one-key `{and: …}` / `{but: …}`
 #     mapping; the modifier form is flattened to "and <text>".
+#   - A step whose text opens with `llm:` or `judge:` is run by a model
+#     rather than by a step definition, and each is legal in exactly one
+#     place: `llm:` ACTS, so it belongs in given:/when:; `judge:` RULES
+#     on what already happened, so it belongs in then: and nowhere else.
+#     The prefix in the wrong block is a refusal, not a reinterpretation.
+#     A `judge:` clause is collected as the scenario runs and ruled on
+#     once at the end, so use it only for what no comparison can settle —
+#     that two wordings mean the same thing, that a rewrite kept its
+#     substance. Anything a step definition could assert belongs in one.
 
 metadata: include('metadata')
 scenarios: map(include('scenario'), min=1)
@@ -42,6 +51,19 @@ scenario:
   # join that decides which test suite owns the scenario: the entry
   # under architecture.testing.suites[] whose `service:` matches.
   service: str()
+  # The generated test file this scenario's test is written into,
+  # repo-relative. `build tests` renders it; `build tests --fix` writes
+  # it. Several scenarios MAY name the same file, and are emitted into
+  # it in id order — that is how related behaviours group into one file
+  # a reader can hold instead of one file each.
+  #
+  # Required and never defaulted. Which behaviours belong together is an
+  # editorial judgement, and a generator that guessed would scatter one
+  # command's scenarios across forty files. What the schema cannot check
+  # the generator does: the path must sit under the owning suite's
+  # `path:`, must end in `_test.go`, must not be inside that suite's
+  # `steps/` tree, and every scenario sharing it must share a `service:`.
+  path: str()
   # Free-form note on where the behaviour comes from. Optional.
   requirement: str(required=False)
   # Optional grouping label. Read by the workspace UI, never by the
@@ -52,6 +74,12 @@ scenario:
   # by `us apply`. An empty list is valid and says so on the record: the
   # scenario exists and no story claims it yet.
   user_stories: list(include('user_story'))
+  # How long the scenario's run may take, as a Go duration ("10m").
+  # Absent means the suite's default. The one key here that is not
+  # behaviour: how long a machine needs is not something a scenario can
+  # assert, so it cannot be a step. A value that is not a positive
+  # duration is refused rather than rounded up to the default.
+  timeout: str(required=False)
   merged_steps: include('merged_steps')
 
 ---

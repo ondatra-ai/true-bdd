@@ -1,8 +1,12 @@
-// Package runner drives BDD-style end-to-end fixtures for true-bdd:
-// each fixture is a folder with `fixture.yaml` (manifest) and the
-// referenced input directory; the runner overlays input into a tmpdir,
-// execs the binary there, and reports a structural diff plus a judge
-// verdict.
+// Package runner drives BDD-style end-to-end fixtures for true-bdd: each
+// fixture is a folder holding the designed project tree under input/; the
+// runner overlays it into a tmpdir, execs the binary there, and reports a
+// structural diff plus a judge verdict.
+//
+// What the run DOES — the invocation, the exit code, the stdout, the
+// interactive input, the clauses it is judged against — comes from the
+// scenario in the registry, not from anything in the folder. A fixture
+// carries data; the scenario carries behaviour.
 package runner
 
 import (
@@ -18,6 +22,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
@@ -110,12 +116,11 @@ type FileChange = fstree.Change
 // registry asked of it.
 //
 // The split is worth keeping straight while reading: Name, Dir,
-// InputPath, JudgeSpec, Stdin, PrepCmds, TeardownCmds,
-// ChecklistPrompts and Timeout come from fixture.yaml. Cmd,
-// ExpectedExitCode and StdoutRegexes come from the scenario's steps and
-// are zero until the suite's step definitions fill them in — they are
-// here so one run record carries what was asked and what was asserted
-// together.
+// InputPath, PrepCmds, TeardownCmds and ChecklistPrompts come from the
+// fixture DIRECTORY. Cmd, ExpectedExitCode, StdoutRegexes, Stdin,
+// JudgeSpec and Timeout come from the SCENARIO and are zero until its
+// steps fill them in — they are here so one run record carries what was
+// asked and what was asserted together.
 type Fixture struct {
 	Name             string
 	Dir              string
@@ -123,18 +128,21 @@ type Fixture struct {
 	InputPath        string // path (relative to Dir) of the directory tree overlaid onto the tmpdir
 	ExpectedExitCode int    // from the scenario's Then step
 	StdoutRegexes    []*regexp.Regexp
-	JudgeSpec        string   // judge rubric from fixture.yaml
-	Stdin            []byte   // contents of optional `answers:` field, fed to subprocess stdin
-	PrepCmds         []string // optional `prep:` shell commands, run in tmpdir before snapshot
-	// TeardownCmds: optional `teardown:` shell commands run in tmpdir
-	// after the post-run snapshot. See FixtureManifest.Teardown.
+	// JudgeSpec is the rubric this run was judged against, rendered by
+	// the suite from the scenario's `judge:` clauses. Written for the
+	// record — the report's expected-vs-actual column reads it — not read
+	// by the judge, which is handed the clauses themselves.
+	JudgeSpec string
+	Stdin     []byte   // interactive input, set by the scenario's Given step
+	PrepCmds  []string // from prep.sh, run in the tmpdir before the pre-run snapshot
+	// TeardownCmds: from teardown.sh, run in the tmpdir after the
+	// post-run snapshot whatever the verdict.
 	TeardownCmds []string
-	// ChecklistPrompts: optional per-stem prompt selection applied to
-	// the tmpdir checklist during prep. See
-	// FixtureManifest.ChecklistPrompts.
+	// ChecklistPrompts: per-stem prompt selection from
+	// checklist-prompts.yaml, applied to the tmpdir checklist during prep.
 	ChecklistPrompts map[string][]string
-	// Timeout caps the CLI run for this fixture. Zero means the caller's
-	// default. See FixtureManifest.Timeout.
+	// Timeout caps the CLI run. Zero means the caller's default; a
+	// scenario overrides it with its own `timeout:` key.
 	Timeout time.Duration
 }
 
@@ -153,38 +161,175 @@ type RunResult struct {
 	StderrFile string
 }
 
-// LoadFixture parses a fixture folder — the DATA half of a scenario.
+// DefaultInputDir is where a fixture's designed project tree lives.
+//
+// A convention rather than a declaration: all 46 fixtures named the same
+// directory, so the field that let them name a different one only ever
+// recorded that nobody wanted to.
+const DefaultInputDir = "input"
+
+// Scripts a fixture may ship beside its input tree to bring up and tear
+// down whatever the CLI cannot: an npm install, a browser download, a
+// container stack.
+//
+// Shell rather than a manifest list, and shell rather than Go, because
+// these are the two things about a fixture that are neither behaviour nor
+// data — they are scaffolding, specific to one tree's layout, and a step
+// definition that hardcoded `npm install --prefix tests` would couple the
+// whole suite to one fixture's directory names.
+//
+// They live at the fixture ROOT, not inside the input tree, and are
+// executed by content rather than by path: a script overlaid into the
+// tmpdir would become a file of the host project the run is supposed to
+// be grading.
+const (
+	PrepScriptFile     = "prep.sh"
+	TeardownScriptFile = "teardown.sh"
+)
+
+// ChecklistPromptsFile is where a fixture declares which prompts of a
+// shipped checklist its run should walk, keyed by checklist stem:
+//
+//	us-refine:
+//	  - "whether its description field contains a vague word"
+//
+// Data, in the same category as the input tree and prep.sh: the tree
+// ships a story carrying exactly one designed defect, and narrowing the
+// checklist is what makes the walk evaluate exactly the check that defect
+// trips. The scenario still SAYS it happens — a Given names the checklist
+// and the prompt — and the step definition behind it verifies the tree
+// really does select that one prompt, which is the same division of labour
+// as `the "<name>" project tree`: the registry names the precondition, the
+// tree provides it.
+const ChecklistPromptsFile = "checklist-prompts.yaml"
+
+// ErrFixtureTreeMissing is returned when a fixture directory has no input
+// tree. Every other file a fixture may ship is optional, so this is the
+// one thing that makes a fixture real — and a scenario naming a tree that
+// is not there should hear about it by name.
+var ErrFixtureTreeMissing = errors.New("fixture has no input tree")
+
+// LoadFixture reads a fixture folder — the DATA half of a scenario.
+//
+// A fixture is a directory, not a document: the designed project tree
+// under input/, the recording under cassettes/, and optionally the
+// scaffolding scripts and checklist selection above. Everything a manifest
+// used to declare is now either a convention here or a step in the
+// scenario that drives it.
 //
 // The returned Fixture cannot be executed yet: Cmd is empty, because the
 // invocation is behaviour and lives in the scenario registry. Call
 // UseCommand with what the scenario's When step names before Execute.
 func LoadFixture(dir string) (*Fixture, error) {
-	manifest, err := LoadFixtureManifest(filepath.Join(dir, "fixture.yaml"))
+	// Every file below is optional, so without this the loader would
+	// succeed for a directory that does not exist at all — and a scenario
+	// whose Given step misspells its tree would get "walk …/input: no such
+	// file" from deep inside Execute instead of being told which name it
+	// got wrong. The manifest read used to be what required the folder to
+	// be real; the input tree is what requires it now.
+	input := filepath.Join(dir, DefaultInputDir)
+
+	info, err := os.Stat(input)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %w", ErrFixtureTreeMissing, input, err)
+	}
+
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%w: %s is not a directory", ErrFixtureTreeMissing, input)
+	}
+
+	fixture := &Fixture{Name: filepath.Base(dir), Dir: dir, InputPath: DefaultInputDir}
+
+	err = loadFixtureScripts(fixture)
 	if err != nil {
 		return nil, err
 	}
 
-	var stdinBytes []byte
-	if manifest.Answers != "" {
-		stdinBytes = []byte(manifest.Answers)
-	}
+	return fixture, nil
+}
 
-	timeout, err := parseFixtureTimeout(manifest.Timeout)
+// loadFixtureScripts reads the optional prep/teardown scripts into the
+// commands Execute already knows how to run.
+//
+// Each script becomes ONE command, so a `set -e` or a multi-line pipeline
+// behaves the way its author wrote it — a per-line split would silently
+// turn one script into several independent shells.
+func loadFixtureScripts(fixture *Fixture) error {
+	prep, err := readOptionalScript(fixture.Dir, PrepScriptFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &Fixture{
-		Name:             filepath.Base(dir),
-		Dir:              dir,
-		InputPath:        strings.TrimSpace(manifest.Input),
-		JudgeSpec:        manifest.Expected.Judge,
-		Stdin:            stdinBytes,
-		PrepCmds:         manifest.Prep,
-		TeardownCmds:     manifest.Teardown,
-		ChecklistPrompts: manifest.ChecklistPrompts,
-		Timeout:          timeout,
-	}, nil
+	teardown, err := readOptionalScript(fixture.Dir, TeardownScriptFile)
+	if err != nil {
+		return err
+	}
+
+	prompts, err := readOptionalChecklistPrompts(fixture.Dir)
+	if err != nil {
+		return err
+	}
+
+	fixture.PrepCmds = prep
+	fixture.TeardownCmds = teardown
+	fixture.ChecklistPrompts = prompts
+
+	return nil
+}
+
+// readOptionalChecklistPrompts reads the fixture's checklist selection, or
+// nothing at all when it ships none.
+//
+// A present-but-empty declaration is refused rather than read as "no
+// filter": it would silently walk the FULL checklist, and a fixture whose
+// story carries one designed defect would then be graded against every
+// other prompt too — the same trap the manifest's own empty-filter check
+// was written to close.
+func readOptionalChecklistPrompts(dir string) (map[string][]string, error) {
+	path := filepath.Join(dir, ChecklistPromptsFile)
+
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return map[string][]string{}, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", ChecklistPromptsFile, err)
+	}
+
+	var prompts map[string][]string
+
+	err = yaml.Unmarshal(data, &prompts)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", ChecklistPromptsFile, err)
+	}
+
+	if len(prompts) == 0 {
+		return nil, fmt.Errorf("%s: %w", ChecklistPromptsFile, ErrFilterDeclaredEmpty)
+	}
+
+	return prompts, nil
+}
+
+// readOptionalScript returns the script as a single-element command list,
+// or nothing at all when the fixture ships no such script. A blank file
+// counts as absent: it declares scaffolding and then supplies none, and a
+// scenario asserting the scaffolding exists should not pass on it.
+func readOptionalScript(dir, name string) ([]string, error) {
+	data, err := os.ReadFile(filepath.Join(dir, name))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", name, err)
+	}
+
+	if strings.TrimSpace(string(data)) == "" {
+		return nil, nil
+	}
+
+	return []string{string(data)}, nil
 }
 
 // UseCommand sets the invocation the scenario asked for and re-checks
@@ -561,11 +706,21 @@ func copyFile(src, dst string) error {
 
 // runSnapshotSkipDirs are subtrees the run diff excludes.
 //
-// They are installed by `prep:` — npm's node_modules above all — so they
-// exist before the pre-run snapshot and are never part of what the run
-// did. Excluding them keeps the judge's diff about the fixture, and
-// keeps the snapshot away from trees full of symlinks and hard links
+// Two kinds, for the same reason. The dependency trees are installed by
+// prep.sh — npm's node_modules above all — so they exist before the
+// pre-run snapshot and are never part of what the run did; excluding them
+// also keeps the snapshot away from trees full of symlinks and hard links
 // into a package cache, which the tree model refuses on purpose.
+//
+// The rest are what a TEST RUNNER writes ABOUT a run rather than as part
+// of the project: Playwright's report and results directories, its
+// last-run marker. They are as much noise as node_modules and excluding
+// them here is strictly better than asking a model to overlook them — a
+// tolerance a judge has to read is a tolerance it can misread, and these
+// would otherwise reach both the diff and the golden.
 func runSnapshotSkipDirs() []string {
-	return []string{".git", "node_modules", ".next"}
+	return []string{
+		".git", "node_modules", ".next",
+		"test-results", "playwright-report",
+	}
 }

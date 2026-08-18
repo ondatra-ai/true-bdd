@@ -10,15 +10,14 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 31471,
-  "request_hash": "sha256:29c8684084cb81c9e208d2389851ce307ada85d9da1ab8efe7abbce522a64029",
+  "duration_ms": 52829,
+  "request_hash": "sha256:5140226d3409b6adb9a113685e5c5649f5c84f71deeafd1e7e81cfa74bbf8013",
   "fsdiff": {
     "created": [
-      "tests/mcp/steps/state.go",
       "tests/mcp/steps/steps.go"
     ],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-16T19:18:40Z"
+  "recorded_at": "2026-08-17T17:36:26Z"
 }

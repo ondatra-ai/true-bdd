@@ -123,24 +123,52 @@
         "fix": 1,
         "reject": 1
       }
+    },
+    {
+      "at": "2026-08-17T21:15:39Z",
+      "sha": "1e3de6b",
+      "branch": "test/bdd-web-scenario-port",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 1,
+      "by_severity": {
+        "minor": 1
+      },
+      "verdicts": {
+        "fix": 1
+      }
+    },
+    {
+      "at": "2026-08-17T21:49:13Z",
+      "sha": "83f9032",
+      "branch": "test/bdd-web-scenario-port",
+      "pr": 70,
+      "source": "coderabbit-github",
+      "found": 15,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 6,
+        "defer": 4,
+        "reject": 5
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 6,
-      "found": 31,
-      "fixed": 25,
+      "rounds": 7,
+      "found": 32,
+      "fixed": 26,
       "deferred": 0,
       "rejected": 6,
-      "precision": 0.806
+      "precision": 0.812
     },
     "coderabbit-github": {
-      "rounds": 2,
-      "found": 14,
-      "fixed": 9,
-      "deferred": 2,
-      "rejected": 3,
-      "precision": 0.786
+      "rounds": 3,
+      "found": 29,
+      "fixed": 15,
+      "deferred": 6,
+      "rejected": 8,
+      "precision": 0.724
     }
   }
 }

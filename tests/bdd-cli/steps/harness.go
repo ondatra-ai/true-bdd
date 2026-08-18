@@ -2,11 +2,12 @@
 // that executes the Given/When/Then lines of every registry scenario
 // whose `service:` is bdd-cli.
 //
-// The whole suite runs on the six definitions in cli_steps.go, because
-// every one of these scenarios has the same shape — prepare a project
-// tree, run the CLI once, assert what it exited with and what it
-// printed. A new scenario needs a new step definition only when it
-// claims something none of those six can say.
+// Every definition here was authored by `build tests --fix`: a scenario
+// arrives in the registry, the walk reports which of its steps bind to
+// nothing, and a model writes the ones that do not. Nothing in this
+// package is meant to be written by hand, and a step that reads as
+// though it were is a step whose scenario said something the vocabulary
+// could not.
 package steps
 
 import (
@@ -144,19 +145,22 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 
 // RecordHint is the command that re-records one scenario, printed by
 // every failure a re-recording would fix.
-func RecordHint(name string) string {
-	return "record it with: go test -tags bdd -run 'TestBDDFixtures/" +
-		name + "' ./tests/bdd-cli/ -mode=record"
+//
+// The fixture name rides along in a trailing comment because the test
+// function is named after the scenario id and nobody thinks in ids —
+// what a person remembers is the tree, and pasting the line has to work
+// without them first having to look the id up.
+func RecordHint(scenario bddgo.Scenario) string {
+	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
+		"$' ./tests/bdd-cli/ -mode=record  # fixture: " + FixtureName(scenario)
 }
 
 // Options builds the bddgo options for this suite: where the registry
-// and the spec live, which suite entry to run, and how a scenario is
-// named as a Go subtest.
+// and the spec live, and which suite entry to run.
 func Options(repoRoot string) bddgo.Options {
 	return bddgo.Options{
 		Registry:     filepath.Join(repoRoot, "docs", "scenarios.yaml"),
 		Architecture: filepath.Join(repoRoot, "docs", "architecture", "architecture.yaml"),
 		Suite:        "bdd-cli",
-		SubtestName:  FixtureName,
 	}
 }
