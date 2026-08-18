@@ -98,21 +98,27 @@ emit_diff_context() {
 # `set -euo pipefail` killed the script, and nothing reached the terminal.
 # This names the reason on stderr.
 run_claude_or_explain() {
-  local role="$1" prompt="$2" outfile="$3" status=0
+  local role="$1" prompt="$2" outfile="$3" rc=0
 
   set +e
   CLAUDE_HISTORY_ROLE="$role" claude -p "$prompt" >"$outfile" 2>"$outfile.err"
-  status=$?
+  rc=$?
   set -e
 
-  # "Prompt is too long" has been seen on stdout; nothing guarantees it
-  # stays there, so both streams are checked.
+  # The EXIT STATUS decides whether the call failed. "Prompt is too long"
+  # only ever explains a failure — it must never declare one, because the
+  # model's own output can legitimately contain the phrase. It did on the
+  # very first run of this helper: the PR body describing this bug quoted
+  # the error, and a successful call was reported as a failure.
+  # Both streams are searched, since nothing pins the message to stdout.
   local too_long=1
-  grep -qi 'prompt is too long' "$outfile" "$outfile.err" 2>/dev/null && too_long=0
+  if [ "$rc" -ne 0 ]; then
+    grep -qi 'prompt is too long' "$outfile" "$outfile.err" 2>/dev/null && too_long=0
+  fi
 
-  if [ "$status" -ne 0 ] || [ ! -s "$outfile" ] || [ "$too_long" -eq 0 ]; then
+  if [ "$rc" -ne 0 ] || [ ! -s "$outfile" ]; then
     {
-      echo "claude -p ($role) failed — exit $status."
+      echo "claude -p ($role) failed — exit $rc."
       if [ "$too_long" -eq 0 ]; then
         echo "Reason: the prompt exceeded the model's context window."
         echo "The diff is capped at DIFF_BUDGET_BYTES=$DIFF_BUDGET_BYTES; lower it and retry."
