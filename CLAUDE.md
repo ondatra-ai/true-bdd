@@ -426,6 +426,50 @@ Lead with the answer or result; drop restatement, framing sentences, and narrati
 
 **How to apply:** One-line result, then only the details that change a decision. No recaps of already-known context, no "what landed / what I verified" sections unless asked. Still report failures and skipped work plainly — brevity is not omission.
 
+## Commit / Merge Skills
+
+`.claude/skills/` holds the commit-and-merge workflow, plus `lib/` for what
+more than one skill needs.
+
+- **`main` is protected**: the `gates` check (strict), **one approving
+  review**, **every review thread resolved**, linear history, no force
+  pushes, and `enforce_admins`. Only `killev` has write access and GitHub
+  forbids self-approval, so the approval comes from CodeRabbit's `APPROVED`
+  review. `dismiss_stale_reviews` and `require_last_push_approval` are
+  deliberately **off** — either would void that approval on every push and
+  turn the requirement into a deadlock.
+- **`.claude/skills/lib/diff-context.sh`** — sourced by `pr-commit/commit.sh`
+  and `pr-update/pr-update.sh`. `emit_diff_context <git-diff-argv>` always
+  sends the **complete** `--stat`, then the diff body in one of three
+  shapes: whole when it fits `DIFF_BUDGET_BYTES` (200 KB); whole-but-filtered
+  when dropping recorded cassettes and `docs/doc-universe.html` brings it
+  under (the usual shape after a re-record); truncated to the cap otherwise.
+  Which one it is, is stated in the piped text — a model told it is reading a
+  prefix leans on the stat, and one that is not told describes the prefix as
+  the whole change. `run_claude_or_explain` names a `claude -p` failure on
+  stderr — a 3.4 MB diff used to exit 1 with nothing on the terminal.
+- **`.claude/skills/pr-merge/render_review.py`** — the reason `threads.sh
+  list` sees the whole review. CodeRabbit posts findings in two places and
+  only one is a thread: "Actionable comments" become review threads, while
+  "Nitpick / Outside diff range / Duplicate comments" live **only inside the
+  review body** with no id, no reply target and nothing to resolve. Querying
+  `reviewThreads` alone showed 16 of 28 findings on PR #70. `list` extracts
+  both classes and **reconciles against the counts the review states about
+  itself**; a `✗ MISMATCH` exits non-zero and is a stop, never a "proceed
+  anyway". It also strips only the named noise blocks instead of truncating
+  at the first `<details>` — the old renderer hid the finding text of every
+  comment that opened with an "Analysis chain" transcript.
+- **`threads.sh await-review [seconds]`** bounds the wait for a re-review. A
+  bot acknowledgement is not a bot verdict: on PR #70 CodeRabbit answered "I
+  will perform a fresh review" and never posted one, and nothing bounded the
+  wait. Exit 3 means the bot did not deliver — stop and ask, never dismiss
+  unasked. Run it in the background; it sleeps.
+- **`merge.sh` runs `threads.sh preflight` first**, naming which precondition
+  is missing rather than letting `gh pr merge`'s generic refusal die under
+  `set -e`. It refuses on a **full** thread page too: the query asks for
+  `first:100`, and reporting "0 unresolved" out of a truncated page is the
+  same silent under-report the rest of this tooling exists to prevent.
+
 ## Notes
 
 - **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.

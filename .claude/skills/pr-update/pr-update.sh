@@ -9,9 +9,19 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 1
 fi
 
+# Bounds the diff piped to `claude -p` and names the failure when the call
+# still fails. A 3.4 MB diff used to exit 1 with nothing on the terminal.
+# shellcheck source=../lib/diff-context.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/diff-context.sh"
+
 mkdir -p ./tmp
 PR_OUTPUT_FILE=./tmp/pr-output.txt
 PR_BODY_FILE=./tmp/pr-body.md
+CONTEXT_FILE=./tmp/pr-context.txt
+
+# `set -e` aborts before any explicit cleanup when the claude call fails,
+# and the context file holds up to DIFF_BUDGET_BYTES of diff.
+trap 'rm -f "$CONTEXT_FILE"' EXIT
 
 BASE_BRANCH="main"
 if ! git show-ref --verify --quiet refs/remotes/origin/main; then
@@ -28,20 +38,15 @@ LINE 3 onward: the body — bullet list of changes (lines starting with "- ", no
 No markdown code fences, no Co-authored-by, no Generated-with trailers, no surrounding quotes, no introduction. Output only the title and body.'
 
 {
-  echo "=== Commits on this branch (vs origin/'"$BASE_BRANCH"') ==="
+  echo "=== Commits on this branch (vs origin/$BASE_BRANCH) ==="
   git log "origin/$BASE_BRANCH"..HEAD --pretty=format:"%s%n%n%b%n---"
   echo ""
-  echo "=== Diff stat vs origin/$BASE_BRANCH ==="
-  git diff "origin/$BASE_BRANCH"...HEAD --stat
-  echo ""
-  echo "=== Diff vs origin/$BASE_BRANCH ==="
-  git diff "origin/$BASE_BRANCH"...HEAD
-} | CLAUDE_HISTORY_ROLE=pr-content claude -p "$PROMPT" | sed -e '/^```[a-zA-Z]*$/d' -e '/^```$/d' > "$PR_OUTPUT_FILE"
+  emit_diff_context "origin/$BASE_BRANCH...HEAD"
+} > "$CONTEXT_FILE"
 
-if [ ! -s "$PR_OUTPUT_FILE" ]; then
-  echo "Claude returned an empty PR title/body." >&2
-  exit 1
-fi
+run_claude_or_explain pr-content "$PROMPT" "$PR_OUTPUT_FILE" < "$CONTEXT_FILE"
+rm -f "$CONTEXT_FILE"
+sed -i.bak -e '/^```[a-zA-Z]*$/d' -e '/^```$/d' "$PR_OUTPUT_FILE" && rm -f "$PR_OUTPUT_FILE.bak"
 
 PR_TITLE=$(head -n 1 "$PR_OUTPUT_FILE")
 tail -n +3 "$PR_OUTPUT_FILE" > "$PR_BODY_FILE"
