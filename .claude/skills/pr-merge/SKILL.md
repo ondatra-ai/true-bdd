@@ -185,24 +185,46 @@ suggestion would break, the reason the code is already correct.
 Then re-run gates (`./.claude/skills/pr-commit/gates.sh`) and commit the
 fixes.
 
-### 2d. Ask for the re-review, and bound the wait
+### 2d. Wait for the re-review, bounded — do not ask for it
 
-A push does not clear a `CHANGES_REQUESTED` verdict — the bot has to post
-a new review object. Ask for one, then wait for it with a bound:
+A push does not clear a `CHANGES_REQUESTED` verdict; the bot has to post a
+new review object. It does that **by itself, on the push.** So push, then
+wait — and post nothing:
 
 ```bash
-gh pr comment <pr> --body "@coderabbitai review"
 # run this in the BACKGROUND — it sleeps
 ./.claude/skills/pr-merge/threads.sh await-review 900 <pr>
 ```
 
 - **exit 0** — a new review landed. Re-run `list` and go back to 2a; a new
   review means new findings, in both classes.
-- **exit 3** — the bot acknowledged and never delivered. This is exactly
-  what happened on PR #70 at 23:38, and it is where the 4h37m stall came
-  from. **Stop. Print `threads.sh status`, and ask the user** whether to
-  dismiss the stale verdict or keep waiting. Do not keep polling, and do
-  not decide it yourself.
+- **exit 3** — no review arrived. **Stop. Print `threads.sh status`, and
+  ask the user** whether to dismiss the stale verdict or keep waiting. Do
+  not keep polling, and do not decide it yourself. This is what PR #70's
+  4h37m stall looked like from the inside.
+
+**Do not post `@coderabbitai review`.** It is not a way to hurry the bot
+along. CodeRabbit reviews incrementally and *will not re-review a commit
+it has already seen*, so on a freshly pushed head the request does
+nothing, and on an already-reviewed head it does nothing twice — while
+still spending a strictly limited budget:
+
+> ⚠️ Action not completed. **Review rate limited.**
+> Note: CodeRabbit is an incremental review system and does not re-review
+> already reviewed commits. This command is applicable only when automatic
+> reviews are paused.
+
+That is not a hypothetical. This skill used to open 2d by requesting a
+review every round; on PR #76 that was five requests in about forty
+minutes, and it exhausted the limit — burning the one thing the merge was
+waiting on, and turning a converging review into a hard block. The failure
+looks identical to exit 3, which is the trap: *the bot is not ignoring
+you, it is out of budget.*
+
+The one case for asking is when **automatic reviews are paused** for the
+repository — the only situation the command is documented for. Then ask
+**once**, and if that request is answered with `Review rate limited`, treat
+it as exit 3: stop and ask the user. Never re-send it.
 
 ### Rules
 
@@ -228,7 +250,9 @@ gh pr comment <pr> --body "@coderabbitai review"
   3. **every** required check is green on HEAD — the list from §1, not
      `gates` alone; a green `gates` beside a red or pending `CodeRabbit`
      is not a reviewed HEAD,
-  4. a re-review was requested and `await-review` returned exit 3.
+  4. the push has had its chance to trigger a review and `await-review`
+     returned exit 3 — or the bot answered `Review rate limited`, which
+     is exit 3 by another name.
 
   The dismissal message states that evidence — what was fixed, what was
   deferred and where, what was rejected and why, and that the re-review
