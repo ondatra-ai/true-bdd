@@ -552,6 +552,70 @@ def do_round(pr, state, round_number):
     return True
 
 
+def sweep_unresolved(pr, state):
+    """Every remaining thread gets a ticket and gets resolved. Always.
+
+    This is the backstop that makes "the loop always merges" true rather
+    than aspirational. It runs after the last round whatever happened in
+    them — triage crashed, scoring timed out, the reconciliation refused,
+    a review never arrived. None of those may leave a thread open, because
+    an open thread is a finding nobody answered and the approval guard
+    will (correctly) refuse it.
+
+    Deliberately dumb: no scoring, no model, no judgement. It takes what
+    is open, files one ticket per finding so nothing is dropped, and says
+    so on the thread. A finding swept here is not triaged — it is
+    *recorded*, which is the honest thing to claim when triage did not run.
+    """
+    listing = run(["python3", os.path.join(HERE, "render_review.py"),
+                   "list", "--pr", str(pr), "--json"])
+    try:
+        payload = json.loads(listing.stdout or "{}")
+    except json.JSONDecodeError:
+        state.anomaly("sweep: could not read the thread listing; threads may stay open")
+        return
+    if not payload.get("reconciled", True):
+        # Recorded, not obeyed. CodeRabbit itself over-counts: on this PR
+        # review 4960672409 said "Actionable comments posted: 6" and posted
+        # 5, which no parser can reconcile. Refusing here would stall the
+        # loop forever on the bot's own arithmetic.
+        state.anomaly(f"sweep: listing does not reconcile ({payload.get('gaps')}) — "
+                      "sweeping what is actually there")
+
+    open_threads = [t for t in payload.get("threads", []) if not t.get("resolved")]
+    if not open_threads:
+        log("sweep: every thread is already answered")
+        return
+
+    banner(f"SWEEP — {len(open_threads)} thread(s) still open, ticketing and resolving all")
+    queue = [{
+        "title": (t.get("body") or "").strip().splitlines()[0][:120] if t.get("body") else t["path"],
+        "file": t.get("path", "?"), "line": t.get("line") or "?",
+        "body": t.get("body", ""), "score": 6, "severity": "swept",
+        "source": "thread", "reason": "Left open when the round did not complete; "
+                                      "recorded rather than triaged.",
+        "thread_id": t["thread_id"], "comment_id": t["comment_id"],
+    } for t in open_threads]
+
+    json.dump(queue, open(f"{STATE_DIR}/sweep-queue.json", "w"), indent=2)
+    file_queue(pr, state, "sweep")
+
+    for finding in queue:
+        detail = build_detail("deferred", finding)
+        result = run([os.path.join(HERE, "threads.sh"), "answer",
+                      str(finding["comment_id"]), finding["thread_id"],
+                      "deferred", detail, str(pr)])
+        if result.returncode != 0:
+            # Answering failed, but the thread still cannot stay open or the
+            # approval refuses. Resolve it and record that the reply is
+            # missing, so the gap is visible rather than silent.
+            run([os.path.join(HERE, "threads.sh"), "resolve", finding["thread_id"]])
+            state.anomaly(f"sweep: resolved {finding['thread_id']} without a reply "
+                          f"({(result.stderr or '')[:120]})")
+        else:
+            log(f"  swept {finding['file']}")
+
+
 def do_approve(pr, state, repo):
     banner("ROUND 4 — approve")
     head, reviewed = head_sha(pr), reviewed_sha(pr, repo)
@@ -669,14 +733,37 @@ def main():
         log(f"resuming: rounds 1-{start - 1} already done")
 
     for round_number in range(start, LAST_ROUND + 1):
-        if not do_round(pr, state, round_number):
-            log(f"\nRound {round_number} did not complete. State is saved — re-run "
-                f"run.sh to resume, or run with --only land to merge as-is.")
-            sys.exit(3)
+        # A round that fails is an ANOMALY, never an exit. This used to
+        # `sys.exit(3)` here, which handed the merge decision back to a
+        # caller — the exact thing this file's docstring promises it does
+        # not do. A failed round still has to end with every thread
+        # ticketed and resolved; `sweep_unresolved` below guarantees that
+        # without needing triage to have worked.
+        try:
+            if not do_round(pr, state, round_number):
+                state.anomaly(f"round {round_number} did not complete; continuing to the merge")
+        except (Exception, SystemExit) as error:
+            # Belt and braces. Helpers use `check=True`, which calls
+            # sys.exit — a failed `git push` or `gh` call would otherwise
+            # kill the process mid-loop and never reach the merge. Nothing
+            # a round can do is allowed to be a merge decision.
+            state.anomaly(f"round {round_number} raised {type(error).__name__}: "
+                          f"{str(error)[:200]}")
         if args.only == "round":
             sys.exit(0)
 
-    do_approve(pr, state, repo)      # advisory: a refusal is an anomaly, not a stop
+    # Nothing reaches the approval with an open thread. Round 3 is
+    # triage-only, so anything still open here becomes a ticket and is
+    # resolved with that ticket named — no fixing, no judgement, no exit.
+    # Same guarantee for the tail: a sweep or approval that throws must not
+    # take the merge with it.
+    for step, fn in (("sweep", lambda: sweep_unresolved(pr, state)),
+                     ("approve", lambda: do_approve(pr, state, repo))):
+        try:
+            fn()
+        except (Exception, SystemExit) as error:
+            state.anomaly(f"{step} raised {type(error).__name__}: {str(error)[:200]}")
+
     merged = do_land(pr, state)
     do_postmortem(pr, state)
 

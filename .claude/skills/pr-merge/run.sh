@@ -9,11 +9,12 @@
 # the approval and the merge. It is resumable — a run takes the better part
 # of an hour and has to survive a dropped connection or a rate limit.
 #
-# Exit codes:
+# Exit codes. There is no code for "did not merge because something went
+# wrong" — a failed round, a missing review or a red preflight is recorded
+# as an anomaly and the loop continues to the merge regardless.
 #   0   merged
 #   1   merged, but merge.sh reported a problem
-#   2   a required tool is missing from PATH
-#   3   a round did not complete; state is saved, re-run to resume
+#   2   a required tool is missing from PATH; nothing ran
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"

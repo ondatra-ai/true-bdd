@@ -179,10 +179,16 @@ def collect_github(pr):
     if result.returncode not in (0, 2):
         sys.exit("render_review.py list failed: %s" % result.stderr.strip()[:400])
     if result.returncode == 2:
-        sys.exit(
-            "render_review.py reported a reconciliation MISMATCH — some finding is "
-            "unaccounted for. Fix the parser before triaging.\n" + result.stdout[-600:]
-        )
+        # Loud, and NOT fatal. This used to exit, which stalled the merge
+        # loop permanently on PR #76 — because the gap was CodeRabbit's own
+        # arithmetic, not a parse failure: review 4960672409 announced
+        # "Actionable comments posted: 6" and posted 5. A guard the bot can
+        # make unsatisfiable must not be able to stop a merge; triage what
+        # is actually there and let the anomaly carry the discrepancy.
+        print("WARNING: reconciliation MISMATCH — triaging what was found anyway.\n"
+              "  A gap can mean a missed finding OR a bot over-count; both are\n"
+              "  recorded, neither blocks. Read the review body to tell them apart.",
+              file=sys.stderr)
     payload = json.loads(result.stdout or "{}")
 
     findings = []

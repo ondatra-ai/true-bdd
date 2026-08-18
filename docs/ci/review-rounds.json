@@ -302,11 +302,21 @@
         "defer": 0,
         "reject": 0
       }
+    },
+    {
+      "at": "2026-08-18T12:10:45Z",
+      "sha": "uncommitted-on-67d59bf",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 0,
+      "by_severity": {},
+      "verdicts": {}
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 12,
+      "rounds": 13,
       "found": 58,
       "fixed": 47,
       "deferred": 1,

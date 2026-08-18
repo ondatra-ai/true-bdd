@@ -19,12 +19,17 @@ anomalies, and the merge result.
 
 ## Exit codes
 
+**It merges.** A failed round, a missing review, a crashed helper or a red
+preflight are recorded as anomalies and the loop carries on; every open
+thread is ticketed and resolved by the sweep before the approval. There is
+no exit that hands the merge decision back to you.
+
 - **0 / 1** — merged (1 = `merge.sh` also reported a problem).
-- **2** — a required tool is missing.
-- **3** — a round did not finish. **State is saved; re-run to resume.**
-  Usually the review never arrived — **do not post `@coderabbitai review`
-  yourself.** If the answer was `Review rate limited`, the hourly quota
-  (~4) is spent and asking again cannot help. Report and wait.
+- **2** — a required tool is missing from PATH; nothing ran.
+
+If the output says `Review rate limited`, **do not post `@coderabbitai
+review` yourself** — the hourly quota (~4) is spent and asking again cannot
+help. It is already an anomaly and the post-mortem will carry it.
 
 ## Rules
 

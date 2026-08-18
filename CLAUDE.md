@@ -458,11 +458,30 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     gates run afterwards is a verification that should never fail. One call
     per finding, so a bad fix is isolated; one that cannot converge has only
     its own files reverted and becomes a ticket.
-  - **The loop always reaches a merge.** A red preflight at the end is
-    recorded as an anomaly, not obeyed. Exit 3 means a round did not
-    complete — **state is saved in `tmp/merge/state.json`, re-run to
-    resume**; a full loop takes the better part of an hour and has to
-    survive a dropped connection or a rate limit.
+  - **The loop always reaches a merge, and there is no path that does not.**
+    A failed round, a raised exception, a `check=True` helper calling
+    `sys.exit`, a red preflight — each is recorded as an anomaly and the
+    loop continues. Every round is wrapped in
+    `except (Exception, SystemExit)` for exactly that reason. This is not
+    decoration: the first live run **stalled at round 3** because `main()`
+    called `sys.exit(3)` on a failed round while the docstring above it
+    claimed the loop always merges. The docstring was aspiration; the code
+    decided.
+  - **`sweep_unresolved` runs after the last round, unconditionally.** Any
+    thread still open gets a ClickUp ticket filed and is resolved with that
+    ticket named — no scoring, no model, no judgement. It is what makes
+    "round 3 leaves every thread resolved and ticketed" true even when
+    triage crashed, the review never arrived, or scoring timed out. A
+    finding swept this way is *recorded*, not triaged, and says so.
+  - **A reconciliation MISMATCH warns; it never blocks.** CodeRabbit
+    over-counts: on PR #76 review `4960672409` announced "Actionable
+    comments posted: 6" and posted 5. No parser can reconcile 37 against
+    38 when the 38th does not exist, so treating the gap as fatal made the
+    guard unsatisfiable and stalled the merge permanently. A gap can mean a
+    missed finding OR a bot over-count; both are recorded, neither stops.
+  - State lives in `tmp/merge/state.json` and the run is resumable; a full
+    loop takes the better part of an hour and has to survive a dropped
+    connection or a rate limit.
   - **No round requests a review of a commit origin does not have.**
     `ensure_pushed` has to answer that positively before the round proceeds,
     and a round that cannot ends as an anomaly instead. Two paths used to
