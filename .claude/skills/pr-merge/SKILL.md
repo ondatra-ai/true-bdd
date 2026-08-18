@@ -219,8 +219,14 @@ GitHub one, or the comparison the ledger exists for has only one side:
 
 ```bash
 ./.claude/skills/pr-commit/ledger.py --source coderabbit-github \
-  --pr <n> --count 28 --verdicts fix=6,defer=5,reject=17
+  --pr <n> --count <TOTAL> \
+  --verdicts fix=<FIX>,defer=<DEFER>,reject=<REJECT>
 ```
+
+Every value comes from **this** round's `list` output and its triage
+table. They are placeholders on purpose: a copied-in literal writes a
+false total into the one file built to measure whether reviewing is worth
+its minutes.
 
 `--count` is the `TOTAL` from `list` — **threads plus body-only
 findings**. Counting only threads is what made PR #70's round record

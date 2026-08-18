@@ -10,7 +10,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # then kills the script before it says anything useful.
 if ! "$HERE/threads.sh" preflight; then
   echo "" >&2
-  echo "Not merging. Run './.claude/skills/pr-merge/threads.sh status' for the detail." >&2
+  echo "Not merging. Run '$HERE/threads.sh status' for the detail." >&2
   exit 1
 fi
 

@@ -122,6 +122,17 @@ preflight)
   TOTAL_THREADS=$(echo "$THREADS_JSON" | jq 'length')
 
   BLOCKED=0
+
+  # Reconciliation is the only mechanical check that covers BODY-ONLY
+  # findings — GitHub models them as nothing at all, so no branch rule can
+  # see them. If `list` cannot account for every finding the review claims,
+  # the merge has no business proceeding.
+  if ! python3 "$RENDER" list --pr "$PR" >/dev/null 2>&1; then
+    echo "Cannot merge: 'threads.sh list $PR' does not reconcile — some finding is unaccounted for." >&2
+    echo "  Run it and read the ✗ MISMATCH line before going further." >&2
+    BLOCKED=1
+  fi
+
   if [ "${UNRESOLVED:-0}" -gt 0 ]; then
     echo "Cannot merge: $UNRESOLVED review thread(s) still unresolved (main requires conversation resolution)." >&2
     BLOCKED=1
@@ -162,7 +173,10 @@ preflight)
   ;;
 
 reply)
-  gh api -X POST "repos/$REPO/pulls/$(gh pr view --json number --jq .number)/comments/$2/replies" \
+  # Takes an optional PR like every other verb: re-deriving it from the
+  # current branch answers the wrong PR whenever the branch is not the one
+  # under triage.
+  gh api -X POST "repos/$REPO/pulls/$(resolve_pr "${4:-}")/comments/$2/replies" \
     -f body="$3" --jq '.id' >/dev/null
   echo "replied to comment $2"
   ;;

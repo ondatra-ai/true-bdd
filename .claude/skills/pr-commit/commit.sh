@@ -39,8 +39,10 @@ if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
   emit_diff_context --cached > "$CONTEXT_FILE"
   run_claude_or_explain branch-name "$BRANCH_PROMPT" "$BRANCH_NAME_FILE" < "$CONTEXT_FILE"
 
-  NEW_BRANCH=$(tr -d '\r' < "$BRANCH_NAME_FILE" \
-    | sed -e '/^```[a-zA-Z]*$/d' -e '/^```$/d' -e '/^$/d' | head -n 1)
+  # One awk over the file, no pipeline: `… | head -n 1` makes the upstream
+  # stage die of SIGPIPE, and under `set -o pipefail` a command
+  # substitution returning 141 aborts the script with nothing printed.
+  NEW_BRANCH=$(awk '{gsub(/\r/, "")} !/^```[a-zA-Z]*$/ && NF {print; exit}' "$BRANCH_NAME_FILE")
   rm "$BRANCH_NAME_FILE"
 
   if [ -z "$NEW_BRANCH" ]; then

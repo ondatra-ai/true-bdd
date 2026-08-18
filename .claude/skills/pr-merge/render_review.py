@@ -114,9 +114,10 @@ query($owner:String!,$repo:String!,$pr:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$pr){
       reviewThreads(first:100){
+        pageInfo{ hasNextPage }
         nodes{
           id isResolved isOutdated path line
-          comments(first:20){ nodes{ databaseId author{login} body } }
+          comments(first:20){ pageInfo{ hasNextPage } nodes{ databaseId author{login} body } }
         }
       }
     }
@@ -131,7 +132,20 @@ def fetch_threads(repo, pr):
         "api", "graphql", "-f", "query=%s" % THREAD_QUERY,
         "-F", "owner=%s" % owner, "-F", "repo=%s" % name, "-F", "pr=%d" % pr,
     )
-    return data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
+    threads = data["data"]["repository"]["pullRequest"]["reviewThreads"]
+    # A truncated page would make every count below a floor rather than a
+    # total, and the reconciliation would still print "✓ reconciled" —
+    # the exact silent under-report this module exists to prevent. Refuse
+    # instead: "could not answer" is not "nothing to report".
+    if threads["pageInfo"]["hasNextPage"]:
+        sys.exit("reviewThreads is truncated at 100 — paginate the query before trusting any count")
+    for thread in threads["nodes"]:
+        if thread["comments"]["pageInfo"]["hasNextPage"]:
+            sys.exit(
+                "thread %s has more than 20 comments — paginate before trusting the reply count "
+                "or the resolved-by-comment map" % thread["id"]
+            )
+    return threads["nodes"]
 
 
 def fetch_reviews(repo, pr):
