@@ -11,11 +11,24 @@ description: Merge the current branch's PR using squash merge, delete the remote
 ./.claude/skills/pr-merge/threads.sh status
 ```
 
-`main` requires three things: the `gates` check green, **one approving
-review**, and **every review thread resolved**. `status` prints all three,
-plus — for each `CHANGES_REQUESTED` verdict — the commit it is pinned to,
-how far HEAD has moved past it, and how many of its threads are still
-open. That last block is the evidence step 2d is decided on.
+`main` is protected by the **"Main Protection" ruleset**, not by classic
+branch protection: two green checks (`gates` and `CodeRabbit`), **one
+approving review**, **every review thread resolved**, squash-only, linear
+history, no force-push, no deletion. `status` prints all of it, plus — for
+each `CHANGES_REQUESTED` verdict — the commit it is pinned to, how far HEAD
+has moved past it, and how many of its threads are still open. That last
+block is the evidence step 2d is decided on.
+
+**The admin role can bypass every one of those rules on a PR merge**
+(`bypass_actors`, `pull_request` scope). So GitHub letting the merge
+through is **not** evidence the preconditions were met — `threads.sh
+preflight` is. Never read a successful `gh pr merge` as approval that
+never arrived.
+
+The ruleset also sets `dismiss_stale_reviews_on_push` and
+`require_last_push_approval`, so **any push voids the approval**: the
+approving review has to come after the final commit. Plan the order — fix
+everything, push, *then* ask for the re-review.
 
 If `gates` is `IN_PROGRESS`, wait for it — but **bound the wait**. Poll for
 up to ~15 minutes; if it has not finished by then, stop and tell the user
@@ -194,8 +207,10 @@ gh pr comment --body "@coderabbitai review"
 - **Never use `gh pr review --dismiss` as a shortcut past an unanswered
   review.** Answer the comments; the bot re-reviews and clears its own
   verdict.
-- **Ask before merging with `--admin`.** That overrides branch
-  protection, which is the user's call and not the default path.
+- **Ask before merging past a red preflight.** The admin bypass means no
+  `--admin` flag is needed and GitHub will raise no objection — which is
+  exactly why this has to be a deliberate question rather than a thing
+  that just happens. Overriding the ruleset is the user's call.
 
 ## 3. Record the round
 

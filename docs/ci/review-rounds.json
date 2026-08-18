@@ -167,11 +167,21 @@
         "fix": 8,
         "reject": 1
       }
+    },
+    {
+      "at": "2026-08-18T06:26:35Z",
+      "sha": "uncommitted-on-90824dd",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 0,
+      "by_severity": {},
+      "verdicts": {}
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 8,
+      "rounds": 9,
       "found": 41,
       "fixed": 34,
       "deferred": 0,

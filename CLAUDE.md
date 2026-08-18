@@ -431,13 +431,27 @@ Lead with the answer or result; drop restatement, framing sentences, and narrati
 `.claude/skills/` holds the commit-and-merge workflow, plus `lib/` for what
 more than one skill needs.
 
-- **`main` is protected**: the `gates` check (strict), **one approving
-  review**, **every review thread resolved**, linear history, no force
-  pushes, and `enforce_admins`. Only `killev` has write access and GitHub
-  forbids self-approval, so the approval comes from CodeRabbit's `APPROVED`
-  review. `dismiss_stale_reviews` and `require_last_push_approval` are
-  deliberately **off** — either would void that approval on every push and
-  turn the requirement into a deadlock.
+- **`main` is protected by the "Main Protection" ruleset** (id `20972312`),
+  modelled on the one in `speedandfunction/website`. Classic branch
+  protection is **deleted** — the two would otherwise stack, and
+  `/branches/main/protection` now 404s, which does not mean unprotected.
+  Read the live rules with `gh api repos/ondatra-ai/true-bdd/rules/branches/main`.
+  It requires two green checks (`gates`, `CodeRabbit`), one approving
+  review, every review thread resolved, squash-only merges, linear history,
+  and forbids deletion and force-push. Its code-scanning and Copilot rules
+  were dropped in the adaptation: this repo runs neither, and requiring a
+  tool that never reports blocks every PR forever.
+  - **The admin role bypasses all of it on a PR merge** (`bypass_actors`,
+    `pull_request` scope), so a merge succeeding proves nothing about the
+    preconditions — `threads.sh preflight` is what proves that.
+  - `dismiss_stale_reviews_on_push` and `require_last_push_approval` are
+    **on**, so every push voids the approval: get the re-review *after* the
+    last commit. Only `killev` has write access and GitHub forbids
+    self-approval, so the approval comes from CodeRabbit's `APPROVED`
+    review — the bypass is what keeps that from being a deadlock when the
+    bot does not deliver.
+  - `require_code_owner_review` is on but inert: there is no `CODEOWNERS`
+    file, so no path has an owner. Adding one makes the rule bite.
 - **`.claude/skills/lib/diff-context.sh`** — sourced by `pr-commit/commit.sh`
   and `pr-update/pr-update.sh`. `emit_diff_context <git-diff-argv>` always
   sends the **complete** `--stat`, then the diff body in one of three

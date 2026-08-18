@@ -137,14 +137,26 @@ preflight)
     echo "Cannot merge: no approving review (main requires 1). reviewDecision=$(echo "$VIEW" | jq -r '.reviewDecision // "none"')" >&2
     BLOCKED=1
   fi
-  # A check run carries `conclusion`; a commit status carries `state` and
-  # leaves `conclusion` null. Reading only the former reports MISSING for
-  # a green gate that happens to be a status.
-  GATES=$(echo "$VIEW" | jq -r '[.statusCheckRollup[]? | select((.name // .context) == "gates")] | .[0] | (.conclusion // .state // "MISSING") | ascii_upcase')
-  if [ "$GATES" != "SUCCESS" ]; then
-    echo "Cannot merge: the 'gates' check is $GATES." >&2
-    BLOCKED=1
+  # Which checks are required is asked of the branch, not hardcoded — the
+  # ruleset is free to change and a stale list here would report "ok" for
+  # a check nobody ran. `gates` is a check run (carries `conclusion`);
+  # `CodeRabbit` is a commit status (carries `state`, `conclusion` null),
+  # so both fields are read.
+  REQUIRED=$(gh api "repos/$REPO/rules/branches/$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)" \
+    --jq '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | .[]' 2>/dev/null || true)
+  if [ -z "$REQUIRED" ]; then
+    echo "Warning: could not read the branch's required checks — falling back to 'gates'." >&2
+    REQUIRED=gates
   fi
+  while IFS= read -r context; do
+    [ -n "$context" ] || continue
+    STATE=$(echo "$VIEW" | jq -r --arg c "$context" \
+      '[.statusCheckRollup[]? | select((.name // .context) == $c)] | .[0] | (.conclusion // .state // "MISSING") | ascii_upcase')
+    if [ "$STATE" != "SUCCESS" ]; then
+      echo "Cannot merge: required check '$context' is $STATE." >&2
+      BLOCKED=1
+    fi
+  done <<< "$REQUIRED"
   [ "$BLOCKED" -eq 0 ] && echo "preflight: ok — approved, threads resolved, gates green."
   exit "$BLOCKED"
   ;;
