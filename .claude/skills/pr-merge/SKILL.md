@@ -30,10 +30,22 @@ The ruleset also sets `dismiss_stale_reviews_on_push` and
 approving review has to come after the final commit. Plan the order — fix
 everything, push, *then* ask for the re-review.
 
-If `gates` is `IN_PROGRESS`, wait for it — but **bound the wait**. Poll for
-up to ~15 minutes; if it has not finished by then, stop and tell the user
-what it is stuck on rather than continuing to poll. Do not merge with
-`--admin` to skip it.
+**Wait for every required check, not just `gates`.** Which ones are
+required comes from the branch, so a ruleset edit does not leave this
+stale:
+
+```bash
+gh api repos/ondatra-ai/true-bdd/rules/branches/main \
+  --jq '[.[] | select(.type=="required_status_checks")
+             | .parameters.required_status_checks[].context]'
+```
+
+Today that is `gates` and `CodeRabbit` — `preflight` reports both, and
+`pr-commit/gates.sh` covers only the first, since the second is posted by
+the bot on GitHub. If any of them is `IN_PROGRESS` or `PENDING`, wait —
+but **bound the wait**. Poll for up to ~15 minutes; if one has not
+finished by then, stop and tell the user which one is stuck rather than
+continuing to poll. Never skip a check by merging past it.
 
 ## 2. Clear the review
 
@@ -207,10 +219,16 @@ gh pr comment --body "@coderabbitai review"
 - **Never use `gh pr review --dismiss` as a shortcut past an unanswered
   review.** Answer the comments; the bot re-reviews and clears its own
   verdict.
-- **Ask before merging past a red preflight.** The admin bypass means no
-  `--admin` flag is needed and GitHub will raise no objection — which is
-  exactly why this has to be a deliberate question rather than a thing
-  that just happens. Overriding the ruleset is the user's call.
+- **Never merge without an explicit user command**, green preflight or
+  not. This skill runs *because* the user asked to land the branch; step 4
+  is not something a plan may reach on its own momentum. That is a
+  standing repository rule (CLAUDE.md, CRITICAL), and it is absolute —
+  §2b's "execute the plan without asking" governs the fixes, never the
+  merge.
+- **And ask again before merging past a red preflight.** The admin bypass
+  means no `--admin` flag is needed and GitHub will raise no objection —
+  which is exactly why this has to be a deliberate question rather than a
+  thing that just happens. Overriding the ruleset is the user's call.
 
 ## 3. Record the round
 
@@ -240,9 +258,13 @@ that total, since every row in the 2a table has a verdict.
 ./.claude/skills/pr-merge/merge.sh
 ```
 
-Runs `threads.sh preflight` first and refuses by name if the approval, the
-`gates` check, or thread resolution is missing. Then squash-merges, deletes
-the remote branch, switches to main, pulls, and removes the local branch.
+**Only on the user's explicit command to merge** — see the rule above.
+Reaching this step with every check green is not itself permission.
+
+Runs `threads.sh preflight` first and refuses by name if any required
+check, the approval, thread resolution, or the `list` reconciliation is
+missing. Then squash-merges, deletes the remote branch, switches to main,
+pulls, and removes the local branch.
 
 ## 5. Work the deferred queue
 
