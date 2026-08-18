@@ -151,24 +151,185 @@
         "defer": 4,
         "reject": 5
       }
+    },
+    {
+      "at": "2026-08-18T05:33:52Z",
+      "sha": "uncommitted-on-395a253",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 9,
+      "by_severity": {
+        "major": 3,
+        "minor": 6
+      },
+      "verdicts": {
+        "fix": 8,
+        "reject": 1
+      }
+    },
+    {
+      "at": "2026-08-18T06:26:35Z",
+      "sha": "uncommitted-on-90824dd",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 0,
+      "by_severity": {},
+      "verdicts": {}
+    },
+    {
+      "at": "2026-08-18T06:35:30Z",
+      "sha": "5b47cb9",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 8,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 6,
+        "reject": 2
+      }
+    },
+    {
+      "at": "2026-08-18T06:40:41Z",
+      "sha": "41f85a5",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 2,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 2
+      }
+    },
+    {
+      "at": "2026-08-18T06:49:50Z",
+      "sha": "9cc2545",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 1,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 1
+      }
+    },
+    {
+      "at": "2026-08-18T07:00:23Z",
+      "sha": "d2167dc",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 5,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 5
+      }
+    },
+    {
+      "at": "2026-08-18T10:23:43Z",
+      "sha": "uncommitted-on-14e327a",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 15,
+      "by_severity": {
+        "major": 12,
+        "minor": 1,
+        "critical": 2
+      },
+      "verdicts": {
+        "fix": 12,
+        "defer": 1,
+        "reject": 2
+      }
+    },
+    {
+      "at": "2026-08-18T11:03:35Z",
+      "sha": "c353c09",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 28,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 2,
+        "defer": 7,
+        "reject": 19
+      }
+    },
+    {
+      "at": "2026-08-18T11:14:35Z",
+      "sha": "uncommitted-on-c353c09",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 2,
+      "by_severity": {
+        "major": 2
+      },
+      "verdicts": {
+        "fix": 1,
+        "defer": 0,
+        "reject": 1
+      }
+    },
+    {
+      "at": "2026-08-18T11:34:48Z",
+      "sha": "c9f1342",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 26,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 0,
+        "defer": 3,
+        "reject": 23
+      }
+    },
+    {
+      "at": "2026-08-18T11:38:22Z",
+      "sha": "d920e9d",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 0,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 0,
+        "defer": 0,
+        "reject": 0
+      }
+    },
+    {
+      "at": "2026-08-18T12:10:45Z",
+      "sha": "uncommitted-on-67d59bf",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 0,
+      "by_severity": {},
+      "verdicts": {}
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 7,
-      "found": 32,
-      "fixed": 26,
-      "deferred": 0,
-      "rejected": 6,
-      "precision": 0.812
+      "rounds": 13,
+      "found": 58,
+      "fixed": 47,
+      "deferred": 1,
+      "rejected": 10,
+      "precision": 0.828
     },
     "coderabbit-github": {
-      "rounds": 3,
-      "found": 29,
-      "fixed": 15,
-      "deferred": 6,
-      "rejected": 8,
-      "precision": 0.724
+      "rounds": 9,
+      "found": 99,
+      "fixed": 31,
+      "deferred": 16,
+      "rejected": 52,
+      "precision": 0.475
     }
   }
 }

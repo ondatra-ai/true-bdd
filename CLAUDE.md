@@ -426,6 +426,152 @@ Lead with the answer or result; drop restatement, framing sentences, and narrati
 
 **How to apply:** One-line result, then only the details that change a decision. No recaps of already-known context, no "what landed / what I verified" sections unless asked. Still report failures and skipped work plainly — brevity is not omission.
 
+## Commit / Merge Skills
+
+`.claude/skills/` holds the commit-and-merge workflow, plus `lib/` for what
+more than one skill needs. **`./start.sh` is how a session begins** — it
+sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
+`CLICKUP_API_TOKEN` reach the scripts; a key sourced mid-session does not.
+
+- **`pr-merge` is ONE command** — `./.claude/skills/pr-merge/run.sh [pr]`,
+  which execs `orchestrate.py`. The SKILL.md invokes it and reports what it
+  printed; it does not drive the steps. The previous design handed the agent
+  a seven-step checklist, and every hand-off was somewhere to skip a step or
+  improvise one — which is what PR #76 did, four times.
+  - **Four rounds.** 1-2 review and fix, **3 reviews and triages only**, 4
+    approves and merges. Round 3 changing no code is load-bearing: the
+    commit it reviewed is the commit round 4 approves. `@coderabbitai
+    approve` analyses *nothing* — it resolves every thread and approves, and
+    is exempt from the rate limit precisely because it does no work. On PR #76 it approved
+    `14e327a`, a commit no review was ever pinned to. `orchestrate.py`
+    refuses to approve unless a review with a **non-empty body** is pinned
+    to HEAD; state is not enough, since the rubber stamp is an `APPROVED`
+    with `body_len=0` while a real review is a 9 KB `COMMENTED`.
+  - **Banded by consequence**: 9-10 fixed inline, 6-8 → ClickUp tagged
+    `fix-now`, 1-5 recorded and dropped. Of PR #76's 16 findings only 2 were
+    worth blocking a merge on. `triage.py collect|score|band` is the engine;
+    only `score` spends a model.
+  - **A fix owns gate-greenness.** Each fix-now finding gets one
+    `claude -p --permission-mode acceptEdits` with a scoped Bash allowlist,
+    told to fix it *and* run `gates.sh` until green, repairing code or test
+    as appropriate. A fix leaving gates red is not a fix. `pr-commit`'s own
+    gates run afterwards is a verification that should never fail. One call
+    per finding, so a bad fix is isolated; one that cannot converge has only
+    its own files reverted and becomes a ticket.
+  - **The loop always reaches a merge, and there is no path that does not.**
+    A failed round, a raised exception, a `check=True` helper calling
+    `sys.exit`, a red preflight — each is recorded as an anomaly and the
+    loop continues. Every round is wrapped in
+    `except (Exception, SystemExit)` for exactly that reason. This is not
+    decoration: the first live run **stalled at round 3** because `main()`
+    called `sys.exit(3)` on a failed round while the docstring above it
+    claimed the loop always merges. The docstring was aspiration; the code
+    decided.
+  - **`sweep_unresolved` runs after the last round, unconditionally.** Any
+    thread still open gets a ClickUp ticket filed and is resolved with that
+    ticket named — no scoring, no model, no judgement. It is what makes
+    "round 3 leaves every thread resolved and ticketed" true even when
+    triage crashed, the review never arrived, or scoring timed out. A
+    finding swept this way is *recorded*, not triaged, and says so.
+  - **A reconciliation MISMATCH warns; it never blocks.** CodeRabbit
+    over-counts: on PR #76 review `4960672409` announced "Actionable
+    comments posted: 6" and posted 5. No parser can reconcile 37 against
+    38 when the 38th does not exist, so treating the gap as fatal made the
+    guard unsatisfiable and stalled the merge permanently. A gap can mean a
+    missed finding OR a bot over-count; both are recorded, neither stops.
+  - State lives in `tmp/merge/state.json` and the run is resumable; a full
+    loop takes the better part of an hour and has to survive a dropped
+    connection or a rate limit.
+  - **No round requests a review of a commit origin does not have.**
+    `ensure_pushed` has to answer that positively before the round proceeds,
+    and a round that cannot ends as an anomaly instead. Two paths used to
+    say yes silently: a `pr-commit` that failed left the tree dirty, and
+    `git log @{u}..HEAD` on a branch with no upstream exits non-zero with
+    empty stdout — indistinguishable from "nothing to push".
+  - `postmortem.sh` fires on any anomaly or past `MERGE_POSTMORTEM_SECONDS`
+    (default 600), filing to ClickUp tagged `merge-improvements`.
+  - `fix-queue` is the other half — it works the `fix-now` tickets back into
+    merged changes, one ticket per PR, each merge on its own command.
+- **`.coderabbit.yaml` — `auto_review` is OFF, deliberately.** With it on,
+  every push spends a review, so an eight-commit branch exhausts the hourly
+  quota before anyone asks for a verdict; that is exactly how PR #76 ran
+  out. With it off, pushes are free and each of `orchestrate.py`'s three
+  rounds buys one `@coderabbitai full review` when the branch is ready. It also makes that
+  command *correct* — the docs scope it to paused auto-review. Consequence
+  to know: the required `CodeRabbit` status check does not exist until a
+  review is requested, so `land` requests one if it is missing.
+  `request_changes_workflow: true` is what makes `@coderabbitai approve`
+  work and the bot flip its own verdict to Approve once threads resolve.
+  `path_filters` keep cassettes, generated tests and `doc-universe.html` out
+  of review entirely.
+
+- **`main` is protected by the "Main Protection" ruleset** (id `20972312`),
+  modelled on the one in `speedandfunction/website`. Classic branch
+  protection is **deleted** — the two would otherwise stack, and
+  `/branches/main/protection` now 404s, which does not mean unprotected.
+  Read the live rules with `gh api repos/ondatra-ai/true-bdd/rules/branches/main`.
+  It requires two green checks (`gates`, `CodeRabbit`), one approving
+  review, every review thread resolved, squash-only merges, linear history,
+  and forbids deletion and force-push. Its code-scanning and Copilot rules
+  were dropped in the adaptation: this repo runs neither, and requiring a
+  tool that never reports blocks every PR forever.
+  - **The admin role bypasses all of it on a PR merge** (`bypass_actors`,
+    `pull_request` scope), so a merge succeeding proves nothing about the
+    preconditions — `threads.sh preflight` is what proves that.
+  - `dismiss_stale_reviews_on_push` and `require_last_push_approval` are
+    **on**, so every push voids the approval: get the re-review *after* the
+    last commit. Only `killev` has write access and GitHub forbids
+    self-approval, so the approval comes from CodeRabbit's `APPROVED`
+    review — the bypass is what keeps that from being a deadlock when the
+    bot does not deliver.
+  - `require_code_owner_review` is on but inert: there is no `CODEOWNERS`
+    file, so no path has an owner. Adding one makes the rule bite.
+- **`.claude/skills/lib/diff-context.sh`** — sourced by `pr-commit/commit.sh`
+  and `pr-update/pr-update.sh`. `emit_diff_context <git-diff-argv>` always
+  sends the **complete** `--stat`, then the diff body in one of three
+  shapes: whole when it fits `DIFF_BUDGET_BYTES` (200 KB); whole-but-filtered
+  when dropping recorded cassettes and `docs/doc-universe.html` brings it
+  under (the usual shape after a re-record); truncated to the cap otherwise.
+  Which one it is, is stated in the piped text — a model told it is reading a
+  prefix leans on the stat, and one that is not told describes the prefix as
+  the whole change. `run_claude_or_explain` names a `claude -p` failure on
+  stderr — a 3.4 MB diff used to exit 1 with nothing on the terminal.
+- **`.claude/skills/pr-merge/render_review.py`** — the reason `threads.sh
+  list` sees the whole review. CodeRabbit posts findings in two places and
+  only one is a thread: "Actionable comments" become review threads, while
+  "Nitpick / Outside diff range / Duplicate comments" live **only inside the
+  review body** with no id, no reply target and nothing to resolve. Querying
+  `reviewThreads` alone showed 16 of 28 findings on PR #70. `list` extracts
+  both classes and **reconciles against the counts the review states about
+  itself**; a `✗ MISMATCH` exits non-zero and is a stop, never a "proceed
+  anyway". It also strips only the named noise blocks instead of truncating
+  at the first `<details>` — the old renderer hid the finding text of every
+  comment that opened with an "Analysis chain" transcript.
+- **`threads.sh await-review [seconds]`** bounds the wait for a re-review. A
+  bot acknowledgement is not a bot verdict: on PR #70 CodeRabbit answered "I
+  will perform a fresh review" and never posted one, and nothing bounded the
+  wait. Exit 3 means the bot did not deliver — stop and ask, never dismiss
+  unasked. Run it in the background; it sleeps.
+- **`merge.sh [pr]` merges the PR it is handed, not the one it can infer.**
+  `orchestrate.py` passes `--pr` through, and its run resumes across
+  sessions, so "whatever branch is checked out" can belong to a different
+  PR entirely — and squashing the wrong one, then deleting its branch, is
+  not reversible. An argument that is not a PR number is a refusal rather
+  than a fallback to the current branch: the fallback derives the PR *from*
+  that branch, so the head-ref check below would agree by construction and
+  catch nothing. With a PR named, the checkout is compared against its
+  `headRefName` and a mismatch stops the merge. It escalates to `--admin`
+  only after the ordinary `gh pr merge` is refused, so the log shows plainly
+  when the ruleset bypass was used.
+- **`threads.sh preflight` is what proves the merge was allowed**, and
+  `orchestrate.py` — not `merge.sh` — is what runs it, both while polling
+  after `@coderabbitai approve` and once more immediately before the merge.
+  It names which precondition is missing rather than letting `gh pr merge`'s
+  generic refusal die under `set -e`, and it refuses on a **full** thread
+  page too: the query asks for `first:100`, and reporting "0 unresolved" out
+  of a truncated page is the same silent under-report the rest of this
+  tooling exists to prevent.
+
 ## Notes
 
 - **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.
