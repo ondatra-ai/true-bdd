@@ -21,9 +21,10 @@ python3 ./.claude/skills/lib/clickup.py list --tag fix-now
 ```
 
 Oldest first — the sort is explicit because a queue worked newest-first
-leaves the oldest finding permanently last. Exit 3 means
-`CLICKUP_API_TOKEN` is unset; use the ClickUp MCP tools (`listTasks` on list
-`901523097822`, filtered to the `fix-now` tag) instead.
+leaves the oldest finding permanently last. It reaches ClickUp through the
+MCP server inherited by `claude -p`, not through a REST token, so there is
+no credential to be missing and no fallback path to take; a non-zero exit
+means the call itself failed and the output says how.
 
 If the queue is empty, say so and stop.
 

@@ -312,16 +312,49 @@
       "found": 0,
       "by_severity": {},
       "verdicts": {}
+    },
+    {
+      "at": "2026-08-18T15:01:46Z",
+      "sha": "06fa07b",
+      "branch": "refactor/pr-merge-single-script",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 3,
+      "by_severity": {
+        "major": 2,
+        "minor": 1
+      },
+      "verdicts": {
+        "fix": 3,
+        "defer": 0,
+        "reject": 0
+      }
+    },
+    {
+      "at": "2026-08-18T15:40:17Z",
+      "sha": "b1873d3",
+      "branch": "refactor/pr-merge-single-script",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 2,
+      "by_severity": {
+        "major": 2
+      },
+      "verdicts": {
+        "fix": 2,
+        "defer": 0,
+        "reject": 0
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 13,
-      "found": 58,
-      "fixed": 47,
+      "rounds": 15,
+      "found": 63,
+      "fixed": 52,
       "deferred": 1,
       "rejected": 10,
-      "precision": 0.828
+      "precision": 0.841
     },
     "coderabbit-github": {
       "rounds": 9,
