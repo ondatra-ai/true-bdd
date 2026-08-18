@@ -214,6 +214,18 @@
       "verdicts": {
         "fix": 1
       }
+    },
+    {
+      "at": "2026-08-18T07:00:23Z",
+      "sha": "d2167dc",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 5,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 5
+      }
     }
   ],
   "totals": {
@@ -226,12 +238,12 @@
       "precision": 0.829
     },
     "coderabbit-github": {
-      "rounds": 6,
-      "found": 40,
-      "fixed": 24,
+      "rounds": 7,
+      "found": 45,
+      "fixed": 29,
       "deferred": 6,
       "rejected": 10,
-      "precision": 0.75
+      "precision": 0.778
     }
   }
 }

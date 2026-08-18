@@ -69,6 +69,13 @@ reviews claim: actionable=16 nitpick=12 outside-diff=0 duplicate=0
 ✓ reconciled
 ```
 
+**`TOTAL` is the reconciliation figure, not the size of your table.** It
+counts every finding the PR has ever carried — resolved threads included —
+because that is the only number comparable against what the reviews claim
+about themselves. What you triage in a round is the **open** set:
+unresolved threads plus body-only findings not yet answered. On a PR in
+its third round those differ, and both are right.
+
 **A `✗ MISMATCH` exits non-zero and is a stop.** It means the extractor
 disagrees with what the review says about itself, so some finding is
 unaccounted for. Read the review body directly, fix `render_review.py`,
@@ -155,12 +162,14 @@ is involved.
 
 ### 2c. Reply and resolve
 
-Threads are answered one at a time, on the thread:
+Threads are answered one at a time, on the thread. **Pass the PR to every
+PR-scoped command** — without it they fall back to whatever the current
+branch points at, which answers the wrong PR the moment the two differ:
 
 ```bash
-./.claude/skills/pr-merge/threads.sh reply <comment-id> "Valid — fixed …"
-./.claude/skills/pr-merge/threads.sh reply <comment-id> "Rejected — …"
-./.claude/skills/pr-merge/threads.sh resolve <thread-id>
+./.claude/skills/pr-merge/threads.sh reply <comment-id> "Valid — fixed …" <pr>
+./.claude/skills/pr-merge/threads.sh reply <comment-id> "Rejected — …"   <pr>
+./.claude/skills/pr-merge/threads.sh resolve <thread-id>   # scoped by the global thread id
 ```
 
 **Body-only findings have no reply target**, so they are answered in
@@ -182,9 +191,9 @@ A push does not clear a `CHANGES_REQUESTED` verdict — the bot has to post
 a new review object. Ask for one, then wait for it with a bound:
 
 ```bash
-gh pr comment --body "@coderabbitai review"
+gh pr comment <pr> --body "@coderabbitai review"
 # run this in the BACKGROUND — it sleeps
-./.claude/skills/pr-merge/threads.sh await-review 900
+./.claude/skills/pr-merge/threads.sh await-review 900 <pr>
 ```
 
 - **exit 0** — a new review landed. Re-run `list` and go back to 2a; a new
@@ -202,9 +211,12 @@ gh pr comment --body "@coderabbitai review"
   exactly this reason: a reviewer bot posts a fresh review on every push,
   so `list` grows while you work, and a blind loop will sweep up comments
   that arrived seconds ago and were never looked at.
-- **Re-run `list` after pushing.** A new push means a new review — and it
-  re-reconciles, which is the only thing that notices a body-only finding
-  arriving in a section that was empty last round.
+- **Re-run `list` once a new review has actually arrived** — that is,
+  after §2d returns exit 0, not merely after a push. A push does not
+  produce a review; assuming it did is how a HEAD gets treated as
+  reviewed when nothing looked at it. Re-running is what re-reconciles,
+  and that is the only thing that notices a body-only finding arriving in
+  a section that was empty last round.
 - **A rejection is a technical argument, not a dismissal.** If it cannot
   be defended in two sentences against the actual code, it is a fix.
 - **Dismissing a review is the user's call, and only for a stale verdict.**
@@ -213,7 +225,9 @@ gh pr comment --body "@coderabbitai review"
   1. every thread from that review is answered and resolved,
   2. HEAD is ahead of the commit the verdict is pinned to (`status` prints
      both, and flags the combination as `→ STALE`),
-  3. `gates` is green on HEAD,
+  3. **every** required check is green on HEAD — the list from §1, not
+     `gates` alone; a green `gates` beside a red or pending `CodeRabbit`
+     is not a reviewed HEAD,
   4. a re-review was requested and `await-review` returned exit 3.
 
   The dismissal message states that evidence — what was fixed, what was
@@ -238,22 +252,28 @@ gh pr comment --body "@coderabbitai review"
 `pr-commit` records its local CodeRabbit round; this skill records the
 GitHub one, or the comparison the ledger exists for has only one side:
 
+Record **once per round**, not once per PR — a PR that takes four rounds
+writes four entries.
+
 ```bash
 ./.claude/skills/pr-commit/ledger.py --source coderabbit-github \
-  --pr <n> --count <TOTAL> \
+  --pr <n> --count <ROWS> \
   --verdicts fix=<FIX>,defer=<DEFER>,reject=<REJECT>
 ```
 
-Every value comes from **this** round's `list` output and its triage
-table. They are placeholders on purpose: a copied-in literal writes a
-false total into the one file built to measure whether reviewing is worth
-its minutes.
+They are placeholders on purpose: a copied-in literal writes a false total
+into the one file built to measure whether reviewing is worth its minutes.
 
-`--count` is the `TOTAL` from `list` — **threads plus body-only
-findings**. Counting only threads is what made PR #70's round record
-`found=15` for a review that raised 28, which is why the miss left no
-trace in the one place built to notice it. The verdict counts must sum to
-that total, since every row in the 2a table has a verdict.
+`--count` is the number of rows in **this round's** 2a table — the open
+findings it triaged, **threads and body-only alike** — and the verdicts
+must sum to it, since every row has one. It is *not* `list`'s `TOTAL`,
+which is cumulative over the PR and includes rounds already recorded;
+using it would count earlier rounds' findings again.
+
+The thing to get right is that body-only findings are in the count at all.
+Counting threads alone is what made PR #70's round record `found=15` for a
+review that raised 28 — the miss left no trace in the one place built to
+notice it.
 
 ## 4. Merge
 
@@ -269,22 +289,27 @@ check, the approval, thread resolution, or the `list` reconciliation is
 missing. Then squash-merges, deletes the remote branch, switches to main,
 pulls, and removes the local branch.
 
-## 5. Work the deferred queue
+## 5. Report the deferred queue
 
 Landing on main is the middle of the job, not the end. Every issue filed
-as **Defer → #N** in step 2a is now the backlog, and it is worked without
-being asked again:
+as **Defer → #N** in step 2a is the backlog. **Report it and stop** — the
+user asked to land *this* PR, and that request does not authorise opening
+and merging more of them. Working the queue is a new job, started on a new
+command.
 
 1. `gh issue list --label deferred-review --state open --json number,title \
    --jq 'sort_by(.number)'` — the queue, oldest first. Explicit ordering,
    because the default is newest-first and a queue worked backwards
    leaves the oldest finding permanently last.
-2. Take the first issue. Branch, fix it, and run the same loop the
-   original change ran: gates, then the `pr-commit` skill, then this
-   skill from step 1. The PR body carries a closing keyword — `Closes
-   #N` — so the issue is closed by the merge rather than by someone
-   remembering to.
-3. When it merges, take the next.
+2. Print it and hand back. Say how many are open and name the first, so
+   picking it up is one word — but do not pick it up unasked.
+3. **On the user's command**, take the first issue. Branch, fix it, and
+   run the same loop the original change ran: gates, then the `pr-commit`
+   skill, then this skill from step 1 — including its rule that the merge
+   itself needs an explicit command. The PR body carries a closing
+   keyword — `Closes #N` — so the issue is closed by the merge rather
+   than by someone remembering to.
+4. When it merges, report and stop again. One command, one issue.
 
 Rules:
 
