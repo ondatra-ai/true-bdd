@@ -244,24 +244,54 @@
         "defer": 1,
         "reject": 2
       }
+    },
+    {
+      "at": "2026-08-18T11:03:35Z",
+      "sha": "c353c09",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": 76,
+      "source": "coderabbit-github",
+      "found": 28,
+      "by_severity": {},
+      "verdicts": {
+        "fix": 2,
+        "defer": 7,
+        "reject": 19
+      }
+    },
+    {
+      "at": "2026-08-18T11:14:35Z",
+      "sha": "uncommitted-on-c353c09",
+      "branch": "fix/pr-merge-review-blindness",
+      "pr": null,
+      "source": "coderabbit-cli",
+      "found": 2,
+      "by_severity": {
+        "major": 2
+      },
+      "verdicts": {
+        "fix": 1,
+        "defer": 0,
+        "reject": 1
+      }
     }
   ],
   "totals": {
     "coderabbit-cli": {
-      "rounds": 10,
-      "found": 56,
-      "fixed": 46,
+      "rounds": 11,
+      "found": 58,
+      "fixed": 47,
       "deferred": 1,
-      "rejected": 9,
-      "precision": 0.839
+      "rejected": 10,
+      "precision": 0.828
     },
     "coderabbit-github": {
-      "rounds": 7,
-      "found": 45,
-      "fixed": 29,
-      "deferred": 6,
-      "rejected": 10,
-      "precision": 0.778
+      "rounds": 8,
+      "found": 73,
+      "fixed": 31,
+      "deferred": 13,
+      "rejected": 29,
+      "precision": 0.603
     }
   }
 }

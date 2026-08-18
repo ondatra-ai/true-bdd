@@ -463,6 +463,12 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     complete — **state is saved in `tmp/merge/state.json`, re-run to
     resume**; a full loop takes the better part of an hour and has to
     survive a dropped connection or a rate limit.
+  - **No round requests a review of a commit origin does not have.**
+    `ensure_pushed` has to answer that positively before the round proceeds,
+    and a round that cannot ends as an anomaly instead. Two paths used to
+    say yes silently: a `pr-commit` that failed left the tree dirty, and
+    `git log @{u}..HEAD` on a branch with no upstream exits non-zero with
+    empty stdout — indistinguishable from "nothing to push".
   - `postmortem.sh` fires on any anomaly or past `MERGE_POSTMORTEM_SECONDS`
     (default 600), filing to ClickUp tagged `merge-improvements`.
   - `fix-queue` is the other half — it works the `fix-now` tickets back into
@@ -527,11 +533,25 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
   will perform a fresh review" and never posted one, and nothing bounded the
   wait. Exit 3 means the bot did not deliver — stop and ask, never dismiss
   unasked. Run it in the background; it sleeps.
-- **`merge.sh` runs `threads.sh preflight` first**, naming which precondition
-  is missing rather than letting `gh pr merge`'s generic refusal die under
-  `set -e`. It refuses on a **full** thread page too: the query asks for
-  `first:100`, and reporting "0 unresolved" out of a truncated page is the
-  same silent under-report the rest of this tooling exists to prevent.
+- **`merge.sh [pr]` merges the PR it is handed, not the one it can infer.**
+  `orchestrate.py` passes `--pr` through, and its run resumes across
+  sessions, so "whatever branch is checked out" can belong to a different
+  PR entirely — and squashing the wrong one, then deleting its branch, is
+  not reversible. An argument that is not a PR number is a refusal rather
+  than a fallback to the current branch: the fallback derives the PR *from*
+  that branch, so the head-ref check below would agree by construction and
+  catch nothing. With a PR named, the checkout is compared against its
+  `headRefName` and a mismatch stops the merge. It escalates to `--admin`
+  only after the ordinary `gh pr merge` is refused, so the log shows plainly
+  when the ruleset bypass was used.
+- **`threads.sh preflight` is what proves the merge was allowed**, and
+  `orchestrate.py` — not `merge.sh` — is what runs it, both while polling
+  after `@coderabbitai approve` and once more immediately before the merge.
+  It names which precondition is missing rather than letting `gh pr merge`'s
+  generic refusal die under `set -e`, and it refuses on a **full** thread
+  page too: the query asks for `first:100`, and reporting "0 unresolved" out
+  of a truncated page is the same silent under-report the rest of this
+  tooling exists to prevent.
 
 ## Notes
 

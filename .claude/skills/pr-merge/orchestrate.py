@@ -199,13 +199,26 @@ def claude(prompt, allowed_tools=None, permission_mode=None, schema=None,
 
 
 def ensure_pushed(state):
+    """True only when origin really holds this HEAD.
+
+    Both silent paths ended with a review requested of something origin does
+    not have: a pr-commit that failed leaves the tree dirty, and
+    `git log @{u}..HEAD` on a branch with no upstream exits non-zero with
+    empty stdout — which reads exactly like "nothing to push".
+    """
     if run(["git", "status", "--porcelain"], check=True).stdout.strip():
         banner("committing the working tree before the review")
-        prcommit(state)
-    ahead = run(["git", "log", "@{u}..HEAD", "--oneline"]).stdout.strip()
-    if ahead:
+        if not prcommit(state):
+            return False
+    upstream = run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+    if upstream.returncode != 0:
+        log("no upstream configured — pushing HEAD to origin")
+        run(["git", "push", "-u", "origin", "HEAD"], check=True)
+        return True
+    if run(["git", "log", "@{u}..HEAD", "--oneline"], check=True).stdout.strip():
         log("pushing unpushed commits")
         run(["git", "push", "origin", "HEAD"], check=True)
+    return True
 
 
 def request_review(pr):
@@ -487,7 +500,10 @@ def do_round(pr, state, round_number):
     banner(f"ROUND {round_number} / {LAST_ROUND}"
            + ("  — TRIAGE ONLY, nothing is fixed" if terminal else ""))
 
-    ensure_pushed(state)
+    if not ensure_pushed(state):
+        state.anomaly(f"round {round_number}: HEAD is not on origin — "
+                      "not requesting a review of a commit origin does not have")
+        return False
     log(f"requesting a review of {head_sha(pr)[:7]}")
     request_review(pr)
 
@@ -593,7 +609,7 @@ def do_land(pr, state):
         state.anomaly(f"merged with a red preflight: {reasons}")
         log("Merging anyway — the admin bypass permits it, and the reason is recorded.")
 
-    if stream([os.path.join(HERE, "merge.sh")], timeout=600).returncode != 0:
+    if stream([os.path.join(HERE, "merge.sh"), str(pr)], timeout=600).returncode != 0:
         state.anomaly("merge.sh failed")
         return False
     state.set(merged_at=int(time.time()))
