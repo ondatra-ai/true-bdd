@@ -70,9 +70,12 @@ It stops, it does not improvise. Any of these exits non-zero with a reason:
 - Ticket filing failed — a thread cannot be answered with a destination
   that does not exist.
 
-`Review rate limited` is **not** a stop. The script recognises it, sleeps 15
-minutes and asks again, for as long as it takes. Do not post
-`@coderabbitai review` yourself while it is waiting.
+`Review rate limited` is **not** a stop. The script recognises it, sleeps for
+as long as the bot says it needs ("your next included review will be
+available in 18 minutes"), and asks again — for as long as it takes. It
+keeps re-reading the acknowledgement while waiting, because CodeRabbit
+rewrites that same comment from "triggered" to "rate limited" seconds after
+posting it. Do not post `@coderabbitai review` yourself while it is waiting.
 
 ## Rules
 

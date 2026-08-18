@@ -180,6 +180,9 @@ def save(path, payload):
 
 ACK_RATE_LIMITED = "Review rate limited"
 ACK_ACCEPTED = ("Full review triggered", "Action performed")
+# "Your next included review will be available in 18 minutes." — the bot
+# says how long, so there is no reason to guess.
+ACK_WAIT_RE = re.compile(r"available in (\d+)\s*minute")
 
 
 def newest_comment_id(repo, pr):
@@ -228,19 +231,33 @@ def request_review(round_number):
         log(f"requesting a full review of {head_sha()[:7]} (attempt {attempt})")
         sh(["gh", "pr", "comment", str(PR), "--body", "@coderabbitai full review"], check=True)
 
-        verdict = await_acknowledgement(REPO, PR, baseline_comment)
-        if verdict == "rate-limited":
-            log(f"rate limited — the hourly quota is spent. Sleeping {RATE_LIMIT_SLEEP // 60} min.")
-            time.sleep(RATE_LIMIT_SLEEP)
-            continue
+        verdict, ack_id = await_acknowledgement(REPO, PR, baseline_comment)
         if verdict == "silent":
             die(f"CodeRabbit did not answer the review request within {ACK_BUDGET}s. "
                 f"Check https://github.com/{REPO}/pull/{PR} — the bot may be down.")
-        return await_review(REPO, PR, baseline_review)
+        if verdict == "accepted" and await_review(REPO, PR, baseline_review, ack_id):
+            return True
+        sleep_off_rate_limit(comment_body(REPO, PR, ack_id))
+
+
+def comment_body(repo, pr, comment_id):
+    if not comment_id:
+        return ""
+    payload = gh_json("api", f"repos/{repo}/issues/comments/{comment_id}")
+    return (payload or {}).get("body") or ""
+
+
+def sleep_off_rate_limit(body):
+    """Wait out the quota, for as long as the bot says it needs."""
+    match = ACK_WAIT_RE.search(body or "")
+    seconds = int(match.group(1)) * 60 + 60 if match else RATE_LIMIT_SLEEP
+    log(f"rate limited — the review quota is spent. Sleeping {seconds // 60} min"
+        + (" (the bot named the wait)." if match else "."))
+    time.sleep(seconds)
 
 
 def await_acknowledgement(repo, pr, baseline_comment):
-    """-> 'accepted' | 'rate-limited' | 'silent'."""
+    """-> (verdict, ack_comment_id), verdict in accepted | rate-limited | silent."""
     waited = 0
     while waited < ACK_BUDGET:
         time.sleep(POLL)
@@ -248,16 +265,23 @@ def await_acknowledgement(repo, pr, baseline_comment):
         for comment in bot_replies_after(repo, pr, baseline_comment):
             body = comment.get("body") or ""
             if ACK_RATE_LIMITED in body:
-                return "rate-limited"
+                return "rate-limited", comment["id"]
             if any(marker in body for marker in ACK_ACCEPTED):
                 log(f"review accepted after {waited}s")
-                return "accepted"
-    return "silent"
+                return "accepted", comment["id"]
+    return "silent", None
 
 
-def await_review(repo, pr, baseline_review):
-    """Wait for a review OBJECT, not an acknowledgement. A bot that says it
-    will review and never posts one is the failure this bounds."""
+def await_review(repo, pr, baseline_review, ack_id):
+    """Wait for a review OBJECT, not an acknowledgement. -> True, or False if
+    the acknowledgement turned out to be a rate limit after all.
+
+    The acknowledgement is re-read on every poll because **CodeRabbit edits
+    it in place**: on PR #77 comment 5330633865 was posted at 15:48:15 saying
+    the review was triggered and rewritten at 15:48:47 to say the quota was
+    spent. Reading it once caught the optimistic version and then waited the
+    full 900s for a review that was never coming.
+    """
     waited = 0
     while waited < REVIEW_BUDGET:
         time.sleep(POLL)
@@ -265,6 +289,9 @@ def await_review(repo, pr, baseline_review):
         if newest_review_id(repo, pr) > baseline_review:
             log(f"review posted after {waited}s")
             return True
+        if ACK_RATE_LIMITED in comment_body(repo, pr, ack_id):
+            log(f"the acknowledgement was edited to a rate limit after {waited}s")
+            return False
     die(f"no review object within {REVIEW_BUDGET}s of an accepted request. "
         f"The bot acknowledged and did not deliver — read the PR before re-running.")
 

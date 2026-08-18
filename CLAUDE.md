@@ -491,8 +491,16 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     `Review rate limited.` Nothing in the predecessor read that answer, so
     PR #76 requested four reviews in 25 minutes, was refused each time, and
     then waited 900s for a review that was never coming. The script now reads
-    it, sleeps 15 minutes (the free tier refills ~4 reviews an hour) and asks
-    again, for as long as it takes.
+    it, sleeps, and asks again for as long as it takes — for the number of
+    minutes the bot itself names (`Your next included review will be
+    available in 18 minutes.`), falling back to 15 when it names none.
+    **The acknowledgement is edited IN PLACE, so it must be re-read while
+    waiting.** Measured on PR #77: comment `5330633865` was posted at
+    15:48:15 saying the review was triggered and rewritten at 15:48:47 to
+    say the quota was spent. Reading it once caught the optimistic version
+    and then blocked the full 900s for a review that was never coming, which
+    is why `await_review` re-reads that comment on every poll and treats a
+    late edit as the rate limit it is.
   - **Three rounds run, always.** No early exit, no resume, no `--only`
     phase. `main()` is the loop and nothing else — request, read, triage,
     split, fix/file/ignore in parallel, resolve, commit — and everything a
