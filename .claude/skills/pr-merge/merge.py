@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge a pull request: three review rounds, then land it.
+"""Merge a pull request: up to three review rounds, then land it.
 
     python3 .claude/skills/pr-merge/merge.py
 
@@ -11,14 +11,18 @@ One script, one straight line, no resume, no flags:
         scored   = triage_comments(findings)
         fix / file a ticket / ignore, by score
         resolve every thread
-        commit
+        break if this round changed nothing, else commit
     merge
     postmortem
 
 Rounds 1 and 2 fix what scores 9-10 and file 6-8 as ClickUp tickets. Round 3
-fixes nothing — everything >= 6 becomes a ticket. That is what makes the
-approval honest: round 3 changes no code, so the commit it reviewed is the
-commit it approves.
+fixes nothing — everything >= 6 becomes a ticket.
+
+A round that changes no file ends the loop, because the next round would buy
+a review of a byte-identical tree at a quarter of the hourly quota. That is
+also what makes the approval honest, whichever round it happens in: the loop
+only ever exits after a round that left HEAD where its own review found it,
+so the commit that was reviewed is the commit that gets approved.
 
 Nothing here is swallowed. The predecessor wrapped every round in
 `except (Exception, SystemExit)` so the loop always reached a merge; it
@@ -113,6 +117,34 @@ def sh(cmd, timeout=None, check=False, capture=True):
 
 def git(*args, **kw):
     return sh(["git", *args], **kw)
+
+
+def worktree_changes():
+    """What git reports as uncommitted — empty when the tree is clean.
+
+    Asked in several places for the same reason: may we proceed, and what is
+    in the way. Returns the raw listing because every caller prints it;
+    `changed_paths()` is the same question answered as a set.
+    """
+    return git("status", "--porcelain", check=True).stdout.strip()
+
+
+def changed_paths():
+    """The set of paths git reports as uncommitted.
+
+    `-z` because the default format QUOTES any path holding a space or a
+    non-ASCII byte, and a quoted name matches nothing it is compared
+    against.
+    """
+    out = git("status", "--porcelain", "-z", check=True).stdout
+    paths, entries = set(), iter(out.split("\0"))
+    for entry in entries:
+        if not entry:
+            continue
+        if entry[0] == "R":
+            next(entries, None)      # a rename emits its source as a second record
+        paths.add(os.path.normpath(entry[3:]))
+    return paths
 
 
 def gh(*args, check=True):
@@ -696,8 +728,10 @@ def split_comments(issues, round_number):
     """-> (to_fix, to_create, to_ignore).
 
     Rounds 1-2: >=9 fixed, 6-8 ticketed, <6 dropped.
-    Round 3   : nothing fixed, >=6 ticketed, <6 dropped — which is what
-                leaves HEAD unchanged for the approval.
+    Round 3   : nothing fixed, >=6 ticketed, <6 dropped. An empty fix band
+                is what ends the loop, so this is also what guarantees the
+                run never exceeds three rounds — `main()` stops on its own
+                once a round plans no fixes.
 
     A body-only finding is never fixed inline whatever it scores: it has no
     thread to answer and no diff position, so the fix could not be reported
@@ -768,9 +802,12 @@ FINDING
 
 WHAT DONE MEANS
 
-1. The finding is actually addressed in the code. Read the file first — the
-   reviewer can be wrong about this codebase. If it IS wrong, change
-   nothing, set gates_green from a plain gates run, and say so in summary.
+1. The finding is actually addressed in the code — a file really changes.
+   Read the file first. The reviewer can be wrong about this codebase, and
+   if it IS wrong, change nothing and say exactly why in summary. Be aware
+   that this ENDS THE RUN rather than passing quietly: triage scored this
+   {score}/10, and a scorer and a fixer that disagree is something a person
+   has to settle. Do not make a token edit to avoid that.
 2. `{gates}` exits 0. Run it. If it fails, fix whatever it reports — the
    production code or the test, whichever is actually wrong — and run it
    AGAIN. Keep going until it exits 0. Do not return while it is red, and
@@ -799,7 +836,20 @@ def fix(to_fix):
 
     Sequential on purpose: two fix agents editing one worktree collide, and
     the collision surfaces as a third finding nobody wrote.
+
+    Bracketed by two assertions rather than watched fix by fix: the tree is
+    clean going in, and every path the agents said they edited is dirty
+    coming out. Between those two, whatever moved was moved by a fix.
     """
+    if not to_fix:
+        return []
+    dirty = worktree_changes()
+    if dirty:
+        die("the worktree is dirty before any fix has run:\n"
+            + "\n".join(f"    {line}" for line in dirty.splitlines())
+            + "\n  Every path dirty after the fixes is supposed to be a fix. Deal with "
+              "this\n  first, or the two cannot be told apart.")
+
     fixed = []
     for index, finding in enumerate(to_fix, 1):
         log(f"fix {index}/{len(to_fix)}: {finding['file']}:{finding['line']} — {finding['title'][:70]}")
@@ -823,16 +873,39 @@ def fix(to_fix):
                 f"  agent  : {payload.get('summary', '')[:300]}\n"
                 f"  A finding triage scored {finding['score']}/10 needs a person.\n"
                 f"{worktree_note()}")
-
         log(f"  -> {payload.get('summary', '')[:150]}")
         finding["fix_summary"] = payload.get("summary", "")
+        finding["files_changed"] = [os.path.normpath(p)
+                                    for p in (payload.get("files_changed") or [])]
         fixed.append(finding)
+
+    # Every file the agents claimed is a file git can see changed. A fix
+    # that named none changed nothing, and one that named a file git does
+    # not report never touched it — both matter because `resolve_conversations`
+    # is about to answer these threads "Fixed on this branch", which would
+    # be untrue, and the merge would proceed on it. Triage called each of
+    # these wrong behaviour reachable by a real invocation; a scorer and a
+    # fixer that disagree is something a person settles.
+    silent = [f for f in fixed if not f["files_changed"]]
+    if silent:
+        die("these fixes changed no file:\n"
+            + "\n".join(f"    {f['file']}:{f['line']} — {f.get('fix_summary', '')[:120]}"
+                        for f in silent)
+            + "\n  Triage scored them 9-10. Re-score them or fix them by hand, then re-run.")
+
+    on_disk = changed_paths()
+    phantom = sorted({p for f in fixed for p in f["files_changed"]} - on_disk)
+    if phantom:
+        die("these paths were reported as edited, and git does not see them changed:\n"
+            + "\n".join(f"    {p}" for p in phantom)
+            + "\n  The fix agent's report and the worktree disagree; nothing was "
+              "committed.")
     return fixed
 
 
 def worktree_note():
     """What the run is leaving behind, so the reader knows where to look."""
-    dirty = git("status", "--porcelain", check=True).stdout.strip()
+    dirty = worktree_changes()
     if not dirty:
         return "  The worktree is unchanged — the agent wrote nothing."
     lines = "\n".join(f"    {line}" for line in dirty.splitlines())
@@ -975,41 +1048,21 @@ def staged_context():
             f"=== Diff — this is {shape} ===\n{body}\n")
 
 
-def commit(round_number):
-    """A literal commit. Returns True if it made one.
+def commit():
+    """Commit and push what this round's fixes changed.
 
-    The last round never commits. It fixes nothing, so it has nothing to
-    commit — and if something did write to the tree, committing it would
-    move HEAD past the review this round just bought, and the approval that
-    follows would be pinned to a commit no review ever saw. That is the
-    PR #76 failure exactly: `@coderabbitai approve` stamped `14e327a`,
-    a commit nothing had reviewed.
+    No decisions of its own: `main()` has already established that this
+    round planned fixes and that they changed the tree, so there is no
+    "nothing to do" path in here to hide the reason a run stopped early.
+    It follows that the last round never reaches this function —
+    `split_comments` empties its fix band, and the loop leaves first.
 
     Deliberately not the pr-commit skill: that path also runs
     scan-recordings, a local review round, the ledger, doc-universe and
     memory sync. Those belong to a human's commit. A merge round's commit
     is a fix commit.
     """
-    if round_number > LAST_FIX_ROUND:
-        dirty = git("status", "--porcelain", check=True).stdout.strip()
-        if not dirty:
-            log(f"round {round_number} does not commit — tree is clean")
-            return False
-        # Not merely reported: the merge that would follow ends with
-        # `git checkout main`, which REFUSES on a dirty tree — after the PR
-        # is squashed and the remote branch deleted. That is PR #76's
-        # merge-err.txt exactly, and it leaves the checkout stranded on a
-        # branch that no longer exists, holding uncommitted work.
-        die(f"round {round_number} fixes nothing, yet the worktree changed:\n"
-            + "\n".join(f"    {line}" for line in dirty.splitlines())
-            + "\n  Nothing was committed, and the merge did not run. Something wrote "
-              "here that\n  no round asked for — deal with it, then re-run.")
-
     git("add", "-A", check=True)
-    if git("diff", "--cached", "--quiet").returncode == 0:
-        log("nothing changed — no commit")
-        return False
-
     log("running the gates before committing")
     if sh([GATES], timeout=GATES_TIMEOUT, capture=False).returncode != 0:
         die("the gates are red after the fixes, though every fix reported them green.\n"
@@ -1031,7 +1084,6 @@ def commit(round_number):
     git("commit", "-F", path, check=True)
     git("push", "origin", "HEAD", check=True)
     log(f"committed and pushed: {message.splitlines()[0]}")
-    return True
 
 
 def head_sha():
@@ -1067,30 +1119,25 @@ def check_pushed():
     work on origin that the caller never decided to publish. So this only
     ever answers the question, and a "no" ends the run.
 
-    Two paths say no silently and must not be collapsed: a dirty tree, and
-    `git log @{u}..HEAD` on a branch with no upstream, which exits non-zero
-    with empty stdout — indistinguishable from "nothing to push".
+    Two questions, and neither goes through `@{u}`. A tracking ref describes
+    LOCAL CONFIG, not what origin holds — `pr-commit/commit.sh` pushes with
+    `git push origin HEAD` and no `-u`, so its branches are fully pushed and
+    have no upstream at all, and asking `@{u}` refused those branches while
+    saying "push it yourself" about a commit origin already had. `git log
+    @{u}..HEAD` is no better: it compares against a local ref that only
+    moves on fetch or push, so it can be stale in either direction.
+    Comparing HEAD to the PR's own head SHA asks GitHub what the pull
+    request is built on, which is the thing that actually has to be true.
     """
-    dirty = git("status", "--porcelain", check=True).stdout.strip()
+    dirty = worktree_changes()
     if dirty:
         die("the working tree is dirty — commit it yourself before merging:\n"
             + "\n".join(f"  {line}" for line in dirty.splitlines()))
-    if git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").returncode != 0:
-        die("this branch has no upstream — push it yourself before merging:\n"
-            "  git push -u origin HEAD")
-    unpushed = git("log", "@{u}..HEAD", "--oneline", check=True).stdout.strip()
-    if unpushed:
-        die("origin does not have this HEAD — push it yourself before merging:\n"
-            + "\n".join(f"  {line}" for line in unpushed.splitlines())
-            + "\n  git push origin HEAD")
-    # `@{u}` proves the commit reached SOME upstream. Only this proves it
-    # reached the branch the PR is actually built from — a review of a
-    # different commit is a review of something else.
     local, remote = git("rev-parse", "HEAD", check=True).stdout.strip(), head_sha()
     if local != remote:
-        die(f"local HEAD is {local[:7]} but PR #{PR} is at {remote[:7]}.\n"
-            f"  Reconcile them yourself — a review of a commit you are not on "
-            f"answers a question\n  nobody asked.")
+        die(f"local HEAD is {local[:7]} but PR #{PR} is at {remote[:7]} — origin does "
+            f"not have\n  what you are on. Push it yourself before merging:\n"
+            f"    git push origin HEAD")
 
 
 # --------------------------------------------------------------------- merge
@@ -1099,10 +1146,12 @@ def check_pushed():
 def merge():
     """Approve, then land it.
 
-    Round 3 committed nothing, so HEAD is the commit round 3's review was
-    posted against — which is what makes `@coderabbitai approve` honest
-    here. It analyses nothing; it resolves threads and approves. On PR #76
-    it approved a commit no review was ever pinned to.
+    The loop only exits after a round that committed nothing, so HEAD is
+    the commit that round's review was posted against — whichever round that
+    was. That is what makes `@coderabbitai approve` honest here: it analyses
+    nothing, it resolves threads and stamps whatever HEAD is. On PR #76 it
+    stamped a commit no review was ever pinned to, which is why the check
+    below reads the review record rather than trusting the sequence.
     """
     banner("merge")
     # Not a re-check of an argument — there isn't one. This catches the
@@ -1114,7 +1163,20 @@ def merge():
         die(f"PR #{PR} is on branch '{pr_branch}', but '{current}' is now checked out. "
             f"The branch moved during the run; nothing was merged.")
 
-    # The one thing round 3 exists to guarantee, checked rather than assumed.
+    # A merge precondition, not a property of any round: this function ends
+    # in `git checkout main`, which REFUSES on a dirty tree — by which point
+    # the PR is squashed and the remote branch deleted, stranding the
+    # checkout on a branch that no longer exists while holding uncommitted
+    # work. That is PR #76's merge-err.txt verbatim.
+    dirty = worktree_changes()
+    if dirty:
+        die("the worktree is dirty — refusing to merge:\n"
+            + "\n".join(f"    {line}" for line in dirty.splitlines())
+            + "\n  The merge ends in `git checkout main`, which refuses on a dirty tree "
+              "— after\n  the squash and the branch deletion. Nothing was merged.")
+
+    # The thing the whole round structure exists to guarantee, checked here
+    # rather than inferred from the loop having ended in the right place.
     # `@coderabbitai approve` analyses nothing — it resolves threads and
     # stamps whatever HEAD happens to be. On PR #76 that was `14e327a`, a
     # commit no review had ever been posted against.
@@ -1280,7 +1342,7 @@ def postmortem():
     # The postmortem reads; it never edits. If the worktree moved, something
     # wrote where nothing should have, and that must not be left for the
     # next branch to discover.
-    dirty = git("status", "--porcelain", check=True).stdout.strip()
+    dirty = worktree_changes()
     if dirty:
         die("the postmortem left changes in the worktree, which it must never do:\n"
             + "\n".join(f"  {line}" for line in dirty.splitlines()))
@@ -1344,7 +1406,15 @@ def main():
             lambda: ignore(to_ignore, round_number),
         ])
         resolve_conversations(fixed, created, ignored)
-        commit(round_number)
+        # This round fixed nothing, so HEAD will not move and the next round
+        # would buy a review of a byte-identical tree at a quarter of the
+        # hourly quota. On PR #77 all three rounds reviewed the same commit
+        # and found nothing to fix in any of them.
+        # The converse needs no test here: `fix()` refuses to return having
+        # changed no file, so a non-empty `to_fix` always has a commit.
+        if not to_fix:
+            break
+        commit()
 
     merge()
     postmortem()
