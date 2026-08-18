@@ -547,13 +547,21 @@ sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
     are printed, neither stops.
   - **No round requests a review of a commit origin does not have, and it
     does not make that true either.** `check_pushed` runs first and only
-    ever answers: a dirty tree, a branch with no upstream, or an unpushed
-    HEAD each name the command to run and end the run. It will not commit
-    or push on the caller's behalf — publishing work nobody decided to
-    publish is not something a merge command gets to do. Two of those three
-    say no silently and must not be collapsed: `git log @{u}..HEAD` on a
-    branch with no upstream exits non-zero with empty stdout,
-    indistinguishable from "nothing to push".
+    ever answers, in two questions: is the tree dirty, and is local HEAD the
+    PR's head SHA. It will not commit or push on the caller's behalf —
+    publishing work nobody decided to publish is not something a merge
+    command gets to do.
+    **Neither question goes through `@{u}`, and that is load-bearing.** A
+    tracking ref describes local config, not what origin holds:
+    `pr-commit/commit.sh` pushes with `git push origin HEAD` and no `-u`, so
+    every branch it creates is fully pushed with no upstream at all — and an
+    `@{u}` check refused exactly those, telling the caller to "push it
+    yourself" about a commit origin already had. `git log @{u}..HEAD` is no
+    better, comparing against a local ref that only moves on fetch or push.
+    Both were inherited from the version that PUSHED, where they chose
+    between `git push -u` and `git push`; once the pushing went, they
+    answered nothing. `head_sha()` asks GitHub what the PR is built on,
+    which is the thing that has to be true.
   - **The post-mortem reads the session history rather than the PR.** It
     takes the current file named by `docs/history/hook-state` (tens of MB, so
     never fed whole to a model), keeps the turns this script made — they are

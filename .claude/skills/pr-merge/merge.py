@@ -1119,30 +1119,25 @@ def check_pushed():
     work on origin that the caller never decided to publish. So this only
     ever answers the question, and a "no" ends the run.
 
-    Two paths say no silently and must not be collapsed: a dirty tree, and
-    `git log @{u}..HEAD` on a branch with no upstream, which exits non-zero
-    with empty stdout — indistinguishable from "nothing to push".
+    Two questions, and neither goes through `@{u}`. A tracking ref describes
+    LOCAL CONFIG, not what origin holds — `pr-commit/commit.sh` pushes with
+    `git push origin HEAD` and no `-u`, so its branches are fully pushed and
+    have no upstream at all, and asking `@{u}` refused those branches while
+    saying "push it yourself" about a commit origin already had. `git log
+    @{u}..HEAD` is no better: it compares against a local ref that only
+    moves on fetch or push, so it can be stale in either direction.
+    Comparing HEAD to the PR's own head SHA asks GitHub what the pull
+    request is built on, which is the thing that actually has to be true.
     """
     dirty = worktree_changes()
     if dirty:
         die("the working tree is dirty — commit it yourself before merging:\n"
             + "\n".join(f"  {line}" for line in dirty.splitlines()))
-    if git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").returncode != 0:
-        die("this branch has no upstream — push it yourself before merging:\n"
-            "  git push -u origin HEAD")
-    unpushed = git("log", "@{u}..HEAD", "--oneline", check=True).stdout.strip()
-    if unpushed:
-        die("origin does not have this HEAD — push it yourself before merging:\n"
-            + "\n".join(f"  {line}" for line in unpushed.splitlines())
-            + "\n  git push origin HEAD")
-    # `@{u}` proves the commit reached SOME upstream. Only this proves it
-    # reached the branch the PR is actually built from — a review of a
-    # different commit is a review of something else.
     local, remote = git("rev-parse", "HEAD", check=True).stdout.strip(), head_sha()
     if local != remote:
-        die(f"local HEAD is {local[:7]} but PR #{PR} is at {remote[:7]}.\n"
-            f"  Reconcile them yourself — a review of a commit you are not on "
-            f"answers a question\n  nobody asked.")
+        die(f"local HEAD is {local[:7]} but PR #{PR} is at {remote[:7]} — origin does "
+            f"not have\n  what you are on. Push it yourself before merging:\n"
+            f"    git push origin HEAD")
 
 
 # --------------------------------------------------------------------- merge
