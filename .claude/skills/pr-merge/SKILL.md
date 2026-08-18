@@ -90,8 +90,11 @@ touching any code:
 | 2 | body-only | … | … | … | **Defer → #123** | #123 | true, but out of this branch's scope — and where it now lives |
 | 3 | thread | … | … | … | **Reject** | — | what in the code makes it false — the behaviour it misreads, the constraint it missed |
 
-There are exactly three verdicts, and **every relevant finding gets an
-owner**:
+There are exactly three verdicts. **A finding that survives triage gets an
+owner** — `Fix now` and `Defer` both name who does the work, and only
+`Reject` takes `—`, because a finding ruled not real leaves nothing to
+own. That asymmetry is the point: an ownerless row is legitimate *only*
+when it carries a technical argument for why there is no work.
 
 - **Fix now** — repaired on this branch, before the merge.
 - **Defer → #N** — real, but not this branch's job. Deferral is only
