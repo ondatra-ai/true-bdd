@@ -433,6 +433,15 @@ more than one skill needs. **`./start.sh` is how a session begins** — it
 sources `.env` (which is gitignored) so `CODERABBIT_API_KEY` and, when set,
 `CLICKUP_API_TOKEN` reach the scripts; a key sourced mid-session does not.
 
+**It also holds 24 skills vendored from `mattpocock/skills` (MIT)** —
+project-scoped on purpose, so they apply here and nowhere else rather than
+being installed globally. `.claude/skills/VENDORED-mattpocock.md` is the
+manifest: what was taken, what was stripped (each skill's `agents/openai.yaml`,
+the Codex half Claude Code never reads), and how to re-sync. One consequence
+worth knowing: `code-review` **shadows Claude Code's built-in skill of the same
+name**, so `/code-review` runs Matt's version here and the built-in
+`ultra` / `--fix` / `--comment` behaviour is unavailable in this repo.
+
 - **`pr-merge` is ONE script** — `python3 ./.claude/skills/pr-merge/merge.py`,
   **no arguments and no flags**. The repository and the PR both come from the
   current checkout; an argument would be a second answer to a question the
