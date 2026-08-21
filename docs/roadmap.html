@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrueBDD — Roadmap</title>
+<style>
+@font-face{font-family:"Poppins";font-style:normal;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,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) format("woff2")}
+@font-face{font-family:"Poppins";font-style:normal;font-weight:700;font-display:swap;src:url(data:font/woff2;base64,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) format("woff2")}
+
+/* ============ S&F tokens (from claude.ai/design · S&F Design System) ============ */
+:root {
+  --white-999:#FFFFFF; --gray-100:#DEDFE4; --gray-600:#828388; --gray-999:#232429; --black-999:#040406;
+  --c-story:#0173D7;   /* spiral-blue        · product docs   */
+  --c-reg:#00A896;     /* spiral-green       · registry       */
+  --c-arch:#F57600;    /* spiral-orange      · architecture   */
+  --c-code:#329BFF;    /* spiral-blue-light  · code artifacts */
+  --c-cfg:#828388;     /* gray-600           · engine config  */
+  --text-primary:var(--black-999); --text-body:var(--gray-999); --text-muted:var(--gray-600);
+  --surface-page:var(--white-999); --surface-subtle:var(--gray-100);
+  --border-hairline:var(--gray-100); --border-strong:var(--black-999);
+  --font-poppins:"Poppins","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ls-label:.08em; --ls-tight:-0.02em;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--surface-page); }
+body {
+  margin: 0;
+  color: var(--text-body);
+  background: var(--surface-page);
+  font-family: var(--font-poppins);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+}
+.inner { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+
+code {
+  font-family: inherit; font-weight: 500; font-size: .85em;
+  background: color-mix(in srgb, var(--gray-100) 45%, var(--white-999));
+  border: 1px solid var(--border-hairline);
+  padding: 0 5px; white-space: nowrap;
+}
+a { color: var(--c-story); text-decoration: none; border-bottom: 1px solid currentColor; }
+a:hover { color: var(--c-reg); }
+
+/* ============ hero ============ */
+.hero { position: relative; overflow: hidden; padding: 100px 0 80px; border-bottom: 1px solid var(--border-hairline); }
+.hero .field {
+  position: absolute; top: -140px; right: -120px; width: 58%; height: 480px;
+  background:
+    radial-gradient(60% 70% at 68% 78%, #50E4D2 0%, rgba(80,228,210,0) 62%),
+    radial-gradient(55% 65% at 78% 42%, #329BFF 0%, rgba(50,155,255,0) 60%),
+    radial-gradient(50% 60% at 46% 32%, #B98CF5 0%, rgba(185,140,245,0) 62%),
+    radial-gradient(70% 80% at 20% 15%, #FFFFFF 0%, rgba(255,255,255,0) 70%);
+  filter: blur(80px); opacity: .55; pointer-events: none;
+}
+.hero .inner { position: relative; }
+.eyebrow {
+  margin: 0 0 30px; font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--text-muted);
+}
+h1 {
+  margin: 0 0 20px; font-size: clamp(36px, 4.6vw, 52px); font-weight: 700;
+  letter-spacing: var(--ls-tight); line-height: 1.2; color: var(--text-primary);
+  text-wrap: balance; max-width: 20ch;
+}
+h1 .grad {
+  background: linear-gradient(90deg, #0173D7 0%, #329BFF 55%, #00A896 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lede { margin: 0; max-width: 56ch; font-size: 20px; color: var(--text-body); }
+.source { margin: 30px 0 0; font-size: 14px; color: var(--text-muted); max-width: 62ch; line-height: 1.5; }
+
+/* ============ bands ============ */
+.band { padding: 80px 0; border-bottom: 1px solid var(--border-hairline); }
+.band.inverse { background: var(--black-999); color: var(--gray-100); border-bottom: none; }
+.slabel {
+  margin: 0 0 20px; font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--text-muted);
+}
+.band.inverse .slabel { color: var(--gray-600); }
+h2 {
+  margin: 0 0 10px; font-size: 32px; font-weight: 700;
+  letter-spacing: var(--ls-tight); line-height: 1.2; color: var(--text-primary); text-wrap: balance;
+}
+.band.inverse h2 { color: var(--white-999); }
+.sub { margin: 0 0 40px; max-width: 62ch; font-size: 16px; line-height: 1.5; color: var(--text-muted); }
+.band.inverse .sub { color: var(--gray-100); }
+
+/* ============ the five-step ladder ============ */
+.ladder { border-left: 2px solid var(--border-strong); padding-left: 0; margin: 0; list-style: none; }
+.ladder li {
+  position: relative; padding: 0 0 0 40px; margin: 0 0 34px;
+  font-size: clamp(22px, 2.6vw, 32px); font-weight: 700;
+  letter-spacing: var(--ls-tight); color: var(--text-primary);
+}
+.ladder li:last-child { margin-bottom: 0; }
+/* aligned to the title line, not to the small STEP label above it — the .n block
+   is ~23px tall, so the tick has to clear it or it reads as a bullet for the label. */
+.ladder li::before {
+  content: ""; position: absolute; left: 0; top: 1.32em; width: 26px; height: 2px;
+  background: var(--border-strong);
+}
+.ladder li .n {
+  display: block; font-size: 14px; font-weight: 700; letter-spacing: var(--ls-label);
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+}
+
+/* ============ diagram frame ============ */
+.figure { border: 1px solid var(--border-hairline); padding: 40px; overflow-x: auto; }
+.band.inverse .figure { border-color: var(--gray-999); }
+.figure svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.figcap { margin: 24px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); max-width: 74ch; }
+.band.inverse .figcap { color: var(--gray-600); }
+
+/* ============ legend ============ */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0 0 30px; padding: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--text-muted); }
+.legend .sw { width: 14px; height: 14px; border: 2px solid currentColor; flex: none; }
+.legend .l-story { color: var(--c-story); } .legend .l-reg { color: var(--c-reg); }
+.legend .l-arch { color: var(--c-arch); }  .legend .l-code { color: var(--c-code); }
+.legend .l-cmd  { color: var(--text-primary); }
+.band.inverse .legend .l-cmd { color: var(--white-999); }
+
+/* ============ the build transform ============ */
+/* the middle column has to hold the caption, not just the chevron glyph — at 90px
+   the four-word caption overflowed across the output card. */
+.transform { display: grid; grid-template-columns: 1fr 190px 1fr; gap: 0; align-items: center; }
+.transform .side { display: grid; gap: 20px; }
+.tcard { border: 1px solid var(--border-hairline); border-left: 3px solid var(--c-cfg); padding: 22px 24px; }
+.tcard.t-tests { border-left-color: var(--c-code); }
+.tcard.t-arch  { border-left-color: var(--c-arch); }
+.tcard.t-out   { border-left-color: var(--c-reg); }
+.tcard h3 {
+  margin: 0 0 12px; font-size: 18px; font-weight: 700; letter-spacing: var(--ls-tight);
+  color: var(--text-primary);
+}
+.tcard ul { margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.6; color: var(--text-body); }
+.tcard ul ul { padding-left: 18px; font-size: 14px; color: var(--text-muted); }
+.chev { display: grid; place-items: center; padding: 0 20px; }
+.chev .cap {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: var(--ls-label);
+  color: var(--text-muted); text-align: center; margin: 10px 0 0; line-height: 1.4; max-width: 150px;
+}
+
+/* ============ milestone cards ============ */
+.miles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+.mile { border: 1px solid var(--border-hairline); padding: 28px 26px 30px; position: relative; }
+.mile.done { background: color-mix(in srgb, var(--c-reg) 6%, var(--white-999)); border-color: color-mix(in srgb, var(--c-reg) 35%, var(--gray-100)); }
+.mile .status {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: var(--ls-label);
+}
+.mile.done .status { color: var(--c-reg); }
+.mile.open .status { color: var(--text-muted); }
+.mile .box {
+  width: 15px; height: 15px; border: 2px solid currentColor; flex: none;
+  display: grid; place-items: center; font-size: 11px; line-height: 1;
+}
+.mile h3 {
+  margin: 0 0 14px; font-size: 21px; font-weight: 700; line-height: 1.25;
+  letter-spacing: var(--ls-tight); color: var(--text-primary); text-wrap: balance;
+}
+.mile p { margin: 0 0 12px; font-size: 15px; line-height: 1.55; color: var(--text-body); }
+.mile p:last-child { margin-bottom: 0; }
+.mile .quote {
+  border-left: 2px solid var(--border-hairline); padding-left: 14px;
+  font-size: 14px; line-height: 1.5; color: var(--text-muted);
+}
+
+/* ============ status table ============ */
+/* the table has a nowrap first column and nowrap code spans, so it has a floor
+   width well above a phone viewport. It scrolls inside its own box rather than
+   pushing the whole page sideways. */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 16px 20px 16px 0; border-bottom: 1px solid var(--border-hairline); line-height: 1.55; }
+th {
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: var(--ls-label);
+  color: var(--text-muted); border-bottom-color: var(--border-strong); padding-top: 0;
+}
+td:first-child { white-space: nowrap; font-weight: 700; color: var(--text-primary); padding-right: 40px; }
+.pill {
+  display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: var(--ls-label); padding: 3px 9px; border: 1px solid currentColor; margin-right: 10px;
+  vertical-align: 2px;
+}
+.p-done { color: var(--c-reg); } .p-part { color: var(--c-arch); } .p-open { color: var(--text-muted); }
+
+/* ============ decision log ============ */
+.log { margin: 0; padding: 0; list-style: none; display: grid; gap: 30px; }
+.log li { border-left: 2px solid var(--border-hairline); padding-left: 24px; max-width: 78ch; }
+.log b { color: var(--text-primary); }
+.log p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; }
+
+footer { padding: 50px 0 70px; font-size: 14px; color: var(--text-muted); }
+footer .inner { display: flex; flex-wrap: wrap; gap: 12px 30px; justify-content: space-between; }
+
+@media (max-width: 820px) {
+  .transform { grid-template-columns: 1fr; }
+  .chev { padding: 24px 0; }
+  .chev svg { transform: rotate(90deg); }
+  .inner { padding: 0 24px; }
+  .band { padding: 56px 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="field"></div>
+  <div class="inner">
+    <p class="eyebrow">TrueBDD · Roadmap</p>
+    <h1>From an idea to working code, <span class="grad">without writing the middle</span></h1>
+    <p class="lede">
+      Five steps a person takes, three commands that do the rest, and four milestones —
+      two of them already done.
+    </p>
+    <p class="source">
+      Transcribed from the <b>“Idea”</b> whiteboard —
+      <a href="https://app.clickup.com/90151491867/v/wb/2kyq568v-17355">app.clickup.com/…/2kyq568v-17355</a>
+      — as it stood on 2026-08-21. The board is the source; this page is the readable copy.
+      When the two disagree, the board is not automatically right — say which one moved.
+      Markdown companion: <a href="https://github.com/ondatra-ai/true-bdd/blob/main/docs/roadmap.md">roadmap.md</a>.
+    </p>
+  </div>
+</header>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">The goal</p>
+    <h2>One sentence per step, in the first person</h2>
+    <p class="sub">
+      The product stated as what a <em>person</em> does, not what the engine does — which is why
+      “It works” is a step rather than an outcome. Everything below exists to make this list run
+      end to end without a person writing the middle of it.
+    </p>
+    <ol class="ladder">
+      <li><span class="n">Step 1</span>I have Idea</li>
+      <li><span class="n">Step 2</span>I create user story with all artifacts and scenarios</li>
+      <li><span class="n">Step 3</span>I build tests</li>
+      <li><span class="n">Step 4</span>I build code</li>
+      <li><span class="n">Step 5</span>It works</li>
+    </ol>
+  </div>
+</section>
+
+<section class="band inverse">
+  <div class="inner">
+    <p class="slabel">The pipeline</p>
+    <h2>Steps 2–4 are three commands</h2>
+    <p class="sub">
+      Each reads documents and writes exactly one thing. Rectangles with a heavy outline are
+      commands; everything else is a document on disk.
+    </p>
+    <ul class="legend">
+      <li class="l-cmd"><span class="sw"></span>command</li>
+      <li class="l-story"><span class="sw"></span>story</li>
+      <li class="l-reg"><span class="sw"></span>registry</li>
+      <li class="l-arch"><span class="sw"></span>architecture</li>
+      <li class="l-code"><span class="sw"></span>tests &amp; code</li>
+    </ul>
+    <div class="figure">
+      <svg viewBox="0 0 800 664" width="800" role="img"
+           aria-label="Pipeline: user_story.yaml flows through Us Apply to scenarios.yaml; scenarios.yaml and architecture.yaml both feed Build Tests, which writes tests; tests and architecture.yaml both feed Build Code, which writes code.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#DEDFE4"/>
+          </marker>
+        </defs>
+        <g font-family="Poppins, Helvetica Neue, Arial, sans-serif" font-size="15" font-weight="500" text-anchor="middle">
+
+          <!-- 1 · user_story.yaml -->
+          <rect x="150" y="20" width="220" height="44" fill="none" stroke="#0173D7" stroke-width="2"/>
+          <text x="260" y="48" fill="#0173D7" font-weight="700">user_story.yaml</text>
+
+          <line x1="260" y1="64" x2="260" y2="98" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 2 · Us Apply -->
+          <rect x="160" y="104" width="200" height="48" fill="#232429" stroke="#FFFFFF" stroke-width="2"/>
+          <text x="260" y="134" fill="#FFFFFF" font-weight="700">Us Apply</text>
+
+          <line x1="260" y1="152" x2="260" y2="190" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 3 · scenarios.yaml + architecture.yaml -->
+          <rect x="150" y="196" width="220" height="44" fill="none" stroke="#00A896" stroke-width="2"/>
+          <text x="260" y="224" fill="#00A896" font-weight="700">scenarios.yaml</text>
+
+          <rect x="450" y="196" width="330" height="44" fill="none" stroke="#F57600" stroke-width="2"/>
+          <text x="615" y="224" fill="#F57600" font-weight="700" font-size="14">docs/architecture/architecture.yaml</text>
+
+          <!-- converge into Build Tests -->
+          <path d="M260,240 L260,270 L220,270 L220,294" fill="none" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+          <path d="M615,240 L615,270 L310,270 L310,294" fill="none" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 4 · Build Tests -->
+          <rect x="160" y="300" width="200" height="48" fill="#232429" stroke="#FFFFFF" stroke-width="2"/>
+          <text x="260" y="330" fill="#FFFFFF" font-weight="700">Build Tests</text>
+
+          <line x1="260" y1="348" x2="260" y2="386" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 5 · tests + architecture.yaml -->
+          <rect x="150" y="392" width="220" height="44" fill="none" stroke="#329BFF" stroke-width="2"/>
+          <text x="260" y="420" fill="#329BFF" font-weight="700">tests</text>
+
+          <rect x="450" y="392" width="330" height="44" fill="none" stroke="#F57600" stroke-width="2"/>
+          <text x="615" y="420" fill="#F57600" font-weight="700" font-size="14">docs/architecture/architecture.yaml</text>
+
+          <!-- converge into Build Code -->
+          <path d="M260,436 L260,466 L220,466 L220,490" fill="none" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+          <path d="M615,436 L615,466 L310,466 L310,490" fill="none" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 6 · Build Code -->
+          <rect x="160" y="496" width="200" height="48" fill="#232429" stroke="#FFFFFF" stroke-width="2"/>
+          <text x="260" y="526" fill="#FFFFFF" font-weight="700">Build Code</text>
+
+          <line x1="260" y1="544" x2="260" y2="582" stroke="#DEDFE4" stroke-width="2" marker-end="url(#ah)"/>
+
+          <!-- 7 · code -->
+          <rect x="150" y="588" width="220" height="44" fill="none" stroke="#329BFF" stroke-width="2"/>
+          <text x="260" y="616" fill="#329BFF" font-weight="700">code</text>
+        </g>
+      </svg>
+      <p class="figcap">
+        Two things the shape is saying. <b style="color:#DEDFE4">First</b>, <code
+        style="background:#232429;border-color:#232429;color:#F57600">architecture.yaml</code> is read
+        <em>twice, by two different commands</em> — it is not consumed and discarded at the top, which is
+        why it is drawn as an input to each rather than as a document that flows downward.
+        <b style="color:#DEDFE4">Second</b>, every command has exactly one output. Nothing writes two
+        things, and nothing writes backwards.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">What “build” means</p>
+    <h2>Two inputs, one transform, one output</h2>
+    <p class="sub">
+      Tests say <b>what must be true</b>. The architecture says <b>where the code may go and what it
+      may be built with</b>. The build step has to satisfy both at once — it may not make a test pass
+      by putting code somewhere the architecture does not declare.
+    </p>
+    <div class="figure">
+      <div class="transform">
+        <div class="side">
+          <div class="tcard t-tests">
+            <h3>Tests</h3>
+            <ul>
+              <li>playwright</li>
+              <li>LLMs</li>
+            </ul>
+          </div>
+          <div class="tcard t-arch">
+            <h3>Architecture</h3>
+            <ul>
+              <li><code>docker-compose.yaml</code></li>
+              <li><code>architecture.yaml</code>
+                <ul>
+                  <li>services1
+                    <ul>
+                      <li>path</li>
+                      <li>initial config</li>
+                      <li>tech stack</li>
+                    </ul>
+                  </li>
+                  <li>initial configuration</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="chev">
+          <svg viewBox="0 0 60 90" width="56" height="84" aria-hidden="true">
+            <path d="M6,6 L40,6 L56,45 L40,84 L6,84 L22,45 Z"
+                  fill="none" stroke="#040406" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          <p class="cap">Make tests pass<br>following architecture</p>
+        </div>
+        <div class="side">
+          <div class="tcard t-out">
+            <h3><code>src/</code></h3>
+            <ul>
+              <li>service1</li>
+              <li>service2</li>
+              <li>service3</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="figcap">
+        Note that <b>Tests</b> has two members — <code>playwright</code> and <code>LLMs</code>. A test is
+        not assumed to be something a regexp can settle; some of what must hold is checked by a model.
+        That is the same split the harness draws between step definitions and the
+        <code>llm:</code> / <code>judge:</code> prefixes.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">Milestones</p>
+    <h2>Four cards, two already ticked</h2>
+    <p class="sub">In board order, left to right.</p>
+    <div class="miles">
+
+      <article class="mile done">
+        <p class="status"><span class="box">✓</span>Done</p>
+        <h3>I have code and Playwright / CLI tests</h3>
+        <p>The starting position: a working system with a real test suite, written by hand.</p>
+      </article>
+
+      <article class="mile done">
+        <p class="status"><span class="box">✓</span>Done</p>
+        <h3>I can generate code from tests</h3>
+        <p>
+          <code>build code</code> closes the loop from a failing test to production source. This is the
+          milestone that proved the direction: if the tests are the specification, the code is derivable.
+        </p>
+      </article>
+
+      <article class="mile open">
+        <p class="status"><span class="box"></span>Open</p>
+        <h3>Generate GWT tests from <code>scenarios.yaml</code></h3>
+        <p class="quote">I can generate GWT tests from <code>scenarios.yaml</code></p>
+        <p>
+          Given/When/Then tests rendered from the registry rather than authored — the registry stops
+          being a document <em>about</em> the tests and becomes the thing they are generated from.
+        </p>
+      </article>
+
+      <article class="mile open">
+        <p class="status"><span class="box"></span>Open</p>
+        <h3>Create remaining scenarios with all artifacts</h3>
+        <p class="quote">Create remaining scenarios with all artifacts: vocabulary, features, steps, etc.</p>
+        <p class="quote">I can generate GWT tests, steps, judgements from <code>scenarios.yaml</code></p>
+        <p>
+          The difference from the previous card is the word <b>steps</b>. That one generates the test;
+          this one generates the step definitions the test binds to, and the judgements that grade what
+          no comparison can settle. When it lands, a scenario written in the registry is executable
+          without anyone opening a <code>.go</code> file.
+        </p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">Position</p>
+    <h2>Where the repo stands against this</h2>
+    <p class="sub">
+      Derived from the tree and <code>CLAUDE.md</code>, not from the board — the board records intent,
+      this records the current position.
+    </p>
+    <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Milestone</th><th>Position</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 · code&nbsp;+&nbsp;tests exist</td>
+          <td><span class="pill p-done">Done</span>46 bdd-cli scenarios over 46 fixture trees.</td>
+        </tr>
+        <tr>
+          <td>2 · generate code from tests</td>
+          <td><span class="pill p-done">Done</span><code>build code</code> walks each suite's declared
+            <code>replay</code> command and drives a fix turn per failure.</td>
+        </tr>
+        <tr>
+          <td>3 · generate GWT tests</td>
+          <td>
+            <span class="pill p-done">Done</span><code>build tests</code> renders one
+            <code>func Test&lt;Id&gt;</code> per scenario into the file that scenario's <code>path:</code>
+            names — deterministic codegen, verified without <code>--fix</code> by regenerating and
+            comparing. It covers all 290 registry scenarios across both suites.
+          </td>
+        </tr>
+        <tr>
+          <td>4 · scenarios&nbsp;→&nbsp;tests, steps, judgements</td>
+          <td>
+            <span class="pill p-part">Partial</span><b>Steps are the gap.</b>
+            <code>build tests --fix</code> authors a step definition per gap, and that mechanism works —
+            but <code>tests/bdd-web/steps</code> registers four definitions against ~1680 unbound steps,
+            so the 244 web scenarios are rendered and <em>not runnable</em>, and
+            <code>tests/legacy/bdd-web-playwright/</code> is still the only thing testing the web surface.
+            <b>Judgements:</b> the <code>judge:</code> prefix exists and 12 of 46 bdd-cli scenarios use it.
+            <b>Vocabulary and features:</b> not started.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub" style="margin:36px 0 0">
+      The single number gating milestone 4 is the <b>1680</b>: until the web step definitions land,
+      <code>TestStepCoverage</code> cannot join the gate line for bdd-web, and <code>build tests</code> on
+      this repository cannot reach zero AI turns. Tracked at
+      <a href="https://app.clickup.com/t/86cb6fjwy">app.clickup.com/t/86cb6fjwy</a>.
+    </p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="inner">
+    <p class="slabel">Decision log</p>
+    <h2>Why the board is drawn the way it is</h2>
+    <ul class="log">
+      <li>
+        <b>The five-step list is written in the first person on purpose.</b>
+        <p>
+          It is the user's experience of the product, not the engine's control flow — which is why
+          “It works” is a step rather than an outcome. A roadmap phrased as engine stages would have
+          hidden that the whole point is what the person does <em>not</em> have to do.
+        </p>
+      </li>
+      <li>
+        <b><code>scenarios.yaml</code> appears twice in the pipeline drawing.</b>
+        <p>
+          Same file. The loose one at the top is the registry as an input the author may already have;
+          the connected one is the registry as the thing <code>us apply</code> writes.
+        </p>
+      </li>
+      <li>
+        <b>Milestones 3 and 4 are separate cards even though both say “generate GWT tests”.</b>
+        <p>
+          Splitting them is the useful part: 3 is generating the test, 4 is generating what the test
+          binds to. Collapsing them would hide that the first is deterministic codegen and the second
+          needs a model.
+        </p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="inner">
+    <span>TrueBDD · <a href="https://github.com/ondatra-ai/true-bdd/blob/main/docs/roadmap.md">roadmap.md</a> · <a href="./doc-universe.html">doc-universe.html</a></span>
+    <span>Source: <a href="https://app.clickup.com/90151491867/v/wb/2kyq568v-17355">“Idea” whiteboard</a>, captured 2026-08-21</span>
+  </div>
+</footer>
+
+</body>
+</html>
