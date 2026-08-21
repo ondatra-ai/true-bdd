@@ -1,10 +1,11 @@
-name: Deploy doc universe to GitHub Pages
+name: Deploy docs site to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
       - docs/doc-universe.html
+      - docs/roadmap.html
       - .github/workflows/deploy-pages.yml
   workflow_dispatch:
 
@@ -29,11 +30,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # Every page here is self-contained — no shared assets to copy, and a page
+      # that is not copied is a page that 404s rather than one that renders
+      # unstyled, so adding an HTML doc under docs/ means adding a line here AND
+      # a path: trigger above.
       - name: Assemble site
         run: |
           mkdir -p _site
           cp docs/doc-universe.html _site/index.html
           cp docs/doc-universe.html _site/doc-universe.html
+          cp docs/roadmap.html _site/roadmap.html
 
       - uses: actions/configure-pages@v5
 
