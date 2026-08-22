@@ -1,0 +1,14 @@
+{
+  "name": "true-bdd-local",
+  "owner": {
+    "name": "ondatra-ai"
+  },
+  "plugins": [
+    {
+      "name": "go-bdd-lsp",
+      "source": "./go-bdd-lsp",
+      "description": "gopls tuned for this repo: bdd build tag enabled, tmp/ and legacy trees filtered",
+      "category": "development"
+    }
+  ]
+}

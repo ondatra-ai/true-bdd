@@ -5,10 +5,18 @@ description: Check the pending diff against CLAUDE.md and update it when the cha
 
 # Update Memory
 
-CLAUDE.md is the project memory: repository layout, CLI subcommands, dev
-commands, conventions, and workflow rules. A commit that changes any of
-those makes CLAUDE.md stale. This skill checks the pending diff and updates
-CLAUDE.md so the fix lands in the same commit.
+The project memory is CLAUDE.md plus the path-scoped rules in
+`.claude/rules/` (`bdd-harness.md`, `engine-internals.md`,
+`go-conventions.md`): repository layout, CLI subcommands, dev commands,
+conventions, and workflow rules. A commit that changes any of those makes
+the memory stale. This skill checks the pending diff and updates the file
+whose scope the change belongs to, so the fix lands in the same commit.
+Scoping rule: always-relevant facts go in CLAUDE.md; facts needed only
+when working under a rule's `paths:` go in that rule file.
+
+CLAUDE.md is loaded into every session — every line spends context on every
+turn, whether or not it matters that turn. A line earns its place only if
+Claude would behave differently without it.
 
 ## Steps
 
@@ -23,18 +31,35 @@ CLAUDE.md so the fix lands in the same commit.
    - a convention, rule, or workflow added or altered
      (including new/changed `.claude/skills/`);
    - config keys or document paths renamed.
-3. **Update CLAUDE.md** — edit only the sections the diff invalidates;
-   match the file's existing tone and density. Cosmetic diffs (wording,
-   formatting, content-only doc edits) need no update: report
-   `memory: no update needed` and stop.
+3. **Update the owning file** — CLAUDE.md or the matching
+   `.claude/rules/*.md`; edit only the sections the diff invalidates.
+   Deleting is as much the update as adding: a line the diff made stale or
+   redundant comes out, it does not get a correcting neighbour. Cosmetic
+   diffs (wording, formatting, content-only doc edits) need no update:
+   report `memory: no update needed` and stop.
 4. **Report** what was updated in one line. No staging needed when run
    from pr-commit — its commit step stages everything.
+
+## What earns a line
+
+- **Record the unwritten**: conventions, rationale, gotchas, and refusal
+  behaviours nothing else states. The test for a candidate line: without
+  it, would Claude do the wrong thing?
+- **Never cache a source of truth.** Anything stated by the code, a
+  script's docstring, a config's own comments, a skill's SKILL.md, or
+  discoverable by `ls`/`--help` gets at most a one-line pointer
+  (e.g. "design rationale lives in merge.py's docstrings"). A restated
+  copy goes stale the day its source changes.
+- **Match the file's density**: compressed prose, bold lead phrases,
+  tables over paragraphs. New material at the same altitude as its
+  section — no war stories, no narration.
 
 ## Rules
 
 - Never record session-temporary facts, task narration, or anything
-  derivable from the code itself — CLAUDE.md states durable conventions.
+  derivable from the code itself.
 - Never touch the sections marked CRITICAL without the change clearly
   requiring it.
-- If a durable *user preference* (not a repo fact) surfaced, it belongs in
-  the auto-memory directory, not CLAUDE.md.
+- CLAUDE.md files are the ONLY memory. A durable user preference belongs
+  in CLAUDE.md's Notes section — never in the auto-memory directory,
+  which this project does not use.
