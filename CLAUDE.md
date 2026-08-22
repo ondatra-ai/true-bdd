@@ -601,8 +601,12 @@ name**, so `/code-review` runs Matt's version here and the built-in
   review is requested, so the first round is what brings it into existence.
   `request_changes_workflow: true` is what makes `@coderabbitai approve`
   work and the bot flip its own verdict to Approve once threads resolve.
-  `path_filters` keep cassettes, generated tests and `doc-universe.html` out
-  of review entirely.
+  `path_filters` restrict review to `tests/` ONLY — every other top-level
+  path is excluded (CodeRabbit has no allowlist mode, so the scope is
+  written as the complement), and within tests/ the cassettes, generated
+  `*_test.go` and `tests/legacy/` stay excluded. A PR touching nothing
+  under `tests/` gets a findings-free review; `@coderabbitai approve`
+  still works, which is what the merge flow needs.
 
 - **`main` is protected by the "Main Protection" ruleset** (id `20972312`),
   modelled on the one in `speedandfunction/website`. Classic branch
