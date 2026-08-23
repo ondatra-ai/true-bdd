@@ -33,7 +33,7 @@ the universe's prose and still violate its schema. Check each schema
 against both its document and the universe's account of that document —
 a field the universe describes but the schema forbids (or omits) is an
 inconsistency, and so is a schema constraint no longer true of the
-document. `./scripts/validate-schemas.sh` (also a CI gate) settles the
+document. `./scripts/lint-schemas.sh` (also a CI gate) settles the
 document-vs-schema half mechanically; run it first and treat any failure
 as a finding to ask about.
 
@@ -66,7 +66,7 @@ and meaning intact are **not** inconsistencies — do not flag them.
 1. **Resolve the scope.** Read `true-bdd/true-bdd.yaml` and collect the
    in-scope paths per the table above.
 2. **Validate documents against schemas.** Run
-   `./scripts/validate-schemas.sh`. Every failure is an inconsistency for
+   `./scripts/lint-schemas.sh`. Every failure is an inconsistency for
    step 6 — do not fix it silently, and do not skip this because CI also
    runs it; the point is to catch it before the push.
 3. **Inventory the universe's claims.** Read both universe files and list
