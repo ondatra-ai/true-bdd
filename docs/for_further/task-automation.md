@@ -130,7 +130,7 @@ Measured on this repository, warm. Three steps are ~90% of the total:
 
 | gate | cost | run when the diff touches |
 | --- | --- | --- |
-| `lint-layout.sh` | 0.45s | **always** — it reads the whole file tree |
+| `alint check` | 0.02s | **always** — it reads the whole file tree |
 | `lint-claude.md.sh` | 0.33s | `CLAUDE.md` |
 | `lint-schemas.sh` | 1.02s | `true-bdd/**`, `docs/{architecture,product}/**`, `docs/scenarios.yaml`, `scripts/cmd/yamlkey/**` |
 | `go vet -tags bdd ./tests/...` | 1.01s | `tests/**` |
@@ -147,7 +147,7 @@ Two properties are not optional:
   directory will one day slip through unchecked, and nothing will say so.
 - **One selector, both places.** `gates.sh` and `.github/workflows/ci.yml`
   must run the same thing. They already drift: CI runs neither
-  `lint-layout.sh` nor `lint-comments.sh`. A gate that exists only on one
+  `alint check` nor `lint-comments.sh`. A gate that exists only on one
   machine is not deterministic enforcement.
 
 What this buys, honestly:

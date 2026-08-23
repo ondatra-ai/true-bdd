@@ -5,10 +5,9 @@
 # for gating production-ready code.
 set -euo pipefail
 
-./scripts/lint-layout.sh
+alint check
 ./scripts/lint-comments.sh
 ./scripts/lint-schemas.sh
-./scripts/lint-claude.md.sh
 ./scripts/lint-markdown.sh
 golangci-lint run
 mkdir -p ./bin

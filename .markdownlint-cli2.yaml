@@ -1,0 +1,36 @@
+# Config for markdownlint-cli2, driven by scripts/lint-markdown.sh.
+# Two rules are off repo-wide because this repository breaks them by design;
+# MD041 is off only for the file kinds that legitimately open with prose,
+# which is what `overrides` buys over a single flat config.
+
+# The banner and the file-by-file progress line would bury the finding in
+# what the PostToolUse hook hands back — it forwards this output verbatim.
+noBanner: true
+noProgress: true
+
+config:
+  default: true
+
+  # Long lines are the house style. CLAUDE.md is the one 80-column file, and
+  # it is out of this gate's scope entirely — alint owns it.
+  MD013: false
+
+  # Table pipe spacing: the corpus is 58 compact to 3 aligned. Reflowing a
+  # table that already reads fine is the churn Surgical Changes forbids.
+  MD060: false
+
+  # On everywhere except the kinds filtered below — a doc that opens with no
+  # top-level heading is a real defect in README.md and under docs/.
+  MD041: true
+
+overrides:
+  # Claude Code reads these top-down as instructions to a model, so the body
+  # opens with prose after the frontmatter rather than with a title.
+  - filter:
+      - ".claude/**"
+      - "**/*.prompt.md"
+      - "**/SKILL.md"
+    combine: merge
+    config:
+      MD041: false
+

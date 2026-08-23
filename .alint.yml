@@ -1,0 +1,177 @@
+# alint config — the repository-shape gate. `scripts/lints.sh` and
+# `gates.sh` run it as `alint check`; CI runs it too.
+#
+# Deliberately no `extends:`. The bundled rulesets carry 22 sets of opinions
+# this repository never chose; every rule here is one it did.
+#
+# `respect_gitignore` defaults to true, which is the semantics the shell
+# version had via `git ls-files -co --exclude-standard`: an untracked file
+# counts, an ignored one does not. A stray fails before it is ever committed.
+version: 1
+
+rules:
+  # PR #85 ported the last Python to Go and the same commit shipped a stale
+  # __pycache__/merge.cpython-314.pyc — bytecode of the file it deleted.
+  # Nothing caught it. This does.
+  - id: no-python
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/*.py"
+        - "**/*.pyi"
+        - "**/*.pyc"
+        - "**/*.pyo"
+      exclude:
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: >-
+      Python in a Go and sh repository. Port it to Go under scripts/, or
+      delete it. Bytecode: rm -rf the __pycache__.
+
+  - id: no-pycache
+    kind: dir_absent
+    level: error
+    paths:
+      include:
+        - "**/__pycache__"
+      exclude:
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: "rm -rf the __pycache__ — this repository runs no Python."
+
+  # Three roots and no fourth: services/<name>/ is product code, tests/<name>/
+  # exercises it, scripts/ is the tooling that drives the repository. A fourth
+  # root is the same code somewhere a reader has to learn about.
+  - id: go-three-roots
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/*.go"
+      exclude:
+        - "services/**"
+        - "tests/**"
+        - "scripts/**"
+    message: >-
+      Go outside the three roots. Move it into the one that owns it:
+      services/<name>/ product code, tests/<name>/ what exercises it,
+      scripts/ tooling that drives this repository.
+
+  # JS belongs to the frontend, the report UI's browser code, and the fenced
+  # fixture and legacy trees. This repository authors no other JavaScript:
+  # what it refuses is JS in scripts/, services/bdd-cli/ or the bdd-cli tests.
+  - id: js-fenced
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/*.js"
+        - "**/*.cjs"
+        - "**/*.mjs"
+        - "**/*.jsx"
+        - "**/*.ts"
+        - "**/*.tsx"
+      exclude:
+        - "services/bdd-web/**"
+        - "tests/libraries/reportserver/web/**"
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: >-
+      JavaScript where this repo is Go and sh. The frontend and the report
+      UI's browser code are the exceptions; everything else is Go or sh.
+
+  # The load-bearing half: JS does not spread one file at a time, it spreads
+  # through `npm install`. A manifest outside the frontend means a second
+  # build system has arrived, which is how the fence stops being one.
+  - id: no-npm-manifests
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/package.json"
+        - "**/package-lock.json"
+        - "**/yarn.lock"
+        - "**/pnpm-lock.yaml"
+        - "**/node_modules/**"
+      exclude:
+        - "services/bdd-web/**"
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: >-
+      A manifest or lockfile means a second build system. Keep them to
+      services/bdd-web/, which is a frontend and needs one.
+
+  # CLAUDE.md is a cache of the repository loaded into every session, so its
+  # cost is paid constantly and its growth is invisible one commit at a time.
+  - id: claude-md-budget
+    kind: file_max_lines
+    level: error
+    paths: "CLAUDE.md"
+    max_lines: 214
+    message: >-
+      CLAUDE.md is over budget. Free lines before adding: prefer the point of
+      use — a package doc comment, a script header, README.md, a config
+      file's comments, docs/for_further/.
+
+  # The mirrored block opens the file: CLAUDE.md is read top-down and a
+  # preamble above the guidelines would outrank them. Stricter than the shell
+  # check it replaces, which tolerated blank lines above the marker.
+  - id: claude-md-opens-with-mirror
+    kind: file_header
+    level: error
+    paths: "CLAUDE.md"
+    lines: 1
+    pattern: "^<!-- KARPATHY:BEGIN"
+    message: "CLAUDE.md must open with the KARPATHY:BEGIN marker."
+
+  # Shelled out because alint cannot express either: line_max_width has no
+  # per-line exemption and the mirror needs a live upstream fetch. The script
+  # is the whole rule; its exit code and stderr are the verdict.
+  - id: claude-md-width-and-mirror
+    kind: command
+    level: error
+    paths: "CLAUDE.md"
+    command: ["./scripts/lint-claude.md.sh"]
+    timeout: 60
+
+  # crush merges every config it finds walking up from its cwd, so one here
+  # silently blocks every fixture's apply turn. Documented in CLAUDE.md and,
+  # until now, enforced by nothing.
+  - id: no-root-crush-config
+    kind: file_absent
+    level: error
+    paths: [".crush.json", "crush.json"]
+    root_only: true
+    message: >-
+      A root crush config silently blocks every fixture's apply turn. Keep
+      crush configuration out of the repository root.
+
+  # go-conventions.md states this convention and said "enforced through
+  # review, not lint". The tree already satisfies it, so the rule costs
+  # nothing today and holds the line from here.
+  - id: go-filename-snake-case
+    kind: filename_case
+    level: error
+    paths: "**/*.go"
+    case: snake
+    message: "Go filenames are snake_case: GitHubService -> github_service.go."
+
+  # The three below already pass repo-wide, and alint ships no fixer for any
+  # of them (`alint fix` reports them "unfixable"). They are guards: cheap
+  # because the tree already satisfies them, and they hold the line from here.
+  - id: text-final-newline
+    kind: final_newline
+    level: error
+    paths: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml", "**/*.md"]
+
+  - id: text-no-trailing-whitespace
+    kind: no_trailing_whitespace
+    level: error
+    paths: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml", "**/*.md"]
+
+  - id: text-lf-line-endings
+    kind: line_endings
+    level: error
+    paths: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml", "**/*.md"]
+    target: lf

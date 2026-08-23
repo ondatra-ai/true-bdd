@@ -12,7 +12,7 @@ import (
 )
 
 // fixTools is what a fix agent may reach for. No Bash(python3 *): this repo
-// is no longer Python (see lint-layout.sh), and an unused allowance is one
+// is no longer Python (see .alint.yml), and an unused allowance is one
 // a fix can wander into.
 const fixTools = "Read,Edit,Write,Glob,Grep," +
 	"Bash(git *),Bash(go *),Bash(gofmt *),Bash(golangci-lint *)," +

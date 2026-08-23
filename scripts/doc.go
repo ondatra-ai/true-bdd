@@ -3,7 +3,7 @@
 // merge loop, and the lint gates beside them in shell.
 //
 // One of three roots — services/, tests/, scripts/ — enforced by
-// lint-layout.sh. These were Python scripts invoked directly from .claude/,
+// .alint.yml's no-python rule. These were Python scripts invoked from .claude/,
 // and they are Go packages under a normal (non-dot) tree for one reason: the
 // Go tool skips any directory whose name begins with a dot, so a package
 // under .claude/ is invisible to `go build ./...`, `go test ./...` and

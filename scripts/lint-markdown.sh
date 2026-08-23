@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Usage: lint-markdown.sh [FILE...]
-# markdownlint-cli over the markdown this repository authors, configured by
-# .markdownlint.yaml. Named files narrow the run and are auto-fixed; a bare
-# run mirrors CI and only reports, because a gate that rewrites is a gate
-# nobody can trust the exit code of.
+# markdownlint-cli2 over the markdown this repository authors. Named files
+# narrow the run and are auto-fixed; a bare run mirrors CI and only reports,
+# because a gate that rewrites is a gate nobody can trust the exit code of.
 #
-# Four exclusions, each for a different reason:
+# The config is NOT passed with --config: cli2 discovers
+# .markdownlint-cli2.yaml by walking up from each linted file, and that same
+# walk is what makes its `overrides:` and per-directory config work at all.
+#
+# Five exclusions, each for a different reason:
 #
 #	.claude/skills/<vendored>/  someone else's files (MIT, mattpocock) —
 #	                            fixing them makes the next re-sync a
@@ -13,6 +16,9 @@
 #	CLAUDE.md                   owned by scripts/lint-claude.md.sh, and its
 #	                            KARPATHY block is a verbatim upstream mirror:
 #	                            a finding inside it would be unfixable
+#	proto-product-snapshot.md   a Playwright accessibility-tree dump: machine
+#	                            output with no headings, so every prose rule
+#	                            is wrong about it
 #	*/testdata/*                golden files — the bytes ARE the assertion
 #	tests/{legacy,bdd-cli/fixtures}/  parked and fixture trees, as in
 #	                            lint-comments.sh
@@ -24,10 +30,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 MANIFEST=".claude/skills/VENDORED-mattpocock.md"
-CONFIG=".markdownlint.yaml"
 
-if ! command -v markdownlint >/dev/null 2>&1; then
-	echo "markdownlint not found in PATH. Install it with: npm i -g markdownlint-cli" >&2
+if ! command -v markdownlint-cli2 >/dev/null 2>&1; then
+	echo "markdownlint-cli2 not found in PATH. Install it with: brew install markdownlint-cli2" >&2
 	exit 1
 fi
 
@@ -46,7 +51,8 @@ if [ -z "$vendored" ]; then
 	exit 1
 fi
 
-EXCLUDE="^\.claude/skills/($vendored)/|^CLAUDE\.md$|/testdata/|^tests/(legacy|bdd-cli/fixtures)/"
+EXCLUDE="^\.claude/skills/($vendored)/|^CLAUDE\.md$|^proto-product-snapshot\.md$"
+EXCLUDE="$EXCLUDE|/testdata/|^tests/(legacy|bdd-cli/fixtures)/"
 
 SPECS=(".")
 if [ $# -gt 0 ]; then
@@ -70,7 +76,7 @@ if [ $# -gt 0 ]; then
 fi
 
 # shellcheck disable=SC2086
-if ! markdownlint --config "$CONFIG" $fix $files 2>&1; then
+if ! markdownlint-cli2 $fix $files 2>&1; then
 	cat >&2 <<-'EOF'
 
 		lint-markdown: fix each finding above. What --fix could rewrite is
