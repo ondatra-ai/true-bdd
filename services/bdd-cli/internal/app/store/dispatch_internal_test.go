@@ -1,10 +1,7 @@
 package store
 
-// Dispatch transaction semantics (critique §6): validate command + bounded
-// token → (owner_id, client_token) lookup → request-hash compare (exact
-// retry ⇒ original run; token reuse with different args ⇒ conflict) →
-// partial-unique nonterminal-per-owner admission → insert run + receipt
-// atomically. Plus receipt retention (latest 200) and the run_pruned
+// Dispatch transaction semantics: see Dispatch's doc in dispatch.go. This
+// file also covers receipt retention (latest 200) and the run_pruned
 // contract.
 
 import (

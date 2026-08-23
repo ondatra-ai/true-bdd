@@ -14,24 +14,9 @@ import (
 // npmInstallTimeout caps fetching playwright-core.
 const npmInstallTimeout = 5 * time.Minute
 
-// ensureDriver returns a Playwright driver directory playwright-go can
-// run, assembling it from npm instead of letting the library download
-// its driver zip.
-//
-// playwright-go fetches `playwright-<version>-<platform>.zip` from
-// Microsoft's CDN. Those URLs are gone — every mirror the library knows
-// answers 404, and the host they redirect to answers 400 for every
-// version, current ones included. What still works is npm, which is
-// where Playwright publishes the same driver as `playwright-core`.
-//
-// So this builds the layout the library expects — `<dir>/package` (the
-// npm package, holding cli.js) beside a `node` executable — and hands
-// the directory over. playwright-go then finds an up-to-date driver,
-// skips the download entirely, and installs browsers through that very
-// cli.js, which reaches a CDN that does answer.
-//
-// Assembled under tmp/ and keyed by version, so it survives between runs
-// and is rebuilt when the library's expected version moves.
+// ensureDriver assembles a Playwright driver directory from npm instead
+// of playwright-go's own downloader — its CDN zip URLs 404 (mirrors) or
+// 400 (redirect target) for every version. Cached under tmp/, keyed by version.
 func ensureDriver(ctx context.Context, repoRoot string) (string, error) {
 	probe, err := playwright.NewDriver(&playwright.RunOptions{})
 	if err != nil {

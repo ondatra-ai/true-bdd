@@ -7,15 +7,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 )
 
-// AIPort defines the interface for AI communication
-// This port interface represents the contract for AI operations in the domain
-// layer.
-//
-// The ModelRef names both the CLI that runs the turn and the model it
-// runs, so a checklist role can be pointed at a different provider
-// without any code change. The Role names which of the three checklist
-// turns this is — it does not affect dispatch (the ModelRef already
-// decided that), it attributes the turn in logs and telemetry.
+// AIPort defines the interface for AI communication. ModelRef names both
+// the CLI and model for the turn, so a role can point at a different
+// provider with no code change; Role does NOT affect dispatch — it only attributes the turn in logs.
 type AIPort interface {
 	ExecutePromptWithSystem(
 		ctx context.Context,

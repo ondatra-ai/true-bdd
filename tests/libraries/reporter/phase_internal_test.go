@@ -7,10 +7,9 @@ import (
 	"time"
 )
 
-// driftTolerance is how far the accounted timeline may land from the
-// wall clock before the phase model is considered to have a hole. The
-// slices are built from millisecond-resolution stamps, so a few
-// milliseconds of rounding is expected; anything larger is a real gap.
+// driftTolerance is how far the accounted timeline may land from the wall
+// clock before the phase model is considered to have a hole; slices are
+// millisecond-resolution, so small rounding is expected.
 const driftTolerance = 0.01
 
 // modelOpus is the stand-in model name for the synthetic turns.
@@ -99,10 +98,9 @@ func TestPhasesAreContiguous(t *testing.T) {
 	}
 }
 
-// TestPhaseOwnership checks that the test subprocess is not counted as
-// engine time. Conflating them was the thing the Go-side breakdown
-// exists to prevent: it would report a slow project test suite as slow
-// engine code.
+// TestPhaseOwnership checks the test subprocess is not counted as engine
+// time — conflating them would report a slow project test suite as slow
+// engine code, the reason the Go-side breakdown exists.
 func TestPhaseOwnership(t *testing.T) {
 	fixture := buildTestFixture()
 
@@ -167,11 +165,9 @@ func testRunPhaseDetail(t *testing.T, fixture *Fixture) string {
 	return ""
 }
 
-// TestDiscoveryBoundCountsOnlyDiscoveryRuns pins the discovery slice's
-// measured-time claim to the runs that happened inside it. A `--fix`
-// run reruns the failing test after each fix, and those exit records
-// live in the same list — counting them would attribute fix-loop time
-// to a slice that closed before the first turn.
+// TestDiscoveryBoundCountsOnlyDiscoveryRuns pins discoveryBound's filter:
+// only discovery invocations count, not the `--fix` loop's reruns that
+// share the same list.
 func TestDiscoveryBoundCountsOnlyDiscoveryRuns(t *testing.T) {
 	t.Parallel()
 
@@ -190,10 +186,9 @@ func TestDiscoveryBoundCountsOnlyDiscoveryRuns(t *testing.T) {
 	}
 }
 
-// TestDiscoveryBoundWithoutDiscoveryRuns checks the honest fallback: a
-// run whose only exit records are reruns has nothing measured inside
-// the discovery slice, so the slice must claim nothing rather than
-// borrow the reruns' duration.
+// TestDiscoveryBoundWithoutDiscoveryRuns checks the honest fallback: with
+// no discovery-phase runs, the slice claims nothing measured rather than
+// borrowing a rerun's duration.
 func TestDiscoveryBoundWithoutDiscoveryRuns(t *testing.T) {
 	t.Parallel()
 
@@ -211,8 +206,7 @@ func TestDiscoveryBoundWithoutDiscoveryRuns(t *testing.T) {
 
 // buildRerunFixture is a `--fix` run: the apply turn lands a fix, the
 // engine re-runs the suite to check it, and only then does the next
-// validation turn open. The rerun is the shape the timeline used to
-// swallow.
+// validation turn open.
 func buildRerunFixture() *Fixture {
 	fixture := buildTestFixture()
 	base := fixture.First
@@ -261,11 +255,9 @@ func findPhase(t *testing.T, fixture *Fixture, want string) Phase {
 	return Phase{}
 }
 
-// TestPostFixRerunIsItsOwnSlice is the point of the split. The engine's
-// PostFix hook is what decides whether an applied fix worked, and for a
-// webServer-startup subject that is a whole docker-build-and-run suite.
-// Reporting it as "Engine between turns" hid the only validating step
-// in a `--fix` run behind a label that said prompt-building.
+// TestPostFixRerunIsItsOwnSlice is the point of the split documented on
+// appendGap: the PostFix rerun gets its own slice instead of hiding inside
+// "Engine between turns".
 func TestPostFixRerunIsItsOwnSlice(t *testing.T) {
 	t.Parallel()
 
@@ -292,12 +284,9 @@ func TestPostFixRerunIsItsOwnSlice(t *testing.T) {
 	}
 }
 
-// TestTestRunSlicesNameTheirOwnRuns pins the association a consumer
-// cannot reconstruct. Two reruns of the same test produce two slices
-// with byte-identical labels, so a report matching on the label shows
-// both runs' output under both rows — every rerun looking like it
-// printed what its neighbour printed. The index is the only thing that
-// tells them apart.
+// TestTestRunSlicesNameTheirOwnRuns pins Phase.TestRuns: two reruns of the
+// same test produce byte-identical labels, so only the index tells the
+// slices apart.
 func TestTestRunSlicesNameTheirOwnRuns(t *testing.T) {
 	t.Parallel()
 
@@ -417,10 +406,9 @@ func TestRerunTimelineStillSumsAndIsContiguous(t *testing.T) {
 	}
 }
 
-// TestUnplaceableRerunLeavesGapWhole checks the fallback. A run from a
-// log with no exit timestamp cannot be positioned, and inventing a
-// position for it would move every later slice on the gantt — so the
-// gap stays one undivided engine slice.
+// TestUnplaceableRerunLeavesGapWhole checks the fallback: a run with no
+// exit timestamp can't be positioned, so the gap stays one undivided
+// engine slice rather than moving every later slice on the gantt.
 func TestUnplaceableRerunLeavesGapWhole(t *testing.T) {
 	t.Parallel()
 

@@ -8,14 +8,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// Hand-written, and that is the point: these three are what catch a
-// generated set that stopped matching the registry, so a GENERATED
-// version of them would be one the generator could silence by
-// regenerating it.
-//
-// None of them brings the harness up, so all three answer in well under
-// a second — which is what makes them affordable to run on every commit
-// and, for the third, on every `build tests` walk.
+// Hand-written, not generated: a generated version of these three could be
+// silenced by regenerating it. None brings up the harness, so all three
+// answer in well under a second, including on every `build tests` walk.
 
 // Every scenario the registry assigns this suite has exactly one
 // generated test, in the file the registry names, and every generated

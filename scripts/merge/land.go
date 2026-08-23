@@ -7,14 +7,9 @@ import (
 	"time"
 )
 
-// merge approves, then lands it.
-//
-// The loop only exits after a round that committed nothing, so HEAD is the
-// commit that round's review was posted against — whichever round that was.
-// That is what makes `@coderabbitai approve` honest here: it analyses nothing,
-// it resolves threads and stamps whatever HEAD is. On PR #76 it stamped a
-// commit no review was ever pinned to, which is why the check below reads the
-// review record rather than trusting the sequence.
+// merge approves, then lands it. HEAD is trustworthy because the loop only
+// exits after a round that committed nothing — see assertHeadWasReviewed
+// for what enforces it (PR #76's stamp-wrong-commit failure).
 func (r *Run) merge() {
 	r.banner("merge")
 
@@ -26,11 +21,9 @@ func (r *Run) merge() {
 	r.returnToTrunk(current)
 }
 
-// branchStillOurs catches the checkout having MOVED during the run.
-//
-// Not a re-check of an argument — there isn't one. A fix agent has
-// Bash(git *), and squashing the wrong branch then deleting it is not
-// reversible.
+// branchStillOurs catches the checkout having MOVED during the run. Not a
+// re-check of an argument — there isn't one; a fix agent has Bash(git *),
+// and squashing the wrong branch then deleting it is not reversible.
 func (r *Run) branchStillOurs() string {
 	current := r.currentBranch()
 	prBranch := strings.TrimSpace(
@@ -45,11 +38,8 @@ func (r *Run) branchStillOurs() string {
 }
 
 // refuseDirtyMerge is a merge precondition, not a property of any round.
-//
-// This function ends in `git checkout main`, which REFUSES on a dirty tree —
-// by which point the PR is squashed and the remote branch deleted, stranding
-// the checkout on a branch that no longer exists while holding uncommitted
-// work. That is PR #76's merge-err.txt verbatim.
+// The merge ends in `git checkout main`, which refuses on a dirty tree —
+// by then the PR is squashed and the branch deleted (PR #76's merge-err.txt).
 func (r *Run) refuseDirtyMerge() {
 	if dirty := r.worktreeChanges(); dirty != "" {
 		r.dief("the worktree is dirty — refusing to merge:\n%s\n"+
@@ -58,23 +48,17 @@ func (r *Run) refuseDirtyMerge() {
 	}
 }
 
-// assertHeadWasReviewed is the thing the whole round structure exists to
-// guarantee, checked here rather than inferred from the loop having ended in
-// the right place.
-//
-// `@coderabbitai approve` analyses nothing — it resolves threads and stamps
-// whatever HEAD happens to be. On PR #76 that was 14e327a, a commit no review
-// had ever been posted against.
+// assertHeadWasReviewed guards what round structure alone can't ensure:
+// `@coderabbitai approve` stamps whatever HEAD is without analysing it — on
+// PR #76 that stamped 14e327a, a commit no review had been posted against.
 func (r *Run) assertHeadWasReviewed() {
 	head, reviewed := r.headSHA(), r.reviewedSHA()
 
 	switch {
 	case r.reviewedThisRun[head]:
-		// A review this run requested and watched arrive. Its body may be
-		// empty — with `path_filters` narrowing review to part of the tree, a
-		// PR touching nothing in scope draws a genuine review with nothing to
-		// say — and that is not the PR #76 failure, which was a stamp on a
-		// commit no review had been posted against at all.
+		// A review this run requested and watched arrive; body may be empty
+		// (path_filters narrows scope — nothing in scope still gets a genuine
+		// review). That's not PR #76's failure — see the doc comment above.
 		r.logf("HEAD %s was reviewed during this run", short(head))
 	case reviewed == "":
 		r.dief("no CodeRabbit review was posted against %s during this run, and no earlier review\n"+

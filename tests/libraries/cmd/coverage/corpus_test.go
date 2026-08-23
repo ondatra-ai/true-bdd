@@ -76,12 +76,9 @@ func (c *corpus) write(path, content string) {
 	}
 }
 
-// addFixture creates a fixture's input tree and returns its run dir.
-//
-// It writes no manifest: the invocation a fixture ran under is behaviour
-// and lives in the scenario registry, so the only place this tool can read
-// it back from a retained run directory is the run's own log. cmd is kept
-// in the signature because it is what each caller is describing.
+// addFixture creates a fixture's input tree and returns its run dir. It
+// writes no manifest — the invocation lives in the scenario registry, so
+// cmd is unused, kept only to describe what each caller is testing.
 func (c *corpus) addFixture(session, fixture, cmd string) string {
 	c.t.Helper()
 

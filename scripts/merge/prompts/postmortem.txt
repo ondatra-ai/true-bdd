@@ -10,9 +10,9 @@ Diagnose the RUN, not the code it was merging. What to look for:
   - A prompt that got an answer the script then had to work around.
 
 Propose improvements to EXACTLY these files, and no others:
-  .claude/skills/pr-merge/merge.py
+  scripts/merge/
+  scripts/clickup/
   .claude/skills/pr-merge/SKILL.md
-  .claude/skills/lib/clickup.py
 
 Read them before proposing anything — a proposal that misreads the current
 code is worse than none. You have read-only tools; do not attempt to edit.

@@ -11,9 +11,8 @@ import (
 )
 
 // writeTestFixture materializes a loadable fixture directory: the
-// checklist selection the caller passes (the body of
-// checklist-prompts.yaml, empty for none) and an input tree populated by
-// the caller's paths (path -> content).
+// checklist selection (checklist-prompts.yaml body, empty for none)
+// and an input tree from the caller's paths (path -> content).
 func writeTestFixture(t *testing.T, selection string, inputFiles map[string]string) string {
 	t.Helper()
 
@@ -83,8 +82,7 @@ func parseGeneratedChecklist(t *testing.T, tmpDir, stem string) loadedChecklist 
 
 // TestPrepareRunDirGeneratesFilteredChecklist drives the real wiring
 // (LoadFixture -> prepareRunDir) and asserts the tmpdir's us-refine
-// checklist ends up with exactly the selected prompt while other
-// checklists stay complete.
+// checklist keeps only the selected prompt; other checklists stay complete.
 func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
 	t.Parallel()
 

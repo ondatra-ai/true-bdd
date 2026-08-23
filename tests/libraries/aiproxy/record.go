@@ -15,13 +15,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
 
-// snapshotSkipDirs are workdir subtrees excluded from per-call
-// snapshots for cost and noise. tmp/ is deliberately NOT here: the
-// validation and apply prompts tell the AI to WRITE its result files
-// under tmp/<run-dir>/, and the engine reads them back to build the
-// next prompt — replay must reproduce them or the conversation
-// diverges. Engine-owned tmp/ paths are filtered per change instead
-// (isEngineOwned).
+// snapshotSkipDirs are workdir subtrees excluded from per-call snapshots.
+// tmp/ deliberately stays IN: the AI writes result files there for the
+// engine to read back, so replay must reproduce them (isEngineOwned filters engine-owned tmp/ paths separately).
 func snapshotSkipDirs() []string {
 	return []string{".crush", ".git", "node_modules"}
 }
@@ -74,16 +70,9 @@ func record(cfg config, name string, argv []string) (int, error) {
 
 	changes := normalizeChanges(fstree.Diff(before, after), cwd)
 
-	// stdout/stderr are stored NORMALIZED: the engine parses result
-	// files out of the response via FILE_START/FILE_END markers that
-	// embed the per-run tmp path (checklist_evaluator.parseResultFile),
-	// so replayed output must carry the REPLAY run's paths, not the
-	// recording's. Replay reverses the substitution before emitting.
-	// Sanitized BEFORE normalizing: the ballast fields are what carry
-	// the recording machine's home paths, so dropping them first leaves
-	// the placeholder substitution with less to catch — and what it does
-	// catch is a genuine path the engine may need mapped, not an
-	// inventory nobody reads.
+	// stdout/stderr are stored NORMALIZED (the engine parses result files by
+	// their per-run tmp path, via FILE_START/FILE_END markers); sanitize runs
+	// BEFORE normalize so stripped ballast leaves less noise for it to catch.
 	stdout := []byte(normalizeText(string(sanitizeStream(result.Stdout)), cwd))
 	stderr := []byte(normalizeText(string(result.Stderr), cwd))
 
@@ -183,10 +172,9 @@ func pump(group *sync.WaitGroup, dst io.Writer, src io.Reader) {
 	_, _ = io.Copy(dst, src)
 }
 
-// waitExitCode reaps the child. A signal-killed child reports exit code
-// 0: the engine's shutdown paths (claude's stdin-close → SIGTERM,
-// crush's group SIGKILL) fire after it has consumed the output it
-// needed, so the recorded turn was a success from the engine's view.
+// waitExitCode reaps the child. A signal-killed child reports exit code 0:
+// the engine's shutdown signals fire only after it has consumed the output
+// it needed, so the recorded turn was a success from the engine's view.
 func waitExitCode(cmd *exec.Cmd) (int, error) {
 	waitErr := cmd.Wait()
 	if waitErr == nil {
@@ -206,13 +194,9 @@ func waitExitCode(cmd *exec.Cmd) (int, error) {
 	return code, nil
 }
 
-// forwardSignals relays SIGTERM/SIGINT to the child. The claude
-// transport's shutdown is stdin-close → SIGTERM → 5s → SIGKILL
-// (claudecode/internal/subprocess/transport.go): relaying keeps the
-// child on that schedule while the shim finalizes the cassette inside
-// the grace window. SIGKILL is not relayable — but the engine only
-// SIGKILLs by process group (cli_invocation.go), which takes the child
-// down with the shim.
+// forwardSignals relays SIGTERM/SIGINT to the child, keeping it on claude's
+// stdin-close→SIGTERM→5s→SIGKILL schedule (transport.go) while the shim
+// finalizes; SIGKILL needs no relay — the engine SIGKILLs by process group, taking the child down with the shim.
 func forwardSignals(cmd *exec.Cmd) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)

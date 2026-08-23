@@ -20,9 +20,8 @@ const (
 )
 
 // RelayClient is the remote's typed HTTP client for the v2 register / poll /
-// reply protocol (plan §2). Every call is context-aware; Poll and Reply return
-// the raw HTTP status so the caller can classify reconnect signals via
-// queryserver.ClassifyStatus.
+// reply protocol (plan §2); Poll and Reply return the raw HTTP status so the
+// caller can classify reconnect signals via queryserver.ClassifyStatus.
 type RelayClient struct {
 	baseURL string
 	http    *http.Client

@@ -3,10 +3,8 @@ package store
 import "testing"
 
 // TestPartialUniqueRejectsSecondNonterminalRun proves the restored partial
-// UNIQUE(owner_id) WHERE state != 'terminal' index (plan §1.1): a second
-// nonterminal run for one owner is rejected at the DB level — the safety the
-// app-level admission COUNT cannot guarantee across two live CLIs on a shared
-// DB — while a terminal run may coexist with a nonterminal one.
+// UNIQUE index from migrations.go (schemaV1) rejects a second nonterminal run
+// per owner at the DB level; a terminal run may still coexist with one.
 func TestPartialUniqueRejectsSecondNonterminalRun(t *testing.T) {
 	store := requireStore(t, tempDBPath(t))
 	seedOwner(t, store, testOwner1)

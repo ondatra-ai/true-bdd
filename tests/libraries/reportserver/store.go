@@ -32,12 +32,9 @@ type sealed struct {
 	size    int64
 }
 
-// Store holds every run in memory and refreshes them lazily.
-//
-// Refresh is pull-based rather than a background ticker: nobody needs a
-// fresh scan when no browser is open, and a ticker would burn CPU for
-// the life of the process and need shutdown plumbing to stop. A read
-// older than the interval does the scan itself.
+// Store holds every run in memory and refreshes them lazily. Refresh is
+// pull-based rather than a background ticker: nobody needs a fresh scan
+// when no browser is open, and a ticker would burn CPU and need shutdown plumbing.
 type Store struct {
 	repoRoot string
 	runsDir  string
@@ -202,12 +199,8 @@ func (s *Store) loadRun(name string, fresh map[string]sealed) (*Run, error) {
 }
 
 // loadFixture returns a cached fixture when its harness record is
-// unchanged, and parses it otherwise.
-//
-// The record's presence is an exact seal, not a heuristic: it is written
-// from the fixture's last t.Cleanup, strictly after everything else the
-// run touches. Its mtime and size are carried too, so a re-run that
-// reuses a session directory still invalidates.
+// unchanged (see HarnessRecordPath), parsing it otherwise. mtime and size
+// are carried too, so a re-run reusing a session directory still invalidates.
 func (s *Store) loadFixture(
 	runID, name, dir string,
 	fresh map[string]sealed,

@@ -20,23 +20,13 @@ import (
 var ErrJudgeRefused = errors.New("judge ruled against the scenario's clauses")
 
 // fixtureNamePattern reads the fixture tree's name out of a scenario's
-// Given step. Kept here rather than only inside the step definition
-// because the subtest name has to be known before any step runs — a
-// scenario is `-run`-selected by the tree it drives, which is the name
-// people already type.
+// Given step. Kept here, not just in the step definition, because the
+// subtest name (what `-run` selects) must be known before any step runs.
 var fixtureNamePattern = regexp.MustCompile(`the "([^"]+)" project tree`)
 
 // FixtureName is the run-directory name for a scenario: the fixture tree
-// it drives, falling back to the scenario id for a scenario whose Given
-// step names no tree — which is a scenario this suite will refuse a few
-// milliseconds later anyway, with a better message than a bad directory
-// name could give.
-//
-// Still the tree rather than the scenario id, now that a scenario's Go
-// test is named after the id instead. Everything that reads a run —
-// the report server, the coverage tool, a person looking in
-// tmp/test_run — finds a directory named after the thing it holds, and
-// renaming that would be a change to all of them for no gain.
+// it drives, falling back to the scenario id when the Given step names
+// none (a scenario this suite refuses moments later anyway).
 func FixtureName(scenario bddgo.Scenario) string {
 	for _, step := range scenario.Steps {
 		match := fixtureNamePattern.FindStringSubmatch(step.Text)
@@ -77,10 +67,9 @@ type State struct {
 	Result   *runner.RunResult
 	Recorder *runner.HarnessRecorder
 
-	// judged carries the verdict from Judge into finish. The two are
-	// separate moments on purpose: Judge runs as the scenario's last act,
-	// where a FAIL can still stop the test; finish runs in cleanup, where
-	// it cannot but where the record has to be written regardless.
+	// judged carries the verdict from Judge into finish: Judge runs as the
+	// scenario's last act (a FAIL can still stop the test); finish runs in
+	// cleanup, where it cannot, but the record must still be written.
 	judged       bool
 	judgeVerdict runner.Verdict
 }
@@ -102,15 +91,8 @@ type ProxySetup struct {
 }
 
 // NewState returns the per-scenario state constructor bddgo calls before
-// the first step.
-//
-// It registers ONE cleanup, and everything that has to happen after the
-// last step happens inside it, in order: grade the run above its steps,
-// publish a passing recording, then write the harness record. One
-// cleanup rather than three because the order between them is the whole
-// point — a record written before the verdict is a record with no
-// verdict in it — and t.Cleanup's LIFO is a worse way to say that than a
-// sequence of statements.
+// the first step. It registers ONE cleanup (not three) that grades, then
+// publishes, then records in order — t.Cleanup's LIFO would reverse that.
 func NewState(harness *Harness) func(*bddgo.World) (*State, error) {
 	return func(world *bddgo.World) (*State, error) {
 		state := &State{T: world.T, Scenario: world.Scenario, Harness: harness}
@@ -125,25 +107,15 @@ func NewState(harness *Harness) func(*bddgo.World) (*State, error) {
 	}
 }
 
-// Judge implements bddgo.Judgeable: it rules on the scenario's `judge:`
-// clauses, once, after every other step passed.
-//
-// In replay it asks nothing of anyone. Every byte those clauses would
-// read was materialised from a cassette, and the recording that produced
-// them only exists because it satisfied these same clauses when it was
-// made — so re-grading it would re-grade a fixed artefact, and would do
-// it with a model's variance. The golden comparison in finish is what
-// discharges them instead, and it is stricter: byte-for-byte rather than
-// a reading.
+// Judge implements bddgo.Judgeable: rules on `judge:` clauses once, after
+// every step passed. In replay it asks nothing — the recording already
+// satisfied these clauses when made; finish's golden diff re-checks it, stricter than a reading.
 func (s *State) Judge(clauses []bddgo.Step) error {
 	texts := clauseTexts(clauses)
 
-	// Recorded BEFORE the replay return, for the same reason the exit code
-	// and the stdout patterns are: the run's record — and so the report's
-	// expected-vs-actual column — must state what this run was held to.
-	// Replay is the mode both gates run, so a record written only on the
-	// live path would leave the clauses unrecoverable exactly where they
-	// are read most.
+	// Recorded BEFORE the replay return: the report's expected-vs-actual
+	// column needs it, and replay is the mode both gates actually run —
+	// recording only on the live path would leave it missing where read most.
 	if s.Fixture != nil {
 		s.Fixture.JudgeSpec = renderClauses(texts)
 	}
@@ -175,10 +147,9 @@ func (s *State) Judge(clauses []bddgo.Step) error {
 
 // finish grades what the steps could not and writes the run's record.
 func (s *State) finish() {
-	// A scenario that never ran the CLI has nothing to grade — an
-	// undefined step, a tree that would not prepare. The record is still
-	// written, because the run still happened and the report's
-	// denominator counts it.
+	// A scenario that never ran the CLI has nothing to grade (an undefined
+	// step, a tree that failed to prepare) — but the record is still
+	// written, since the report's denominator counts the run regardless.
 	if s.Result != nil {
 		s.grade()
 	}
@@ -188,12 +159,8 @@ func (s *State) finish() {
 }
 
 // runTimeout is how long this scenario's CLI invocation may take: its own
-// `timeout:` if it declared one, otherwise the suite default.
-//
-// The resolved value is carried onto the fixture rather than only returned,
-// because the run record reads it there — a report that showed every
-// budget as zero could not tell a 5-minute default run from the 15-minute
-// one, which is the whole reason a scenario is allowed to say.
+// `timeout:` if declared, else the suite default. Carried onto the
+// fixture too, since the run record reads it there for the report.
 func (s *State) runTimeout() time.Duration {
 	timeout := s.Harness.Timeout
 	if s.Scenario.Timeout > 0 {
@@ -310,10 +277,7 @@ func (s *State) recordOutcome() {
 	s.T.Logf("recorded outcome: %d file(s) outside tmp/", len(golden.Files))
 }
 
-// fail prefixes a step failure with the scenario id, so a failure read
-// out of a long log says which scenario produced it without scrolling
-// up. The caller's own `%w` survives: the id is spliced into the format
-// string rather than wrapped around a second Errorf.
+// fail prefixes a step failure with the scenario id via format-string splicing, preserving the caller's `%w`.
 //
 //nolint:err113 // the message IS the failure; callers pass %w wherever a sentinel exists.
 func (s *State) fail(format string, args ...any) error {

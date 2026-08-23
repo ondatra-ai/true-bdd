@@ -42,9 +42,8 @@ func TestAskApplyRefineOrExitMapping(t *testing.T) {
 }
 
 // TestAskQuestionsMapsNumberToOptionText proves the clarify mapping A3
-// relies on: the browser answers with the option NUMBER and the collector
-// records that option's TEXT. Non-numeric and out-of-range inputs pass
-// through verbatim.
+// relies on: the browser answers with the option number and the collector
+// records its text; non-numeric or out-of-range input passes through verbatim.
 func TestAskQuestionsMapsNumberToOptionText(t *testing.T) {
 	t.Parallel()
 
@@ -77,9 +76,8 @@ func TestAskQuestionsMapsNumberToOptionText(t *testing.T) {
 }
 
 // TestAskRefinementFeedbackMultiline proves the multiline transport: the
-// collector reads lines until a blank line terminates the block, returning
-// the joined body. Surplus input past the blank line is left unread (A2's
-// terminating-blank-line contract).
+// collector reads lines until a blank line terminates the block and returns
+// the joined body, leaving surplus input unread (A2's contract).
 func TestAskRefinementFeedbackMultiline(t *testing.T) {
 	t.Parallel()
 

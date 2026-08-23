@@ -7,13 +7,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 )
 
-// TestProjectionConcurrentReadsDoNotDeadlock is the inverted regression for the
-// reproduced second-DB deadlock (finding 6): the codex probe pinned all four
-// reader connections with four outer `allRuns` cursors whose nested
-// `hasPendingPrompt` queries then waited forever. The rewrite runs each
-// projection in ONE read transaction and derives `answerable` from an EXISTS
-// subquery — no nested query on a second connection — so far MORE concurrent
-// readers than the pool size all complete promptly.
+// TestProjectionConcurrentReadsDoNotDeadlock is the regression for the
+// reproduced deadlock (finding 6): four outer cursors pinned all four
+// connections while nested queries waited forever; now ONE read tx, no nesting.
 func TestProjectionConcurrentReadsDoNotDeadlock(t *testing.T) {
 	t.Parallel()
 

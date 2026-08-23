@@ -16,8 +16,7 @@ const (
 
 // writeFixture materializes a fixture dir: fixture.yaml with the given
 // manifest text plus an input tree (path -> content). A nil inputFiles
-// still creates the input/ dir so manifests declaring `input: input`
-// stay loadable.
+// still creates the input/ dir, so `input: input` manifests stay loadable.
 func writeFixture(t *testing.T, manifest string, inputFiles map[string]string) string {
 	t.Helper()
 

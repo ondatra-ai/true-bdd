@@ -8,12 +8,9 @@ import (
 	"testing"
 )
 
-// TestCrushGuardCommandQuotesTheExecutable checks the hook command
-// survives a path with shell metacharacters.
-//
-// crush parses this string as a shell command AND fails OPEN when a
-// hook cannot run — so an unquoted `$` or `'` in the binary's path does
-// not merely break the hook, it silently removes the only write gate.
+// TestCrushGuardCommandQuotesTheExecutable checks the hook command survives
+// a path with shell metacharacters — crush parses it as a shell command, so
+// an unquoted `$` or `'` in the binary's path would break the hook.
 func TestCrushGuardCommandQuotesTheExecutable(t *testing.T) {
 	t.Parallel()
 

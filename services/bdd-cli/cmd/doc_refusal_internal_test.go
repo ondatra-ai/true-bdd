@@ -8,19 +8,16 @@ import (
 	"testing"
 )
 
-// errResolve stands in for a docs.Resolver failure. Its text mimics the
-// real ErrDocPathNotConfigured message, which names the config key —
-// the substring the build-tests-unconfigured-registry BDD fixture
-// asserts on stdout.
+// errResolve mimics ErrDocPathNotConfigured's real text — the config-key
+// substring the build-tests-unconfigured-registry BDD fixture asserts on
+// stdout, so changing it here breaks that fixture, not this test.
 var errResolve = errors.New(
 	`document path not configured: "scenarios_yaml" (config key documents.scenarios_yaml)`,
 )
 
-// The refusal must keep the error contract the call sites had before it
-// existed — same wrapping, same text — because the only thing it was
-// added to change is the reporting. A caller that stopped wrapping
-// would break `errors.Is` for anyone matching on the resolver's
-// sentinel errors.
+// TestRefuseUnresolvedDocPreservesTheErrorContract checks refuseUnresolvedDoc
+// keeps the same wrapping and text the call sites had before it existed, so
+// errors.Is still matches the resolver's sentinel errors.
 func TestRefuseUnresolvedDocPreservesTheErrorContract(t *testing.T) {
 	stdout := captureStdout(t, func() {
 		got := refuseUnresolvedDoc("build tests", "scenario registry", errResolve)
@@ -35,10 +32,9 @@ func TestRefuseUnresolvedDocPreservesTheErrorContract(t *testing.T) {
 		}
 	})
 
-	// The console line is what the BDD fixture greps for. Cobra prints
-	// the returned error to stderr, which the fixture harness neither
-	// asserts nor hands to the judge — so without this line the refusal
-	// is invisible to every automated reader.
+	// stdout, not the returned error, is what the BDD fixture checks —
+	// cobra's default error printing goes to stderr, which the fixture
+	// never reads.
 	if !strings.Contains(stdout, "Cannot start: resolve scenario registry") {
 		t.Errorf("stdout missing the refusal line, got: %q", stdout)
 	}
@@ -48,10 +44,9 @@ func TestRefuseUnresolvedDocPreservesTheErrorContract(t *testing.T) {
 	}
 }
 
-// captureStdout runs body with os.Stdout redirected to a pipe and returns
-// what it wrote. Deliberately not parallel: it swaps a process global,
-// and Go holds t.Parallel() tests until the sequential ones finish, so
-// keeping this test sequential is what makes the swap safe.
+// captureStdout redirects os.Stdout to a pipe and returns what it wrote.
+// Never call t.Parallel() around it: swapping a process global races any
+// parallel test that also touches stdout while this one holds it swapped.
 func captureStdout(t *testing.T, body func()) string {
 	t.Helper()
 

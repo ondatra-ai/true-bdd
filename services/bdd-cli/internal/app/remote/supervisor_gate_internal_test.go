@@ -39,10 +39,8 @@ func buildTrueBDD(t *testing.T) string {
 }
 
 // TestGatedSupervisorFailsClosedWithoutRelease is the regression for the
-// spawn-before-bookkeeping crash window (finding 4): the resident supervisor is
-// the group leader but blocks on its release gate, so if the parent "crashes"
-// (aborts the gate) BEFORE recording the group identity, the supervisor EOF-
-// exits WITHOUT ever running the mutating command — no untracked mutating group.
+// spawn-before-bookkeeping crash window (finding 4): if the parent "crashes"
+// (aborts the gate) BEFORE recording the identity, the supervisor EOF-exits WITHOUT ever running the command.
 func TestGatedSupervisorFailsClosedWithoutRelease(t *testing.T) {
 	bin := buildTrueBDD(t)
 

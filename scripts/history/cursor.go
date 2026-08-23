@@ -9,10 +9,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
-// cursor records how much of the current turn is already logged.
-//
-// A blocking Stop hook can force a turn to continue; without this, the next
-// Stop would re-append the whole turn instead of only the continuation.
+// cursor records how much of the current turn is already logged. A
+// blocking Stop hook can force a turn to continue; without this, the next
+// Stop re-appends the whole turn instead of only the continuation.
 type cursor struct {
 	PromptID string `json:"prompt_id"`
 	Blocks   int    `json:"blocks"`

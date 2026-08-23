@@ -13,11 +13,9 @@ var (
 	ErrDefaultTierMissing = errors.New("default model tier names a tier that engine.models does not configure")
 )
 
-// Registry resolves a Tier to the ModelRef that runs it.
-//
-// Built once at startup from `engine.models` plus one default tier per
-// Role, and validated eagerly, so a typo'd tier fails the command up
-// front rather than silently downgrading a turn halfway through a walk.
+// Registry resolves a Tier to the ModelRef that runs it. Built once at
+// startup from `engine.models` plus one default tier per Role, and
+// validated eagerly, so a typo'd tier fails up front, not mid-walk.
 type Registry struct {
 	byTier       map[Tier]ModelRef
 	defaultTiers map[Role]Tier
@@ -97,10 +95,9 @@ func (r *Registry) Resolve(tier Tier) (ModelRef, error) {
 	return ref, nil
 }
 
-// ResolveRole validates and resolves a raw tier name straight from
-// YAML — a checklist's `prompt_model:` or a prompt's `model:` — for the
-// turn that is about to run. The empty string means the role's default,
-// i.e. `engine.default_<role>_model`.
+// ResolveRole validates and resolves a raw tier name straight from YAML —
+// a checklist's `prompt_model:` or a prompt's `model:` — for the turn about
+// to run. Empty string means the role's default, `engine.default_<role>_model`.
 func (r *Registry) ResolveRole(role Role, raw string) (ModelRef, error) {
 	if strings.TrimSpace(raw) == "" {
 		return r.Resolve(r.DefaultTier(role))

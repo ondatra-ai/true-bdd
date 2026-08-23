@@ -1,15 +1,8 @@
 package remote
 
 // docs.go implements the workspace document persistence backend (plan Slice
-// 0 — S1): the `doc_tree` / `doc_read` / `doc_write` synchronous work items,
-// parallel to the `query` handler in handlers.go, off the run machinery.
-//
-// doc_write is the S1 persistence backend: path-safety (workspace-relative,
-// canonical containment under docs/, symlink resolution of the FINAL target,
-// `.yaml`-only, an exact-pattern allowlist plus an exclusive-creatable story
-// glob), a YAML gate, per-document serialization with a stale-`base_revision`
-// conflict, an atomic temp+fsync+rename commit, and a write receipt. No
-// loaders/caching — direct file I/O (CLAUDE.md's Core Data Flow Principle).
+// 0 — S1): the doc_tree / doc_read / doc_write work items — path-safety,
+// YAML gate, atomic commit, no caching (CLAUDE.md's Core Data Flow Principle).
 
 import (
 	"bytes"
@@ -43,10 +36,9 @@ const existingFixedDocCount = 4
 // PRESERVES the existing file's mode — plan Slice 0 (d)).
 const newFilePerm = 0o644
 
-// The fixed (non-glob) workspace document paths (plan Target state).
-// Deliberately independent of the engine config: these are the workspace
-// UI-manifest contract (doc_tree order, doc_read/doc_write allowlist)
-// shared with the browser, which always addresses the canonical layout.
+// The fixed (non-glob) workspace document paths (plan Target state) —
+// deliberately independent of the engine config: this is the workspace
+// UI-manifest contract (doc_tree order, doc_read/doc_write allowlist) the browser hardcodes too.
 const (
 	archYAMLPath      = "docs/architecture/architecture.yaml"
 	productYAMLPath   = "docs/product/product.yaml"
@@ -128,9 +120,8 @@ type docWriteReceipt struct {
 }
 
 // docDedupEntry remembers ONE client_token's accepted write (plan r2 #17):
-// an identical replay (same request hash) returns the stored receipt; the
-// SAME token with DIFFERENT args is a 409 conflict. Bounded to one agent
-// lifetime (in-memory; a restart clears it).
+// an identical replay (same request hash) returns the stored receipt; a
+// SAME token with DIFFERENT args is a 409 conflict, bounded to one agent lifetime (in-memory).
 type docDedupEntry struct {
 	requestHash string
 	receipt     docWriteReceipt
@@ -167,11 +158,7 @@ func docAllowed(clean string) bool {
 	return dir == storyGlobDir && strings.HasSuffix(file, ".yaml") && file != ".yaml"
 }
 
-// malformedPath reports whether relPath fails a cheap, filesystem-free
-// syntactic check (traversal/absolute/NUL/wrong-extension/wrong-directory) —
-// split out of validatePath to keep its cyclomatic complexity in check. It is
-// a flat sequence of independent one-line rejections; splitting it further
-// would scatter the path-safety policy across more functions than it clarifies.
+// malformedPath is a cheap, filesystem-free syntactic check; kept flat, not split further (see validatePath).
 //
 //nolint:cyclop // see above
 func malformedPath(relPath string) (string, bool) {
@@ -198,9 +185,8 @@ func malformedPath(relPath string) (string, bool) {
 }
 
 // validatePath rejects traversal/absolute/NUL/wrong-extension/wrong-directory
-// paths BEFORE any filesystem access, then resolves the FINAL target through
-// any existing symlinks (not just parents) and enforces canonical containment
-// under the project root (plan Slice 0 / r1 #12, r2 #12).
+// paths before any filesystem access, then resolves symlinks on the FINAL
+// target (not just parents) and enforces canonical containment under the root (plan Slice 0/r1 #12/r2 #12).
 func (d *docStore) validatePath(relPath string) (string, string, error) {
 	clean, bad := malformedPath(relPath)
 	if bad {
@@ -216,9 +202,8 @@ func (d *docStore) validatePath(relPath string) (string, string, error) {
 }
 
 // resolveWithinRoot resolves every symlink along the LONGEST EXISTING
-// ancestor of folder/clean (covering the final target itself when it
-// exists), appends any not-yet-existing suffix (the exclusive-create case),
-// and rejects the result if it escapes the canonical root (plan r1 #12).
+// ancestor of folder/clean (covering the final target when it exists),
+// appends any not-yet-existing suffix, and rejects escapes of the canonical root (plan r1 #12).
 func resolveWithinRoot(folder, clean string) (string, error) {
 	canonicalRoot, err := filepath.EvalSymlinks(folder)
 	if err != nil {
@@ -247,8 +232,7 @@ func resolveWithinRoot(folder, clean string) (string, error) {
 
 // longestExistingAncestor walks UP from target until it finds a path segment
 // that exists on disk, returning that ancestor plus the not-yet-existing
-// suffix segments (in order) — the exclusive-create case (a brand new story
-// file has no existing leaf, but its parent directory does).
+// suffix segments — the exclusive-create case (a new story file has no leaf, but its parent dir does).
 func longestExistingAncestor(target string) (string, []string) {
 	existing := target
 
@@ -283,15 +267,9 @@ func revisionOf(exists bool, data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// isValidYAML reports whether data parses as EXACTLY ONE YAML document (the
-// P10a/P10b gate). A single decoder pass — not yaml.Unmarshal — because
-// Unmarshal silently accepts a multi-document stream by decoding only its FIRST
-// document, whereas the browser's authoritative single-document YAML.parse()
-// REJECTS multiple documents. Aligning the CLI gate with the client keeps the
-// committed file re-parseable by the workspace (a stray `---` separator in a
-// direct doc_write must not commit content the browser then treats as invalid).
-// See chat.go's stripAccidentalDocumentMarkers for the same mismatch on the
-// chat path.
+// isValidYAML reports whether data is EXACTLY ONE YAML document (P10a/P10b):
+// yaml.Unmarshal alone would silently accept a multi-document stream (only
+// its first doc), but the browser's YAML.parse() rejects one (see chat.go).
 func isValidYAML(data []byte) bool {
 	dec := yaml.NewDecoder(bytes.NewReader(data))
 
@@ -465,12 +443,9 @@ func targetMode(resolved string, exists bool) os.FileMode {
 	return info.Mode().Perm()
 }
 
-// currentState reads the current on-disk revision under the caller's per-document
-// lock. Only a genuine ErrNotExist counts as "absent" (existence false, absent
-// revision) — any OTHER read error (EACCES, EISDIR, transient I/O) returns
-// ioErr=true so the write is refused rather than collapsing to the absent
-// revision, which a base_revision of "absent" would otherwise use to CLOBBER an
-// existing-but-currently-unreadable file (bypassing the revision/conflict guard).
+// currentState treats only a genuine ErrNotExist as "absent"; any OTHER read
+// error (EACCES, EISDIR, transient I/O) returns ioErr=true so the write is
+// refused instead of collapsing to "absent", which would let a client CLOBBER an unreadable-but-existing file.
 func (d *docStore) currentState(resolved string) (bool, string, bool) {
 	existing, readErr := os.ReadFile(resolved) //nolint:gosec // resolved is containment-checked by validatePath
 	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
@@ -482,11 +457,9 @@ func (d *docStore) currentState(resolved string) (bool, string, bool) {
 	return exists, revisionOf(exists, existing), false
 }
 
-// dedupOutcome checks a client_token against the dedup table. The second
-// return is true when the caller must return the first immediately (either
-// an identical replay's original receipt, or a 409 conflict for a reused
-// token with different args); false means no prior record exists, so the
-// caller should proceed with the write.
+// dedupOutcome checks a client_token against the dedup table; the second
+// return is true when the caller must return the first immediately (a
+// replay's stored receipt, or a 409 for a reused token with different args).
 func (d *docStore) dedupOutcome(token, requestHash string) (docWriteOutcome, bool) {
 	entry, ok := d.dedupLookup(token)
 	if !ok {

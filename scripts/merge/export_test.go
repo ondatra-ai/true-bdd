@@ -1,9 +1,8 @@
 package merge
 
-// The comment machinery is unexported because nothing outside this package
-// has any business calling it. The parity test still has to, so it reaches it
-// through here — the standard export_test.go seam, which the compiler drops
-// from any non-test build.
+// The comment machinery is unexported; the parity test reaches it through
+// this export_test.go seam, which the compiler drops from any non-test
+// build.
 
 func botReview(body string) ghReview {
 	return ghReview{ID: 1, Body: body, User: ghUser{Login: "coderabbitai[bot]"}}

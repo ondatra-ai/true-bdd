@@ -7,9 +7,8 @@ import (
 )
 
 // The flattening MUST match the engine's (checklist_loader.go): sections
-// in file order, prompts in file order, skipped prompts omitted. That
-// walk assigns the %02d index in every artifact filename, so an
-// off-by-one here mislabels every turn in the run.
+// and prompts in file order, skipped prompts omitted — that walk assigns
+// the %02d index in every artifact filename.
 func TestLoadChecklistDocFlattensLikeTheEngine(t *testing.T) {
 	t.Parallel()
 
@@ -89,10 +88,9 @@ func TestChecklistDocPromptBounds(t *testing.T) {
 	}
 }
 
-// A session recorded before the engine logged its checklist path, or one
-// whose checklist has since been deleted, must degrade to an unloaded
-// doc — the label then falls back to the raw section id rather than the
-// whole report failing.
+// A session predating the checklist-path log, or one whose checklist was
+// since deleted, must degrade to an unloaded doc (raw section id) rather
+// than fail the whole report.
 func TestLoadChecklistDocDegrades(t *testing.T) {
 	t.Parallel()
 

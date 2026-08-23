@@ -68,9 +68,8 @@ emit_diff_context() {
     cat "$full"
   elif [ "$capped_bytes" -le "$DIFF_BUDGET_BYTES" ]; then
     # The common case after a re-record: enormous in cassettes, small in
-    # the files a person wrote. Nothing is truncated, so say that — the
-    # truncation branch below would print a NEGATIVE "not shown" figure
-    # and claim a prefix that is actually the whole thing.
+    # the files a person wrote — nothing truncated. The branch below would
+    # print a NEGATIVE "not shown" figure if reached here by mistake.
     echo "=== Diff ($scope) — COMPLETE for every file below ==="
     echo "=== Recorded cassettes and docs/doc-universe.html are omitted here; they ARE in the stat above. ==="
     echo ""
@@ -91,12 +90,9 @@ emit_diff_context() {
   rm -f "$full" "$capped"
 }
 
-# run_claude_or_explain <role> <prompt> <outfile>  — stdin is the context.
-#
-# The old failure was silent from the caller's side: `claude -p` wrote
-# "Prompt is too long" into the redirect target and exited non-zero,
-# `set -euo pipefail` killed the script, and nothing reached the terminal.
-# This names the reason on stderr.
+# run_claude_or_explain <role> <prompt> <outfile> — stdin is the context.
+# Old failure was silent: claude -p wrote "Prompt is too long" to the
+# redirect target, pipefail killed the script, nothing reached the terminal.
 run_claude_or_explain() {
   local role="$1" prompt="$2" outfile="$3" rc=0
 
@@ -105,12 +101,9 @@ run_claude_or_explain() {
   rc=$?
   set -e
 
-  # The EXIT STATUS decides whether the call failed. "Prompt is too long"
-  # only ever explains a failure — it must never declare one, because the
-  # model's own output can legitimately contain the phrase. It did on the
-  # very first run of this helper: the PR body describing this bug quoted
-  # the error, and a successful call was reported as a failure.
-  # Both streams are searched, since nothing pins the message to stdout.
+  # Exit status decides failure, never the "prompt is too long" text alone:
+  # the model's own output can legitimately contain that phrase — it did on
+  # this helper's first run, when a PR body quoting the bug was misdetected.
   local too_long=1
   if [ "$rc" -ne 0 ]; then
     grep -qi 'prompt is too long' "$outfile" "$outfile.err" 2>/dev/null && too_long=0

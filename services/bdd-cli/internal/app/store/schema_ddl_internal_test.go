@@ -30,10 +30,9 @@ func seedAgentAndRuns(t *testing.T, store Store) {
 	))
 
 	for _, run := range []string{"r1", "r2"} {
-		// r2 is terminal so ONE owner can hold both rows under the restored
-		// partial UNIQUE(owner_id) WHERE state != 'terminal' index (plan §1.1).
-		// The per-run event_seq / NOT NULL checks below are indifferent to run
-		// state — this is the single flagged DDL-fixture change.
+		// r2 is terminal so this owner can hold both rows under the partial
+		// UNIQUE(owner_id) WHERE state != 'terminal' index (see migrations.go).
+		// The checks below don't care about run state otherwise.
 		state := "running"
 		if run == "r2" {
 			state = stateTerminal

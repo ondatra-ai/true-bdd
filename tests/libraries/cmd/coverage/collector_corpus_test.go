@@ -58,10 +58,8 @@ func buildFullCorpus(t *testing.T) *corpus {
 	corp.logLines(run, lineLoaded())
 
 	// S5: two failed prompts and one apply, with no fix/apply evidence in
-	// the log → the apply is unattributed. The log still carries its
-	// "Loaded prompts" line, because the engine writes that before it
-	// evaluates anything: a run with result files and no log at all is a
-	// state the engine cannot reach.
+	// the log → the apply is unattributed. The engine always writes
+	// "Loaded prompts" before evaluating, so the log line stays present.
 	run = corp.addFixture("S5", "mini-twofail", "us mini 9.9")
 	corp.withChecklist(run, miniChecklist)
 	corp.evalCell(run, 1, "fail")

@@ -13,11 +13,9 @@ const (
 	orphanTermGrace = 2 * time.Second
 )
 
-// livenessProbe reports whether the process (pid) is alive AND is the SAME
-// process that recorded startIdentity (plan §1.6). It is used for the OWNER
-// decision, where the CONSERVATIVE direction on an unverifiable identity is to
-// assume the owner is ALIVE — so a possibly-live sibling's run is never
-// abandoned. (The signal path uses the STRICT supervisorVerified instead.)
+// livenessProbe reports whether pid is alive AND the same process that
+// recorded startIdentity (plan §1.6), biased CONSERVATIVE — unverifiable ⇒
+// alive, never wrongly abandoning a live sibling (see supervisorVerified, the STRICT opposite).
 func livenessProbe(pid int, startIdentity string) bool {
 	if pid <= 0 {
 		return false
@@ -42,9 +40,8 @@ func livenessProbe(pid int, startIdentity string) bool {
 }
 
 // supervisorVerified is the STRICT probe evaluated immediately before EACH
-// signal (finding 5): it NEVER falls back to bare-PID existence. A missing
-// recorded identity, an unreadable current identity, or any mismatch ⇒ false
-// (unknown ⇒ skip — never signal by PID alone, defeating PGID reuse).
+// signal (finding 5): unlike livenessProbe, any missing/unreadable identity
+// or mismatch ⇒ false — unknown ⇒ skip, never signal by bare PID (PGID reuse).
 func supervisorVerified(pgid int, startIdentity string) bool {
 	if pgid <= 0 || startIdentity == "" {
 		return false
@@ -64,11 +61,8 @@ func supervisorVerified(pgid int, startIdentity string) bool {
 }
 
 // bootReconcile runs the single-winner, FENCED boot reconciliation BEFORE the
-// remote registers (plan §1.6, finding 5): it refreshes this agent's row,
-// acquires the durable reconcile lease (skipping if a live claimant holds it),
-// then executes a NON-mutating inspection FENCED — draining/killing every
-// verified live orphan group FIRST, then abandoning each planned run under the
-// SAME fencing token. A live sibling's runs are untouched.
+// remote registers (plan §1.6, finding 5): it acquires the durable reconcile
+// lease, then reconcilePass drains/abandons under that fencing token.
 func (a *Agent) bootReconcile() {
 	nowMs := time.Now().UnixMilli()
 
@@ -90,10 +84,9 @@ func (a *Agent) bootReconcile() {
 
 	abandoned, terminated := a.reconcilePass(token)
 
-	// Release the lease as soon as this pass completes so a LATER replacement
-	// remote can reconcile the runs THIS remote may create and then abandon on
-	// its own death (plan §1.6). Expiring the row (not deleting it) preserves
-	// fencing-token monotonicity.
+	// Release the lease as soon as this pass completes so a later replacement
+	// remote can reconcile runs this remote creates and later abandons on its
+	// own death (plan §1.6); expiring (not deleting) preserves token monotonicity.
 	a.releaseReconcileLease(token, time.Now().UnixMilli())
 
 	if abandoned > 0 || terminated > 0 {
@@ -101,12 +94,9 @@ func (a *Agent) bootReconcile() {
 	}
 }
 
-// reconcilePass executes the fenced reconciliation plan: it inspects (NON-
-// mutating) via the store's classifier, DRAINS/KILLS every planned orphan group
-// FIRST (re-validating the supervisor identity and renewing the token before
-// EACH signal), THEN abandons each planned run under the SAME token. Draining
-// every group before ANY terminal write closes the crash-between-kill-and-
-// abandon window (finding 5). It STOPS the instant the lease is lost.
+// reconcilePass executes the fenced plan: DRAINS/KILLS every planned orphan
+// group FIRST, THEN abandons each planned run under the SAME token — draining
+// before any abandon closes the crash-between-kill-and-abandon window (finding 5).
 func (a *Agent) reconcilePass(token int64) (int, int) {
 	// NON-mutating inspection. livenessProbe (conservative) protects live
 	// siblings; the strict supervisorVerified re-checks before each signal.
@@ -146,9 +136,8 @@ func (a *Agent) reconcilePass(token int64) (int, int) {
 }
 
 // terminateOrphanFenced drains then kills a verified live orphan group,
-// re-validating the SUPERVISOR identity AND renewing the fencing lease
-// immediately before EACH signal (finding 5). A missing/unreadable identity is
-// never signalled. Returns whether the group was signalled.
+// re-validating the SUPERVISOR identity and renewing the fencing lease
+// immediately before EACH signal (finding 5); an unreadable identity is never signalled.
 func (a *Agent) terminateOrphanFenced(pgid int, identity string, token int64) bool {
 	if pgid <= 0 {
 		return false

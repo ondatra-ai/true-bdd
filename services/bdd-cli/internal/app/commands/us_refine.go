@@ -43,15 +43,9 @@ func loadStoryFromFile(
 	return func(_ context.Context) ([]*story.Story, error) {
 		doc, err := loader.Load(storyNumber)
 		if err != nil {
-			// The "run us create first" advice is only true when the
-			// story is genuinely absent. Load also fails when two files
-			// claim the id, when the file cannot be read, and when it is
-			// not valid YAML — and for those the advice is actively
-			// wrong: creating another copy is the opposite of the fix
-			// for an ambiguous id, and does nothing for a syntax error.
-			// Since this text is now the user-facing refusal rather than
-			// a stderr line under a usage dump, a wrong instruction is
-			// worse than none.
+			// The "run us create first" advice applies only when the story is
+			// genuinely absent, not when Load fails on a duplicate id, an
+			// unreadable file, or invalid YAML — that advice would be actively wrong for those cases.
 			if errors.Is(err, pkgerrors.ErrStoryFileNotFound) {
 				return nil, fmt.Errorf(
 					"story file not found — run `true-bdd us create %s` first: %w",

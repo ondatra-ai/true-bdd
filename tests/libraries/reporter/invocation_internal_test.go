@@ -5,10 +5,9 @@ import (
 	"testing"
 )
 
-// TestReconstructedClaudeInvocation pins the reconstruction against the
-// flag order in src/claudecode/internal/cli/discovery.go. If BuildCommand
-// changes and this is not updated, the report would show a command that
-// no longer resembles the one the engine runs.
+// TestReconstructedClaudeInvocation pins the reconstruction against the flag
+// order in src/claudecode/internal/cli/discovery.go's BuildCommand — nothing
+// else catches the two drifting apart.
 func TestReconstructedClaudeInvocation(t *testing.T) {
 	turn := &Turn{
 		CLI:             cliClaude,

@@ -9,12 +9,9 @@ import (
 
 func strPtr(s string) *string { return &s }
 
-// TestChatSystemPromptDemandsExactFormatting guards against a real regression
-// (a10): a real Claude turn reproduced the WHOLE file with a subtly different
-// indentation, which the client-side YAML gate correctly rejected as invalid
-// (P10b) — so the edit was silently discarded and never reached disk. The
-// system prompt must explicitly demand byte-for-byte fidelity outside the
-// requested change.
+// TestChatSystemPromptDemandsExactFormatting guards a real regression (a10):
+// a Claude turn reproduced the file with different indentation, which the
+// client-side YAML gate (P10b) silently discarded — so the prompt must demand byte-for-byte fidelity.
 func TestChatSystemPromptDemandsExactFormatting(t *testing.T) {
 	path := archYAMLPath
 	prompt := chatSystemPrompt(chatPayload{CurrentPath: &path, CurrentContent: strPtr("version: 1\n")})
@@ -26,15 +23,9 @@ func TestChatSystemPromptDemandsExactFormatting(t *testing.T) {
 	}
 }
 
-// TestStripAccidentalDocumentMarkers reproduces a LIVE a10 failure: asked for
-// "no code fences", real Claude (opus-4) instead wrapped new_content in a
-// leading/trailing YAML `---` document separator. Go's yaml.Unmarshal
-// silently decodes only the first document in the resulting two-document
-// stream (so the CLI's own gate accepts it), but the browser's strict
-// single-document `YAML.parse()` throws "multiple documents" — so the
-// client-side P10b gate discarded an otherwise-correct edit FOREVER (the
-// disk write never even reached the CLI). This must be stripped server-side
-// before the edit is ever returned to the browser.
+// TestStripAccidentalDocumentMarkers reproduces a live a10 failure (real
+// Claude, opus-4) — see leadingDocMarker's doc comment for why this must be
+// stripped server-side.
 func TestStripAccidentalDocumentMarkers(t *testing.T) {
 	wrapped := "---\nversion: 1\nterms:\n  - name: A\n\n---\n"
 

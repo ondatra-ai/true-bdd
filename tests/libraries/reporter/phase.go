@@ -51,11 +51,8 @@ type Phase struct {
 	CostUSD float64
 	Tokens  int
 	// TestRuns indexes into Fixture.TestRuns for the subprocesses this
-	// slice contains. Carried explicitly because the label cannot
-	// recover it: a fix loop reruns the same test repeatedly, so several
-	// slices share the label "Test run (playwright · rerun)" and a
-	// consumer matching on it would show every rerun's output under
-	// every rerun's row.
+	// slice contains. Explicit because a label can't recover it: reruns of
+	// the same test share one label, so matching on it would misattribute output.
 	TestRuns []int
 }
 
@@ -64,19 +61,13 @@ type Phase struct {
 // "0ms shutdown" row would be noise.
 const shutdownFloor = 0.0005
 
-// gapFloor is the smallest engine residual around a test run worth its
-// own row. Below this the engine's record and the runner's are the same
-// instant; the time is folded into the adjacent slice so the phases
-// still sum to the gap.
+// gapFloor is the smallest engine residual around a test run worth its own
+// row; smaller residuals fold into the adjacent slice (see buildPhases).
 const gapFloor = 0.0005
 
-// buildPhases cuts one fixture's wall clock into contiguous slices.
-//
-// Everything is measured except the leading harness block, which is a
-// residual: `go test` reports a subtest's total but never stamps when it
-// began, so prep is whatever the other measured slices do not claim.
-// That is also why the slices sum to the wall clock by construction —
-// the report prints the drift so a hole in this model stays visible.
+// buildPhases cuts one fixture's wall clock into contiguous slices. Every
+// slice is measured except the leading harness block — a residual, since
+// `go test` never stamps a subtest's start — so slices sum to the wall clock by construction.
 func buildPhases(fixture *Fixture) []Phase {
 	var phases []Phase
 
@@ -218,18 +209,8 @@ func appendTurns(phases []Phase, fixture *Fixture) []Phase {
 }
 
 // appendGap cuts the span between two model turns into what actually
-// happened in it.
-//
-// The gap after an apply turn is not engine bookkeeping: the engine's
-// PostFix hook re-executes the test there to decide whether the fix
-// worked, and for a webServer-startup subject that is a whole
-// docker-build-and-run suite. Reporting all of it as "Engine between
-// turns" hid the only step in a `--fix` run that validates anything,
-// and described it as prompt-building.
-//
-// Every emitted slice is contiguous and they sum to the gap exactly: a
-// residual too small for its own row is folded into the slice it abuts
-// rather than dropped.
+// happened: a PostFix rerun (up to a docker-build-and-run suite) gets its
+// own slice instead of folding into "Engine between turns", hiding a `--fix` run's only validating step.
 func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase {
 	runs := testRunsWithin(fixture, from, until)
 	if len(runs) == 0 {
@@ -266,15 +247,9 @@ func appendGap(phases []Phase, fixture *Fixture, from, until time.Time) []Phase 
 	return phases
 }
 
-// testRunsWithin lists the runner subprocesses that finished inside the
-// window, oldest first, as indices into fixture.TestRuns. A run the
-// engine could not place — no exit timestamp — is left out, so the gap
-// falls back to one undivided slice rather than inventing a position
-// for it.
-//
-// Indices rather than values: the slice each run produces has to name
-// which run it was, and two reruns of the same test are identical in
-// every field a consumer could match on.
+// testRunsWithin lists the runner subprocesses inside the window, oldest
+// first, as indices into fixture.TestRuns. A run with no exit timestamp is
+// left unplaceable and excluded rather than mispositioned.
 func testRunsWithin(fixture *Fixture, from, until time.Time) []int {
 	var runs []int
 
@@ -316,10 +291,9 @@ func engineGapPhase(seconds float64) Phase {
 	}
 }
 
-// testRunPhase is one runner subprocess on the timeline. The slice is
-// bounded by the surrounding turn records, so it can carry a sliver of
-// engine work either side; the detail states the runner's own measured
-// wall clock so the reader can see how much of the slice is the tests.
+// testRunPhase is one runner subprocess on the timeline: bounded by the
+// surrounding turn records, so it can carry a sliver of engine work either
+// side, with the detail stating the runner's own measured wall clock.
 func testRunPhase(run TestRun, position int, seconds float64) Phase {
 	return Phase{
 		Label:    "Test run (" + run.Label() + ")",
@@ -412,19 +386,9 @@ func postRunPhase(fixture *Fixture, seconds float64) Phase {
 	}
 }
 
-// discoveryBound describes how the test-run slice was measured.
-//
-// The slice is bounded by log records, so it also carries whatever the
-// engine did either side of the subprocess (loading architecture.yaml,
-// reaching the checklist loader). When the runner reported its own
-// wall clock, saying how much of the slice it accounts for is the
-// difference between a span the reader has to trust and one they can
-// check.
-//
-// Only discovery-phase invocations count. A `--fix` run reruns the
-// failing test after every applied fix, and those exit records sit in
-// the same list — folding them in would claim more measured time than
-// the slice contains, which is worse than claiming none.
+// discoveryBound describes how the test-run slice was measured, counting
+// only discovery-phase invocations: a `--fix` run's rerun records share the
+// list, and folding them in would claim more measured time than the slice contains.
 func discoveryBound(fixture *Fixture) string {
 	measured := time.Duration(0)
 	count := 0

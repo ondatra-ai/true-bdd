@@ -1,14 +1,8 @@
 package inventory_test
 
-// Content-extraction goldens (plan §1/§4 "Go"). These pin the TARGET
-// snapshot wire the scanner must emit for the story review popup: per-story
-// declared_title/declared_status/match_count/source_file/error/content/raw
-// (+ raw_truncated) and the epic Title. To stay COMPILE-SAFE against a
-// schema that does not exist yet, every assertion decodes the REAL
-// inventory.Scan output as JSON into LOCAL target structs (never
-// yet-nonexistent fields on the real types): the tests compile today and
-// fail (red) because Scan does not populate the new fields, and go green
-// once the scanner emits them. The implementer builds to these structs.
+// Content-extraction goldens (plan §1/§4 "Go") pin the target snapshot wire
+// for the story review popup, decoded from the REAL inventory.Scan output
+// into local target structs rather than asserting nonexistent fields (see scanJSON).
 
 import (
 	"encoding/json"

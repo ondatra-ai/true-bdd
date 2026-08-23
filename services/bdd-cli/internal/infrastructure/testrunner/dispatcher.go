@@ -25,40 +25,33 @@ const (
 	statusTimedOut = "timedOut"
 )
 
-// Config is one test-suite block consumed by a Runner. Field shape
-// mirrors architecture.TestConfig; conversion happens at the LoadItems
-// boundary in commands/build_code.go to keep this package free of any
-// dependency on the architecture loader.
+// Config is one test-suite block consumed by a Runner, mirroring
+// architecture.TestConfig; conversion happens at the LoadItems boundary
+// in commands/build_code.go.
 type Config struct {
 	Path       string // repo-relative test root (e.g. "tests/integration")
 	Framework  string // matches one of the Framework* constants
 	ConfigFile string // repo-relative config (e.g. "tests/playwright.config.ts")
 	Pattern    string // framework-specific filename glob (informational)
 
-	// Command is the complete command line this suite's suite runs
-	// under, verbatim from the spec's `commands:` block. Only the
-	// selected mode's string is carried here, so this package never
-	// learns the record/replay/live vocabulary — picking one is the
-	// caller's decision, at the LoadItems boundary.
+	// Command is the complete command line this suite runs under, verbatim
+	// from the spec's `commands:` block — whichever mode the caller
+	// selected at the LoadItems boundary.
 	Command string
 }
 
 // Runner is the framework-agnostic primitive every per-framework runner
-// implements. Discover walks every test under the supplied Config and
-// returns the currently-failing ones; RunOne re-executes a single test
-// in isolation by its framework-native id.
+// implements: Discover walks every test under Config and returns the
+// currently-failing ones; RunOne re-executes one by its framework-native id.
 type Runner interface {
-	// Discover runs every test under cfg and returns one FailingTest per
-	// failure. The runner is responsible for tagging each entry with
-	// the supplied service + suite + the dispatcher's framework name.
-	// Returns a non-nil error only on infrastructure problems (missing
-	// binary, unparseable output) — test failures are values, not errors.
+	// Discover runs every test under cfg, returning one FailingTest per
+	// failure tagged with service/suite/framework. A non-nil error means an
+	// infrastructure problem — test failures are values, not errors.
 	Discover(ctx context.Context, cfg Config, service, suite string) ([]*FailingTest, error)
 
-	// RunOne re-executes a single failing test in isolation by its
-	// framework-native TestName. Returns whether the test now passes,
-	// the raw output (tail-truncated by the caller), and a non-nil
-	// error only on infrastructure problems.
+	// RunOne re-executes one failing test in isolation by its framework-native
+	// TestName, returning pass/fail, raw output (tail-truncated by the
+	// caller), and a non-nil error only on infrastructure problems.
 	RunOne(ctx context.Context, ft *FailingTest) (passed bool, output string, err error)
 }
 
@@ -69,10 +62,9 @@ type Dispatcher struct {
 	byFramework map[string]Runner
 }
 
-// NewDispatcher builds a Dispatcher from the supplied runner map. The
-// caller registers one Runner per framework name. Unknown frameworks
-// returned from architecture.yaml surface ErrUnknownFramework at call
-// time.
+// NewDispatcher builds a Dispatcher from the supplied runner map, one
+// Runner per framework name; a framework absent from the map surfaces
+// ErrUnknownFramework at call time.
 func NewDispatcher(runners map[string]Runner) *Dispatcher {
 	owned := make(map[string]Runner, len(runners))
 	for k, v := range runners {

@@ -13,11 +13,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// epicFilenameRE extracts the raw filename-number digits from an epic
-// file (epic-NN-*.yaml). The digits are kept so the scanner can decide
-// whether the encoding is the canonical %02d form epic_loader.go's glob
-// (epic-%02d-*.yaml) resolves — the number itself is parsed without
-// leading zeros for the UI's data-epic-number contract.
+// epicFilenameRE extracts the filename-number digits from an epic file
+// (epic-NN-*.yaml), kept raw so the scanner can tell whether the encoding
+// is the canonical %02d form epic_loader.go's glob resolves.
 var epicFilenameRE = regexp.MustCompile(`^epic-(\d+)-.*\.yaml$`)
 
 // epicScanInput bundles the resolved directories the epic scan walks.
@@ -29,10 +27,8 @@ type epicScanInput struct {
 }
 
 // parsedEpic is one epic's cheaply-parsed identity plus its epic-declared
-// story list — the metadata the incremental (budget > 0) scan needs BEFORE
-// it reads any story file (finding 2). Reading the epic document is cheap
-// relative to reading N story files, so parsing all epic docs first lets the
-// scanner then stream and fit story rows one at a time.
+// story list — what the incremental (budget > 0) scan needs before reading
+// any story file, so epics parse first and stories stream one at a time.
 type parsedEpic struct {
 	header    Epic
 	declared  []storymodel.Story
@@ -40,9 +36,8 @@ type parsedEpic struct {
 }
 
 // scanEpics globs the epics directory, resolves each epic's identity and
-// story rows, then marks epics sharing a filename number as duplicates
-// (plan §3.4). Epics are ordered by filename for stable rendering. This is
-// the UNLIMITED (budget <= 0) path: it retains every enriched story.
+// story rows, then marks epics sharing a filename number as duplicates.
+// This is the UNLIMITED (budget <= 0) path: it retains every enriched story.
 func scanEpics(input epicScanInput) []Epic {
 	parsed := parseEpicHeaders(input)
 
@@ -62,13 +57,9 @@ func scanEpics(input epicScanInput) []Epic {
 	return epics
 }
 
-// scanEpicsFitted is the INCREMENTAL (budget > 0) path (finding 2): it parses
-// every epic doc cheaply, then reads and fits story rows ONE AT A TIME
-// through the snapshotBuilder so aggregate retained memory is bounded by the
-// budget plus one in-flight story. Duplicate-number and duplicate-declared-id
-// flags are computed from the parsed metadata (which is fully known before
-// any story file is read) so a fitted row still carries the same flags the
-// unlimited path would set.
+// scanEpicsFitted is the INCREMENTAL (budget > 0) path (finding 2): epics
+// parse cheaply, stories fit ONE AT A TIME via snapshotBuilder, and
+// duplicate flags come from the full parsed set upfront, matching what the unlimited path would set.
 func scanEpicsFitted(input epicScanInput, base Snapshot, budget int) Snapshot {
 	parsed := parseEpicHeaders(input)
 	dupNumbers := duplicateFilenameNumbers(parsed)
@@ -139,18 +130,9 @@ func parseEpicHeaders(input epicScanInput) []parsedEpic {
 	return out
 }
 
-// parseEpicHeader classifies one epic file and returns its identity plus the
-// epic-declared story list. A filename that carries no epic number is not an
-// epic and is skipped (ok=false). A filename whose number is not the
-// canonical %02d encoding epic_loader.go's glob resolves is still listed
-// (with its identity), but marked NoncanonicalFilename and given NO declared
-// stories: `us create <n>.<x>` cannot find epic-%02d-*.yaml, so none of its
-// stories are Create-addressable and advertising them would be dishonest.
-//
-// Decode uses the REAL typed models.EpicDocument (§1c): its declared stories
-// carry the same rejecting ScenarioStep semantics us create enforces, so a
-// YAML-valid epic with an invalid step is `invalid` with no rows — the
-// harness never renders Create controls us create rejects.
+// parseEpicHeader classifies one epic file: identity plus its epic-declared story list.
+// A noncanonical-%02d filename gets NoncanonicalFilename and no declared stories (us
+// create can't glob it); decoding rejects invalid steps as `invalid` (typed models.EpicDocument, §1c).
 func parseEpicHeader(path string) (parsedEpic, bool) {
 	number, canonical, ok := epicNumber(filepath.Base(path))
 	if !ok {
@@ -191,10 +173,8 @@ func parseEpicHeader(path string) (parsedEpic, bool) {
 }
 
 // scanEpicStories builds the story rows for a parseable epic's declared
-// stories. Duplicate epic-declared story ids are flagged snapshot-wide by
-// markDuplicateDeclaredIDs after every epic is scanned (unlimited path), not
-// here. The whole declared story (its title/status/statement/ACs) is passed
-// through so each row carries the epic-declared content fallback (plan §1b).
+// stories (unlimited path only — duplicate flags come later, snapshot-wide,
+// via markDuplicateDeclaredIDs). Each row carries the epic-declared content fallback (plan §1b).
 func scanEpicStories(number int, declared []storymodel.Story, input epicScanInput) []Story {
 	stories := make([]Story, 0, len(declared))
 
@@ -214,9 +194,7 @@ func scanEpicStories(number int, declared []storymodel.Story, input epicScanInpu
 
 // epicNumber parses the filename number from an epic-NN-*.yaml basename
 // and reports whether the encoding is the canonical %02d form
-// epic_loader.go resolves. `epic-42-*` and `epic-07-*` are canonical
-// (%02d of 42 is "42", of 7 is "07"); `epic-7-*` and `epic-042-*` are
-// not — the loader glob would never find them.
+// epic_loader.go resolves (see TestHonestyEpicCanonicalEncoding for cases).
 func epicNumber(basename string) (int, bool, bool) {
 	groups := epicFilenameRE.FindStringSubmatch(basename)
 	if groups == nil {
@@ -271,12 +249,9 @@ func duplicateFilenameNumbers(parsed []parsedEpic) map[int]bool {
 	return dup
 }
 
-// markDuplicateDeclaredIDs flags every displayed story row whose declared
-// id appears more than once across the ENTIRE snapshot — not just within
-// one epic. Two epics that both declare `70.1` collide on `us refine
-// 70.1` / `us apply 70.1` just as two rows in one epic do, so both rows
-// must raise the flag. Empty declared ids are skipped: a missing id is
-// its own state (created=missing), not a cross-row duplicate.
+// markDuplicateDeclaredIDs flags a story row whose declared id repeats
+// across the ENTIRE snapshot, not just within one epic — `us refine/apply
+// 70.1` collides the same whether the id repeats within or across epics.
 func markDuplicateDeclaredIDs(epics []Epic) {
 	counts := make(map[string]int)
 

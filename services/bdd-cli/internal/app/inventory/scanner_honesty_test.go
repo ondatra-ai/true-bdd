@@ -10,14 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// This file is the inverted honesty probe (was tmp/codex_inventory_probe_test.gotxt,
-// which asserted the BROKEN behavior). Every assertion here pins the
-// CORRECT loader-mirroring surface (MUST-FIX #4): a missing/invalid
-// registry taints the applied cell, a story the real typed model rejects
-// is created=invalid, an architecture with no services is invalid, only
-// canonical epic filenames are Create-addressable, and duplicate declared
-// ids are detected snapshot-wide. Trees are built in-code so the golden
-// cases need no Playwright fixture.
+// The inverted honesty probe (was tmp/codex_inventory_probe_test.gotxt,
+// which asserted the BROKEN behavior; MUST-FIX #4) — pins loader-mirroring
+// behavior for registry taint, typed-model rejection, and duplicate ids.
 
 // Shared in-code fixture paths (canonical host layout under a tmpdir).
 const (
@@ -203,10 +198,8 @@ func TestHonestyArchitectureMirrorsBuildCodeLoader(t *testing.T) {
 			inventory.StatusPresent,
 		},
 		// The workspace file-as-source schema (task workspace-overview-design-parity,
-		// R3): a top-level `services:` MAP, no `architecture:` wrapper — mirrors
-		// services/bdd-web/src/app/lib/workspace/derive.ts's deriveArchitecture. Both schemas
-		// must classify correctly since the SAME inventory chip serves the protocol
-		// detail page AND the workspace overview canvas.
+		// R3): a top-level `services:` map, no `architecture:` wrapper, mirroring
+		// derive.ts's deriveArchitecture — same chip serves both UI surfaces.
 		{"workspace_schema_no_services", "services: {}\n", inventory.StatusInvalid},
 		{
 			"workspace_schema_with_services",

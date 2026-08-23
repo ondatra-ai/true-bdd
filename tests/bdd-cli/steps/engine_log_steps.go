@@ -11,44 +11,36 @@ import (
 	"strings"
 )
 
-// engineLogRelPath is where the CLI under test writes its structured log,
-// relative to a run's tmpdir: paths.tmp_dir ("./tmp" in the engine config
-// seed) joined with the file the bootstrap logger opens. The engine runs
-// with the run dir as its cwd, so this resolves under Result.TmpDir.
+// engineLogRelPath is where the CLI writes its structured log, relative
+// to a run's tmpdir (paths.tmp_dir in the engine config seed). The engine
+// runs with the run dir as cwd, so this resolves under Result.TmpDir.
 const engineLogRelPath = "tmp/true-bdd.log.json"
 
-// Log messages the engine emits once per event, at the two seams these
-// assertions read. "Spawning test runner" is written by the testrunner
-// package before every framework subprocess fork; "Dispatching AI turn"
-// by the AI router before every model turn. Matching on the message binds
-// these steps to the engine's own vocabulary rather than to a stdout
-// phrasing or a byte count.
+// Log messages the engine emits once per event: "Spawning test runner"
+// before every framework subprocess fork, "Dispatching AI turn" before
+// every model turn — the engine's own vocabulary, not a stdout phrasing.
 const (
 	engineMsgSpawnTestRunner = "Spawning test runner"
 	engineMsgDispatchAITurn  = "Dispatching AI turn"
 )
 
 // engineLogRecord is the slice of one slog JSON line these assertions
-// need: the message that names the event, and the binary a test-runner
-// spawn carries. Every other field the engine logs — timings, byte
-// counts, cost — is left undecoded.
+// need: the message naming the event, and the binary a test-runner spawn
+// carries. Other fields (timings, byte counts, cost) are left undecoded.
 type engineLogRecord struct {
 	Msg    string   `json:"msg"`
 	Binary string   `json:"binary"`
 	Args   []string `json:"args"`
 }
 
-// ErrNoEngineLog is returned when a run left no structured log at all,
-// which is distinct from a log that recorded no spawns: a run that never
-// reached bootstrap cannot answer what the engine did, and a silent zero
-// would pass a "dispatched no AI turns" clause for the wrong reason.
+// ErrNoEngineLog means a run left no structured log at all — distinct
+// from a log recording zero spawns. Treating them the same would let a
+// run that never reached bootstrap falsely pass "dispatched no AI turns".
 var ErrNoEngineLog = errors.New("the run wrote no engine log")
 
-// readEngineLog parses the CLI's slog file (newline-delimited JSON, one
-// record per line) into records. A blank trailing line and any line that
-// is not a JSON object are skipped rather than failing the read: the file
-// is append-mode and these assertions only ask about whole, well-formed
-// records.
+// readEngineLog parses the CLI's slog file (newline-delimited JSON) into
+// records. A blank trailing line or malformed line is skipped, not
+// failed: the file is append-mode and only whole records matter here.
 func readEngineLog(state *State) ([]engineLogRecord, error) {
 	if state.Result == nil {
 		return nil, state.fail("%w", ErrNoRun)
@@ -95,9 +87,8 @@ func countEngineLog(records []engineLogRecord, msg string) int {
 }
 
 // assertTestRunnerSpawned pins that the engine spawned a named framework
-// runner at least once — the "Cannot run …" case, where the binary the
-// spec names does not exist and the only proof it was reached is the spawn
-// record written before the fork.
+// runner at least once — e.g. the "Cannot run …" case, where the spawn
+// record is the only proof the binary was reached before the fork failed.
 func assertTestRunnerSpawned(state *State, args []string) error {
 	want := args[0]
 
@@ -124,14 +115,9 @@ func assertTestRunnerSpawned(state *State, args []string) error {
 		"expected the engine to spawn test runner %q, but it spawned %v", want, spawned)
 }
 
-// assertTestRunnerArgs pins the argv a spawned framework runner carried.
-// The scenario names a regexp; the step passes when at least one
-// "Spawning test runner" record's arguments — joined into one
-// space-separated string — match it. This is how a scenario proves the
-// engine ran the exact command its spec declared (a `-run ^TestName$`
-// filter, a machine-readable flag) rather than merely spawning *a*
-// runner. The capture group is a regexp so one definition serves every
-// scenario that names a different argv fragment.
+// assertTestRunnerArgs pins the argv a spawned runner carried: passes
+// when any spawn record's args, space-joined, match the given regexp —
+// proof the engine ran the exact command declared, not merely *a* runner.
 func assertTestRunnerArgs(state *State, args []string) error {
 	pattern, err := regexp.Compile(args[0])
 	if err != nil {
@@ -164,9 +150,8 @@ func assertTestRunnerArgs(state *State, args []string) error {
 }
 
 // assertTestRunnerCount pins how many framework runners the engine
-// spawned. The whole-suite discovery pass is one; a per-fix rerun is
-// another — so the count is what separates "discovery failed and stopped"
-// from "it went on to rerun a fixed test".
+// spawned — what separates "discovery failed and stopped" (one) from
+// "it went on to rerun a fixed test" (another).
 func assertTestRunnerCount(state *State, args []string) error {
 	want, err := strconv.Atoi(args[0])
 	if err != nil {
@@ -188,11 +173,8 @@ func assertTestRunnerCount(state *State, args []string) error {
 }
 
 // assertNoTestRunnerSpawned pins that the engine spawned NO framework
-// runner at all — the startup-refusal case, where the static pre-pass
-// rejects the run before the first subprocess fork, so the proof is the
-// ABSENCE of the spawn record every fork writes. The engine still wrote a
-// log (its "Refusing to start" record went to slog), so readEngineLog
-// succeeds and finding zero spawns is the pass, not the missing file.
+// runner — the startup-refusal case. The engine still wrote a log (its
+// "Refusing to start" record), so this passes on zero spawns, not a missing file.
 func assertNoTestRunnerSpawned(state *State, _ []string) error {
 	records, err := readEngineLog(state)
 	if err != nil {
@@ -216,10 +198,9 @@ func assertNoTestRunnerSpawned(state *State, _ []string) error {
 	return nil
 }
 
-// assertAITurnCount pins how many model turns the engine dispatched.
-// Counted at the router's dispatch record, so it is one number regardless
-// of which CLI a tier named. Zero is the read-only walk that never reaches
-// a fix.
+// assertAITurnCount pins how many model turns the engine dispatched,
+// counted at the router's dispatch record so it is one number regardless
+// of which CLI a tier named. Zero is the read-only walk that never fixes.
 func assertAITurnCount(state *State, args []string) error {
 	want, err := aiTurnCount(args[0])
 	if err != nil {

@@ -36,12 +36,9 @@ type ListEdit struct {
 	Value string `json:"value"`
 }
 
-// ExpectedDiff compares what the two runs were asked to satisfy.
-//
-// This is only meaningful because the harness snapshots each run's
-// manifest: read from the source tree, both sides would always be
-// today's fixture.yaml and every comparison would show no change.
-// SourceLeft/SourceRight say which side is a real snapshot.
+// ExpectedDiff compares what the two runs were asked to satisfy. Only
+// meaningful for a real per-run snapshot (see reporter.Manifest.Source);
+// SourceLeft/SourceRight say which side is one.
 type ExpectedDiff struct {
 	SourceLeft   string       `json:"source_left"`
 	SourceRight  string       `json:"source_right"`
@@ -121,10 +118,7 @@ func compareExpected(left, right *reporter.Manifest) ExpectedDiff {
 		SourceRight: sourceOf(right),
 	}
 
-	// Only a real per-run snapshot on both sides makes this a comparison
-	// of what the runs were actually held to. Two repo reads are the same
-	// bytes twice, and saying "no change" about them would be a lie of
-	// omission.
+	// Two repo reads are the same bytes twice; saying "no change" about them would be a lie of omission.
 	expected.Comparable = expected.SourceLeft == string(reporter.ManifestSnapshot) &&
 		expected.SourceRight == string(reporter.ManifestSnapshot)
 

@@ -26,10 +26,8 @@ func NewServer(store *Store) *Server {
 	return &Server{store: store}
 }
 
-// Handler is the routing table.
-//
-// Go's own ServeMux does method and wildcard patterns, so there is no
-// router dependency here.
+// Handler is the routing table. Go's own ServeMux does method and
+// wildcard patterns, so there is no router dependency here.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 

@@ -20,10 +20,9 @@ type sectionDoc struct {
 	ValidationPrompts []promptDoc `yaml:"validation_prompts"`
 }
 
-// promptDoc is one validation prompt, decoded with production parity:
-// the map-based unmarshal accepts only string-typed values (a boolean
-// `skip: false` therefore decodes to "" and does NOT skip, exactly as
-// src/internal/domain/models/checklist/prompt.go does).
+// promptDoc is one validation prompt, decoded with production parity
+// (map-based unmarshal accepts only string values — see TestSkipParity
+// in universe_test.go for the skip: false quirk this preserves).
 type promptDoc struct {
 	Question    string
 	Rationale   string

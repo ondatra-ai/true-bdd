@@ -49,26 +49,28 @@ check() {
 			awk -v F="$file" -v LANG="$lang" -v MAXP="$MAX_PROSE" -v MAXB="$MAX_BLOCK" '
 				function flush(next_line,   exempt) {
 					if (prose + block == 0) return
-					exempt = (LANG == "go") ? (next_line ~ /^package /) : first_run
+					# Go: the run preceding `package X`. sh/yaml: a run
+					# preceding ALL content — ci.yml opens with `name: CI`,
+					# so its first comment is not a header.
+					exempt = (LANG == "go") ? (next_line ~ /^package /) : run_at_top
 					if (!exempt && prose > MAXP)
 						printf "%s:%d: %d lines of prose (max %d)\n", F, start, prose, MAXP
 					if (block > MAXB)
 						printf "%s:%d: %d-line block scheme (max %d)\n", F, start, block, MAXB
-					if (LANG != "go") first_run = 0
 					prose = 0; block = 0
 				}
+				BEGIN { at_top = 1 }
 				NR == 1 && /^#!/ { next }
 				/^[[:space:]]*(\/\/|#)/ {
-					if (prose + block == 0) start = NR
+					if (prose + block == 0) { start = NR; run_at_top = at_top }
 					body = $0
 					sub(/^[[:space:]]*(\/\/|#)/, "", body)
 					# An indented line is a preformatted block, not prose.
 					if (body ~ /^(\t|    )/) block++; else prose++
 					next
 				}
-				{ flush($0) }
+				{ flush($0); if (NF) at_top = 0 }
 				END { flush("") }
-				BEGIN { first_run = 1 }
 			' "$file"
 		done
 }

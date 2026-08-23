@@ -104,8 +104,7 @@ func intVal(t *testing.T, ptr *int) int {
 
 // TestEnvelopeFailedFinalizationRetained proves a converged story whose
 // final write FAILED keeps its engine_outcome + finalization_ok=false while
-// the classification is error(contradiction) — the facts are not erased
-// (finding 7).
+// classified error(contradiction) — the facts are not erased (finding 7).
 func TestEnvelopeFailedFinalizationRetained(t *testing.T) {
 	t.Parallel()
 

@@ -22,9 +22,8 @@ func writeDoc(t *testing.T, name, body string) string {
 }
 
 // Given/When/Then are flattened into one ordered list, and every step
-// after the first in a block reads as And — which is what makes one
-// definition serve `the file is written` whether it is the first Then or
-// the third.
+// after the first in a block reads as And — so one definition serves
+// `the file is written` whether it is the first Then or the third.
 func TestLoadRegistryFlattensBlocksInOrder(t *testing.T) {
 	t.Parallel()
 

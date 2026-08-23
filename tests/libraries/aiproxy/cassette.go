@@ -11,13 +11,9 @@ import (
 
 const metaSchemaVersion = 1
 
-// Cassette file names. stdout/stderr hold the recorded streams
-// (stream-json for claude, plain text for crush) with run-volatile
-// paths NORMALIZED ({{CWD}}, {{RUN_DIR}}) — replay denormalizes them
-// onto the live run before emitting, because the engine parses result
-// files out of the response by their per-run tmp path. meta.json is
-// written LAST via rename — its presence marks the cassette finalized,
-// the same convention harness.json uses.
+// Cassette file names. stdout/stderr paths are NORMALIZED ({{CWD}}, {{RUN_DIR}});
+// replay denormalizes before emitting, since the engine parses result files by
+// their per-run tmp path. Write order (meta.json last): see writeCassette.
 const (
 	metaFile   = "meta.json"
 	stdinFile  = "stdin"

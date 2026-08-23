@@ -11,10 +11,9 @@ import (
 // guardTestDirMode is the permission for scratch dirs these tests build.
 const guardTestDirMode = 0o755
 
-// TestCrushGuardDeniesSymlinkEscape is the guard's core promise under
-// attack. `crush run` has no permission gate of its own, so this policy
-// is the ONLY enforcement: a symlink planted inside a granted root must
-// not become a write outside it.
+// TestCrushGuardDeniesSymlinkEscape guards crush's only permission layer:
+// `crush run` has no gate of its own, so a symlink planted inside a
+// granted root must never resolve to a write outside it.
 func TestCrushGuardDeniesSymlinkEscape(t *testing.T) {
 	t.Parallel()
 
@@ -66,12 +65,9 @@ func TestCrushGuardDeniesSymlinkEscape(t *testing.T) {
 	}
 }
 
-// TestCrushGuardDeniesSiblingPrefix pins the component boundary. This
-// is not a regression test — NewCrushGuardPolicy already appends a
-// trailing separator to every root, so a sibling never matched. It
-// exists so that dropping that separator, or comparing against a root
-// built some other way, fails here instead of silently widening the
-// only write gate crush has.
+// TestCrushGuardDeniesSiblingPrefix pins the boundary absoluteGlobRoot's
+// trailing separator creates (crush_guard_policy.go) — without it, a
+// sibling directory sharing the root's string prefix would slip through.
 func TestCrushGuardDeniesSiblingPrefix(t *testing.T) {
 	t.Parallel()
 

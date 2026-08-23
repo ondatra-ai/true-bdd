@@ -15,10 +15,8 @@ const (
 	modeRecord = "record"
 	modeReplay = "replay"
 
-	// exitProxyFailure is the shim's own failure code — distinctive on
-	// purpose so a missing/stale cassette is unmistakable in the CLI
-	// transcript and never confusable with the wrapped CLI's own exit
-	// codes.
+	// exitProxyFailure is the shim's own distinctive failure code, so a
+	// missing/stale cassette is never confused with the wrapped CLI's exit codes.
 	exitProxyFailure = 86
 
 	dirPerm  = 0o755

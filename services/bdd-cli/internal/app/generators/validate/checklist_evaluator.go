@@ -78,12 +78,9 @@ func NewChecklistEvaluatorWithPaths(
 	}
 }
 
-// EvaluateOne evaluates a single prompt against the subject and returns
-// the full ValidationResult. This is the per-cell primitive the engine
-// `query` closure calls — returning the result (not just pass/fail) so
-// the cell's `genFix` closure can read it via shared closure state.
-//
-// promptIndex must be 1-based to match the tmp-file naming convention.
+// EvaluateOne evaluates a single prompt against the subject and returns the
+// full ValidationResult, not just pass/fail, so the cell's `genFix` closure
+// can read it via shared closure state. promptIndex must be 1-based to match the tmp-file naming convention.
 func (e *ChecklistEvaluator) EvaluateOne(
 	ctx context.Context,
 	subject any,
@@ -252,9 +249,8 @@ func (e *ChecklistEvaluator) parseResultFile(response, path string) ParsedResult
 }
 
 // renderAnswerNode converts the YAML answer node back to its text form. For
-// scalars this returns the raw value (e.g. "5", "yes"); for mappings and
-// sequences it preserves the YAML block structure so downstream display and
-// comparison logic see the same text the user would read in the result file.
+// scalars it returns the raw value ("5", "yes"); for mappings and sequences
+// it preserves YAML block structure, matching what downstream display/comparison expects.
 func renderAnswerNode(node *yaml.Node) string {
 	if node == nil || node.Kind == 0 {
 		return ""
@@ -275,9 +271,8 @@ func renderAnswerNode(node *yaml.Node) string {
 }
 
 // stripMarkdownFences removes leading/trailing markdown code fences
-// (```yaml, ```yml, or plain ```) from a YAML payload. Some models wrap
-// answer blocks inside markdown fences even when the surrounding format
-// is FILE_START/FILE_END markers; this normalizes that.
+// (```yaml, ```yml, or plain ```) from a YAML payload — some models wrap
+// answer blocks in fences even under FILE_START/FILE_END markers.
 func stripMarkdownFences(content string) string {
 	content = strings.TrimSpace(content)
 
@@ -296,13 +291,9 @@ func stripMarkdownFences(content string) string {
 	return strings.TrimSpace(content)
 }
 
-// loadRequestedDocs resolves document keys to file paths.
-//
-// By the time a walk reaches here the runner has already refused any
-// run whose declared documents cannot be satisfied, so a failure is a
-// wiring bug rather than a user-facing condition — log it and skip
-// rather than injecting a Read() instruction for a path that is not
-// there.
+// loadRequestedDocs resolves document keys to file paths. By the time a
+// walk reaches here the runner has already refused any run whose declared
+// documents cannot be satisfied, so a failure is a wiring bug — log and skip, not a Read() for a missing path.
 func (e *ChecklistEvaluator) loadRequestedDocs(keys []string) map[string]*docs.ArchitectureDoc {
 	result := make(map[string]*docs.ArchitectureDoc, len(keys))
 
@@ -322,10 +313,9 @@ func (e *ChecklistEvaluator) loadRequestedDocs(keys []string) map[string]*docs.A
 	return result
 }
 
-// logResolvedDocs records the other side of the comparison.
-// loadRequestedDocs resolves every `docs:` key to a real path and only
-// logs the failures, so without this record the run keeps no trace of
-// WHAT the subject was checked against — only that it was checked.
+// logResolvedDocs records the other side of the comparison: loadRequestedDocs
+// only logs failures, so without this the run keeps no trace of WHAT the
+// subject was checked against — only that it was checked.
 func (e *ChecklistEvaluator) logResolvedDocs(
 	promptIndex int,
 	sectionPath string,

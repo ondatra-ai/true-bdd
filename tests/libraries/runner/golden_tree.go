@@ -12,9 +12,8 @@ import (
 )
 
 // GoldenFile is the recorded outcome's name inside a fixture's
-// cassettes/ directory. It rides with the cassettes because it is part
-// of the same recording: the cassettes are what the models said, this is
-// what the engine then produced.
+// cassettes/ directory: the cassettes are what the models said, this
+// is what the engine then produced.
 const GoldenFile = "golden.json"
 
 // goldenSchema versions the on-disk shape.
@@ -26,19 +25,8 @@ const goldenSchema = 1
 const goldenTextLimit = 64 * 1024
 
 // GoldenTree is a fixture's recorded outcome: every file the run
-// created, modified or deleted OUTSIDE its own tmp/ scratch.
-//
-// It is what makes replay meaningful without the judge. In replay every
-// AI-written file is materialised from a recorded fs-diff, so grading
-// those files re-grades a fixed artefact; what actually varies is the
-// ENGINE — which cells it walks, how it parses each response, and the
-// files it writes itself, the registry merge above all. The cassette
-// request hash pins the calls; this pins their consequences.
-//
-// tmp/ is excluded because it is per-run scratch under a timestamped
-// directory: the prompt artefacts, the engine's log, the shim's cursor
-// state. Nothing there is a claim about behaviour, and its paths differ
-// on every run by construction.
+// created, modified, or deleted outside its own tmp/ scratch — tmp/
+// excluded since its timestamped paths differ on every run.
 type GoldenTree struct {
 	Schema  int           `json:"schema"`
 	Fixture string        `json:"fixture"`

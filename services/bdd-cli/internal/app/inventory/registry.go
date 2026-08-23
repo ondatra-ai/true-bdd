@@ -18,13 +18,9 @@ type rawRegistry struct {
 	} `yaml:"scenarios"`
 }
 
-// registryStatus classifies the scenarios registry the applied cell
-// counts against. It is carried through lineageIndex so an eligible
-// story is tainted honestly (unknown(registry_missing|registry_invalid))
-// when the registry us apply requires cannot be loaded, rather than
-// silently rendered counted 0/y. A present-but-empty registry
-// (`scenarios: {}`) parses cleanly and stays registryOK — present_empty
-// is legitimate coverage, not a taint.
+// registryStatus classifies the scenarios registry the applied cell counts
+// against, so an eligible story is tainted honestly (unknown(...)) rather
+// than rendered a silent counted 0/y when the registry can't load.
 type registryStatus int
 
 const (
@@ -37,20 +33,16 @@ const (
 )
 
 // lineageIndex answers "is (storyPath, lineageID) covered by the
-// registry?" — the exact predicate us apply merges against (plan §3.4):
-// a registry entry whose user_stories[] references the EXACT story path
-// and the position-derived lineage id <internal-id>-NNN. status carries
-// whether the registry itself was loadable.
+// registry?" (plan §3.4): a match requires the EXACT story path plus the
+// position-derived lineage id <internal-id>-NNN.
 type lineageIndex struct {
 	status  registryStatus
 	covered map[string]map[string]bool
 }
 
 // loadLineageIndex reads the registry and indexes every (story path,
-// scenario id) pair, recording whether the registry was missing,
-// unparseable, or ok. A valid empty `scenarios:` map is registryOK (the
-// registry chip reports present_empty separately); missing/invalid taint
-// the applied cell in countApplied.
+// scenario id) pair, recording whether it was missing, unparseable, or ok
+// (see registryStatus; missing/invalid taint countApplied's cell).
 func loadLineageIndex(path string) lineageIndex {
 	index := lineageIndex{covered: make(map[string]map[string]bool)}
 

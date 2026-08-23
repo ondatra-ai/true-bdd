@@ -14,11 +14,9 @@ func cancelledCtx() context.Context {
 	return ctx
 }
 
-// TestNaturalCompletionThenLateCancelIsNotInterrupted proves the NICE-1
-// fix: a child that COMPLETED NATURALLY (a present result on a clean exit)
-// is NOT reclassified interrupted just because the run ctx was cancelled
-// afterwards — the late, unrelated cancellation must not overwrite a real
-// result.
+// TestNaturalCompletionThenLateCancelIsNotInterrupted proves the NICE-1 fix:
+// a child that completed naturally (a present result, clean exit) must not
+// be reclassified interrupted just because the run ctx was cancelled afterwards.
 func TestNaturalCompletionThenLateCancelIsNotInterrupted(t *testing.T) {
 	t.Parallel()
 
@@ -36,11 +34,9 @@ func TestNaturalCompletionThenLateCancelIsNotInterrupted(t *testing.T) {
 	}
 }
 
-// TestRealInterruptRobustToChildExitRace proves the interrupt path stays
-// robust when the child died (non-zero, no result) from the group signal
-// BEFORE watchShutdown observed the cancellation: a cancelled ctx with a
-// non-clean exit still classifies interrupted, so a real Ctrl+C is never
-// mislabelled error(no_result).
+// TestRealInterruptRobustToChildExitRace proves the interrupt path is
+// robust when the child dies (non-zero, no result) from the group signal
+// BEFORE watchShutdown observes it — a non-clean exit still classifies interrupted, never error(no_result).
 func TestRealInterruptRobustToChildExitRace(t *testing.T) {
 	t.Parallel()
 

@@ -55,12 +55,9 @@ func CollectRun(run FixtureRun, uni *Universe, fixturesDir string) ([]Observatio
 				Message: "no command evidence in the run log — run skipped, not identifiable as a help run"})
 		}
 
-		// A help run produces NO segments at all. Segments without a stem
-		// mean the log carried relevant records — parseLogSpine emits one
-		// for "Result file saved" even where "Loaded prompts" never
-		// appeared — so this is a run that did something the spine could
-		// not name. Returning silently here drops it and hides the gap,
-		// which is the one outcome a coverage tool must not produce.
+		// Segments without a stem still carry log records (parseLogSpine
+		// emits one for "Result file saved" even without "Loaded prompts");
+		// silently dropping this would hide a run the tool cannot name.
 		if len(segments) > 0 {
 			return nil, append(diagnostics, Diagnostic{Fixture: run.Fixture, Hard: false,
 				Message: fmt.Sprintf(

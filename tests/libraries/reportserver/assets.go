@@ -6,23 +6,14 @@ import (
 	"net/http"
 )
 
-// webAssets is the single-page UI.
-//
-// Embedded rather than served from disk so the binary runs from anywhere
-// and there is no build step: no npm, no bundler, no node_modules inside
-// a Go-only test tree.
+// webAssets is the single-page UI, embedded so the binary needs no build step.
 //
 //go:embed web
 var webAssets embed.FS
 
-// assetHandler serves the embedded UI at the root.
-//
-// Explicitly uncacheable. Embedded files carry a zero modification time,
-// so http.FileServer sends no Last-Modified and browsers fall back to
-// heuristic caching — which means a rebuilt binary keeps serving the old
-// page until someone thinks to hard-reload. For a local dev tool that is
-// pure confusion, and there is nothing to gain from caching a few KB
-// off loopback.
+// assetHandler serves the embedded UI at the root, explicitly uncacheable:
+// embedded files carry a zero mod time, so browsers fall back to heuristic
+// caching and a rebuilt binary keeps serving the old page otherwise.
 func assetHandler() http.Handler {
 	sub, err := fs.Sub(webAssets, "web")
 	if err != nil {

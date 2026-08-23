@@ -1,10 +1,8 @@
 package queryserver_test
 
 // Query-server client + worker pool (plan §2, critique §5). Typed HTTP
-// errors, re-register with the SAME client-owned session id on poll
-// 404/stale-epoch, monotonic epoch, and the bounded worker pool (mutations
-// serialized, ≤4 concurrent reads, 1 inventory scan, priority answer >
-// dispatch > reads).
+// errors, re-register with the SAME session id on poll 404/stale-epoch,
+// monotonic epoch, and a bounded pool (serialized mutations; priority answer > dispatch > reads).
 
 import (
 	"testing"

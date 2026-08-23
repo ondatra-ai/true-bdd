@@ -25,11 +25,9 @@ func NewChecklistLoader(cfg *config.ViperConfig) *ChecklistLoader {
 	}
 }
 
-// LoadFull reads the checklist for the named command and returns the
-// full Checklist struct (including the optional `config:` block).
-// Use this when a caller needs per-checklist config in addition to —
-// or instead of — the flat prompt list. For just the prompts, prefer
-// Load.
+// LoadFull reads the checklist for the named command and returns the full
+// Checklist struct, including the optional `config:` block. Prefer Load
+// when only the flat prompt list is needed.
 func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, error) {
 	path := filepath.Join(l.checklistsDir, commandName+".yaml")
 	slog.Debug("Loading full checklist", "command", commandName, "path", path)

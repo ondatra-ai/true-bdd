@@ -81,10 +81,9 @@ func TestLoadStillFlattensModifiersForPrompts(t *testing.T) {
 	}
 }
 
-// A mapping key that is not and/but is refused rather than carried into
-// the generator, where it would render `s.Foo(…)` — valid Go that does
-// not compile. bddgo's own decoder refuses the same document, and two
-// readers of one file must agree about what a step IS.
+// An unknown modifier key (anything but and/but) is refused here rather
+// than reaching the generator, which would render it as `s.Foo(…)` — valid
+// Go that fails to compile.
 func TestLoadRefusesAnUnknownModifier(t *testing.T) {
 	t.Parallel()
 
@@ -109,10 +108,9 @@ func TestLoadRefusesAnEmptyModifierKey(t *testing.T) {
 	}
 }
 
-// A non-scalar VALUE is refused too. `node.Value` is empty for a sequence,
-// so reading it would set the step's text to "" — a step rendering as
-// `s.And("")`, binding to nothing, and reporting as a step the author
-// wrote rather than as the malformed one it is.
+// A non-scalar value is refused too: node.Value is empty for a sequence, so
+// reading it naively would silently set the step's text to "" — a step
+// that binds to nothing and looks like the author wrote it.
 func TestLoadRefusesANonScalarModifierValue(t *testing.T) {
 	t.Parallel()
 

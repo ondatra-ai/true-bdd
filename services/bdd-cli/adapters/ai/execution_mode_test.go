@@ -88,12 +88,9 @@ func TestExecutionModeAllowsBash(t *testing.T) {
 	}
 }
 
-// The bug this covers cost a 30-minute fixture run: the build-code
-// applier's system prompt named `services/*` as its allowed root while
-// the enforced mode granted only the tmp glob, so the crush guard
-// denied every write and the applier reported it could not apply.
-// ExecutionMode is what the guard is derived from, so the grant has to
-// be here, not in the prompt.
+// TestSourceEditModeGrantsProjectRoots pins the grant to ExecutionMode, not
+// the applier's prompt: a prompt/ExecutionMode mismatch here once cost a
+// 30-minute fixture run when the crush guard denied every write.
 func TestSourceEditModeGrantsProjectRoots(t *testing.T) {
 	factory := ai.NewModeFactory(testConfig(t))
 	mode := factory.GetSourceEditMode([]string{"services/frontend", "services/backend"})
@@ -155,11 +152,9 @@ func TestSourceEditModeReachesTheCrushGuard(t *testing.T) {
 	}
 }
 
-// testConfig builds a ViperConfig from a throwaway host config so mode
-// construction is exercised for real without depending on the repo's
-// own seed. NewViperConfig resolves ./true-bdd/true-bdd.yaml relative
-// to the working directory, hence the chdir (which rules out
-// t.Parallel for its callers).
+// testConfig builds a throwaway host config so mode construction runs for
+// real. NewViperConfig resolves ./true-bdd/true-bdd.yaml relative to the
+// working directory, so testConfig chdirs and its callers cannot be parallel.
 func testConfig(t *testing.T) *config.ViperConfig {
 	t.Helper()
 

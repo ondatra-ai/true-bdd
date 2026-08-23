@@ -1,12 +1,8 @@
 package store
 
-// Linearizable scan-vs-command lock protocol (plan §1.5, round-3 fix). Exact
-// acquisition order: a SCAN takes scan.lock shared then probes
-// command-intent.lock (held ⇒ inventory_busy); a COMMAND takes
-// command-intent.lock EXCLUSIVE (fail-fast folder_locked vs another command),
-// then drains in-flight scans by taking scan.lock exclusive, then the folder
-// flock. Linearization point: either a scan sees the planted intent, or the
-// command waits for that scan — no TOCTOU window.
+// Locks protocol: see BeginScan/BeginCommand in locks.go for the exact
+// acquisition order. These tests pin the linearization point directly: no
+// TOCTOU window between a scan's intent probe and a command's drain wait.
 
 import (
 	"testing"

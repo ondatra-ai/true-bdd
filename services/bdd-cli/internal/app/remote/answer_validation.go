@@ -31,9 +31,7 @@ const (
 // errInvalidAnswer is the sentinel wrapped with the concrete violation.
 var errInvalidAnswer = errors.New("invalid answer for prompt")
 
-// choiceValues are the answer strings a choice prompt accepts: the
-// canonical apply/refine/exit enum plus the 1/2/3 numeric equivalents the
-// collector also maps (user_input_collector.go).
+// choiceValues are the accepted choice-prompt answers (also mapped in user_input_collector.go).
 //
 //nolint:gochecknoglobals // fixed answer enum
 var choiceValues = map[string]bool{

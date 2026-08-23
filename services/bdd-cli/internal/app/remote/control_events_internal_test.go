@@ -46,12 +46,9 @@ func seedControlRun(t *testing.T) (*store.DB, *RunExecutor, string) {
 	return database, executor, folder
 }
 
-// TestControlEventNeverDroppedOnTransientFailure is the inverted regression for
-// the reproduced control-event drop (finding 7): the tailer used to advance its
-// JSONL offset UNCONDITIONALLY, so a prompt whose store append failed was lost
-// and the child blocked forever on an invisible prompt. Now the offset advances
-// past a control line ONLY after it durably commits; an unpersistable prompt
-// fails the run CLOSED and never advances past the lost event.
+// TestControlEventNeverDroppedOnTransientFailure guards finding 7: the tailer
+// used to advance its JSONL offset UNCONDITIONALLY, so a failed store append
+// lost the prompt and the child blocked forever; now the offset advances only after a durable commit.
 func TestControlEventNeverDroppedOnTransientFailure(t *testing.T) {
 	t.Parallel()
 

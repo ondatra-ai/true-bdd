@@ -32,10 +32,9 @@ const (
 	msgRunnerReturned  = "Test runner returned"
 )
 
-// Artifact is one file the engine wrote during a turn, with its content.
-// Prompts and responses are read eagerly: they are the evidence the
-// detail page exists to show, and a fixture's whole artifact set is tens
-// of kilobytes.
+// Artifact is one file the engine wrote during a turn, with its content,
+// read eagerly: it's the evidence the detail page exists to show, and a
+// fixture's whole artifact set is tens of kilobytes.
 type Artifact struct {
 	Kind    string
 	Name    string
@@ -105,13 +104,9 @@ func isArtifactRecord(msg string) bool {
 	}
 }
 
-// ChecklistCell identifies which checklist cell produced a turn.
-//
-// Derived from the artifact filename, which the engine builds as
-// `<promptIndex>-<subjectID>-checklist-<section-path>-<suffix>.txt`
-// (checklist_evaluator.go: savePromptFile). The fix and apply turns of
-// the same cell reuse the subject and index, so the whole three-turn
-// cycle resolves to one cell.
+// ChecklistCell identifies which checklist cell produced a turn, derived
+// from the artifact filename the engine builds as
+// `<promptIndex>-<subjectID>-checklist-<section-path>-<suffix>.txt` (checklist_evaluator.go: savePromptFile).
 type ChecklistCell struct {
 	Index   string
 	Subject string
@@ -135,17 +130,12 @@ func (c ChecklistCell) String() string {
 // and the applier append (`-fix-iter1`, `-iter2`).
 var iterationSuffix = regexp.MustCompile(`-(fix-)?iter\d+$`)
 
-// cellFromArtifact parses a cell out of an artifact filename. Returns
-// false for names that carry no cell (the crush transcript, say).
-//
-// Three shapes exist, all built from the same subject id:
+// cellFromArtifact parses a cell out of an artifact filename (false for
+// names with no cell, e.g. the crush transcript). Three shapes exist:
 //
 //	01-<subject>-checklist-<section>-user.txt   the validation turn
 //	01-<subject>-fix-iter1-user.txt             the fix turn
 //	apply-<subject>-iter1-user.txt              the apply turn
-//
-// Only the first names the section, so the other two resolve to the same
-// subject and inherit the section from it (see inheritCellSections).
 func cellFromArtifact(name string) (ChecklistCell, bool) {
 	base := strings.TrimSuffix(strings.TrimSuffix(name, ".txt"), ".yaml")
 
@@ -193,11 +183,9 @@ func trimArtifactSuffix(name string) string {
 	return strings.Trim(name, "-")
 }
 
-// inheritCellSections fills in the section for turns whose artifacts do
-// not name one. The fix and apply turns of a cell reuse its subject, so
-// the validation turn that opened the cell supplies the section for the
-// whole cycle — which is what makes a turn readable as "this cell",
-// rather than as three unrelated subjects.
+// inheritCellSections fills in the section for turns whose artifacts don't
+// name one (fix and apply, per cellFromArtifact) from the validation turn
+// that opened the cell, since they reuse its subject.
 func inheritCellSections(turns []*Turn) {
 	sections := map[string]string{}
 

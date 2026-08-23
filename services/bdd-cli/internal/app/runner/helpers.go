@@ -44,10 +44,9 @@ func validateStoryNumber(storyNumber string) error {
 	}
 
 	if !matched {
-		// Name the offending argument. "invalid story number format" on
-		// its own tells the reader what kind of thing is wrong but not
-		// which thing, and this message is now the user-facing refusal
-		// rather than an internal error a wrapper would elaborate.
+		// Names the offending value: the bare message alone doesn't say
+		// which input failed, and this is the user-facing refusal itself,
+		// not an internal error a wrapper elaborates later.
 		return fmt.Errorf("%w: expected <epic>.<story>, got %q",
 			errInvalidStoryNumberFormat, storyNumber)
 	}
@@ -60,19 +59,9 @@ func validateStoryNumber(storyNumber string) error {
 var errUnsatisfiableChecklistDocs = errors.New(
 	"checklist declares documents that cannot be provided")
 
-// validateRequiredDocs refuses a walk whose prompts ask for evidence
-// the engine cannot hand them.
-//
-// A prompt's `docs:` list becomes `Read(<path>)` instructions in its
-// rendered prompt. Nothing downstream verifies those paths, so a
-// declared-but-absent document used to cost a silent quality loss: the
-// model reported the file was missing in its reasoning and answered
-// from whatever else it had, while the walk still reported success.
-// Checking up front — with the story-number format, before the header
-// and before any item is loaded — turns that into a startup failure.
-//
-// Every unsatisfiable document is reported together, so one run tells
-// you about all of them.
+// validateRequiredDocs refuses a walk whose prompts declare `docs:` paths
+// that don't exist: nothing downstream verifies them once turned into
+// Read() instructions, so a missing doc used to silently degrade output.
 func validateRequiredDocs(
 	prompts []checklistmodels.PromptWithContext,
 	resolver *docs.Resolver,
@@ -99,36 +88,14 @@ func validateRequiredDocs(
 }
 
 // errChecklistNotFixable is the canonical error returned by
-// validateFixTemplates. Plain prose with no regex metacharacters, the
-// way "checklist declares documents that cannot be provided" is: these
-// refusals get pinned by a fixture's undelimited `stdout matches`
-// pattern, and an `F:` in the text would push escaping into a document
-// meant to be read.
+// validateFixTemplates, kept in plain prose (no regex metachars) since
+// fixtures pin it via an unescaped `stdout matches` pattern.
 var errChecklistNotFixable = errors.New(
 	"checklist has prompts with no F fix template, so --fix has nothing to apply")
 
 // validateFixTemplates refuses a --fix run whose checklist cannot guide
-// a single one of its own fixes.
-//
-// A prompt's `F:` reaches the VALIDATION turn, not the fix turn: the
-// prompt template gates both the "If Validation Fails" section and the
-// `fix_prompt:` output field on it. Without one the model is never asked
-// for a fix_prompt, so ValidationResult.FixPrompt stays empty — and the
-// fix generator still spends a turn rendering "Suggested Fix Template:"
-// followed by nothing, a cell that can only ever end at CellFailedNoFix.
-// Checking up front — beside the story number and the required docs,
-// before the header and before any AI turn — turns that silent
-// degradation into a startup failure the checklist's author can act on.
-//
-// The `fix` gate lives inside rather than at the call site: without the
-// flag an absent template costs nothing, so "is this run fixable?" is
-// answered here in full and every command's plain walk is unchanged.
-//
-// Every unfixable prompt is reported together, so one run tells you
-// about all of them. The ordinal is the prompt's 1-based position in the
-// flattened walk — a section path repeats across its own prompts — and
-// the question's first line is what makes the offender findable in the
-// YAML without counting.
+// its own fixes: a missing `F:` leaves ValidationResult.FixPrompt empty,
+// so the walk can only ever land on CellFailedNoFix for that cell.
 func validateFixTemplates(
 	fix bool,
 	checklistName string,
@@ -182,46 +149,22 @@ func questionFirstLine(question string) string {
 	return ""
 }
 
-// reported wraps an error whose diagnosis has already been printed by
-// the code that produced it. Error() and Unwrap() pass straight through,
-// so the message, the wrapping chain and every errors.Is match are
-// unchanged — the marker is invisible to everything except refuseStartup.
+// reported wraps an error already diagnosed by the code that produced
+// it — Error()/Unwrap() pass straight through, so the marker is
+// invisible to everything except refuseStartup.
 type reported struct{ error }
 
 // Unwrap keeps errors.Is/As working through the marker.
 func (r reported) Unwrap() error { return r.error }
 
 // Reported marks an error as already diagnosed, so the generic startup
-// refusal stays silent about it.
-//
-// It exists for one shape: a command whose LoadItems does real work
-// rather than only loading. `build code` spawns test runners inside
-// LoadItems, so a spawn failure arrives at the same return as a
-// malformed spec — but it has already printed `Cannot run <svc>/<layer>:`
-// with the specific diagnosis, and by then the run has started. Letting
-// the generic refusal speak too would print the same failure a second
-// time under the headline "Refusing to start", which is false: it did
-// start, and said so on the line above.
+// refusal stays silent about it — build code's LoadItems already prints
+// "Cannot run <svc>/<layer>:" itself before returning.
 func Reported(err error) error { return reported{err} }
 
-// refuseStartup reports a precondition failure on both channels, the way
-// validateRequiredDocs reports an unsatisfiable document and
-// cmd.refuseUnresolvedDoc reports an unresolvable one.
-//
-// Every command reaches its subject through Spec.LoadItems: the epic
-// story for `us create`, the story file for `us refine`, the acceptance
-// criteria for `us apply`, the registry for `build tests`, the
-// architectural spec for `build code`. When that subject is absent,
-// ambiguous or malformed, the error used to surface only as a cobra
-// stderr line under a usage dump — the output shape for "you typed the
-// flags wrong", not for "the document you named is not there". Nothing
-// reached stdout or the log, so whoever ran the command saw the right
-// text in the wrong shape, and a harness, a CI scrape or the BDD judge
-// saw nothing at all.
-//
-// The error is returned exactly as the caller built it, so wrapping,
-// exit code and cobra behaviour are unchanged; only the reporting is
-// added.
+// refuseStartup reports a precondition failure on both stdout and the
+// log, the way validateRequiredDocs and cmd.refuseUnresolvedDoc do —
+// a bare cobra stderr usage dump reaches neither a harness nor the judge.
 func refuseStartup(command string, err error) error {
 	var alreadyReported reported
 	if errors.As(err, &alreadyReported) {
@@ -281,10 +224,9 @@ func displayFailureInfo(failedCheck *checklistmodels.ValidationResult) {
 	}
 }
 
-// displayFixPrompt prints the rendered fix prompt under a banner.
-// The opening banner is enough framing — the next thing on stdout is
-// the interactive apply/refine/exit prompt, which prints its own
-// separators.
+// displayFixPrompt prints the rendered fix prompt under a banner; no
+// closing banner is needed since the next stdout output (the
+// interactive apply/refine/exit prompt) prints its own separators.
 func displayFixPrompt(fixPrompt string) {
 	console.BlankLine()
 	console.Header("FIX PROMPT GENERATED", SeparatorWidth)
@@ -371,9 +313,8 @@ type fixPromptGenInput struct {
 }
 
 // runFixPromptGeneration adapts one call to FixPromptGenerator.Generate
-// into the engine's FixResult type. Used by both us create/refine and
-// us apply genFix closures so the engine doesn't import the validate
-// package directly.
+// into the engine's FixResult type, so us create/refine and us apply's
+// genFix closures don't need the engine to import validate directly.
 func runFixPromptGeneration(
 	ctx context.Context,
 	input fixPromptGenInput,
@@ -415,17 +356,9 @@ func StorySubject(item *story.Story) (string, string) {
 	return item.ID, item.Title
 }
 
-// StoryPostFix returns the PostFix closure for story-based commands.
-// The FixApplier returns the full updated story body as YAML; this
-// closure unmarshals it, pins the canonical ID, saves a new version,
-// and returns the freshly loaded latest snapshot — which the engine
-// uses for the next Query iteration against the same item.
-//
-// The applier's contract is to emit every story field (top-level
-// `title`/`as_a`/`i_want`/`so_that`/`status` plus `acceptance_criteria`)
-// so any fix — not just AC-shaped ones — actually lands. The story ID
-// is reasserted from the in-memory item to defend against an applier
-// that drops or rewrites it.
+// StoryPostFix returns the PostFix closure for story-based commands: it
+// unmarshals the applier's YAML onto a zero Story, so a partial body
+// zeroes whatever it omits — only the ID is reasserted here as a backstop.
 func StoryPostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context, item *story.Story, applierContent string) (*story.Story, error) {
@@ -497,15 +430,9 @@ func StoryFinalize(
 	}
 }
 
-// writeConvergedStory writes the engine's final item to disk. The
-// new-vs-update toggle reflects whether the command is creating a
-// brand-new story file or updating an existing one.
-//
-// A write (or load) failure is now SURFACED, not swallowed (plan §3.2):
-// the returned error propagates up so the runner marks the result event
-// finalization_ok=false and the CLI exits non-zero. The user still sees a
-// clear console message, so terminal behavior stays sensible — but a
-// converged walk whose story never landed no longer reports success.
+// writeConvergedStory writes the engine's final item to disk (new file
+// or update, per writeNew) and propagates any write/load failure instead
+// of swallowing it (plan §3.2): a story that never landed no longer reports success.
 func writeConvergedStory(
 	versionMgr *fs.StoryVersionManager,
 	storiesDir, storyNumber string,

@@ -137,16 +137,9 @@ func asScore(value any) (int, bool) {
 	}
 }
 
-// split decides what happens to each finding.
-//
-// Rounds 1-2: >=9 fixed, 6-8 ticketed, <6 dropped.
-// Round 3   : nothing fixed, >=6 ticketed, <6 dropped. An empty fix band is
-// what ends the loop, so this is also what guarantees the run never exceeds
-// three rounds — Main stops on its own once a round plans no fixes.
-//
-// A body-only finding is never fixed inline whatever it scores: it has no
-// thread to answer and no diff position, so the fix could not be reported back
-// even if it were made.
+// split decides what happens to each finding. Rounds 1-2: >=9 fixed, 6-8
+// ticketed, <6 dropped. Round 3: nothing fixed, >=6 ticketed, <6 dropped.
+// Body-only findings never fix inline: no thread or diff position to report a fix back to.
 func (r *Run) split(
 	issues []clickup.Finding, round int,
 ) ([]clickup.Finding, []clickup.Finding, []clickup.Finding) {

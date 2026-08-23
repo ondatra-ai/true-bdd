@@ -1,9 +1,8 @@
 package store
 
-// Answer lifecycle (critique §6): pending-prompt currentness, first-wins,
-// exact-retry-200, terminal-race rejection, non-empty clarify/freetext, the
-// PromptID actually used at delivery, delivery_started_at committed BEFORE
-// the stdin write (at-most-once), and the cross-owner guard (plan §1.1).
+// Answer lifecycle: pending-prompt currentness, first-wins/exact-retry,
+// terminal-race rejection, clarify/freetext validation, at-most-once delivery
+// timing, and the cross-owner guard — one test per case below.
 
 import (
 	"testing"

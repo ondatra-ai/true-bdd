@@ -42,13 +42,9 @@ func Role() string {
 	return DefaultRole
 }
 
-// RepoRoot locates the repository being logged.
-//
-// CLAUDE_PROJECT_DIR is set when Claude Code invokes a hook, and the shim
-// exports it for the `!`-invoked /new-task command, which is not a hook and
-// does not get one. `git rev-parse --show-toplevel` is the backstop — the same
-// question the Python's walk up from `__file__` was asking, asked of git
-// instead, because a `go run` binary's own path is a temporary directory.
+// RepoRoot locates the repository being logged: CLAUDE_PROJECT_DIR (set by
+// Claude Code, exported by the shim for /new-task, which isn't a hook) or
+// `git rev-parse --show-toplevel` — a `go run` binary's own path is a temp dir.
 func RepoRoot() string {
 	if dir := os.Getenv("CLAUDE_PROJECT_DIR"); dir != "" {
 		resolved, err := filepath.Abs(dir)

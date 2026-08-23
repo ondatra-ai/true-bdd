@@ -41,10 +41,8 @@ func TestSanitizeStreamDropsMachineInventory(t *testing.T) {
 	}
 }
 
-// The reason the type check moved after json.Unmarshal: a frame
-// serialised with a space after the colon is the same frame, and a
-// byte-match on `"type":"system"` would wave it through with its
-// inventory intact.
+// Pins why the type check runs after json.Unmarshal (see sanitizeLine's
+// cheap-reject comment): a byte-match would be whitespace-sensitive.
 func TestSanitizeStreamIsNotWhitespaceSensitive(t *testing.T) {
 	t.Parallel()
 

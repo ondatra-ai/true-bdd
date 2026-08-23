@@ -230,10 +230,9 @@ func TestDocWriteRejectsMultiDocumentStream(t *testing.T) {
 	initial, _ := store.read(archYAMLPath)
 	before, _ := os.ReadFile(filepath.Join(folder, archYAMLPath))
 
-	// A valid first document followed by a `---` separator and a second document:
-	// Go's lenient decoder would accept the first, but the browser's strict
-	// single-document YAML.parse() rejects it — the CLI gate must too, or it would
-	// commit content the workspace immediately considers invalid.
+	// A valid first document followed by `---` and a second: Go's decoder would
+	// accept just the first, but the browser's strict YAML.parse() rejects it,
+	// so the CLI gate must reject it too (see isValidYAML).
 	outcome := store.write(docWritePayload{
 		Path:         archYAMLPath,
 		Content:      "version: 1\n---\nrogue: 2\n",

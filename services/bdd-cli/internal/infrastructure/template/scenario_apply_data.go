@@ -15,8 +15,7 @@ type MergedSteps struct {
 
 // ScenarioApplyData carries one acceptance criterion from a refined story
 // through the apply-checklist evaluator, fix-prompt generator, and
-// fix-applier templates. Each instance represents a single (scenario,
-// prompt) cell input for the apply walk.
+// fix-applier templates: one instance per (scenario, prompt) cell input.
 type ScenarioApplyData struct {
 	StoryID                 string      // e.g. "4.1"
 	StoryPath               string      // e.g. "docs/product/stories/4.1-shared-document-editing.yaml"

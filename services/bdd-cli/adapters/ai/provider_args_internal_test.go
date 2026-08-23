@@ -94,11 +94,9 @@ func TestBuildCodexArgs(t *testing.T) {
 	}
 }
 
-// codex has no sandbox level between "nothing" and "all of the working
-// root", so only a mode that deliberately opens a project tree may have
-// workspace-write. A tmp-only write grant must NOT escalate: that would
-// hand a validation or fix turn write access to the tree it is only
-// supposed to read.
+// TestCodexSandboxOnlyEscalatesForSourceWrites checks a tmp-only write grant
+// stays read-only: codex has no sandbox level between "nothing" and "all of
+// the working root," so escalating would open write access to unread source.
 func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
 	t.Parallel()
 

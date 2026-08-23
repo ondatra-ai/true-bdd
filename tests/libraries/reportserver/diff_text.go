@@ -8,13 +8,9 @@ import (
 	"znkr.io/diff/textdiff"
 )
 
-// Caps on one text diff's payload.
-//
-// The pathological case is two entirely unrelated texts, where hunks
-// cover 100% of both sides and a ~70KB prompt pair becomes a ~140KB
-// response. Truncation is reported rather than silent: a diff that
-// quietly stops half way reads as "the rest is identical", which is the
-// one thing it must never imply.
+// Caps on one text diff's payload. The pathological case is two entirely
+// unrelated texts, where hunks cover 100% of both sides; truncation is
+// reported rather than silent, since a quiet stop would imply "the rest is identical".
 const (
 	maxDiffEdits       = 4000
 	maxDiffBytes       = 512 * 1024
@@ -90,11 +86,9 @@ func DiffText(left, right string, context int) TextDiff {
 		for _, edit := range hunk.Edits {
 			line := strings.TrimSuffix(edit.Line, "\n")
 
-			// Measured BEFORE appending, including this line's own length.
-			// Checking only the running total let a single line longer than
-			// the whole budget through in full — a minified bundle or an
-			// embedded blob on one line would blow the cap it exists to
-			// enforce.
+			// Measured BEFORE appending, including this line's own length —
+			// checking only the running total would let one line longer than
+			// the whole budget through in full.
 			if edits >= maxDiffEdits || bytes+len(line) > maxDiffBytes {
 				result.Truncated = true
 

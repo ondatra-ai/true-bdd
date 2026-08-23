@@ -1,9 +1,8 @@
 package reporter
 
-// The three checklist roles, plus the harness's own verdict call.
-// roleJudge is not an engine turn — it is recovered from the test
-// process's records — but it spends real money, so it is carried
-// alongside the others everywhere costs are totalled.
+// The three checklist roles, plus the harness's own verdict call. roleJudge
+// is not an engine turn (recovered from the test process's records), but it
+// spends real money, so it is carried alongside the others in cost totals.
 const (
 	rolePrompt = "prompt"
 	roleFix    = "fix"
@@ -18,16 +17,9 @@ const (
 	cliCodex  = "codex"
 )
 
-// The operation a turn performs, as the report names it. A role says
-// which of the three seats in a checklist cell a turn occupied; a verb
-// says what it did, which is the role plus whether the cell had been
-// entered before. The distinction is the whole point: the first and the
-// fourth turn of us-apply-rewalk-converges are both `prompt`, but one
-// establishes a verdict and the other confirms a fix.
-// The words are the ENGINE'S, not invented here: the fix turn is the one
-// the log calls "Generating fix prompt" and the applier is the one that
-// logs "Applying fix prompt". A reader who greps the log for a row's verb
-// has to land on the record that produced it.
+// The operation a turn performs, as the report names it: a role says which
+// seat a turn occupied, a verb says what it did — role plus whether the
+// cell had been entered before (see verbFor). Words echo the engine's own log lines.
 const (
 	verbValidate   = "Validate"
 	verbReValidate = "Re-validate"

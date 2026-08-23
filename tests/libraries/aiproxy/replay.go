@@ -15,11 +15,9 @@ var (
 		"checklist, or engine change); re-record with `go test -tags bdd ./tests/bdd-cli/... -mode=record`")
 )
 
-// replay serves one recorded call: verify the incoming request against
-// the cassette, apply the recorded file effects, emit the recorded
-// output byte-for-byte, exit with the recorded code. The real CLI is
-// never touched, and there is deliberately NO fall-through to it —
-// VCR "record_mode=none" semantics.
+// replay serves one recorded call: verify the incoming request against the
+// cassette, apply the recorded file effects, emit the recorded output
+// byte-for-byte, exit with the recorded code — no fall-through to the real CLI.
 func replay(cfg config, name string, argv []string) (int, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -70,11 +68,9 @@ func replay(cfg config, name string, argv []string) (int, error) {
 	return manifest.ExitCode, nil
 }
 
-// applyFSDiff reproduces the recorded call's file effects in cwd.
-// Cassette paths and contents are stored normalized ({{CWD}},
-// {{RUN_DIR}}); both are mapped back onto the live run before writing —
-// the result files the AI writes under tmp/<run-dir>/ must land in
-// THIS run's directory for the engine to read them back.
+// applyFSDiff reproduces the recorded call's file effects in cwd. Cassette
+// paths and contents are stored normalized ({{CWD}}, {{RUN_DIR}}) and mapped
+// back onto the live run so result files land in THIS run's directory.
 func applyFSDiff(dir string, manifest *meta, cwd string) error {
 	runDir := findCurrentRunDir(cwd)
 

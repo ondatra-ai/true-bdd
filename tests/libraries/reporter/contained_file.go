@@ -6,20 +6,9 @@ import (
 	"strings"
 )
 
-// ContainedFile resolves rel underneath base and reports whether the
-// result is a readable file genuinely inside base.
-//
-// Every path this package opens from a run's own log goes through here.
-// A log is data on disk, not a promise: the report reads whatever it
-// names, so a path that is absolute, that climbs out with "..", or that
-// reaches outside through a symlink would let loading a report read an
-// arbitrary file and surface its contents in the UI.
-//
-// Symlinks are resolved on BOTH sides before comparing, because a purely
-// lexical check passes a path whose every component is inside base while
-// the final open follows a link straight out of it. Resolution also
-// means a path that does not exist yet is reported as uncontained, which
-// is the correct answer for a caller that is about to read it.
+// ContainedFile resolves rel underneath base and reports whether the result
+// is a readable file genuinely inside base — refusing an absolute path, a
+// "..", or a symlink escape. Symlinks resolve on BOTH sides.
 func ContainedFile(base, rel string) (string, bool) {
 	if rel == "" || filepath.IsAbs(rel) {
 		return "", false
@@ -40,10 +29,9 @@ func ContainedFile(base, rel string) (string, bool) {
 		return "", false
 	}
 
-	// Containment is not enough: a FIFO sitting inside the fixture is
-	// perfectly contained, and os.ReadFile on one blocks until a writer
-	// appears — which for a report request means a goroutine that never
-	// returns. Only a regular file can be read to EOF in bounded time.
+	// Containment is not enough: a FIFO is perfectly contained, and
+	// os.ReadFile on one blocks until a writer appears — a goroutine that
+	// never returns. Only a regular file reads to EOF in bounded time.
 	info, err := os.Stat(resolved)
 	if err != nil || !info.Mode().IsRegular() {
 		return "", false
@@ -52,10 +40,9 @@ func ContainedFile(base, rel string) (string, bool) {
 	return resolved, true
 }
 
-// ReadContained reads a file named relative to base, refusing anything
-// that escapes it. The second result separates "not readable" from a
-// file that is readable and empty — a caller listing what exists must
-// not drop a zero-byte file.
+// ReadContained reads a file named relative to base, refusing anything that
+// escapes it. The second result separates "not readable" from
+// readable-and-empty, so a caller doesn't drop a zero-byte file.
 func ReadContained(base, rel string) (string, bool) {
 	path, ok := ContainedFile(base, rel)
 	if !ok {

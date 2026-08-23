@@ -21,12 +21,9 @@ var ErrNavigation = errors.New("navigation failed")
 // hydration and a client render, not for the network.
 const textTimeout = 10_000 // milliseconds
 
-// Register binds every step this suite's scenarios can use.
-//
-// Deliberately the same shape as the CLI suite's Register, and
-// deliberately a different vocabulary: what a browser scenario says is
-// "opens", "shows", "the page title is". A step that reads like the CLI
-// suite's would be a scenario pointed at the wrong surface.
+// Register binds every step this suite's scenarios can use — the same
+// shape as the CLI suite's Register, deliberately a different vocabulary
+// ("opens", "shows", "the page title is") so a step names its surface.
 func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the relay is running$`, relayIsRunning)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) opens "([^"]*)"$`, openPath)
@@ -44,11 +41,9 @@ func relayIsRunning(state *State, _ []string) error {
 	return nil
 }
 
-// openPath navigates the scenario's page to a path on the relay.
-//
-// The role is captured and discarded: it is the scenario's own statement
-// of who does this, held to the product document's role list by the
-// pattern itself.
+// openPath navigates the scenario's page to a path on the relay. The
+// captured role is discarded — held to the product document's role list
+// by the pattern itself.
 func openPath(state *State, args []string) error {
 	path := args[1]
 
@@ -88,11 +83,9 @@ func assertTitle(state *State, args []string) error {
 	return nil
 }
 
-// assertText waits for the text to appear anywhere on the page.
-//
-// A wait rather than a read: the page is server-rendered but hydrates,
-// and asserting the instant DOMContentLoaded fires is how a browser
-// suite acquires the flake it then blames on the browser.
+// assertText waits for the text to appear, rather than reading once: the
+// page is server-rendered but hydrates client-side, and asserting at
+// DOMContentLoaded is how a browser suite acquires the flake it blames on the browser.
 func assertText(state *State, args []string) error {
 	page, err := state.page()
 	if err != nil {

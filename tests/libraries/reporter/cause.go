@@ -9,12 +9,8 @@ import (
 )
 
 // CellRoleKey is a turn's identity as "which seat of which cell": the
-// checklist cell plus which of the three roles this turn occupied.
-//
-// The iteration index is deliberately excluded. A cell is retried until
-// it passes, so the same seat is legitimately occupied several times —
-// counting those occupancies is exactly how a `prompt` turn becomes a
-// "Re-validate".
+// checklist cell plus which role this turn occupied. The iteration index is
+// deliberately excluded, so retries of the same seat share a key.
 func (t *Turn) CellRoleKey() string {
 	section := t.Cell.Section
 	if section == "" {
@@ -29,14 +25,9 @@ func (t *Turn) CellRoleKey() string {
 	return strings.Join([]string{section, subject, t.Role}, "\x1f")
 }
 
-// seatKey is CellRoleKey plus the prompt index, and it is what attempts
-// are counted on.
-//
-// The index has to be here even though CellRoleKey omits it. A section
-// holds several prompts — us-create's `format` holds two — and they are
-// different questions about the same subject, not retries of one. Key
-// without the index and the second question reads as "Re-validate",
-// which is a false statement about a check that had never run.
+// seatKey is CellRoleKey plus the prompt index, and it is what attempts are
+// counted on — unlike CellRoleKey, since a section can hold several
+// prompts (us-create's `format` holds two) that are different questions, not retries of one.
 func (t *Turn) seatKey() string {
 	return t.CellRoleKey() + "\x1f" + strconv.Itoa(t.PromptIdx)
 }
@@ -59,15 +50,9 @@ type turnEvidence struct {
 // characters outside the safe set collapses to a single "-".
 var subjectUnsafe = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
 
-// sanitizeSubject makes a logged subject id comparable with the one
-// parsed out of a filename.
-//
-// The log carries the raw id, the filename the flattened one:
-// `frontend/integration/playwright:<startup>` is written to disk as
-// `frontend-integration-playwright-startup-`. The trailing hyphen then
-// comes back off, because cellFromArtifact trims it when reading the
-// name — both ends have to agree or every build-code turn fails to find
-// the fix that was just applied to it and reports the wrong cause.
+// sanitizeSubject makes a logged subject id comparable with the one parsed
+// out of a filename: the log carries the raw id, the filename a flattened
+// one with the trailing hyphen trimmed by cellFromArtifact — both must agree.
 func sanitizeSubject(id string) string {
 	return strings.Trim(subjectUnsafe.ReplaceAllString(id, "-"), "-")
 }
@@ -122,11 +107,9 @@ func (w *contextWalker) consume(record *LogRecord) {
 		w.fixIter = intOr(record.Iteration)
 		w.lastGenIdx[subject] = intOr(record.PromptIndex)
 	case msgFixPromptSaved:
-		// The apply turn reads THIS file. Taking its name from the record
-		// rather than rebuilding it from the subject keeps the reference
-		// pointed at something that provably exists — the engine's own
-		// name survives ids that sanitise to a trailing hyphen, which a
-		// reconstruction does not.
+		// The apply turn reads THIS file. Its name comes from the record rather
+		// than being rebuilt from the subject, since the engine's own name
+		// survives ids that sanitise to a trailing hyphen and a reconstruction wouldn't.
 		w.fixPrompt = filepath.Base(record.File)
 	case msgFixApplying:
 		w.applyFix = intOr(record.Iteration)
@@ -147,11 +130,9 @@ func (w *contextWalker) claimTurn() {
 	turn := w.turns[w.cursor]
 	w.cursor++
 
-	// Both fields come from the same record and are cleared together. A
-	// turn with no documents record of its own must read as "index
-	// unknown", not as the index of whichever earlier turn last logged
-	// one — a stale index resolves against the checklist and prints a
-	// section name and a Q[n] belonging to a different check.
+	// Both fields come from the same record and are cleared together, so a
+	// turn with no documents record of its own reads as "index unknown"
+	// rather than inheriting a stale index from an earlier turn.
 	turn.Docs = w.docs
 	pendingIdx := w.docsIdx
 	w.docs, w.docsIdx = nil, 0
@@ -222,18 +203,9 @@ func classifyCauses(turns []*Turn) {
 	}
 }
 
-// promptCause separates the three reasons a validation runs.
-//
-// A first look is a first look. A re-entry is either this item's own fix
-// — the walker restarts it at query 0 (walker.go) — or the outer re-walk
-// that fires when ANY item was fixed (engine.go).
-//
-// Telling them apart needs no walk-boundary record, only arithmetic: the
-// walker restarts ONLY on a fix, and every fix increments the run-global
-// counter, so a restart always arrives carrying a fix number this cell
-// has not seen. A re-entry with no new fix therefore has exactly one
-// remaining explanation. The walk-boundary record adds the numbers to
-// that sentence, not the conclusion.
+// promptCause separates a first look from a re-entry caused by this item's
+// own fix (walker.go) vs. the outer re-walk (engine.go), by arithmetic: every
+// fix bumps a run-global counter, so a restart always carries one this cell hasn't seen; no new fix means re-walk.
 func promptCause(turn *Turn, attributed map[string]int) TurnCause {
 	if turn.Attempt <= 1 {
 		return TurnCause{Kind: causeWalk, WalkAttempt: turn.evidence.walk}
@@ -253,10 +225,8 @@ func promptCause(turn *Turn, attributed map[string]int) TurnCause {
 	}
 }
 
-// fixCause reads the generator's own iteration counter. The engine caps
-// clarification at maxClarificationIterations (5) and offsets user
-// refinement past it (cell_handler.go), so the number alone says which
-// loop produced this turn.
+// fixCause reads the generator's own iteration counter against
+// maxClarificationRounds, which mirrors the engine's own cap (see below).
 func fixCause(iteration int) TurnCause {
 	switch {
 	case iteration <= 1:

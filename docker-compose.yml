@@ -35,10 +35,9 @@ services:
     command: ["redis-server", "--maxmemory", "1gb", "--maxmemory-policy", "noeviction"]
 
   harness:
-    # Next.js relay + UI, built from services/bdd-web/Dockerfile (Next standalone output).
-    # Manual dev stack only — the e2e suite does NOT use this service (it runs a
-    # host `node server.js` per test); `docker compose up` still exercises the
-    # production image end-to-end for manual verification.
+    # Next.js relay + UI (services/bdd-web/Dockerfile, Next standalone). Manual
+    # dev stack only — e2e runs a host `node server.js` per test, NOT this
+    # service; `docker compose up` is for manual production-image verification.
     build:
       context: ./services/bdd-web
     image: true-bdd-harness:e2e

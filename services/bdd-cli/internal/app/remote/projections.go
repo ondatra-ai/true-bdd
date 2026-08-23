@@ -10,19 +10,9 @@ import (
 	_ "modernc.org/sqlite" // pure-Go SQLite driver (same as the store)
 )
 
-// readHandle is a SECOND, READ-ONLY *sql.DB on the same per-project SQLite file
-// the store owns (plan §3). Writes ALWAYS go through store.DB (the single
-// writer); the projection SELECTs that build the browser-facing shapes run on
-// this handle so reads never contend on the store's writer mutex. This keeps
-// the store package unedited while giving the remote the project-wide run
-// reads the store does not expose.
-//
-// Every projection runs inside ONE read transaction (a consistent snapshot)
-// and NEVER issues a nested query while an outer Rows cursor is open — outer
-// rows are fully materialized, and per-row derived facts (answerable) come from
-// an EXISTS subquery, not a second query. That closes the reproduced deadlock
-// where four concurrent outer reads occupied all four connections while their
-// nested queries waited forever (finding 6).
+// readHandle is a SECOND, READ-ONLY *sql.DB on the same per-project SQLite
+// file the store owns (plan §3); writes always go through store.DB. Each
+// projection runs ONE read tx, no nested query mid-cursor (finding 6).
 type readHandle struct {
 	sql *sql.DB
 }
@@ -176,9 +166,8 @@ func scanRunSummaryRow(rows *sql.Rows, sessionID string) (RunSummary, bool) {
 }
 
 // activeOwnersFrom derives the distinct owners with a non-terminal run — the
-// sibling-warning working set (plan §3) — from the already-materialized,
-// newest-first run history, so no SECOND query runs while the outer cursor is
-// open (finding 6). owner_id IS the session id in v2.
+// sibling-warning working set (plan §3) — from the already-materialized run
+// history (no second query; see readHandle, finding 6). owner_id IS the session id in v2.
 func activeOwnersFrom(runs []RunSummary) []ActiveOwner {
 	seen := map[string]bool{}
 	out := []ActiveOwner{}

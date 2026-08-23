@@ -1,9 +1,8 @@
 package store
 
-// Regression for the reproduced answer DOUBLE-DELIVERY (finding 3): the store's
-// atomic ResolveAnswer must report ShouldDeliver=true ONLY on the first accept,
-// and false for every exact retry — so a lost-response retry never re-writes
-// the child's stdin. It also records a delivery_error without re-answering.
+// Regression for the reproduced answer DOUBLE-DELIVERY (finding 3): ResolveAnswer
+// must report ShouldDeliver=true ONLY on the first accept, never on a retry —
+// see TestResolveAnswerDeliversOnceThenNeverAgain. Plus delivery_error recording.
 
 import "testing"
 

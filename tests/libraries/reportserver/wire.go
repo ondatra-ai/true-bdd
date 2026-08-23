@@ -1,18 +1,15 @@
 package reportserver
 
-// The JSON contract. Deliberately a separate layer from reporter's
-// loader structs rather than tags on them:
+// The JSON contract, a separate layer from reporter's loader structs
+// rather than tags on them:
 //
-//   - Phase carries a *Turn back-pointer; marshalling the loader types
-//     directly would emit every turn twice, once in the turn list and
-//     once nested in its phase, artifacts and all.
-//   - Artifact holds whole prompt bodies, tens of kilobytes each. They
-//     must never ride along in a list response; here they are references
-//     and the body is a separate request.
-//   - time.Duration marshals as an int64 of nanoseconds. Every duration
-//     crosses this boundary as seconds, named so.
-//   - Tagging the loaders would weld their field names to the wire, and
-//     those files are pinned by the phase-timeline invariant tests.
+//	Phase     carries a *Turn back-pointer; tagging it would double-marshal
+//	          every turn, once in the list and once nested in its phase
+//	Artifact  holds whole prompt bodies (tens of KB); wire refs only, body
+//	          is a separate request
+//	Duration  marshals as int64 ns; every duration crosses as seconds instead
+//	Loaders   tagging would weld field names to the wire, and those files
+//	          are pinned by the phase-timeline invariant tests
 
 // StateResponse is the poll target: small, memory-only, and enough to
 // decide whether anything needs re-fetching.
@@ -232,10 +229,8 @@ type CellDTO struct {
 	Key     string `json:"key"`
 }
 
-// OperationDTO is what a turn did, named: the verb, what it was checked
-// against, and why it happened at all. Label is the row text; CellLabel
-// is the attempt-free form the cross-run comparison uses, where a row
-// can pair a first entry on one side with a re-entry on the other.
+// OperationDTO is what a turn did, named (see reporter.Operation). Label is
+// the row text; CellLabel is the attempt-free form cross-run comparison uses.
 type OperationDTO struct {
 	Verb        string   `json:"verb"`
 	Section     string   `json:"section"`

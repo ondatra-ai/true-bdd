@@ -11,19 +11,12 @@ import (
 
 // ErrSuiteNotDeclared signals that the architectural spec has no
 // `architecture.testing.suites[]` entry with the name a test binary
-// asked for. Refused rather than defaulted: a suite that runs scenarios
-// the spec never assigned it is a suite whose coverage no reader can
-// predict.
+// asked for. Refused rather than defaulted, to keep coverage predictable.
 var ErrSuiteNotDeclared = errors.New("architecture declares no test suite by that name")
 
 // SuiteSpec is one `architecture.testing.suites[]` entry, as the test
 // binary needs it: the suite's own name, the service whose scenarios it
 // owns, and the tree its step definitions live under.
-//
-// It is read from the same document the engine reads. The alternative —
-// a constant in the test binary — is a second place to say which
-// scenarios a suite covers, and the two would disagree the first time
-// someone edited only one.
 type SuiteSpec struct {
 	Name      string `yaml:"name"`
 	Service   string `yaml:"service"`
@@ -40,9 +33,8 @@ type rawArchitecture struct {
 }
 
 // LoadSuiteSpec reads the architectural spec and returns the named
-// suite. The error names every suite the document does declare, because
-// the mistake this catches is almost always a typo and the fix is
-// almost always visible in that list.
+// suite. The error names every suite the document does declare, since
+// the mistake this catches is almost always a typo.
 func LoadSuiteSpec(path, name string) (SuiteSpec, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -70,10 +62,9 @@ func LoadSuiteSpec(path, name string) (SuiteSpec, error) {
 		path, name, ErrSuiteNotDeclared, strings.Join(declared, ", "))
 }
 
-// Owns reports whether a scenario belongs to this suite. The join is the
-// scenario's `service:` against the suite's — one line of the spec,
-// replacing the id-prefix convention (`INT-` / `E2E-`) that used to
-// decide it in prompt prose and nowhere in code.
+// Owns reports whether a scenario belongs to this suite: the scenario's
+// `service:` against the suite's — one line of the spec, not an
+// id-prefix convention.
 func (s SuiteSpec) Owns(scenario Scenario) bool {
 	return scenario.Service == s.Service
 }

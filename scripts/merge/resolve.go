@@ -57,11 +57,9 @@ type answer struct {
 	text    string
 }
 
-// resolveConversations answers and resolves every thread.
-//
-// `main` requires conversation resolution, so a round that leaves one open
-// cannot be merged. Body-only findings are skipped here because GitHub models
-// them as nothing at all — no id, no reply target, no resolvable state.
+// resolveConversations answers and resolves every thread — main requires
+// resolution, so an open one blocks merge. Body-only findings are skipped:
+// GitHub gives them no id, reply target, or resolvable state.
 func (r *Run) resolveConversations(fixed, created, ignored []clickup.Finding) {
 	answers := make([]answer, 0, len(fixed)+len(created)+len(ignored))
 
@@ -105,10 +103,9 @@ func (r *Run) resolveConversations(fixed, created, ignored []clickup.Finding) {
 	r.sweepStragglers()
 }
 
-// sweepStragglers resolves whatever is still open, with a reason.
-//
-// A thread opened by a human, or one whose finding deduped away, blocks the
-// merge just as hard. Leaving it to the end is how PR #76 got there.
+// sweepStragglers resolves whatever is still open, with a reason. A thread
+// opened by a human, or one whose finding deduped away, blocks the merge
+// just as hard — leaving it to the end is how PR #76 got there.
 func (r *Run) sweepStragglers() {
 	swept := 0
 

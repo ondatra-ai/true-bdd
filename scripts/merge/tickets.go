@@ -8,17 +8,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 )
 
-// create files one ClickUp ticket per finding, tagged fix-now.
-//
-// The clickup package is the single ClickUp interface — scripts/cmd/clickup is
-// the same code behind a binary, which is how the fix-queue skill reaches it
-// by path — so its four-heading ticket shape stays that skill's contract
-// whichever way it is called.
-//
-// One knob changed in the port: the timeout is CLICKUP_CLAUDE_TIMEOUT, the
-// clickup package's own, because the call is in-process now. MERGE_CLICKUP_
-// TIMEOUT bounded the subprocess that no longer exists; both defaulted to
-// 900s, so only the name moved.
+// create files one ClickUp ticket per finding, tagged fix-now, via the
+// shared clickup package (also scripts/cmd/clickup, what fix-queue calls).
+// Timeout env var renamed in the port: was MERGE_CLICKUP_TIMEOUT, now CLICKUP_CLAUDE_TIMEOUT (same 900s default).
 func (r *Run) create(toCreate []clickup.Finding, round int) []clickup.Finding {
 	if len(toCreate) == 0 {
 		return nil

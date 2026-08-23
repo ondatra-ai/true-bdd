@@ -36,10 +36,8 @@ func controlType(t string) bool {
 }
 
 // AppendEvent is the writer-actor entry point: it allocates next_seq and
-// inserts the event in ONE transaction, so concurrent producers get unique,
-// contiguous sequences (plan §1.2). Control events commit synchronously and
-// are never dropped; once a run is terminal no further event is appended, so
-// terminal always stays last.
+// inserts the event in ONE transaction under db.writeMu (see the DB doc) so
+// concurrent producers get unique, contiguous sequences.
 func (db *DB) AppendEvent(runID string, event EventInput) AppendOutcome {
 	db.writeMu.Lock()
 	defer db.writeMu.Unlock()

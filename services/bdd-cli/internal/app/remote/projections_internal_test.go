@@ -57,8 +57,7 @@ func newProjectionFixture(t *testing.T) (*store.DB, *readHandle, string, string)
 
 // TestSessionStatusAndRunDetailProjection proves the store → read-handle →
 // projection path produces the exact browser-facing shapes (api-client.ts):
-// the active run, project history, a pending prompt with answerable=true, then
-// a terminal outcome + envelope with answerable=false.
+// active run, history, a pending prompt (answerable=true), then terminal (answerable=false).
 func TestSessionStatusAndRunDetailProjection(t *testing.T) {
 	t.Parallel()
 

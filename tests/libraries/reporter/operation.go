@@ -22,9 +22,8 @@ type TurnCause struct {
 	Round int
 }
 
-// Operation is what a turn did, named. Every field is derived from the
-// run's own log and its own copy of the checklist — nothing here is a
-// lookup table keyed on the command, which is why `build code` needs no
+// Operation is what a turn did, named. Every field is derived from the run's
+// own log and its own copy of the checklist, so `build code` needs no
 // special case.
 type Operation struct {
 	Verb    string
@@ -38,10 +37,9 @@ type Operation struct {
 	Why string
 	// Label is the full attempt-aware name.
 	Label string
-	// CellLabel is Label with the first-entry verb, always. Cross-run
-	// comparison aligns on the cell, not the attempt, so a matched row
-	// can pair attempt 1 on one side with attempt 2 on the other —
-	// "Re-validate" there would be a claim about one side only.
+	// CellLabel is Label with the first-entry verb, always: cross-run
+	// comparison aligns on the cell, not the attempt, so a matched row can
+	// pair attempt 1 with attempt 2 without "Re-validate" claiming one side.
 	CellLabel string
 	// SectionName is the checklist author's human name for the section
 	// ("Scenario Merge"). Shown in the turn's fact table, not the row:
@@ -54,10 +52,9 @@ type Operation struct {
 // walk recorded.
 const firstReWalk = 2
 
-// Phrase words a cause. An empty string means the cause is unknown —
-// ordinary for a session recorded before the engine logged walk
-// boundaries — and the label simply omits the clause rather than
-// guessing at one.
+// Phrase words a cause. An empty string means the cause is unknown — normal
+// for a session recorded before the engine logged walk boundaries — so the
+// label omits the clause rather than guessing.
 func (c TurnCause) Phrase(promptRef string) string {
 	switch c.Kind {
 	case causeWalk:
@@ -66,10 +63,7 @@ func (c TurnCause) Phrase(promptRef string) string {
 		// every item, so nothing is being seen for the first time there.
 		return "walk " + strconv.Itoa(max(c.WalkAttempt, 1))
 	case causeReWalk:
-		// The conclusion holds without the walk-boundary record; only
-		// the numbering needs it. A session recorded before the engine
-		// logged boundaries gets the sentence without the count rather
-		// than a made-up "2/5".
+		// No count rather than a made-up "2/5" when WalkAttempt wasn't recorded.
 		if c.WalkAttempt < firstReWalk {
 			return "re-walk — the previous walk applied a fix"
 		}
@@ -115,10 +109,8 @@ func (c TurnCause) fixPhrase(promptRef string) string {
 	}
 }
 
-// describeTurn names one turn.
-//
-// command is the hyphenated checklist command the run logged
-// ("us-apply"), used only to strip the command prefix the artifact
+// describeTurn names one turn. command is the hyphenated checklist command
+// the run logged ("us-apply"), used only to strip the prefix the artifact
 // filenames glue onto the section id.
 func describeTurn(turn *Turn, doc ChecklistDoc, command string) Operation {
 	index := turn.PromptIndex()
@@ -173,15 +165,12 @@ func verbFor(role string, attempt int) string {
 
 // turnRef names what the turn was working from.
 //
-//   - the VALIDATE turn is evaluated against `Q[n]`. Its rendered prompt
-//     does also carry the `F:` template, for the model to paste back
-//     verbatim if it answers fail — but that is cargo, not the thing the
-//     check is measured against, and naming it here would suggest the
-//     validation had something to do with fixing.
-//   - the FIX turn works FROM `F[n]`: it receives F's rendered output as
-//     "Suggested Fix Template" (us-checklist.fix-generator.prompt.tpl).
-//   - the APPLY turn receives only the generated fix prompt. It never
-//     sees F, so naming an F index there would be false.
+//	VALIDATE  Q[n] — the F: template is cargo for a possible fail, not what
+//	          the check is measured against; naming it here would imply the
+//	          validation had something to do with fixing.
+//	FIX       F[n] — receives F's rendered output as "Suggested Fix Template".
+//	APPLY     the generated fix prompt only; it never sees F, so an F index
+//	          here would be false.
 func turnRef(turn *Turn, index int, hasFix bool) string {
 	switch turn.Role {
 	case rolePrompt:
@@ -230,19 +219,11 @@ func sectionID(section, command string, entry ChecklistPrompt, known bool) strin
 	return section
 }
 
-// assemble builds the row text as an English sentence, one shape per
-// role — a single template cannot serve all three, because the verbs
-// govern differently: you validate a cell AGAINST a question, but you
-// generate a fix prompt FOR a cell FROM its template.
+// assemble builds the row text as an English sentence, one shape per role.
 //
 //	Validate            99.3-001 against Q[1]
 //	Generate fix prompt for 99.3-001 from F[1]
 //	Apply fix           to 99.3-001 from 01-99.3-001-fix-prompts.md
-//
-// The section is NOT in the sentence. Q[n] already identifies the prompt,
-// and the prompt belongs to exactly one section — naming both says the
-// same thing twice in the one place with no room for it. The section id
-// and the checklist author's name for it live in the turn's fact table.
 func assemble(verb string, operation Operation, role string) string {
 	target := operation.Subject
 

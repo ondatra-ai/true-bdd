@@ -183,13 +183,9 @@ func TestBaselineWriteRefusesHardDiagnostics(t *testing.T) {
 	}
 }
 
-// TestShippedBaselineValidity is the cheap PR gate: every entry of the
-// checked-in baseline must still map onto the current shipped universe
-// by machine hashes, and the baseline must cover the ENTIRE current
-// universe. Editing a shipped Q/F, deleting a baseline entry, or
-// adding a shipped prompt without fixture coverage breaks this test
-// until the fixtures are re-run and the baseline consciously
-// regenerated.
+// TestShippedBaselineValidity is the cheap PR gate: every checked-in
+// baseline entry must still map onto the current shipped universe by
+// machine hashes, and the baseline must cover the entire universe.
 func TestShippedBaselineValidity(t *testing.T) {
 	t.Parallel()
 

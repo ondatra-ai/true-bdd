@@ -11,10 +11,8 @@ import (
 	"time"
 )
 
-// Production shutdown escalation bounds (plan §3.2): forward SIGINT + close
-// stdin, wait, then SIGTERM the group, wait, then SIGKILL the group. A
-// healthy claude dies on the SIGINT + stdin EOF; the escalation is forced
-// only for a child that ignores the softer signals.
+// escalateSIGINTWait and escalateSIGTERMWait are Escalate's production
+// shutdown bounds (plan §3.2); shortened in tests via escalateConfig.
 const (
 	escalateSIGINTWait  = 20 * time.Second
 	escalateSIGTERMWait = 5 * time.Second
@@ -43,10 +41,8 @@ type spawnConfig struct {
 }
 
 // managedChild is a spawned child in its own process group with its stdio
-// pipes and a one-shot Wait. It is the testable unit behind the executor's
-// process supervision: the signal-escalation, flock-inheritance, and
-// nested-descendant-cleanup Go tests drive it directly with an engineered
-// helper child (no Claude).
+// pipes and a one-shot Wait — the testable unit behind the executor's
+// process supervision (signal-escalation, flock-inheritance, cleanup).
 type managedChild struct {
 	cmd    *exec.Cmd
 	stdin  io.WriteCloser
@@ -55,9 +51,8 @@ type managedChild struct {
 	pgid   int
 
 	// releaseWrite is the write end of the gated supervisor's release pipe
-	// (finding 4); nil for a non-gated child. Release() writes the go-byte;
-	// abortGate() closes it WITHOUT writing so the supervisor EOF-exits without
-	// ever running the real command.
+	// (finding 4); nil for a non-gated child. Release() writes the go-byte
+	// to exec the command; see abortGate for the fail-closed abort path.
 	releaseWrite *os.File
 	releaseOnce  sync.Once
 
@@ -69,10 +64,8 @@ type managedChild struct {
 // spawnProcessGroup starts cfg's binary in a fresh process group (setpgid)
 // with its stdio wired to pipes and cfg.lockFile inherited when present.
 func spawnProcessGroup(cfg spawnConfig) (*managedChild, error) {
-	// context.Background: the child's lifecycle is governed by the explicit
-	// SIGINT→TERM→KILL Escalate path, not by ctx cancellation, so no
-	// CommandContext auto-kill is wanted here.
-	//
+	// context.Background: lifecycle is governed by the explicit Escalate
+	// path, not ctx cancellation, so no CommandContext auto-kill is wanted.
 	//nolint:gosec // remote-owned binary + already-validated args
 	cmd := exec.CommandContext(context.Background(), cfg.binPath, cfg.args...)
 	cmd.Dir = cfg.dir
@@ -104,11 +97,8 @@ func spawnProcessGroup(cfg spawnConfig) (*managedChild, error) {
 }
 
 // spawnGatedGroup launches the RESIDENT GATED supervisor (finding 4) as the
-// process-group leader, blocked on a release pipe. The returned child wraps the
-// SUPERVISOR (pgid == supervisor pid); the caller records the group identity and
-// then calls child.Release() to let the supervisor exec the real command. If
-// the caller instead calls child.abortGate() (a bookkeeping failure), the
-// supervisor EOF-exits without ever running the command.
+// process-group leader (pgid == supervisor pid), blocked on its release pipe
+// until the caller calls Release() (exec the command) or abortGate() (fail closed).
 func spawnGatedGroup(cfg spawnConfig) (*managedChild, error) {
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
@@ -187,10 +177,9 @@ func (c *managedChild) Wait() error {
 	return c.waitErr
 }
 
-// Escalate runs the forced SIGINT → SIGTERM → SIGKILL shutdown (plan
-// §3.2): SIGINT the group and close stdin (a blocked child EOF-exits),
-// then, only if the child survives each bounded wait, escalate to SIGTERM
-// and finally SIGKILL. It returns after the child is reaped.
+// Escalate runs the forced SIGINT→TERM→KILL shutdown (plan §3.2): SIGINT +
+// stdin close first, since a healthy claude EOF-exits from that alone; each
+// further stage escalates only if the child survives the prior bounded wait.
 func (c *managedChild) Escalate(cfg escalateConfig) {
 	c.signalGroup(syscall.SIGINT)
 	c.closeStdin()

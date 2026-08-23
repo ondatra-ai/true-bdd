@@ -5,9 +5,8 @@ import (
 )
 
 // CellHandler runs the per-cell state machine: Query → if fail and
-// fix mode → clarification loop (ask GenFix repeatedly until it
-// returns a prompt) → apply/refine/exit loop → Fix. The engine, not
-// per-command code, owns this UX.
+// fix mode → clarification loop (ask GenFix until it returns a
+// prompt) → apply/refine/exit loop → Fix.
 type CellHandler[I, Q any] struct {
 	Query   QueryFn[I, Q]
 	GenFix  GenerateFixFn[I, Q]
@@ -39,9 +38,8 @@ func (h *CellHandler[I, Q]) Handle(
 }
 
 // runFixLoop drives the full interactive fix UX for one failed cell:
-// clarification loop (≤ maxClarificationIterations) to extract an
-// initial fix prompt, then apply/refine/exit loop until the user
-// picks a terminal action.
+// clarification loop (≤ maxClarificationIterations) for an initial fix
+// prompt, then apply/refine/exit until the user picks a terminal action.
 func (h *CellHandler[I, Q]) runFixLoop(
 	ctx context.Context,
 	item I,
@@ -60,9 +58,8 @@ func (h *CellHandler[I, Q]) runFixLoop(
 }
 
 // runClarificationLoop calls GenFix repeatedly until it returns a
-// concrete fix prompt or the cap fires. Each iteration that returns
-// Questions triggers AskQuestions, and the answers are folded into
-// userAnswers before the next call.
+// concrete fix prompt or the cap fires. Each Questions result triggers
+// AskQuestions; answers fold into userAnswers before the next call.
 func (h *CellHandler[I, Q]) runClarificationLoop(
 	ctx context.Context,
 	item I,
@@ -148,10 +145,8 @@ func (h *CellHandler[I, Q]) applyFix(
 }
 
 // tryRefine bumps the refinement counter (bounded by
-// maxRefinementIterations), collects user feedback, and runs GenFix
-// with the `_user_refinement` answer injected. Returns "" when the
-// cap is hit, no feedback is given, or GenFix declines to produce a
-// new prompt — caller keeps the existing prompt.
+// maxRefinementIterations), collects feedback, and reruns GenFix with
+// `_user_refinement` injected; "" means the caller keeps its prompt.
 func (h *CellHandler[I, Q]) tryRefine(
 	ctx context.Context,
 	item I,

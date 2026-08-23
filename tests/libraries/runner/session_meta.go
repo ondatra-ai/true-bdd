@@ -16,16 +16,9 @@ const SessionMetaFile = "session.json"
 // sessionMetaSchema versions the on-disk shape.
 const sessionMetaSchema = 1
 
-// SessionMeta is what is true of a whole `go test` invocation rather
-// than of any one fixture: which AI mode it ran under, and which
-// fixtures it set out to run.
-//
-// Planned exists because the fixtures a report can SEE are only the
-// ones that already produced a directory. Mid-run that is a count of
-// what has finished, which makes "6 of 7" mean "6 of the 7 so far" —
-// a denominator that grows as the suite proceeds and never states the
-// target. Planned is that target, written before the first fixture
-// starts.
+// SessionMeta is what is true of a whole `go test` invocation: which AI
+// mode it ran under, and which fixtures it set out to run. Planned is
+// the target fixture list, since a report can only see directories that already exist.
 type SessionMeta struct {
 	Schema    int       `json:"schema"`
 	Mode      string    `json:"mode"`
@@ -39,10 +32,8 @@ func SessionMetaPath(sessionRoot string) string {
 }
 
 // WriteSessionMeta records a session's mode and planned fixture list.
-//
 // Write-then-rename, like the harness record: the report server polls
-// this tree every fifteen seconds and must never read a half-written
-// file.
+// this tree periodically and must never read a half-written file.
 func WriteSessionMeta(sessionRoot, mode string, planned []string) error {
 	meta := SessionMeta{
 		Schema:    sessionMetaSchema,

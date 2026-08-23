@@ -14,11 +14,9 @@ import (
 )
 
 const (
-	// cliWaitDelay bounds how long Wait blocks after the process exits
-	// or is killed. crush's embedded shell can leave a grandchild
-	// holding the stdout pipe; without this the turn would hang forever
-	// instead of failing — which is also why a caller should tree-kill
-	// rather than wait.
+	// cliWaitDelay bounds how long Wait blocks after exit: crush's embedded
+	// shell can leave a grandchild holding the stdout pipe, so without this
+	// the turn hangs forever — also why Cancel below kills the whole process group.
 	cliWaitDelay = 10 * time.Second
 	// transcriptFileMode matches the permissions the generators use for
 	// their prompt/response artifacts.

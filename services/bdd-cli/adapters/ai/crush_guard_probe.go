@@ -14,16 +14,9 @@ import (
 // guard must deny a write to it.
 const crushGuardProbePath = "/true-bdd-guard-probe/must-be-denied"
 
-// verifyCrushGuardEnforces proves the guard hook actually denies before
-// any crush turn is allowed to start.
-//
-// This exists because crush FAILS OPEN: if the hook command cannot be
-// executed — a bad path, a binary without the subcommand, a
-// non-executable file — crush runs the tool anyway. Observed directly:
-// a hook pointing at a binary with no `crush-guard` subcommand let a
-// write outside the allowed root through silently. Since the hook is
-// the ONLY thing standing between a crush turn and the host's files,
-// silently losing it is unacceptable; a loud startup failure is not.
+// verifyCrushGuardEnforces proves the guard hook actually denies before any
+// crush turn starts: crush FAILS OPEN if the hook can't execute — observed
+// directly, a binary with no `crush-guard` subcommand let a write through silently.
 func verifyCrushGuardEnforces(ctx context.Context, executable string) error {
 	//nolint:gosec // executable is os.Executable(); no user input reaches it
 	cmd := exec.CommandContext(ctx, executable, crushGuardSubcommand)

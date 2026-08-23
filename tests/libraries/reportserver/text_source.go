@@ -27,12 +27,9 @@ const (
 	refCommitted = "run:committed"
 )
 
-// resolveText returns the body a ref names, and whether it exists.
-//
-// Refs are resolved by LOOKUP against the fixture's own loaded artifacts
-// and a fixed set of pseudo-refs — never by joining a client string onto
-// a filesystem path. That is the whole reason refs are opaque tokens
-// rather than paths: there is no traversal surface to get wrong.
+// resolveText returns the body a ref names, and whether it exists. Refs are
+// resolved by LOOKUP against the fixture's own loaded artifacts, never by
+// joining a client string onto a path — no traversal surface to get wrong.
 func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
 	body, present, handled := fixedRef(fixture, ref)
 	if handled {
@@ -51,13 +48,9 @@ func resolveText(fixture *reporter.Fixture, ref string) (string, bool) {
 	}
 }
 
-// fixedRef resolves the pseudo-refs that name exactly one body.
-//
-// Three results, not two: `present` says the body was found, `handled`
-// says the ref was one of these at all. They are separate because a file
-// can be readable and empty, and collapsing that into "absent" drops a
-// truncated target from the provenance list — the one case where the
-// emptiness is the thing worth seeing.
+// fixedRef resolves the pseudo-refs that name exactly one body. Three
+// results, not two: `present` (body found) and `handled` (ref recognized)
+// are separate so a readable-but-empty file doesn't collapse into "absent".
 func fixedRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
 	switch ref {
 	case refJudgeSystem:
@@ -112,19 +105,13 @@ func provenanceRef(fixture *reporter.Fixture, ref string) (string, bool, bool) {
 	return body, ok, true
 }
 
-// provenanceRefs lists the files behind every check the run performed:
-// where the walked items came from, which checklist posed the questions,
-// and what the fixes mutate. Run-level, so they are resolved once and
-// every turn points at the same three bodies.
+// provenanceRefs lists the files behind every check the run performed.
+// Run-level, so they are resolved once and every turn points at the same bodies.
 func provenanceRefs(fixture *reporter.Fixture) []ArtifactRef {
 	candidates := []struct{ ref, kind, path string }{
 		{refItemsFile, "subject from", fixture.Meta.ItemsFile},
 		{refChecklist, "checklist", fixture.Meta.ChecklistPath},
-		// Both, and usually only one resolves. A run that converged has
-		// had its scratch renamed over the canonical file, so the scratch
-		// is gone and the fixes are findable only at the destination; a
-		// run that did not converge leaves the scratch and never touches
-		// the canonical. Listing both lets whichever exists speak.
+		// Both, though usually only one resolves (see RunMetadata.CommittedFile).
 		{refTarget, "fixes written to", fixture.Meta.TargetFile},
 		{refCommitted, "fixes committed to", fixture.Meta.CommittedFile},
 	}

@@ -17,14 +17,9 @@
 architecture:
   testing:
     suites:
-      # Scenario-driven fixture harness under tests/bdd-cli/. Scenarios
-      # come from docs/scenarios.yaml; each one's steps resolve against
-      # the step definitions in tests/bdd-cli/steps/. The suite is gated
-      # behind `//go:build bdd` and takes its AI mode from a `-mode`
-      # flag, neither of which any engine default could have guessed —
-      # which is why `commands:` exists. All three modes are mandatory;
-      # `build code` runs `replay`, the only one that spawns no model
-      # and costs nothing.
+      # Scenario-driven fixture harness under tests/bdd-cli/ (scenarios from
+      # docs/scenarios.yaml). Gated behind //go:build bdd with a -mode flag —
+      # neither guessable, hence commands:. All 3 modes mandatory; build code uses replay (spawns no model).
       - name: bdd-cli
         service: bdd-cli
         path: tests/bdd-cli
@@ -33,17 +28,14 @@ architecture:
           record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
           replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
           live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
-          # Asked by `build tests` before it walks anything: which
-          # registry steps bind to no step definition. Deterministic and
-          # under a second, so a converged repository costs no AI turn
-          # at all. It brings no harness up — no binary, no shim, no
-          # session — because the question is about two files on disk.
+          # Asked by `build tests` before it walks anything: which registry
+          # steps bind to no definition. Deterministic, under a second, no
+          # harness brought up — the question is about two files on disk.
           coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-cli/"
 
-      # The web relay's suite, same runner, same registry — the step
-      # definitions drive a browser through playwright-go instead of a
-      # subprocess. Its specs live in the root Go module; the parked
-      # TypeScript suite it replaces is at tests/legacy/bdd-web-playwright/.
+      # The web relay's suite, same runner and registry — steps drive a
+      # browser via playwright-go instead of a subprocess. Parked TypeScript
+      # suite it replaces: tests/legacy/bdd-web-playwright/.
       - name: bdd-web
         service: bdd-web
         path: tests/bdd-web
@@ -64,15 +56,13 @@ architecture:
       language: go
       frameworks:
         - cobra
-      # What this service talks to at runtime. `protocol` is the
-      # connection mechanism (cli = spawned subprocess over argv/stdio,
-      # http, ws, sql, redis, …). `scope` places the dependency:
-      #   internal    — another service declared in this file
-      #   self_hosted — we run the instance (redis, postgres, kafka);
-      #                 builds use the real thing
-      #   third_party — a vendor's service is behind it, wherever the
-      #                 binary lives (crush is local, GLM's API is not);
-      #                 builds mock these (record/replay)
+      # What this service talks to at runtime: `protocol` is the connection
+      # mechanism (cli, http, ws, sql, redis, …); `scope` places it:
+      #	internal    — another service declared in this file
+      #	self_hosted — we run the instance (redis, postgres, kafka); builds
+      #	              use the real thing
+      #	third_party — a vendor's service, wherever the binary lives (crush is
+      #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
         - name: claude
           protocol: cli

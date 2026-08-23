@@ -10,11 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// retainedRawCap bounds the story `raw` text RETAINED in the snapshot
-// (plan §1a). It applies ONLY to what is kept for the modal's Raw tab; the
-// scanner always reads and decodes the COMPLETE file, so validity/content
-// never flip on a truncated prefix. A file over the cap keeps a valid-UTF-8
-// prefix and sets raw_truncated.
+// retainedRawCap bounds only the story `raw` text RETAINED in the snapshot
+// (plan §1a) for the modal's Raw tab; the scanner still decodes the
+// COMPLETE file regardless, so content never flips on a truncated prefix.
 const retainedRawCap = 256 * 1024
 
 // lineageIDFormat mirrors the engine's us apply lineage id derivation
@@ -23,10 +21,8 @@ const retainedRawCap = 256 * 1024
 const lineageIDFormat = "%s-%03d"
 
 // legacyStoryProbe mirrors only the legacy `scenarios.test_scenarios[]`
-// block the scanner needs to detect the deprecated 3.x story format. The
-// canonical identity and acceptance-criteria list come from the real
-// typed model (storymodel.StoryDocument) instead, so the scanner rejects
-// exactly the malformed step shapes us apply rejects.
+// block, used to detect the deprecated 3.x format; identity and ACs come
+// from the real typed model instead, so rejection mirrors us apply exactly.
 type legacyStoryProbe struct {
 	Scenarios struct {
 		TestScenarios []yaml.Node `yaml:"test_scenarios"`
@@ -53,10 +49,9 @@ type storyRowInput struct {
 	lineage    lineageIndex
 }
 
-// storyResolution is the structured result of resolving one epic story row
-// to its file(s): the created status, match count / source file, the parsed
-// file (valid only for created=one), the retained (possibly-truncated) raw
-// text, the extracted content, and the parse error (created=invalid).
+// storyResolution is the structured result of resolving one epic story
+// row to its file(s): created status, match/source, raw (possibly
+// truncated), extracted content, and parse error.
 type storyResolution struct {
 	created      string
 	matchCount   int
@@ -69,11 +64,8 @@ type storyResolution struct {
 }
 
 // scanStoryRow resolves the story file for one epic row and computes its
-// created / applied / refined cells, identity flags, and the review-modal
-// content (plan §1/§1b). Every declared row also carries the epic-declared
-// content fallback so it is openable even when its file is missing,
-// ambiguous, or invalid. The epic-level duplicate_declared_id flag is
-// applied by the caller.
+// created/applied/refined cells, identity flags, and review-modal content
+// (plan §1/§1b); duplicate_declared_id is applied by the caller.
 func scanStoryRow(input storyRowInput) Story {
 	declared := input.declared
 	story := Story{
@@ -109,12 +101,9 @@ func scanStoryRow(input storyRowInput) Story {
 	return story
 }
 
-// resolveStory globs <storiesDir>/<declaredID>-*.yaml (mirroring the
-// StoryLoader), then reads and parses the single match — returning a
-// structured result (matches, source file, raw, content, error) instead of
-// discarding them, so the review modal can render the file verbatim (Raw
-// tab), the extracted content (Review tab), and honest ambiguity/parse
-// states.
+// resolveStory globs <storiesDir>/<declaredID>-*.yaml (mirroring
+// StoryLoader), then parses the single match into a structured result so
+// the review modal can render the raw file, content, and any parse error.
 func resolveStory(storiesDir, declaredID string) storyResolution {
 	if declaredID == "" {
 		return storyResolution{created: CreatedMissing}
@@ -184,16 +173,9 @@ func retainRaw(data []byte) (string, bool) {
 	return string(prefix), true
 }
 
-// parseStory reads and decodes a story file into the fields the scanner
-// reasons about PLUS its render-ready content. Honest surface: the story
-// identity, AC list, and content are taken from the REAL typed domain model
-// (storymodel.StoryDocument), whose ScenarioStep/StepStatement decoders
-// reject malformed step shapes (a scalar step like `- 42`, a bad
-// {and|but} modifier). A story the real model rejects fails here and is
-// surfaced as created=invalid (applied unknown(invalid)) instead of a
-// misleading created=one with a counted lineage. A deprecated-format story
-// still decodes cleanly here (its ACs are well-formed) and keeps its own
-// apply-ineligibility (deprecated_format) via the legacy probe.
+// parseStory decodes via the REAL typed model, so a malformed step (e.g. a scalar `- 42`)
+// fails here as created=invalid rather than a misleading counted lineage; a deprecated-format
+// story still decodes cleanly (created=one) and is flagged apply-ineligible instead.
 func parseStory(path string, data []byte) (storyFile, *Content, error) {
 	var legacy legacyStoryProbe
 
@@ -230,15 +212,9 @@ func storyFlags(file storyFile, declaredID string) StoryFlags {
 	}
 }
 
-// countApplied derives the story-applied cell for a resolved, parseable
-// story. Apply ELIGIBILITY is checked before counting: a story that us
-// apply would reject (deprecated format, zero ACs, empty internal id) is
-// reported unknown(<reason>) rather than a misleading x/y. Story
-// eligibility is checked BEFORE the registry so those reasons survive
-// even when the registry is absent. Only for an eligible story does the
-// registry status taint the cell (missing/invalid → unknown), otherwise
-// counting keys on the EXACT registry story path and position-derived
-// lineage ids.
+// countApplied derives the story-applied cell. Eligibility (deprecated,
+// zero ACs, empty id) is checked BEFORE the registry, so an ineligible
+// story keeps its own reason even when the registry is also unusable.
 func countApplied(file storyFile, storiesRel string, lineage lineageIndex) Applied {
 	if reason, ok := appliedIneligibility(file); ok {
 		return Applied{Status: AppliedUnknown, Reason: reason}

@@ -12,11 +12,9 @@ import (
 )
 
 const (
-	// crushGlobalConfigEnvVar points crush at a config DIRECTORY that
-	// the engine generates per run. Verified against crush v0.88.1: the
-	// directory's crush.json joins the config load chain, which lets the
-	// engine supply permissions and hooks WITHOUT writing into the host
-	// repo or clobbering an existing .crush.json.
+	// crushGlobalConfigEnvVar points crush at a generated config DIRECTORY.
+	// Verified against crush v0.88.1: its crush.json joins the config load
+	// chain, so the engine supplies permissions/hooks without touching the host's .crush.json.
 	crushGlobalConfigEnvVar = "CRUSH_GLOBAL_CONFIG"
 	// crushGuardSubcommand is the hidden true-bdd subcommand crush
 	// invokes as its PreToolUse hook.
@@ -28,18 +26,9 @@ const (
 	crushConfigFileMode = 0o644
 )
 
-// CrushProvider runs a turn through the `crush` CLI.
-//
-// Two properties of crush shape this implementation, both verified
-// against the live binary:
-//
-//   - `crush run` has NO permission gate, so writes are policed by a
-//     generated PreToolUse hook (see CrushGuardPolicy) rather than by
-//     the CLI itself.
-//   - crush SILENTLY ignores an unknown model pinned in config — a bad
-//     pin falls back to whatever global state says instead of failing.
-//     The model is therefore always passed as `-m`, never via the
-//     generated file.
+// CrushProvider runs a turn through the `crush` CLI. Verified against the
+// live binary: it has NO permission gate (see CrushGuardPolicy), and it
+// SILENTLY ignores an unknown model pin, so the model is always passed as `-m`.
 type CrushProvider struct{}
 
 // NewCrushProvider creates the crush provider.
@@ -125,11 +114,9 @@ type crushConfig struct {
 }
 
 type crushOptions struct {
-	// DataDirectory is where crush keeps per-project state (its SQLite
-	// database). It defaults to `.crush` under the working directory,
-	// which would grow inside the host project on every turn; pinning it
-	// under the run's TmpDir keeps the engine from writing anything into
-	// the host repo outside its declared write roots.
+	// DataDirectory is crush's SQLite state dir. It defaults to `.crush`
+	// under the working directory (i.e., inside the host repo); pinning
+	// it under the run's TmpDir keeps crush from writing there.
 	DataDirectory string `json:"data_directory"`
 }
 
@@ -158,10 +145,9 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
 	}
 
-	// One directory per turn. A fixed name under a shared TmpDir means
-	// two concurrent turns write the same crush.json, and the second
-	// would hand the first turn's policy — including its write roots —
-	// to a turn that was granted something narrower.
+	// One directory per turn: a fixed name under a shared TmpDir would let
+	// two concurrent turns share crush.json, handing the second turn the
+	// first's write roots — possibly broader than what it was actually granted.
 	configDir, err := os.MkdirTemp(req.TmpDir, "crush-config-")
 	if err != nil {
 		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
@@ -194,12 +180,9 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 	return configDir, nil
 }
 
-// crushDataDir resolves the per-turn crush data directory. TmpDir is
-// typically relative (`./tmp/<run-id>` from paths.tmp_dir) and crush
-// resolves a relative data_directory against its own working directory,
-// which is the host project root — the same anchor. Absolutizing anyway
-// removes the coupling, so the value stays correct if either side's cwd
-// ever changes.
+// crushDataDir resolves the per-turn data dir. TmpDir is usually relative,
+// and crush resolves a relative data_directory against its own cwd (the
+// host project root) — same anchor today, but absolutizing removes that coupling.
 func crushDataDir(req Request, configDir string) string {
 	dataDir := filepath.Join(configDir, "crush-data")
 	if filepath.IsAbs(dataDir) {
@@ -226,14 +209,9 @@ func crushAllowedTools(mode ExecutionMode) []string {
 	return allowed
 }
 
-// crushGuardCommand builds the hook command line pointing back at this
-// binary, so a host project needs no guard script of its own.
-//
-// The path is always quoted, never conditionally. crush parses this
-// string as a shell command, and a binary living under a path
-// containing a quote, `$`, or `;` would otherwise be emitted raw — at
-// best the hook fails to start, and crush FAILS OPEN when a hook cannot
-// run, so a quoting slip silently removes the only write gate.
+// crushGuardCommand builds the hook command pointing back at this binary.
+// The path is always quoted, never conditionally: crush parses it as a
+// shell command, and it FAILS OPEN, so an unquoted quote/`$`/`;` would silently kill the only write gate.
 func crushGuardCommand(executable string) string {
 	return shellQuote(executable) + " " + crushGuardSubcommand
 }
@@ -260,18 +238,9 @@ func buildCrushEnv(req Request, configDir string) ([]string, error) {
 	), nil
 }
 
-// warnOnHostCrushConfig notes that a host repo's own crush config
-// merges over the engine's generated one and may widen `permissions`.
-// Verified against crush v0.88.1: PreToolUse hooks are ADDITIVE — a
-// host hook does not displace the engine's, and a denial from either
-// blocks the tool — so writes stay policed. The operator should still
-// know another config is in play.
-//
-// The search walks UP from the workdir because that is crush's actual
-// discovery rule: it merges every config it finds on the way to the
-// filesystem root, nearest last. Checking only the workdir itself once
-// hid a config one level up whose read-only `allowed_tools` and
-// relative-path hook silently blocked every write an apply turn made.
+// warnOnHostCrushConfig warns when a host config merges over the engine's:
+// verified v0.88.1, PreToolUse hooks are ADDITIVE, so writes stay policed
+// either way. It walks UP from workdir because a parent-only config once silently blocked every write.
 func warnOnHostCrushConfig(workDir string) {
 	if workDir == "" {
 		return
@@ -305,9 +274,8 @@ func warnOnHostCrushConfig(workDir string) {
 }
 
 // hostCrushConfigKeys reports the enforcement-relevant top-level keys a
-// host config declares. A config that names neither `permissions` nor
-// `hooks` cannot narrow what the apply turn may do, so it is not worth
-// a warning.
+// host config declares — only `permissions` and `hooks` can narrow what
+// the apply turn may do, so those are the only ones worth a warning.
 func hostCrushConfigKeys(path string) ([]string, bool) {
 	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled host config path
 	if err != nil {

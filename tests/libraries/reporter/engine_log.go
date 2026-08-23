@@ -75,10 +75,8 @@ type LogRecord struct {
 	Dir    string   `json:"dir"`
 
 	// Framework/Phase and the Exit* fields describe a test-runner
-	// subprocess. They arrive on "Test runner returned", which is
-	// written AFTER the process exits — unlike the spawn record, which
-	// proves only that the engine intended to run something. DurationMs
-	// above is reused for the measured wall clock.
+	// subprocess, arriving on "Test runner returned" (written AFTER the
+	// process exits, unlike the spawn record). DurationMs is reused here.
 	Framework   string `json:"framework"`
 	Phase       string `json:"phase"`
 	ExitCode    *int   `json:"exit_code"`
@@ -101,11 +99,8 @@ type LogRecord struct {
 	RawInput         string `json:"rawInput"` //nolint:tagliatelle // slog field name is the wire contract
 
 	// Fields carried by the records that explain WHY a turn happened and
-	// WHAT it was checked against.
-	//
-	// Attempt/MaxAttempts come from "Walk attempt started" and are the
-	// only way to tell a re-walk (another item's fix invalidated this
-	// cell) from the walker's own restart (this item was just fixed).
+	// WHAT it was checked against. Attempt/MaxAttempts, from "Walk attempt
+	// started", are the only signal separating a re-walk from a restart.
 	Attempt     *int `json:"attempt"`
 	MaxAttempts *int `json:"max_attempts"`
 	// PromptIndex is shared by "Generating fix prompt" and "Prompt
@@ -217,10 +212,9 @@ func decodeRecord(line string) (LogRecord, bool) {
 	return record, true
 }
 
-// parseLogTime reads slog's RFC3339 stamp, offset and all. The zone is
-// left as written: every use is a subtraction between two instants, and
-// those are absolute regardless of which offset each side carries. A
-// zero time means "unparsable", never "epoch".
+// parseLogTime reads slog's RFC3339 stamp, offset and all — every use is a
+// subtraction between two instants, absolute regardless of offset. A zero
+// time means "unparsable", never "epoch".
 func parseLogTime(raw string) time.Time {
 	if raw == "" {
 		return time.Time{}
@@ -235,14 +229,8 @@ func parseLogTime(raw string) time.Time {
 }
 
 // turnFolder walks the record stream once, attaching everything a turn
-// produced to that turn.
-//
-// Artifacts are matched positionally, which the log supports exactly:
-// prompt artifacts are written immediately before the dispatch that
-// consumes them, and responses immediately after the completion that
-// produced them. Kind decides which side of a boundary a file falls on —
-// a system or user prompt in the gap between two turns belongs to the
-// NEXT turn, anything else to the one that just closed.
+// produced to that turn. Artifacts match positionally — a prompt in the gap
+// between two turns belongs to the NEXT turn, anything else to the one that just closed.
 type turnFolder struct {
 	fixtureDir string
 	turns      []*Turn
@@ -293,13 +281,9 @@ func (f *turnFolder) consume(record *LogRecord) {
 	}
 }
 
-// attachSpawn records the command a turn's subprocess was started with.
-//
-// The spawn record lands just AFTER the dispatch, not before it: the
-// router logs the dispatch, then calls the provider, which builds the
-// argv and spawns. So it belongs to the turn already open — holding it
-// for the next dispatch would shift every command one turn late, which
-// is exactly wrong when consecutive turns run on different CLIs.
+// attachSpawn records the command a turn's subprocess was started with. The
+// spawn record lands just AFTER the dispatch, so it belongs to the turn
+// already open — holding it for the next dispatch would shift every command one turn late.
 func (f *turnFolder) attachSpawn(record *LogRecord) {
 	invocation := Invocation{
 		Binary: record.Binary, Args: record.Args, Dir: record.Dir, Known: true,
@@ -371,10 +355,8 @@ func (f *turnFolder) attachArtifact(record *LogRecord) {
 		return
 	}
 
-	// The archived transcript is the only completion signal crush and
-	// codex give: they stream no messages, so without this their turns
-	// would have no result boundary and would look unsplittable AND
-	// unfinished.
+	// The archived transcript is crush/codex's only completion signal (see
+	// msgTranscriptSaved); without this their turns look unsplittable AND unfinished.
 	if artifact.Kind == "CLI transcript" && target.ResultAt.IsZero() {
 		target.ResultAt = record.At
 	}
@@ -382,11 +364,9 @@ func (f *turnFolder) attachArtifact(record *LogRecord) {
 	target.Outputs = append(target.Outputs, artifact)
 }
 
-// rememberTools records the permissions a turn ran under. Like the
-// spawn record, the provider logs these just after the dispatch, so they
-// belong to the turn already open; the pending fields are the fallback
-// for a log whose ordering differs. The allow and deny lists arrive as
-// two separate records.
+// rememberTools records the permissions a turn ran under. Like the spawn
+// record, these log just after the dispatch and belong to the turn already
+// open; the pending fields are the fallback for a log whose ordering differs.
 func (f *turnFolder) rememberTools(record *LogRecord) {
 	if f.open != nil {
 		if len(record.AllowedTools) > 0 {
@@ -486,10 +466,9 @@ func findTurn(turns []*Turn, number int) *Turn {
 	return nil
 }
 
-// closeUnfinished gives any turn still open at EOF a lower-bound
-// duration from the log's final record. The real figure is unknowable —
-// the process stopped writing — so it is marked as a floor and the
-// report renders it with a "≥".
+// closeUnfinished gives any turn still open at EOF a lower-bound duration
+// from the log's final record — the real figure is unknowable, so it is
+// marked as a floor and the report renders it with a "≥".
 func (l *EngineLog) closeUnfinished(turns []*Turn) {
 	for _, turn := range turns {
 		if turn.Status != TurnOpen || turn.Started.IsZero() || l.Last.IsZero() {

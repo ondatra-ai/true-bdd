@@ -7,22 +7,8 @@ import (
 )
 
 // PlannedTests is the set of top-level tests a `go test` invocation
-// intends to run: everything the binary declares, minus what its -run
-// and -skip patterns filter out.
-//
-// It exists so a report can say "6 / 0 / 19" while the suite is still
-// working. The alternative — counting the tests that already left a
-// directory — makes the denominator grow as the run proceeds, so it can
-// only ever say how much of what has finished is green, never how much
-// of the run remains.
-//
-// The testing package keeps its matcher private, so this reimplements
-// it rather than reading it: split the pattern on "/" and match the
-// first element as an UNANCHORED regexp against the test's name (which
-// is why -run TestFoo also runs TestFooBar). Only the first element,
-// because there are no subtests left to address — one scenario is one
-// top-level test now, and a filter naming a deeper level is `testing`'s
-// business rather than this function's.
+// intends to run, matching -run/-skip as an UNANCHORED regexp on the
+// first path element, exactly as `go test` does (see TestPlannedTestsRunIsUnanchored).
 func PlannedTests(names []string, runPattern, skipPattern string) ([]string, error) {
 	run, err := splitFilter(runPattern)
 	if err != nil {

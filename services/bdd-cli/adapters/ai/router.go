@@ -14,10 +14,9 @@ import (
 // aiPromptTimeout bounds one turn regardless of which CLI runs it.
 const aiPromptTimeout = 20 * time.Minute
 
-// Router dispatches each turn to the provider named by the ModelRef's
-// CLI. It is the sole implementation of the domain's AIPort, so
-// changing which CLI runs a checklist role is a config edit rather
-// than a code change.
+// Router dispatches each turn to the provider named by the ModelRef's CLI.
+// It is the sole implementation of the domain's AIPort, so changing which
+// CLI runs a checklist role is a config edit, not a code change.
 type Router struct {
 	providers map[provider.CLI]Provider
 	workDir   string
@@ -40,10 +39,9 @@ func NewRouter(workDir, tmpDir string) *Router {
 	return &Router{providers: providers, workDir: workDir, tmpDir: tmpDir}
 }
 
-// ExecutePromptWithSystem satisfies ports.AIPort. The ModelRef decides
-// both which binary runs and which model it runs; the Role says which
-// of the three checklist turns is being run, which is what makes the
-// emitted telemetry attributable to a stage of the walk.
+// ExecutePromptWithSystem satisfies ports.AIPort: ModelRef picks the binary
+// and model; Role says which checklist turn this is, so emitted telemetry
+// is attributable to a stage of the walk.
 func (r *Router) ExecutePromptWithSystem(
 	ctx context.Context,
 	role provider.Role,

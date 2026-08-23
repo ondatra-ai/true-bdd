@@ -44,10 +44,8 @@ const (
 )
 
 // childEvent is the child-emitted JSONL shape the remote tails from the
-// event-channel file (plan §1.2). The `result` event carries the FULL engine
-// result — outcome, whether finalization succeeded, and any detail — so the
-// remote synthesizes the terminal envelope without erasing the underlying
-// facts (finding 7).
+// event-channel file (plan §1.2). The `result` event carries the full
+// engine result (finding 7); see childResult for why it's retained whole.
 type childEvent struct {
 	Type           string         `json:"type"`
 	PromptID       string         `json:"prompt_id"`
@@ -58,13 +56,9 @@ type childEvent struct {
 	Detail         string         `json:"detail"`
 }
 
-// RunExecutor runs one dispatched command as a child process, streams its
-// stdout/stderr and event-channel events into the CLI store's per-run event
-// ledger (plan §1.2), relays prompt answers to the child's stdin, and
-// synthesizes the terminal envelope (plan §3.2). It gates the spawn behind the
-// store's command lease (plan §1.5) and records the child's group identity on
-// the run row BEFORE streaming so a crash never leaves an untracked group
-// (plan §1.6).
+// RunExecutor runs one dispatched command as a child process, streaming its
+// output and events into the store's per-run ledger (plan §1.2) and relaying
+// answers to stdin; see spawnChild for the crash-safe group-identity gating.
 type RunExecutor struct {
 	store    *store.DB
 	locks    *store.Locks
@@ -116,10 +110,9 @@ func (e *RunExecutor) RunID() string {
 	return e.run.RunID
 }
 
-// Execute takes the command lease, spawns the child, streams its output into
-// the store, and appends exactly one terminal event last. It BLOCKS until the
-// child exits, holding the lease so the folder stays reserved for this command
-// (plan §1.5); releasing it frees the folder for the next command (P10).
+// Execute takes the command lease, spawns the child, streams its output, and
+// appends exactly one terminal event last. It BLOCKS until the child exits,
+// holding the lease so the folder stays reserved (plan §1.5, P10).
 func (e *RunExecutor) Execute(ctx context.Context) {
 	lease, outcome := e.locks.BeginCommand()
 
@@ -133,10 +126,9 @@ func (e *RunExecutor) Execute(ctx context.Context) {
 
 		return
 	case lockOutcomeTimeout:
-		// A bounded scan-drain wait exceeded: a 504-class dispatch failure,
-		// classified as error(timeout) — NOT a spawn error and NOT a false
-		// folder_locked (plan §1.5). (The 201 dispatch reply was already sent
-		// before the spawn, so this surfaces on the run row, not the HTTP status.)
+		// See detailTimeout for the classification. The 201 dispatch reply was
+		// already sent before the spawn, so this surfaces on the run row, not
+		// the HTTP status.
 		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailTimeout})
 
 		return
@@ -148,9 +140,8 @@ func (e *RunExecutor) Execute(ctx context.Context) {
 	}
 
 	// The command lease holds the folder flock; publish the lock-proof
-	// transition (queued → running) into the store (plan §1.2). If it cannot be
-	// persisted, FAIL CLOSED without spawning — a child must never run without
-	// its lock-proof transition recorded (finding 7).
+	// transition (queued → running) into the store (plan §1.2). A failure to
+	// persist FAILS CLOSED without spawning (finding 7).
 	if !e.appendLockAcquired() {
 		slog.Error("remote: lock_acquired unpersistable — failing closed without spawn", "run", e.run.RunID)
 		e.appendTerminal(terminalEnvelope{outcome: outcomeError, detail: detailSpawn})
@@ -179,9 +170,8 @@ func (e *RunExecutor) Execute(ctx context.Context) {
 }
 
 // DeliverAnswer writes a store-accepted answer to the child's stdin (plan
-// §1.4). At-most-once delivery is enforced by the store's delivery_started_at
-// commit, so the executor simply validates and writes. A malformed answer is
-// rejected by remote-side hygiene without being written.
+// §1.4); at-most-once delivery is enforced by the store's
+// delivery_started_at commit, so the executor simply validates and writes.
 func (e *RunExecutor) DeliverAnswer(kind, value string) error {
 	e.mu.Lock()
 	stdin := e.stdin
@@ -263,14 +253,9 @@ func (e *RunExecutor) wasInterrupted(ctx context.Context, waitErr error) bool {
 	return !cleanNaturalCompletion
 }
 
-// spawnChild launches the command via the RESIDENT GATED supervisor (plan §1.6,
-// finding 4): the supervisor becomes the process-group leader and blocks on its
-// release gate; this method records + fsyncs the supervisor's verifiable group
-// identity on the run row AND the per-owner pidfile BEFORE releasing it to exec
-// the real command, so a crash never leaves an untracked mutating group. A
-// bookkeeping failure FAILS CLOSED — the gate is aborted and the supervisor
-// exits without ever running the command. The folder flock is held by the
-// command lease, so the child does not inherit a lock fd in v2.
+// spawnChild launches the command via the RESIDENT GATED supervisor (plan
+// §1.6, finding 4); a bookkeeping failure FAILS CLOSED (gate aborted, no exec).
+// The command lease holds the folder flock, so the child inherits no lock fd in v2.
 func (e *RunExecutor) spawnChild() (*managedChild, string, error) {
 	args, err := commandArgs(e.run)
 	if err != nil {
@@ -321,8 +306,7 @@ func (e *RunExecutor) spawnChild() (*managedChild, string, error) {
 
 // recordGroupIdentity durably records the supervisor's {pgid, start_identity}
 // on the run row (WAL-durable) and the per-owner pidfile (fsynced), so boot
-// reconciliation can verify or clean up the group (finding 4). A run-row write
-// failure fails closed.
+// reconciliation can verify or clean up the group; a write failure fails closed (finding 4).
 func (e *RunExecutor) recordGroupIdentity(pgid int, identity string) error {
 	err := e.store.Exec(
 		`UPDATE runs SET child_pgid = ?, child_start_identity = ? WHERE id = ?`,
@@ -430,10 +414,8 @@ const (
 )
 
 // drainEvents reads and handles the complete lines appended past offset. The
-// offset advances past a line ONLY after its control event durably committed
-// (or was legitimately dropped); a control event that cannot be persisted fails
-// the run CLOSED and stops the drain there — the offset never advances past a
-// lost control event (finding 7).
+// offset advances past a line only after its control event durably commits
+// (or is legitimately dropped); on failure it stops, never past a lost event (finding 7).
 func (e *RunExecutor) drainEvents(path string, offset int64) int64 {
 	if e.controlFailed.Load() {
 		return offset
@@ -506,10 +488,9 @@ func (e *RunExecutor) handleChildLine(line []byte) lineResult {
 	}
 }
 
-// appendControl persists a control event, retrying transient failures a bounded
-// number of times (finding 7). It returns persisted=true on commit; terminal=
-// true when the run is already terminal/gone (a legitimate, safe drop); and
-// (false,false) when the event remained unpersistable after every retry.
+// appendControl persists a control event, retrying transient failures a
+// bounded number of times (finding 7): persisted=true on commit, terminal=true
+// on a safe drop (run already gone), or (false,false) after every retry fails.
 func (e *RunExecutor) appendControl(event store.EventInput) (bool, bool) {
 	for range controlAppendRetries {
 		out := e.store.AppendEvent(e.run.RunID, event)
@@ -555,10 +536,8 @@ func (e *RunExecutor) appendOutput(stream, data string) {
 }
 
 // appendPrompt publishes a child prompt into the store ledger; the store's
-// projection records the pending prompt row (plan §1.2/§1.4). A prompt is a
-// CONTROL event: if it cannot be persisted (after retries) the tail must NOT
-// advance past it — otherwise the child blocks forever on a prompt the browser
-// can never see (finding 7).
+// projection records the pending prompt row (plan §1.2/§1.4). It is a
+// CONTROL event (see drainEvents/failClosed for the fail-closed handling, finding 7).
 func (e *RunExecutor) appendPrompt(event childEvent) lineResult {
 	payloadJSON := ""
 

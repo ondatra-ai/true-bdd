@@ -29,10 +29,9 @@ var ErrRepoRootRequired = errors.New(
 var ErrRemovePathMissing = errors.New(
 	"materializer: remove path does not exist after base overlay")
 
-// ErrChecklistStemUnknown is returned when a checklist_prompts stem
-// does not resolve to a live checklist file in the materialized tree —
-// the harness analogue of the BDD runner's wrong-stem validation
-// (harness fixtures have no `cmd` to derive the stem from).
+// ErrChecklistStemUnknown is returned when a checklist_prompts stem does
+// not resolve to a live checklist file in the materialized tree (the
+// harness analogue of the BDD runner's wrong-stem validation).
 var ErrChecklistStemUnknown = errors.New(
 	"materializer: checklist_prompts stem has no live checklist in the materialized tree")
 
@@ -57,10 +56,9 @@ type Result struct {
 	Teardown []string          `json:"teardown"`
 }
 
-// Materialize prepares the fixture tree in the target directory:
-// base overlay → remove → input overlay → checklist filtering → prep →
-// baseline tree hash. Teardown commands are validated and echoed but
-// never executed.
+// Materialize prepares the fixture tree in the target directory: base
+// overlay → remove → input overlay → checklist filtering → prep →
+// baseline tree hash. Teardown commands are validated and echoed, never run.
 func Materialize(ctx context.Context, opts Options) (*Result, error) {
 	manifest, err := LoadManifest(opts.FixtureDir)
 	if err != nil {
@@ -199,9 +197,8 @@ func applyInputOverlay(manifest *Manifest, fixtureDir, target string) error {
 }
 
 // applyChecklistFilters rewrites each declared checklist in the target
-// to the selected prompts, reusing the BDD runner's filter verbatim so
-// snippet semantics (whitespace-collapsed substring, exactly one live
-// non-skipped prompt, no duplicate resolution) stay identical.
+// to the selected prompts, reusing runner.FilterChecklistFile verbatim
+// so snippet-matching semantics stay identical (see checklist_filter.go).
 func applyChecklistFilters(manifest *Manifest, target string) error {
 	for stem, snippets := range manifest.ChecklistPrompts {
 		path := filepath.Join(target, "true-bdd", "checklists", stem+".yaml")

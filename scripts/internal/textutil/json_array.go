@@ -18,13 +18,8 @@ var fenceRE = regexp.MustCompile(
 		`*|` + whitespaceClass + "*```" + whitespaceClass + `*$`)
 
 // ExtractJSONArray returns the `[...]` span of a model's answer, ready to
-// unmarshal, or ErrNoJSONArray if there is none.
-//
-// Models were asked for "ONLY a JSON array, no prose and no code fence" and
-// mostly comply, so this strips a fence if one came anyway and then takes
-// everything from the first `[` to the last `]`. Deliberately not a parse of
-// the whole answer: a leading sentence is common and harmless, and failing on
-// it would turn a usable answer into a stop.
+// unmarshal, or ErrNoJSONArray if none. Not a strict parse (strips a stray
+// fence, then takes first `[` to last `]`): a leading sentence is common and harmless.
 func ExtractJSONArray(answer string) ([]byte, error) {
 	text := fenceRE.ReplaceAllString(strings.TrimSpace(answer), "")
 

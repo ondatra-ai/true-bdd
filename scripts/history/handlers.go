@@ -26,11 +26,9 @@ func (h *Hook) PromptSubmit(event Event) error {
 
 	prompt := strings.TrimSpace(firstNonEmpty(event.str("prompt"), event.str("user_message")))
 
-	// /new-task fires UserPromptSubmit like any prompt, but its whole job is
-	// to roll history over — logging it would recreate the state file it just
-	// deleted (a fresh "...-new-task.md" holding only the command + ack).
-	// Drop it; the Stop that follows finds no active file and is skipped too,
-	// so the ack response is dropped for free.
+	// /new-task rolls history over; logging it would recreate the state file
+	// it just deleted. Drop it — the Stop that follows finds no active file
+	// and is skipped too, so the ack response is dropped for free.
 	if fields := strings.Fields(prompt); len(fields) > 0 && fields[0] == "/new-task" {
 		return nil
 	}
@@ -43,12 +41,8 @@ func (h *Hook) PromptSubmit(event Event) error {
 }
 
 // logPrompt opens a task file if none is active, then appends the prompt.
-//
-// The main interactive session runs with the default role, so its prompt is a
-// real human turn -> "## user". A headless worker
-// (CLAUDE_HISTORY_ROLE=branch-name|commit-msg|pr-content ...) is driven by
-// claude via `claude -p`, so its prompt is claude addressing that worker ->
-// "## claude to @<role>".
+// Default role -> "## user" (a human turn); non-default (headless
+// `claude -p` worker) -> "## claude to @<role>".
 func (h *Hook) logPrompt(event Event, prompt string) error {
 	heading := "user"
 	if h.role != DefaultRole {
@@ -73,11 +67,9 @@ func (h *Hook) logPrompt(event Event, prompt string) error {
 	return h.appendEntry(filename, heading, prompt)
 }
 
-// logTurn appends the whole assistant turn — every text block since the last
-// prompt.
-//
-// The event's final message backstops the tail in case the transcript hasn't
-// flushed it yet.
+// logTurn appends the whole assistant turn — every text block since the
+// last prompt. The event's final message backstops the tail in case the
+// transcript hasn't flushed it yet.
 func (h *Hook) logTurn(event Event) error {
 	filename := h.loadCurrent()
 	if filename == "" {

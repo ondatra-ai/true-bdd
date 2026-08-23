@@ -49,50 +49,12 @@ func NewClient(opts ...Option) Client {
 	return client
 }
 
-// WithClient provides Go-idiomatic resource management equivalent to Python SDK's async context manager.
-// It automatically connects to Claude Code CLI, executes the provided function, and ensures proper cleanup.
-// This eliminates the need for manual Connect/Disconnect calls and prevents resource leaks.
-//
-// The function follows Go's established resource management patterns using defer for guaranteed cleanup,
-// similar to how database connections, files, and other resources are typically managed in Go.
-//
-// Example - Basic usage:
+// WithClient connects, runs callback, and disconnects — Python SDK parity
+// for `async with ClaudeSDKClient()`. Disconnect errors don't override callback's.
 //
 //	err := claudecode.WithClient(ctx, func(client claudecode.Client) error {
 //	    return client.Query(ctx, "What is 2+2?")
-//	})
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//
-// Example - With configuration options:
-//
-//	err := claudecode.WithClient(ctx, func(client claudecode.Client) error {
-//	    if err := client.Query(ctx, "Calculate the area of a circle with radius 5"); err != nil {
-//	        return err
-//	    }
-//
-//	    // Process responses
-//	    for msg := range client.ReceiveMessages(ctx) {
-//	        if assistantMsg, ok := msg.(*claudecode.AssistantMessage); ok {
-//	            fmt.Println("Claude:", assistantMsg.Content[0].(*claudecode.TextBlock).Text)
-//	        }
-//	    }
-//	    return nil
-//	}, claudecode.WithSystemPrompt("You are a helpful math tutor"),
-//	   claudecode.WithAllowedTools("Read", "Write"))
-//
-// The client will be automatically connected before callback is called and disconnected after callback returns,
-// even if callback returns an error or panics. This provides 100% functional parity with Python SDK's
-// 'async with ClaudeSDKClient()' pattern while using idiomatic Go resource management.
-//
-// Parameters:
-//   - ctx: Context for connection management and cancellation
-//   - callback: Function to execute with the connected client
-//   - opts: Optional client configuration options
-//
-// Returns an error if connection fails or if callback returns an error.
-// Disconnect errors are handled gracefully without overriding the original error from callback.
+//	}, claudecode.WithSystemPrompt("You are a helpful math tutor"))
 func WithClient(ctx context.Context, callback func(Client) error, opts ...Option) error {
 	if ctx.Err() != nil {
 		return fmt.Errorf("context error before client connect: %w", ctx.Err())
@@ -183,23 +145,16 @@ func (c *ClientImpl) Disconnect() error {
 	return nil
 }
 
-// Query sends a simple text query using the default session.
-// This is equivalent to QueryWithSession(ctx, prompt, "default").
-//
-// Example:
+// Query sends a simple text query using the default session (equivalent
+// to QueryWithSession(ctx, prompt, "default")). Example:
 //
 //	client.Query(ctx, "What is Go?")
 func (c *ClientImpl) Query(ctx context.Context, prompt string) error {
 	return c.queryWithSession(ctx, prompt, defaultSessionID)
 }
 
-// QueryWithSession sends a simple text query using the specified session ID.
-// Each session maintains its own conversation context, allowing for isolated
-// conversations within the same client connection.
-//
-// If sessionID is empty, it defaults to "default".
-//
-// Example:
+// QueryWithSession sends a query using the specified session (each session
+// keeps its own context); empty sessionID defaults to "default". Example:
 //
 //	client.QueryWithSession(ctx, "Remember this", "my-session")
 //	client.QueryWithSession(ctx, "What did I just say?", "my-session") // Remembers context

@@ -14,9 +14,8 @@ const folderLockPerm = 0o644
 var errFolderLocked = errors.New("folder already locked by another remote")
 
 // FolderLock is the host-side authoritative folder mutex (plan §3.7): a
-// non-blocking flock taken before spawning a command child. The
-// underlying fd is inherited by the child so the lock survives until
-// both remote and child release it (parent-death safety).
+// non-blocking flock taken before spawning a command child. The underlying
+// fd is inherited by the child, so the lock survives until both release it (parent-death safety).
 type FolderLock struct {
 	file *os.File
 }

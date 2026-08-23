@@ -29,17 +29,15 @@ func NewUserInputCollector() *UserInputCollector {
 }
 
 // NewUserInputCollectorFrom builds a collector over an arbitrary reader. The
-// hidden `prompt-probe` command (plan §4) uses it to drive the real
-// choice/clarify/freetext collector against a controlled stdin, so protocol
-// tests exercise the prompt dialogs without spawning `claude`.
+// hidden `prompt-probe` command (plan §4) uses it to drive the real prompt
+// dialogs against controlled stdin without spawning `claude`.
 func NewUserInputCollectorFrom(reader io.Reader) *UserInputCollector {
 	return newUserInputCollector(reader)
 }
 
 // newUserInputCollector builds a collector over an arbitrary reader so the
-// line-based prompt parsing (choice enum, numeric→option-text clarify
-// mapping, multiline+blank-line freetext termination) is unit-testable
-// without a real terminal.
+// line-based prompt parsing (choice enum, numeric-to-text clarify mapping,
+// multiline freetext termination) is unit-testable without a real terminal.
 func newUserInputCollector(reader io.Reader) *UserInputCollector {
 	return &UserInputCollector{
 		reader:  bufio.NewReader(reader),

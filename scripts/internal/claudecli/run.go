@@ -67,13 +67,8 @@ func (o Options) args(prompt string) []string {
 }
 
 // environ is the parent environment with the history role stamped on and
-// CLAUDECODE removed.
-//
-// Removed, not blanked. The subprocess helpers elsewhere set CLAUDECODE to the
-// empty string, which is right for a child that should merely know it is not
-// interactive. A nested `claude -p` is different: it has to look like it was
-// not launched from inside a session at all, and a variable that is present
-// and empty is still present.
+// CLAUDECODE removed — not blanked like other subprocess helpers do: a
+// nested `claude -p` must look entirely unlaunched-from-a-session.
 func (o Options) environ() []string {
 	const roleKey = "CLAUDE_HISTORY_ROLE"
 
@@ -123,11 +118,8 @@ func Run(prompt string, opts Options) (string, error) {
 }
 
 // RunJSON performs one headless turn under Options.Schema and returns the
-// structured answer.
-//
-// `--output-format json` wraps the turn in an envelope; the answer is
-// `structured_output` when the schema was honoured and `result` when it was
-// not, so both are tried in that order.
+// structured answer. `--output-format json` wraps it in an envelope: read
+// structured_output when the schema was honoured, else result.
 func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	stdout, err := Run(prompt, opts)
 	if err != nil {

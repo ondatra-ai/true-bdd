@@ -180,10 +180,9 @@ func (b *Baseline) newlyCovered(profile *Profile) []string {
 	return ids
 }
 
-// guardShrink refuses to drop entries an existing baseline holds. Only
-// a genuinely absent file means "nothing to preserve" — an unreadable
-// or invalid existing baseline aborts the write instead of being
-// silently replaced (unless the shrink override is explicit).
+// guardShrink refuses to drop entries an existing baseline holds. Only a
+// genuinely absent file means "nothing to preserve" — an unreadable or
+// invalid baseline aborts the write unless the shrink override is set.
 func (b *Baseline) guardShrink(path string, allowShrink bool) error {
 	existing, err := LoadBaseline(path)
 	if err != nil {

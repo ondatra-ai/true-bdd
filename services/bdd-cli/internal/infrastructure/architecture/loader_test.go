@@ -10,10 +10,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 )
 
-// specWith renders a one-suite, one-service architecture document whose
-// suite carries the supplied `commands:` body verbatim, so a test can
-// omit a key rather than set it empty — those are different YAML and
-// only one of them is what a host actually writes.
+// specWith renders a one-suite, one-service architecture document, splicing
+// the given commands: body in verbatim so a test can omit a key instead of
+// setting it empty.
 func specWith(commands string) string {
 	return `architecture:
   testing:

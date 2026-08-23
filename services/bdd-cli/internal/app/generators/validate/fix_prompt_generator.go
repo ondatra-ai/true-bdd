@@ -149,12 +149,9 @@ func (g *FixPromptGenerator) buildPromptData(params GenerateParams, resultPath s
 	}
 }
 
-// resolveDocPaths converts doc keys to file paths.
-//
-// The runner has already refused any run whose declared documents
-// cannot be satisfied, so a failure here is a wiring bug — skip the
-// key rather than pointing the fix prompt at a path with nothing
-// behind it.
+// resolveDocPaths converts doc keys to file paths. Same invariant as
+// loadRequestedDocs (checklist_evaluator.go): the runner already refused an
+// unsatisfiable doc, so a failure here is a wiring bug — skip, don't point the fix prompt at nothing.
 func (g *FixPromptGenerator) resolveDocPaths(docKeys []string) map[string]string {
 	docPaths := make(map[string]string, len(docKeys))
 

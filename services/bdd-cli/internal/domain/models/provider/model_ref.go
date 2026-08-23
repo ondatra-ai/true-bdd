@@ -45,10 +45,9 @@ type ModelRef struct {
 	Model string
 }
 
-// ParseModelRef parses the `"<cli>:<model>"` form used by
-// `engine.models` in true-bdd.yaml. The split is on the FIRST colon
-// only, so a model id that itself contains a colon survives intact and
-// hyphenated ids are never mangled.
+// ParseModelRef parses the `"<cli>:<model>"` form used by `engine.models`
+// in true-bdd.yaml. Split on the FIRST colon only, so a model id containing
+// a colon survives intact.
 func ParseModelRef(raw string) (ModelRef, error) {
 	cliPart, modelPart, found := strings.Cut(strings.TrimSpace(raw), ":")
 	if !found {

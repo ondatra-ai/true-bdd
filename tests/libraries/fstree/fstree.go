@@ -16,10 +16,9 @@ import (
 	"strings"
 )
 
-// ErrSymlinkInTree is returned when a snapshot meets a symbolic link.
-// The tree model stores file contents, so a link can be neither
-// recorded faithfully nor reproduced — and following it would read
-// outside the root the snapshot claims to describe.
+// ErrSymlinkInTree is returned when a snapshot meets a symbolic link: the
+// tree model stores file contents, so a link can't be recorded or replayed
+// faithfully, and following it could read outside the snapshot root.
 var (
 	ErrSymlinkInTree = errors.New("fstree: symbolic link in snapshot tree")
 
@@ -39,8 +38,7 @@ type Change struct {
 
 // Snapshot reads every file under root into a path → content map.
 // skipDirs entries are root-relative paths (e.g. "tmp", ".git") whose
-// subtrees are excluded from the snapshot entirely — the walk does not
-// descend into them.
+// subtrees are excluded from the snapshot entirely.
 func Snapshot(root string, skipDirs ...string) (map[string][]byte, error) {
 	out := make(map[string][]byte)
 
@@ -88,14 +86,8 @@ func Snapshot(root string, skipDirs ...string) (map[string][]byte, error) {
 }
 
 // checkEscape rejects the two entries whose content may not belong to
-// the tree being snapshotted.
-//
-// os.ReadFile FOLLOWS symlinks, so a link planted inside the root pulls
-// outside content into the diff — and, in record mode, into a committed
-// cassette. Replay could not honour it either: Change carries bytes, not
-// link targets. A hard link is the same escape wearing different
-// clothes: the entry IS a regular file, so Type() says nothing, and the
-// link count is the only signal the walk gets.
+// the tree being snapshotted: a symlink (os.ReadFile follows it) or a
+// hard link (entry.Type() can't see it; only the link count can).
 func checkEscape(entry fs.DirEntry, rel string) error {
 	if entry.Type()&fs.ModeSymlink != 0 {
 		return fmt.Errorf("%w: %s", ErrSymlinkInTree, rel)
@@ -114,15 +106,8 @@ func checkEscape(entry fs.DirEntry, rel string) error {
 }
 
 // isSkipped reports whether a root-relative path lies in an excluded
-// subtree.
-//
-// A skip entry containing a separator ("docs/history") is anchored at
-// the root, and matches only there. A bare name ("node_modules") matches
-// that directory at ANY depth — because that is where these trees
-// actually appear: a fixture's `prep:` runs `npm install --prefix
-// tests`, so the tree lands at tests/node_modules, and a root-anchored
-// rule would walk straight into a directory full of symlinks into a
-// package cache.
+// subtree. A skip entry with a separator ("docs/history") anchors at
+// root; a bare name ("node_modules") matches that directory at any depth.
 func isSkipped(rel string, skipDirs []string) bool {
 	for _, skip := range skipDirs {
 		if rel == skip || strings.HasPrefix(rel, skip+string(filepath.Separator)) {
@@ -148,9 +133,8 @@ func hasComponent(rel, name string) bool {
 }
 
 // Diff compares two snapshots (path → content) and returns the list of
-// created/modified/deleted entries, sorted by path. Callers are
-// responsible for taking the snapshots — this lets them bracket exactly
-// the window they care about without extra file IO.
+// created/modified/deleted entries, sorted by path. Callers take the
+// snapshots themselves, bracketing exactly the window they care about.
 func Diff(before, after map[string][]byte) []Change {
 	var changes []Change
 

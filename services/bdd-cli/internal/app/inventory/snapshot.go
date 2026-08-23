@@ -13,51 +13,19 @@
 // carries the parse error for the `invalid` chips only.
 //
 //	{
-//	  "documents": {                       // key -> status
-//	    "config":          "present|missing|invalid|present_empty",
-//	    "product":             "present|missing|invalid",
-//	    "architecture":    "present|missing|invalid",
-//	    "registry":        "present|missing|invalid|present_empty",
-//	    "stories-dir":     "present|missing|not_a_dir",
-//	    "epics-dir":       "present|missing|not_a_dir",
-//	    "checklist-us-create": "present|missing|invalid",
-//	    "checklist-us-refine": "...", "checklist-us-apply": "...",
-//	    "checklist-build-tests": "...", "checklist-build-code": "..."
-//	  },
-//	  "document_errors": {"config": "yaml: line 3: ..."},  // invalid chips only
-//	  "architecture_path_mismatch": bool,  // configured != canonical default
-//	  "configured_architecture_path": "docs/arch/architecture.yaml",
-//	  "canonical_architecture_path":  "docs/architecture/architecture.yaml",
-//	  "epics": [
-//	    {
-//	      "file": "epic-42-identity-mismatch.yaml",   // basename
-//	      "number": 42,                               // filename number, no leading zeros
-//	      "status": "parseable|invalid",
-//	      "doc_id": 99,                               // document epic.id (0 when unparseable)
-//	      "id_mismatch": true,                        // doc_id present and != number
-//	      "duplicate_number": false,                  // shares a filename number with another epic
-//	      "noncanonical_filename": false,             // filename number is not the %02d form us create resolves;
-//	                                                  // when true the epic carries no Create-addressable stories
-//	      "error": "?",
-//	      "stories": [
-//	        {
-//	          "create_id": "42.1",       // position-derived <number>.<position>
-//	          "epic_number": 42,
-//	          "position": 1,
-//	          "declared_id": "77.5",     // epic-declared story id
-//	          "file_id": "88.9",         // story-file internal id, when resolvable
-//	          "created": "one|missing|ambiguous|invalid",
-//	          "applied": {"status": "counted", "applied": 1, "total": 2}
-//	                   | {"status": "unknown", "reason":
-//	                        "missing|ambiguous|invalid|deprecated_format|no_acceptance_criteria|
-//	                         empty_internal_id|registry_missing|registry_invalid"},
-//	          "refined": "not_recorded",
-//	          "flags": {"duplicate_declared_id": bool, "id_mismatch": bool,
-//	                    "deprecated_format": bool, "no_acs": bool, "empty_internal_id": bool}
-//	        }
-//	      ]
-//	    }
-//	  ]
+//	  "documents": {"<key>": "<Status* const>", ...},       // per-key enum: Status* consts below
+//	  "document_errors": {"config": "yaml: line 3: ..."},   // invalid chips only
+//	  "architecture_path_mismatch": bool, "configured/canonical_architecture_path": "...",
+//	  "epics": [{"file": "epic-42-x.yaml", "number": 42, "status": "parseable|invalid",
+//	    "doc_id": 99, "id_mismatch": bool, "duplicate_number": bool,
+//	    "noncanonical_filename": bool, "error": "?",
+//	    "stories": [{"create_id": "42.1", "epic_number": 42, "position": 1,
+//	      "declared_id": "77.5", "file_id": "88.9", "created": "one|missing|ambiguous|invalid",
+//	      "applied": {"status":"counted","applied":1,"total":2} |
+//	                 {"status":"unknown","reason":"<Reason* const>"},
+//	      "refined": "not_recorded", "flags": {"<flag>": bool, ...}
+//	    }]
+//	  }]
 //	}
 package inventory
 
@@ -123,10 +91,9 @@ const (
 	ReasonNoAcceptanceCriteria = "no_acceptance_criteria"
 	// ReasonEmptyInternalID — the story-file internal id is empty.
 	ReasonEmptyInternalID = "empty_internal_id"
-	// ReasonRegistryMissing — the scenarios registry us apply requires is
-	// absent, so an otherwise-eligible story cannot be counted (rather
-	// than silently rendered counted 0/y). us apply copies the required
-	// registry first and fails when it is missing (us_apply.go).
+	// ReasonRegistryMissing — the required registry is absent, so an
+	// otherwise-eligible story can't be counted (not silently 0/y). us apply
+	// copies the registry first and fails when missing (us_apply.go).
 	ReasonRegistryMissing = "registry_missing"
 	// ReasonRegistryInvalid — the scenarios registry is present but
 	// unparseable, so lineage coverage cannot be counted honestly.
@@ -137,16 +104,9 @@ const (
 // UI renders it as the literal text "not recorded".
 const RefinedNotRecorded = "not_recorded"
 
-// Snapshot is the complete folder inventory the remote uploads. Its JSON
-// shape is the binding contract documented in the package comment.
-// Documents is a key→status map so the UI renders each chip's data-status
-// directly; DocumentErrors carries the parse error for `invalid` chips.
-//
-// The size-discipline fields (plan §1a) describe how far the request-budget
-// degrade ladder was walked to make the SERIALIZED snapshot fit: Totals
-// always carries the true global counts (surviving epic-entry truncation);
-// SnapshotTruncated / StoriesOmitted / Unavailable name the mode(s) reached
-// and drive the visible inventory-truncated-banner.
+// Snapshot is the complete folder inventory the remote uploads (JSON shape
+// is the package doc's contract). Totals always carries true global counts
+// even under truncation; SnapshotTruncated/StoriesOmitted/Unavailable name which degrade mode was reached.
 type Snapshot struct {
 	Documents                  map[string]string `json:"documents"`
 	DocumentErrors             map[string]string `json:"document_errors,omitempty"`
@@ -183,12 +143,9 @@ type Epic struct {
 	Stories              []Story `json:"stories"`
 }
 
-// Story is one epic story row with its full identity tuple, created /
-// applied / refined cells, identity flags, and the review-modal content
-// (plan §1/§1b). Declared* / DeclaredContent come from the epic declaration
-// and back the "every story openable" fallback; Content / Raw come from the
-// resolved story file; the omission fields record what the degrade ladder
-// dropped to fit the request budget (plan §1a).
+// Story is one epic story row: identity tuple, created/applied/refined
+// cells, identity flags, review-modal content. Declared*/DeclaredContent
+// come from the epic; Content/Raw from the resolved file; omission fields record what the degrade ladder dropped.
 type Story struct {
 	CreateID        string     `json:"create_id"`
 	EpicNumber      int        `json:"epic_number"`

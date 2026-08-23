@@ -11,10 +11,9 @@ const execBits = 0o111
 
 var errRealBinaryNotFound = errors.New("real binary not found on PATH outside the shim dir")
 
-// resolveRealBinary finds the genuine CLI behind the shim: the first
-// PATH entry that is not the shim dir and holds an executable with this
-// name. No hardcoded install locations — the shim dir simply loses its
-// PATH priority for this one lookup.
+// resolveRealBinary finds the genuine CLI behind the shim: the first PATH
+// entry that is not the shim dir and holds an executable with this name —
+// no hardcoded install locations.
 func resolveRealBinary(name, shimDir string) (string, error) {
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
 		if dir == "" {

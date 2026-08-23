@@ -8,20 +8,16 @@ import (
 )
 
 // modelRefPattern matches an `engine.models` entry's `"<cli>:<model>"`
-// value and captures the cli. Deliberately a scan rather than a YAML
-// parse: this package cannot import the engine's internal config
-// packages, and the only fact needed is which binaries must exist.
+// value and captures the cli. Deliberately a scan, not a YAML parse:
+// this package can't import the engine's internal config packages.
 var modelRefPattern = regexp.MustCompile(`(?m)^\s+\w+:\s*"?([a-z]+):[^"\n]+"?\s*$`)
 
 // supportedCLICount sizes the result: claude, crush, codex.
 const supportedCLICount = 3
 
 // RequiredCLIs returns the distinct agent CLIs the engine config binds
-// its model tiers to.
-//
-// The suite gates on these: with tiers pointing at crush or codex, a
-// missing binary would otherwise surface as a confusing mid-walk
-// failure instead of an honest skip.
+// its model tiers to. The suite gates on these, so a missing binary
+// surfaces as an honest skip instead of a confusing mid-walk failure.
 func RequiredCLIs(configPath string) ([]string, error) {
 	raw, err := os.ReadFile(configPath)
 	if err != nil {

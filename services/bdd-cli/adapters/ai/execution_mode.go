@@ -24,15 +24,9 @@ const (
 type ExecutionMode struct {
 	AllowedTools    []string
 	DisallowedTools []string
-	// SourceWriteRoots are project trees outside the tmp dir that this
-	// mode deliberately opens for writing — set only by
-	// GetSourceEditMode, for the appliers that author production code.
-	//
-	// Kept apart from AllowedTools because the coarse-sandbox providers
-	// need to distinguish "may write its own scratch files" from "may
-	// edit the project". codex has no level between those, so without
-	// the distinction every scratch-writing turn would be handed the
-	// whole workspace.
+	// SourceWriteRoots are project trees outside tmp this mode opens for
+	// writing (set only by GetSourceEditMode). Kept apart from AllowedTools:
+	// codex has no sandbox level between scratch-only and the whole workspace, so merging them would over-grant it.
 	SourceWriteRoots []string
 }
 
@@ -49,15 +43,9 @@ func writeToolNames() []string {
 	return []string{"Write", "Edit", "MultiEdit", "NotebookEdit"}
 }
 
-// WriteGlobs returns the path patterns this mode lets file-writing
-// tools touch, parsed out of the Claude tool specs
-// (`Write(./tmp/**)` → `./tmp/**`). An empty result means the turn may
-// not write at all.
-//
-// Providers with no native per-tool allowlist (crush, codex) derive
-// their sandbox from this, so ExecutionMode stays the single source of
-// truth for permissions across every CLI rather than each provider
-// inventing its own rules.
+// WriteGlobs returns the path patterns this mode lets file-writing tools
+// touch, parsed out of the Claude tool specs (`Write(./tmp/**)` →
+// `./tmp/**`). Empty means the turn may not write at all; crush and codex derive their sandbox from this.
 func (m ExecutionMode) WriteGlobs() []string {
 	globs := make([]string, 0, len(m.AllowedTools))
 
@@ -116,22 +104,18 @@ func (f *ModeFactory) GetThinkMode() ExecutionMode {
 			bashToolName,
 			editAnyToolSpec,
 			multiEditAnySpec,
-			// Sub-agent tools. Every prompt here is a single-turn
-			// `claude -p` call; delegating to a sub-agent and awaiting it
-			// ends the turn with no output (the parent cannot resume),
-			// which silently yields an empty fix prompt. Force inline work.
+			// Sub-agent tools: every prompt here is a single-turn `claude -p`
+			// call, and delegating to a sub-agent ends the turn with no output
+			// (the parent can't resume) — silently yielding an empty fix prompt.
 			agentToolName,
 			taskToolName,
 		},
 	}
 }
 
-// GetEditMode returns a mode that additionally allows Edit and
-// MultiEdit against the configured tmp glob, so callers whose F:
-// handlers mutate the scratch registry in place (e.g. us apply) can
-// actually run their prompts. ThinkMode disallows Edit globally,
-// which is correct for handlers that emit FILE_START/FILE_END
-// markers (us create / us refine), but wrong for us apply.
+// GetEditMode extends ThinkMode with Edit/MultiEdit against the tmp glob,
+// for callers whose F: handlers mutate the scratch registry in place (e.g.
+// us apply) rather than emit FILE_START/FILE_END markers.
 func (f *ModeFactory) GetEditMode() ExecutionMode {
 	tmpGlob := f.config.GetString("paths.tmp_glob")
 
@@ -154,16 +138,9 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 	}
 }
 
-// GetSourceEditMode extends GetEditMode with write access to project
-// roots outside tmp — the production or test trees a `build` command's
-// applier is supposed to author into.
-//
-// Without it those turns are told by their system prompt to write under
-// `services/*`, while the only enforced write root is the tmp glob; the
-// guard then denies every write and the applier reports back that it
-// could not apply. Permissions live here rather than in the prompt
-// because ExecutionMode is what the crush guard and codex sandbox are
-// actually derived from.
+// GetSourceEditMode extends GetEditMode with write access to project roots
+// outside tmp — the trees a `build` applier is told by its system prompt to
+// write into. Without this the guard denies every such write and the applier silently reports "could not apply".
 func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
 	mode := f.GetEditMode()
 

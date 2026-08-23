@@ -14,26 +14,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
 )
 
-// assertScenarioStepsMatched pins that a `build tests --fix` run left an
-// inner project's named scenario EXECUTABLE: every one of its steps
-// resolves to exactly one step definition in the suite's steps package.
-// This is the outcome the whole fix loop exists to reach — the loop is
-// done not when *a* file appeared but when the scenario the file was
-// written for now binds — and it is a claim no file-effect assertion can
-// make, because a created .go file could register the wrong pattern, or
-// none.
-//
-// It mirrors bddgo's own resolution semantics against artefacts on disk:
-// the inner registry is parsed with bddgo.LoadRegistry (so a model-run
-// `llm:`/`judge:` step is bound by construction, exactly as bddgo binds
-// it), and the step definitions are read out of the Go source the fix
-// loop wrote — every `.Step(<pattern>, …)` call's regexp literal. A step
-// passes when exactly one of those patterns matches its text; zero is
-// unbound, more than one is ambiguous, and both are reported.
-//
-// The scenario id, the registry path and the steps directory are all
-// capture groups, both paths relative to the run's tmpdir, so one
-// definition serves every scenario naming a different target.
+// assertScenarioStepsMatched pins that a `build tests --fix` run left a
+// named scenario EXECUTABLE: every step resolves to exactly one pattern
+// parsed from the fix loop's Go source — zero is unbound, more than one is ambiguous.
 func assertScenarioStepsMatched(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -78,14 +61,9 @@ func assertScenarioStepsMatched(state *State, args []string) error {
 	return nil
 }
 
-// unresolvedSteps reports every step of a scenario that does not resolve
-// to exactly one of the given patterns, saying which way it failed: zero is
-// unbound, more than one is ambiguous, and either makes the scenario
-// non-executable.
-//
-// A model-run step binds by construction — no regexp settles an
-// `llm:`/`judge:` step and none should, so bddgo resolves it the moment it
-// is read, and this assertion must not demand a pattern for it either.
+// unresolvedSteps reports steps that fail to resolve to exactly one
+// pattern (zero: unbound; many: ambiguous). A model-run (`llm:`/`judge:`)
+// step binds by construction, so it is skipped rather than needing a pattern.
 func unresolvedSteps(scenario bddgo.Scenario, patterns []*regexp.Regexp) []string {
 	var unresolved []string
 
@@ -116,9 +94,8 @@ func unresolvedSteps(scenario bddgo.Scenario, patterns []*regexp.Regexp) []strin
 }
 
 // findScenario returns the scenario with the given id, and whether the
-// registry declared one at all — a scenario the run was supposed to make
-// executable but that is absent is a different failure than one present
-// with an unbound step.
+// registry declared one — an absent scenario is a different failure than
+// one present with an unbound step.
 func findScenario(scenarios []bddgo.Scenario, id string) (bddgo.Scenario, bool) {
 	for _, scenario := range scenarios {
 		if scenario.ID == id {
@@ -129,14 +106,9 @@ func findScenario(scenarios []bddgo.Scenario, id string) (bddgo.Scenario, bool) 
 	return bddgo.Scenario{}, false
 }
 
-// extractStepPatterns reads every registered step pattern out of the Go
-// source under dir: the first string-literal argument of each `.Step(…)`
-// call, compiled as a regexp. It parses the source rather than running it
-// because the code lives in a separate module inside the run's tmpdir
-// that this suite cannot import or build — but the patterns a scenario
-// resolves against are exactly these literals, and go/parser reads them
-// without a toolchain. A file that does not parse is a fix that did not
-// produce valid Go, and its error is surfaced rather than swallowed.
+// extractStepPatterns reads each `.Step(…)` call's string-literal pattern
+// from the Go source under dir, compiled as a regexp. Parsed, not run: the
+// code lives in a separate module this suite cannot import or build.
 func extractStepPatterns(dir string) ([]*regexp.Regexp, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -171,10 +143,8 @@ func extractStepPatterns(dir string) ([]*regexp.Regexp, error) {
 }
 
 // stepCallPattern returns the compiled regexp of a `.Step("<pattern>", …)`
-// call node, and whether node was one. A call whose first argument is not
-// a string literal, or whose literal does not unquote or compile, is not
-// one — it is skipped, not an error, because a helper named Step that took
-// a computed pattern would be someone else's method, not a registration.
+// call, and whether node was one. A non-literal or non-compiling argument
+// is skipped, not an error — it may be an unrelated method also named Step.
 func stepCallPattern(node ast.Node) (*regexp.Regexp, bool) {
 	call, isCall := node.(*ast.CallExpr)
 	if !isCall {

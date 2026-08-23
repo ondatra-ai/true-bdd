@@ -16,8 +16,7 @@ import "errors"
 
 // ErrNoPath signals a scenario with no `path:`. Required and never
 // defaulted: which behaviours belong in one file is editorial, and a
-// generator that guessed would scatter one command's scenarios across
-// forty files.
+// guessed default would scatter one command's scenarios across many files.
 var ErrNoPath = errors.New("scenario declares no path: for its generated test")
 
 // ErrPathNotRelative signals a `path:` that is absolute, escapes the
@@ -27,19 +26,14 @@ var ErrPathNotRelative = errors.New("path: must be a clean repo-relative path")
 // ErrPathNotTestFile signals a `path:` Go would not compile as a test.
 var ErrPathNotTestFile = errors.New("path: must name a _test.go file")
 
-// ErrPathNotInSuiteRoot signals a `path:` outside the directory the
-// owning suite declares.
-//
-// Directly inside it, not merely underneath: a file one directory down
-// is a different Go package, needing its own shim and its own
-// TestMain, and a generator that silently created those would be
-// inventing structure the spec never asked for.
+// ErrPathNotInSuiteRoot signals a `path:` outside the directory the owning
+// suite declares. Directly inside it, not merely underneath: a file one
+// directory down is a different Go package, needing its own shim and TestMain that the generator does not create.
 var ErrPathNotInSuiteRoot = errors.New("path: must sit directly in the owning suite's directory")
 
-// ErrPathInStepsTree signals a `path:` inside the suite's steps/ tree.
-// That tree belongs to the fix turn; a generated file written into it
-// could overwrite a step definition, and the definitions are the one
-// thing here no regeneration can reproduce.
+// ErrPathInStepsTree signals a `path:` inside the suite's steps/ tree. That
+// tree belongs to the fix turn; a generated file written there could
+// overwrite a step definition — the one thing here no regeneration can reproduce.
 var ErrPathInStepsTree = errors.New("path: must not be inside the suite's steps/ tree")
 
 // ErrPathCrossSuite signals two scenarios sharing a `path:` while naming

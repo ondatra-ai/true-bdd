@@ -31,11 +31,9 @@ func RunCreate(ctx context.Context, deps CreateDeps, storyNumber string, fix boo
 	)
 }
 
-// loadStoryFromEpic is the LoadItems factory for `us create`. Loads
-// the story from its epic and seeds the version manager with the
-// initial snapshot. The engine's first `US CREATE — Story <id>`
-// banner already announces the subject so we don't pretty-print the
-// loaded story body here.
+// loadStoryFromEpic is the LoadItems factory for `us create`. Loads the
+// story from its epic and seeds the version manager with the initial
+// snapshot; not pretty-printed here since the engine's first banner already announces the subject.
 func loadStoryFromEpic(
 	loader *epic.EpicLoader,
 	storyNumber string,

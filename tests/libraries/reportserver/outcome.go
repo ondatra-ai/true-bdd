@@ -2,13 +2,9 @@ package reportserver
 
 import "strings"
 
-// Outcome is why one fixture run ended the way it did.
-//
-// The harness records a verdict of PASS or FAIL and a list of failure
-// strings. FAIL alone is not actionable: a run killed at its timeout, a
-// CLI that exited with an error, a run whose printed output was wrong,
-// and a run whose content the judge rejected are four unrelated
-// problems with four different owners, and they are all "FAIL" today.
+// Outcome is why one fixture run ended the way it did. The harness records
+// only PASS/FAIL plus failure strings, and FAIL alone is not actionable: a
+// timeout, a CLI error, wrong output, and a rejected judgement all read as "FAIL" today.
 type Outcome string
 
 const (
@@ -17,10 +13,8 @@ const (
 	// OutcomeKilled is a run that hit its timeout and was killed. The
 	// harness reports this as exit code -1.
 	OutcomeKilled Outcome = "killed"
-	// OutcomeJudgeBroken is the judge itself failing — it answered with
-	// prose instead of PASS or FAIL, so its verdict parsed to nothing.
-	// Distinct from a rejection because the run yields no evidence about
-	// the product either way.
+	// OutcomeJudgeBroken is the judge itself failing — prose instead of
+	// PASS or FAIL, so its verdict parsed to nothing (see classifyFailure for why it outranks a rejection).
 	OutcomeJudgeBroken Outcome = "judge-broken"
 	// OutcomeCrashed is the CLI exiting non-zero where zero was wanted.
 	OutcomeCrashed Outcome = "crashed"
@@ -69,22 +63,17 @@ func classify(summary TestSummary) Outcome {
 }
 
 // classifyFailure walks the reasons a failed fixture could have failed,
-// ordered by ROOT CAUSE, most upstream first.
-//
-// Failures are multi-dimensional — a killed run also misses its stdout
-// patterns and also fails the judge, because neither had anything
-// coherent to work with. Reporting such a run as "output mismatch" would
-// send someone to fix the assertions instead of the timeout.
+// ordered by ROOT CAUSE, most upstream first: a killed run also misses
+// stdout and fails the judge, so the downstream symptom would mislead.
 func classifyFailure(summary TestSummary) Outcome {
 	// 1. Killed. Explains every downstream failure it drags with it.
 	if summary.ExitCode != nil && *summary.ExitCode == exitCodeKilled {
 		return OutcomeKilled
 	}
 
-	// 2. The oracle broke. Ranked above the product's own failures
-	// because the verdict is not evidence about the product either way —
-	// treating it as a content rejection would blame the code for the
-	// judge's malformed reply.
+	// 2. The oracle broke, ranked above the product's own failures: the
+	// verdict is not evidence about the product either way, so treating it
+	// as a rejection would blame the code for the judge's malformed reply.
 	if hasFailure(summary.Failures, judgeErroredMarker) {
 		return OutcomeJudgeBroken
 	}
@@ -169,10 +158,9 @@ func outcomeReasons() map[Outcome]string {
 		OutcomeKilled:      "timed out",
 		OutcomeCrashed:     "CLI error",
 		OutcomeJudgeBroken: "judge broke",
-		// "no error raised" describes the COMMAND, which is what this
-		// fixture asserts about. Saying "passed but should not have" read
-		// as a claim about the test, which is the opposite of the truth:
-		// the test is doing its job by going red here.
+		// "no error raised" describes the COMMAND, not the test: "passed
+		// but should not have" would claim the opposite of the truth — the
+		// test is doing its job by going red here.
 		OutcomeUnexpectedSuccess: "no error raised",
 		OutcomeOutputMismatch:    "wrong output",
 		OutcomeContentRejected:   "judge rejected",

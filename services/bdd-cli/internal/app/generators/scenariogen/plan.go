@@ -65,14 +65,9 @@ type Plan struct {
 	Files []PlannedFile
 }
 
-// BuildPlan groups scenarios by `path:`, resolves each one's owning
-// suite, and refuses the whole registry if any scenario cannot be
-// generated.
-//
-// The whole registry, not the first bad scenario's file: these mistakes
-// arrive in batches — a renamed suite, a moved directory — and a
-// generator that wrote nine files and then refused the tenth would leave
-// a tree that is neither the old shape nor the new one.
+// BuildPlan groups scenarios by `path:`, resolves each one's owning suite,
+// and refuses the whole registry if any scenario cannot be generated —
+// never writes here, so a mid-registry refusal leaves no file half-regenerated.
 func BuildPlan(
 	scenarios []*registry.RegistryScenario,
 	arch *architecture.Architecture,
@@ -125,12 +120,9 @@ func BuildPlan(
 	return plan, nil
 }
 
-// checkPackageClauses checks each target directory once.
-//
-// Once per DIRECTORY rather than once per file: the check reads and
-// parses every `_test.go` beside the target, and a suite whose scenarios
-// group into six files would otherwise re-read the same tree — including
-// the largest generated files in it — six times.
+// checkPackageClauses checks each target directory once, not once per file:
+// the check re-reads and re-parses every `_test.go` beside the target, so a
+// suite whose scenarios group into six files would otherwise pay for it six times.
 func checkPackageClauses(plan *Plan, repoRoot string) error {
 	checked := map[string]bool{}
 
@@ -207,17 +199,9 @@ func planFile(
 	}, nil
 }
 
-// headerRegistryPath is the registry path as the generated header quotes
-// it: repo-relative, slash-separated, cleaned.
-//
-// Relativised rather than quoted as given, because these bytes are
-// compared. `--requirements $(pwd)/docs/scenarios.yaml --fix` would
-// otherwise bake one machine's absolute path into every generated file,
-// and every later run — including one on the same machine without the
-// flag — would report the whole tree as drifted. Cleaned for the same
-// reason at smaller scale: the host config conventionally writes
-// "./docs/…", and a header quoting the leading "./" reads like a shell
-// argument rather than a document.
+// headerRegistryPath is the registry path as the generated header quotes it:
+// repo-relative, slash-separated, cleaned. These bytes are compared for
+// drift, so an absolute or "./"-prefixed --requirements path would otherwise make every run report the tree as stale.
 func headerRegistryPath(repoRoot, registryPath string) string {
 	if filepath.IsAbs(registryPath) {
 		relative, err := filepath.Rel(repoRoot, registryPath)
@@ -272,13 +256,9 @@ func suiteFor(
 		scenario.ID, scenario.Service, ErrNoSuiteForService)
 }
 
-// checkPath refuses everything about a `path:` that the schema cannot
-// see and that would make the generated file wrong rather than missing.
-//
-// The target is the path as WRITTEN, not a trimmed copy: validating one
-// string and then writing another is how `"…_test.go "` passes every
-// check here and lands on disk with a trailing space, as a file `go
-// test` ignores and Verify reports as drifted forever.
+// checkPath refuses everything about a `path:` the schema cannot see and
+// that would make the file wrong rather than missing. Validates the target
+// as WRITTEN, not a trimmed copy — else a trailing-space path passes every check and drifts forever.
 func checkPath(scenario *registry.RegistryScenario, suite architecture.Suite) error {
 	target := scenario.Path
 
@@ -301,10 +281,9 @@ func checkPath(scenario *registry.RegistryScenario, suite architecture.Suite) er
 
 	suiteRoot := path.Clean(filepath.ToSlash(suite.Path))
 
-	// Before the suite-root check, not after: a path under steps/ fails
-	// both, and the reader is much better served by the one that says
-	// which tree they landed in than by "not directly in the suite's
-	// directory".
+	// Before the suite-root check, not after: a path under steps/ fails both,
+	// and the reader is better served by the message that says which tree
+	// they landed in than "not directly in the suite's directory".
 	if strings.HasPrefix(target, suiteRoot+"/steps/") {
 		return fmt.Errorf("%s: %q: %w", scenario.ID, target, ErrPathInStepsTree)
 	}
@@ -318,9 +297,8 @@ func checkPath(scenario *registry.RegistryScenario, suite architecture.Suite) er
 }
 
 // checkIdentifiers refuses a registry whose ids do not render runnable,
-// distinct Go test names. Checked across the whole registry rather than
-// per file: two colliding ids in different files still make
-// `-run TestE2E001` ambiguous.
+// distinct Go test names — checked registry-wide, not per file, since two
+// colliding ids in different files still make `-run TestE2E001` ambiguous.
 func checkIdentifiers(scenarios []*registry.RegistryScenario) error {
 	seen := make(map[string]string, len(scenarios))
 
@@ -345,14 +323,8 @@ func checkIdentifiers(scenarios []*registry.RegistryScenario) error {
 }
 
 // checkRunnableTestName refuses an id whose function `go test` would
-// compile and never run.
-//
-// The rule is testing.isTest's: Test followed by anything that is NOT a
-// lower-case letter. So `E2E-001` is fine and `int-900` is not — it
-// renders Testint900, which compiles, is skipped in silence, and still
-// satisfies every coverage check, because a call site exists and only
-// the runner knows the function is not a test. That is the worst
-// available failure: a scenario that reports as covered and never runs.
+// compile and never run. Per testing.isTest: Test followed by anything NOT
+// a lower-case letter runs; `int-900` renders Testint900: compiles, silently skipped, reports covered.
 func checkRunnableTestName(scenarioID, name string) error {
 	rest := strings.TrimPrefix(name, testPrefix)
 
@@ -415,20 +387,8 @@ func packageName(suiteName string) (string, error) {
 }
 
 // checkPackageClause refuses a target directory that already declares a
-// different package.
-//
-// Renaming a suite in the architectural spec silently re-derives the
-// package name; without this the regeneration writes `package cli_test`
-// into a directory whose hand-written main_test.go still says
-// `bddcli_test`, and the suite simply stops compiling with nothing
-// pointing at the rename.
-//
-// Two things it must NOT refuse. A file already carrying the generated
-// marker is the generator's own previous output, and refusing it would
-// make a suite rename permanently unfixable — `--fix` could never write
-// the new package because the old one is still on disk. And Go allows an
-// internal test package beside the external one, so a legal `package
-// bddcli` file in a `bddcli_test` directory is not a mismatch.
+// different package — EXCEPT the generator's own previous output (else
+// --fix could never overwrite it to fix a rename) and Go's legal internal test package beside the external one.
 func checkPackageClause(dir, want string) error {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {

@@ -48,13 +48,8 @@ const (
 )
 
 // Statement is one Given/When/Then line with its keyword kept apart from
-// its text.
-//
-// Steps below renders the same lines flattened into display strings,
-// which is what the prompt templates show. This is the form the test
-// generator needs: a generated file calls `s.And(...)` and `s.But(...)`
-// as separate methods, so "and" has to still be a keyword rather than
-// two words at the front of a sentence.
+// its text: the generated test file calls `s.And(...)`/`s.But(...)` as
+// separate methods, so "and"/"but" must stay a keyword, not plain text.
 type Statement struct {
 	Keyword string
 	Text    string
@@ -76,10 +71,9 @@ type RegistryScenario struct {
 	UserStories []UserStoryRef
 }
 
-// FormatSteps renders Given / When / Then for display in the
-// build-tests prompt templates. Same shape as
-// template.ScenarioApplyData.FormatSteps so the .tpl files can read
-// `{{.Subject.FormatSteps}}` interchangeably.
+// FormatSteps renders Given/When/Then for the build-tests prompt templates.
+// Same shape as template.ScenarioApplyData.FormatSteps so .tpl files can
+// read `{{.Subject.FormatSteps}}` interchangeably.
 func (s *RegistryScenario) FormatSteps() string {
 	var result strings.Builder
 
@@ -135,24 +129,18 @@ func (s *rawStatement) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	if node.Kind == yaml.MappingNode {
-		// Exactly one pair, matching bddgo's `!= 2`. A `< 2` check
-		// ACCEPTS `{and: A, but: B}` and reads only the first pair, so
-		// `build tests` would render a test missing the second clause and
-		// call the scenario converged, while bddgo refuses the whole
-		// registry — the laxer reader silently dropping behaviour is the
-		// worse half of that disagreement.
+		// Exactly one pair, matching bddgo's `!= 2`. A `< 2` check would ACCEPT
+		// `{and: A, but: B}`, silently drop the second clause, and call the
+		// scenario converged — while bddgo refuses the whole registry for it.
 		if len(node.Content) != stepModifierMappingFields {
 			return fmt.Errorf("%w near line %d", ErrMalformedStepModifier, node.Line)
 		}
 
 		key := node.Content[0].Value
 
-		// The VALUE has to be a scalar too. `node.Value` is empty for a
-		// sequence or a mapping, so `- and: [A, B]` would otherwise set the
-		// step's text to "" — a step that renders as `s.And("")`, binds to
-		// nothing, and reports as a step the author wrote rather than as the
-		// malformed one it is. Same class as the arity check above: the
-		// silent drop is worse than the refusal.
+		// The VALUE must be a scalar too: `node.Value` is empty for a sequence
+		// or mapping, so `- and: [A, B]` would otherwise set text to "" and
+		// render as `s.And("")` — a malformed step disguised as one the author wrote.
 		if node.Content[1].Kind != yaml.ScalarNode {
 			return fmt.Errorf("%w: %q takes a scalar, got kind=%d near line %d",
 				ErrMalformedStepModifier, key, node.Content[1].Kind, node.Content[1].Line)
@@ -160,13 +148,9 @@ func (s *rawStatement) UnmarshalYAML(node *yaml.Node) error {
 
 		val := node.Content[1].Value
 
-		// `and` and `but` and nothing else, matching bddgo's own decoder
-		// (tests/libraries/bddgo/registry.go). Two readers of one
-		// document that disagree about what a step IS would eventually
-		// disagree about what it means — and here the laxer one would
-		// render `s.Foo(...)` into a generated file, which is valid Go
-		// that does not compile. An empty key is refused by the same
-		// check, rather than reaching a slice index that panics.
+		// `and`/`but` only, matching bddgo's own decoder (registry.go): any
+		// other key would render `s.Foo(...)` into a generated file — valid
+		// Go that doesn't compile — and an empty key is refused here rather than panicking later.
 		keyword, known := modifierKeyword(key)
 		if !known {
 			return fmt.Errorf("%w: got %q near line %d",
@@ -197,10 +181,8 @@ func modifierKeyword(key string) (string, bool) {
 }
 
 // statements renders the three blocks into one ordered list, keywords
-// intact. The first step of a block takes the block's keyword and the
-// rest default to And, which is how the same lines read on a feature
-// file — and the same rule bddgo's own loader applies, so the generated
-// file and the registry classify a step identically.
+// intact: the first step takes the block's keyword, the rest default to
+// And — the same rule bddgo's loader applies, so both classify identically.
 func (r rawMergedSteps) statements() []Statement {
 	out := make([]Statement, 0, len(r.Given)+len(r.When)+len(r.Then))
 
@@ -225,16 +207,9 @@ func (r rawMergedSteps) statements() []Statement {
 	return out
 }
 
-// statementKeyword resolves one step's keyword. The BLOCK's keyword wins
-// at index 0 even when the step spelled a modifier for itself, and the
-// same rule lives in bddgo's stepKeyword.
-//
-// It has to win, not merely read better. A generated file states each
-// step by calling the method its keyword names, and And/But inherit the
-// block from the call above them — so a block emitted as `s.And(…)`
-// first would inherit the PREVIOUS block, and a step the registry
-// classified against then: would be re-classified against when: at run
-// time. `And` as the opening line of a block is not Gherkin anyway.
+// statementKeyword resolves one step's keyword: the BLOCK's keyword MUST
+// win at index 0 (same rule as bddgo's stepKeyword) — a self-spelled
+// modifier winning there would emit `s.And(…)` first, inheriting the PREVIOUS block and reclassifying it at runtime.
 func statementKeyword(step rawStatement, blockKeyword string, index int) string {
 	if index == 0 {
 		return blockKeyword
@@ -278,10 +253,9 @@ func NewRegistryLoader() *RegistryLoader {
 	return &RegistryLoader{}
 }
 
-// Load reads the YAML registry at `path`, flattens the `scenarios:` map
-// into a slice sorted by id, and returns one RegistryScenario per
-// entry. YAML maps are unordered in Go, so the deterministic sort makes
-// stdout output and tmp-file naming stable across runs.
+// Load reads the YAML registry at `path`, flattens `scenarios:` into a
+// slice sorted by id, one RegistryScenario per entry. The sort matters:
+// YAML maps are unordered in Go, so output and naming would otherwise vary across runs.
 func (l *RegistryLoader) Load(path string) ([]*RegistryScenario, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

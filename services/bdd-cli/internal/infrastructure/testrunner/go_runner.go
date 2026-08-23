@@ -15,10 +15,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner/dto"
 )
 
-// goTestNameSeparator joins package + test in FailingTest.TestName so the
-// resulting id round-trips through `-run '^<test>$' <package>` in RunOne.
-// `::` was chosen because Go package paths legitimately contain `/` but
-// never `::`.
+// goTestNameSeparator joins package + test in FailingTest.TestName so it
+// round-trips through `-run '^<test>$' <package>` in RunOne. `::` was
+// chosen because Go package paths contain `/` but never `::`.
 const goTestNameSeparator = "::"
 
 // goTestRunFlag is the flag that narrows a `go test` invocation to a
@@ -49,12 +48,9 @@ func NewGoTestRunner(artifacts *Artifacts) *GoTestRunner {
 	return &GoTestRunner{artifacts: artifacts}
 }
 
-// Discover runs the suite's declared command and returns one
-// FailingTest per failed test plus one synthetic entry per
-// non-test-bearing package failure (typically compile errors). The
-// command comes from the spec verbatim — build tags, package selectors
-// and test-binary flags included — because which tests exist is the
-// host's statement, not the engine's guess.
+// Discover runs the suite's declared command verbatim (build tags, package
+// selectors, flags included — which tests exist is the host's statement,
+// not the engine's guess), returning one FailingTest per failure or compile error.
 func (r *GoTestRunner) Discover(
 	ctx context.Context,
 	cfg Config,
@@ -87,13 +83,9 @@ func (r *GoTestRunner) Discover(
 	return failures, nil
 }
 
-// RunOne re-executes a single failing Go test by its TestName id, under
-// the same command Discover used so the rerun inherits the build tags
-// and test-binary flags that made the test discoverable in the first
-// place — a rerun assembled from scratch would compile a different set
-// of packages and never reproduce the failure. For build-failure
-// synthetic entries (TestName suffix `::<build>`) it re-runs the
-// command unfiltered and lets the compile be the verdict.
+// RunOne re-executes a single failing Go test under the same command
+// Discover used: a rerun assembled from scratch would compile a different
+// set of packages and might never reproduce the failure. Build-failure entries (`::<build>`) rerun unfiltered.
 func (r *GoTestRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -128,9 +120,8 @@ func (r *GoTestRunner) RunOne(
 }
 
 // exec runs the suite's command with the supplied argv and captures
-// stdout/stderr. phase labels the invocation in the log and in the
-// captured output's filename. `go test` exits non-zero on test failure
-// — that is not an infrastructure error.
+// stdout/stderr. phase labels the invocation in log/filename. `go test`
+// exits non-zero on test failure — that is not an infrastructure error.
 func (r *GoTestRunner) exec(
 	ctx context.Context,
 	cwd, phase string,
@@ -150,15 +141,9 @@ func (r *GoTestRunner) exec(
 	})
 }
 
-// appendGoRunFilter narrows the suite's command to a single test.
-// Appended rather than inserted because `go test` accepts its own flags
-// after the package list, and appending is the only position that
-// cannot land in front of a package selector the spec put there.
-//
-// A `-run` the spec already declared stays in place: the last one wins
-// in Go's flag parsing, so the narrower filter this adds is the one
-// that takes effect. Build-failure synthetic entries get no filter at
-// all, so the package's compile is the verdict.
+// appendGoRunFilter narrows the suite's command to a single test. Appended,
+// not inserted: `go test` takes the LAST `-run` in Go's flag parsing, so a
+// spec-declared `-run` would win over an inserted filter — appending also can't land in front of a package selector.
 func appendGoRunFilter(base []string, test string) []string {
 	if test == goBuildFailureMarker {
 		return base
@@ -303,10 +288,9 @@ func (s *goEventStream) outputFor(pkg, test string) string {
 	return ""
 }
 
-// toFailingTests projects the stream into a slice of FailingTest values
-// tagged with the supplied service + suite. Per-test failures take
-// precedence over package-level failures; a package whose failure is
-// already explained by per-test entries is omitted from the output.
+// toFailingTests projects the stream into FailingTest values tagged with
+// service + suite. Per-test failures take precedence over package-level
+// ones; a package already explained by per-test entries is omitted.
 func (s *goEventStream) toFailingTests(service, suite string) []*FailingTest {
 	out := make([]*FailingTest, 0, len(s.testFailed)+len(s.packageFailed))
 
@@ -326,10 +310,9 @@ func (s *goEventStream) toFailingTests(service, suite string) []*FailingTest {
 	return out
 }
 
-// packageHasExplainedFailure reports whether at least one per-test
-// failure already exists under the supplied package. Used to avoid
-// double-counting a package-level fail summary when individual tests
-// failed.
+// packageHasExplainedFailure reports whether a per-test failure already
+// exists under pkg — used by toFailingTests to avoid double-counting a
+// package-level fail summary when individual tests already explain it.
 func (s *goEventStream) packageHasExplainedFailure(pkg string) bool {
 	prefix := pkg + "\x00"
 	for key := range s.testFailed {

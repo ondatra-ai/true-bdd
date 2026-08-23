@@ -28,10 +28,9 @@ type Turn struct {
 	// Started and Ended bracket the whole provider call.
 	Started time.Time
 	Ended   time.Time
-	// FirstOutput is the first AssistantMessage — the moment the CLI
-	// finished booting and the model started producing. ResultAt is the
-	// terminal message. Both are zero for CLIs that stream nothing,
-	// which is what makes their turns unsplittable.
+	// FirstOutput is the first AssistantMessage (CLI done booting, model
+	// producing); ResultAt is the terminal message. Both zero means the CLI
+	// streamed nothing, which is what makes its turns unsplittable.
 	FirstOutput time.Time
 	ResultAt    time.Time
 
@@ -45,10 +44,9 @@ type Turn struct {
 
 	CostUSD float64
 	HasCost bool
-	// Tokens keeps the four counters apart rather than pre-summing:
-	// cache reads and cache writes are priced differently from ordinary
-	// input, so a turn that looks expensive per token may just be one
-	// that re-uploaded its system prompt.
+	// Tokens keeps the four counters apart rather than pre-summing: cache
+	// reads/writes are priced differently, so an expensive-looking turn
+	// may just be one that re-uploaded its system prompt.
 	Tokens TokenCounts
 
 	// SystemLength and UserLength are the prompt sizes the dispatch
@@ -63,16 +61,14 @@ type Turn struct {
 	Invocation Invocation
 	Cell       ChecklistCell
 
-	// Attempt is 1-based within (cell, role): how many times this seat
-	// of this cell has been occupied, this one included. AttemptTotal is
-	// how many times it ends up being occupied across the whole run.
-	// Attempt is what turns `prompt` into "Re-validate".
+	// Attempt is 1-based within (cell, role): how many times this seat has
+	// been occupied, this one included — it's what turns `prompt` into
+	// "Re-validate". AttemptTotal is the run's final occupancy count.
 	Attempt      int
 	AttemptTotal int
-	// PromptIdx is the 1-based index into the run's flattened prompt
-	// list. Validation and fix artifacts carry it in their filename;
-	// apply artifacts do not, so classifyCauses inherits it from the fix
-	// turn the apply followed.
+	// PromptIdx is the 1-based index into the run's flattened prompt list.
+	// Validation/fix artifacts carry it in their filename; apply artifacts
+	// don't, so it's inherited from the fix turn the apply followed.
 	PromptIdx int
 	// FixPromptArtifact is the generated fix prompt an apply turn
 	// consumed — the only thing it actually reads.

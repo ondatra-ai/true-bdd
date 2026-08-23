@@ -44,11 +44,6 @@ type result struct {
 }
 
 // sh runs an argv list. No shell, ever.
-//
-// A timeout is diagnosed here rather than returned: the callers that pass one
-// are the long ones (the gates, the ClickUp filing), and an undiagnosed
-// timeout is exactly the "aborts with no diagnostic" this package exists not
-// to do.
 func (r *Run) sh(cmd []string, opt options) result {
 	ctx := context.Background()
 
@@ -119,18 +114,15 @@ func (r *Run) ghJSON(target any, args ...string) {
 }
 
 // worktreeChanges is what git reports as uncommitted — empty when clean.
-//
-// Asked in several places for the same reason: may we proceed, and what is in
-// the way. Returns the raw listing because every caller prints it;
-// changedPaths is the same question answered as a set.
+// Returns the raw listing for callers that print it; changedPaths answers
+// the same question as a set.
 func (r *Run) worktreeChanges() string {
 	return strings.TrimSpace(r.gitChecked("status", "--porcelain"))
 }
 
-// changedPaths is the set of paths git reports as uncommitted.
-//
-// `-z` because the default format QUOTES any path holding a space or a
-// non-ASCII byte, and a quoted name matches nothing it is compared against.
+// changedPaths is the set of paths git reports as uncommitted. -z: the
+// default format quotes any path with a space or non-ASCII byte, and a
+// quoted name matches nothing it's compared against.
 func (r *Run) changedPaths() map[string]bool {
 	paths := map[string]bool{}
 	entries := strings.Split(r.gitChecked("status", "--porcelain", "-z"), "\x00")

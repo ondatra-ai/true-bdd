@@ -3,12 +3,8 @@ package inventory
 import storymodel "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 
 // Content is the normalized, render-ready view of a story the review modal
-// shows: identity + statement + acceptance criteria with FLATTENED Gherkin
-// steps (plan §1). It is extracted from the SAME typed model us create /
-// us apply decode (storymodel.Story), so a story file and its epic-declared
-// counterpart flatten identically. The JSON shape is the binding contract
-// consumed by the harness view-model (view-model/inventory.ts) and pinned
-// by the Go content-extraction goldens.
+// shows: identity + statement + flattened Gherkin acceptance criteria (plan
+// §1) — the JSON shape view-model/inventory.ts and the Go goldens pin.
 type Content struct {
 	ID                 string                       `json:"id"`
 	Title              string                       `json:"title"`
@@ -39,11 +35,9 @@ type ContentStep struct {
 	Text string `json:"text"`
 }
 
-// contentFromStory flattens a typed story (a file's story: block OR an
-// epic's declared story) into the render-ready Content. Each AC's steps are
-// flattened in source order: a plain statement inside a given/when/then
-// block carries the block kind, while an and/but modifier carries its own
-// kind — the exact flattening the modal and the story-fixture oracle share.
+// contentFromStory flattens a typed story (a file's story: block or an
+// epic's declared story) into render-ready Content, keeping each AC's steps
+// in source order (and/but modifiers keep their own kind).
 func contentFromStory(source storymodel.Story) *Content {
 	criteria := make([]ContentAcceptanceCriterion, 0, len(source.AcceptanceCriteria))
 	for _, ac := range source.AcceptanceCriteria {

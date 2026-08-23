@@ -22,13 +22,8 @@ var ErrScenarioNotOwned = errors.New("this suite does not own that scenario")
 var ErrModifierWithoutBlock = errors.New("And/But before any Given/When/Then")
 
 // ErrScenarioDrift signals a generated test file whose steps are not the
-// registry's.
-//
-// The file is what runs — that is what makes it a test and not a
-// comment — so a file the registry no longer agrees with is two specs
-// where the project promises one. Refused whole rather than run
-// partially: a scenario that executes the file's steps while its report
-// quotes the registry's description is worse than one that does not run.
+// registry's — refused whole rather than run partially, since a scenario
+// that runs the file's steps but reports the registry's is worse.
 var ErrScenarioDrift = errors.New("the registry and this generated test file disagree")
 
 // ErrDoneTwice signals Done called more than once on one scenario.
@@ -38,15 +33,9 @@ var ErrDoneTwice = errors.New("Done was already called")
 // into every drift failure, because the fix is never a hand edit.
 const regenerate = "true-bdd build tests --fix"
 
-// Run is one scenario as its generated test file drives it.
-//
-// The file declares the steps by calling Given/When/Then/And/But, and
-// Done runs them. Two things follow from that order, and both are the
-// point. The steps are declared before anything executes, so the file
-// reads as the scenario reads. And they are declared by the FILE, so
-// what a reader sees in the test is what the machine does — the registry
-// supplies the id, the description and the budget, and is checked
-// against the file rather than substituted for it.
+// Run is one scenario as its generated test file drives it: the file
+// declares steps via Given/When/Then/And/But, Done runs them, and the
+// registry supplies id/description/budget, checked against the file.
 type Run[S any] struct {
 	t     *testing.T
 	suite *Suite[S]
@@ -72,11 +61,9 @@ type declaredStep struct {
 	text string
 }
 
-// Scenario returns a Run for the named registry scenario.
-//
-// Refuses an id the registry does not hold, and one this suite does not
-// own — the two ways a generated file can survive an edit to the
-// registry that should have deleted or moved it.
+// Scenario returns a Run for the named registry scenario. Refuses an id
+// the registry does not hold, and one this suite does not own — the two
+// ways a generated file can survive an edit that should have moved it.
 func (s *Suite[S]) Scenario(t *testing.T, scenarioID string) *Run[S] {
 	t.Helper()
 
@@ -171,9 +158,8 @@ func (r *Run[S]) Done() {
 	}
 
 	// The file supplies the behaviour; the registry supplies everything
-	// that is not behaviour. A timeout is a fact about the machine a run
-	// happens on rather than about what the run proves, so it belongs in
-	// the document a person edits and not in generated code.
+	// that is not behaviour (see Scenario.Timeout) — not generated code,
+	// since duration is a machine fact rather than something proven.
 	scenario := r.registry
 	scenario.Steps = steps
 
@@ -204,11 +190,8 @@ func (r *Run[S]) classify() ([]Step, error) {
 }
 
 // checkAgainstRegistry compares the file's steps with the registry's,
-// element by element, and reports the first that differs.
-//
-// The first rather than all of them: a step inserted near the top shifts
-// every one below it, and a report listing forty differences would bury
-// the single edit that caused them.
+// element by element, and reports the first that differs — not all of
+// them, since one inserted step would bury the edit in forty diffs.
 func (r *Run[S]) checkAgainstRegistry(steps []Step) error {
 	want := r.registry.Steps
 

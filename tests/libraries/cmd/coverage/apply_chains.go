@@ -24,9 +24,8 @@ func (s *partitionState) attributeAndChainApplies() {
 }
 
 // applyAttributions returns the log-derived attribution queues keyed by
-// sanitized subject, in apply order. Sanitizer collisions (two distinct
-// raw subjects collapsing to one artifact subject) poison the affected
-// key: its applies become unattributed rather than guessed.
+// sanitized subject, in apply order. A sanitizer collision (two raw
+// subjects collapsing to one key) poisons that key: unattributed, not guessed.
 func (s *partitionState) applyAttributions() map[string][]applyAttribution {
 	result := map[string][]applyAttribution{}
 
@@ -65,12 +64,9 @@ func (s *partitionState) applyAttributions() map[string][]applyAttribution {
 	return result
 }
 
-// attributionFor resolves the attribution for one apply artifact. With
-// a log segment present, ONLY consumed log attribution counts (a
-// segment without a matching generation never falls back — Review-1
-// policy). The single-failed-prompt fallback applies only to logless
-// runs, and its result carries EventIndex -1 (no temporal proof, so it
-// can never satisfy the fix chain; it merely labels candidates).
+// attributionFor resolves the attribution for one apply artifact. With a
+// log segment present, only consumed log attribution counts — a segment
+// without a matching generation never falls back to the heuristic (Review-1).
 func (s *partitionState) attributionFor(
 	apply ApplyArtifact, queues map[string][]applyAttribution,
 ) (applyAttribution, bool) {
@@ -137,10 +133,9 @@ func (s *partitionState) chainFixEffective(cell cellID, apply ApplyArtifact, app
 	s.observe(cell, ObsFixEffective, evidence, "reconstructed chain")
 }
 
-// fixChainComplete verifies the full reconstructed chain: semantic
-// fail, final canonical pass, a log-proven clean post-apply walk, and
-// a post-apply result save for THIS cell (cell-temporal, not just the
-// run-global save count).
+// fixChainComplete verifies the full reconstructed chain: semantic fail,
+// final canonical pass, a log-proven clean post-apply walk, and a
+// post-apply result save for this cell (not just a run-global count).
 func (s *partitionState) fixChainComplete(cell cellID, applyEventIdx int) (string, bool) {
 	if !s.failedCells[cell] {
 		return "no semantic fail recorded for the attributed cell", false

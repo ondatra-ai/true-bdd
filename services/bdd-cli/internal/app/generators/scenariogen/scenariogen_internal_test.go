@@ -160,10 +160,9 @@ func TestBuildPlanGroupsByPathInIDOrder(t *testing.T) {
 	}
 }
 
-// Everything a `path:` can be wrong about, refused by name. Each of
-// these produces a file that compiles into the wrong package, overwrites
-// something it must not, or does not compile at all — so none of them
-// can be a warning.
+// Everything a `path:` can be wrong about, refused by name: each produces a
+// file that compiles into the wrong package, overwrites something it must
+// not, or does not compile at all — so none of them can be a warning.
 func TestBuildPlanRefusesABadPath(t *testing.T) {
 	t.Parallel()
 
@@ -215,14 +214,9 @@ func TestBuildPlanRefusesThePathInsideTheStepsTree(t *testing.T) {
 	}
 }
 
-// Two scenarios in one file must belong to one suite: the file is one Go
-// package bound to one suite's state, and two suites' scenarios could
-// not both compile in it.
-//
-// Reachable only when two suites declare the SAME root — with different
-// roots the per-scenario path check catches it first, and says so more
-// precisely. Two suites over one directory is a legal thing for a host
-// to write and the only shape this refusal exists for.
+// Two scenarios sharing one file must belong to one suite — the file is one
+// Go package bound to one suite's state. Reachable only when two suites
+// declare the SAME root; different roots are already caught by the per-scenario path check.
 func TestBuildPlanRefusesTwoServicesInOneFile(t *testing.T) {
 	t.Parallel()
 
@@ -418,10 +412,9 @@ func TestVerifyReportsMissingAndStale(t *testing.T) {
 	}
 }
 
-// An id whose Go name `go test` would compile and never run is refused.
-// This is the worst failure available — every coverage check still
-// reports the scenario as covered, because a call site exists and only
-// the runner knows the function is not a test.
+// An id whose Go name `go test` would compile and never run is refused —
+// see checkRunnableTestName: the worst failure available, since every
+// coverage check still reports the scenario as covered.
 func TestBuildPlanRefusesAnUnrunnableTestName(t *testing.T) {
 	t.Parallel()
 
@@ -474,10 +467,9 @@ func TestBuildPlanNamesTheStepsTree(t *testing.T) {
 	}
 }
 
-// Renaming a suite re-derives the package name; without a check the
-// regeneration writes one package into a directory whose hand-written
-// files declare another, and the suite stops compiling with nothing
-// pointing at the rename.
+// Renaming a suite re-derives the package name — see checkPackageClause:
+// without a check, regeneration writes a mismatched package and the suite
+// stops compiling with nothing pointing at the rename.
 func TestBuildPlanRefusesAPackageClauseMismatch(t *testing.T) {
 	t.Parallel()
 

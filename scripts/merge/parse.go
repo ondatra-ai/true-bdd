@@ -5,12 +5,9 @@ import (
 	"strings"
 )
 
-// CodeRabbit puts findings in two places and only one of them is a thread.
-// "Actionable comments" become review threads: they have an id, a reply
-// target and a resolvable state. "Nitpick / Outside diff range / Duplicate"
-// comments live ONLY inside the review body, with none of those. A helper
-// that queries reviewThreads alone sees 16 of 28 findings, which is what
-// happened on PR #70. Everything here exists to see the other 12.
+// CodeRabbit puts findings in two places and only one is a thread: actionable
+// comments become review threads, "Nitpick/Outside diff/Duplicate" comments
+// live only in the review body. Threads alone saw 16 of 28 findings on PR #70.
 
 const (
 	openTag  = "<details>"
@@ -109,23 +106,16 @@ func isNoise(summary string) bool {
 	return false
 }
 
-// clean drops the machinery blocks and keeps everything else headed by its
-// summary.
-//
-// A denylist rather than an allowlist: the block carrying the proposed fix has
-// at least four different summaries ("Proposed change", "Proposed guard",
-// "Committable suggestion", "Refactor suggestion"), and an allowlist would
-// silently drop the one that matters. Truncating at the first <details> is
-// worse still — CodeRabbit routinely opens a comment with its verification
-// transcript and puts the finding after it.
+// clean drops the machinery blocks, keeps everything else headed by its
+// summary. Denylist, not allowlist: proposed-fix blocks use 4+ different
+// summaries, so an allowlist would silently drop the one that matters.
 func clean(body string) string {
 	return cleanAt(body, 0)
 }
 
-// cleanAt tidies at EVERY level, not once at the top. That is load-bearing:
-// the recursive result is trimmed before it is spliced in, which is what puts
-// a summary marker hard against the line below it and what drops the indent
-// from a marker that lands first in its own level.
+// cleanAt tidies at EVERY level, not once at the top — load-bearing for
+// marker placement and indent: the recursive result is trimmed before
+// splicing in.
 func cleanAt(body string, depth int) string {
 	var out strings.Builder
 
@@ -230,11 +220,9 @@ func findingsInSection(sectionBody, section string) []bodyFinding {
 	return findings
 }
 
-// chunksOf splits a file block into its findings.
-//
-// A finding ENDS at its cr-comment marker, so only chunks that precede one are
-// findings. What trails the last marker is the block's footer, and counting it
-// inflates the total per file.
+// chunksOf splits a file block into its findings. A finding ends at its
+// cr-comment marker; what trails the LAST marker is the block's footer —
+// counting it would inflate the total per file.
 func chunksOf(stripped, section, path string) []bodyFinding {
 	chunks := markerRE.Split(stripped, -1)
 	if len(chunks) > 1 {

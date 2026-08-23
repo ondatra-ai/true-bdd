@@ -7,11 +7,9 @@ import (
 	"strings"
 )
 
-// Dispatch is the v1 server transaction MOVED INTO the CLI store (plan §1.4):
-// validate command + bounded token → (owner_id, client_token) receipt lookup →
-// request-hash compare (exact retry ⇒ original run; token reuse with different
-// args ⇒ conflict) → partial-unique nonterminal-per-owner admission → insert
-// run + receipt atomically → reply after commit.
+// Dispatch replays the v1 server's dispatch transaction inside the CLI store:
+// validate the command/token, resolve an existing (owner, token) receipt for
+// an idempotent retry, else admit under one-nonterminal-run-per-owner and insert.
 func (db *DB) Dispatch(req DispatchInput) DispatchOutcome {
 	if !validCommand(req.Command) {
 		return DispatchOutcome{Kind: dispatchInvalid}

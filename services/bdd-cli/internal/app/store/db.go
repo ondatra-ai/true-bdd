@@ -32,12 +32,9 @@ const (
 	maxOpenConns = 8
 )
 
-// DB is the concrete v2 CLI-owned state store: a per-project SQLite database
-// that owns ALL run/session state (plan §1). It is the production type behind
-// the seam `Store` interface (wired via the test bridge). A single in-process
-// write mutex serializes every write transaction so the writer-actor sequencing
-// (unique, contiguous per-run seqs) and the dispatch/answer transactions never
-// interleave; a per-connection busy timeout handles the cross-process case.
+// DB is the concrete per-project SQLite state store behind the seam `Store`
+// interface. A single write mutex serializes writes so per-run seqs stay
+// unique and contiguous; a per-connection busy timeout covers cross-process writers.
 type DB struct {
 	sql     *sql.DB
 	dbPath  string
@@ -45,10 +42,8 @@ type DB struct {
 }
 
 // Open opens (creating + migrating if necessary) a per-project store at
-// dbPath. The directory is 0700 and the db/WAL/SHM files 0600 (plan §1.1);
-// foreign keys, WAL, and a busy timeout are set on EVERY connection via the
-// DSN; a quick_check runs at boot and sequential checksummed migrations apply
-// under an exclusive transaction.
+// dbPath. Foreign keys, WAL, and busy_timeout are set via DSN params, not a
+// post-open Exec, so EVERY pooled connection gets them — not just the first.
 func Open(dbPath string) (*DB, error) {
 	dir := filepath.Dir(dbPath)
 

@@ -21,9 +21,8 @@ const (
 )
 
 // declaredSelection pins one fixture's checklist_prompts declaration to
-// the exact shipped prompt it must resolve to: the stem, the prompt's
-// short Q hash (content identity — reorder- and rewording-proof), and
-// whether an authored F is required.
+// the exact shipped prompt it must resolve to: stem, short Q hash
+// (content identity), and whether an authored F is required.
 type declaredSelection struct {
 	Stem     string
 	QShort   string
@@ -108,10 +107,8 @@ func listFixtures(t *testing.T) []string {
 }
 
 // allowedOverrideFixtures is the explicit allowlist for checked-in
-// checklist override files. Empty on purpose: every current fixture
-// that needs a filtered checklist declares checklist_prompts and the
-// runner generates the file — a copied override reintroduces silent
-// drift. Adding an entry here must be a conscious, reviewed decision.
+// checklist override files. Empty on purpose — every current fixture
+// declares checklist_prompts instead; adding an entry must be reviewed.
 func allowedOverrideFixtures() map[string]bool {
 	return map[string]bool{}
 }
@@ -156,9 +153,7 @@ func TestDeclaredSelectionsComplete(t *testing.T) {
 
 // TestOverridePromptsMatchShipped requires every prompt of every fixture
 // checklist override to EvalKey-match a shipped prompt of the same
-// checklist. A failure means someone edited the shipped checklist (or
-// the override) without updating the other side: the affected fixture
-// would silently exercise a non-shipped prompt and earn no coverage.
+// checklist, or the fixture would silently exercise a non-shipped prompt.
 func TestOverridePromptsMatchShipped(t *testing.T) {
 	t.Parallel()
 
@@ -197,11 +192,8 @@ type manifestSelection struct {
 }
 
 // TestDeclaredSelectionsResolveToPinnedPrompts requires each
-// checklist_prompts fixture to declare exactly one snippet that
-// resolves to exactly the pinned shipped prompt (by content hash), with
-// an authored F where required, and to NOT also ship a checklist
-// override file. The hash pin makes reordering or rewording a shipped
-// prompt a conscious, test-breaking change.
+// checklist_prompts fixture to declare exactly one snippet resolving to
+// the pinned shipped prompt (by content hash), with F where required.
 func TestDeclaredSelectionsResolveToPinnedPrompts(t *testing.T) {
 	t.Parallel()
 
@@ -309,8 +301,7 @@ type configBlock struct {
 
 // TestOverrideConfigMatchesShipped requires every override to carry the
 // same `config:` block as its shipped counterpart: production reads the
-// knobs from the OVERLAID file, so a shipped config change that is not
-// mirrored would silently change fixture engine behavior.
+// knobs from the overlaid file, so a drift would silently change behavior.
 func TestOverrideConfigMatchesShipped(t *testing.T) {
 	t.Parallel()
 

@@ -8,10 +8,9 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-// An applier turn can finish cleanly having written nothing — the
-// guard denied it, or the only path offered was a forbidden one. The
-// engine used to read that as a successful fix and re-walk forever, so
-// the explicit `applied: false` has to surface as an error.
+// An applier turn can finish cleanly having written nothing — the guard
+// denied it, or the only path offered was forbidden. See Apply (fix_applier.go):
+// the engine used to read that as success and re-walk forever.
 func TestCheckFixAppliedRejectsExplicitFalse(t *testing.T) {
 	t.Parallel()
 
@@ -77,10 +76,9 @@ as_a: Claude User`,
 	}
 }
 
-// The block a real run produced: the model put an explanatory `": "`
-// inside an unquoted `target:` scalar, so the whole block is invalid
-// YAML. Passing that through logged "Fix applied successfully" for an
-// applier that had explicitly written nothing.
+// The block a real run produced: an explanatory `": "` inside an unquoted
+// `target:` scalar made the whole block invalid YAML. Passing that through
+// used to log "Fix applied successfully" for an applier that wrote nothing.
 func TestCheckFixAppliedRejectsFalseInUnparseableBlock(t *testing.T) {
 	t.Parallel()
 
@@ -100,10 +98,9 @@ summary: "Could not write any file — every tool was blocked."`
 	}
 }
 
-// Unparseable content can carry more than one status line — a model
-// that narrates an attempt before reporting the outcome writes both. A
-// refusal must win over an earlier success regardless of order, or the
-// fallback reinstates the very inversion it exists to prevent.
+// Unparseable content can carry more than one status line — a model that
+// narrates an attempt before reporting the outcome writes both. See
+// checkFixAppliedFallback: a refusal must win regardless of order.
 func TestCheckFixAppliedFallbackFalseWinsOverEarlierTrue(t *testing.T) {
 	t.Parallel()
 

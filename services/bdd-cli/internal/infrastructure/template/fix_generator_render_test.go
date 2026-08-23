@@ -76,9 +76,8 @@ func render(t *testing.T) string {
 }
 
 // The defect (#61): the prompt listed descriptions only, so the model
-// could not tell an AC that was missing steps from one that already had
-// them — and rewrote all of them, dropping AC-1's "at least 500 words"
-// qualifier in the process.
+// couldn't distinguish an AC missing steps from one that had them, and
+// rewrote all ACs — dropping AC-1's "at least 500 words" qualifier.
 func TestFixGeneratorPromptShowsExistingSteps(t *testing.T) {
 	t.Parallel()
 

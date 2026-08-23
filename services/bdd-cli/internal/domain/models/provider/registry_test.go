@@ -53,10 +53,9 @@ func TestRegistryResolvesEachTier(t *testing.T) {
 	}
 }
 
-// The empty tier is how "neither the prompt nor its checklist named
-// one" reaches the registry, and each role falls back to its OWN
-// engine.default_<role>_model. Every role is given a different tier
-// here so a role-blind fallback cannot pass.
+// The empty tier is how "neither the prompt nor its checklist named one"
+// reaches the registry, and each role falls back to its OWN
+// engine.default_<role>_model — given a different tier per role here so a role-blind fallback cannot pass.
 func TestRegistryEmptyTierUsesTheRoleDefault(t *testing.T) {
 	t.Parallel()
 

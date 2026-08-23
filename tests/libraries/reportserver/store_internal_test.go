@@ -83,9 +83,8 @@ func writeRecord(t *testing.T, dir, name, verdict string) {
 }
 
 // TestSealedFixturesAreNotReparsed pins the cache key that makes a 15s
-// refresh affordable: a fixture with a harness record can never change,
-// so a rescan must hand back the very same pointer rather than re-parse
-// its engine log.
+// refresh affordable: a rescan must hand back the same pointer for a
+// sealed fixture, not re-parse its engine log.
 func TestSealedFixturesAreNotReparsed(t *testing.T) {
 	runsDir := t.TempDir()
 	writeFixture(t, runsDir, "2026-01-01_00-00-00", "sealed-fx", true)
@@ -237,10 +236,9 @@ func TestNeighboursWalkRunsInOrder(t *testing.T) {
 	}
 }
 
-// The report server assembles its own Session so it can reuse sealed
-// fixtures across scans, which means it does NOT go through
-// reporter.LoadSession. That divergence already cost one silently
-// empty mode column; this pins the store's own path.
+// The store assembles its own Session (not reporter.LoadSession) to reuse
+// sealed fixtures across scans; that divergence already cost one silently
+// empty mode column, so this pins the store's own path.
 func TestStoreReadsSessionMeta(t *testing.T) {
 	t.Parallel()
 

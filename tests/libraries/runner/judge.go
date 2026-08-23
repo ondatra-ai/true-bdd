@@ -32,16 +32,9 @@ type JudgeRequest struct {
 	Diff    []FileChange
 }
 
-// JudgeOutcome is one judge call: its decision, and the exact text the
-// call was made of.
-//
-// The prompts are carried out rather than discarded because they are the
-// only evidence of what the judge was actually asked. Two runs of the
-// same fixture can disagree solely because their diffs differed, and
-// without the prompt that difference is invisible — the report can show
-// "PASS then FAIL" but never why. They are returned rather than written
-// here so the judge stays a pure function of its request and the caller
-// keeps sole responsibility for touching the filesystem.
+// JudgeOutcome is one judge call: its decision and the exact text it
+// was made of — the only evidence for why two runs disagree. Returned,
+// not written here, so Judge stays pure and the caller owns all I/O.
 type JudgeOutcome struct {
 	Pass   bool
 	Reason string
@@ -120,25 +113,18 @@ func (j *ClaudeJudge) Verdict(ctx context.Context, req JudgeRequest) (JudgeOutco
 	return outcome, nil
 }
 
-// judgeScope tells the judge what is NOT its job.
-//
-// Every clause that reaches it survived a step definition's failure to
-// express it, so the run's exit code, its output and which files it
-// touched were all asserted mechanically before this call was made. Left
-// unsaid, a model re-derives them from the diff and fails a run for a
-// file the suite already approved.
+// judgeScope tells the judge what is NOT its job: every clause that
+// reaches it survived mechanical checks already (exit code, output,
+// files touched) — left unsaid, a model re-derives and fails on them.
 const judgeScope = `Rules 1..%d below are this run's judged clauses — the assertions no
 comparison could make. Everything else about the run has already been
 checked mechanically by the test suite: its exit code, its output, and
 which files it created, modified or left alone. Do not re-derive those
 and do not fail the run for anything outside the numbered rules.`
 
-// judgeTolerances is the noise policy, identical for every scenario.
-//
-// It was per-fixture prose in all 46 rubrics and near-identical in all
-// 46 — which made it 46 places to update when the harness started
-// excluding a new directory, and 46 chances for one of them to say
-// something slightly different from the others.
+// judgeTolerances is the noise policy, identical for every scenario —
+// centralized after living as near-identical prose in all 46 rubrics,
+// which was 46 places to update and 46 chances to disagree.
 const judgeTolerances = `Ignore in every case, and never fail a run for:
   - anything under ` + "`tmp/`" + ` — per-run scratch, excluded by design
   - ` + "`node_modules/`, `.next/`" + `, and any other build or dependency cache
@@ -229,21 +215,9 @@ func clipBody(body []byte, totalSoFar int) (string, int) {
 	return string(body[:limit]) + "\n…(truncated)…", totalSoFar + limit
 }
 
-// parseJudgeVerdict extracts the judge's verdict from its reply.
-//
-// The LAST verdict-shaped line wins, not the first. The rubric asks for
-// a bare "PASS" or "FAIL: <reason>", but a model that works through the
-// rubric point by point states its conclusion at the END — and reading
-// only the first line turned those replies into "malformed response",
-// failing fixtures whose runs were correct and whose judge agreed.
-// Scanning from the end also resolves a reply that quotes one verdict
-// while reaching the other ("...would FAIL if X ... PASS") in favour of
-// the conclusion, which is what the words mean.
-//
-// A line only counts as a verdict when it is EXACTLY the word (after
-// stripping markdown emphasis) or opens with "FAIL:". Prose that merely
-// contains the word does not qualify — that is what keeps this
-// tolerance from becoming a coin flip.
+// parseJudgeVerdict extracts the judge's verdict from its reply: the
+// LAST verdict-shaped line wins (see TestParseJudgeVerdict for the
+// real-fixture bug this fixed); a line must match exactly, not just contain the word.
 func parseJudgeVerdict(resp string) (bool, string, error) {
 	lines := strings.Split(resp, "\n")
 

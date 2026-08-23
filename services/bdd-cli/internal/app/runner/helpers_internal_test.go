@@ -46,9 +46,8 @@ func seedVersionManager(t *testing.T) *fs.StoryVersionManager {
 }
 
 // TestStoryFinalizeSurfacesWriteFailure proves the plan §3.2 change:
-// a converged walk whose story file cannot be written no longer reports
-// success. The finalize error propagates so the runner marks the result
-// event finalization_ok=false and the CLI exits non-zero.
+// finalize's error now propagates instead of being swallowed, so a
+// converged walk whose story never landed no longer reports success.
 func TestStoryFinalizeSurfacesWriteFailure(t *testing.T) {
 	t.Parallel()
 
@@ -227,8 +226,7 @@ func TestValidateRequiredDocsReportsAllMissing(t *testing.T) {
 
 // TestValidateRequiredDocsHonoursDefaultDocs covers the fallback
 // GetEffectiveDocs implements: a prompt with no docs: of its own
-// inherits the checklist's default_docs, and those must be validated
-// too.
+// inherits and validates the checklist's default_docs too.
 func TestValidateRequiredDocsHonoursDefaultDocs(t *testing.T) {
 	resolver := newDocResolver(t,
 		map[string]string{docs.KeyProduct: testProductPath},
@@ -291,9 +289,8 @@ func promptFixing(section, question, fixTemplate string) checklistmodels.PromptW
 }
 
 // TestValidateFixTemplatesAcceptsFullyFixableChecklist is the green
-// path: every prompt carries an F:, so --fix has something to apply at
-// every cell and the walk is allowed to start. us-apply, build-code and
-// build-tests all ship this shape.
+// path: every prompt carries an F:, so --fix can apply at every cell.
+// us-apply, build-code and build-tests all ship this shape.
 func TestValidateFixTemplatesAcceptsFullyFixableChecklist(t *testing.T) {
 	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
 		promptFixing("format", "Does the story follow the format?", "Rewrite it."),
@@ -305,9 +302,8 @@ func TestValidateFixTemplatesAcceptsFullyFixableChecklist(t *testing.T) {
 }
 
 // TestValidateFixTemplatesRejectsMissingFixTemplate is the regression
-// this check exists for: without an F: the validation turn never asks
-// for a fix_prompt, so the fix turn runs with nothing to say. The
-// refusal has to name the checklist and locate the prompt inside it.
+// this check exists for: without an F: the fix turn would run with
+// nothing to say, so the refusal must name the checklist and prompt.
 func TestValidateFixTemplatesRejectsMissingFixTemplate(t *testing.T) {
 	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
 		promptFixing("who", "Does the as_a clause use a known role?\nRead the product doc.", ""),
@@ -373,10 +369,9 @@ func TestValidateFixTemplatesAllowsEmptyPromptList(t *testing.T) {
 	}
 }
 
-// TestValidateFixTemplatesIsInertWithoutTheFlag is the other half of the
-// contract: a checklist with no F: anywhere still walks fine without
-// --fix, because nothing was going to be fixed. us-create and us-refine
-// are exactly that checklist, so this is the shape most runs take.
+// TestValidateFixTemplatesIsInertWithoutTheFlag is the other half of
+// the contract: a checklist with no F: anywhere still walks fine
+// without --fix — us-create/us-refine are exactly this shape.
 func TestValidateFixTemplatesIsInertWithoutTheFlag(t *testing.T) {
 	err := validateFixTemplates(false, testChecklistName, []checklistmodels.PromptWithContext{
 		promptFixing("format", "Q one", ""),

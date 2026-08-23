@@ -22,10 +22,9 @@ import (
 // channel file. Unset ⇒ emission disabled.
 const EventsFileEnv = "TRUE_BDD_EVENTS_FILE"
 
-// FailClosedSentinel is printed to stderr when an append fails, right
-// before the process exits non-zero. The remote classifies an
-// unexpected non-zero child exit as error(no_result); the sentinel
-// makes the telemetry failure legible in the captured stderr log.
+// FailClosedSentinel is printed to stderr right before a failed append
+// exits the process non-zero, so the remote's error(no_result) exit
+// classification has a legible cause in the captured log.
 const FailClosedSentinel = "true-bdd: FATAL event-channel append failed"
 
 const eventFilePerm = 0o600
@@ -44,10 +43,8 @@ const (
 )
 
 // Emitter appends structured events to the event-channel file. Its ordinal
-// and prompt counters are monotonic for the emitter's lifetime, so a
-// collector reused across a fix loop emits DISTINCT prompt ids for
-// successive prompts — and, crucially, the child-local result ordinal
-// FOLLOWS the prompt ordinals (plan §3.2 / finding 7).
+// and prompt counters are monotonic per instance, so ids stay distinct and
+// the result ordinal always follows the prompt ordinals (plan §3.2, finding 7).
 type Emitter struct {
 	mu      sync.Mutex
 	path    string
@@ -55,9 +52,7 @@ type Emitter struct {
 	prompts int
 }
 
-// sharedMu guards the process-wide emitter shared by every producer
-// (the input collector for prompts, the runner/version for the result) so
-// they draw from ONE child-local ordinal source.
+// sharedMu guards the process-wide emitter's single ordinal source.
 //
 //nolint:gochecknoglobals // the child-local ordinal source is process-wide
 var (
@@ -65,13 +60,9 @@ var (
 	shared   *Emitter
 )
 
-// NewEmitter returns the process-wide emitter bound to the event-channel
-// file named by TRUE_BDD_EVENTS_FILE. Because a child process has exactly
-// one event channel, every producer shares one monotonic ordinal — so the
-// runner's result ordinal never restarts behind the collector's prompts
-// (finding 7). The instance is keyed on the current env path, so a test
-// that repoints TRUE_BDD_EVENTS_FILE gets a fresh, isolated emitter. An
-// empty path (variable unset) yields a no-op emitter.
+// NewEmitter returns the process-wide emitter bound to TRUE_BDD_EVENTS_FILE,
+// keyed on that path so a test repointing the env var gets a fresh instance;
+// an empty path (variable unset) yields a no-op emitter.
 func NewEmitter() *Emitter {
 	path := os.Getenv(EventsFileEnv)
 
@@ -111,10 +102,9 @@ func (e *Emitter) EmitFreetextPrompt(prompt string) {
 	e.emitPrompt(KindFreetext, map[string]any{"prompt": prompt})
 }
 
-// EmitResult writes the terminal result event after finalization. The
-// outcome is the engine's stop-reason classification; finalizationOK is
-// false when the post-walk write failed (story-write failures are no
-// longer swallowed — plan §3.2).
+// EmitResult writes the terminal result event after finalization: outcome
+// is the stop-reason classification, and finalizationOK is false when the
+// post-walk write failed (plan §3.2).
 func (e *Emitter) EmitResult(outcome string, finalizationOK bool, detail string) {
 	if e.path == "" {
 		return

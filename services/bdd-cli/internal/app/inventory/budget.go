@@ -7,10 +7,9 @@ import (
 	"strconv"
 )
 
-// budgetEnvVar is the pinned env knob that drives the request-budget
-// degrade ladder without a running server (plan §1a). It is the fit budget
-// the remote otherwise derives from the server's negotiated inventory
-// limit; exposing it as an override makes the ladder unit-testable.
+// budgetEnvVar is the env override for the request-budget ladder (plan
+// §1a), standing in for the server's negotiated inventory limit so the
+// ladder is unit-testable without a running server.
 const budgetEnvVar = "TRUE_BDD_INVENTORY_BUDGET_BYTES"
 
 // UnavailableLimitTooSmall is the session-level cannot-fit state: the
@@ -22,25 +21,14 @@ const UnavailableLimitTooSmall = "limit_too_small"
 // to over-estimate the worst-case bounded floor size in MinInventoryFloor.
 const minFloorSampleChips = 12
 
-// MinInventoryFloor is the smallest snapshot-fit budget for which the
-// always-fit FLOOR (document chips + global counts, NO per-epic entries and
-// NO unbounded error strings) is still emitted. A budget below it is a
-// TERMINAL cannot-fit condition: the snapshot is marked
-// unavailable("limit_too_small") rather than degraded forever (plan §1a).
-//
-// Unlike the previous hard-coded 200, it is COMPUTED from the worst-case
-// bounded floor (all document chips at their longest status + saturated
-// global counts), so it is an honest lower bound on what the floor actually
-// serializes to — finding 1. The remote adds the request envelope to it to
-// reject an impossible server cap out-of-band.
+// MinInventoryFloor is the smallest budget the always-fit floor still fits; computed, not hard-coded (finding 1).
 //
 //nolint:gochecknoglobals // a computed constant threshold, not mutable state
 var MinInventoryFloor = computeMinInventoryFloor()
 
-// computeMinInventoryFloor serializes a saturated worst-case bounded floor
-// (a generous over-estimate of the document-chip vocabulary + max counts),
-// so MinInventoryFloor is an honest ceiling on the floor's real byte size
-// regardless of the concrete document keys a scan produces.
+// computeMinInventoryFloor serializes a saturated worst-case floor (longest
+// document-chip vocabulary + max counts) so MinInventoryFloor stays an
+// honest ceiling regardless of the scan's real document keys.
 func computeMinInventoryFloor() int {
 	docs := make(map[string]string, minFloorSampleChips)
 	// The sample chips have keys at least as long as the real vocabulary
@@ -89,13 +77,9 @@ func serializedLen(value any) int {
 	return len(data)
 }
 
-// snapshotBuilder assembles a budget-fitted snapshot INCREMENTALLY, adding
-// epics and stories one at a time and retaining each only to the extent it
-// fits (plan §1a / finding 2). It maintains the exact serialized size of the
-// snapshot-so-far as a running counter (`used`), updated by per-item deltas,
-// so it never re-marshals the whole snapshot — killing the previous O(n²)
-// whole-snapshot re-marshal loop — and it never holds more than the budget
-// (plus the one story currently being fitted) of retained bytes.
+// snapshotBuilder assembles a budget-fitted snapshot INCREMENTALLY (plan
+// §1a / finding 2), retaining each epic/story only while it fits, tracked
+// via a running serialized-size counter (`used`) rather than re-marshaling.
 type snapshotBuilder struct {
 	snap      Snapshot
 	base      Snapshot // documents + totals + arch fields, no epics (for the floor)
@@ -146,12 +130,9 @@ func (b *snapshotBuilder) addEpicHeader(header Epic) bool {
 	return true
 }
 
-// addStory fits one story into the CURRENT (last-added) epic, degrading the
-// story per-row largest-first: full → drop raw (raw_omitted) → drop file
-// content (content_omitted). The declared-content fallback is never dropped
-// (it is the "every story openable" guarantee). A row that cannot fit even
-// minimally is truncated (latching `full`), counted later in
-// stories_omitted.
+// addStory fits one story into the CURRENT (last-added) epic, trying
+// degradedForms(story) largest-first until one fits; a story that fits
+// nowhere latches `full` and is counted later via stories_omitted.
 func (b *snapshotBuilder) addStory(story Story) bool {
 	if b.full || len(b.snap.Epics) == 0 {
 		if len(b.snap.Epics) > 0 {
@@ -188,11 +169,9 @@ func (b *snapshotBuilder) addStory(story Story) bool {
 	return false
 }
 
-// degradedForms yields a story's retained variants in largest-first order:
-// the full row, the row without its raw (raw_omitted), and the minimal row
-// without raw OR file content (both omitted). Each later form is strictly
-// smaller, so the caller keeps the largest that fits — preserving the
-// per-story invariant that content is never omitted while raw is retained.
+// degradedForms yields a story's retained variants, largest first: full,
+// then raw dropped, then raw+content both dropped. DeclaredContent is never
+// cleared by any form — the every-story-openable guarantee (see addStory).
 func degradedForms(story Story) []Story {
 	forms := []Story{story}
 
@@ -229,12 +208,9 @@ func degradedForms(story Story) []Story {
 	return forms
 }
 
-// finalize records the omission counts, sets snapshot_truncated when any
-// degradation happened, and collapses to the always-fit floor when NOTHING
-// fit (or, defensively, when the running size somehow exceeds the budget).
-// totalRenderable is the true count of declared story rows the full scan
-// would render, so stories_omitted is honest even though truncated rows are
-// never retained.
+// finalize records omission counts, marks snapshot_truncated on any
+// degradation, and collapses to the always-fit floor when nothing fit (or,
+// defensively, when the running size still exceeds budget).
 func (b *snapshotBuilder) finalize(totalRenderable int) Snapshot {
 	retained := countDeclaredStories(b.snap.Epics)
 
@@ -264,11 +240,8 @@ func (b *snapshotBuilder) finalize(totalRenderable int) Snapshot {
 }
 
 // floorSnapshot collapses to the always-fit floor: document chips + global
-// counts, NO per-epic entries and NO unbounded document error strings
-// (finding 1). When even that bounded floor cannot fit the budget — a cap
-// below MinInventoryFloor — only the minimal honest cannot-fit signal is
-// carried (document chips dropped too), reported as
-// unavailable="limit_too_small".
+// counts, no per-epic entries, no unbounded error strings (finding 1). Below
+// MinInventoryFloor even that cannot fit, so only unavailable="limit_too_small" survives.
 func floorSnapshot(base Snapshot, budget int, storiesOmitted int) Snapshot {
 	floor := Snapshot{
 		Documents:                base.Documents,

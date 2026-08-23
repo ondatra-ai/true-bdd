@@ -22,18 +22,8 @@ import (
 )
 
 // StagingDirName holds record mode's in-flight cassettes, one
-// subdirectory per fixture, at the session root.
-//
-// At the session root and not inside the fixture's own run directory:
-// cassettes are written DURING the run, and everything written inside
-// the run directory lands in the post-run snapshot and therefore in the
-// prompt the judge grades. A hundred kilobytes of recorded prompts in
-// that diff would drown the handful of files the fixture is actually
-// about.
-//
-// The reporter counts a session subdirectory as a fixture only when it
-// holds an engine log or a harness record, so this one is invisible to
-// the report while still sitting next to the run it belongs to.
+// subdirectory per fixture, at the session root — not inside the run
+// directory, whose contents land in the judge's graded diff/prompt.
 const StagingDirName = ".cassettes-staging"
 
 // stagingPerm is the mode of the per-fixture staging directory: the
@@ -112,15 +102,9 @@ func (h *Harness) prepareStaging(name string) (string, error) {
 	return staging, nil
 }
 
-// promoteCassettes publishes a recording into the source tree. Called
-// only for a scenario that PASSED: a cassette set is a recording of
-// correct behaviour, and one taken from a failed run would make replay
-// reproduce the failure forever — green in record mode today, red in
-// replay mode tomorrow, with the evidence already overwritten.
-//
-// Leaving a failed run's cassettes in staging is the other half of that:
-// the previous, good cassettes are still in place, and the rejected ones
-// are still on disk to look at.
+// promoteCassettes publishes a recording into the source tree — only for
+// a PASSED scenario: promoting a failed run's cassettes would make replay
+// reproduce that failure forever, with the real evidence already overwritten.
 func (h *Harness) promoteCassettes(name, staging string) error {
 	dest, err := h.CassetteDir(name)
 	if err != nil {
@@ -144,12 +128,8 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 }
 
 // RecordHint is the command that re-records one scenario, printed by
-// every failure a re-recording would fix.
-//
-// The fixture name rides along in a trailing comment because the test
-// function is named after the scenario id and nobody thinks in ids —
-// what a person remembers is the tree, and pasting the line has to work
-// without them first having to look the id up.
+// every failure a re-recording would fix. The fixture name rides along
+// as a trailing comment, since a reader thinks in trees, not scenario ids.
 func RecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
 		"$' ./tests/bdd-cli/ -mode=record  # fixture: " + FixtureName(scenario)

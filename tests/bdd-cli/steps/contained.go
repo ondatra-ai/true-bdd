@@ -14,21 +14,8 @@ import (
 var ErrPathEscapesRun = errors.New("path resolves outside the run directory")
 
 // containedPath resolves a scenario-supplied, run-relative path under the
-// run's tmpdir and refuses one that leaves it.
-//
-// The path comes from docs/scenarios.yaml, so an escape is an authoring
-// mistake rather than an attack. It is still the one mistake a harness
-// must not make quietly: a step that reads outside the run directory
-// returns a verdict about a file the run never touched, and the scenario
-// passes or fails on evidence from somewhere else entirely. Resolution
-// goes through reporter.ContainedFile, which resolves symlinks on both
-// sides — a purely lexical check admits a path whose every component sits
-// inside the tree while its last one links straight out.
-//
-// A path that does not EXIST is not an escape. The joined path is
-// returned in that case so the caller's own os.Stat / os.ReadFile reports
-// the absence in its own words — "it does not exist to be left alone"
-// says more to a reader than "uncontained" would.
+// run's tmpdir, refusing an escape. Symlink-resolved on both sides — a
+// lexical check alone would admit a path whose last component links out.
 func (s *State) containedPath(rel string) (string, error) {
 	if rel == "" || filepath.IsAbs(rel) || climbsOut(rel) {
 		return "", s.fail("%w: %q must be relative to the run directory", ErrPathEscapesRun, rel)
@@ -51,19 +38,9 @@ func (s *State) containedPath(rel string) (string, error) {
 	return "", s.fail("%w: %q", ErrPathEscapesRun, rel)
 }
 
-// missingInside vets a path that does not exist yet.
-//
-// Returning an unresolved path because its last component is missing is a
-// hole, not a shortcut: with `escape` a symlink out of the tree,
-// `escape/missing` does not exist, so a check on the leaf says nothing —
-// and the caller's own os.Stat or os.ReadFile then follows `escape`
-// straight out. So the nearest ancestor that DOES exist is resolved and
-// required to be inside; only then is the joined path handed back.
-//
-// This is check-then-use, so a path created between the two is not
-// covered. That is inherent to answering about a file by name, and the
-// names here come from docs/scenarios.yaml rather than from anything
-// racing us.
+// missingInside vets a path that does not exist yet: checking only its
+// missing leaf says nothing if an ancestor (e.g. `escape`) is a symlink
+// out of the tree, so the nearest EXISTING ancestor is resolved and checked instead.
 func (s *State) missingInside(rel, joined string) (string, error) {
 	root, err := filepath.EvalSymlinks(s.Result.TmpDir)
 	if err != nil {
@@ -126,12 +103,8 @@ func (s *State) containedDir(rel string) (string, error) {
 }
 
 // containedMatch resolves an absolute path a glob under the run's tmpdir
-// produced.
-//
-// The glob expanded under that tmpdir, so the match is lexically inside it
-// — but a matched entry can still be a symlink pointing out, which is what
-// the containment check resolves. `glob` names the pattern in the failure,
-// since that is what the scenario actually wrote.
+// produced, applying the same symlink-escape check as containedPath.
+// `glob` names the pattern (not the matched path) in any failure.
 func (s *State) containedMatch(glob, match string) (string, error) {
 	rel, err := filepath.Rel(s.Result.TmpDir, match)
 	if err != nil {

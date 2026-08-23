@@ -79,10 +79,9 @@ func TestExtractFileContent(t *testing.T) {
 	}
 }
 
-// The applier occasionally wraps its whole result in a markdown fence.
-// The markers already say what the block is, so the fence carries no
-// information — but it reaches a YAML parser, and `yaml: found character
-// that cannot start any token` failed an entire `us create --fix` run.
+// The applier occasionally wraps its whole result in a markdown fence; see
+// stripCodeFence. A real run's fence reached the YAML parser and failed an
+// entire `us create --fix` run with "found character that cannot start any token".
 func TestExtractFileContentStripsWholeBlockFence(t *testing.T) {
 	t.Parallel()
 

@@ -9,25 +9,16 @@ import (
 )
 
 const (
-	// codexSandboxReadOnly / codexSandboxWorkspaceWrite are codex's two
-	// usable sandbox levels. One of them is MANDATORY: without `-s`,
-	// `codex exec` blocks on an approval prompt and hangs forever
-	// headlessly.
+	// codexSandboxReadOnly / codexSandboxWorkspaceWrite are codex's two usable
+	// sandbox levels. `-s` is MANDATORY: without it, `codex exec` blocks on an
+	// approval prompt and hangs forever headlessly.
 	codexSandboxReadOnly       = "read-only"
 	codexSandboxWorkspaceWrite = "workspace-write"
 )
 
-// CodexProvider runs a turn through the `codex` CLI.
-//
-// codex prints only a trace to stdout, so the assistant's answer is
-// read from the file named by `-o`. Its sandbox is coarser than
-// Claude's per-tool allowlist and crush's guard hook: workspace-write
-// grants the whole working root rather than the mode's specific write
-// globs, and there is no narrower level. So only a mode that
-// deliberately opens a project tree gets it (see codexSandbox);
-// everything else runs read-only, and the Go side recovers
-// FILE_START/FILE_END content from the response rather than from a file
-// the model wrote.
+// CodexProvider runs a turn through the `codex` CLI. codex prints only a
+// trace to stdout; the answer is read from the file named by `-o`. Sandbox
+// handling is coarser than the other providers' — see codexSandbox.
 type CodexProvider struct{}
 
 // NewCodexProvider creates the codex provider.
@@ -101,23 +92,9 @@ func buildCodexArgs(req Request, answerPath string) []string {
 	return append(args, "-o", answerPath, "-")
 }
 
-// codexSandbox projects an ExecutionMode onto codex's sandbox levels.
-//
-// Only a mode that deliberately opens a project tree gets
-// workspace-write. A mode whose sole write grant is the tmp glob runs
-// READ-ONLY, because codex has no level between "nothing" and "all of
-// the working root": handing workspace-write to a validation or
-// fix-generation turn would let it edit the very tree it is only
-// supposed to read.
-//
-// Scratch writes are not lost by this. codex's answer reaches the
-// engine through the `-o` file, which the CLI writes itself rather than
-// the sandboxed model — verified to still be produced under
-// `-s read-only` — and file content the model proposes is recovered
-// from FILE_START/FILE_END markers in that answer.
-//
-// `--add-dir` cannot narrow this: it only widens workspace-write with
-// extra roots, so there is no way to express "the tmp dir only".
+// codexSandbox projects an ExecutionMode onto codex's sandbox levels: there
+// is no level between read-only and workspace-write (the whole root), so a
+// scoped mode runs read-only — verified the `-o` answer file still lands there.
 func codexSandbox(mode ExecutionMode) string {
 	if mode.GrantsSourceWrites() {
 		return codexSandboxWorkspaceWrite

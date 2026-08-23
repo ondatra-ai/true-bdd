@@ -11,11 +11,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 )
 
-// fixTools is what a fix agent may reach for.
-//
-// No `Bash(python3 *)`: nothing in this repository is Python any more, and an
-// allowance that grants a capability nothing needs is one a fix can wander
-// into.
+// fixTools is what a fix agent may reach for. No Bash(python3 *): this repo
+// is no longer Python (see lint-layout.sh), and an unused allowance is one
+// a fix can wander into.
 const fixTools = "Read,Edit,Write,Glob,Grep," +
 	"Bash(git *),Bash(go *),Bash(gofmt *),Bash(golangci-lint *)," +
 	"Bash(./scripts/*)," +
@@ -49,21 +47,9 @@ const fixSchema = `{"type":"object",` +
 	`"gates_green":{"type":"boolean"},` +
 	`"summary":{"type":"string"}}}`
 
-// fix repairs each finding in turn. A failure stops the whole run, and leaves
-// the worktree exactly as the failed fix left it.
-//
-// Nothing is reverted. A fix that could not converge is the one case where a
-// person has to look, and what they need to see is what the agent actually
-// did — half a fix that is nearly right is worth more than a clean tree and no
-// evidence. Reverting would also throw away the work of every fix that already
-// succeeded this round.
-//
-// Sequential on purpose: two fix agents editing one worktree collide, and the
-// collision surfaces as a third finding nobody wrote.
-//
-// Bracketed by two assertions rather than watched fix by fix: the tree is
-// clean going in, and every path the agents said they edited is dirty coming
-// out. Between those two, whatever moved was moved by a fix.
+// fix repairs each finding in turn; a failure stops the run and leaves the
+// worktree as-is (no revert, so the evidence and prior fixes survive).
+// Sequential: two fix agents sharing a worktree would collide.
 func (r *Run) fix(toFix []clickup.Finding) []clickup.Finding {
 	if len(toFix) == 0 {
 		return nil
@@ -140,15 +126,9 @@ func (r *Run) runFixAgent(finding clickup.Finding) fixReport {
 	return report
 }
 
-// assertFixesLanded checks that every file the agents claimed is a file git
-// can see changed.
-//
-// A fix that named none changed nothing, and one that named a file git does
-// not report never touched it — both matter because resolveConversations is
-// about to answer these threads "Fixed on this branch", which would be untrue,
-// and the merge would proceed on it. Triage called each of these wrong
-// behaviour reachable by a real invocation; a scorer and a fixer that disagree
-// is something a person settles.
+// assertFixesLanded checks every file an agent claimed is a file git sees
+// changed — a fix that named none, or named one git doesn't see, would let
+// resolveConversations tell GitHub "Fixed on this branch" untruthfully.
 func (r *Run) assertFixesLanded(fixed []clickup.Finding) {
 	var silent []string
 

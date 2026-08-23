@@ -14,13 +14,8 @@ const (
 )
 
 // formatDuration renders a span the way a reader scans it: sub-second
-// values in milliseconds (an engine step is meaningless as "0.0s"), then
-// seconds, then minutes once the number stops being scannable.
-//
-// This survives the move to a JSON API for one reason: phase.Detail is
-// prose the loader composes, and TestDiscoveryBoundCountsOnlyDiscoveryRuns
-// pins its exact wording. Every other number now crosses the wire raw and
-// is formatted by the client.
+// values in milliseconds, then seconds, then minutes. Still used because
+// phase.Detail's prose has pinned wording (TestDiscoveryBoundCountsOnlyDiscoveryRuns).
 func formatDuration(seconds float64, ok bool) string {
 	if !ok {
 		return emDash

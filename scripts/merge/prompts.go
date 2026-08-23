@@ -2,10 +2,9 @@ package merge
 
 import _ "embed"
 
-// The prompts are files, not string literals, for two reasons: they are dense
-// with backticks that a Go literal cannot carry unescaped, and a prompt this
-// package rewrote by accident would change what a model is asked without
-// showing up as a change to a prompt.
+// Prompts are files, not string literals: literals can't carry backticks
+// unescaped, and an accidental rewrite here would change what's asked
+// without showing up as a change to a prompt.
 
 // rubricPrompt scores each finding by consequence if left unfixed.
 //

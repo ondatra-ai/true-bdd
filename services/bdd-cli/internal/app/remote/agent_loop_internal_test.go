@@ -75,9 +75,8 @@ func newLoopAgent(t *testing.T, serverURL string) (*Agent, string, string) {
 }
 
 // TestRegisterPollReplyLoopDeliversQuery drives the whole v2 protocol path:
-// register → poll (one session_status query work item) → the CLI projects the
-// store and replies with the correct correlation headers and a 200 body
-// carrying the active run.
+// register → poll (one session_status query work item) → reply, checking the
+// correlation headers and the 200 body carrying the active run.
 func TestRegisterPollReplyLoopDeliversQuery(t *testing.T) {
 	t.Parallel()
 

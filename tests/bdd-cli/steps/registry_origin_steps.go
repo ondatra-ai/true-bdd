@@ -10,19 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Registry-origin assertions read the central scenario registry a
-// `us apply … --fix` run writes, and ask what LINEAGE each entry carries:
-// how many entries descend from one acceptance criterion, which story an
-// entry cites, and what an entry's serialized content says. These are the
-// claims the duplicate-collapse scenario makes that no file-effect step
-// can — "the file was modified" cannot see that two entries sharing a
-// lineage became one.
-//
-// A registry entry has `user_stories: [{story, scenario_id, …}]`. A
-// scenario "comes from acceptance criterion X" when one of those entries
-// has `scenario_id: X`; it "cites story S" when one has `story: S`. The
-// registry path and the criterion are capture groups, so one definition
-// serves every scenario naming a different registry or lineage.
+// Registry-origin assertions read the registry a `us apply … --fix` run
+// writes: a scenario "comes from" criterion X when a `user_stories` entry
+// has `scenario_id: X`; it "cites" story S when one has `story: S`.
 
 // registryFile is the slice of a scenario registry these assertions need:
 // the `scenarios:` mapping, each entry kept as a raw node so it can be
@@ -31,10 +21,9 @@ type registryFile struct {
 	Scenarios map[string]yaml.Node `yaml:"scenarios"`
 }
 
-// registryScenario is the lineage of one registry entry: which stories and
-// acceptance criteria (`scenario_id`) its user_stories cite. Every other
-// field an entry carries — description, service, merged_steps — is left
-// undecoded, because these assertions ask only about origin.
+// registryScenario is the lineage of one registry entry: which stories
+// and acceptance criteria (`scenario_id`) its user_stories cite. Other
+// fields (description, service, merged_steps) are left undecoded.
 type registryScenario struct {
 	UserStories []struct {
 		Story      string `yaml:"story"`
@@ -43,10 +32,8 @@ type registryScenario struct {
 }
 
 // groupByStepText groups entry ids by the canonical serialization of their
-// merged_steps; any key holding more than one id is a set of duplicates.
-//
-// An entry with no merged_steps is skipped rather than allowed to collide
-// with every other step-less entry on an empty key.
+// merged_steps; any key with more than one id is a duplicate set. An entry
+// with no merged_steps is skipped, not collided into an empty-key group.
 func groupByStepText(entries map[string]yaml.Node, ids []string) (map[string][]string, error) {
 	bySteps := make(map[string][]string)
 
@@ -80,9 +67,7 @@ func groupByStepText(entries map[string]yaml.Node, ids []string) (map[string][]s
 
 // loadRegistryScenarios reads and parses the registry at registryRel
 // (relative to the run's tmpdir) into its entries keyed by id. A registry
-// that does not read, does not parse, or declares no scenarios is named in
-// its own failure rather than yielding an empty map that would pass a
-// "zero scenarios" count for the wrong reason.
+// that fails to read, parse, or declares no scenarios fails loudly.
 func loadRegistryScenarios(state *State, registryRel string) (map[string]yaml.Node, error) {
 	full, containErr := state.containedPath(registryRel)
 	if containErr != nil {
@@ -109,9 +94,8 @@ func loadRegistryScenarios(state *State, registryRel string) (map[string]yaml.No
 }
 
 // scenarioIDsFromCriterion returns, sorted, the ids of every registry
-// entry whose user_stories cite the given acceptance criterion. Sorted so
-// a count failure names the offenders in a stable order regardless of map
-// iteration.
+// entry whose user_stories cite the given criterion — sorted so a count
+// failure names offenders in a stable order regardless of map iteration.
 func scenarioIDsFromCriterion(entries map[string]yaml.Node, criterion string) ([]string, error) {
 	var ids []string
 
@@ -137,11 +121,9 @@ func scenarioIDsFromCriterion(entries map[string]yaml.Node, criterion string) ([
 	return ids, nil
 }
 
-// uniqueScenarioFromCriterion resolves the single registry entry that
-// descends from an acceptance criterion, for the assertions that speak of
-// "the scenario from" it. Zero and more-than-one are each their own
-// failure: a lineage that collapsed to nothing, or one that never
-// collapsed at all.
+// uniqueScenarioFromCriterion resolves the single registry entry
+// descending from an acceptance criterion. Zero or more-than-one are each
+// their own failure: a lineage collapsed to nothing, or never collapsed.
 func uniqueScenarioFromCriterion(
 	state *State, entries map[string]yaml.Node, registryRel, criterion string,
 ) (string, yaml.Node, error) {
@@ -165,11 +147,9 @@ func uniqueScenarioFromCriterion(
 	}
 }
 
-// assertRegistryScenarioCount pins how many registry entries descend from
-// one acceptance criterion. It is how the duplicate-collapse scenario
-// proves two entries sharing a lineage became one — and, for the unrelated
-// lineage, that the collapse left it at one. The count, the registry path
-// and the criterion are all capture groups.
+// assertRegistryScenarioCount pins how many registry entries descend
+// from one acceptance criterion — how the duplicate-collapse scenario
+// proves two entries sharing a lineage became one.
 func assertRegistryScenarioCount(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -203,9 +183,8 @@ func assertRegistryScenarioCount(state *State, args []string) error {
 }
 
 // assertRegistryScenarioCitesStory pins that the single entry descending
-// from an acceptance criterion cites a given story — the lineage survived
-// the collapse still pointing back at the right source. The criterion, the
-// registry path and the story path are all capture groups.
+// from a criterion cites a given story — the lineage survived the collapse
+// still pointing back at the right source.
 func assertRegistryScenarioCitesStory(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -247,13 +226,9 @@ func assertRegistryScenarioCitesStory(state *State, args []string) error {
 		entryID, criterion, registryRel, story, cited)
 }
 
-// assertRegistryScenarioMatches pins that the single entry descending from
-// an acceptance criterion, re-serialized to YAML, matches a regexp — proof
-// the collapse preserved the entry's behaviour (a `HTTP 200` then-step),
-// not merely its entryID. The pattern runs undelimited to the end of the line,
-// like `stdout matches`, so a regexp carrying its own quotes needs no
-// escaping. The criterion, the registry path and the pattern are all
-// capture groups.
+// assertRegistryScenarioMatches pins that the single entry descending
+// from a criterion, re-serialized to YAML, matches a regexp — proof the
+// collapse preserved behaviour, not merely the entry id.
 func assertRegistryScenarioMatches(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -292,13 +267,8 @@ func assertRegistryScenarioMatches(state *State, args []string) error {
 }
 
 // assertNoDuplicateScenarioSteps pins the duplicate-collapse invariant
-// stated positively: no two registry entries carry the same merged_steps.
-// It is the claim the re-walk scenario leans on — a walk that re-added an
-// already-present AC would leave two entries with byte-identical steps, the
-// exact shape this catches — and one no per-criterion count can make, since
-// a collision can span two different criteria. The registry path is a
-// capture group so one definition serves every scenario naming a different
-// registry.
+// positively: no two registry entries share merged_steps — a check no
+// per-criterion count can make, since a collision can span two criteria.
 func assertNoDuplicateScenarioSteps(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
