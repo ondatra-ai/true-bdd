@@ -1,0 +1,8 @@
+{
+  "name": "go-bdd-lsp",
+  "version": "1.0.0",
+  "description": "gopls for this repo: analyzes //go:build bdd files, skips tmp/ and tests/legacy/",
+  "author": {
+    "name": "ondatra-ai"
+  }
+}

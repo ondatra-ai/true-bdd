@@ -17,7 +17,10 @@ description: Audit CLAUDE.md band by band, one read-only memory-auditor agent pe
    current length.
 2. Spawn one `memory-auditor` per band **in parallel**, each told its line range,
    headings, and budget — plus what the fenced block already covers, so no band spends
-   lines restating it.
+   lines restating it, and what `.claude/rules/*.md` already covers. Those are
+   path-scoped (`paths:` frontmatter) and load only when Claude reads a matching file,
+   so they are the preferred `MOVE→rules` destination for anything that matters in one
+   part of the tree rather than every session.
 3. Recreate `tmp/memory-audit/` empty; write each report there as `NN-<band>.md`.
 4. Assemble `cat tmp/memory-audit/[0-9]*.md > tmp/memory-audit.md` under a summary: per-band now→proposed lines, stale claims, must-move facts, decisions for the human.
 5. Hand over the file and stop — acting on it is the user's call.

@@ -221,6 +221,18 @@ def save(path, payload):
 
 ACK_RATE_LIMITED = "Review rate limited"
 ACK_ACCEPTED = ("Full review triggered", "Action performed")
+# The third answer, and it also arrives under "⚠️ Action not completed":
+#
+#     ⚠️ Action not completed
+#     No files to review.
+#
+# `path_filters` scopes review to tests/, so a PR whose diff touches nothing
+# there gives the bot nothing to do. It says so in seconds and posts an
+# APPROVED review with an empty body. Measured on PR #81, whose own changes
+# against main are rules and a plugin. Not matching this used to fall through
+# to the ACK_BUDGET timeout and report "the bot may be down" about a bot that
+# had answered in ten seconds.
+ACK_NOTHING_TO_REVIEW = "No files to review"
 # "Your next included review will be available in 18 minutes." — the bot
 # says how long, so there is no reason to guess.
 ACK_WAIT_RE = re.compile(r"available in (\d+)\s*minute")
@@ -252,6 +264,7 @@ def request_review(round_number):
     CodeRabbit answers a request with a comment saying which happened:
       ✅ Action performed / Full review triggered.   -> the review is coming
       ⚠️ Action not completed / Review rate limited. -> the quota is spent
+      ⚠️ Action not completed / No files to review.  -> nothing in scope; done
 
     Nothing in the predecessor read that answer, so PR #76 requested four
     reviews in 25 minutes, was refused, and waited 900s each time for a
@@ -276,6 +289,13 @@ def request_review(round_number):
         if verdict == "silent":
             die(f"CodeRabbit did not answer the review request within {ACK_BUDGET}s. "
                 f"Check https://github.com/{REPO}/pull/{PR} — the bot may be down.")
+        if verdict == "nothing-to-review":
+            # The bot evaluated the PR and its filters left nothing. That is a
+            # completed review of zero files, not a refusal: asking again would
+            # get the same answer forever. HEAD counts as reviewed so `merge`
+            # does not then reject the empty-bodied APPROVED it just posted.
+            REVIEWED_THIS_RUN.add(head_sha())
+            return True
         if verdict == "accepted" and await_review(REPO, PR, baseline_review, ack_id):
             return True
         sleep_off_rate_limit(comment_body(REPO, PR, ack_id))
@@ -298,13 +318,22 @@ def sleep_off_rate_limit(body):
 
 
 def await_acknowledgement(repo, pr, baseline_comment):
-    """-> (verdict, ack_comment_id), verdict in accepted | rate-limited | silent."""
+    """-> (verdict, ack_comment_id).
+
+    verdict in accepted | rate-limited | nothing-to-review | silent. Check
+    ACK_NOTHING_TO_REVIEW before ACK_RATE_LIMITED: both arrive under the same
+    "Action not completed" heading, and only the wording separates a spent
+    quota from an empty diff.
+    """
     waited = 0
     while waited < ACK_BUDGET:
         time.sleep(POLL)
         waited += POLL
         for comment in bot_replies_after(repo, pr, baseline_comment):
             body = comment.get("body") or ""
+            if ACK_NOTHING_TO_REVIEW in body:
+                log(f"nothing in review scope after {waited}s")
+                return "nothing-to-review", comment["id"]
             if ACK_RATE_LIMITED in body:
                 return "rate-limited", comment["id"]
             if any(marker in body for marker in ACK_ACCEPTED):

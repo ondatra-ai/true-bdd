@@ -1,0 +1,32 @@
+---
+paths:
+  - "services/bdd-cli/**"
+  - "true-bdd/**"
+  - "templates/**"
+---
+
+# Engine Internals
+
+## build tests / build code, in depth
+
+- `build tests` — Stage 1 is deterministic codegen (one `func Test<Id>` per scenario into its `path:` file; written by `--fix`, verified by regenerate-and-compare without it). Stage 2 asks each suite's `commands.coverage` which steps bind to nothing and walks **only** the scenarios with gaps — a converged repo dispatches zero AI turns. "Executable" = every Given/When/Then step binds to exactly one step definition in the owning suite (the `architecture.testing.suites[]` entry whose `service:` matches; definitions under `<path>/steps/`), except `llm:`/`judge:` steps, which a model runs and must never be given a definition. With `--fix`, each gap drives a Claude-mediated loop authoring the missing step definition; the registry is never modified by the run. Coverage narrowing: the suite writes JSON to `$TRUEBDD_COVERAGE_REPORT`; the exit status is ignored (a coverage test legitimately reds on gaps) but a missing report is a refusal — "could not answer" is not "nothing to report". The report keys on which scenarios it **examined**: one absent from `examined` is walked; an empty gap list alone means nothing. `coverage:` is the one optional command (fallback: a model reads the source in prose). After a `--fix` walk the generated files are re-verified.
+- `build code` — discovers failing tests by running each suite's own `commands.replay`, and walks each failure against the `build-code` checklist. With `--fix`, Claude edits production source until the test passes; test files and the registry are never modified. Every suite carries a mandatory `commands: {record, replay, live}` block — there is **no built-in invocation**; an incomplete block is a startup refusal, never a substituted default. Each command is framework-native including its machine-readable flag, runs from the directory holding the suite's `config:`, and gets only a name filter appended on re-run. A suite names one `service:`, which grants the fix applier its write root — a suite covering two services is two suites. Everything statically checkable is checked in a pre-pass before the first subprocess; what only a spawn can reveal surfaces as `Cannot run <service>/<suite>:` on stdout, marked `runner.Reported` so the generic refusal stays silent. Negative-coverage fixtures live at `tests/bdd-cli/fixtures/build-code-*`, each planting a *failing* test so "reported no failures" can never be confused with "had nothing to find".
+
+**Startup refusals**: every command reports precondition failures as `Cannot start: …` on stdout plus a `Refusing to start` slog record — the BDD judge reads the log, not the terminal, and `stdout_regex` matches stdout alone. All go through `runner.refuseStartup` except the `docs:` check, which reports inline. An error already diagnosed by the code that produced it is wrapped in `runner.Reported` so it is not announced twice.
+
+## Model tiers and providers
+
+The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per checklist role. `engine.models` binds tiers (`xhigh`, `high`, `coder`) to `"<cli>:<model>"` (split on the FIRST colon only); `engine.default_prompt_model` / `default_fix_model` / `default_apply_model` name each role's fallback tier. Per-cell resolution: prompt override (`model:`/`fix_model:`/`apply_model:`) → checklist `engine:` block → `engine.default_<role>_model`. Anything unresolvable is a startup error, never a silent substitution.
+
+- `internal/domain/models/provider/` owns the vocabulary (`ModelRef`, `Tier`, `Registry`); the registry is validated once in `bootstrap.newAIRouter`. `adapters/ai/router.go` is the only `ports.AIPort` implementation.
+- `ExecutionMode` is the single permission source for all three CLIs — `WriteGlobs()`/`AllowsBash()` project it onto crush's guard and codex's `-s` sandbox.
+- The fix generator and applier never see the prompt; the evaluator resolves their tiers and carries them on `ValidationResult.FixModelTier`/`ApplyModelTier`.
+- **crush gotchas (verified live):** it silently ignores an unknown model pinned in config (so the model is always passed via `-m`), and it fails OPEN when a hook cannot run (`verifyCrushGuardEnforces` probes the guard before every turn). `true-bdd crush-guard` is the hidden `PreToolUse` write gate, wired through a generated config dir via `CRUSH_GLOBAL_CONFIG`; the host's `.crush.json` is never touched.
+- **crush config discovery walks UP from cwd and merges every `.crush.json` it finds**, hooks additively — a root config would hijack every fixture's apply turn. Never add a tracked `.crush.json`/`crush.json` at the repo root.
+
+## Package notes
+
+- `internal/app/generators/scenariogen/` renders registry → Go test. `BuildPlan` refuses the whole registry before writing a byte; `Render` always runs `format.Source`; `Write` refuses a target without the generated marker. Its template is `//go:embed`ed (it must compile against bddgo's API), not under `templates/`.
+- `internal/infrastructure/stepcoverage/` runs a suite's `commands.coverage` and reads the report back.
+- `internal/infrastructure/architecture/loader.go` decodes ONLY `testing.suites[]` and each service's `name`/`path`/`language`; everything else under `architecture:` stays undecoded — only `scripts/lint-schemas.sh` would notice a typo there.
+- `true-bdd/` schemas are host lint contracts, not engine inputs — only `scripts/lint-schemas.sh` enforces them; the pairing key is the WHOLE document key, underscores included (`architecture_yaml-schema.yaml`), and a schema whose key names no document HARD-FAILS the gate.

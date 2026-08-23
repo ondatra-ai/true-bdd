@@ -1,0 +1,14 @@
+{
+  "gopls": {
+    "command": "gopls",
+    "extensionToLanguage": {
+      ".go": "go"
+    },
+    "settings": {
+      "gopls": {
+        "buildFlags": ["-tags=bdd"],
+        "directoryFilters": ["-**/node_modules", "-tmp", "-tests/legacy"]
+      }
+    }
+  }
+}
