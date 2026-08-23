@@ -34,7 +34,7 @@
 /tests/legacy/bdd-web-playwright/.tmp/
 /tests/legacy/bdd-web-playwright/tmp/
 
-# Conversation history captured by .claude/hooks/history.py
+# Conversation history captured by .claude/hooks/history.sh
 /docs/history/
 coverage.txt
 coverage.out
@@ -43,9 +43,6 @@ coverage.out
 .DS_Store
 .idea/
 .vscode/
-
-# Python bytecode (Claude hooks)
-__pycache__/
 
 # Playwright MCP server artefacts (console/page logs)
 .playwright-mcp/

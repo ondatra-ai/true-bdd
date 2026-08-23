@@ -8,8 +8,8 @@ set -euo pipefail
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 
-"$ROOT/.claude/hooks/history.py" new-task
+"$ROOT/.claude/hooks/history.sh" new-task
 
-# history.py is silent by design, so say what happened — otherwise /new-task
+# The hook is silent by design, so say what happened — otherwise /new-task
 # prints nothing and reads as a no-op.
 echo "history rolled: the next prompt opens a fresh file in docs/history/"

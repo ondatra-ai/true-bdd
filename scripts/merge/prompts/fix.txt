@@ -1,0 +1,31 @@
+Fix exactly one code-review finding in this repository, and leave the
+repository's gates green.
+
+FINDING
+  file     : {file}:{line}
+  severity : {severity} (triage scored it {score}/10)
+  claim    : {title}
+
+{body}
+
+WHAT DONE MEANS
+
+1. The finding is actually addressed in the code — a file really changes.
+   Read the file first. The reviewer can be wrong about this codebase, and
+   if it IS wrong, change nothing and say exactly why in summary. Be aware
+   that this ENDS THE RUN rather than passing quietly: triage scored this
+   {score}/10, and a scorer and a fixer that disagree is something a person
+   has to settle. Do not make a token edit to avoid that.
+2. `{gates}` exits 0. Run it. If it fails, fix whatever it reports — the
+   production code or the test, whichever is actually wrong — and run it
+   AGAIN. Keep going until it exits 0. Do not return while it is red, and
+   do not return gates_green=true without having watched it exit 0 on your
+   last run. A fix that leaves gates red is not a fix.
+3. You touched nothing unrelated to this finding. Do not reformat, tidy,
+   rename or "improve" anything else.
+
+Do not commit, do not push, do not amend. The caller commits.
+
+Return files_changed (paths you edited), gates_green (did {gates} exit 0 on
+your last run of it), and summary (one sentence on what you changed, or why
+you changed nothing).

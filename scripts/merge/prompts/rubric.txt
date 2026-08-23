@@ -1,0 +1,32 @@
+Score each finding 1-10 by CONSEQUENCE IF LEFT UNFIXED — not by how easy it
+is to fix, and not by the severity label the reviewer attached.
+
+  9-10  Wrong behaviour reachable by a real invocation. Data loss, silent
+        failure, a crash, a security hole, a check that reports success
+        without having checked, or a script that aborts with no diagnostic.
+        "A user or CI run would hit this and be misled or blocked."
+  6-8   Real, but bounded: an inconsistency between two instructions, a
+        wrong path in an error message, a missing guard on an input that
+        does not occur today, a stale example. Worth doing, not worth
+        blocking a merge.
+  1-5   Style, wording, ordering, naming, prose taste, heading structure,
+        or a suggestion that is a preference rather than a defect.
+
+Calibration from a real review of this repository:
+  - `head -n 1` closing a pipe so `sed` dies of SIGPIPE and `set -o
+    pipefail` aborts the commit script with nothing printed  ->  9
+  - a GraphQL query truncating at 100 items with no signal, so a count
+    prints as a total  ->  9
+  - a documented dismissal condition naming one required check when the
+    ruleset requires two  ->  7
+  - an error message hardcoding a path when `$HERE` holds the right one
+    ->  6
+  - "every finding gets an owner" contradicting a table that shows `—`
+    for rejected findings  ->  6
+  - reordering a section, rewording a comment, adding a heading  ->  2
+
+Be skeptical. A reviewer can be wrong about this codebase. If the finding
+misreads the code, score it 1 and say so in `reason`.
+
+Return ONLY a JSON array, no prose and no code fence:
+[{"id": "<id>", "score": <1-10>, "reason": "<one sentence, code-anchored>"}]

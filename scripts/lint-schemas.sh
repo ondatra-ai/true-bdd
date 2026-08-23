@@ -28,11 +28,7 @@ status=0
 for schema in "${schemas[@]}"; do
   key=$(basename "$schema" -schema.yaml)
 
-  doc=$(KEY="$key" CONFIG="$CONFIG" python3 -c '
-import os, sys, yaml
-cfg = yaml.safe_load(open(os.environ["CONFIG"]))
-print((cfg.get("documents") or {}).get(os.environ["KEY"], ""))
-')
+  doc=$(go run ./scripts/cmd/yamlkey "$CONFIG" "documents.$key")
 
   if [ -z "$doc" ]; then
     echo "FAIL $schema — no documents.$key in $CONFIG, so this schema enforces nothing." >&2

@@ -17,7 +17,7 @@ from opening PRs on its own momentum.
 ## 1. Read the queue
 
 ```bash
-python3 ./.claude/skills/lib/clickup.py list --tag fix-now
+go run ./scripts/cmd/clickup list --tag fix-now
 ```
 
 Oldest first — the sort is explicit because a queue worked newest-first

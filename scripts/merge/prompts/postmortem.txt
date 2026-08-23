@@ -1,0 +1,32 @@
+Below is the transcript of a pull-request merge run, extracted from this
+session's history: every headless turn the merge script made, in order.
+
+Diagnose the RUN, not the code it was merging. What to look for:
+  - A round whose findings existed only because an earlier round's fix
+    created them.
+  - Review quota spent on anything that bought nothing.
+  - A wait that was longer than it needed to be, or a stop that was not
+    diagnosed well enough to act on.
+  - A prompt that got an answer the script then had to work around.
+
+Propose improvements to EXACTLY these files, and no others:
+  .claude/skills/pr-merge/merge.py
+  .claude/skills/pr-merge/SKILL.md
+  .claude/skills/lib/clickup.py
+
+Read them before proposing anything — a proposal that misreads the current
+code is worse than none. You have read-only tools; do not attempt to edit.
+
+Return ONLY a JSON array, no prose and no code fence:
+[{"title": "<imperative, <=100 chars>",
+  "score": <1-10 by how much time or noise it would save>,
+  "reason": "<one sentence>",
+  "file": "<the file it changes>",
+  "line": "<line or ?>",
+  "severity": "postmortem",
+  "source": "postmortem",
+  "body": "<markdown: what the transcript shows, with numbers; then the concrete change>"}]
+
+--- BEGIN TRANSCRIPT ---
+{transcript}
+--- END TRANSCRIPT ---

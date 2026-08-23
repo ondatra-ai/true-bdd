@@ -8,5 +8,5 @@ description: Merge the current branch's PR with one command — up to three boun
 **Only on the user's explicit command to merge** (CLAUDE.md, CRITICAL).
 Call in command in background and create monitor that publish status every 1 minute. If the user wants to cancel, they can do so by running `kill -9 <pid>` where `<pid>` is the process ID of the merge command.
 ```bash
-python3 ./.claude/skills/pr-merge/merge.py
+go run ./scripts/cmd/merge
 ```
