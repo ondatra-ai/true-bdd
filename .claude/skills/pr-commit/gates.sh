@@ -9,6 +9,7 @@ set -euo pipefail
 ./scripts/lint-comments.sh
 ./scripts/lint-schemas.sh
 ./scripts/lint-claude.md.sh
+./scripts/lint-markdown.sh
 golangci-lint run
 mkdir -p ./bin
 go build -o ./bin/true-bdd ./services/bdd-cli

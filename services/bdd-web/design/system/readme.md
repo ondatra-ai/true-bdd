@@ -32,6 +32,7 @@ strictly monochrome: the colour is the idea, so it is rationed.
 dashboard, or docs site is implied by the source.
 
 ### No logo exists in the sources
+
 The PDF's own partner-lockup example sets the mark as the literal text `S&F`. No logo file, SVG, or
 mark artwork was supplied. `components/brand/Wordmark.jsx` therefore renders the brand name in
 Poppins Bold type, and nothing in this system draws a mark. **Do not invent one.**
@@ -65,6 +66,7 @@ The one warm note in the entire system is the blurred gradient; everything else 
 white paper.
 
 Examples in the brand's voice (as written in `ui_kits/website/`):
+
 - *"Organisations evolve in stages"* — headline
 - *"Structure is the only lever that outlives the people who pull it"* — statement
 - *"Read the stage before you change the structure"* — section headline
@@ -148,6 +150,7 @@ no offset outline.
 icon usage example anywhere in the guideline. This is a genuine gap, not an omission on our part.
 
 What the system does use in place of icons:
+
 - **The `×` multiplication sign (U+00D7)** — the one sanctioned glyph, reserved exclusively for the
   partner lockup.
 - **The em-dash `—`** in numbered section labels (`01—Typography`).
@@ -170,6 +173,7 @@ Authored primitives, grouped by concern. The source defines **Button**, **Card**
 **partner-logo composition**; everything else is a supporting primitive or a flagged addition.
 
 `components/core/`
+
 - **Button** — large sharp rectangle, bold uppercase, 4 variants × 3 sizes, hover inverts
 - **ButtonRow** — flush horizontal row, zero gap, shared borders
 - **Card** — editorial module: two-line clamped headline + small paragraph
@@ -177,20 +181,24 @@ Authored primitives, grouped by concern. The source defines **Button**, **Card**
 - **Tag** — small uppercase metadata marker (*intentional addition*)
 
 `components/brand/`
+
 - **Wordmark** — the brand name set in type; stands in for the absent logo
 - **PartnerLockup** — `S&F × Partner` at equal weight
 - **GradientField** — full-bleed blurred colour band using the real artwork
 - **GradientText** — selective typographic gradient colouring
 
 `components/layout/`
+
 - **Grid** / **GridItem** — Swiss 12-column, margin 0, gutter 20
 - **Section** — full-bleed tonal band with the 120px rhythm
 - **SectionLabel** — the guideline's own `01—Typography` numbered label
 
 `components/forms/`
+
 - **Input** — square text field, border-only chrome (*intentional addition*)
 
 ### Intentional additions
+
 - **Tag** — the guideline defines semantic red/green/yellow but no component that uses them; Tag is
   the smallest honest home for status colour.
 - **Input** — the guideline's CTA is *"start the conversation"*, which requires contact capture;

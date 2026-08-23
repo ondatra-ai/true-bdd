@@ -93,6 +93,7 @@ the rule directly:
 - `engine-internals.md` — `services/bdd-cli/**`, `true-bdd/**`,
   `templates/**`: command depth, startup refusals, model tiers, crush
 - `go-conventions.md` — `**/*.go`
+- `markdown.md` — `**/*.md`
 
 ## CLI Subcommands
 
@@ -108,9 +109,7 @@ pins the refusal); the `us-refine-fix-*` fixtures pass only because
 ## Development Commands
 
 ```bash
-./scripts/lint-layout.sh       # Go only under services/ tests/ scripts/
-./scripts/lint-schemas.sh      # schema gate (yamale); rule in its header
-./scripts/lint-claude.md.sh    # this file: size, width, upstream mirror
+./scripts/lints.sh [FILE...]  # all lint gates; also run per-edit by a hook
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
 go run ./tests/libraries/cmd/report-server    # report UI on :7331

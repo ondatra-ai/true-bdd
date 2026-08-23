@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: lint-comments.sh
+# Usage: lint-comments.sh [FILE...]
 # Comment budget: at most 3 lines of prose, at most 15 lines of block scheme.
 #
 # Prose is argument, and argument compresses. A comment earns length only by
@@ -75,9 +75,27 @@ check() {
 		done
 }
 
+# No argument walks everything. The lint hook passes the one file just
+# written instead, which is 0.1s against 2.5s — the whole repo is swept at
+# commit time, so nothing goes unchecked by scoping the per-edit run.
+if [ $# -eq 0 ]; then
+	go_paths=('*.go')
+	hash_paths=('*.sh' '*.yaml' '*.yml')
+else
+	go_paths=()
+	hash_paths=()
+
+	for file in "$@"; do
+		case "$file" in
+		*.go) go_paths+=("$file") ;;
+		*.sh | *.yaml | *.yml) hash_paths+=("$file") ;;
+		esac
+	done
+fi
+
 findings=$(
-	check go '*.go'
-	check hash '*.sh' '*.yaml' '*.yml'
+	if [ ${#go_paths[@]} -gt 0 ]; then check go "${go_paths[@]}"; fi
+	if [ ${#hash_paths[@]} -gt 0 ]; then check hash "${hash_paths[@]}"; fi
 )
 
 if [ -n "$findings" ]; then

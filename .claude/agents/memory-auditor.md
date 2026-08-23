@@ -30,16 +30,20 @@ Return ONLY this markdown, no preamble:
 ## &lt;band name&gt; (lines A–B) — budget N
 
 ### Verdicts
+
 | paragraph (first few words) | verdict | why |
 |---|---|---|
 
 ### Proposed replacement (≤N lines)
+
 ```md
 <the exact markdown you propose keeping>
 ```
 
 ### Must move first
+
 &lt;any fact that would be LOST if this prose were deleted — one line each, naming the destination file&gt;
 
 ### Notes
+
 &lt;at most 3 bullets: stale claims, cross-band collisions, decisions for the human&gt;

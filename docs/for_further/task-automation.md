@@ -13,7 +13,7 @@ retry logic; it is how well the ticket was written before it was taken.
 One Claude Code instance, one task at a time. There is no concurrency to
 design around: the instance *is* the mutex.
 
-```
+```text
 mandate granted
   └─ /new-task ──────────► next ticket bound, status TO DO → PROCESSING
        ├─ branch from main

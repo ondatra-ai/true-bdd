@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: lint-layout.sh
+# Usage: lint-layout.sh [FILE...]
 # Two shape rules: this repository is Go and sh, and its Go lives in three
 # roots.
 #
@@ -31,9 +31,18 @@ cd "$(dirname "$0")/.."
 ROOTS='services tests scripts'
 PATTERN="^($(echo "$ROOTS" | tr ' ' '|'))/"
 
-python=$(git ls-files -co --exclude-standard '*.py' '*.pyi' '*.pyc' '*.pyo' |
+# No argument walks everything; the lint hook names the one file just
+# written. Both rules are per-file, so the scoped verdict is the same verdict.
+SPECS=(".")
+if [ $# -gt 0 ]; then
+	SPECS=("$@")
+fi
+
+listed=$(git ls-files -co --exclude-standard "${SPECS[@]}")
+
+python=$(printf '%s\n' "$listed" | grep -E '\.(py|pyi|pyc|pyo)$' |
 	grep -vE '^tests/(legacy|bdd-cli/fixtures)/' || true)
-pycache=$(git ls-files -co --exclude-standard | grep '__pycache__/' || true)
+pycache=$(printf '%s\n' "$listed" | grep '__pycache__/' || true)
 
 if [ -n "$python$pycache" ]; then
 	echo "lint-layout: Python in a Go and sh repository:" >&2
@@ -43,7 +52,7 @@ if [ -n "$python$pycache" ]; then
 	exit 1
 fi
 
-stray=$(git ls-files -co --exclude-standard '*.go' | grep -vE "$PATTERN" || true)
+stray=$(printf '%s\n' "$listed" | grep '\.go$' | grep -vE "$PATTERN" || true)
 
 if [ -n "$stray" ]; then
 	echo "lint-layout: Go files outside the three roots ($ROOTS):" >&2
@@ -58,5 +67,5 @@ if [ -n "$stray" ]; then
 	exit 1
 fi
 
-count=$(git ls-files -co --exclude-standard '*.go' | wc -l | tr -d ' ')
+count=$(printf '%s\n' "$listed" | grep -c '\.go$' || true)
 echo "lint-layout: OK ($count Go files, all under $ROOTS)"

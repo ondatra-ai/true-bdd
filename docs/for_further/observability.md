@@ -110,7 +110,7 @@ from it would make every wording change a silent data regression.
 
 ### `tools/merge` span tree
 
-```
+```text
 merge (root)                     attrs: pr, repo, head_sha, session, source
 ├── check_pushed
 ├── round 1                      attrs: round=1
