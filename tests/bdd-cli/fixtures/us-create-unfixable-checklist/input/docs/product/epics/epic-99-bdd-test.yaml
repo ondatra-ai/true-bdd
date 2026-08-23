@@ -3,7 +3,7 @@ epic:
   name: "BDD Test Epic"
   status: "PLANNED"
   goal: "Provide a synthetic epic that the true-bdd BDD harness can drive end-to-end without colliding with any real product feature."
-  context: "Used only by tests/bdd-cli/fixtures/us-create-fix-happy-path. Describes a hypothetical document-summary feature so prompts have plausible material to reason about."
+  context: "Used only by tests/bdd-cli/fixtures/us-create-unfixable-checklist. The run is refused before the epic is ever read, so nothing here is evaluated — it exists so the tree is a complete, valid host project rather than one that would fail for a second reason."
 
 stories:
   - id: "99.1"

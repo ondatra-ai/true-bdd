@@ -55,23 +55,18 @@ func TestE2E028(t *testing.T) {
 	s.Done()
 }
 
-// E2E-029: An implementation term in a story seed's so_that clause must drive the fix loop until the clause states a user outcome
+// E2E-029: A `--fix` run must be refused when any prompt it would walk carries no `F:`, rather than spending a fix turn that has nothing to say
 func TestE2E029(t *testing.T) {
 	s := scenarios.New(t, "E2E-029")
-	s.Given(`the "us-create-fix-happy-path" project tree`)
-	s.And(`the Product Owner answers "1" to every prompt`)
+	s.Given(`the "us-create-unfixable-checklist" project tree`)
 	s.When(`the Product Owner runs "us create 99.1 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`exactly 1 file matching "docs/product/stories/*.yaml" is created`)
-	s.And(`exactly 1 file matching "docs/product/stories/99.1-*.yaml" is created`)
-	s.And(`the story "docs/product/stories/99.1-*.yaml" has id "99.1"`)
-	s.And(`the story "docs/product/stories/99.1-*.yaml" has at least 3 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/99.1-*.yaml" has an id matching ^AC-\d+$ and a non-empty description`)
-	s.And(`the "so_that" clause of the story "docs/product/stories/99.1-*.yaml" does not match (?i)\b(REST|endpoint|API|SDK|database|WebSocket|JWT|microservice|cache|GraphQL)\b`)
-	s.But(`the file "docs/product/epics/epic-99-bdd-test.yaml" is unchanged`)
-	s.And(`no file outside "tmp" and "docs/product/stories" changed`)
-	s.And(`judge: the story's as_a, i_want and so_that clauses keep the meaning of the epic's — a Claude User who wants a short summary of a Google Doc on request, so as not to have to download it or copy large sections of it elsewhere just to get a quick gist`)
-	s.And(`judge: the acceptance criteria cover the substance of the epic's three — summarising a shared Google Doc, the error path when the document is not shared, and the partial-summary path when it is too long — in any order, with polished wording, and with extra criteria allowed`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches Cannot start: checklist has prompts with no F fix template, so --fix has nothing to apply: us-create has 9 of 9`)
+	s.And(`stdout matches us-create/format #1 Does the story follow the format`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us create"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`no file matching "docs/product/stories/*.yaml" is created`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 

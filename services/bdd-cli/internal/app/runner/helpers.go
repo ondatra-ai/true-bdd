@@ -98,6 +98,90 @@ func validateRequiredDocs(
 	return nil
 }
 
+// errChecklistNotFixable is the canonical error returned by
+// validateFixTemplates. Plain prose with no regex metacharacters, the
+// way "checklist declares documents that cannot be provided" is: these
+// refusals get pinned by a fixture's undelimited `stdout matches`
+// pattern, and an `F:` in the text would push escaping into a document
+// meant to be read.
+var errChecklistNotFixable = errors.New(
+	"checklist has prompts with no F fix template, so --fix has nothing to apply")
+
+// validateFixTemplates refuses a --fix run whose checklist cannot guide
+// a single one of its own fixes.
+//
+// A prompt's `F:` reaches the VALIDATION turn, not the fix turn: the
+// prompt template gates both the "If Validation Fails" section and the
+// `fix_prompt:` output field on it. Without one the model is never asked
+// for a fix_prompt, so ValidationResult.FixPrompt stays empty — and the
+// fix generator still spends a turn rendering "Suggested Fix Template:"
+// followed by nothing, a cell that can only ever end at CellFailedNoFix.
+// Checking up front — beside the story number and the required docs,
+// before the header and before any AI turn — turns that silent
+// degradation into a startup failure the checklist's author can act on.
+//
+// The `fix` gate lives inside rather than at the call site: without the
+// flag an absent template costs nothing, so "is this run fixable?" is
+// answered here in full and every command's plain walk is unchanged.
+//
+// Every unfixable prompt is reported together, so one run tells you
+// about all of them. The ordinal is the prompt's 1-based position in the
+// flattened walk — a section path repeats across its own prompts — and
+// the question's first line is what makes the offender findable in the
+// YAML without counting.
+func validateFixTemplates(
+	fix bool,
+	checklistName string,
+	prompts []checklistmodels.PromptWithContext,
+) error {
+	if !fix {
+		return nil
+	}
+
+	offenders := make([]string, 0)
+
+	for idx := range prompts {
+		if strings.TrimSpace(prompts[idx].Prompt.FixTemplate) != "" {
+			continue
+		}
+
+		// The question goes in unquoted: half of them carry double
+		// quotes of their own, and %q would render those as \" — an
+		// escaping scheme in a line whose whole job is to be read.
+		offenders = append(offenders, fmt.Sprintf(
+			"%s #%d %s",
+			prompts[idx].GetFullSectionPath(),
+			idx+1,
+			questionFirstLine(prompts[idx].Prompt.Question),
+		))
+	}
+
+	if len(offenders) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s has %d of %d — %s",
+		errChecklistNotFixable,
+		checklistName,
+		len(offenders),
+		len(prompts),
+		strings.Join(offenders, "; "),
+	)
+}
+
+// questionFirstLine returns the first non-blank line of a prompt's Q, so
+// a multi-line question still names its prompt in one line of output.
+func questionFirstLine(question string) string {
+	for line := range strings.SplitSeq(question, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+
+	return ""
+}
+
 // reported wraps an error whose diagnosis has already been printed by
 // the code that produced it. Error() and Unwrap() pass straight through,
 // so the message, the wrapping chain and every errors.Is match are
