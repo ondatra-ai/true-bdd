@@ -31,6 +31,9 @@ jobs:
       - name: Validate document schemas
         run: ./scripts/validate-schemas.sh
 
+      - name: CLAUDE.md mirrors upstream guidelines
+        run: ./scripts/check-karpathy-block.sh
+
       - name: Lint
         uses: golangci/golangci-lint-action@v8
         with:

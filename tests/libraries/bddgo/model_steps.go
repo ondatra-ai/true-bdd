@@ -77,6 +77,13 @@ var ErrNoJudge = errors.New("scenario has judge: clauses but the suite's state d
 // Actor is the optional interface a suite's state implements to host
 // `llm:` steps. Act runs one such step at its position in the scenario,
 // so a later step sees whatever it did.
+//
+// Nothing implements it yet, and that is deliberate forward work rather
+// than an oversight. The bdd-web scenarios are where acting earns its
+// keep: "close whatever dialog is covering the list" is a real step, and
+// naming a testid in it would be a spoiler — the scenario would encode
+// the answer it means to check. So `llm:` is a declared capability with
+// no implementer until those step definitions land.
 type Actor interface {
 	Act(step Step) error
 }

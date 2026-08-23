@@ -6,6 +6,7 @@
 set -euo pipefail
 
 ./scripts/validate-schemas.sh
+./scripts/check-karpathy-block.sh
 golangci-lint run
 mkdir -p ./bin
 go build -o ./bin/true-bdd ./services/bdd-cli
