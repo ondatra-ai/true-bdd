@@ -9,11 +9,9 @@
 version: "1.0"
 last_updated: "2026-04-25"
 
-# Per-checklist engine knobs. Read by `us apply --fix` to bound the
-# outer re-walk loop: if any fix is applied during walk N, the engine
-# re-walks from AC 1 prompt 1; if N reaches max_apply_attempts without
-# a clean walk, the run aborts and the canonical registry is left
-# untouched.
+# Per-checklist engine knob, read by `us apply --fix` to bound the outer
+# re-walk loop: any fix applied during walk N re-walks from AC 1 prompt 1;
+# N reaching max_apply_attempts without a clean walk aborts, registry untouched.
 config:
   max_apply_attempts: 5
 

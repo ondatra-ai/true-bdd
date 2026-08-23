@@ -20,21 +20,17 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
-// ErrBuildCodeNotConverged is returned when the build-code walk
-// finishes with one or more tests still failing after the engine's
-// max apply attempts. Sets a non-zero CLI exit code. It wraps
-// runner.ErrExpectedNonconvergence so the terminal envelope classifies it
-// not_fixed (finalization OK) rather than a finalization failure — the CLI
-// exit behavior is unchanged (finding 7).
+// ErrBuildCodeNotConverged is returned when the build-code walk finishes with
+// tests still failing after the engine's max apply attempts (non-zero exit).
+// It wraps runner.ErrExpectedNonconvergence so the envelope classifies it not_fixed, not a failure (finding 7).
 var ErrBuildCodeNotConverged = fmt.Errorf(
 	"one or more tests still failing after max fix attempts: %w",
 	runner.ErrExpectedNonconvergence,
 )
 
-// BuildCodeDeps bundles what `build code` needs at the command
-// boundary. Mirrors BuildTestsDeps; the new entries are the architecture
-// loader (drives scope) and the test-runner dispatcher (executes
-// frameworks and parses their JSON output).
+// BuildCodeDeps bundles what `build code` needs at the command boundary.
+// Mirrors BuildTestsDeps, plus the architecture loader and the test-runner
+// dispatcher that executes frameworks and parses their JSON output.
 type BuildCodeDeps struct {
 	TestRunnerDispatcher        *testrunner.Dispatcher
 	ChecklistLoader             *checklist.ChecklistLoader
@@ -48,10 +44,8 @@ type BuildCodeDeps struct {
 }
 
 // RunBuildCode drives `build code`. Loads architecture.yaml, discovers
-// failing tests across every declared test suite, and walks each
-// through the build-code checklist. With fix=true, each failing cell's
-// Claude turn edits production source under services/* until the engine
-// converges. Exits non-zero if any test is still failing after the walk.
+// failing tests across every declared suite, and walks each through the
+// build-code checklist, editing production source under services/* until it converges.
 func RunBuildCode(
 	ctx context.Context,
 	deps BuildCodeDeps,
@@ -89,11 +83,9 @@ func RunBuildCode(
 	return nil
 }
 
-// loadFailingTests is the LoadItems factory for `build code`. Loads
-// architecture.yaml, dispatches every declared test suite to its
-// framework runner, deduplicates suites that run the same command over
-// the same tree, and returns the union of failures sorted by id for
-// deterministic walk order.
+// loadFailingTests is the LoadItems factory for `build code`. Dispatches
+// every declared suite to its framework runner, deduplicates suites that
+// run the same command over the same tree, and returns the union of failures sorted by id.
 func loadFailingTests(
 	deps BuildCodeDeps,
 	architectureFile string,
@@ -109,10 +101,9 @@ func loadFailingTests(
 			return nil, err
 		}
 
-		// The applier may write exactly the production roots the
-		// architecture declares. Taken from the spec rather than config
-		// so "edits production source, never tests" is enforced by the
-		// same document that defines where production source lives.
+		// Write roots come from the architecture spec, not a separate config,
+		// so "edits production source, never tests" is enforced by the same
+		// document that defines where production source lives.
 		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
 
 		failures, err := walkSuites(ctx, deps.TestRunnerDispatcher, arch)
@@ -130,17 +121,9 @@ func loadFailingTests(
 	}
 }
 
-// validateSuites checks every declared suite before the first
-// subprocess is spawned: that its framework routes to a runner, and
-// that its replay command is one that runner can act on.
-//
-// A pre-pass rather than a check at each suite's turn: discovery runs a
-// whole test suite at a time, so finding the second suite unrunnable
-// after the first has already run costs minutes for a verdict the spec
-// could have given immediately — and leaves behind a run that did half
-// its work. The framework check belongs here for a second reason: at
-// its turn, the walk has already printed "Running calc tests via
-// rspec...", claiming work that cannot start.
+// validateSuites checks every declared suite before the first subprocess:
+// its framework routes to a runner and its replay command is valid — a
+// pre-pass, so an unrunnable suite is caught before a progress line already claims work that cannot start.
 func validateSuites(dispatcher *testrunner.Dispatcher, suites []architecture.Suite) error {
 	for _, suite := range suites {
 		err := validateSuite(dispatcher, suite)
@@ -163,10 +146,9 @@ func validateSuite(dispatcher *testrunner.Dispatcher, suite architecture.Suite) 
 	return testrunner.ValidateCommand(suite.Framework, replayCommand(suite))
 }
 
-// replayCommand picks the mode `build code` runs under. Hardcoded:
+// replayCommand picks the mode `build code` runs under. Hardcoded to replay:
 // `record` and `live` are declared and validated by the loader but no
-// command reaches them yet, so naming replay here — once — is the whole
-// of the mode selection.
+// command reaches them yet.
 func replayCommand(suite architecture.Suite) string {
 	return suite.Commands.Replay
 }
@@ -198,9 +180,8 @@ func walkSuites(
 
 	for _, suite := range arch.Suites {
 		// The command joins the key because it is what actually runs:
-		// two suites agreeing on framework, path and config but
-		// declaring different commands are different work, and
-		// collapsing them would silently drop one of them.
+		// two suites sharing framework, path and config but declaring
+		// different commands are different work — collapsing them would silently drop one.
 		dedupKey := strings.Join([]string{
 			suite.Framework,
 			suite.Path,
@@ -252,12 +233,9 @@ func runSuiteDiscovery(
 
 	failures, err := runnerImpl.Discover(ctx, rcfg, suite.Service, suite.Name)
 	if err != nil {
-		// Reported here, on both channels, because this is the one
-		// failure in the command path no validation can reach: the spec
-		// can be complete, splittable and parseable and the binary
-		// still absent. Left to cobra it would surface as a stderr
-		// traceback under a usage dump, right after a progress line
-		// saying the suite was running.
+		// Reported here, on both channels: this is the one failure the
+		// command path cannot validate ahead of time. Left to cobra it
+		// would surface as a raw stderr traceback under a usage dump, right after the "Running ..." progress line.
 		slog.Error("Cannot run test suite",
 			"suite", suite.Name,
 			"service", suite.Service,
@@ -266,11 +244,9 @@ func runSuiteDiscovery(
 		)
 		console.Println(fmt.Sprintf("Cannot run %s: %s", suite.Label(), err.Error()))
 
-		// Marked as reported so the generic startup refusal stays quiet:
-		// this failure is already on both channels with a more specific
-		// diagnosis, and it happened after the run started, so a second
-		// line headlined "Refusing to start" would contradict the
-		// progress line printed just above.
+		// Marked as reported so the generic startup refusal stays quiet: this
+		// already carries a specific diagnosis on both channels, and came
+		// after progress was printed, so "Refusing to start" would contradict it.
 		return nil, runner.Reported(fmt.Errorf("discover %s: %w", suite.Label(), err))
 	}
 
@@ -287,10 +263,9 @@ func buildCodeOnItemStart(idx, total int, item *testrunner.FailingTest) {
 	)
 }
 
-// buildCodePostFix re-runs the failing test through its framework
-// runner and refreshes LastRunPassed / FailureOutput / LastRunAt on the
-// item. Returning the same pointer lets the engine's next Query
-// iteration read the refreshed state without a separate channel.
+// buildCodePostFix re-runs the failing test and refreshes LastRunPassed /
+// FailureOutput / LastRunAt on the item, so the engine's next Query
+// iteration reads the refreshed state via the same pointer.
 func buildCodePostFix(
 	deps BuildCodeDeps,
 ) func(ctx context.Context, item *testrunner.FailingTest, applierContent string) (*testrunner.FailingTest, error) {

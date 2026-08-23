@@ -12,21 +12,13 @@ import (
 // brought into existence.
 const changeKindCreated = "created"
 
-// File-effect assertions verify what a run did to the working tree:
-// which files it modified, which it left untouched, and how large a file
-// it produced. The change facts come from the run's structural diff
-// (State.Result.Diff — []fstree.Change whose Kind is changeKindCreated,
-// "modified", or "deleted"); a line count comes from the file on disk
-// under Result.TmpDir, because the diff records THAT a file changed while
-// the disk holds its final content. Each path (and the line count) is a
-// capture group, so one definition serves every scenario that names a
-// different file or number rather than one scenario's literal line.
+// File-effect assertions read what a run did from its structural diff
+// (State.Result.Diff, kind changeKindCreated/"modified"/"deleted"); a line
+// count reads the file on disk instead — the diff says THAT it changed, not its content.
 
 // assertFileCreated pins that the run created the named file: its path
-// appears in the diff with kind changeKindCreated. A file that was modified,
-// deleted, or never touched is named in the failure so a reader sees
-// what actually happened instead. The path is a capture group so one
-// definition serves every scenario that names a different file.
+// appears in the diff with kind changeKindCreated. A file modified,
+// deleted, or untouched instead is named in the failure.
 func assertFileCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -50,9 +42,8 @@ func assertFileCreated(state *State, args []string) error {
 }
 
 // assertFileModified pins that the run modified the named file: its path
-// appears in the diff with kind "modified". A file that was created,
-// deleted, or never touched is named in the failure so a reader sees
-// what actually happened instead.
+// appears in the diff with kind "modified". A file created, deleted, or
+// untouched instead is named in the failure.
 func assertFileModified(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -75,10 +66,9 @@ func assertFileModified(state *State, args []string) error {
 	return state.fail("expected file %q to be modified, but the run left it unchanged", path)
 }
 
-// assertFileUnchanged pins that the run left the named file alone: it
-// appears nowhere in the diff. The file must still exist on disk — a path
-// that never existed is "unchanged" only vacuously, so a scenario naming
-// a mistyped path would otherwise pass for the wrong reason.
+// assertFileUnchanged pins that the named file is absent from the diff
+// AND still exists on disk — a mistyped or nonexistent path would
+// otherwise pass "unchanged" vacuously.
 func assertFileUnchanged(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -106,12 +96,9 @@ func assertFileUnchanged(state *State, args []string) error {
 	return nil
 }
 
-// assertFileLineCount pins the final line count of the named file, read
-// from disk under the run's tmpdir. It is how a scenario proves the fix
-// loop re-ran only the test it fixed and not the whole suite: a canary
-// log that gains one line per suite run must hold exactly one after a
-// correctly narrowed rerun. The count is a capture group so one
-// definition serves every scenario that names a different number.
+// assertFileLineCount pins the final line count of the named file. It is
+// how a scenario proves a fix loop re-ran only the test it fixed: a canary
+// log gaining one line per suite run must hold exactly one after a narrowed rerun.
 func assertFileLineCount(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -144,13 +131,8 @@ func assertFileLineCount(state *State, args []string) error {
 }
 
 // assertFileMatches pins that the named file's content matches a regexp,
-// read from disk under the run's tmpdir. It is how a scenario proves the
-// fix loop wrote not merely a file at a path but a file that says the
-// right thing — a page whose markup carries the heading the browser test
-// asserts. The path and the pattern are both capture groups so one
-// definition serves every scenario that names a different file or regexp.
-// The pattern runs undelimited to the end of the line, like `stdout
-// matches`, so a regexp carrying its own quotes needs no escaping.
+// read from disk — proof the fix loop wrote a file that says the right
+// thing, e.g. a page whose markup carries the heading a browser test asserts.
 func assertFileMatches(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -183,14 +165,8 @@ func assertFileMatches(state *State, args []string) error {
 }
 
 // assertFilesMatchingCreated pins that the run created EXACTLY the named
-// number of files whose path matches a glob (filepath.Match semantics:
-// "*" spans one path segment, never the separator). It is the count
-// assertion no single-path `is created` step can make — when the fix loop
-// authors a step-definition file, the exact filename is the loop's to
-// choose, so a scenario can only pin "one .go file appeared under this
-// directory", not its name. The count and the glob are both capture
-// groups so one definition serves every scenario naming a different
-// number or directory.
+// number of files matching a glob — the count assertion no single-path
+// `is created` step can make when the fix loop chooses the filename.
 func assertFilesMatchingCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -217,15 +193,9 @@ func assertFilesMatchingCreated(state *State, args []string) error {
 	return nil
 }
 
-// assertNoFileMatchingCreated pins that the run created NO file whose path
-// matches a glob (filepath.Match semantics: "*" spans one path segment,
-// never the separator). It is the negative twin of
-// assertFilesMatchingCreated: a scenario uses it to prove the run wrote
-// nothing at a path it must never touch — here, that relocating the
-// registry to docs/specs/requirements.yaml left the OLD conventional
-// docs/scenarios.yaml uncreated, so the location really did come from
-// config and not a hardcoded default. The glob is a capture group so one
-// definition serves every scenario naming a different path or pattern.
+// assertNoFileMatchingCreated is the negative twin of
+// assertFilesMatchingCreated: the run created NO file matching a glob —
+// e.g. proving a relocated registry left the old conventional path uncreated.
 func assertNoFileMatchingCreated(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -248,15 +218,8 @@ func assertNoFileMatchingCreated(state *State, args []string) error {
 }
 
 // createdMatching returns the paths the run CREATED that match a glob
-// (filepath.Match semantics: "*" spans one path segment, never the
-// separator).
-//
-// The glob is validated before the walk, and that validation is the whole
-// reason this is one function rather than two loops: a malformed glob
-// makes every path silently non-matching, so the count reads zero and
-// both the "exactly N" and the "no files" assertion pass vacuously. A
-// guard against a FALSE PASS is the last thing that should exist in two
-// copies, since a fix applied to one of them leaves the other silent.
+// (filepath.Match: "*" spans one path segment, never the separator).
+// Validated once here: split in two, a malformed glob would pass both callers vacuously.
 func createdMatching(state *State, glob string) ([]string, error) {
 	_, matchErr := filepath.Match(glob, "")
 	if matchErr != nil {
@@ -280,9 +243,8 @@ func createdMatching(state *State, glob string) ([]string, error) {
 }
 
 // countLines counts the lines of text in a file's content. A trailing
-// newline terminates the last line rather than opening an empty one, so
-// it adds no line; empty content (or content that is only a newline) is
-// zero lines.
+// newline ends the last line rather than opening an empty one; empty
+// content (or only a newline) is zero lines.
 func countLines(content []byte) int {
 	text := string(content)
 	if text == "" {

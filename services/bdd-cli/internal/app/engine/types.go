@@ -8,9 +8,8 @@ package engine
 import "context"
 
 // GenerateQFn renders one raw checklist item into the query value `Q`
-// that the per-cell `Query` and `GenerateFix` consume. Pure in `idx`
-// and `p` so the engine can render every prompt once and reuse the
-// result across all items.
+// that `Query` and `GenerateFix` consume. Must be pure in `idx`/`p`:
+// the engine renders each prompt once and reuses it across all items.
 type GenerateQFn[P, Q any] func(idx int, p P) Q
 
 // QueryFn evaluates one (item, query) cell. Returns true iff the
@@ -19,15 +18,8 @@ type GenerateQFn[P, Q any] func(idx int, p P) Q
 type QueryFn[I, Q any] func(ctx context.Context, item I, q Q) (bool, error)
 
 // GenerateFixFn is the per-cell, per-iteration fix-prompt generator
-// that the engine calls inside its clarify/refine loop. It performs
-// one Claude turn and returns either a concrete fix prompt OR a set
-// of clarifying questions to ask the user. The engine handles the
-// surrounding apply/refine/exit + clarifying-question UX.
-//
-// userAnswers carries answers collected so far (empty on the first
-// call). iteration is 1-based; refinement iterations continue past
-// MaxClarificationIterations so callers can encode "this is a
-// refinement, not a clarification" via the iteration number.
+// the clarify/refine loop calls. iteration is 1-based and continues
+// past MaxClarificationIterations, so callers can tell refinement from clarification by the number alone.
 type GenerateFixFn[I, Q any] func(
 	ctx context.Context,
 	item I,
@@ -37,10 +29,8 @@ type GenerateFixFn[I, Q any] func(
 ) (FixResult, error)
 
 // FixFn applies an approved `FixDecision` to `item` and returns the
-// post-fix item. For commands whose `item` is a value (e.g. a Story),
-// the returned `I` is the new version; for commands whose `item` is a
-// reference and the mutation happens externally (e.g. a scratch file),
-// returning the same `item` is correct.
+// post-fix item: a value item (e.g. Story) returns the new version;
+// a reference item mutated externally returns the same item.
 type FixFn[I any] func(ctx context.Context, item I, d FixDecision) (I, error)
 
 // Action is the engine-internal user choice in the fix loop. Public
@@ -74,9 +64,8 @@ type ClarifyQuestion struct {
 }
 
 // FixResult is one iteration of fix-prompt generation: either a
-// concrete prompt (success) or a set of clarifying questions. The
-// engine loops by reading Questions, asking the user, then calling
-// GenerateFix again with the answers folded in.
+// concrete FixPrompt (success) or a set of clarifying Questions; see
+// CellHandler.runClarificationLoop for how the engine loops on it.
 type FixResult struct {
 	FixPrompt string
 	Questions []ClarifyQuestion
@@ -161,23 +150,17 @@ type ItemRun[I any] struct {
 
 // Options tunes engine behaviour.
 type Options struct {
-	// MaxApplyAttempts bounds the outer fixpoint re-walk. 0 → default
-	// (5). Plumbed from a checklist's `config.max_apply_attempts`.
-	//
-	// The runner gives the same number to SequentialWalker.MaxFixes, so
-	// it also bounds the fixes applied WITHIN one walk. Both loops need
-	// a bound: the outer one only advances when a walk finishes, and a
-	// non-converging cell never finishes one.
+	// MaxApplyAttempts bounds the outer fixpoint re-walk (0 → default 5,
+	// from `config.max_apply_attempts`). The runner also passes it to
+	// SequentialWalker.MaxFixes — both loops need a bound of their own.
 	MaxApplyAttempts int
 	// OnAttemptStart, if non-nil, fires at the top of each outer-walk
-	// attempt (1-indexed). The runner uses this to emit the
-	// "RE-WALK N/M" banner on attempts past the first; the engine
-	// itself stays console-free.
+	// attempt (1-indexed); the runner uses it for the "RE-WALK N/M"
+	// banner. The engine itself stays console-free.
 	OnAttemptStart func(attempt, maxAttempts int)
-	// OnItemStart, if non-nil, fires before each per-item walk within
-	// an attempt. The runner uses this to emit a per-item banner (e.g.
-	// "AC N/M: <description>" for us apply); story-based commands with
-	// a single item leave the spec callback nil and emit nothing.
+	// OnItemStart, if non-nil, fires before each per-item walk within an
+	// attempt; the runner uses it for a per-item banner (e.g. "AC N/M:
+	// <description>"). Single-item commands leave it nil.
 	OnItemStart func(idx, total int)
 }
 

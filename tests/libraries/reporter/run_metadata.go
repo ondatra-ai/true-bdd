@@ -13,11 +13,9 @@ type RunMetadata struct {
 	Prompts          int
 	MaxApplyAttempts int
 
-	// ItemsFile is where the walked items came from — the story file for
-	// the story commands, the same file `us apply` parses its ACs out
-	// of. TargetFile is the file fixes actually mutate: for `us apply`
-	// the scratch registry, which is NOT a `docs:` key and so is
-	// nameable only at seed time.
+	// ItemsFile is where the walked items came from (the story file, for
+	// `us apply`'s ACs). TargetFile is the file fixes actually mutate —
+	// for `us apply` the scratch registry, nameable only at seed time.
 	ItemsFile  string
 	TargetFile string
 	// CommittedFile is the canonical file the scratch is renamed over

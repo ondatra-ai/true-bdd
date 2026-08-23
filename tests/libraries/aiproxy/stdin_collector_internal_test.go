@@ -5,11 +5,8 @@ import (
 	"time"
 )
 
-// The hole this closes: a cassette recorded with EMPTY stdin must not
-// swallow a request that arrives with bytes. Returning early there would
-// hash nil, match the empty recording, and serve a response taped for a
-// different request — the one way a changed request can pass the check
-// the whole design rests on.
+// The hole this closes: see collectUnexpected — a cassette recorded with
+// EMPTY stdin must not swallow a request that arrives with bytes.
 func TestCollectUnexpectedReturnsLateArrivals(t *testing.T) {
 	t.Parallel()
 

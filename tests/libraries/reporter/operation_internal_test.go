@@ -10,10 +10,9 @@ import (
 	"testing"
 )
 
-// applyChecklist mirrors the shape of true-bdd/checklists/us-apply.yaml
-// as the rewalk fixture filters it: one section, one prompt, with a fix
-// template. The `F:` matters — a prompt that declares one is answered
-// against Q and F both.
+// applyChecklist mirrors the shape of true-bdd/checklists/us-apply.yaml as
+// the rewalk fixture filters it: one section, one prompt, with a fix
+// template — the `F:` matters, since a declaring prompt answers against Q and F both.
 const applyChecklist = `
 sections:
   - id: merge
@@ -96,10 +95,9 @@ func TestOperationSeparatesReWalkFromRestart(t *testing.T) {
 	writeLog(t, dir, append(applyRunRecords(t),
 		logLine(t, "2026-08-10T23:24:00Z", "Walk attempt started", map[string]any{
 			"attempt": 2, "max_attempts": 5}),
-		// 99.3-001 was already walked and already fixed, so walk 2 seeing
-		// it again is the re-walk. 99.3-002 is a first look that happens
-		// to fall in walk 2 — a different thing, and it must not borrow
-		// the re-walk's explanation.
+		// 99.3-001 was already walked and fixed, so walk 2 seeing it again is
+		// the re-walk. 99.3-002 is a first look that happens to fall in walk 2
+		// and must not borrow the re-walk's explanation.
 		promptTurn(t, 5, firstAC),
 		promptTurn(t, 6, "99.3-002"),
 	))
@@ -122,10 +120,9 @@ func TestOperationSeparatesReWalkFromRestart(t *testing.T) {
 	}
 }
 
-// A section can hold several prompts — us-create's `format` holds two —
-// and they are different questions, not retries of one. Counting them
-// as attempts of a single seat would label the second question
-// "Re-validate", which is a claim about a check that had never run.
+// A section can hold several prompts — us-create's `format` holds two — and
+// they are different questions, not retries of one; counting them as one
+// seat's attempts would label the second question "Re-validate" falsely.
 func TestOperationDoesNotConflatePromptsOfOneSection(t *testing.T) {
 	t.Parallel()
 
@@ -164,9 +161,8 @@ sections:
 }
 
 // build-code subject ids contain slashes and angle brackets, so the
-// filename carries a flattened form while the log carries the raw one.
-// Keyed on the raw id, a build-code turn never finds the fix that was
-// just applied to it and reports the wrong cause.
+// filename carries a flattened form while the log carries the raw one;
+// keyed on the raw id, a turn would never find the fix just applied to it.
 func TestOperationMatchesSanitisedSubjectIDs(t *testing.T) {
 	t.Parallel()
 
@@ -217,10 +213,9 @@ sections:
 	}
 }
 
-// The point of the whole exercise is naming what was compared against
-// what, so the file provenance has to survive the trip: the subject's
-// source, the checklist that posed the question, the file fixes mutate,
-// and every document the prompt actually resolved.
+// The point of the whole exercise is naming what was compared against what,
+// so file provenance must survive the trip: the subject's source, the
+// checklist, the file fixes mutate, and every document the prompt resolved.
 func TestOperationCarriesFileProvenance(t *testing.T) {
 	t.Parallel()
 
@@ -319,10 +314,9 @@ func TestOperationFallsBackToTheFilenameSection(t *testing.T) {
 	}
 }
 
-// The clarification cap is the engine's, not the report's: iterations
-// past maxClarificationIterations are user refinements
-// (cell_handler.go), and calling those "clarification round 7" would
-// misreport who drove the turn.
+// The clarification cap is the engine's, not the report's: iterations past
+// maxClarificationIterations are user refinements (cell_handler.go), and
+// calling those "clarification round 7" would misreport who drove the turn.
 func TestFixCauseSplitsClarificationFromRefinement(t *testing.T) {
 	t.Parallel()
 
@@ -350,10 +344,9 @@ func TestFixCauseSplitsClarificationFromRefinement(t *testing.T) {
 	}
 }
 
-// A turn whose artifacts never named a prompt index, and which logged no
-// documents of its own, must read as "index unknown". Carrying the last
-// index seen would resolve it against the checklist and print a section
-// name and a Q[n] belonging to an entirely different check.
+// A turn with no prompt-index artifacts of its own must read as "index
+// unknown" — carrying the last index seen would resolve it against the
+// checklist and print a Q[n] belonging to an entirely different check.
 func TestTurnWithoutItsOwnRecordsInheritsNoIndex(t *testing.T) {
 	t.Parallel()
 

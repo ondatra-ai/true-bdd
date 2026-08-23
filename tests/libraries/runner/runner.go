@@ -41,13 +41,7 @@ var ErrRepoRootNotFound = errors.New(
 
 // RepoLayer lists subtrees the runner pre-copies from the real repo
 // into each fixture's tmpdir BEFORE overlaying the fixture's input
-// tree. These are the live engine ingredients (checklists, prompt
-// templates, engine config). Anything outside this list must be
-// provided by the fixture itself under its input directory.
-//
-// Exported because the harness fixture materializer
-// (tests/libraries/materializer) shares the same engine-layer
-// convention for its `base: engine` fixtures.
+// tree: the live engine ingredients (checklists, templates, config).
 func RepoLayer() []string {
 	return []string{
 		"true-bdd",
@@ -56,11 +50,8 @@ func RepoLayer() []string {
 }
 
 // NewSessionRoot creates a fresh per-test-invocation directory under
-// `<repoRoot>/tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/`. Each fixture
-// in the same `go test` run will get its own subdirectory beneath this
-// path (see prepareRunDir), so all fixtures from one invocation are
-// grouped together. The repo's `/tmp/` .gitignore rule covers this
-// tree, so it is never accidentally committed.
+// `<repoRoot>/tmp/test_run/<YYYY-MM-DD_HH-MM-SS>/`; each fixture gets
+// its own subdirectory beneath it (see prepareRunDir).
 func NewSessionRoot() (string, error) {
 	repoRoot, err := FindRepoRoot()
 	if err != nil {
@@ -79,12 +70,8 @@ func NewSessionRoot() (string, error) {
 }
 
 // FindRepoRoot walks up from cwd until it finds a directory containing
-// a `.git` entry — the unambiguous repository marker. (Preferring
-// `.git` over `go.mod` is a holdover from the monorepo era when the
-// module lived below the repo root; today go.mod sits at the root
-// too, so either marker would work.)
-//
-// Exported for reuse by the harness fixture materializer.
+// a `.git` entry — the unambiguous repository marker. Exported for
+// reuse by the harness fixture materializer.
 func FindRepoRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -107,20 +94,13 @@ func FindRepoRoot() (string, error) {
 }
 
 // FileChange describes one file's diff between the fixture's input/ and
-// the post-run state of the tmpdir. It is an alias for the shared
-// fstree.Change so the aiproxy shim's per-call diffs and the runner's
-// per-run diffs are the same type.
+// the post-run state of the tmpdir — an alias for fstree.Change so the
+// aiproxy shim's per-call diffs and the runner's per-run diffs match.
 type FileChange = fstree.Change
 
 // Fixture is one scenario's on-disk data plus the behaviour the
-// registry asked of it.
-//
-// The split is worth keeping straight while reading: Name, Dir,
-// InputPath, PrepCmds, TeardownCmds and ChecklistPrompts come from the
-// fixture DIRECTORY. Cmd, ExpectedExitCode, StdoutRegexes, Stdin,
-// JudgeSpec and Timeout come from the SCENARIO and are zero until its
-// steps fill them in — they are here so one run record carries what was
-// asked and what was asserted together.
+// registry asked of it: directory-derived fields (Name, PrepCmds, ...)
+// vs scenario-derived ones (Cmd, ExpectedExitCode, ...), zero until set.
 type Fixture struct {
 	Name             string
 	Dir              string
@@ -128,10 +108,9 @@ type Fixture struct {
 	InputPath        string // path (relative to Dir) of the directory tree overlaid onto the tmpdir
 	ExpectedExitCode int    // from the scenario's Then step
 	StdoutRegexes    []*regexp.Regexp
-	// JudgeSpec is the rubric this run was judged against, rendered by
-	// the suite from the scenario's `judge:` clauses. Written for the
-	// record — the report's expected-vs-actual column reads it — not read
-	// by the judge, which is handed the clauses themselves.
+	// JudgeSpec is the rubric this run was judged against, rendered by the
+	// suite from the scenario's `judge:` clauses — written for the report's
+	// expected-vs-actual column, not read by the judge itself (see Clauses).
 	JudgeSpec string
 	Stdin     []byte   // interactive input, set by the scenario's Given step
 	PrepCmds  []string // from prep.sh, run in the tmpdir before the pre-run snapshot
@@ -154,79 +133,44 @@ type RunResult struct {
 	Diff     []FileChange
 	TmpDir   string // predictable per-fixture path under tmp/test_run/<session>/; preserved after every run
 	// StdoutFile/StderrFile are where the CLI's streams were persisted
-	// under TmpDir/bdd-cli-logs. Empty when capture failed. A failing
-	// fixture is read long after the test binary's own output has
-	// scrolled away, so the transcript has to outlive the process.
+	// under TmpDir/bdd-cli-logs, empty when capture failed — a failing
+	// fixture is read long after the test binary's own output scrolled away.
 	StdoutFile string
 	StderrFile string
 }
 
-// DefaultInputDir is where a fixture's designed project tree lives.
-//
-// A convention rather than a declaration: all 46 fixtures named the same
-// directory, so the field that let them name a different one only ever
-// recorded that nobody wanted to.
+// DefaultInputDir is where a fixture's designed project tree lives —
+// a convention, not a per-fixture declaration: every fixture has always
+// named it the same thing.
 const DefaultInputDir = "input"
 
-// Scripts a fixture may ship beside its input tree to bring up and tear
-// down whatever the CLI cannot: an npm install, a browser download, a
-// container stack.
-//
-// Shell rather than a manifest list, and shell rather than Go, because
-// these are the two things about a fixture that are neither behaviour nor
-// data — they are scaffolding, specific to one tree's layout, and a step
-// definition that hardcoded `npm install --prefix tests` would couple the
-// whole suite to one fixture's directory names.
-//
-// They live at the fixture ROOT, not inside the input tree, and are
-// executed by content rather than by path: a script overlaid into the
-// tmpdir would become a file of the host project the run is supposed to
-// be grading.
+// PrepScriptFile/TeardownScriptFile live at the fixture ROOT, not
+// inside the input tree, and run by content rather than by path: a
+// script overlaid into the tmpdir would pollute the diff being graded.
 const (
 	PrepScriptFile     = "prep.sh"
 	TeardownScriptFile = "teardown.sh"
 )
 
-// ChecklistPromptsFile is where a fixture declares which prompts of a
-// shipped checklist its run should walk, keyed by checklist stem:
+// ChecklistPromptsFile narrows which checklist prompts a fixture's run
+// walks, keyed by stem:
 //
 //	us-refine:
 //	  - "whether its description field contains a vague word"
-//
-// Data, in the same category as the input tree and prep.sh: the tree
-// ships a story carrying exactly one designed defect, and narrowing the
-// checklist is what makes the walk evaluate exactly the check that defect
-// trips. The scenario still SAYS it happens — a Given names the checklist
-// and the prompt — and the step definition behind it verifies the tree
-// really does select that one prompt, which is the same division of labour
-// as `the "<name>" project tree`: the registry names the precondition, the
-// tree provides it.
 const ChecklistPromptsFile = "checklist-prompts.yaml"
 
-// ErrFixtureTreeMissing is returned when a fixture directory has no input
-// tree. Every other file a fixture may ship is optional, so this is the
-// one thing that makes a fixture real — and a scenario naming a tree that
-// is not there should hear about it by name.
+// ErrFixtureTreeMissing is returned when a fixture directory has no
+// input tree — the one required file, since everything else a fixture
+// may ship is optional.
 var ErrFixtureTreeMissing = errors.New("fixture has no input tree")
 
-// LoadFixture reads a fixture folder — the DATA half of a scenario.
-//
-// A fixture is a directory, not a document: the designed project tree
-// under input/, the recording under cassettes/, and optionally the
-// scaffolding scripts and checklist selection above. Everything a manifest
-// used to declare is now either a convention here or a step in the
-// scenario that drives it.
-//
-// The returned Fixture cannot be executed yet: Cmd is empty, because the
-// invocation is behaviour and lives in the scenario registry. Call
-// UseCommand with what the scenario's When step names before Execute.
+// LoadFixture reads a fixture folder — the DATA half of a scenario. The
+// returned Fixture cannot be executed yet: Cmd is empty, since invocation
+// is behaviour from the registry — call UseCommand with it before Execute.
 func LoadFixture(dir string) (*Fixture, error) {
-	// Every file below is optional, so without this the loader would
-	// succeed for a directory that does not exist at all — and a scenario
-	// whose Given step misspells its tree would get "walk …/input: no such
-	// file" from deep inside Execute instead of being told which name it
-	// got wrong. The manifest read used to be what required the folder to
-	// be real; the input tree is what requires it now.
+	// Every file below is optional, so without this check a missing
+	// fixture directory would surface as "walk …/input: no such file"
+	// deep inside Execute, not a clear error naming the misspelled tree.
 	input := filepath.Join(dir, DefaultInputDir)
 
 	info, err := os.Stat(input)
@@ -249,11 +193,8 @@ func LoadFixture(dir string) (*Fixture, error) {
 }
 
 // loadFixtureScripts reads the optional prep/teardown scripts into the
-// commands Execute already knows how to run.
-//
-// Each script becomes ONE command, so a `set -e` or a multi-line pipeline
-// behaves the way its author wrote it — a per-line split would silently
-// turn one script into several independent shells.
+// commands Execute already knows how to run — each script becomes ONE
+// command, so `set -e`/multi-line pipelines behave, not split into shells.
 func loadFixtureScripts(fixture *Fixture) error {
 	prep, err := readOptionalScript(fixture.Dir, PrepScriptFile)
 	if err != nil {
@@ -277,14 +218,9 @@ func loadFixtureScripts(fixture *Fixture) error {
 	return nil
 }
 
-// readOptionalChecklistPrompts reads the fixture's checklist selection, or
-// nothing at all when it ships none.
-//
-// A present-but-empty declaration is refused rather than read as "no
-// filter": it would silently walk the FULL checklist, and a fixture whose
-// story carries one designed defect would then be graded against every
-// other prompt too — the same trap the manifest's own empty-filter check
-// was written to close.
+// readOptionalChecklistPrompts reads the fixture's checklist selection,
+// or nothing when it ships none. A present-but-empty declaration is
+// refused (see ErrFilterDeclaredEmpty), not read as "no filter".
 func readOptionalChecklistPrompts(dir string) (map[string][]string, error) {
 	path := filepath.Join(dir, ChecklistPromptsFile)
 
@@ -311,10 +247,9 @@ func readOptionalChecklistPrompts(dir string) (map[string][]string, error) {
 	return prompts, nil
 }
 
-// readOptionalScript returns the script as a single-element command list,
-// or nothing at all when the fixture ships no such script. A blank file
-// counts as absent: it declares scaffolding and then supplies none, and a
-// scenario asserting the scaffolding exists should not pass on it.
+// readOptionalScript returns the script as a single-element command
+// list, or nothing when the fixture ships none. A blank file counts as
+// absent too — declared scaffolding that supplies nothing shouldn't pass.
 func readOptionalScript(dir, name string) ([]string, error) {
 	data, err := os.ReadFile(filepath.Join(dir, name))
 	if errors.Is(err, os.ErrNotExist) {
@@ -333,12 +268,8 @@ func readOptionalScript(dir, name string) ([]string, error) {
 }
 
 // UseCommand sets the invocation the scenario asked for and re-checks
-// everything that depends on it.
-//
-// The checklist-prompt filter is the reason this is a method and not a
-// field assignment: a filter names the checklist stem it narrows, and
-// whether that stem is the one being invoked can only be known once the
-// command is. Loading the fixture cannot answer it; the scenario can.
+// everything that depends on it — a method, not a field assignment,
+// since checklist-stem validation only becomes possible once Cmd is known.
 func (f *Fixture) UseCommand(cmd string) error {
 	trimmed := strings.TrimSpace(cmd)
 	if trimmed == "" {
@@ -350,40 +281,9 @@ func (f *Fixture) UseCommand(cmd string) error {
 	return validateChecklistFilters(f)
 }
 
-// Execute runs the fixture. Four-step prep:
-//  1. Pre-populate the tmpdir from the repo allowlist (RepoLayer).
-//     These are the live engine ingredients (checklists, templates,
-//     config) — pulled from the real repo so a checklist edit
-//     propagates to every fixture automatically.
-//  2. Overlay the fixture's input/ on top. Files in input/ win, so
-//     per-fixture overrides remain possible.
-//  3. Run the fixture's `prep:` shell commands (npm install, etc.)
-//     against the tmpdir. Side effects are captured by the pre-run
-//     snapshot so they don't pollute the diff handed to the judge.
-//  4. Snapshot the post-prep state for the diff (so the judge only
-//     sees what the run itself did, not the prep).
-//
-// Then execs binPath in the tmpdir. The tmpdir lives at
-// `<sessionRoot>/<fixture.Name>/`, is preserved on the result, and is
-// never auto-cleaned — callers can inspect or `docker compose up` inside
-// it after the test exits.
-//
-// After the run, fixture-declared `teardown:` commands run via a
-// deferred call against a fresh context, so long-lived external
-// resources (e.g. docker-compose stacks the CLI brought up) get torn
-// down even when the CLI itself failed or hit the fixture timeout.
-//
-// runTimeout caps the CLI invocation ALONE. Its deadline starts
-// immediately before the exec, not when Execute was called, so the
-// tmpdir build and the pre-run snapshot cannot eat into it — on the
-// playwright fixture that snapshot reads the whole tree, node_modules
-// included, and charging it to the CLI would fail a run that behaved.
-//
-// extraEnv entries are appended AFTER the inherited environment, so
-// they win on duplicate keys (os/exec keeps the last value). This is
-// how the harness activates the aiproxy shim: a PATH override plus the
-// TRUE_BDD_AIPROXY_* contract, applied to the CLI subprocess alone —
-// the judge, running in the test process, keeps a clean environment.
+// Execute runs the fixture: build tmpdir, prep, snapshot, then exec.
+// runTimeout's deadline starts at the exec, not Execute's call, so setup
+// cost doesn't eat the CLI's budget; extraEnv is appended LAST, winning ties (os/exec).
 func Execute(
 	ctx context.Context,
 	fixture *Fixture,
@@ -472,9 +372,7 @@ func Execute(
 
 // prepareRunDir creates the tmpdir, pre-populates it from the repo
 // allowlist, and overlays the fixture's input/ on top. Snapshotting
-// the "before" state is the caller's responsibility — Execute does it
-// after prep commands have a chance to mutate the tree, so prep side
-// effects don't pollute the diff.
+// "before" is the caller's job, done after prep so prep effects don't pollute the diff.
 func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	tmpDir := RunDir(sessionRoot, fixture.Name)
 
@@ -516,21 +414,9 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	return tmpDir, nil
 }
 
-// runPrepCommands executes each fixture-provided prep command in the
-// tmpdir via `bash -c`. Stdin is unset; stdout and stderr are teed —
-// streamed to the calling `go test -v` output so progress stays visible
-// during long installs, and captured under bdd-cli-logs/ so a failed
-// prep can still be read afterwards. Any non-zero exit aborts the
-// fixture.
-//
-// The whole prep phase gets its own budget, decoupled from the run ctx:
-// `npm install` and `playwright install` are external work that says
-// nothing about whether the CLI under test behaves, so charging them to
-// the fixture's run timeout would fail a correct fixture on a cold
-// cache.
-//
-// These writes land before the pre-run snapshot, so they appear in both
-// snapshots and never show up in the diff.
+// runPrepCommands executes each fixture-provided prep command via
+// `bash -c`, teed to console and bdd-cli-logs/. Its own budget, decoupled
+// from the run timeout: npm/playwright installs are external, cold-cache work.
 func runPrepCommands(tmpDir string, prepCmds []string) error {
 	if len(prepCmds) == 0 {
 		return nil
@@ -572,21 +458,14 @@ func runPrepCommands(tmpDir string, prepCmds []string) error {
 // browser download is minutes of pure I/O.
 const prepTimeout = 15 * time.Minute
 
-// teardownTimeout caps the *entire* teardown phase for one fixture
-// (all teardown commands share the budget). Decoupled from the
-// fixture's run ctx so teardown still fires when the run hit its
-// timeout — that is exactly when leftover resources are most likely
-// to be holding ports / state for the next run.
+// teardownTimeout caps the *entire* teardown phase (all commands share
+// it), decoupled from the run ctx so teardown still fires when the run
+// hit ITS timeout — exactly when leftover resources most need cleanup.
 const teardownTimeout = 2 * time.Minute
 
 // runTeardownCommands executes each fixture-provided teardown command
-// in the tmpdir via `bash -c`, against a fresh context independent of
-// the run timeout. Stdout/stderr are teed — streamed to the calling
-// `go test -v` and captured under bdd-cli-logs/, which is where the
-// evidence for a stack that refused to come down has to live, since
-// teardown output arrives after the verdict is already decided.
-// Failures are logged but never returned — teardown is best-effort
-// hygiene and must not mask the primary run verdict.
+// via `bash -c` on a context independent of the run timeout, teed to
+// bdd-cli-logs/ — failures are logged, never returned, and can't mask the verdict.
 func runTeardownCommands(tmpDir string, teardownCmds []string) {
 	if len(teardownCmds) == 0 {
 		return
@@ -640,8 +519,7 @@ func envWithoutClaudeCode(env []string) []string {
 
 // CopyTree recursively copies the directory tree rooted at src into
 // dst, creating directories as needed and overwriting existing files.
-// Exported for reuse by the harness fixture materializer, which layers
-// engine base + fixture input with the same overlay semantics.
+// Exported for reuse by the harness fixture materializer.
 func CopyTree(src, dst string) error {
 	walkErr := filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -704,20 +582,9 @@ func copyFile(src, dst string) error {
 // Snapshotting and diffing live in tests/libraries/fstree, shared with
 // the aiproxy record/replay shim.
 
-// runSnapshotSkipDirs are subtrees the run diff excludes.
-//
-// Two kinds, for the same reason. The dependency trees are installed by
-// prep.sh — npm's node_modules above all — so they exist before the
-// pre-run snapshot and are never part of what the run did; excluding them
-// also keeps the snapshot away from trees full of symlinks and hard links
-// into a package cache, which the tree model refuses on purpose.
-//
-// The rest are what a TEST RUNNER writes ABOUT a run rather than as part
-// of the project: Playwright's report and results directories, its
-// last-run marker. They are as much noise as node_modules and excluding
-// them here is strictly better than asking a model to overlook them — a
-// tolerance a judge has to read is a tolerance it can misread, and these
-// would otherwise reach both the diff and the golden.
+// runSnapshotSkipDirs are subtrees the run diff excludes: dependency
+// trees (node_modules) installed by prep.sh, whose symlinks fstree.Snapshot
+// refuses by design, and test-runner noise (playwright-report, etc).
 func runSnapshotSkipDirs() []string {
 	return []string{
 		".git", "node_modules", ".next",

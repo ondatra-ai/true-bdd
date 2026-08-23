@@ -10,11 +10,8 @@ import (
 )
 
 // containerProvider lazily builds the bootstrap container on first use.
-// The `version` and `remote` subcommands never call it, so they run
-// without a container — and therefore without a valid host config,
-// honestly reporting a bare folder (plan §3.1). The `us` and `build`
-// commands resolve it inside their RunE, preserving their exact prior
-// behavior (the container is built the moment the command runs).
+// `version`/`remote` never call it, so they run without one — honestly
+// reporting a bare folder (plan §3.1); `us`/`build` resolve it in RunE.
 type containerProvider func() (*bootstrap.Container, error)
 
 // lazyContainer returns a provider that constructs the container at most

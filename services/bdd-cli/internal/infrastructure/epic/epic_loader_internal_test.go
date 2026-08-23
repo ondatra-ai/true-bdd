@@ -8,10 +8,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 )
 
-// TestLoadStoryFromEpicUsesConfiguredEpicsDir pins the config key the
-// loader reads: paths.epics_dir (the old top-level epics.path is gone).
-// The epic lives at a NON-default directory so a silent fall back to
-// docs/product/epics would fail the lookup.
+// TestLoadStoryFromEpicUsesConfiguredEpicsDir pins the config key the loader
+// reads (paths.epics_dir) using a non-default directory, so a silent
+// fallback to docs/product/epics would fail the lookup.
 func TestLoadStoryFromEpicUsesConfiguredEpicsDir(t *testing.T) {
 	root := t.TempDir()
 

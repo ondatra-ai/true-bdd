@@ -8,8 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// checklistStems are the five per-command checklists resolved by
-// convention (plan §3.4 / README-testids inventory-doc-checklist-<stem>).
+// checklistStems are the five per-command checklists (plan §3.4).
 //
 //nolint:gochecknoglobals // fixed checklist vocabulary
 var checklistStems = []string{
@@ -77,24 +76,16 @@ type rawArchitectureShape struct {
 	} `yaml:"architecture"`
 }
 
-// rawWorkspaceArchitectureShape mirrors the workspace file-as-source schema
-// (services/bdd-web/src/app/lib/workspace/derive.ts's deriveArchitecture): a
-// top-level `services:` MAP (no `architecture:` wrapper, no list) — the
-// schema the workspace UI's architecture.yaml pages/editor speak. Only
-// presence of at least one service matters for the chip.
+// rawWorkspaceArchitectureShape mirrors the second supported architecture
+// schema, services/bdd-web/src/app/lib/workspace/derive.ts's
+// deriveArchitecture: a top-level `services:` map, no `architecture:` wrapper.
 type rawWorkspaceArchitectureShape struct {
 	Services map[string]yaml.Node `yaml:"services"`
 }
 
-// architectureDoc classifies docs/architecture/architecture.yaml: missing
-// when absent, invalid on a parse error, and — mirroring ErrNoServices —
-// invalid when the file parses but declares no services under EITHER
-// supported schema. Two schemas coexist in this codebase: the legacy engine
-// shape the build-code loader walks (`architecture.services:` list,
-// architecture.Loader.Load) and the newer workspace file-as-source shape
-// (top-level `services:` map). A generic yamlDoc would mark any
-// syntactically valid YAML `present`, advertising an architecture no reader
-// can actually walk.
+// architectureDoc classifies docs/architecture/architecture.yaml: missing,
+// or invalid — on a parse error, or when neither supported schema (see
+// rawWorkspaceArchitectureShape) declares any services.
 func architectureDoc(path string) docResult {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -137,10 +128,9 @@ func dirDoc(path string) docResult {
 	return docResult{status: StatusPresent}
 }
 
-// registryDoc classifies the configured scenario registry
-// (documents.scenarios_yaml, conventionally docs/scenarios.yaml): missing,
-// invalid on a parse error, present_empty when its scenarios map is empty,
-// else present.
+// registryDoc classifies the configured scenario registry (conventionally
+// docs/scenarios.yaml): missing, invalid on a parse error, present_empty
+// when its scenarios map is empty, else present.
 func registryDoc(path string) docResult {
 	data, err := os.ReadFile(path)
 	if err != nil {

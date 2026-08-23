@@ -36,11 +36,9 @@ func writeRunFixture(t *testing.T, records, stdout, stderr string) string {
 	return dir
 }
 
-// TestTestRunsLoadsCapturedStreams is the reporter half of the evidence
-// chain: the engine writes the exit record and the captured streams, and
-// the report is only as good as its ability to find them again. It also
-// pins the empty-stderr case, which must survive as a captured artifact
-// rather than degrading into "not recorded".
+// TestTestRunsLoadsCapturedStreams pins loading the exit record's captured
+// streams back, including the empty-stderr case, which must survive as a
+// captured artifact rather than degrading into "not recorded".
 func TestTestRunsLoadsCapturedStreams(t *testing.T) {
 	t.Parallel()
 

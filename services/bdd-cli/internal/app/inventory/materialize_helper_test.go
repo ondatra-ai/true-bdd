@@ -11,8 +11,7 @@ import (
 )
 
 // fixtureManifest mirrors the subset of a Playwright fixture.yaml the
-// golden tests need to reproduce base:engine overlay + remove + input,
-// so the scanner is exercised against the EXACT trees P3/P4 render-assert
+// golden tests need to reproduce base:engine overlay + remove + input
 // (plan §4.3/§4.6).
 type fixtureManifest struct {
 	Base   string   `yaml:"base"`
@@ -46,10 +45,9 @@ func repoRoot(t *testing.T) string {
 	}
 }
 
-// materialize reproduces a harness fixture into a fresh tmpdir: it copies
-// the engine seed (true-bdd/) for base:engine, applies the manifest's
-// remove list, then overlays the fixture input tree. It returns the
-// canonical host folder the scanner runs against.
+// materialize reproduces a harness fixture into a fresh tmpdir: copies the
+// engine seed (true-bdd/) for base:engine, applies the remove list, then
+// overlays the fixture input tree; returns the resulting host folder.
 func materialize(t *testing.T, fixture string) string {
 	t.Helper()
 

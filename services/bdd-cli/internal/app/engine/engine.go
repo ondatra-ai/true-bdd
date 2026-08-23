@@ -6,9 +6,8 @@ import (
 )
 
 // Engine renders prompts once via generateQ, iterates items, and
-// drives the outer fixpoint re-walk. The Walker is injected so
-// engine tests can stub it and future iteration policies (parallel,
-// no-restart) drop in without touching the engine.
+// drives the outer fixpoint re-walk. The Walker is injected so tests
+// can stub it and other iteration policies can drop in later.
 type Engine[I, P, Q any] struct {
 	generateQ GenerateQFn[P, Q]
 	walker    Walker[I, Q]
@@ -28,16 +27,9 @@ func New[I, P, Q any](
 	}
 }
 
-// Run drives the (items × prompts) walk to a stop reason.
-//
-// Termination semantics:
-//   - empty prompts → AllPassed=true, Reason=Converged.
-//   - a walk that applies zero fixes and all items pass → Converged.
-//   - a walk that applies zero fixes and some item fails → NotFixed.
-//   - a walk that applies any fix triggers a re-walk (cross-item
-//     interactions can invalidate previously-passing cells).
-//   - any walker reporting UserExited short-circuits → UserExit.
-//   - exhausting MaxApplyAttempts re-walks → MaxAttemptsExhausted.
+// Run drives the (items × prompts) walk to a stop reason. Termination
+// semantics: zero prompts converges immediately, exhausting
+// MaxApplyAttempts stops; see terminalResult for the fixpoint logic.
 func (e *Engine[I, P, Q]) Run(
 	ctx context.Context,
 	items []I,
@@ -84,9 +76,8 @@ type walkSummary struct {
 }
 
 // terminalResult returns the Result to bail with after one walk, or
-// nil if the engine should re-walk. The fixpoint contract: any fix
-// triggers another walk (cross-item interactions); zero fixes means
-// we've converged one way or the other.
+// nil if the engine should re-walk: any fix triggers another walk
+// (cross-item interactions); zero fixes means we've converged.
 func terminalResult[I any](summary walkSummary, items []I) *Result[I] {
 	switch {
 	case summary.exit:

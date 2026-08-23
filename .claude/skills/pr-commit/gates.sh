@@ -6,6 +6,7 @@
 set -euo pipefail
 
 ./scripts/lint-layout.sh
+./scripts/lint-comments.sh
 ./scripts/lint-schemas.sh
 ./scripts/lint-claude.md.sh
 golangci-lint run
@@ -13,55 +14,24 @@ mkdir -p ./bin
 go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./...
 
-# The bdd-tagged tree is invisible to `go vet ./...` and to
-# golangci-lint, which sets no build tags — so the suite shims, the
-# TestMain bootstraps and every generated test file would go unchecked.
-# That gap is not theoretical: vet is what catches a generated function
-# named `Testfoo`, which compiles, is never run by `go test`, and still
-# satisfies every coverage check.
+# The bdd-tagged tree is invisible to `go vet ./...`/golangci-lint (no
+# build tags set) — so shims, TestMain and generated tests go unchecked.
+# Not theoretical: vet catches a generated `Testfoo` that compiles, never runs, and still passes coverage.
 go vet -tags bdd ./tests/...
 
-# The BDD fixtures, replayed. Every AI turn is served from a committed
-# cassette, so this spawns no model, costs nothing, needs no agent CLI
-# installed, and finishes in under a minute — the three reasons the
-# suite used to be excluded from this gate no longer hold.
-#
-# It is here because it is the only check that sees the engine actually
-# run. Unit tests pass while a prompt template silently rewrites data it
-# was asked to preserve, and while an applier's fenced YAML crashes a
-# command mid-fix; replay caught both, one as a golden mismatch and one
-# as a non-zero exit.
-#
-# A failure means one of three things, and the output says which:
-#   stale cassette (exit 86) — a prompt/template/engine change altered a
-#     request. Re-record the affected fixtures.
-#   golden mismatch — the run produced different files than recorded.
-#     Read the diff before re-recording; this is the regression signal.
-#   ordinary failure — exit code or stdout assertion.
-#
-# The live suite (real models, ~30-90 min, real money) stays manual:
-#   go test -tags bdd -timeout=180m ./tests/bdd-cli/...
+# BDD fixtures, replayed — cassette-served: no model, no cost, <1 min.
+# Only check that runs the engine: caught a template silently rewriting
+# data, and a fenced-YAML crash mid-fix — both missed by unit tests.
+#	exit 86            stale cassette — re-record the fixtures
+#	golden mismatch    regression signal — read the diff first
+#	ordinary failure   exit code or stdout assertion
+#	live suite (real models, ~30-90 min, $): go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 go test -tags bdd -timeout=20m ./tests/bdd-cli/ -mode=replay
 
-# The web suite's guards, and only its guards. The suite itself needs
-# node, a Next.js build and a browser and stays manual — but "does every
-# bdd-web scenario have a generated test?" needs none of those and
-# answers in milliseconds. Without this the web half of the registry
-# could go stale for weeks and the only thing that would notice is a
-# deliberate run nobody makes.
-#
-# TestStepCoverage is deliberately NOT here yet. The suite owns 244
-# scenarios: the 243 ported from the legacy Playwright suite, plus the one
-# landing scenario whose steps DO bind. tests/bdd-web/steps registers four
-# definitions, so the guard reports ~1680 unbound steps across those 243 —
-# it would not fail this gate, it would make it unsatisfiable, blocking
-# every PR in the repo rather than only the port's own. Add it back to this
-# line, and to the CI step that mirrors it, in the change that lands the
-# web step definitions:
-#
-#   https://app.clickup.com/t/86cb6fjwy
-#
-# The question is not lost meanwhile: `build tests` asks it through the
-# suite's `commands.coverage`, and one command still answers it —
-#   go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-web/
+# Web suite guards only (no node/browser/build; answers in ms) — the
+# suite itself stays manual. TestStepCoverage stays OUT: only 4 of 244
+# scenarios' steps bind — adding it would make this gate UNSATISFIABLE, not just fail it.
+#	~1680 unbound steps across those 243 would block EVERY PR, not just
+#	the port's. Land it with the web step definitions: ClickUp 86cb6fjwy.
+#	Meanwhile: go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-web/
 go test -tags bdd -count=1 -run '^TestScenarioCoverage$' ./tests/bdd-web/

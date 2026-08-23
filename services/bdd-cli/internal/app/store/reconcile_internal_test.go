@@ -1,12 +1,8 @@
 package store
 
-// Boot reconciliation matrix (plan §1.6): for each nonterminal run, validate
-// owner pid+start_identity and child pgid+start_identity; both dead ⇒
-// abandoned; owner dead + child ALIVE ⇒ verify identity, terminate the
-// group, abandon; a LIVE sibling's run is untouched; NEVER infer liveness
-// from a PID alone (PID reuse ⇒ identity mismatch ⇒ treated dead; PGID reuse
-// with an absent leader ⇒ no signal). Plus the durable, FENCED single-winner
-// reconciliation lease.
+// Boot reconciliation matrix: see each test below for one row (dead/dead,
+// dead-owner/live-orphan, live sibling, PID reuse, PGID reuse) plus the
+// durable, FENCED single-winner reconciliation lease.
 
 import (
 	"testing"

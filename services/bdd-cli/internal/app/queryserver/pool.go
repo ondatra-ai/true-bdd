@@ -12,10 +12,9 @@ const (
 	ClassDispatch  WorkClass = "dispatch"
 	ClassRead      WorkClass = "read"
 	ClassInventory WorkClass = "inventory"
-	// ClassDoc is the workspace document lane (doc_tree/doc_read/doc_write —
-	// plan Slice 0, r3 #6): its own concurrency bound, independent of the
-	// run-mutation lane (answer/dispatch), so document work never contends
-	// with run scheduling for a slot.
+	// ClassDoc is the workspace document lane (doc_tree/doc_read/doc_write):
+	// its own concurrency bound, independent of the run-mutation lane, so
+	// document work never contends with run scheduling for a slot.
 	ClassDoc WorkClass = "doc"
 	// ClassChat is the workspace chat lane (plan Slice 5, r3 #6): scheduled
 	// separately from ClassDispatch so a slow chat turn (a real Claude call)
@@ -49,11 +48,9 @@ type unit struct {
 	class WorkClass
 }
 
-// WorkerPool models the query-server's bounded scheduling policy (plan §2):
-// mutations are serialized (exactly one at a time, priority answer > dispatch),
-// reads are bounded by MaxReads, inventory scans by MaxInventory. It is the
-// pure scheduling core — Submit records a pending unit, RunnableNow computes
-// the batch that would run concurrently, Complete removes a finished unit.
+// WorkerPool models the query-server's bounded scheduling policy (plan
+// §2): mutations serialize one at a time (priority answer > dispatch),
+// reads bound by MaxReads, inventory scans by MaxInventory.
 type WorkerPool struct {
 	mu       sync.Mutex
 	settings PoolSettings
@@ -83,12 +80,7 @@ func (p *WorkerPool) Submit(unitID string, class WorkClass) {
 	p.pending = append(p.pending, unit{id: unitID, class: class})
 }
 
-// RunnableNow returns the ids the pool would run concurrently: up to MaxReads
-// reads, up to MaxInventory inventory scans, up to MaxDocs doc_tree/doc_read/
-// doc_write, up to MaxChat chat turns, and at most ONE mutation chosen by
-// priority (answer over dispatch). One switch per class keeps each lane's
-// bound readable in place; splitting per-class would scatter the SAME
-// bounded-lane pattern across more functions than it would clarify.
+// RunnableNow returns the ids runnable now, bound per lane plus one priority mutation, in one switch per class.
 //
 //nolint:cyclop // see above
 func (p *WorkerPool) RunnableNow() []string {

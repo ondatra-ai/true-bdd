@@ -28,13 +28,9 @@ const (
 	outcomeMaxAttempts = "max_attempts"
 )
 
-// childResult is the complete engine result the child emitted on the
-// event channel (plan §3.2 / finding 7): its stop-reason outcome, whether
-// finalization (the post-walk write) succeeded, and any error detail. It
-// is retained WHOLE so the synthesized envelope never erases the
-// underlying facts (a converged story whose final write failed keeps its
-// engine_outcome=converged + finalization_ok=false alongside the
-// classification).
+// childResult is the complete engine result the child emitted on the event
+// channel (plan §3.2 / finding 7), retained WHOLE so synthesizeEnvelope never
+// erases it (a converged story whose write failed keeps engine_outcome=converged + finalization_ok=false).
 type childResult struct {
 	present        bool
 	outcome        string
@@ -42,11 +38,9 @@ type childResult struct {
 	detail         string
 }
 
-// terminalEnvelope is the remote-synthesized final classification for a
-// run plus the FULL diagnostic envelope carried through to the server, DB,
-// API, and UI (plan §3.2 / finding 7). `outcome` is the classification
-// (the badge); `detail` is set only for the error class; engineOutcome /
-// finalizationOK / exitCode / signal are the retained underlying facts.
+// terminalEnvelope is the remote-synthesized final classification for a run
+// plus the FULL diagnostic envelope carried to the server/DB/API/UI (plan
+// §3.2 / finding 7): outcome is the badge, detail set only for the error class.
 type terminalEnvelope struct {
 	outcome        string
 	detail         string
@@ -56,13 +50,9 @@ type terminalEnvelope struct {
 	signal         string
 }
 
-// synthesizeEnvelope applies the plan §3.2 precedence: killed by signal
-// ⇒ interrupted; no result ⇒ error(no_result); result + clean exit ⇒
-// the engine outcome; a non-zero exit that contradicts a success-class
-// result ⇒ error(contradiction); otherwise the engine outcome (a
-// non-zero exit is legitimate for not_fixed / max_attempts). The full
-// exit code / signal / engine-result facts are ALWAYS attached so the
-// synthesized classification never erases them.
+// synthesizeEnvelope applies the plan §3.2 precedence (see
+// TestSynthesizeEnvelopePrecedence): signal ⇒ interrupted; no result ⇒
+// error(no_result); else the engine outcome, or error(contradiction) on a non-zero exit from a success-class result.
 func synthesizeEnvelope(waitErr error, result childResult) terminalEnvelope {
 	code, signaled, signalName := exitInfo(waitErr)
 

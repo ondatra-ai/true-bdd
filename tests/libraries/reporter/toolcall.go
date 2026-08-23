@@ -6,13 +6,9 @@ import (
 	"strings"
 )
 
-// ToolCall is one tool the model invoked during a turn.
-//
-// This is the only record of what a turn actually *did* — the response
-// artifact shows what it concluded, not the twelve Reads it took to get
-// there. A turn whose permissions and prompt look right but which made
-// no tool calls at all is a different failure from one that searched and
-// found nothing.
+// ToolCall is one tool the model invoked during a turn — the only record
+// of what a turn actually *did*, distinguishing a turn that made no tool
+// calls at all from one that searched and found nothing.
 type ToolCall struct {
 	Name  string
 	Input string

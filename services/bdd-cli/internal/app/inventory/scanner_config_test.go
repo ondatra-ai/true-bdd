@@ -8,12 +8,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
-// These tests pin the scanner's config-driven paths after the engine
-// moved them into true-bdd.yaml: paths.epics_dir (was top-level
-// epics.path) and documents.scenarios_yaml (was hardcoded engine-wide).
-// The scanner must honor configured locations, and — unlike the engine,
-// which refuses to run on a missing key — fall back to the canonical
-// defaults, because a scan never fails.
+// These tests pin the scanner's config-driven paths (paths.epics_dir,
+// documents.scenarios_yaml). Unlike the engine, which refuses on a missing
+// key, the scanner falls back to canonical defaults — a scan never fails.
 
 const configFileRel = "true-bdd/true-bdd.yaml"
 

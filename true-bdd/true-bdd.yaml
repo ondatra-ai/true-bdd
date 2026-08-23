@@ -1,11 +1,7 @@
 engine:
-  # Three named tiers. A checklist asks for a tier by name; this table
-  # decides which CLI runs it and with which model, so retargeting a
-  # role at a different provider is a config edit, not a code change.
-  #
-  # Value format: "<cli>:<model>". Split on the FIRST colon only.
-  #   cli   — claude | crush | codex (each must be on $PATH)
-  #   model — passed through verbatim to that CLI's model flag
+  # "<cli>:<model>", split on the FIRST colon only. cli is claude | crush |
+  # codex and must be on $PATH; model passes through verbatim to that CLI's
+  # model flag. A checklist asks for a tier by name.
   models:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-4-8"
@@ -51,16 +47,9 @@ paths:
   epics_dir: "./docs/product/epics"
   stories_dir: "docs/product/stories"
   checklists_dir: "./true-bdd/checklists"
-  # Roots `build tests --fix` may author into. Its applier writes step
-  # definitions under the `path:` of the suite that owns the scenario —
-  # a location architecture.yaml chooses, not this file — and
-  # ExecutionMode is what the crush guard and codex sandbox enforce. So
-  # this list has to be broad enough to contain every suite path the
-  # spec can declare, which is why it is a pair of roots rather than one
-  # directory.
-  #
-  # `build code --fix` needs no equivalent key: it takes its write roots
-  # from the service paths declared in architecture.yaml.
+  # Roots `build tests --fix` may author into — broad because the actual
+  # write location (a suite's `path:`) is chosen by architecture.yaml, not
+  # here; ExecutionMode enforces the boundary. build code --fix needs no equivalent key.
   test_write_globs:
     - "./tests/**"
     - "./services/**"

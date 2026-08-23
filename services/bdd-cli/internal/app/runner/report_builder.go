@@ -7,14 +7,8 @@ import (
 )
 
 // reportBuilder accumulates per-cell ValidationResults into one
-// ChecklistReport per subject. Used by the per-command query
-// closures so the post-walk render can show the full pass/fail table
-// for every item the engine touched.
-//
-// Results are upserted by (subjectID, promptIndex), so a fix that
-// triggers a walker re-walk overwrites stale results with the
-// post-fix state — the final render reflects what the engine landed
-// on, not the journey.
+// ChecklistReport per subject, keyed by (subjectID, promptIndex) so a
+// re-walk overwrites stale results — the render reflects final state, not the journey.
 type reportBuilder struct {
 	bySubject map[string]*subjectReport
 	order     []string // first-seen ordering of subject IDs

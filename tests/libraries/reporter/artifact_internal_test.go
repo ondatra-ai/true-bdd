@@ -134,12 +134,9 @@ func TestArtifactsAttachToTheRightTurn(t *testing.T) {
 	}
 }
 
-// TestSpawnAttachesToTheOpenTurn guards an ordering that is easy to get
-// backwards: the provider logs its argv just AFTER the dispatch, so a
-// spawn record belongs to the turn already open. Holding it for the next
-// dispatch shifts every command one turn late — invisible while
-// consecutive turns share a CLI, and flatly wrong the moment they do
-// not.
+// TestSpawnAttachesToTheOpenTurn guards attachSpawn's ordering (see its
+// doc): the bug is invisible while consecutive turns share a CLI, and
+// flatly wrong the moment they don't.
 func TestSpawnAttachesToTheOpenTurn(t *testing.T) {
 	base := time.Date(2026, time.August, 9, 23, 0, 0, 0, time.UTC)
 	step := func(seconds float64) string {

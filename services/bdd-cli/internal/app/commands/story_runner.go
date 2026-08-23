@@ -13,11 +13,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 )
 
-// StoryCommonDeps is the field set both `us create` and `us refine`
-// need at the command boundary. CreateDeps embeds this and adds its
-// own item loader (EpicLoader); RefineDeps does the same with
-// StoryLoader. Sharing the common shape keeps runStoryCommand
-// container-agnostic.
+// StoryCommonDeps is the field set both `us create` and `us refine` need at
+// the command boundary. CreateDeps embeds this plus EpicLoader; RefineDeps
+// embeds this plus StoryLoader — keeping runStoryCommand container-agnostic.
 type StoryCommonDeps struct {
 	ChecklistLoader    *checklist.ChecklistLoader
 	DocResolver        *docs.Resolver
@@ -37,10 +35,9 @@ type storyLoadItemsFactory func(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context) ([]*story.Story, error)
 
-// runStoryCommand is the shared body of `us create` and `us refine`.
-// Both commands wire the engine identically once they have a
-// LoadItems factory and a "writeNew vs update" toggle; this helper
-// encapsulates that wiring so per-command entry points stay tiny.
+// runStoryCommand is the shared body of `us create` and `us refine`: both
+// wire the engine identically given a LoadItems factory and a "writeNew vs
+// update" toggle, so per-command entry points stay tiny.
 func runStoryCommand(
 	ctx context.Context,
 	deps StoryCommonDeps,

@@ -54,9 +54,8 @@ func run(cfg config, name string, argv []string) (int, error) {
 }
 
 // fail reports a proxy-level failure on stderr and exits with the
-// distinctive proxy code. The message is the diagnosis: it lands in the
-// engine's combined CLI transcript, which is where a failed fixture is
-// read.
+// distinctive proxy code — the message lands in the engine's combined CLI
+// transcript, which is where a failed fixture gets read.
 func fail(err error) {
 	fmt.Fprintln(os.Stderr, "aiproxy:", err)
 	os.Exit(exitProxyFailure)

@@ -11,17 +11,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 )
 
-// newCrushGuardCmd builds the hidden PreToolUse hook that the crush
-// provider wires into its generated config.
-//
-// `crush run` has no permission gate of its own, so this is the ONLY
-// enforcement on what a crush-backed turn may write. Shipping it as a
-// subcommand of this binary means a host project needs no guard script
-// of its own — the crush provider points the hook at os.Executable().
-//
-// It fails CLOSED: a missing or malformed policy denies everything, so
-// a stray `crush run` that happens to inherit the config stays
-// read-only.
+// newCrushGuardCmd builds the hidden PreToolUse hook the crush provider
+// wires into its generated config (see CrushGuardPolicy), shipped as a
+// subcommand of this binary so a host project needs no guard script of its own.
 func newCrushGuardCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:    "crush-guard",

@@ -30,10 +30,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
-// ReportEnv names the file the suite must write its report to. Passed
-// rather than parsed out of stdout: a Go test's stdout carries the
-// framework's own noise, and a report that has to survive being mixed
-// with it is a report with a parser nobody can predict.
+// ReportEnv names the file the suite must write its report to — not
+// stdout: a Go test's stdout carries the framework's own noise, so a
+// report mixed into it would need a parser nobody can predict.
 const ReportEnv = "TRUEBDD_COVERAGE_REPORT"
 
 // ErrNoReport signals a coverage command that ran but wrote no report.
@@ -47,9 +46,8 @@ var ErrNoReport = errors.New("coverage command wrote no report")
 var ErrAmbiguousStep = errors.New("step matches more than one definition")
 
 // ErrUnknownSchema signals a report shape this engine does not know.
-// Refused rather than read with today's meanings: a future field could
-// change what an empty `unbound` means, and guessing wrong drops
-// scenarios from the walk.
+// Refused rather than read with today's meanings: a future schema could
+// change what an empty `unbound` means, and guessing wrong drops scenarios silently.
 var ErrUnknownSchema = errors.New("coverage report uses an unknown schema version")
 
 // ErrSuiteCouldNotAnswer signals a suite that reported a failure of its
@@ -60,9 +58,8 @@ var ErrSuiteCouldNotAnswer = errors.New("the suite could not report which steps 
 var ErrInconsistentReport = errors.New("coverage report is internally inconsistent")
 
 // ErrWrongSuiteReported signals a report written by a suite other than
-// the one asked. Almost always a copy-pasted `coverage:` command, and
-// the field exists to catch exactly that: acting on another suite's
-// answer means narrowing this suite's walk on scenarios nobody examined.
+// the one asked — almost always a copy-pasted `coverage:` command. Acting
+// on it would narrow this suite's walk on scenarios nobody examined.
 var ErrWrongSuiteReported = errors.New("coverage report names a different suite")
 
 // Gap is one scenario step that binds to no definition.
@@ -92,48 +89,30 @@ type Report struct {
 	Failure string `json:"failure,omitempty"`
 }
 
-// Answer is one suite's reply: which scenarios it looked at, and which
-// of them have a step that binds to nothing.
-//
-// The two are separate because an empty gap list means nothing without
-// the first. A run that died after writing its file, or one that never
-// reached a scenario, reports no gaps for it — and reading that as
-// "every step binds" silently drops it from the walk.
+// Answer is one suite's reply: which scenarios it looked at, and which of
+// them have a step that binds to nothing. The two are kept separate —
+// see Report.Examined for why an empty gap list alone means nothing.
 type Answer struct {
 	Examined map[string]bool
 	Gaps     map[string][]string
 }
 
-// commandTimeout bounds the coverage subprocess. Generous, because a
-// cold `go test` compiles the world; bounded, because every other
-// subprocess the engine spawns is, and a suite that deadlocks would
-// otherwise hang `build tests` before its first AI turn with no output
-// at all.
+// commandTimeout bounds the coverage subprocess: generous, because a cold
+// `go test` compiles the world; bounded, because a deadlocked suite would
+// otherwise hang `build tests` before its first AI turn with no output at all.
 const commandTimeout = 10 * time.Minute
 
-// waitDelay bounds how long Wait blocks after the process is gone.
-//
-// Without it the timeout above does not actually bound anything: Wait
-// blocks on the output-copy goroutines until every inherited pipe writer
-// closes, so a coverage command that leaves a grandchild holding stdout —
-// a dev server, a browser driver, a container — hangs `build tests`
-// forever with no output, which is the exact outcome commandTimeout
-// exists to prevent. Same value and same reason as the agent-CLI
-// invocation in adapters/ai.
+// waitDelay bounds how long Wait blocks after the process is gone — same
+// value and reason as cliWaitDelay in adapters/ai: a coverage command that
+// leaves a grandchild holding stdout (a dev server, a browser driver) would otherwise hang `build tests` forever.
 const waitDelay = 10 * time.Second
 
 // schemaVersion is the report format this reader understands.
 const schemaVersion = 1
 
-// Validate checks every declared coverage command before the first one
-// is spawned.
-//
-// A pre-pass for the same reason `build code` has one: finding the third
-// suite's command unsplittable after the first two have each compiled a
-// test binary costs minutes for a verdict the spec could have given
-// immediately. The architectural loader cannot make this check itself —
-// `coverage:` is the one optional command, and the loader validates
-// presence rather than shape.
+// Validate checks every declared coverage command before the first one is
+// spawned — same reason `build code` has a pre-pass: finding one unsplittable
+// after two suites already compiled costs minutes for a verdict the spec could give immediately.
 func Validate(suites []architecture.Suite) error {
 	for _, suite := range suites {
 		if strings.TrimSpace(suite.Commands.Coverage) == "" {
@@ -149,14 +128,9 @@ func Validate(suites []architecture.Suite) error {
 	return nil
 }
 
-// Ask runs one suite's coverage command and returns what it examined
-// and what it found.
-//
-// The command's exit status is ignored on purpose. A coverage test
-// legitimately fails when it finds gaps — that is what makes it useful
-// to a person running it by hand — so the report file, not the status,
-// is the answer. What is not ignored is the report's absence, a schema
-// it does not understand, or a suite saying it could not answer.
+// Ask runs one suite's coverage command and returns what it examined and
+// found. Exit status is ignored on purpose: a coverage test legitimately
+// FAILS when it finds gaps, so the report file — not the status — is the answer.
 func Ask(ctx context.Context, suite architecture.Suite, repoRoot string) (*Answer, error) {
 	argv, err := testrunner.SplitCommand(suite.Commands.Coverage)
 	if err != nil {
@@ -215,15 +189,9 @@ func checkReport(suite architecture.Suite, report *Report, output string) error 
 		return fmt.Errorf("%s: %w: %s", suite.Label(), ErrSuiteCouldNotAnswer, report.Failure)
 	}
 
-	// Checked rather than merely decoded. A `coverage:` command copied
-	// from a sibling suite runs the wrong package, and its answer is not
-	// wrong in any way the rest of this function can see — it is a
-	// well-formed report about scenarios this suite does not own.
-	//
-	// A blank name is refused too, not exempted. The wire contract names
-	// `suite` alongside `schema` as something every report states, and
-	// treating "unstated" as "must be right" would let the copy-paste this
-	// check exists to catch through the moment a suite stopped filling it in.
+	// Checked, not merely decoded: a copy-pasted `coverage:` command runs the
+	// wrong package and returns a well-formed report the rest of this function
+	// can't tell is wrong. A blank `suite` is refused too, not exempted, so an unfilled field can't slip through.
 	if report.Suite != suite.Name {
 		return fmt.Errorf("%s: %w: the report says %q\n%s",
 			suite.Label(), ErrWrongSuiteReported, report.Suite, output)
@@ -267,14 +235,8 @@ func reportFile(suite architecture.Suite) (string, func(), error) {
 }
 
 // commandDir is where the coverage command runs: the directory holding
-// the suite's `config:`, or the invocation directory when it declares
-// none.
-//
-// The same rule testrunner.CommandDir applies to record/replay/live. One
-// rule for all four keys of one `commands:` block, because a host writes
-// them together, in one style — and a coverage command that resolved
-// against a different directory than its three siblings would fail with
-// "wrote no report", which says nothing about the working directory.
+// the suite's `config:`, or the invocation dir when it declares none —
+// same rule as testrunner.CommandDir, so all four `commands:` keys resolve identically.
 func commandDir(suite architecture.Suite, repoRoot string) string {
 	config := strings.TrimSpace(suite.ConfigFile)
 	if config == "" {
@@ -283,11 +245,9 @@ func commandDir(suite architecture.Suite, repoRoot string) string {
 
 	dir := filepath.Dir(filepath.FromSlash(config))
 
-	// Absolute stays absolute, exactly as testrunner.CommandDir leaves it.
-	// Joining it onto repoRoot would produce `<repoRoot>/srv/app` for a
-	// `config: /srv/app/...`, so the three sibling commands would run in
-	// the declared directory and this one in a directory that does not
-	// exist — the divergence this function was written to remove.
+	// Absolute stays absolute, exactly as testrunner.CommandDir leaves it:
+	// filepath.Join(repoRoot, dir) would still produce `<repoRoot>/srv/app` for
+	// an absolute `config: /srv/app/...`, landing this command in a directory that does not exist.
 	if filepath.IsAbs(dir) {
 		return dir
 	}
@@ -296,12 +256,8 @@ func commandDir(suite architecture.Suite, repoRoot string) string {
 }
 
 // runCoverage executes the command and returns its combined output for a
-// diagnostic.
-//
-// Spawned in its own process group, and killed as a group, for the same
-// reason the agent CLIs are: a `go test` that started a server leaves a
-// grandchild holding the pipes, and killing only the direct child leaves
-// Wait blocked on them.
+// diagnostic. Spawned in its own process group, and killed as a group —
+// same reason as waitDelay above: a leaked grandchild would hold the pipes past a direct-child kill.
 func runCoverage(ctx context.Context, argv []string, dir, reportPath string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()

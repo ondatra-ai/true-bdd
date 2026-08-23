@@ -9,17 +9,9 @@ import (
 	"strings"
 )
 
-// generatedMarker is Go's own convention for machine-written source, and
-// what `.golangci.yaml`'s generated-file exclusion keys on.
-//
-// Matched against a TRIMMED line, so a CRLF checkout reads the same as an
-// LF one and an indented marker still counts. bddgo carries its own copy
-// of this convention (it is an agreement between a generator and a reader
-// that may not be Go at all), and the two must accept the same files
-// rather than merely look alike — so this is matched the same way, inside
-// the leading comment block only. A whole-file match would treat a
-// hand-written file that merely QUOTES the convention in a string literal
-// as safe to overwrite.
+// generatedMarker is Go's own convention for machine-written source;
+// bddgo carries its own copy and the two must accept the same files.
+// Matched only in the leading comment block, not whole-file, so a hand-written file merely quoting it stays safe.
 var generatedMarker = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
 
 // hasGeneratedMarker reports whether the marker appears in the file's
@@ -91,13 +83,9 @@ func Verify(plan *Plan, repoRoot string) ([]Drift, error) {
 	return drifted, nil
 }
 
-// Write renders every planned file and writes the ones that changed,
-// returning their repo-relative paths.
-//
-// Only the ones that changed: rewriting an identical file would touch
-// its mtime, which is what a build cache and a file watcher key on, and
-// a regeneration that rebuilt the world every time would stop being
-// something anyone ran routinely.
+// Write renders every planned file and writes only the ones that changed,
+// returning their repo-relative paths. Skips identical files because
+// rewriting them touches mtime, which a build cache and file watcher key on.
 func Write(plan *Plan, repoRoot string) ([]string, error) {
 	var written []string
 

@@ -28,14 +28,7 @@ type classifyCase struct {
 }
 
 // TestClassifyRealFailureShapes is table-driven over every failure shape
-// actually present in tmp/test_run — the strings are verbatim from the
-// harness, so this breaks if runner/checks.go changes its wording.
-//
-// The point of the ladder is that failures are multi-dimensional: a
-// killed run also misses its stdout patterns and also fails the judge,
-// because neither had anything coherent to work with. Classifying such a
-// run by its downstream symptom would send someone to fix the assertions
-// instead of the timeout.
+// actually present in tmp/test_run (see classifyFailure for the ladder's rationale).
 func TestClassifyRealFailureShapes(t *testing.T) {
 	cases := append(classifyCases(), classifyExitCases()...)
 	cases = append(cases, classifyEdgeCases()...)

@@ -15,14 +15,8 @@ var snippetQuotedRun = regexp.MustCompile(`"[^"]*"`)
 var snippetNumberRun = regexp.MustCompile(`\b\d+\b`)
 
 // undefinedReport renders the failure a scenario gets when one of its
-// steps binds to nothing.
-//
-// It prints a paste-ready step definition per missing step, the way
-// godog does, because the alternative is a reader translating a sentence
-// into an anchored regexp by hand and getting the escaping wrong. It is
-// also what `build tests --fix` is looking at: the fix turn is asked to
-// author the definition, and a failure that already contains its
-// signature is a much narrower request than one that only says no.
+// steps binds to nothing: a paste-ready step definition per missing
+// step (godog-style) — also what `build tests --fix` consumes to author it.
 func undefinedReport(scenario Scenario, undefined []Step) string {
 	var buf strings.Builder
 

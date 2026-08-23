@@ -25,9 +25,8 @@ type FailingTest struct {
 	LastRunPassed bool      // updated by RunOne in PostFix
 	LastRunAt     time.Time // updated by RunOne in PostFix
 	// RunnerConfig captures the original architecture.yaml block that
-	// produced this test so RunOne can re-invoke the framework with the
-	// same config file and root path. Populated by Discover; not part of
-	// the prompt-visible subject.
+	// produced this test, so RunOne can re-invoke the framework with the
+	// same config file and root path; populated by Discover, not prompt-visible.
 	RunnerConfig Config
 }
 
@@ -38,10 +37,9 @@ func Subject(item *FailingTest) (string, string) {
 	return item.ID, item.TestName
 }
 
-// BuildID assembles a deterministic, filename-safe id from the four
-// inputs that together uniquely identify a failing test in a build-code
-// walk. Slashes inside the framework-native id are folded to `.` so the
-// result can be spliced into tmp file paths without escaping.
+// BuildID assembles a deterministic, filename-safe id from the four inputs
+// that identify a failing test; slashes in the framework-native id are
+// folded to `.` so the id can be spliced into tmp file paths unescaped.
 func BuildID(service, suite, framework, frameworkID string) string {
 	safe := strings.ReplaceAll(frameworkID, "/", ".")
 	safe = strings.ReplaceAll(safe, " ", "_")

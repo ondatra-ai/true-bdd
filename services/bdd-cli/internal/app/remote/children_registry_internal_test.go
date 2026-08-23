@@ -9,9 +9,8 @@ import (
 )
 
 // TestChildrenRegistryPidsFileFormat proves the pids file the scoped
-// teardown reads (plan §3.2 / §4.1) carries the PGID + process-start
-// identity + run id per entry, one JSONL object per live child, and that
-// Remove drops an entry.
+// teardown reads (plan §3.2/§4.1) carries PGID + start identity + run id per
+// entry, one JSONL object per live child, and that Remove drops an entry.
 func TestChildrenRegistryPidsFileFormat(t *testing.T) {
 	t.Parallel()
 

@@ -47,16 +47,9 @@ func (db *DB) NonterminalRuns() []PendingRun {
 	return out
 }
 
-// Reconcile is a NON-MUTATING inspection (finding 5): it CLASSIFIES each
-// nonterminal run against the liveness probe (plan §1.6) and returns the plan —
-// a live owner is a live sibling (Skipped); a dead owner with a verified live
-// orphan group is Terminated then Abandoned; a dead owner with no verifiable
-// child is Abandoned without a signal. It writes NOTHING: the caller executes
-// the plan FENCED (drain/kill the group FIRST, then AbandonRunFenced under the
-// current token), so a crash between the kill and the terminal write can never
-// hide a live orphan behind a terminal row. Liveness is NEVER inferred from a
-// PID alone — the probe checks (pid, start_identity), so PID/PGID reuse is
-// treated as dead.
+// Reconcile is a NON-MUTATING classification pass — it writes nothing so the
+// caller can execute the plan FENCED: kill the group, THEN AbandonRunFenced.
+// See TestReconcileInspectionIsNonMutating for the reproduced crash window (finding 5).
 func (db *DB) Reconcile(_ int64, probe func(pid int, startIdentity string) bool) Reconciled {
 	res := Reconciled{}
 
@@ -142,12 +135,9 @@ func (db *DB) AcquireReconcileLease(ownerID string, nowMs, ttlMs int64) (int64, 
 	return token, true
 }
 
-// RenewReconcileLease extends the lease to expires_at = now + ttl iff the caller
-// is the current holder with the current token (lease renewal during a long
-// pass, plan §1.6, finding 5). The TTL is preserved as the invariant
-// (expires_at - acquired_at); resetting acquired_at to now keeps it exact across
-// repeated renews. Returns false when the caller no longer holds the lease
-// (expired + taken over) — the paused claimant must then stop acting.
+// RenewReconcileLease extends the lease iff the caller holds the current
+// token; it keeps expires_at-acquired_at (the TTL) invariant via SQL delta
+// rather than a passed ttl, so repeated renews never drift the TTL (finding 5).
 func (db *DB) RenewReconcileLease(ownerID string, token, nowMs int64) bool {
 	db.writeMu.Lock()
 	defer db.writeMu.Unlock()

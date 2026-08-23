@@ -9,13 +9,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// Manifest is the fixture's own declaration of what the harness ran:
-// the CLI invocation, the shell commands bracketing it, and what the run
-// was asserted against.
-//
-// Read through runner.LoadFixture rather than re-parsed here — the
-// runner is the authority on manifest shape, and a reporter with its own
-// YAML reader would drift from it silently.
+// Manifest is the fixture's own declaration of what the harness ran: the
+// CLI invocation, the shell commands bracketing it, and what the run was
+// asserted against. Read through runner.LoadFixture, the shape's authority, rather than re-parsed here.
 type Manifest struct {
 	Command      string
 	Answers      string
@@ -26,12 +22,9 @@ type Manifest struct {
 	JudgeSpec    string
 	InputPath    string
 	Loaded       bool
-	// Source says where the expectations came from, and it is load-bearing
-	// for any comparison across runs. SourceSnapshot is what this run was
-	// actually held to; SourceRepo is what the source tree says today,
-	// which may have moved since. A reader comparing two runs has to be
-	// able to tell those apart, or a changed rubric looks like no change
-	// at all.
+	// Source says where the expectations came from: the snapshot is what
+	// this run was held to, the repo is what the source tree says today —
+	// conflating them makes a changed rubric look like no change at all.
 	Source ManifestSource
 }
 
@@ -48,26 +41,15 @@ const (
 	ManifestRepo ManifestSource = "repo"
 )
 
-// loadManifest reads one fixture's expectations, preferring this run's
-// own snapshot over the source tree.
+// loadManifest reads one fixture's expectations, preferring this run's own
+// snapshot over the source tree.
 //
-// The snapshot wins because fixture.yaml is never copied into the
-// tmpdir: read from the repo, "expected" is always current HEAD, so two
-// runs of the same fixture would show identical expectations even when
-// the rubric changed between them. A fixture whose folder has since been
-// renamed or deleted and which predates the snapshot yields an unloaded
-// Manifest rather than an error — the run still happened, and its
-// timings are still worth reporting.
-//
-// The repo fallback carries no command, exit code, stdout checks,
-// answers or judge rubric, and that is deliberate rather than missing.
-// Every one of those is the SCENARIO's now, not the fixture's, and the
-// only place they exist per-run is the snapshot. Reading today's registry
-// for a run recorded before it would answer the question with something
-// this run was never held to — the exact lie the snapshot exists to
-// prevent, told one document further along. Leaving them BLANK while
-// still reporting Loaded would tell the same lie the other way, as
-// "this run had no rubric" rather than "this source cannot say".
+//	snapshot  what this run was actually held to — the repo always shows
+//	          current HEAD, which would hide rubric drift across runs
+//	repo      timings only; Command/ExpectedExit/etc. stay BLANK rather
+//	          than backfilled from today's registry, which would falsely
+//	          claim this run was held to a rubric it never saw
+//	missing   unloaded Manifest, not an error — timings still count
 func loadManifest(repoRoot, name, dir string) *Manifest {
 	manifest := manifestFromSnapshot(dir)
 	if manifest != nil {

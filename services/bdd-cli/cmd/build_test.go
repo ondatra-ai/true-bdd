@@ -6,11 +6,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
 )
 
-// Both path flags must register with an EMPTY default: an unset flag is
-// the signal that the config (documents.architecture_yaml /
-// documents.scenarios_yaml) decides the path at RunE time. A literal
-// path here would silently bypass the host config — that hardcode is
-// exactly what this test guards against re-entering.
+// TestBuildPathFlagDefaultsAreEmpty checks both path flags default to
+// empty, so an unset flag defers to host config (documents.architecture_yaml
+// / documents.scenarios_yaml) at RunE time instead of a hardcoded path.
 func TestBuildPathFlagDefaultsAreEmpty(t *testing.T) {
 	t.Parallel()
 

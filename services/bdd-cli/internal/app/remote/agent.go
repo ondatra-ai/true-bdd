@@ -38,8 +38,7 @@ type Options struct {
 
 // Agent is the long-lived remote session: it registers with the relay, runs a
 // single-outstanding-poll loop, and dispatches each work item to a query /
-// dispatch / answer handler. Writes go through the store (the single writer);
-// projection reads use a second read-only handle.
+// dispatch / answer handler.
 type Agent struct {
 	client   *RelayClient
 	store    *store.DB
@@ -251,10 +250,9 @@ func (a *Agent) gracefulOrErr(ctx context.Context, err error) error {
 	return err
 }
 
-// handlePollResult reacts to one poll: a 200 work item is handled in its own
-// goroutine (then the loop repolls immediately — exactly one outstanding
-// poll); a 204 repolls; any other status classifies into a reconnect via
-// queryserver (a 404 re-registers with the SAME session id, plan §2).
+// handlePollResult reacts to one poll: a 200 work item goes to the scheduler
+// (the loop then repolls immediately, so exactly one poll stays outstanding);
+// a 204 repolls; anything else classifies into a reconnect via queryserver.
 func (a *Agent) handlePollResult(ctx context.Context, item *workItem, status int, rng *rand.Rand) error {
 	switch {
 	case status == http.StatusOK && item != nil:
@@ -328,8 +326,7 @@ func (a *Agent) register(ctx context.Context) error {
 
 // shutdown interrupts the active child on ctx cancel and WAITS (bounded) for
 // every active executor to finish tearing its child down, so the process never
-// exits leaving a mutating group mid-escalation (plan §2/§1.6, finding 4). The
-// store and read handle are closed by the deferred closeResources in Run.
+// exits leaving a mutating group mid-escalation (plan §2/§1.6, finding 4).
 func (a *Agent) shutdown() {
 	if exec := a.getActive(); exec != nil {
 		exec.Interrupt()

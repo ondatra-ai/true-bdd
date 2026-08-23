@@ -210,10 +210,8 @@ func fHashOf(f string) string {
 }
 
 // evalFieldsDigest digests every evaluator-relevant prompt field: Q,
-// rationale, F, and the effective docs list. Two prompts with equal
-// digests produce identical evaluator input (modulo whitespace reflow).
-// Docs are length-prefixed so list shape is unambiguous: ["a","b"] must
-// not collide with ["a,b"] — production would load different documents.
+// rationale, F, and the effective docs list. Docs are length-prefixed
+// so ["a","b"] cannot collide with ["a,b"] (different production input).
 func evalFieldsDigest(question, rationale, fixTemplate string, docs []string) string {
 	docParts := make([]string, 0, len(docs))
 	for _, doc := range docs {

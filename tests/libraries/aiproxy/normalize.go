@@ -13,9 +13,8 @@ const (
 	runDirPlaceholder = "{{RUN_DIR}}"
 	homePlaceholder   = "{{HOME}}"
 
-	// runDirPattern matches the engine's run-directory basename —
-	// timestamp-pid, see services/bdd-cli/internal/infrastructure/fs/
-	// run_directory.go — which differs on every run and would otherwise
+	// runDirPattern matches the engine's run-directory basename — timestamp-pid
+	// (fs/run_directory.go), which differs every run and would otherwise
 	// make every request hash unstable.
 	runDirPattern = `\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d+`
 )
@@ -25,18 +24,9 @@ const (
 // stdout line goes through it.
 var runDirRe = regexp.MustCompile(runDirPattern)
 
-// normalizeText replaces the run-volatile substrings a call can embed —
-// the fixture tmpdir, the engine's per-run tmp directory name, and the
-// recording machine's home directory — with stable placeholders, so the
-// same logical request hashes identically across runs. Recording and
-// replay each normalize against their OWN cwd and home, which is exactly
-// what makes the comparison meaningful.
-//
-// Home matters for a reason cwd does not: cassettes are COMMITTED. An
-// agent CLI reports its own install and config paths, all of them under
-// $HOME, so without this the recording carries the username of whoever
-// recorded it into a public repository — and differs per machine, which
-// is the same failure the other two placeholders exist to prevent.
+// normalizeText replaces the run-volatile substrings a call can embed — cwd,
+// the engine's per-run tmp dir, and the recording machine's home (see
+// TestNormalizeReplacesHome for why home matters) — with stable placeholders.
 func normalizeText(text, cwd string) string {
 	text = strings.ReplaceAll(text, cwd, cwdPlaceholder)
 
@@ -45,13 +35,9 @@ func normalizeText(text, cwd string) string {
 	return runDirRe.ReplaceAllString(text, runDirPlaceholder)
 }
 
-// replaceHome substitutes the home directory only where it is a whole
-// path component — the exact path, or the path followed by a separator.
-//
-// A bare substring replace would also rewrite a SIBLING whose name
-// merely starts with it: with $HOME=/Users/peter, the unrelated
-// /Users/peterson/x becomes {{HOME}}son/x, which denormalizes on the
-// replaying machine into a path that never existed.
+// replaceHome substitutes the home directory only where it is a whole path
+// component (exact, or followed by a separator) — a bare substring replace
+// would also mangle a sibling like /Users/peterson (TestNormalizeLeavesSiblingPathsAlone).
 func replaceHome(text string) string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" || home == string(os.PathSeparator) {
@@ -82,9 +68,7 @@ func normalizeArgv(argv []string, cwd string) []string {
 
 // requestHash fingerprints one call: sha256 over the normalized argv
 // (NUL-joined) and the normalized stdin. Replay compares it against the
-// cassette's recorded hash — sequence matching finds the cassette, the
-// hash keeps it honest (a template or checklist edit since recording
-// must fail loudly, never replay a stale response).
+// cassette's hash, so an edit since recording fails loudly instead of replaying stale.
 func requestHash(argv []string, stdin []byte, cwd string) string {
 	hasher := sha256.New()
 

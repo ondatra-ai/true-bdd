@@ -1,13 +1,8 @@
 package inventory_test
 
-// §1c typed-epic validity golden (plan §1/§4). Epic parseability must come
-// from the REAL typed models.EpicDocument decoder — the SAME rejecting
-// ScenarioStep semantics the us create loader uses — not an id-only probe.
-// A YAML-valid epic whose story declaration carries a scalar (invalid) step
-// is therefore INVALID, so the harness never renders Create controls where
-// us create would itself reject the epic. Compile-safe: asserts the
-// existing `status` field with the TARGET value, so it is red (the current
-// id-only probe reports `parseable`) until the typed decoder lands.
+// §1c typed-epic validity golden (plan §1/§4): epic parseability comes from
+// the REAL typed models.EpicDocument decoder, so a YAML-valid epic with an
+// invalid step is INVALID — matching what us create itself would reject.
 
 import (
 	"testing"

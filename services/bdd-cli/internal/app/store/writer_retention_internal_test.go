@@ -1,11 +1,8 @@
 package store
 
-// Per-run DB-WRITER ACTOR (critique §9): all producers submit to one bounded
-// channel; the writer allocates next_seq and inserts in one transaction, so
-// concurrent producers get UNIQUE, CONTIGUOUS sequences, control events are
-// never dropped, and terminal stays last. Plus local retention (critique
-// §10): a 256 KiB logical cap with head+tail + ONE gap event, control events
-// retained independently, and nonterminal runs never pruned.
+// Per-run writer actor (writer.go AppendEvent, serialized via db.writeMu):
+// unique/contiguous seqs and control-event ordering, proven below under real
+// concurrency. Plus retention: 256 KiB cap, head+tail+ONE gap, nonterminal never pruned.
 
 import (
 	"strings"

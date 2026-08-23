@@ -27,10 +27,9 @@ type Totals struct {
 	Tokens   int
 	Wall     time.Duration
 	CostUSD  float64
-	// JudgeCostUSD is billed separately from CostUSD: it is the harness
-	// spending money to grade, not the engine spending it to work, and
-	// mixing them makes an expensive fixture indistinguishable from an
-	// expensive verdict.
+	// JudgeCostUSD is billed separately from CostUSD: the harness spending
+	// to grade, not the engine spending to work — mixed, an expensive
+	// fixture becomes indistinguishable from an expensive verdict.
 	JudgeCostUSD float64
 }
 
@@ -42,15 +41,13 @@ type Run struct {
 	// replay. Empty means the session predates the record — unknown, not
 	// live.
 	Mode string
-	// Planned is how many fixtures the invocation set out to run. It is
-	// the honest denominator for "passed": the fixtures on disk are only
-	// the ones that have finished, so counting those says how much of
-	// what is done is green, never how much of the run is left.
+	// Planned is how many fixtures the invocation set out to run — the
+	// honest denominator for "passed", since fixtures on disk are only
+	// the finished ones.
 	Planned int
-	// Complete is true when every fixture in the run has a harness
-	// record. That record is the last byte written into a fixture
-	// directory, so a complete run can never change again — which is what
-	// makes it safe to cache forever.
+	// Complete is true when every fixture has a harness record (see
+	// reporter.HarnessRecordPath) — a complete run can never change again,
+	// which is what makes it safe to cache forever.
 	Complete bool
 	Tests    []*reporter.Fixture
 	Totals   Totals
@@ -77,10 +74,9 @@ func newRun(session *reporter.Session) *Run {
 		byName:   make(map[string]*reporter.Fixture, len(session.Fixtures)),
 	}
 
-	// A session with no record of what it planned — anything recorded
-	// before the harness wrote one — falls back to what it can see. That
-	// is the old, growing denominator, but it is never smaller than the
-	// truth and it keeps those runs renderable.
+	// A session with no planned-record (predating the harness writing one)
+	// falls back to what it can see — never smaller than the truth, and it
+	// keeps those runs renderable.
 	if run.Planned == 0 {
 		run.Planned = len(session.Fixtures)
 	}
@@ -119,11 +115,9 @@ func (t *Totals) add(fixture *reporter.Fixture) {
 	}
 }
 
-// Snapshot is one consistent view of every run on disk.
-//
-// Immutable once published. Readers take the pointer once and hold it
-// for a whole request, so a refresh mid-request can never tear a
-// response.
+// Snapshot is one consistent view of every run on disk, immutable once
+// published: readers hold the pointer for a whole request, so a refresh
+// mid-request can never tear a response.
 type Snapshot struct {
 	// Version increments only when the content actually changed, so a
 	// polling client can hold its scroll position through a scan that

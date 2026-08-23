@@ -9,13 +9,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 )
 
-// TestRenderMatchesGolden pins the ticket document byte for byte.
-//
-// The goldens were produced by the Python `clickup.py render` this replaces,
-// so the first run of this test was the port's parity check. They stay as a
-// regression pin: the document is what a person reads before anything is
-// uploaded and what the model is told to transcribe verbatim, so a stray
-// space in it is a change to both.
+// TestRenderMatchesGolden pins the ticket document byte for byte (the
+// goldens came from the Python this replaces). A stray space is a change
+// both a person reading it and a model transcribing it would see.
 func TestRenderMatchesGolden(t *testing.T) {
 	t.Parallel()
 

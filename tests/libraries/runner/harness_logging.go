@@ -22,10 +22,8 @@ const msgAITurnUsage = "AI turn usage"
 const HarnessLogFile = "harness.log.json"
 
 // usageTokenKeys are the counters the claude CLI reports, mirroring
-// logTurnUsage in src/adapters/ai/claude_provider.go. Cache reads and
-// cache writes are priced differently from ordinary input, which is why
-// the provider keeps them apart; the record keeps both the split and the
-// sum.
+// logTurnUsage in src/adapters/ai/claude_provider.go — cache reads and
+// writes are priced differently from ordinary input, so kept apart.
 func usageTokenKeys() []string {
 	return []string{
 		"input_tokens",
@@ -49,11 +47,8 @@ type UsageSink struct {
 	records []usageEntry
 }
 
-// Between totals the usage stamped inside [from, until].
-//
-// Exact in a way pairing by index was not: a fixture that died before
-// reaching its judge has a zero window and claims nothing, rather than
-// inheriting the next fixture's cost and shifting every one after it.
+// Between totals the usage stamped inside [from, until] — exact in a
+// way pairing by index was not; see TestUsageOutsideJudgeWindowIsNotBilled.
 func (s *UsageSink) Between(from, until time.Time) (float64, map[string]int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -97,10 +92,9 @@ func (s *UsageSink) add(record slog.Record) {
 	s.records = append(s.records, entry)
 }
 
-// numberOf reads a counter regardless of how it reached slog. The CLI's
-// usage block is decoded into map[string]any, so its counts arrive as
-// float64 — but the cost is logged from a *float64 and a future field
-// could be a plain int.
+// numberOf reads a counter regardless of how it reached slog. Usage
+// counts decode from JSON as float64, but cost is logged from a
+// *float64 directly, and a future field could arrive as a plain int.
 func numberOf(value slog.Value) float64 {
 	switch value.Kind() {
 	case slog.KindFloat64:
@@ -165,21 +159,8 @@ func (h *harnessHandler) WithGroup(name string) slog.Handler {
 }
 
 // InstallHarnessLogging points this process's default slog at the
-// session, and returns the sink judge costs are billed from plus a
-// closer for the log file.
-//
-// The test process does not configure slog on its own, so every record
-// it emits — most importantly the judge's "AI turn usage" — reaches
-// stderr through the log package's default text format and exists
-// structurally nowhere. This adds a JSON copy beside the session and
-// keeps the console copy.
-//
-// The engine cannot reach this handler. It runs as a SUBPROCESS with its
-// own slog installed by src/internal/app/bootstrap/logging.go, writing
-// to its own <tmpdir>/tmp/true-bdd.log.json; its console half goes to
-// the subprocess's stdout, which Execute captures into a buffer and
-// persists under bdd-cli-logs/. Every record this sink sees is the
-// harness's own.
+// session, returning the billing sink and a log closer. The engine runs
+// as a SUBPROCESS with its own slog — this sink sees only the harness's own records.
 func InstallHarnessLogging(sessionRoot string) (*UsageSink, func(), error) {
 	path := filepath.Join(sessionRoot, HarnessLogFile)
 

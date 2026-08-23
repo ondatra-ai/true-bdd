@@ -12,10 +12,9 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-// ClaudeProvider runs a turn through the `claude` CLI via the
-// in-process SDK wrapper in src/claudecode. It is the only provider
-// with native system-prompt and per-tool allowlist support, so its
-// permissions come straight from the ExecutionMode with no projection.
+// ClaudeProvider runs a turn through the `claude` CLI via the in-process SDK
+// wrapper. It is the only provider with native system-prompt and per-tool
+// allowlist support, so ExecutionMode permissions apply directly, unprojected.
 type ClaudeProvider struct {
 	// No persistent client needed with severity1 SDK
 }
@@ -229,13 +228,9 @@ func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bo
 	return true, nil
 }
 
-// logTurnUsage emits the cost and token counters the CLI reports for a
-// finished turn. Without this the numbers are parsed off the wire and
-// dropped, leaving no way to attribute spend to a checklist role.
-//
-// Emitted as its own record rather than merged into the router's "AI
-// turn returned" line because only the claude provider sees a usage
-// report at all — crush and codex return bare text.
+// logTurnUsage logs the cost/token counters as a standalone "AI turn usage"
+// record: only the claude provider returns a usage report at all — crush
+// and codex return bare text, so this can't merge into the router's line.
 func logTurnUsage(msg *claudecode.ResultMessage) {
 	// Cache reads and cache writes are priced differently from ordinary
 	// input, so each counter is kept separate rather than summed.

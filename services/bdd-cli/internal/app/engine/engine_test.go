@@ -10,9 +10,8 @@ import (
 )
 
 // Tests use small primitives so failures point at engine logic, not
-// at parsing or rendering. Item type is int (interpreted as
-// "version"); prompt type and query type are both string so the
-// generateQ closure is trivial.
+// at parsing or rendering. Item is int ("version"); prompt and query
+// are both string, so generateQ is trivial.
 
 const fixMePrompt = "fix-me"
 
@@ -656,11 +655,9 @@ func TestEngine_GenerateQReceivesOneBasedIndex(t *testing.T) {
 	}
 }
 
-// The production bug this bound exists for: an applier that reports
-// success without changing anything. The check keeps failing, the walk
-// keeps restarting, and nothing inside the engine ever stops it — the
-// real run was killed by a 30-minute harness timeout after 5 wasted
-// apply turns. Without SequentialWalker.MaxFixes this test hangs.
+// Guards a real incident: an applier that reports success without
+// changing anything looped forever, killed by a 30-minute harness
+// timeout after 5 wasted turns — see SequentialWalker.MaxFixes.
 func TestSequentialWalker_StopsWhenFixesNeverConverge(t *testing.T) {
 	t.Parallel()
 
@@ -728,11 +725,9 @@ func TestSequentialWalker_ConvergingWalkIsNotStopped(t *testing.T) {
 	}
 }
 
-// The bound counts fixes per query, not per walk, and this is why: a
-// nine-prompt refine that fixes each prompt once is a healthy walk
-// making steady progress. Counting per walk would have failed it at
-// the sixth prompt — several us-refine fixtures pipe 20+ apply
-// answers precisely because that is normal.
+// The bound counts fixes per query, not per walk: a nine-prompt refine
+// that fixes each prompt once is healthy, but per-walk counting would
+// fail it at prompt six — some us-refine fixtures pipe 20+ applies.
 func TestSequentialWalker_ManyDistinctFixesAreNotStuck(t *testing.T) {
 	t.Parallel()
 

@@ -10,9 +10,8 @@ const (
 )
 
 // commandArgs maps a dispatched run's typed command to the CLI argument
-// vector the remote spawns its own binary with (plan §3.2). The store's
-// enum allowlist has already validated the command; an unknown value
-// here is defensive.
+// vector the remote spawns its own binary with (plan §3.2); the store's enum
+// allowlist already validates the command, so an unknown value here is defensive.
 func commandArgs(run RunSpec) ([]string, error) {
 	switch run.Command {
 	case commandVersion:

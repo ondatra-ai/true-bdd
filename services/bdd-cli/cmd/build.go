@@ -28,13 +28,9 @@ func NewBuildCommand(provide containerProvider) *cobra.Command {
 	return buildCmd
 }
 
-// buildRunE is the run shape both `build` subcommands use after sourcing
-// their lazily-built container, resolved spec path, and fix flag.
-//
-// It receives the cobra command as well, because `build tests` needs a
-// SECOND document — it renders its test files from the registry and the
-// architectural spec together — and only the command knows whether the
-// user passed the flag or left the host config to decide.
+// buildRunE is the run shape both `build` subcommands share, receiving the
+// resolved container, spec path, and fix flag — plus the cobra command,
+// since `build tests` alone needs a second document and must check its flag.
 type buildRunE func(
 	ctx context.Context,
 	cmd *cobra.Command,
@@ -55,28 +51,18 @@ type specFlag struct {
 	label string
 }
 
-// buildSpecCmd builds the cobra shell shared by every `build`
-// subcommand: a spec-path flag whose empty default defers to the host
-// config, plus --fix. The container is resolved from the provider at
-// RunE time (never at construction), so building the command tree
-// touches no host config.
+// buildSpecCmd builds the cobra shell shared by every `build` subcommand: a
+// spec-path flag deferring to host config, plus --fix. The container is
+// resolved at RunE time only (see containerProvider), never at construction.
 func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvider, run buildRunE) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
 		Long:  long,
 		Args:  argsWithUsage(cobra.NoArgs),
-		// Every failure these commands RETURN is a failure of the run,
-		// not of the invocation: an unresolvable document, a spec that
-		// will not load, a walk that did not converge. Cobra's default
-		// is to print the full help text after any error, which reads
-		// as "you typed the flags wrong" and buries the line that
-		// actually says what happened.
-		//
-		// Its switch is all-or-nothing though, so silencing usage here
-		// silences it for a mistyped argument too — the one case where
-		// the help text IS the answer. argsWithUsage carries it back on
-		// that path only.
+		// A run failure (bad doc, bad spec, non-converging walk) shouldn't
+		// dump help text like a mistyped flag would — so usage is silenced
+		// globally and argsWithUsage restores it only for that one case.
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			container, err := provide()

@@ -176,10 +176,8 @@ func (s *partitionState) classifyPreFix(cell cellID, files *cellFiles) {
 }
 
 // resultConflicts reports whether the surviving result.yaml carries a
-// canonical verdict that contradicts the re-parsed response. The
-// evaluator saves the response best-effort BEFORE parsing and the
-// result after — a failed response write followed by a successful
-// result save leaves exactly this contradiction behind.
+// canonical verdict that contradicts the re-parsed response: the
+// evaluator writes response before result, so a partial write leaves this.
 func (s *partitionState) resultConflicts(files *cellFiles, responseClass VerdictClass) bool {
 	if files.ResultPath == "" || !responseClass.Credits() {
 		return false

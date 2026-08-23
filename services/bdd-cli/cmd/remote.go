@@ -15,20 +15,9 @@ import (
 
 const defaultServerURL = "http://127.0.0.1:4517"
 
-// resolveServerURL picks the harness server URL the remote connects OUT to.
-// Precedence (plan: connect-cli-to-vercel-harness → Codex r1 #13):
-//   - an explicit `--server` flag wins;
-//   - else the set-once `TRUE_BDD_SERVER` env var, if present and non-empty;
-//   - else the loopback default.
-//
-// `Flags().Changed("server")` is the only reliable signal that the user passed
-// `--server`: Cobra installs the loopback value as the flag DEFAULT, so a flag
-// left at the default is ambiguous between "user chose loopback" and "user did
-// not pass the flag at all".
-//
-// A trailing slash is trimmed so the relay client's `baseURL + path`
-// concatenation never produces a double slash — HTTPS URLs from `vercel env`
-// or copy-paste often carry one (plan r1 #13: HTTPS URL normalization).
+// resolveServerURL resolves the harness server URL: --server flag, then
+// TRUE_BDD_SERVER env, then loopback. Flags().Changed is required: Cobra
+// installs the default INTO the flag, so a flag left at default can't otherwise be told from "not passed".
 func resolveServerURL(cmd *cobra.Command, flagValue string) string {
 	var raw string
 	if cmd.Flags().Changed("server") {
@@ -42,10 +31,9 @@ func resolveServerURL(cmd *cobra.Command, flagValue string) string {
 	return normalizeServerURL(raw)
 }
 
-// normalizeServerURL trims trailing slashes. It deliberately does NOT reject
-// malformed values: the remote surfaces a deterministic request-time error
-// against the bad URL (and a test pins that the function returns the raw value
-// unchanged except for the trailing slash).
+// normalizeServerURL trims trailing slashes. It deliberately does not
+// reject malformed values — the remote surfaces a deterministic
+// request-time error against the bad URL instead.
 func normalizeServerURL(raw string) string {
 	return strings.TrimRight(raw, "/")
 }

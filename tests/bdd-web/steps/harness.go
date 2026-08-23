@@ -81,15 +81,8 @@ type Harness struct {
 }
 
 // NewHarness builds the application, starts it on a free loopback port,
-// installs the Playwright driver and launches a browser.
-//
-// Everything heavy happens here, once. The returned closer stops the
-// server and the browser; the caller registers it with t.Cleanup.
-//
-// The driver install is idempotent and cached under the user's home, so
-// only the first run on a machine pays for it. It is also why this suite
-// stays out of the one-minute commit gate: a gate that downloads a
-// browser is a gate people learn to skip.
+// installs the Playwright driver, and launches a browser — once, cached
+// under the user's home, which is why this suite skips the one-minute commit gate.
 func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), error) {
 	bundle, err := buildBundle(ctx, repoRoot)
 	if err != nil {
@@ -124,13 +117,9 @@ func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), e
 	return harness, harness.stop, nil
 }
 
-// buildBundle compiles the application and assembles the standalone
-// bundle exactly as the Dockerfile's runtime stage does: the standalone
-// output plus `.next/static`, which Next does not copy itself.
-//
-// Built from source on every invocation rather than cached by content
-// hash. A suite that might be asserting against a stale build is a suite
-// whose green means nothing, and the build is seconds on a warm tree.
+// buildBundle compiles the app and assembles the standalone bundle
+// exactly as the Dockerfile's runtime stage does. Built from source every
+// time, not cached: a stale build would make this suite's green mean nothing.
 func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 	appDir := filepath.Join(repoRoot, "services", "bdd-web")
 
@@ -198,11 +187,8 @@ func freePort(ctx context.Context) (int, error) {
 }
 
 // startServer spawns the bundle's own `node server.js` and waits for it
-// to answer.
-//
-// Deliberately NOT CommandContext: the server has to outlive this call
-// by the whole length of the suite, and a context that cancels when the
-// setup returns would take it down with it. Its lifetime is stop's.
+// to answer. Deliberately not CommandContext — see the nolint below: its
+// lifetime is stop's, not this call's.
 func (h *Harness) startServer(ctx context.Context, bundle string, port int) error {
 	//nolint:noctx // the server outlives this call; stop() owns its lifetime
 	server := exec.Command("node", "server.js")

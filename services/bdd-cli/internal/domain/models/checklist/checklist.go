@@ -16,15 +16,9 @@ type ConfigBlock struct {
 	MaxApplyAttempts int `yaml:"max_apply_attempts,omitempty"`
 }
 
-// EngineBlock selects a model tier per AI role in a checklist cell.
-// Each value names a tier declared under `engine.models` in
-// true-bdd.yaml (xhigh / high / coder), never a model id — which model
-// a tier means is the host project's decision, not the checklist's.
-//
-// An empty field falls through to that role's engine-level default —
-// `engine.default_prompt_model`, `engine.default_fix_model`, or
-// `engine.default_apply_model`. An individual prompt overrides any of
-// these; see Prompt.
+// EngineBlock selects a model tier per AI role in a checklist cell. Each
+// value names a tier under `engine.models` (never a model id); an empty
+// field falls through to the role's `engine.default_*_model`, and a prompt can override any of these; see Prompt.
 type EngineBlock struct {
 	// PromptModel runs the validation turn that answers `Q:`.
 	PromptModel string `yaml:"prompt_model,omitempty"`

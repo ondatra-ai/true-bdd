@@ -656,11 +656,8 @@ func ErrFixApplierNoContentFound(resultPath string) error {
 }
 
 // ErrFixNotAppliedByModel reports an applier turn that ran to completion
-// but wrote nothing, self-reported via `applied: false`.
-//
-// This is a hard stop rather than a retry: the summary the model gives
-// is almost always an environmental blocker (a denied write root, a
-// forbidden path) that the identical next attempt would hit again.
+// but wrote nothing, self-reported via `applied: false`. A hard stop, not a
+// retry: the blocker (a denied write root, a forbidden path) is environmental and an identical retry would repeat it.
 func ErrFixNotAppliedByModel(target, summary string) error {
 	message := "fix applier reported applied: false"
 	if target != "" {
@@ -679,12 +676,9 @@ func ErrFixNotAppliedByModel(target, summary string) error {
 	}
 }
 
-// ErrFixLoopNotConverging reports a cell whose fixes kept reporting
-// success without ever making the check pass.
-//
-// Without this the walk restarts on every applied fix and never
-// terminates — the only thing stopping it is an external timeout, which
-// a host project does not have.
+// ErrFixLoopNotConverging reports a cell whose fixes kept reporting success
+// without ever making the check pass. Without this the walk restarts on
+// every applied fix and never terminates — a host project has no external timeout to stop it.
 func ErrFixLoopNotConverging(applies int) error {
 	return &AppError{
 		Category: CategoryAI,
@@ -733,10 +727,9 @@ func ErrWriteStoryFileFailed(cause error) error {
 	}
 }
 
-// Multi-provider routing errors. A model tier that cannot be resolved,
-// or a CLI with no registered provider, is always fatal: the engine
-// must never silently fall back to a different model than the
-// checklist asked for.
+// Multi-provider routing errors: an unresolvable tier or an unregistered
+// CLI is always fatal — the engine must never silently fall back to a
+// different model than the checklist asked for.
 var (
 	ErrProviderNotRegistered = errors.New("no provider registered for cli")
 	ErrProviderExecution     = errors.New("provider execution failed")

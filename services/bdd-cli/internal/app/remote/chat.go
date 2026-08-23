@@ -1,14 +1,8 @@
 package remote
 
 // chat.go implements the workspace chat work item (plan Slice 5): a
-// narrowly-scoped Claude turn — NOT the run/build machinery — that returns a
-// structured result `{reply_text, edit: {path, new_content} | null}`. The
-// edit is deliberately full-content replacement so it flows through the SAME
-// doc_write YAML gate and revision mechanism the direct-edit path uses (S1,
-// one persistence path for both). A deterministic driver (env
-// TRUE_BDD_CHAT_DRIVER=deterministic) short-circuits the Claude turn with a
-// scripted structured result so protocol tests exercise the identical
-// buffer→doc_write path with no model call.
+// narrowly-scoped Claude turn returning `{reply_text, edit: {path,
+// new_content} | null}`, routed through the SAME doc_write gate the direct-edit path uses (S1).
 
 import (
 	"context"
@@ -24,11 +18,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 )
 
-// chatRouter builds the provider router and resolves the engine's
-// default model tier for a chat turn. Unlike the checklist commands
-// this path has no container, so it reads the host config directly. A
-// chat turn is validation-shaped — it reasons and answers rather than
-// applying a fix — so it runs on the prompt role's default.
+// chatRouter builds the provider router and resolves the engine's default
+// model tier for a chat turn — unlike the checklist commands there's no
+// container, so it reads the host config directly and runs on the prompt role's default.
 func chatRouter() (*ai.Router, provider.ModelRef, error) {
 	cfg, err := config.NewViperConfig()
 	if err != nil {
@@ -131,9 +123,7 @@ func (h *chatHandler) turn(ctx context.Context, payload chatPayload) chatResult 
 
 // deterministicChatTurn short-circuits the Claude turn with a scripted
 // structured result for `@probe <directive> <arg>` messages (README-testids:
-// add-term / add-scenario / append). On a non-file page (CurrentPath nil)
-// EVERY directive replies with edit=null — never a write with no backing
-// file.
+// add-term / add-scenario / append); on a non-file page it always replies with edit=null.
 func deterministicChatTurn(payload chatPayload) chatResult {
 	last := lastUserMessage(payload.Conversation)
 
@@ -341,18 +331,9 @@ func parseChatResult(raw string) (chatResult, bool) {
 	return result, true
 }
 
-// leadingDocMarker / trailingDocMarker match a stray YAML document-separator
-// (`---`) a model sometimes wraps its answer in despite being told "no code
-// fences, no prose outside the JSON" — `---` is not a MARKDOWN fence, so a
-// model instructed to avoid those sometimes reaches for YAML's OWN document
-// marker instead (observed live in a10). A leading/trailing `---` turns
-// single-document new_content into a two-document STREAM: Go's
-// yaml.Unmarshal silently decodes only the first document (so the CLI's own
-// gate would accept it), but the browser's strict single-document
-// `YAML.parse()` throws "multiple documents" — so the client-side gate
-// (P10b) would silently discard an otherwise-correct edit forever. Stripped
-// unconditionally: the original file content never carries a `---`, so this
-// can only ever remove the model's accidental fencing, never legitimate content.
+// leadingDocMarker / trailingDocMarker strip a stray YAML `---` that a
+// model reaches for instead of a markdown fence (observed live in a10);
+// unstripped, it silently vanishes: Go's decoder accepts the 2-doc stream, the browser's parser rejects it.
 var (
 	leadingDocMarker  = regexp.MustCompile(`^---[ \t]*\r?\n`)
 	trailingDocMarker = regexp.MustCompile(`\r?\n---[ \t]*\r?\n?$`)

@@ -51,18 +51,9 @@ scenario:
   # join that decides which test suite owns the scenario: the entry
   # under architecture.testing.suites[] whose `service:` matches.
   service: str()
-  # The generated test file this scenario's test is written into,
-  # repo-relative. `build tests` renders it; `build tests --fix` writes
-  # it. Several scenarios MAY name the same file, and are emitted into
-  # it in id order — that is how related behaviours group into one file
-  # a reader can hold instead of one file each.
-  #
-  # Required and never defaulted. Which behaviours belong together is an
-  # editorial judgement, and a generator that guessed would scatter one
-  # command's scenarios across forty files. What the schema cannot check
-  # the generator does: the path must sit under the owning suite's
-  # `path:`, must end in `_test.go`, must not be inside that suite's
-  # `steps/` tree, and every scenario sharing it must share a `service:`.
+  # Generated test file this scenario is written into, repo-relative.
+  # Several scenarios may share one file (emitted in id order). Required,
+  # never defaulted — grouping is editorial judgement no generator should guess.
   path: str()
   # Free-form note on where the behaviour comes from. Optional.
   requirement: str(required=False)
@@ -74,11 +65,9 @@ scenario:
   # by `us apply`. An empty list is valid and says so on the record: the
   # scenario exists and no story claims it yet.
   user_stories: list(include('user_story'))
-  # How long the scenario's run may take, as a Go duration ("10m").
-  # Absent means the suite's default. The one key here that is not
-  # behaviour: how long a machine needs is not something a scenario can
-  # assert, so it cannot be a step. A value that is not a positive
-  # duration is refused rather than rounded up to the default.
+  # How long the scenario's run may take, as a Go duration ("10m"); absent
+  # means the suite's default. Not a step (a machine's speed isn't
+  # behaviour) — an invalid duration is refused, not rounded up to default.
   timeout: str(required=False)
   merged_steps: include('merged_steps')
 
@@ -89,10 +78,9 @@ user_story:
   merge_date: str(required=False)
 
 ---
-# All three blocks are optional in shape but a scenario with no step at
-# all is one no test can execute; that is left to `build tests` to
-# report against the suite, since which blocks a scenario needs depends
-# on the behaviour rather than on the document.
+# All three blocks are optional in shape; a scenario with no step at all
+# is one no test can execute, but that check is left to `build tests` —
+# which blocks are needed depends on the behaviour, not the document.
 merged_steps:
   given: list(any(str(), map(str())), required=False)
   when: list(any(str(), map(str())), required=False)

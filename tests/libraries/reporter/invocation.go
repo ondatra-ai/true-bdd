@@ -10,10 +10,9 @@ type Invocation struct {
 	Binary string
 	Args   []string
 	Dir    string
-	// Reconstructed marks a command the reporter derived from logged
-	// options rather than read from a log record. Shown to the reader,
-	// because a reconstructed command is a claim about what the engine
-	// would build, not a record of what it did.
+	// Reconstructed marks a command derived from logged options rather than
+	// read from a log record — shown to the reader, since it is a claim
+	// about what the engine would build, not a record of what it did.
 	Reconstructed bool
 	Known         bool
 }
@@ -47,10 +46,9 @@ func quoteArg(arg string) string {
 	return "'" + strings.ReplaceAll(arg, "'", `'\''`) + "'"
 }
 
-// Base flags src/claudecode/internal/cli/discovery.go always passes.
-// Mirrored here only for the reconstruction path — logs written before
-// the engine started recording its argv still get a command line, and
-// it is labelled as reconstructed wherever it is shown.
+// Base flags src/claudecode/internal/cli/discovery.go always passes,
+// mirrored here only for the reconstruction path (logs predating argv
+// recording still get a command line, labelled Reconstructed).
 func claudeBaseArgs() []string {
 	return []string{
 		"--output-format", "stream-json", "--verbose",
@@ -61,10 +59,9 @@ func claudeBaseArgs() []string {
 // claudePermissionMode is what ClaudeProvider.buildClientOptions pins.
 const claudePermissionMode = "acceptEdits"
 
-// reconstructClaudeInvocation rebuilds the claude command from the
-// options the engine did log: the tool allow/deny lists, the model, and
-// the system prompt's size. Flag order follows BuildCommand's, so the
-// result is comparable to a real one.
+// reconstructClaudeInvocation rebuilds the claude command from options the
+// engine did log (tool lists, model, system prompt size), in BuildCommand's
+// flag order so the result is comparable to a real one.
 func reconstructClaudeInvocation(turn *Turn) Invocation {
 	args := claudeBaseArgs()
 

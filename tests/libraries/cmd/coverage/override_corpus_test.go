@@ -8,10 +8,8 @@ import (
 )
 
 // soloOverrideChecklist reproduces a single-prompt fixture override:
-// the run checklist contains ONLY the mini corpus's F-bearing prompt
-// (shipped q2), copied verbatim. Its run-local index is therefore 1
-// while the shipped global index is 2 — the reindexing case every
-// single-prompt fixture relies on.
+// the run checklist contains only the mini corpus's F-bearing prompt
+// (shipped q2). Run-local index 1 maps to shipped global index 2.
 const soloOverrideChecklist = `
 version: "1.0"
 sections:
@@ -62,10 +60,9 @@ func buildSoloOverrideCorpus(t *testing.T) *corpus {
 	return corp
 }
 
-// TestSoloOverrideEarnsShippedCredit proves a single-prompt override
-// run earns full shipped-branch credit for the prompt it copies: pass,
-// semantic fail, and the complete fix-effective chain land on shipped
-// q2 even though the run-local prompt index is 1.
+// TestSoloOverrideEarnsShippedCredit proves a single-prompt override run
+// earns full shipped-branch credit for the prompt it copies: pass,
+// semantic fail, and the fix-effective chain land on shipped q2.
 func TestSoloOverrideEarnsShippedCredit(t *testing.T) {
 	t.Parallel()
 

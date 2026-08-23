@@ -48,10 +48,9 @@ type ReconnectPlan struct {
 	Backoff       bool
 }
 
-// ReconnectFor maps a signal to the reconnect plan (plan §2): a poll 404 /
-// stale-epoch re-registers with the SAME client-owned session id; a transport
-// failure re-registers with capped full-jitter backoff; a normal completion or
-// a domain conflict never re-registers.
+// ReconnectFor maps a signal to the reconnect plan (plan §2): 404 /
+// stale-epoch re-register with the SAME session id; transport/capacity
+// failures re-register with backoff; else no reconnect.
 func ReconnectFor(signal string) ReconnectPlan {
 	switch signal {
 	case signalSessionGone, signalStaleEpoch:

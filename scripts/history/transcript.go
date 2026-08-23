@@ -9,16 +9,9 @@ import (
 	"strings"
 )
 
-// readJSONL reads a transcript, dropping any line that will not parse.
-//
-// A partial tail is normal — the hook fires while the harness is still
-// writing — and the event's own `last_assistant_message` backstops whatever
-// the tail was going to say, so a malformed line is skipped rather than
-// reported. A missing file is likewise not an error.
-//
-// Streamed rather than read whole: a live transcript runs to tens of
-// megabytes, and one entry carrying a large tool result is far past the
-// default scanner's line limit.
+// readJSONL reads a transcript, dropping any line that will not parse. A
+// partial tail is normal (hook fires mid-write; last_assistant_message backstops it).
+// Streamed via bufio.Reader, not Scanner: a large tool result exceeds Scanner's default line-length limit.
 func readJSONL(path string) []map[string]any {
 	handle, err := os.Open(path) //nolint:gosec // the path comes from the harness's own event.
 	if err != nil {

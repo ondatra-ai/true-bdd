@@ -24,9 +24,8 @@ type EvaluatorArtifact struct {
 }
 
 // decodeEvaluatorName decodes "NN-<subject>-checklist-<sanitized-path>-<kind>"
-// by right-anchoring on the known sanitized section paths of the run's
-// own checklist — never by dash-splitting (subjects contain dashes and
-// can end with one).
+// by right-anchoring on the run's own checklist section paths — never by
+// dash-splitting, since subjects may contain dashes.
 func decodeEvaluatorName(name string, sanitizedPaths []string) (EvaluatorArtifact, bool) {
 	kinds := []string{kindResultYAML, kindResponse, kindSystem, kindUser}
 

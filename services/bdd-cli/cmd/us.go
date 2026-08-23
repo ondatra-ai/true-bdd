@@ -35,10 +35,9 @@ func NewUSCommand(provide containerProvider) *cobra.Command {
 	return usCmd
 }
 
-// buildStoryCmd builds the cobra shell shared by every `us` subcommand
-// that takes a story number and an optional --fix flag. The container is
-// resolved from the provider at RunE time (never at construction), so
-// building the command tree touches no host config.
+// buildStoryCmd builds the cobra shell shared by every `us` subcommand that
+// takes a story number and an optional --fix flag. The container is
+// resolved at RunE time only (see containerProvider), never at construction.
 func buildStoryCmd(use, short, long string, provide containerProvider, run storyRunE) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use,

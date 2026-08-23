@@ -11,10 +11,9 @@ import (
 // version` and echoed by the harness "Test connection" control (P8).
 const Version = "0.1.0"
 
-// newVersionCmd builds the `version` subcommand — a real, non-Claude,
-// non-interactive command that constructs no bootstrap container. It
-// prints the version line and, when the event channel is enabled (under
-// `true-bdd remote`), emits an `ok` result event (plan §3.1/§3.2).
+// newVersionCmd builds the `version` subcommand, which never touches the
+// bootstrap container (see containerProvider) — it prints the version line
+// and, under `true-bdd remote`, emits an `ok` result event (plan §3.1/§3.2).
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",

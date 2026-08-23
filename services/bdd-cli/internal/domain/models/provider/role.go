@@ -1,9 +1,8 @@
 package provider
 
-// Role is the AI turn a model tier is being resolved for. Each role has
-// its own engine-level default, so "neither the prompt nor its checklist
-// named a tier" means a different model for the turn that writes a file
-// than for the one that validates a question.
+// Role is the AI turn a model tier is being resolved for. Each role has its
+// own engine-level default, so an unnamed tier means a different model for
+// the turn that writes a file than for the one that validates a question.
 type Role string
 
 const (

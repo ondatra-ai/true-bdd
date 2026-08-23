@@ -17,13 +17,8 @@ import (
 )
 
 // generatedMarker is Go's own convention for a machine-written file, and
-// what `.golangci.yaml`'s generated-file exclusion keys on.
-//
-// Matched against a TRIMMED line, so a CRLF checkout reads the same as
-// an LF one. The engine's scenariogen carries its own copy of this
-// convention — a wire agreement between a generator and a reader that
-// may not be written in Go at all — and the two must accept the same
-// files, or one writes what the other refuses to recognise.
+// what `.golangci.yaml`'s generated-file exclusion keys on. Matched
+// against a trimmed line (CRLF-safe); the engine's scenariogen keeps a copy in sync.
 var generatedMarker = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
 
 // ErrNotGenerated signals a file holding a scenario call but carrying no
@@ -45,11 +40,6 @@ type ScenarioCall struct {
 // ScanScenarioCalls parses every .go file in dir and returns each
 // two-argument `<pkg>.New(<ident>, "<literal>")` call whose enclosing
 // function is a top-level Test function.
-//
-// Parsed rather than compiled-and-reflected, for the same reason the
-// bdd-cli suite parses step registrations: the answer is needed by a
-// test that must not first build the package it is asking about, and by
-// a harness that has to know the planned set before running anything.
 func ScanScenarioCalls(dir string) ([]ScenarioCall, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -153,17 +143,8 @@ func scenarioCallID(fset *token.FileSet, node ast.Node) (string, int, bool) {
 }
 
 // CheckCoverage refuses a suite whose registry and generated test files
-// disagree, in either direction.
-//
-// Both directions, because both are silent. A scenario with no generated
-// test is a behaviour nothing executes; a generated test naming a
-// scenario that no longer exists fails on its own, but one whose file
-// was moved by hand does not — it keeps passing from the wrong place,
-// and the next regeneration writes a second copy beside it.
-//
-// It reports every disagreement at once: these arrive in batches, and a
-// check that names one per run makes a regeneration into four rounds of
-// discovery.
+// disagree, in either direction: a scenario with no test executes
+// nothing, and a test naming an unknown scenario fails on its own.
 func (s *Suite[S]) CheckCoverage(t *testing.T, pkgDir, repoRoot string) {
 	t.Helper()
 
@@ -282,9 +263,8 @@ func checkEveryTestHasAScenario[S any](t *testing.T, suite *Suite[S], calls []Sc
 }
 
 // checkGeneratedMarkers refuses a file that declares a scenario without
-// saying it was generated. The marker is what tells the next
-// regeneration the file is safe to overwrite, so a file missing it is
-// one a regeneration will refuse to touch — silently drifting for good.
+// saying it was generated: the marker is what tells the next
+// regeneration the file is safe to overwrite.
 func checkGeneratedMarkers(t *testing.T, calls []ScenarioCall, repoRoot string) {
 	t.Helper()
 
@@ -331,15 +311,8 @@ func hasGeneratedMarker(data []byte) bool {
 }
 
 // CheckFixtureTrees refuses a run in which the registry and a fixtures
-// directory disagree.
-//
-// A scenario naming a tree that does not exist fails loudly on its own —
-// but a TREE with no scenario does not: it simply stops being run, and a
-// directory nobody executes looks exactly like a directory that passes.
-// Renaming a fixture without updating the registry is the way that
-// happens.
-//
-// It also refuses the other asymmetry: two scenarios naming ONE tree.
+// directory disagree: a scenario naming a missing tree fails loudly, but
+// a TREE with no scenario just stops running — silently, forever.
 func (s *Suite[S]) CheckFixtureTrees(t *testing.T, dir string, name func(Scenario) string) {
 	t.Helper()
 
@@ -376,17 +349,8 @@ func (s *Suite[S]) CheckFixtureTrees(t *testing.T, dir string, name func(Scenari
 }
 
 // checkTreesClaimedOnce indexes the trees the owned scenarios name and
-// refuses a tree two of them name.
-//
-// The harness keys a run directory on the tree name and clears it before
-// each run, so the second scenario to name a tree deletes the first's
-// entire record — its engine log, its manifest snapshot, its verdict —
-// after that scenario has already passed. The report then shows one run
-// for two scenarios and a planned count that does not match.
-//
-// Expressible only since the tree name moved into the scenario's Given
-// step: while a fixture carried its own manifest, one directory could
-// only ever be one run.
+// refuses a tree two of them name: the harness keys a run dir on tree
+// name and clears it per run, so a duplicate deletes the first's record.
 func checkTreesClaimedOnce(t *testing.T, owned []Scenario, name func(Scenario) string) map[string]bool {
 	t.Helper()
 
@@ -416,12 +380,6 @@ func checkTreesClaimedOnce(t *testing.T, owned []Scenario, name func(Scenario) s
 // Unbound resolves every owned scenario without running anything and
 // returns the steps no definition matches, keyed by scenario id. Empty
 // means the suite covers its half of the registry.
-//
-// This is the question `build tests` asks, answered by the same resolver
-// the run itself uses. Answering it any other way — by parsing the
-// source, or by asking a model to read it — produces a second opinion
-// that can disagree with what actually happens, and a check that
-// disagrees with the runner is worse than no check.
 func (s *Suite[S]) Unbound() (map[string][]Step, error) {
 	if s.err != nil {
 		return nil, s.err
@@ -449,14 +407,8 @@ func (s *Suite[S]) Unbound() (map[string][]Step, error) {
 }
 
 // coverageReportEnv names the file `build tests` asks a suite to write
-// its step-coverage report to.
-//
-// The same string lives in the engine's stepcoverage package, and that
-// duplication is deliberate: this is a wire protocol between the engine
-// and ANY suite, including one written in a language that could not
-// import a Go constant. Sharing it as code would say the engine only
-// ever talks to Go, which is the one thing the arrangement is meant not
-// to say.
+// its step-coverage report to. The same string is deliberately
+// duplicated in the engine's stepcoverage package — a language-agnostic wire protocol.
 const coverageReportEnv = "TRUEBDD_COVERAGE_REPORT"
 
 const reportPerm = 0o644
@@ -483,13 +435,9 @@ type coverageAmbiguity struct {
 type coverageReport struct {
 	Schema int    `json:"schema"`
 	Suite  string `json:"suite"`
-	// Examined names every scenario this suite actually resolved.
-	//
-	// Without it an empty `unbound` is ambiguous between "every step
-	// binds" and "the run died before it looked", and the engine reads
-	// the second as the first — dropping scenarios from its walk that
-	// nothing ever checked. With it, a scenario absent from this list is
-	// simply walked.
+	// Examined names every scenario this suite actually resolved. Without
+	// it, an empty Unbound is ambiguous between "every step binds" and
+	// "died before it looked" — the engine would read a crash as full coverage.
 	Examined  []string            `json:"examined"`
 	Unbound   []coverageGap       `json:"unbound"`
 	Ambiguous []coverageAmbiguity `json:"ambiguous"`
@@ -502,12 +450,6 @@ type coverageReport struct {
 // ReportStepCoverage fails for every registry step that binds to no step
 // definition, and — when TRUEBDD_COVERAGE_REPORT is set — writes the
 // same answer as JSON for `build tests` to read.
-//
-// One code path serving both readers, on purpose. A person running this
-// test by hand and the engine deciding which scenarios need a fix turn
-// have to be told the same thing; two implementations of "does this step
-// bind" would eventually disagree, and the disagreement would be a
-// scenario the engine believes is covered and the suite does not.
 func (s *Suite[S]) ReportStepCoverage(t *testing.T) {
 	t.Helper()
 
@@ -515,15 +457,9 @@ func (s *Suite[S]) ReportStepCoverage(t *testing.T) {
 
 	gaps, err := s.Unbound()
 	if err != nil {
-		// Ambiguity is a finding about a step; anything else is this
-		// suite failing to answer. Reported apart, because telling an
-		// operator to remove a duplicate definition that does not exist
-		// is worse than telling them nothing.
-		//
-		// Field by field, not as one formatted string: the engine renders
-		// the scenario id and the patterns into its refusal from their own
-		// fields, and a report that left them blank would print an empty
-		// id, an empty pattern list, and the message twice.
+		// Populated field by field, not as one formatted string: the
+		// engine renders the scenario id and patterns into its own
+		// refusal text, and blank fields would double the message.
 		var ambiguous *AmbiguousStepError
 
 		if errors.As(err, &ambiguous) {

@@ -8,29 +8,14 @@ import (
 	"time"
 )
 
-// Stdin collection tuning. The engine writes the whole request in one
-// burst right after spawning, so collection stops as soon as the byte
-// count reaches the recorded budget and stays stable
-// (stdinStablePeriod), or — when the incoming request is shorter than
-// the recording, e.g. a narrower pid in a normalized path, or a changed
-// prompt — after a quiet window with data (stdinQuietPeriod).
-// stdinReadTimeout is the hard ceiling for a request that never
-// arrives; the hash check right after turns every short read into a
-// loud stale-cassette failure instead of a hang.
+// Stdin collection tuning. Collection stops once the byte count reaches the
+// recorded budget and holds stable, or after a quiet window with data (see
+// stdinQuietPeriod); stdinReadTimeout is the ceiling for a request that never arrives.
 const (
 	stdinReadTimeout = 30 * time.Second
-	// stdinQuietPeriod is the fallback for a request that never reaches
-	// the recorded byte count, and that is the COMMON case rather than
-	// the exception: the recorded length counts the recording machine's
-	// paths, and the live request carries the replaying machine's. A
-	// run directory named after a 4-digit pid where the recording had 5
-	// makes the request one byte shorter per mention — enough to miss
-	// `size >= want` forever and pay this wait on every single turn.
-	//
-	// So it is short. It only has to outlast the gap between chunks of
-	// one burst, which is sub-millisecond in practice; the request hash
-	// right after is what actually decides whether the bytes were right,
-	// and a truncated read fails there loudly rather than passing.
+	// stdinQuietPeriod is the fallback for a request that never reaches the
+	// recorded byte count — the COMMON case: recorded length reflects the
+	// recording machine's paths, so e.g. a shorter pid at replay misses `size >= want` forever.
 	stdinQuietPeriod  = 400 * time.Millisecond
 	stdinStablePeriod = 200 * time.Millisecond
 	stdinPollPeriod   = 50 * time.Millisecond
@@ -61,17 +46,11 @@ func startStdinCollector() *stdinCollector {
 }
 
 // collect returns the incoming request: what arrives until the stop
-// conditions documented at the tuning consts. A goroutine + timers
-// rather than SetReadDeadline: deadlines on an inherited stdin pipe are
-// not reliably supported, and a silent no-op deadline turns a changed
-// request into a hang instead of a stale-cassette failure.
+// conditions documented at the tuning consts. A goroutine + timers, not
+// SetReadDeadline — deadlines on an inherited stdin pipe aren't reliably supported.
 func (c *stdinCollector) collect(want int) []byte {
-	// A zero budget means the RECORDING had empty stdin — it does not
-	// mean this call does. Returning early here would hash nil, match
-	// the empty-stdin cassette, and serve it to a request that carried
-	// bytes: the one way a changed request could pass the hash check the
-	// whole design rests on. So the quiet window is still observed, and
-	// anything that arrives is returned to be hashed and rejected.
+	// A zero budget means the RECORDING had empty stdin, not that this call
+	// does — see collectUnexpected for why late-arriving bytes still get hashed.
 	if want == 0 {
 		return c.collectUnexpected()
 	}
@@ -103,15 +82,9 @@ func (c *stdinCollector) collect(want int) []byte {
 	}
 }
 
-// collectUnexpected waits out the quiet window for a call whose
-// recording had no stdin, and returns whatever arrived anyway.
-//
-// Usually nothing does, and this costs one quiet period. When something
-// does, returning it is the point: the caller hashes it, the hash misses
-// the empty-stdin cassette, and the run fails loudly instead of
-// replaying a response recorded for a different request. EOF short-
-// circuits the wait, which is the common case for a CLI whose prompt
-// travels in argv.
+// collectUnexpected waits out the quiet window for a call whose recording
+// had no stdin: late-arriving bytes still get hashed and rejected rather
+// than silently matching the empty-stdin cassette. EOF short-circuits the wait.
 func (c *stdinCollector) collectUnexpected() []byte {
 	deadline := time.After(stdinReadTimeout)
 
@@ -128,12 +101,9 @@ func (c *stdinCollector) collectUnexpected() []byte {
 		case <-time.After(stdinPollPeriod):
 		}
 
-		// The quiet window only starts once something has arrived. An
-		// empty buffer waits for EOF or the hard timeout instead: there
-		// is no way to tell "this call sends no stdin" from "the first
-		// byte has not landed yet" without waiting, and stopping early
-		// on the guess is exactly how a late request would get hashed as
-		// empty and matched against the wrong cassette.
+		// The quiet window only starts once something has arrived — an empty
+		// buffer waits for EOF or the hard timeout, since there's no way to
+		// tell "no stdin" from "first byte not landed yet" without waiting.
 		if quiet == nil && c.buf.Len() > 0 {
 			quiet = time.After(stdinQuietPeriod)
 		}
@@ -151,13 +121,9 @@ func collectedEnough(size, want int, stable time.Duration) bool {
 	return size > 0 && stable >= stdinQuietPeriod
 }
 
-// awaitClose blocks until the parent closes the shim's stdin (or
-// signals it) — the engine's own end-of-turn signal: the claude
-// transport closes stdin only after it has CONSUMED the result frame,
-// and crush's engine hands the shim EOF immediately. Exiting before
-// this races the engine's pipe drain — process-exit teardown cancels
-// the stream reader with replayed frames still in the pipe buffer,
-// truncating the response the engine sees.
+// awaitClose blocks until the parent closes the shim's stdin — the engine's
+// end-of-turn signal: claude closes only after consuming the result frame;
+// crush hands EOF immediately. Exiting early truncates the response.
 func (c *stdinCollector) awaitClose() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)

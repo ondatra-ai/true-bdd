@@ -8,23 +8,16 @@ import (
 	"time"
 )
 
-// What CodeRabbit answers a review request with. It always answers one of
-// these three, and nothing in the predecessor read the answer, so PR #76
-// requested four reviews in 25 minutes, was refused, and waited 900s each
-// time for a review that was never going to arrive.
+// What CodeRabbit answers a review request with — one of these three.
+// The predecessor didn't check: PR #76 requested four reviews in 25 min,
+// was refused each time, and waited 900s per attempt for nothing.
 const (
 	ackRateLimited = "Review rate limited"
-	// The third answer, and it also arrives under "⚠️ Action not completed":
-	//
+	// The third answer also arrives under "⚠️ Action not completed":
 	//     ⚠️ Action not completed
 	//     No files to review.
-	//
-	// `path_filters` scopes review to tests/, so a PR whose diff touches
-	// nothing there gives the bot nothing to do. It says so in seconds and
-	// posts an APPROVED review with an empty body. Measured on PR #81, whose
-	// own changes against main are rules and a plugin. Not matching this used
-	// to fall through to the ackBudget timeout and report "the bot may be
-	// down" about a bot that had answered in ten seconds.
+	// path_filters scopes review to tests/: PR #81's tests/-only diff got this
+	// and used to fall through to the ackBudget timeout as a false "bot may be down" report.
 	ackNothingToReview = "No files to review"
 )
 
@@ -64,10 +57,8 @@ type ghReview struct {
 }
 
 // requestReview asks for a full review, waiting out the rate limit for as
-// long as it takes.
-//
-// Being pushed already is a precondition of asking: a review of a commit
-// origin does not have is a review of the wrong thing.
+// long as it takes. Precondition: HEAD must already be pushed, or the
+// review targets the wrong commit.
 func (r *Run) requestReview(round int) {
 	headline := fmt.Sprintf("round %d of %d", round, lastRound)
 	if round > lastFixRound {
@@ -91,10 +82,9 @@ func (r *Run) requestReview(round int) {
 			r.dief("CodeRabbit did not answer the review request within %s. "+
 				"Check https://github.com/%s/pull/%d — the bot may be down.", ackBudget, r.repo, r.pr)
 		case verdictNothingToReview:
-			// The bot evaluated the PR and its filters left nothing. That is a
-			// completed review of zero files, not a refusal: asking again would
-			// get the same answer forever. HEAD counts as reviewed so `merge`
-			// does not then reject the empty-bodied APPROVED it just posted.
+			// Zero files reviewed is a completed review, not a refusal — retrying
+			// gets the same answer forever. Mark headSHA reviewed now so `merge`
+			// doesn't reject the empty-bodied APPROVED CodeRabbit already posted.
 			r.reviewedThisRun[r.headSHA()] = true
 
 			return
@@ -109,11 +99,9 @@ func (r *Run) requestReview(round int) {
 	}
 }
 
-// awaitAcknowledgement waits for the bot's answer to a request.
-//
-// Checks ackNothingToReview before ackRateLimited: both arrive under the same
-// "Action not completed" heading, and only the wording separates a spent
-// quota from an empty diff.
+// awaitAcknowledgement waits for the bot's answer to a request. Check
+// ackNothingToReview before ackRateLimited: both share the "Action not
+// completed" heading; only the wording tells a spent quota from an empty diff.
 func (r *Run) awaitAcknowledgement(baselineComment int) (verdict, int) {
 	for waited := time.Duration(0); waited < ackBudget; {
 		time.Sleep(poll)
@@ -139,14 +127,9 @@ func (r *Run) awaitAcknowledgement(baselineComment int) (verdict, int) {
 	return verdictSilent, 0
 }
 
-// awaitReview waits for a review OBJECT, not an acknowledgement. False means
-// the acknowledgement turned out to be a rate limit after all.
-//
-// The acknowledgement is re-read on every poll because **CodeRabbit edits it
-// in place**: on PR #77 comment 5330633865 was posted at 15:48:15 saying the
-// review was triggered and rewritten at 15:48:47 to say the quota was spent.
-// Reading it once caught the optimistic version and then waited the full 900s
-// for a review that was never coming.
+// awaitReview waits for a review OBJECT; false means the ack was later
+// edited to a rate limit. Re-read every poll: PR #77 comment 5330633865 was
+// posted "triggered" then edited 32s later to "quota spent" — reading once misses that.
 func (r *Run) awaitReview(baselineReview, ackID int) bool {
 	for waited := time.Duration(0); waited < reviewBudget; {
 		time.Sleep(poll)
@@ -203,11 +186,9 @@ func rateLimitWait(body string) (time.Duration, bool) {
 	return time.Duration(minutes)*time.Minute + time.Minute, true
 }
 
-// recordReviewsAfter notes which commits the reviews newer than sinceID were
-// posted against.
-//
-// Called the moment a requested review lands, which is the only point at which
-// "reviewed and found nothing" is still distinguishable from "rubber stamped".
+// recordReviewsAfter notes which commits got reviews newer than sinceID.
+// Call it the moment a review lands — that's the only point where "reviewed,
+// found nothing" is still distinguishable from a later rubber stamp.
 func (r *Run) recordReviewsAfter(sinceID int) {
 	for _, review := range r.reviews() {
 		if review.ID > sinceID && isBot(review.User.Login) {
@@ -248,9 +229,7 @@ func (r *Run) newestCommentID() int {
 
 // newestReviewID is the same for review objects.
 //
-// Deliberately reduced here rather than with `--jq`: `gh api --paginate`
-// applies the filter to EACH page and concatenates, so a filter ending in
-// `max` emits one number per page.
+// No --jq: gh api --paginate filters per page, so a `max` filter emits one per page.
 func (r *Run) newestReviewID() int {
 	newest := 0
 	for _, review := range r.reviews() {

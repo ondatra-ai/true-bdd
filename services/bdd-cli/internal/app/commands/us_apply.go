@@ -21,8 +21,7 @@ import (
 
 // scratchRegistryFilename is the scratch copy's basename inside the run
 // tmpdir. Deliberately fixed: one registry per run, and the name never
-// leaves the tmpdir, so it stays stable regardless of where
-// documents.scenarios_yaml points.
+// leaves the tmpdir, so it stays stable regardless of where documents.scenarios_yaml points.
 const scratchRegistryFilename = "scenarios.yaml"
 
 // ApplyDeps bundles what `us apply` needs at the command boundary.
@@ -38,10 +37,9 @@ type ApplyDeps struct {
 	RunDir                  *fs.RunDirectory
 }
 
-// RunApply drives `us apply`. Walks every acceptance criterion
-// against the us-apply checklist. Each cell's fix mutates a scratch
-// copy of the requirements registry via Claude's Edit tool; the
-// canonical file is replaced atomically only on Converged.
+// RunApply drives `us apply`. Walks every acceptance criterion against the
+// us-apply checklist; each fix mutates a scratch copy of the registry, and
+// commitApplyWalk (below) replaces the canonical file atomically once converged.
 func RunApply(
 	ctx context.Context,
 	deps ApplyDeps,
@@ -94,10 +92,9 @@ func loadScenarios(
 			return nil, fmt.Errorf("failed to seed scratch registry: %w", err)
 		}
 
-		// us-apply declares no `docs:` keys — the registry it checks
-		// against rides on the subject, so the evaluator's document
-		// record is empty for this command. This is the only place the
-		// target is nameable.
+		// us-apply declares no `docs:` keys, so the evaluator's document
+		// record is empty for this command — this log line is the only
+		// place the target registry path is nameable.
 		slog.Info("Seeded scratch registry", "from", requirementsFile, "to", scratchPath)
 
 		scenarios, _, err := deps.StoryScenarioParser.ParseStoryScenarios(storyNumber, scratchPath)
@@ -116,10 +113,9 @@ func scenarioSubject(item *template.ScenarioApplyData) (string, string) {
 	return item.LineageScenarioID, item.Description
 }
 
-// scenarioOnItemStart is the OnItemStart implementation for apply:
-// prints the "AC N/M: <description>" banner that the BDD fixture
-// (and any human watching) uses to track per-AC progress through
-// the outer walk.
+// scenarioOnItemStart is the OnItemStart implementation for apply: prints
+// the "AC N/M: <description>" banner that the BDD fixture (and any human
+// watching) uses to track per-AC progress.
 func scenarioOnItemStart(idx, total int, item *template.ScenarioApplyData) {
 	console.Header(
 		fmt.Sprintf("AC %d/%d: %s", idx+1, total, item.Description),
@@ -127,10 +123,9 @@ func scenarioOnItemStart(idx, total int, item *template.ScenarioApplyData) {
 	)
 }
 
-// scenarioPostFix is the PostFix implementation for apply. The fix
-// already mutated the scratch file via the Edit tool, so the item
-// itself is unchanged — Run's next Query iteration will read the
-// new state from disk.
+// scenarioPostFix is the PostFix implementation for apply. The fix already
+// mutated the scratch file via the Edit tool, so the item itself is
+// unchanged; Run's next Query iteration reads the new state from disk.
 func scenarioPostFix(
 	_ context.Context,
 	item *template.ScenarioApplyData,
@@ -144,11 +139,9 @@ func scenarioPostFix(
 	return item, nil
 }
 
-// commitApplyWalk returns the Finalize closure for `us apply`. On
-// Converged it atomically renames the scratch registry over the
-// canonical file; every other stop reason leaves the canonical
-// untouched (the scratch copy is preserved in tmpDir for
-// inspection).
+// commitApplyWalk returns the Finalize closure for `us apply`. On Converged
+// it atomically renames the scratch registry over the canonical file; any
+// other stop reason leaves the canonical untouched, scratch kept in tmpDir for inspection.
 func commitApplyWalk(
 	scratchPath, requirementsFile string,
 ) func(*engine.Result[*template.ScenarioApplyData]) error {

@@ -8,10 +8,9 @@ import (
 	"testing"
 )
 
-// A snapshot must describe the tree it was pointed at. Both of these
-// entries would silently pull in content from outside it — the symlink
-// because os.ReadFile follows links, the hard link because the entry is
-// a regular file and nothing in fs.DirEntry says otherwise.
+// A snapshot must describe the tree it was pointed at: os.ReadFile follows
+// symlinks, and a hard-linked entry looks like a regular file to
+// fs.DirEntry, so both could silently pull in content from outside it.
 func TestSnapshotRejectsSymlink(t *testing.T) {
 	t.Parallel()
 

@@ -5,15 +5,9 @@ import (
 	"io"
 )
 
-// Event is a hook payload, kept as a decoded map rather than a struct.
-//
-// Deliberate: this runs on every prompt and every Stop, it is wired into the
-// harness rather than called by us, and it must never be the reason a turn
-// fails. A struct makes the field types part of the contract — an `agent_id`
-// that arrived as a number instead of a string would fail the whole decode
-// and turn "skip this sub-agent turn" into "log it", which is the one thing
-// the check exists to prevent. Reading fields the way Python's `.get()` read
-// them keeps a surprise in one field confined to that field.
+// Event is a hook payload, kept as a decoded map rather than a struct: a
+// struct's typed fields would fail the WHOLE decode on a type surprise
+// (e.g. agent_id as a number), turning "skip this sub-agent turn" into "log it".
 type Event map[string]any
 
 // DecodeEvent reads a hook event. A malformed one is an empty event, not an

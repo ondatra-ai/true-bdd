@@ -12,10 +12,9 @@ import (
 	"time"
 )
 
-// Environment keys the re-exec helper child reads. The process-supervision
+// Environment keys the re-exec helper child reads: the process-supervision
 // tests spawn THIS test binary as an engineered child (no Claude), driving
-// the flock-inheritance, SIGINT-EOF, forced TERM→KILL escalation, and
-// nested-descendant-cleanup paths deterministically.
+// flock-inheritance, SIGINT-EOF, TERM→KILL escalation, and nested-descendant-cleanup paths deterministically.
 const (
 	testChildModeEnv     = "TRUE_BDD_REMOTE_TEST_CHILD_MODE"
 	testGrandchildPidEnv = "TRUE_BDD_REMOTE_TEST_GC_PID_FILE"
@@ -78,8 +77,7 @@ func blockStdinChild() {
 
 // ignoreSignalsChild ignores SIGINT and SIGTERM and blocks (on a timer, so
 // the runtime's deadlock detector stays quiet) until SIGKILL — the
-// forced-escalation target. It never reads stdin, so a stdin close cannot
-// end it either.
+// forced-escalation target; it never reads stdin, so a stdin close cannot end it either.
 func ignoreSignalsChild() {
 	signal.Ignore(syscall.SIGINT, syscall.SIGTERM)
 	emitReady()

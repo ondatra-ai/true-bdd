@@ -10,25 +10,18 @@ import (
 )
 
 // ErrNoScenariosForSuite signals that the registry has scenarios but
-// none the named suite owns. A suite that runs nothing passes trivially,
-// so it is refused: the two ways to reach this state — a scenario whose
-// `service:` is misspelled, and a suite wired to a service nobody writes
-// scenarios for — are both bugs, and both look exactly like success.
+// none the named suite owns — refused because a suite that runs nothing
+// passes trivially, indistinguishable from a bug that looks like success.
 var ErrNoScenariosForSuite = errors.New("no registry scenario names this suite's service")
 
 // ErrAmbiguousStep signals a step matched by more than one definition.
-// Refused rather than resolved by registration order: which one runs
-// would then depend on the order of two lines in a file nobody reads
-// while writing scenarios.
+// Refused rather than resolved by registration order, which would make
+// behavior depend on line order in a file nobody reads for that.
 var ErrAmbiguousStep = errors.New("step matches more than one definition")
 
-// AmbiguousStepError is the ambiguity resolve found, with its three parts
-// kept apart.
-//
-// Typed rather than only formatted, because the coverage report has a
-// field for each part: packing all three into one string leaves the
-// engine's refusal rendering a blank scenario id, an empty pattern list,
-// and the whole message twice.
+// AmbiguousStepError is the ambiguity resolve found, with its three
+// parts kept apart — typed rather than formatted, for the coverage
+// report's per-field rendering (see ReportStepCoverage in coverage.go).
 type AmbiguousStepError struct {
 	Scenario string
 	Step     string
@@ -64,16 +57,14 @@ type stepDef[S any] struct {
 
 // Suite is a registry-driven test suite. S is the per-scenario state the
 // suite's own step definitions share — the tmpdir, the run result, the
-// browser page. bddgo never looks inside it; it only builds one per
-// scenario and hands it to each step in turn.
+// browser page — which bddgo builds once per scenario but never inspects.
 type Suite[S any] struct {
 	opts  Options
 	spec  SuiteSpec
 	steps []stepDef[S]
 	// err holds the first step pattern that would not compile. Recorded
-	// rather than raised, because Step is called from TestMain where
-	// there is no *testing.T to fail; the scenarios report it instead,
-	// each one naming itself.
+	// rather than raised, since Step is called from TestMain where there
+	// is no *testing.T to fail; each scenario reports it instead.
 	err error
 	// newState builds the per-scenario state. Registered through Init.
 	newState func(*World) (*S, error)
@@ -87,11 +78,8 @@ type Suite[S any] struct {
 }
 
 // New loads the architectural spec, resolves the named suite and returns
-// an empty suite ready for step registration. A spec that does not
-// declare the suite fails here, before any scenario is read.
-//
-// It takes no *testing.T: the suite is built once per process, in
-// TestMain, and outlives every test that uses it.
+// an empty suite ready for step registration. It takes no *testing.T:
+// the suite is built once per process, in TestMain, and outlives every test.
 func New[S any](opts Options) (*Suite[S], error) {
 	spec, err := LoadSuiteSpec(opts.Architecture, opts.Suite)
 	if err != nil {
@@ -106,21 +94,16 @@ func (s *Suite[S]) Spec() SuiteSpec {
 	return s.spec
 }
 
-// Init registers the per-scenario state constructor. Required.
-//
-// The constructor receives the World — the scenario and its *testing.T —
-// so a suite that needs teardown registers it with w.T.Cleanup and gets
-// LIFO ordering against everything the steps register later.
+// Init registers the per-scenario state constructor. Required. The
+// constructor receives the World (scenario + *testing.T), so teardown
+// registered via w.T.Cleanup gets LIFO ordering against later steps.
 func (s *Suite[S]) Init(newState func(*World) (*S, error)) {
 	s.newState = newState
 }
 
 // Step binds a regexp to the code that executes a matching step. The
 // pattern's capture groups become the step's arguments, in order.
-//
-// Anchoring is the caller's business — `^…$` is the usual and the safe
-// choice, since an unanchored pattern quietly matches steps it was never
-// meant to.
+// Anchoring (`^…$`) is the caller's business — unanchored quietly over-matches.
 func (s *Suite[S]) Step(pattern string, run func(*S, []string) error) {
 	compiled, err := regexp.Compile(pattern)
 	if err != nil {
@@ -143,11 +126,9 @@ func (s *Suite[S]) all() ([]Scenario, error) {
 	return s.loaded, s.loadErr
 }
 
-// Owned returns the registry scenarios this suite owns, in id order.
-//
-// An empty result is not an error here. Whether a suite owning nothing
-// is a bug is a question about the repository rather than about one
-// invocation, so CheckCoverage asks it — see coverage.go.
+// Owned returns the registry scenarios this suite owns, in id order. An
+// empty result is not an error here — whether that's a bug is
+// CheckCoverage's question to ask (see ErrNoScenariosForSuite).
 func (s *Suite[S]) Owned() ([]Scenario, error) {
 	all, err := s.all()
 	if err != nil {
@@ -192,14 +173,8 @@ type resolved[S any] struct {
 }
 
 // resolve binds every step of a scenario to a definition WITHOUT running
-// any of them, and returns the ones it could not bind.
-//
-// A pre-pass rather than a match-as-you-go loop, for the same reason the
-// engine validates a whole spec before spawning anything: a scenario
-// whose fourth step is undefined should say so before its first step
-// creates a tmpdir and spawns a subprocess. It is also what lets a
-// failure list EVERY missing definition at once, which is what makes the
-// fix a single edit instead of four rounds of discovery.
+// any of them, and returns the ones it could not bind — a pre-pass so a
+// scenario's fourth step can fail before the first spawns a subprocess.
 func (s *Suite[S]) resolve(scenario Scenario) ([]resolved[S], []Step, error) {
 	bound := make([]resolved[S], 0, len(scenario.Steps))
 
@@ -207,10 +182,8 @@ func (s *Suite[S]) resolve(scenario Scenario) ([]resolved[S], []Step, error) {
 
 	for _, step := range scenario.Steps {
 		// A model-run step is bound the moment it is read: what it asks
-		// for is precisely what no regexp can settle, so consulting the
-		// pattern table would only ever report it undefined — and
-		// `build tests` would then demand a definition for a step that
-		// must not have one.
+		// for is precisely what no regexp can settle, so the pattern
+		// table would only ever report it undefined.
 		if step.Mode != ModeDeterministic {
 			bound = append(bound, resolved[S]{step: step})
 
@@ -257,12 +230,8 @@ func patternList[S any](matches []resolved[S]) []string {
 }
 
 // runScenario resolves, builds state, and executes the steps in order.
-//
-// Reached only through Run.Done — a generated test file declares the
-// steps, and this runs them. There is no entry point that walks the
-// owned set directly any more: a scenario without a generated test is
-// not a scenario this suite silently runs anyway, it is a gap
-// CheckCoverage names.
+// Reached only through Run.Done — there is no entry point that walks
+// the owned set directly; an unrun scenario is a gap CheckCoverage names.
 func (s *Suite[S]) runScenario(t *testing.T, scenario Scenario) {
 	t.Helper()
 
@@ -291,20 +260,17 @@ func (s *Suite[S]) runScenario(t *testing.T, scenario Scenario) {
 	for index, step := range bound {
 		err = s.runStep(state, step, &clauses)
 		if err != nil {
-			// The remaining steps are reported rather than run: once a
-			// When has not happened, every Then after it would assert
-			// against a state the scenario never reached, and their
-			// failures would bury the one that matters.
+			// The remaining steps are reported rather than run: once a When
+			// has not happened, every Then after it would assert against a
+			// state the scenario never reached, burying the failure that matters.
 			t.Fatalf("%s\n  step %d/%d failed: %s\n  %v\n  not run: %s",
 				scenario.ID, index+1, len(bound), step.step, err, remaining(bound[index+1:]))
 		}
 	}
 
-	// The verdict comes last and only here, which is why the collect
-	// step above returns nil instead of ruling in place: a scenario whose
-	// exit code was wrong has already stopped at the t.Fatalf above, and
-	// paying a model to read the wreckage would answer a question nobody
-	// asked.
+	// The verdict comes last and only here, so a scenario whose exit code
+	// was already wrong stops at the t.Fatalf above — paying a model to
+	// read the wreckage would answer a question nobody asked.
 	err = judgeClauses(state, clauses)
 	if err != nil {
 		t.Fatalf("%s\n  %v", scenario.ID, err)

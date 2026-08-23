@@ -60,13 +60,9 @@ const (
 	KeywordBut   = "But"
 )
 
-// Step is one Given/When/Then line of a scenario.
-//
-// Text is what a step definition's pattern is matched against, and
-// neither the modifier nor a model-run prefix is part of it: `and the
-// file is written` and `the file is written` are the same assertion said
-// twice, so one definition must serve both, and `llm:`/`judge:` say who
-// runs the step rather than what it says.
+// Step is one Given/When/Then line of a scenario. Text excludes both
+// the modifier and a model-run prefix (see Classify): `and the file is
+// written` and `the file is written` bind to the same definition.
 type Step struct {
 	Keyword string
 	Mode    StepMode
@@ -94,20 +90,14 @@ type Scenario struct {
 	Description string
 	Service     string
 	// Path is the generated test file this scenario's Go test is written
-	// into, repo-relative. Several scenarios may share one.
-	//
-	// bddgo does not validate it — by the time a test runs, the file it
-	// was generated into is the one calling. Only the coverage guard
-	// reads it, to catch a generated file someone moved by hand.
+	// into, repo-relative. Several scenarios may share one; bddgo itself
+	// does not validate it — only the coverage guard reads it.
 	Path        string
 	Requirement string
 	Feature     string
 	// Timeout is the scenario's own budget for the work its When step
-	// kicks off. Zero means the suite's default.
-	//
-	// A harness budget rather than behaviour, and the one key here that
-	// is: how long a run may take is a fact about the machine it runs on,
-	// so it cannot be asserted and does not belong in a step.
+	// kicks off. Zero means the suite's default — a harness budget rather
+	// than behaviour, since run duration can't be asserted as a step.
 	Timeout time.Duration
 	Steps   []Step
 }
@@ -239,10 +229,8 @@ func buildScenario(scenarioID string, entry rawScenario) (Scenario, error) {
 }
 
 // parseScenarioTimeout reads the optional `timeout:` key. Absent means
-// zero, which the suite reads as "use your default"; a value that is not
-// a positive duration is refused rather than rounded up to the default,
-// because a typo'd budget silently becoming the default is exactly the
-// substitution this repository refuses everywhere else.
+// zero (use the suite's default); an invalid value is refused, never
+// silently rounded up to the default.
 func parseScenarioTimeout(value string) (time.Duration, error) {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -261,14 +249,9 @@ func parseScenarioTimeout(value string) (time.Duration, error) {
 	return timeout, nil
 }
 
-// flattenSteps renders the three blocks into one ordered list. A step
-// that named its own `and`/`but` keeps it; the first step of each block
-// takes the block's keyword and the rest default to `And`, which is how
-// the same lines read on a feature file.
-//
-// Whether a step is model-run is settled here too, against the BLOCK's
-// keyword rather than the step's own: `- but: 'judge: …'` under then: is
-// a rule, and the `But` it spelled is the reader's punctuation.
+// flattenSteps renders the three blocks into one ordered list: a step
+// that named its own `and`/`but` keeps it, the first step of each block
+// takes the block's keyword (see stepKeyword for the block-vs-own rule).
 func flattenSteps(steps rawMergedSteps) ([]Step, error) {
 	out := make([]Step, 0, len(steps.Given)+len(steps.When)+len(steps.Then))
 
@@ -305,17 +288,9 @@ func flattenSteps(steps rawMergedSteps) ([]Step, error) {
 	return out, nil
 }
 
-// stepKeyword resolves one step's keyword. The BLOCK's keyword wins at
-// index 0 even when the step spelled a modifier for itself, and the same
-// rule lives in the engine's statementKeyword.
-//
-// It has to win, not merely read better. A generated file states each
-// step by calling the method its keyword names, and Run.modify gives
-// And/But the block OPENED above them — so a block emitted as `s.And(…)`
-// first would inherit the previous block, and a `judge:` clause the
-// loader classified against then: would be refused at run time as
-// illegal in when:. `And` as the opening line of a block is not Gherkin
-// anyway.
+// stepKeyword resolves one step's keyword: the BLOCK's keyword wins at
+// index 0 even over the step's own modifier — an index-0 `s.And(...)`
+// would inherit the PREVIOUS block via Run.modify, breaking judge: routing.
 func stepKeyword(step rawStep, blockKeyword string, index int) string {
 	if index == 0 {
 		return blockKeyword

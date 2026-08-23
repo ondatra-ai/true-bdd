@@ -14,18 +14,8 @@ import (
 var cassetteNamePattern = regexp.MustCompile(`^([a-z]+)-(\d{3})$`)
 
 // CheckCassettesConsumed reports whether the run used every recorded
-// call, per binary.
-//
-// This is the one divergence the per-call request hash cannot catch. The
-// hash fires when a call arrives that does not match its cassette; it
-// says nothing about a call that never arrives. An engine that stops one
-// turn early — a loop bound that changed, a validation that now
-// short-circuits — consumes a prefix of the cassettes, matches every one
-// of them, and finishes quietly. Counting what was left on the shelf is
-// what turns that silence into a failure.
-//
-// The shim's cursor file holds the index of the last call it served, so
-// the cursor and the cassette count must agree exactly.
+// call, per binary — the one divergence a per-call request hash can't
+// catch: an engine that stops early matches a prefix and finishes quietly.
 func CheckCassettesConsumed(cassettesDir, stateDir string) []string {
 	recorded, err := countCassettes(cassettesDir)
 	if err != nil {

@@ -17,55 +17,41 @@ var ErrNoServices = errors.New(
 	"architecture file has no services to walk",
 )
 
-// ErrNoTestSuites signals that the architecture YAML declares no
-// `architecture.testing.suites:`. A spec that never says how its tests
-// run describes a project no build pipeline can act on, so it is a
-// startup refusal rather than a walk over zero items reported as green.
+// ErrNoTestSuites signals no `architecture.testing.suites:` declared. A
+// spec that never says how tests run is a startup refusal, not a walk
+// over zero items quietly reported as green.
 var ErrNoTestSuites = errors.New(
 	"architecture file has no test suites to walk",
 )
 
 // ErrUnknownSuiteService signals a suite whose `service:` names no entry
-// in `services[]`. Caught here because that name is what decides which
-// source root the fix applier may write: a typo would otherwise grant
-// nothing and the walk would look like a fix that never lands.
+// in `services[]`: that name is what grants the fix applier its write
+// root, so an uncaught typo would grant nothing and look like a fix that never lands.
 var ErrUnknownSuiteService = errors.New(
 	"test suite names a service the architecture does not declare",
 )
 
-// ErrMissingSuiteCommand signals that a declared suite left one of the
-// three mandatory `commands:` entries empty. The engine has no built-in
-// invocation to fall back on — how a suite runs is spec, not an engine
-// default — so an incomplete block is a startup error, never a silent
-// substitution.
+// ErrMissingSuiteCommand signals a suite left one of the three mandatory
+// `commands:` entries empty. The engine has no built-in invocation to
+// fall back on, so an incomplete block is a startup error, never a silently substituted default.
 var ErrMissingSuiteCommand = errors.New("test suite command is required")
 
-// SuiteCommands is the `commands:` block on one test suite: the command
-// line to run that suite in each of the three AI-dependency modes.
-// `build code` executes Replay today; Record and Live are declared and
-// validated but not yet reachable from any command.
-//
-// All three are mandatory so a spec can never half-declare how its
-// tests run: a suite that names only the mode it happens to use today
-// is a suite whose other modes silently do not exist.
+// SuiteCommands is the `commands:` block on one test suite. `build code`
+// executes Replay today; Record and Live are declared and validated but
+// not yet reachable from any command (see ErrMissingSuiteCommand for why all three are mandatory).
 type SuiteCommands struct {
 	Record string `yaml:"record"`
 	Replay string `yaml:"replay"`
 	Live   string `yaml:"live"`
 	// Coverage reports which registry steps bind to no step definition,
-	// without running a scenario. Optional, and the only one that is:
-	// a suite declaring none falls back to `build tests` asking a model
-	// the same question in prose, so adding this key is an upgrade a
-	// host takes when it wants one rather than a break when it does not.
+	// without running a scenario. The only optional command: a suite
+	// without one falls back to `build tests` asking a model the same question in prose.
 	Coverage string `yaml:"coverage,omitempty"`
 }
 
-// Suite is one entry under `architecture.testing.suites[]`. Mirrors the
-// testrunner.Config shape; converted at the LoadItems boundary.
-//
-// Service names the one service this suite exercises. A suite covering
-// two services is two suites: a failure that names no single source
-// root is a failure no fix prompt can be pointed at.
+// Suite is one entry under `architecture.testing.suites[]`, mirroring
+// testrunner.Config (converted at the LoadItems boundary). Service names
+// the ONE service this suite exercises — a suite covering two is two suites, since a fix prompt needs one root.
 type Suite struct {
 	Name       string        `yaml:"name"`
 	Service    string        `yaml:"service"`
@@ -77,9 +63,8 @@ type Suite struct {
 }
 
 // Label is how a suite is named in progress lines and refusals:
-// `<service>/<suite>`. Both halves, because a repository with two
-// suites over one service and one suite over two services are both
-// legible only when the pair is printed.
+// `<service>/<suite>`. Both halves: a repo with two suites over one
+// service, or one suite over two, is unambiguous only when the pair prints.
 func (s Suite) Label() string {
 	return s.Service + "/" + s.Name
 }
@@ -132,10 +117,8 @@ type rawArchitecture struct {
 }
 
 // Load reads the YAML architecture file at `path`, decodes the testing
-// suites and the service source roots the build pipeline needs, and
-// returns both sorted by name. Purely path-driven: the cmd layer
-// resolves the path (flag override or documents.architecture_yaml)
-// before calling it.
+// suites and service source roots the build pipeline needs, and returns
+// both sorted by name. Purely path-driven — the cmd layer resolves the path before calling it.
 func Load(path string) (*Architecture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -183,17 +166,9 @@ func Load(path string) (*Architecture, error) {
 	return arch, nil
 }
 
-// validateSuites refuses a spec whose suites cannot be walked: one
-// naming a service that does not exist, or one that left a `commands:`
-// entry empty. Checked here rather than at first use so the whole
-// document is judged before the first subprocess is spawned: a run that
-// discovers one suite's tests and only then finds the next unrunnable
-// has already cost minutes for a verdict the spec could have given
-// immediately.
-//
-// The message names the full YAML path — suite and key — because a spec
-// with several suites has several places this could be wrong and
-// "commands.replay is required" alone names none of them.
+// validateSuites refuses a spec whose suites cannot be walked — unknown
+// service, or an empty `commands:` entry — before the first subprocess
+// spawns; messages name the full YAML path since a bare error can't tell suites apart.
 func validateSuites(path string, arch *Architecture) error {
 	for _, suite := range arch.Suites {
 		_, known := arch.ServicePath(suite.Service)

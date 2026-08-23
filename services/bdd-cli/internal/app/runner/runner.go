@@ -16,13 +16,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
-// ErrExpectedNonconvergence marks a finalize error that is an EXPECTED,
-// non-erroneous nonconvergence — a `build tests` / `build code` walk that
-// legitimately did not converge (plan §3.2 / finding 7). The command still
-// returns the error so the CLI exit code is unchanged (mirror, don't fix),
-// but the terminal envelope reports finalization_ok=true and a not_fixed
-// classification rather than a finalization FAILURE. Build finalizers wrap
-// this sentinel; genuine write failures (e.g. a story-file write) do not.
+// ErrExpectedNonconvergence marks a legitimately non-converged build
+// tests/code walk (plan §3.2/finding 7): the CLI still exits non-zero,
+// but only build finalizers may wrap it — a genuine write failure must not.
 var ErrExpectedNonconvergence = errors.New("expected nonconvergence")
 
 // renderedPrompt is the Q value the engine passes around. Pairs a
@@ -40,13 +36,9 @@ func renderPrompt(idx int, prompt checklistmodels.PromptWithContext) *renderedPr
 	return &renderedPrompt{Prompt: prompt, Index: idx}
 }
 
-// Spec describes one checklist-driven command: its name, the
-// checklist YAML it drives, the items it walks, and the per-command
-// hooks (load + post-fix + finalize). Everything else — header,
-// engine wiring, report rendering — is identical across commands and
-// lives in Run.
-//
-// To author a new us-* command, fill in this struct and call Run.
+// Spec describes one checklist-driven command: its name, the checklist
+// it drives, the items it walks, and per-command hooks (load, post-fix,
+// finalize) — everything else lives in Run. Fill it in and call Run.
 type Spec[I any] struct {
 	// Name is the human-facing command name (e.g. "us create").
 	// Used in headers and error messages.
@@ -60,26 +52,17 @@ type Spec[I any] struct {
 	// CellHandler.FixMode.
 	Fix bool
 
-	// LoadItems is the per-command source. For us create it loads
-	// from the epic; us refine from docs/product/stories/; us apply parses
-	// the refined story into one item per AC plus seeding the
-	// scratch registry.
+	// LoadItems is the per-command source: us create loads from the
+	// epic, us refine from docs/product/stories/, us apply parses the
+	// refined story into one item per AC and seeds the scratch registry.
 	LoadItems func(ctx context.Context) ([]I, error)
-	// Prepare, if non-nil, runs after the items load and before the
-	// first AI turn. It may refuse the run, and it may narrow the item
-	// set it returns.
-	//
-	// The narrowing is the point: `build tests` answers most of its own
-	// question deterministically — which steps bind is a regexp match,
-	// not a judgement — and hands the walk only the scenarios that
-	// genuinely need one. A converged repository then costs no AI turn
-	// at all, which is what makes the command affordable to run on
-	// every commit rather than once a quarter.
+	// Prepare, if non-nil, runs after items load and before the first AI
+	// turn: it may refuse the run or narrow the item set. `build tests`
+	// narrows to unbound scenarios so a converged repo costs zero AI turns.
 	Prepare func(ctx context.Context, items []I) ([]I, error)
-	// PostFix is invoked after the FixApplier returns. For us
-	// create/refine it unmarshals the new ACs and stores a new
-	// version; for us apply the mutation is already on disk via the
-	// Edit tool so it just returns the item unchanged.
+	// PostFix is invoked after the FixApplier returns: us create/refine
+	// unmarshal the new ACs and store a new version; us apply's mutation
+	// is already on disk via the Edit tool, so it returns the item unchanged.
 	PostFix func(ctx context.Context, item I, applierContent string) (I, error)
 	// Finalize handles the post-walk write. For us create it writes
 	// a new story file; us refine updates in place; us apply
@@ -88,16 +71,14 @@ type Spec[I any] struct {
 	// GetSubject reads the per-item (id, title) used for tmp file
 	// naming and the post-walk report table.
 	GetSubject func(item I) (subjectID, subjectTitle string)
-	// OnItemStart, if non-nil, is invoked before each item walk. us
-	// apply uses this to print the "AC N/M: <description>" banner so
-	// per-AC progress is visible in stdout. Story-based commands have
-	// a single item and typically leave this nil.
+	// OnItemStart, if non-nil, runs before each item walk; us apply uses
+	// it for the "AC N/M: <description>" progress banner. Story-based
+	// commands have one item and typically leave it nil.
 	OnItemStart func(idx, total int, item I)
 
-	// Evaluator / FixGenerator / FixApplier together form the
-	// generator triple. us create/refine use the standard triple;
-	// us apply uses the apply-flavoured triple (different templates,
-	// fix-applier configured with EditMode).
+	// Evaluator / FixGenerator / FixApplier form the generator triple: us
+	// create/refine use the standard triple, us apply the apply-flavoured
+	// one (different templates, fix applier configured with EditMode).
 	Evaluator    *validate.ChecklistEvaluator
 	FixGenerator *validate.FixPromptGenerator
 	FixApplier   *validate.FixApplier
@@ -115,23 +96,13 @@ type Spec[I any] struct {
 	TmpDir string
 }
 
-// Run is the template method every `us` subcommand walks through:
-//  1. Validate the story number.
-//  2. Print the command header.
-//  3. LoadItems (per-command).
-//  4. Load the checklist.
-//  5. Build the engine with shared closures.
-//  6. Run the engine.
-//  7. Render the per-item report tables.
-//  8. Finalize (per-command).
-//
-// The shared closures package up Evaluator/FixGenerator/FixApplier
-// calls so per-command code never touches them directly.
+// Run is the template method every `us` subcommand walks: validate,
+// load, build and run the engine, render, then finalize — closures wrap
+// Evaluator/FixGenerator/FixApplier so per-command code never touches them.
 func Run[I any](ctx context.Context, spec Spec[I]) error {
-	// Validation phase. Everything here is a precondition on the run
-	// itself — it must fail before the header, before any item is
-	// loaded, and above all before the first AI turn, so a
-	// misconfigured run costs nothing.
+	// Validation phase: everything here must fail before the header, any
+	// item load, or the first AI turn, so a misconfigured run costs
+	// nothing.
 	if spec.StoryNumber != "" {
 		err := validateStoryNumber(spec.StoryNumber)
 		if err != nil {
@@ -148,11 +119,9 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 
 	err = validateRequiredDocs(prompts, spec.DocResolver)
 	if err != nil {
-		// Both, deliberately. The console line is for whoever ran the
-		// command; the log record is what a harness, a CI scrape, or the
-		// BDD judge reads afterwards, and it must name the offending
-		// document there too — a refusal nobody can attribute is barely
-		// better than the silent degradation this check replaced.
+		// Both, deliberately: console is for whoever ran the command, the
+		// log record is what a harness, CI scrape or BDD judge reads
+		// afterwards — an unattributed refusal is barely better than the degradation it replaced.
 		slog.Error("Refusing to start: checklist documents unsatisfiable",
 			"command", spec.Name,
 			"checklist", spec.ChecklistName,
@@ -163,10 +132,9 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		return err
 	}
 
-	// Asking for --fix against a checklist that carries no fix template
-	// is asking for something the walk cannot deliver: the fix turn would
-	// run per failed cell with nothing to say. Refused here rather than
-	// discovered one paid turn at a time.
+	// Asking for --fix against a checklist with no fix template asks for
+	// something the walk can't deliver — refused here, before any paid
+	// turn, rather than discovered one fix at a time.
 	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
 	if err != nil {
 		return refuseStartup(spec.Name, err)
@@ -218,12 +186,9 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	return finErr
 }
 
-// loadAndPrepare sources the items and lets the command narrow or refuse
-// them, reporting either failure as a startup refusal.
-//
-// Both are preconditions on the run: an unloadable subject and a
-// repository whose generated tests do not match its registry are equally
-// reasons the walk about to start would measure the wrong thing.
+// loadAndPrepare sources the items and lets the command narrow or
+// refuse them, reporting either failure as a startup refusal — both
+// mean the walk about to start would measure the wrong thing.
 func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 	items, err := spec.LoadItems(ctx)
 	if err != nil {
@@ -242,14 +207,9 @@ func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 	return items, nil
 }
 
-// emitRunResult publishes the terminal result event AFTER finalization
-// (plan §3.2 / finding 7). An EXPECTED build nonconvergence is NOT a
-// finalization failure: it reports finalization_ok=true and a not_fixed
-// classification (the CLI still exits non-zero via the returned error —
-// mirror, don't fix). A genuine post-walk write failure keeps
-// finalization_ok=false and its detail. The emitter is the process-wide
-// instance the collector uses for prompts, so the result ordinal follows
-// them. No-op without the event-channel env var.
+// emitRunResult publishes the terminal result event after finalization
+// (plan §3.2/finding 7): finErr wrapping ErrExpectedNonconvergence
+// reports finalization_ok=true and not_fixed, not a failure.
 func emitRunResult(reason engine.StopReason, finErr error) {
 	expectedNonconvergence := errors.Is(finErr, ErrExpectedNonconvergence)
 	finalizationOK := finErr == nil || expectedNonconvergence
@@ -284,11 +244,9 @@ func outcomeForReason(reason engine.StopReason) string {
 	return "error"
 }
 
-// buildSpecEngine wires the four-layer engine with closures whose
-// behaviour is determined entirely by the Spec's generator triple,
-// GetSubject, and PostFix. Per-command files never construct an
-// engine directly. `items` is captured so the engine's index-only
-// OnItemStart can dispatch to the spec's typed OnItemStart hook.
+// buildSpecEngine wires the four-layer engine with closures driven
+// entirely by the Spec's generator triple, GetSubject and PostFix, so
+// per-command files never construct an engine directly.
 func buildSpecEngine[I any](
 	spec Spec[I],
 	builder *reportBuilder,
@@ -323,11 +281,9 @@ func buildSpecEngine[I any](
 // banner at the top of every outer-walk attempt past the first.
 // Attempt 1 is the initial walk; banners only make sense on retries.
 func reWalkBanner(attempt, maxAttempts int) {
-	// Logged for EVERY attempt including the first, so a reader can tell
-	// which walk any later turn belongs to. Without this boundary a
-	// re-validation triggered by another item's fix (a re-walk) is
-	// indistinguishable from one triggered by this item's own fix (the
-	// walker's restart), and the two mean different things.
+	// Logged for every attempt, including the first, so a reader can tell
+	// re-validation triggered by another item's fix (a re-walk) apart from
+	// one triggered by this item's own fix (the walker's restart).
 	slog.Info("Walk attempt started", "attempt", attempt, "max_attempts", maxAttempts)
 
 	if attempt <= 1 {
@@ -341,9 +297,8 @@ func reWalkBanner(attempt, maxAttempts int) {
 }
 
 // itemBannerDispatcher adapts the engine's index-only OnItemStart to
-// the spec's typed OnItemStart, looking up the live item from the
-// captured slice. Nil out → no-op so commands that omit the spec hook
-// pay nothing.
+// the spec's typed one, looking up the live item from the captured
+// slice. A nil spec hook returns nil, so unused commands pay nothing.
 func itemBannerDispatcher[I any](
 	spec Spec[I],
 	items []I,
@@ -361,10 +316,9 @@ func itemBannerDispatcher[I any](
 	}
 }
 
-// buildQueryClosure produces the engine.QueryFn that calls the
-// Spec's Evaluator and side-effects into the report builder. The
-// shared *latestResult slot lets buildGenFixClosure read the failing
-// check on the next iteration.
+// buildQueryClosure produces the engine.QueryFn that calls the Spec's
+// Evaluator and side-effects into the report builder; the shared
+// *latestResult slot lets buildGenFixClosure read the failing check.
 func buildQueryClosure[I any](
 	spec Spec[I],
 	builder *reportBuilder,
@@ -423,11 +377,9 @@ func buildGenFixClosure[I any](
 	}
 }
 
-// buildFixClosure produces the engine.FixFn. The captured fixCount
-// keeps FixApplier tmp files uniquely named across multiple cell
-// invocations within one run. The shared *latestResult slot carries
-// the apply-model tier the evaluator resolved for this cell — the same
-// channel buildGenFixClosure reads the failing check from.
+// buildFixClosure produces the engine.FixFn: the captured fixCount
+// keeps FixApplier tmp files uniquely named per run, and the shared
+// *latestResult slot also carries the apply-model tier for this cell.
 func buildFixClosure[I any](
 	spec Spec[I],
 	latestResult *checklistmodels.ValidationResult,
@@ -472,10 +424,8 @@ func headerLine(name, storyNumber string) string {
 }
 
 // flattenChecklistPrompts walks a Checklist's sections and emits the
-// non-skipped prompts with section context attached. Mirrors the loop
-// inside ChecklistLoader.Load so Run can use LoadFull (to read the
-// config block) and still produce the flat prompt list the engine
-// expects.
+// non-skipped prompts with section context attached — mirrors the loop
+// inside ChecklistLoader.Load, so Run can call LoadFull for the config block.
 func flattenChecklistPrompts(
 	doc *checklistmodels.Checklist,
 	commandName string,

@@ -1,20 +1,8 @@
 package inventory_test
 
-// Finding 2 (aggregate-memory bound + quadratic kill): the incremental
-// scan must NOT retain the whole folder before fitting, and must NOT
-// re-marshal the whole snapshot once per dropped item (the previous O(n²)
-// degrade loop). These invariants are exercised on a pathological folder —
-// many large story files under a tiny budget — and asserted two ways:
-//
-//   1. The RETAINED snapshot is bounded by the negotiated budget (its
-//      serialized body is <= budget) and the retained raw/content across all
-//      rows never exceeds budget + one decoded file.
-//   2. The total bytes ALLOCATED by one Scan stay linear in the folder size
-//      (bounded well below what an all-in-memory build + per-drop whole-
-//      snapshot re-marshal would allocate — that path is quadratic and would
-//      allocate on the order of files×passes, i.e. hundreds of MB→GB here).
-//
-// t.Setenv forbids t.Parallel.
+// Finding 2 (aggregate-memory bound + quadratic-remarshal kill): the
+// incremental scan must not retain the whole folder before fitting, nor
+// re-marshal per dropped item (t.Setenv below forbids t.Parallel).
 
 import (
 	"encoding/json"
@@ -29,10 +17,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
-// manyLargeStoriesFolder writes one canonical epic declaring n stories, each
-// backed by a story file whose description is ~fileKiB KiB, so the full
-// snapshot is far larger than any small budget and the all-in-memory build
-// would retain n×fileKiB before fitting.
+// manyLargeStoriesFolder writes one canonical epic declaring n stories,
+// each backed by a ~fileKiB KiB story file — large enough that the full
+// snapshot dwarfs any small test budget.
 func manyLargeStoriesFolder(t *testing.T, storyCount, fileKiB int) string {
 	t.Helper()
 
@@ -160,11 +147,9 @@ func TestScanAllocationIsLinearNotQuadratic(t *testing.T) {
 	onDiskMiB := float64(stories*fileKiB) / 1024
 	t.Logf("scan allocated %.1f MiB for a %.1f MiB folder (budget %d)", allocatedMiB, onDiskMiB, budget)
 
-	// The incremental scan reads each file once and marshals only per-story;
-	// it stays a small multiple of the on-disk size. The old build-all +
+	// Linear scan stays a small multiple of on-disk size; the old build-all +
 	// per-drop whole-snapshot re-marshal loop would allocate on the order of
-	// stories×snapshot (hundreds of MiB→GiB here). A ceiling well below that
-	// catches a regression to the quadratic path.
+	// stories×snapshot (hundreds of MiB→GiB here) — 200 catches that regression.
 	const ceilingMiB = 200
 	if allocatedMiB > ceilingMiB {
 		t.Fatalf("scan allocated %.1f MiB, want <= %d MiB (quadratic re-marshal regression?)", allocatedMiB, ceilingMiB)

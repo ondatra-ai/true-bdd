@@ -1,9 +1,8 @@
 package promptprobe_test
 
-// prompt-probe command behavior (plan §4): it emits choice → clarify →
-// freetext prompts through the real collector, reading one answer per prompt
-// from stdin, with the freetext framed by a terminating blank line. The three
-// prompts carry DISTINCT ids.
+// prompt-probe command behavior: it emits choice → clarify → freetext
+// prompts through the real collector, one stdin answer per prompt
+// (freetext ends on a blank line); the three prompts carry distinct ids.
 
 import (
 	"strings"

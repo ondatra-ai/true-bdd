@@ -29,9 +29,8 @@ type ValidationResult struct {
 	PromptIndex  int      // Index of the prompt (1-based) for file naming
 	Docs         []string // Document keys for this validation (e.g., "product", "user_roles")
 	// Model tiers for the two downstream fix turns, resolved by the
-	// evaluator (the only place a PromptWithContext is in scope) and
-	// carried here because the fix generator and applier receive a
-	// ValidationResult, never the prompt. Same channel as Docs.
+	// evaluator (the only place with prompt access) and carried here,
+	// same channel as Docs — the fix generator/applier never see the prompt.
 	FixModelTier   string // Tier for the fix-generation turn
 	ApplyModelTier string // Tier for the fix-application turn
 }

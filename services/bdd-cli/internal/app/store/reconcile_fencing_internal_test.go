@@ -2,13 +2,9 @@ package store
 
 import "testing"
 
-// TestReconcileInspectionIsNonMutating is the regression for the reproduced
-// crash-between-kill-and-abandon window (finding 5): the OLD Reconcile marked a
-// run terminal `abandoned` BEFORE the caller killed its live orphan group, so a
-// crash in that gap hid a live orphan behind a terminal row and every later
-// pass ignored it. Reconcile is now a NON-mutating inspection — the run stays
-// visibly nonterminal until the FENCED abandon, which the caller issues ONLY
-// after draining/killing the group.
+// TestReconcileInspectionIsNonMutating is the regression for finding 5: the
+// OLD Reconcile abandoned a run BEFORE the caller killed its live orphan
+// group, so a crash there hid the orphan behind a terminal row forever.
 func TestReconcileInspectionIsNonMutating(t *testing.T) {
 	store := requireStore(t, tempDBPath(t))
 	insertReconcileRun(t, store, "run-orphan", "owner-dead")
@@ -43,9 +39,8 @@ func TestReconcileInspectionIsNonMutating(t *testing.T) {
 }
 
 // TestRenewReconcileLeaseNowPlusTTL proves the production renewal (finding 5):
-// a renew extends expires_at to now+ttl (keeping the holder past the original
-// expiry), only the current holder+token may renew, and a takeover after the
-// RENEWED expiry mints a fresh fencing token.
+// only the current holder+token may renew, and a takeover after the RENEWED
+// expiry (not the original one) mints a fresh fencing token.
 func TestRenewReconcileLeaseNowPlusTTL(t *testing.T) {
 	store := requireStore(t, tempDBPath(t))
 

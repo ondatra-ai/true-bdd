@@ -115,11 +115,8 @@ type rawStoryFile struct {
 }
 
 // ParseStoryScenarios resolves docs/product/stories/<storyNumber>-*.yaml,
-// validates it uses the canonical AC-with-steps shape, and emits one
-// ScenarioApplyData per AC. The returned slice carries the supplied
-// scratch path on every entry so downstream prompts can reference it.
-// The resolved story file path is returned for downstream use
-// (lineage, error messages).
+// validates the canonical AC-with-steps shape, and returns one
+// ScenarioApplyData per AC plus the resolved story path.
 func (p *StoryScenarioParser) ParseStoryScenarios(
 	storyNumber string,
 	requirementsScratchPath string,

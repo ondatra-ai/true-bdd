@@ -6,18 +6,9 @@ import (
 	"os"
 )
 
-// Finding is one row of a queue file: a review finding on its way to becoming
-// a ticket.
-//
-// One type for the whole pipeline, because one JSON shape travels it. The
-// merge loop writes these to `tmp/merge/round-N/*.json`, hands the deferred
-// ones to `file`, and the fix-queue skill reads what came back. Splitting it
-// per stage would mean three structs that must agree about a file on disk.
-//
-// Absent and empty are not distinguished, which they were in Python: a queue
-// row that carries `"file": ""` renders as `?` here where it rendered as
-// empty before. No queue this repository has produced does that, and `?` is
-// the better of the two answers.
+// Finding is one row of a queue file: a review finding on its way to
+// becoming a ticket. One type for the whole pipeline (merge writes it, file
+// hands it off, fix-queue reads it back) — absent and empty both render `?`, unlike the Python it ports.
 type Finding struct {
 	ID       string `json:"id"`
 	Source   string `json:"source"`

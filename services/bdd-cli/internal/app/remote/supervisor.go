@@ -32,20 +32,9 @@ const (
 	psGroupFields = 2
 )
 
-// RunSupervisor is the RESIDENT GATED group-leader launcher (plan §1.6, finding
-// 4). The parent spawns it as the PROCESS-GROUP LEADER and records + fsyncs its
-// {pid, start_identity, pgid} BEFORE releasing it, so the mutating group is
-// ALWAYS identity-verifiable with NO crash window. Sequence:
-//   - ignore the escalation signals (the anchor survives to reap the command;
-//     the signals still reach the real command in the group);
-//   - block on the release pipe (fd 3): EOF ⇒ the parent died before recording
-//     our identity ⇒ exit WITHOUT ever running the command (fail closed);
-//   - on release, exec the real command inside the SAME group;
-//   - wait for it, linger until the group drains, and propagate its exit status.
-//
-// Because the recorded identity is the RESIDENT supervisor's (not the transient
-// command's), the group stays identity-verifiable even after the command exits,
-// so PGID reuse can never be confused with the real group.
+// RunSupervisor is the RESIDENT GATED group-leader launcher (plan §1.6,
+// finding 4): its {pid, start_identity, pgid} is recorded BEFORE release, and
+// stays the group's identity even after the command exits — so PGID reuse can never be confused with it.
 func RunSupervisor(args []string) int {
 	signal.Ignore(syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 

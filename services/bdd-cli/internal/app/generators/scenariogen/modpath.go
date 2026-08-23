@@ -13,13 +13,9 @@ import (
 // per suite; a generated file imports it and calls nothing else.
 const scenariosPkgDir = "scenarios"
 
-// scenariosImportPath computes the import path of a suite's scenarios
-// shim by walking up to the nearest go.mod.
-//
-// Walked rather than assumed, because this repository is full of
-// sentinel modules — services/bdd-web, tests/legacy, and every fixture
-// input tree — and a suite generated inside one of those has an import
-// path that has nothing to do with the repository's own module.
+// scenariosImportPath computes the import path of a suite's scenarios shim
+// by walking up to the nearest go.mod — not assumed, since sentinel modules
+// (services/bdd-web, tests/legacy, every fixture tree) give a suite inside them an unrelated module path.
 func scenariosImportPath(repoRoot, suitePath string) (string, error) {
 	suiteDir := filepath.Join(repoRoot, filepath.FromSlash(suitePath))
 

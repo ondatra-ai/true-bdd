@@ -17,10 +17,7 @@ type migration struct {
 	sql     string
 }
 
-// migrations is the ordered list applied under an exclusive transaction. The
-// DDL is EXECUTABLE (explicit types, NOT NULL on every identity/state/
-// sequence/receipt-key column, CHECK + conflict actions, meaningful FKs) —
-// the constraints ARE the safety.
+// migrations is the ordered, checksummed migration ledger; DDL constraints ARE the safety, not app code.
 //
 //nolint:gochecknoglobals // the embedded, checksummed migration ledger is package-wide by design
 var migrations = []migration{

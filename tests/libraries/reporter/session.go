@@ -65,10 +65,9 @@ type Session struct {
 	Dir string
 	// Fixtures is every fixture that left a trace, in directory order.
 	Fixtures []*Fixture
-	// Mode is the AI-CLI mode the whole invocation ran under — live,
-	// record or replay. Empty for a session recorded before the harness
-	// wrote a session record, which a reader must show as unknown rather
-	// than assume was live.
+	// Mode is the AI-CLI mode the whole invocation ran under — live, record
+	// or replay. Empty means unknown (a session predating the mode record),
+	// never assumed live.
 	Mode string
 	// Planned is the fixtures this invocation set out to run, whether or
 	// not they have finished. Empty for the same older sessions; a reader
@@ -132,19 +131,9 @@ func LoadSession(dir, repoRoot string) (*Session, error) {
 	return session, nil
 }
 
-// ApplySessionMeta folds the session record — the AI mode and the
-// planned fixture list — into a Session.
-//
-// Exported and separate because a Session is assembled in two places:
-// LoadSession here, and the report server's own store, which builds one
-// incrementally so it can reuse sealed fixtures across scans. Reading
-// the record in only one of them is exactly the drift this function
-// exists to prevent.
-//
-// Absent is not an error: sessions predating the record, and a session
-// whose first fixture has not started yet, simply report an unknown
-// mode — which a reader must show as unknown rather than assume was
-// live.
+// ApplySessionMeta folds the session record — mode and planned fixtures —
+// into a Session. Exported so LoadSession and the report server's
+// incremental store share one reader (see the Mode field for absent-record handling).
 func ApplySessionMeta(session *Session) {
 	meta, err := runner.ReadSessionMeta(session.Dir)
 	if err != nil || meta == nil {
@@ -155,14 +144,9 @@ func ApplySessionMeta(session *Session) {
 	session.Planned = meta.Planned
 }
 
-// IsFixtureDir reports whether a directory holds a reportable fixture
-// run.
-//
-// A fixture counts if the engine logged anything OR the harness recorded
-// an outcome. Requiring the engine log alone silently dropped every
-// fixture that legitimately starts no engine — `--help`, and any run
-// refused during validation — from a report whose whole job is to list
-// what ran.
+// IsFixtureDir reports whether a directory holds a reportable fixture run:
+// the engine log alone would silently drop `--help` and refused-validation
+// runs, which start no engine but still belong in the report.
 func IsFixtureDir(dir string) bool {
 	return exists(EngineLogPath(dir)) || exists(HarnessRecordPath(dir))
 }

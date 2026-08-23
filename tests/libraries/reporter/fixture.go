@@ -13,13 +13,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// discoveryEndMarkers are the records the engine writes immediately
-// AFTER runner.Discover returns. Discovery itself logs nothing, so one
-// of these closes its span.
-//
-// Deliberately log-derived rather than taken from the runner artifact's
-// mtime: a preserved tmpdir can be re-run by hand later, and a
-// measurement that changes when someone inspects it is worse than none.
+// discoveryEndMarkers are the records the engine writes immediately AFTER
+// runner.Discover returns. Log-derived rather than the runner artifact's
+// mtime: a measurement that changes when a tmpdir is re-run by hand is worse than none.
 func discoveryEndMarkers() []string {
 	return []string{"Loading full checklist", "Loaded prompts"}
 }
@@ -42,9 +38,8 @@ const startupOutcome = "the engine synthesized its startup marker subject, so th
 	"started, making this startup cost, not test-execution cost"
 
 // emptyFailurePattern finds a prompt that describes a failing test but
-// carries no failure text. Playwright reports a webServer startup
-// failure in its JSON report's top-level errors[], not on stderr, so a
-// synthesized startup subject can reach the model with an empty block.
+// carries no failure text: playwright reports a webServer startup failure
+// in its JSON report's top-level errors[], not on stderr, so a synthesized startup subject can reach the model empty.
 var emptyFailurePattern = regexp.MustCompile("(?i)Last Failure Output\\s*\n+```[a-z]*\\s*\n\\s*```")
 
 // Discovery is what the engine's test-run span was, and whether any test
@@ -61,10 +56,9 @@ type Fixture struct {
 	Name    string
 	Command string
 	Dir     string
-	// RelDir is Dir relative to the repo root. Every path the report
-	// shows is joined onto this, so a reader can paste one straight into
-	// an editor or a shell from the repo root — an absolute path is
-	// machine-specific and a tmpdir-relative one is unlocatable.
+	// RelDir is Dir relative to the repo root, so every path the report
+	// shows can be pasted straight into an editor or shell from the repo
+	// root — an absolute path is machine-specific.
 	RelDir string
 
 	Turns []*Turn
@@ -73,17 +67,13 @@ type Fixture struct {
 
 	Wall    time.Duration
 	HasWall bool
-	// Record is the harness's own record of the run, verbatim, when one
-	// was written. Nil for a fixture still in flight or one that predates
-	// the record. Everything below is derived from it; the server reads
-	// the rest (exit code, timestamps, structural diff, judge model)
-	// straight off this.
+	// Record is the harness's own record of the run, verbatim, when one was
+	// written (nil for a fixture still in flight or predating the record).
+	// Everything below is derived from it; the server reads the rest straight off this.
 	Record *runner.HarnessRecord
-	// HasRecord says the outcome came from the harness's own record
-	// rather than the legacy `go test` scrape. It decides what an empty
-	// Diff means: the record carries the diff for every fixture, so
-	// empty means the run wrote nothing — whereas the scrape only ever
-	// printed a diff for a failing fixture, so empty means unknown.
+	// HasRecord decides what an empty Diff means: the record carries a
+	// diff for every fixture (empty means the run wrote nothing), but the
+	// legacy `go test` scrape only ever printed one for a failure (empty means unknown).
 	HasRecord bool
 	Verdict   string
 	Judge     *JudgeCall
@@ -113,13 +103,9 @@ type Fixture struct {
 	PhaseTotal float64
 }
 
-// LoadFixtureDir builds one Fixture and its phase timeline from a
-// fixture's run directory.
-//
-// Exported so the report server can reload one fixture at a time. A
-// fixture whose harness record exists is final — the record is the last
-// byte ever written into its directory — so per-fixture loading is what
-// lets a session be cached and only the run in flight re-read.
+// LoadFixtureDir builds one Fixture and its phase timeline from a fixture's
+// run directory. Exported so the report server can reload one at a time: a
+// fixture is final once its record exists (HarnessRecordPath), so a session can be cached.
 func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	logPath := EngineLogPath(dir)
 
@@ -127,9 +113,7 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 
 	if exists(logPath) {
 		// A log that cannot be read degrades this fixture to "no turns
-		// recorded" rather than failing the scan. One unreadable file in
-		// one session must not take down a report covering every other
-		// run — the same stance applyHarnessRecord already takes.
+		// recorded" rather than failing the scan (same stance as applyHarnessRecord).
 		loaded, err := loadEngineLog(logPath)
 		if err == nil {
 			log = loaded
@@ -173,10 +157,9 @@ func LoadFixtureDir(dir, name, repoRoot string) (*Fixture, error) {
 	return fixture, nil
 }
 
-// nameOperations gives every turn its operation name, reading the run's
-// OWN copy of the checklist rather than the working tree's — a fixture
-// may have filtered or overridden it, and only the run's copy has the
-// prompt indices the run used.
+// nameOperations gives every turn its operation name, reading the run's OWN
+// copy of the checklist rather than the working tree's — a fixture may have
+// filtered or overridden it, and only the run's copy has the indices used.
 func nameOperations(fixture *Fixture, dir string) {
 	fixture.Checklist = loadChecklistDoc(dir, fixture.Meta.ChecklistPath)
 
@@ -292,12 +275,8 @@ func exists(path string) bool {
 		return true
 	}
 
-	// Only "not there" counts as absent. A permission or I/O error means
-	// the file may well exist and we simply cannot see it — reporting
-	// that as absent would silently drop the fixture from a report whose
-	// entire job is to list what ran. Treating it as present instead
-	// carries the fixture through to the loaders, which already degrade
-	// to "no verdict recorded" on an unreadable file, so the problem
-	// shows up on the page rather than disappearing from it.
+	// Only "not there" counts as absent — a permission/I/O error means the
+	// file may exist and we can't see it, and reporting that as absent would
+	// silently drop the fixture from a report whose whole job is to list what ran.
 	return !errors.Is(err, fs.ErrNotExist)
 }

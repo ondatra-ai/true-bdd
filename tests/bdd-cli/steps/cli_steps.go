@@ -15,14 +15,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// Register binds every step this suite's scenarios can use.
-//
-// The shape underneath is still one shape: a bdd-cli scenario IS "given
-// this project, run the CLI once, and this is what it must exit with,
-// print and leave on disk". Every definition below is an answer to one
-// of those four questions, and a scenario needing a new one is a
-// scenario claiming something none of them can say — which is exactly
-// when `build tests --fix` writes one.
+// Register binds every step this suite's scenarios can use — each one
+// answering what project ran, what it must exit with, print, or leave on
+// disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
 	// Given preconditions the scenario states and the fixture materialises
@@ -31,10 +26,9 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every prompt$`,
 		assertAnswersEveryPrompt)
-	// A Given precondition that a single named prompt of a checklist is the
-	// only one that runs. The fixture trims the shipped checklist to that one
-	// prompt via `checklist_prompts:`; this step verifies the selection is
-	// real and singular. Implemented in cli_steps.go.
+	// A Given precondition that a checklist is narrowed to one named prompt;
+	// the fixture selects it via `checklist_prompts:`, and this step verifies
+	// the selection is real and singular.
 	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
 	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
@@ -47,21 +41,16 @@ func Register(suite *bddgo.Suite[State]) {
 	// below.
 	suite.Step(`^stdout does not match (.+)$`, assertStdoutNoMatch)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
-	// The two-directory twin: a scenario proves nothing moved outside
-	// EITHER of two named scratch prefixes — how a `build tests --fix`
-	// scenario proves the fix loop wrote only into the suite's steps tree
-	// ("tests") and the engine scratch ("tmp"), and touched the registry
-	// nowhere. Implemented in cli_steps.go.
+	// The two-directory twin of the read-only check: proves nothing moved
+	// outside either of two named scratch prefixes, e.g. a `build tests
+	// --fix` run touching only "tests" and "tmp", never the registry.
 	suite.Step(`^no file outside "([^"]+)" and "([^"]+)" changed$`, assertNoChangesOutsideTwo)
-	// The tighter twin of the read-only check above: EXACTLY ONE file
-	// changed outside the named prefix, and it is the named file — how a
-	// `us refine … --fix` scenario proves the run rewrote its story and
-	// nothing else. Implemented in cli_steps.go.
+	// The tighter twin of the read-only check: exactly one file changed
+	// outside the named prefix, and it is the named file — how `us refine
+	// … --fix` proves the run rewrote only its story.
 	suite.Step(`^the only file changed outside "([^"]+)" is "([^"]+)"$`, assertOnlyFileChangedOutside)
-	// File-effect assertions read the run's structural diff — and, for a
-	// line count, the file on disk — rather than stdout: what the fix loop
-	// wrote, what it left alone, and how large a file it produced.
-	// Implemented in file_steps.go.
+	// File-effect assertions read the run's structural diff (and, for line
+	// counts, the file itself) rather than stdout. Implemented in file_steps.go.
 	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
 	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
 	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
@@ -71,17 +60,12 @@ func Register(suite *bddgo.Suite[State]) {
 	// `is created` above: the fix loop chooses the new file's name, so a
 	// scenario can only pin how many .go files appeared under a directory.
 	suite.Step(`^exactly (\d+) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
-	// The negative twin of the count assertion above: a scenario proves the
-	// run created NO file matching a glob — here, that a relocated registry
-	// left the old conventional docs/scenarios.yaml uncreated. Implemented
-	// in file_steps.go.
+	// The negative twin of the count assertion above: proves the run created
+	// NO file matching a glob. Implemented in file_steps.go.
 	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
-	// Story-shape assertions read a story document a `us create … --fix`
-	// run authored — the id it carries, how many acceptance criteria it
-	// has, that each criterion is well-formed, and that a named clause
-	// avoids a forbidden vocabulary. The story's filename is the fix loop's
-	// to choose, so every one names the file by glob and resolves it to the
-	// single matching file on disk. Implemented in story_steps.go.
+	// Story-shape assertions read a story a `us create … --fix` run authored:
+	// its id, acceptance-criteria count and shape, forbidden vocabulary.
+	// Filenames are resolved by glob since the fix loop names the file. See story_steps.go.
 	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
 	suite.Step(`^the story "([^"]+)" has at least (\d+) acceptance criteria$`, assertStoryCriteriaCount)
 	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
@@ -94,25 +78,19 @@ func Register(suite *bddgo.Suite[State]) {
 		assertStoryCriterionDescNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
 		assertStoryCriterionDescMatch)
-	// The step-text twin of the two description assertions above: it reads
-	// the wording of a NAMED criterion's Given/When/Then steps rather than
-	// its description, and proves the fix loop drove a forbidden action verb
-	// out of them until each step names an observable action. Implemented in
-	// story_steps.go.
+	// The step-text twin of the description assertions above: checks a
+	// named criterion's Given/When/Then wording instead of its description,
+	// e.g. that steps name an observable action rather than a forbidden verb.
 	suite.Step(`^the steps of acceptance criterion "([^"]+)" of the story "([^"]+)" do not match (.+)$`,
 		assertStoryCriterionStepsNoMatch)
-	// Registry-executability assertion: after a `build tests --fix` run, is
-	// the inner project's named scenario now bound by definitions in its
-	// suite's steps package? Reads the inner registry and the Go source the
-	// fix loop wrote, both under the run's tmpdir. Implemented in
-	// registry_steps.go.
+	// Registry-executability assertion: after `build tests --fix`, is the
+	// inner project's named scenario now bound by step definitions? Reads
+	// the inner registry and generated Go source under the tmpdir. See registry_steps.go.
 	suite.Step(`^every step of scenario "([^"]+)" in "([^"]+)" is matched by a step definition under "([^"]+)"$`,
 		assertScenarioStepsMatched)
-	// Registry-origin assertions read the central registry a `us apply
-	// … --fix` run writes and ask what LINEAGE each entry carries: how many
-	// entries descend from one acceptance criterion, which story an entry
-	// cites, and what an entry's serialized content says. Implemented in
-	// registry_origin_steps.go.
+	// Registry-origin assertions read the registry a `us apply … --fix` run
+	// writes and ask its LINEAGE: which acceptance criterion an entry
+	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
 	suite.Step(`^exactly (\d+) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
 		assertRegistryScenarioCount)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
@@ -156,12 +134,9 @@ func prepareTree(state *State, args []string) error {
 	return nil
 }
 
-// resolveProxy decides where this scenario's AI calls come from.
-//
-// Live returns the zero value: no shim, no env, byte-for-byte an
-// unmediated run. Replay REFUSES a scenario with no recording rather
-// than skipping it. Record writes into staging, which is published only
-// once the whole scenario passes.
+// resolveProxy decides where this scenario's AI calls come from: live is
+// unmediated, replay REFUSES a scenario with no recording (never skips),
+// and record writes to staging, published only once the scenario passes.
 func (s *State) resolveProxy(name string) (ProxySetup, error) {
 	if s.Harness.Mode == runner.ProxyModeLive {
 		return ProxySetup{}, nil
@@ -210,12 +185,9 @@ func (s *State) resolveProxy(name string) (ProxySetup, error) {
 	return setup, nil
 }
 
-// runCLI executes the invocation the scenario names, once.
-//
-// The role is captured and discarded: it is the scenario's own statement
-// of who does this, checked against the product document's role list by
-// the pattern itself, and there is nothing for the harness to do with it
-// beyond refusing a role nobody declared.
+// runCLI executes the invocation the scenario names, once. The captured
+// role is discarded — validated by the pattern itself, with nothing else
+// for the harness to do with it.
 func runCLI(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -258,23 +230,15 @@ var ErrNoTreePrepared = errors.New("no Given step prepared a project tree")
 // happened.
 var ErrNoRun = errors.New("no When step ran the CLI")
 
-// ErrNoDependencyInstall is returned when a scenario states the project's
-// dependencies are installed but the fixture backing it declares no prep
-// commands to install them — so nothing the run does actually satisfies
-// the precondition the scenario asserts.
+// ErrNoDependencyInstall means a scenario states the project's
+// dependencies are installed, but the fixture declares no prep commands
+// to install them.
 var ErrNoDependencyInstall = errors.New(
 	"the fixture declares no prep commands to install the project's dependencies")
 
-// assertDependenciesInstalled binds the Given precondition that the
-// project's dependencies are installed before the CLI runs. The install
-// itself is external scaffolding — an npm install, a browser download —
-// that the fixture declares under `prep:` and runner.Execute runs while
-// assembling the tmpdir, before the pre-run snapshot; there is no tmpdir
-// yet at Given time for this step to install into. So the step verifies
-// the precondition is real: the fixture backing this scenario declares
-// the prep that installs them. The dependency kind ("browser test") is a
-// capture group so one definition serves every scenario naming a
-// different kind.
+// assertDependenciesInstalled verifies the Given precondition is real: at
+// Given time there is no tmpdir yet to install into (prep runs later,
+// during tmpdir assembly), so this only checks the fixture declares prep.
 func assertDependenciesInstalled(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -291,23 +255,14 @@ func assertDependenciesInstalled(state *State, args []string) error {
 	return nil
 }
 
-// everyPromptAnswers is how many copies of the answer the step supplies
-// the interactive fix loop. "every prompt" is unbounded; the loop reads
-// one line per prompt and stops when it is done, and surplus lines are
-// harmless — EOF on stdin makes the CLI exit cleanly — so a generous
-// fixed supply answers every prompt any single fix loop raises.
+// everyPromptAnswers is how many copies of the answer the step feeds the
+// fix loop; picked generously since surplus lines are harmless (EOF exits
+// the CLI cleanly).
 const everyPromptAnswers = 64
 
-// assertAnswersEveryPrompt binds the Given step that a role answers the
-// same choice to every interactive prompt. The scenario is the source of
-// the run's interactive input: the step sets the CLI's stdin to a block
-// of the captured answer, one line per prompt, so the `--fix` loop takes
-// that option at every menu. It is set on the fixture before the When
-// step runs the CLI, which is where runner.Execute pipes it to the
-// subprocess's stdin. The role is captured and discarded — the scenario's
-// statement of who acts, checked against the declared roles by the
-// pattern itself. The answer is a capture group so one definition serves
-// every scenario whatever choice it names.
+// assertAnswersEveryPrompt sets the fixture's stdin to the given answer,
+// repeated, before the When step runs the CLI and pipes it to the
+// subprocess. The captured role is discarded — validated by the pattern.
 func assertAnswersEveryPrompt(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -320,25 +275,15 @@ func assertAnswersEveryPrompt(state *State, args []string) error {
 	return nil
 }
 
-// ErrNoChecklistFilter is returned when a scenario states that only one
-// prompt of a checklist runs, but the fixture backing it declares no
-// checklist_prompts selection for that checklist — so nothing trims the
-// shipped checklist down to that one prompt, and the precondition the
-// scenario asserts is not actually established.
+// ErrNoChecklistFilter means a scenario says a checklist is narrowed to
+// one prompt, but the fixture declares no checklist_prompts selection
+// for it — so the precondition is not actually established.
 var ErrNoChecklistFilter = errors.New(
 	"the fixture declares no checklist_prompts selection for this checklist")
 
-// assertChecklistNarrowed binds the Given precondition that a checklist is
-// narrowed to a single named prompt for this run. The narrowing itself is
-// external scaffolding the fixture declares under `checklist_prompts:` and
-// runner prep performs — it rewrites the overlaid checklist down to only the
-// prompts whose Q text carries a declared snippet, so there is no narrowed
-// checklist on disk yet at Given time for this step to inspect. So the step
-// verifies the precondition is real and singular: the fixture backing this
-// scenario selects exactly one prompt for the named checklist, and it is the
-// named one. The checklist stem and the prompt are both capture groups so
-// one definition serves every scenario naming a different checklist or
-// prompt.
+// assertChecklistNarrowed verifies the Given precondition is real: at
+// Given time there is no narrowed checklist on disk yet (prep rewrites it
+// later), so this only checks the fixture selects exactly the named prompt.
 func assertChecklistNarrowed(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
@@ -414,14 +359,9 @@ func assertStdout(state *State, args []string) error {
 	return nil
 }
 
-// assertStdoutNoMatch pins that the run's stdout does NOT match a regexp —
-// the negative twin of assertStdout. A scenario uses it to prove an error
-// banner never appeared: the fix loop converged before it "Hit max apply
-// attempts". The pattern runs undelimited to the end of the line, exactly
-// like the positive form, and is a capture group so one definition serves
-// every scenario naming a different pattern. It is not recorded on the
-// fixture's StdoutRegexes, which is a list of expected MATCHES; a negative
-// clause is asserted directly against Result.Stdout instead.
+// assertStdoutNoMatch is the negative twin of assertStdout: proves stdout
+// does NOT match a pattern. Unlike assertStdout it does not append to
+// fixture.StdoutRegexes — that list holds expected matches, not exclusions.
 func assertStdoutNoMatch(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -440,25 +380,16 @@ func assertStdoutNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// underPrefix reports whether a diff path is the named directory or
-// something inside it.
-//
-// The separator is not optional. A raw string-prefix test also swallows a
-// sibling whose name merely STARTS with the prefix — with the "tmp" every
-// scope assertion uses, a fix applier that wrote `tmp-scratch.yaml` at the
-// run root would be excused by exactly the steps written to catch it.
+// underPrefix reports whether a path is the named dir or something inside
+// it. The trailing separator matters: a raw prefix test would let a
+// sibling like `tmp-scratch.yaml` be wrongly excused by the "tmp" prefix.
 func underPrefix(path, prefix string) bool {
 	return path == prefix || strings.HasPrefix(path, prefix+"/")
 }
 
 // changesOutside returns the run's diff entries under none of the named
-// prefixes: their paths, and the "<kind> <path>" lines a failure quotes.
-//
-// One scope walk for all three assertions below, because the scope RULE
-// is what they share. underPrefix exists to stop a sibling like
-// `tmp-scratch.yaml` being excused by the `tmp` prefix, and a rule with
-// that much reasoning behind it must not live in three loops where a
-// later refinement can reach only one of them.
+// prefixes, shared by all three scope assertions below so their common
+// rule (see underPrefix) lives in one loop, not three.
 func changesOutside(state *State, prefixes ...string) ([]string, []string) {
 	var paths, detail []string
 
@@ -493,15 +424,9 @@ func assertNoChangesOutside(state *State, args []string) error {
 	return nil
 }
 
-// assertNoChangesOutsideTwo pins that nothing moved outside EITHER of two
-// named prefixes — the two-directory twin of assertNoChangesOutside. A
-// `build tests --fix` scenario uses it to prove the fix loop wrote only
-// into the suite's own steps tree ("tests") and the engine scratch
-// ("tmp"), leaving every other path — the scenario registry above all —
-// untouched. A change under neither prefix is an offender and is named,
-// with its kind, in the failure. Both prefixes are capture groups so one
-// definition serves every scenario naming a different pair of scratch
-// directories rather than this scenario's literal line.
+// assertNoChangesOutsideTwo is the two-prefix twin of
+// assertNoChangesOutside: nothing moved outside EITHER named prefix, e.g.
+// a `build tests --fix` run touching only "tests" and "tmp".
 func assertNoChangesOutsideTwo(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)
@@ -520,14 +445,9 @@ func assertNoChangesOutsideTwo(state *State, args []string) error {
 	return nil
 }
 
-// assertOnlyFileChangedOutside pins that EXACTLY ONE file changed outside
-// the named prefix, and that it is the named file. It is the tighter twin
-// of assertNoChangesOutside: where that step proves a read-only invocation,
-// this proves a run touched precisely one file beyond its scratch prefix —
-// the story a `us refine … --fix` run rewrote, and nothing else. The change
-// facts come from the run's structural diff, and the prefix and the file
-// are both capture groups so one definition serves every scenario naming a
-// different scratch prefix or target file.
+// assertOnlyFileChangedOutside is the tighter twin of
+// assertNoChangesOutside: exactly one file changed outside the named
+// prefix, and it is the named file — e.g. the story `us refine … --fix` rewrote.
 func assertOnlyFileChangedOutside(state *State, args []string) error {
 	if state.Result == nil {
 		return state.fail("%w", ErrNoRun)

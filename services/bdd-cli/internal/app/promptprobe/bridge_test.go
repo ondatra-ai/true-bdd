@@ -16,10 +16,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
 )
 
-// runProbe drives one prompt-probe execution: it routes the probe's prompt
-// emissions through a temp event-channel file (the same emitter the remote
-// tails), then reads back the emitted prompt kinds + ids alongside the answers
-// the collector recorded from stdin.
+// runProbe drives one prompt-probe execution through a temp
+// event-channel file, then reads back the emitted prompt kinds + ids
+// alongside the answers the collector recorded from stdin.
 func runProbe(t *testing.T, stdin io.Reader) ProbeRun {
 	t.Helper()
 

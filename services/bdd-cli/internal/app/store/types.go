@@ -6,9 +6,8 @@ import (
 )
 
 // The production DTOs. They are field-identical to the seam's test-only types
-// (seam_test.go) so the test bridge adapts them with a single struct
-// conversion — production code (remote, queryserver) uses these directly,
-// honoring the direct-data-flow principle.
+// so the test bridge adapts them with a single struct conversion; production
+// code (remote, queryserver) uses these directly.
 
 // DispatchInput mirrors the seam DispatchRequest.
 type DispatchInput struct {
@@ -43,10 +42,9 @@ type EventInput struct {
 	Control      bool
 }
 
-// AppendOutcome mirrors the seam AppendResult. Terminal distinguishes a
-// LEGITIMATE reject — the run is already terminal or gone, so nothing may follow
-// and dropping the event is safe — from a TRANSIENT failure that the caller must
-// retry / fail closed on (finding 7).
+// AppendOutcome mirrors the seam AppendResult. Terminal=true is a LEGITIMATE
+// reject (run already terminal/gone; safe to drop) vs Terminal=false, a
+// TRANSIENT failure the caller must retry or fail closed on (finding 7).
 type AppendOutcome struct {
 	Seq      int
 	Rejected bool
@@ -73,11 +71,9 @@ type AnswerInput struct {
 	Value    string
 }
 
-// AnswerResolution is the atomic answer outcome (finding 3): the string
-// Outcome PLUS whether this submission is the FIRST accept that must be
-// delivered to the child (ShouldDeliver — false for an exact retry, so a
-// lost-response retry never re-writes stdin) and the prompt's StoredKind (used
-// to format/validate delivery from ONE consistent read).
+// AnswerResolution is the atomic answer outcome: Outcome plus ShouldDeliver
+// (false for an exact retry — see answerRetry in answer.go) and StoredKind,
+// used to format/validate delivery from ONE consistent read.
 type AnswerResolution struct {
 	Outcome       AnswerOutcome
 	ShouldDeliver bool
@@ -141,8 +137,7 @@ const (
 	cmdPromptProbe = "prompt-probe"
 )
 
-// allowedCommands is the typed dispatch allowlist (plan §2 / api-client
-// COMMANDS). Anything else is invalid.
+// allowedCommands is the typed dispatch allowlist (plan §2 / api-client COMMANDS); anything else is invalid.
 //
 //nolint:gochecknoglobals // the dispatch allowlist is a package-wide constant set
 var allowedCommands = map[string]bool{

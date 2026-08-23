@@ -9,13 +9,8 @@ import (
 )
 
 // SpawnLogDir is the tmpdir subdirectory holding the harness's own
-// spawn evidence: the streams of every process the runner starts.
-//
-// It lives inside the tmpdir so evidence sits next to the run it
-// explains, but every write is timed to fall outside the before/after
-// snapshot window — prep before the "before" snapshot, the CLI and
-// teardown after the "after" — so nothing here reaches the diff the
-// judge grades.
+// spawn evidence: every process the runner starts. Timed to fall
+// outside the before/after snapshot window, so nothing here reaches the judge's diff.
 const SpawnLogDir = "bdd-cli-logs"
 
 const (
@@ -24,10 +19,8 @@ const (
 )
 
 // spawnLog captures one harness-spawned process's streams under the
-// tmpdir. The engine writes its own subprocess evidence into its run
-// directory; this is the same idea one level up, for the processes the
-// engine never sees — the CLI under test and the fixture's prep and
-// teardown shells.
+// tmpdir — the same idea as the engine's own subprocess evidence, one
+// level up, for processes the engine never sees (CLI, prep, teardown).
 type spawnLog struct {
 	dir string
 }
@@ -68,15 +61,8 @@ func (s *spawnLog) Write(name, stream string, payload []byte) string {
 }
 
 // Tee returns writers that copy a live process's streams to disk while
-// still passing them through to the harness's own stdout/stderr, plus a
-// flush closure that finalizes both artifacts and returns their paths.
-// Used for prep and teardown, where progress must stay visible during
-// long installs but the transcript still has to survive the run.
-//
-// Output lands on disk as it arrives rather than being held until the
-// process exits: a `playwright install` prints tens of megabytes of
-// progress, and a prep command killed by the parent test timeout would
-// otherwise take its whole transcript with it.
+// passing them through to stdout/stderr, plus a flush closure. Streamed
+// live, not buffered — a timeout-killed prep would take a buffer with it.
 func (s *spawnLog) Tee(name string) (io.Writer, io.Writer, func() (string, string)) {
 	stdout := s.open(name, "stdout")
 	stderr := s.open(name, "stderr")
@@ -88,10 +74,9 @@ func (s *spawnLog) Tee(name string) (io.Writer, io.Writer, func() (string, strin
 	return stdout.writer(os.Stdout), stderr.writer(os.Stderr), flush
 }
 
-// stream is one live half of a process's output: the artifact file it is
-// being written to, or nothing when capture is off or the file could not
-// be opened. A stream that cannot be recorded still reaches the console
-// — the run's verdict must not depend on the evidence recorder.
+// stream is one live half of a process's output: the artifact file it
+// is writing to, or nothing when capture is off or open failed — still
+// reaches the console either way (see newSpawnLog).
 type stream struct {
 	path string
 	file *os.File

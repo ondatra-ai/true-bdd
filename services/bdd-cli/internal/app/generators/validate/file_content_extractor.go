@@ -31,9 +31,8 @@ func ExtractFileContent(response, path string) string {
 	startRe := regexp.MustCompile(pattern)
 
 	// The path on the closing marker is optional: crush routinely closes
-	// with a bare `=== FILE_END ===`. The opening marker already pinned
-	// which file this block is, so requiring the path twice only threw
-	// away a block that was otherwise complete and correct.
+	// with a bare `=== FILE_END ===`, and requiring the path twice used to
+	// throw away an otherwise complete and correct block.
 	endPattern := `={2,4}\s*"?\s*FILE_END:?\s*(?:` + escapedPath + `)?\s*"?\s*={2,4}`
 	endRe := regexp.MustCompile(endPattern)
 
@@ -53,28 +52,15 @@ func ExtractFileContent(response, path string) string {
 	return stripCodeFence(strings.TrimSpace(remaining[:endLoc[0]]))
 }
 
-// fencedBlock matches content wrapped ENTIRELY in one markdown code
-// fence: backticks or tildes, three or more, with an optional language
-// tag, closed by the same character. CommonMark allows all of those, and
-// a model that opens with ````yaml is doing nothing unusual — matching
-// only three backticks would leave that fence in the payload and put the
-// YAML parse back where it started.
+// fencedBlock matches content wrapped ENTIRELY in one markdown fence:
+// backticks or tildes, three OR MORE (CommonMark-legal), with an optional
+// language tag — fixing the count at exactly three would leave a ````yaml fence in place.
 var fencedBlock = regexp.MustCompile(
 	"(?s)\\A(?:```+|~~~+)[a-zA-Z0-9_+-]*[ \\t]*\\r?\\n(.*?)\\r?\\n?(?:```+|~~~+)[ \\t]*\\z")
 
-// stripCodeFence removes a markdown fence wrapping the whole block.
-//
-// The markers already say what the block is and where it goes, so a
-// fence inside them carries no information — but the engine writes the
-// content to a file and parses it, and a stray ``` is a YAML syntax
-// error that takes the entire command down with "found character that
-// cannot start any token". A coder model emitting fenced output is
-// normal, occasional, and not worth failing a run over; this is the same
-// tolerance the marker matching above already extends.
-//
-// Only a fence around the WHOLE block is removed. A fence in the middle
-// belongs to the content — a fix prompt legitimately contains example
-// YAML — and removing those would corrupt it.
+// stripCodeFence removes a markdown fence wrapping the whole block. A stray
+// ``` left in unparsed content is a YAML syntax error that takes the whole
+// command down; only a WHOLE-block fence is stripped — one in the middle belongs to the content.
 func stripCodeFence(content string) string {
 	match := fencedBlock.FindStringSubmatch(content)
 	if match == nil {

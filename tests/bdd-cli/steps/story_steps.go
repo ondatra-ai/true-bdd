@@ -11,39 +11,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Story-shape assertions read a story document a `us create … --fix` run
-// authored and check its shape rather than merely that a file appeared:
-// the id it carries, how many acceptance criteria it has, that each
-// criterion is well-formed, and that a named narrative clause avoids a
-// forbidden vocabulary. These are claims no file-effect step can make —
-// "the file was created" cannot see that the so_that clause still speaks
-// of an implementation term the fix loop was meant to drive out.
-//
-// The story's filename is the fix loop's to choose (`<id>-<slug>.yaml`),
-// so every one of these steps names the file by GLOB and resolves it to
-// the single matching file on disk under the run's tmpdir. Zero matches
-// (the run wrote no such story) and more than one (an ambiguous glob) are
-// each their own failure rather than a silently-picked file.
-//
-// The document nests everything under a top-level `story:` key:
-//
+// Story-shape assertions read a story a `us create … --fix` run authored:
+// its id, criteria shape, and that a clause avoids forbidden vocabulary.
+// Filenames are the fix loop's to choose, so steps resolve them by glob.
 //	story:
 //	  id: "99.1"
 //	  as_a / i_want / so_that: …
 //	  acceptance_criteria: [{id, description, steps}, …]
-//
-// The glob, the id, the count, the criterion-id regexp, the clause name
-// and the forbidden pattern are all capture groups, so one definition
-// each serves every scenario naming a different target.
 
-// storyCriterion is the slice of one acceptance criterion these
-// assertions read: its id, its description, and its Given/When/Then steps.
-// The steps decode as a sequence of single-key mappings
-// (`given:`/`when:`/`then:`), each holding a list of step nodes — exactly
-// what a "has given, when and then steps" assertion needs to see present
-// and non-empty without reading the step text itself. The individual step
-// wording stays undecoded: these assertions ask about a criterion's shape,
-// not its behaviour.
+// storyCriterion is one acceptance criterion: id, description, and
+// Given/When/Then steps decoded as single-key mappings
+// (`given:`/`when:`/`then:`) holding step-node lists; wording stays undecoded.
 type storyCriterion struct {
 	ID          string                   `yaml:"id"`
 	Description string                   `yaml:"description"`
@@ -51,20 +29,14 @@ type storyCriterion struct {
 }
 
 // storyData is one story document reduced to what the story assertions
-// need: its id, its acceptance criteria, and every top-level clause kept
-// as a raw node so an arbitrarily-named one (as_a, i_want, so_that) can be
-// looked up by the clause the scenario names.
+// need: id, acceptance criteria, and every top-level clause as a raw node
+// so an arbitrarily-named one (as_a, i_want, so_that) can be looked up.
 type storyData struct {
 	ID       string
 	Criteria []storyCriterion
 	Clauses  map[string]yaml.Node
 }
 
-// loadStory resolves a story glob to the single file it names on disk
-// under the run's tmpdir and parses it. The filename is the fix loop's to
-// choose, so the scenario can only name the story by glob; a glob that
-// matches nothing or more than one file is named in its own failure
-// rather than yielding a silently-picked or empty story.
 // readMatchedStory reads the one file a story glob resolved to, refusing a
 // match that leaves the run directory through a symlink.
 func (s *State) readMatchedStory(glob, match string) ([]byte, error) {
@@ -245,10 +217,9 @@ func assertStoryID(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaCount pins a lower bound on how many acceptance
-// criteria the story document carries — "at least", because the fix loop
-// may polish or add criteria and a scenario pins the floor it must clear,
-// not an exact tally. The glob and the count are both capture groups.
+// assertStoryCriteriaCount pins a lower bound on acceptance criteria —
+// "at least", since the fix loop may add or polish criteria and the
+// scenario pins only the floor it must clear.
 func assertStoryCriteriaCount(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -269,12 +240,9 @@ func assertStoryCriteriaCount(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaExactCount pins the EXACT number of acceptance
-// criteria the story document carries — the tighter twin of
-// assertStoryCriteriaCount's "at least". A scenario uses it to prove a fix
-// loop that rewrites the whole story neither dropped nor added a criterion:
-// it must still have precisely as many as the seed. The glob and the count
-// are both capture groups.
+// assertStoryCriteriaExactCount pins the EXACT criteria count — the
+// tighter twin of assertStoryCriteriaCount's "at least", proving a fix
+// loop that rewrote the story neither dropped nor added one.
 func assertStoryCriteriaExactCount(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -295,12 +263,9 @@ func assertStoryCriteriaExactCount(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaWellFormed pins that EVERY acceptance criterion of the
-// story is well-formed: its id matches a regexp and its description is
-// non-empty. A story with no criteria fails rather than passing vacuously.
-// The glob and the id regexp are both capture groups; the regexp runs
-// undelimited up to ` and a non-empty description`, so an anchored pattern
-// like `^AC-\d+$` needs no escaping.
+// assertStoryCriteriaWellFormed pins that EVERY criterion has an id
+// matching a regexp and a non-empty description; a story with no
+// criteria fails rather than passing vacuously.
 func assertStoryCriteriaWellFormed(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -341,13 +306,9 @@ func assertStoryCriteriaWellFormed(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryClauseNoMatch pins that a named narrative clause of the story
-// (as_a, i_want, so_that) does NOT match a forbidden regexp — how a
-// scenario proves the fix loop drove an implementation term out of the
-// so_that clause until it states a user outcome. The clause name, the glob
-// and the pattern are all capture groups; the pattern runs undelimited to
-// the end of the line, like `stdout matches`, so a regexp carrying its own
-// alternation and word boundaries needs no escaping.
+// assertStoryClauseNoMatch pins that a named clause (as_a, i_want,
+// so_that) does NOT match a forbidden regexp, e.g. driving an
+// implementation term out of so_that. Pattern is undelimited, like `stdout matches`.
 func assertStoryClauseNoMatch(state *State, args []string) error {
 	clause := args[0]
 
@@ -382,14 +343,9 @@ func assertStoryClauseNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaHaveSteps pins that EVERY acceptance criterion of the
-// story carries Given, When and Then steps — how a scenario proves a fix
-// loop that rewrites a story preserved each criterion's executable shape
-// rather than leaving a description with no steps behind it. A criterion is
-// satisfied when its `steps` sequence holds a non-empty `given`, a non-empty
-// `when` and a non-empty `then` block; a story with no criteria fails rather
-// than passing vacuously. The glob is a capture group so one definition
-// serves every scenario naming a different story.
+// assertStoryCriteriaHaveSteps pins that EVERY criterion carries a
+// non-empty given, when and then block; a story with no criteria fails
+// rather than passing vacuously.
 func assertStoryCriteriaHaveSteps(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -423,16 +379,9 @@ func assertStoryCriteriaHaveSteps(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionDescNoMatch pins that the description of a NAMED
-// acceptance criterion does NOT match a forbidden regexp — how a scenario
-// proves the fix loop drove a vague qualifier out of one criterion's
-// description until it reads as a measurable claim. It is the per-criterion
-// twin of assertStoryClauseNoMatch, which speaks of a top-level narrative
-// clause. The criterion is resolved by id; a story that carries no such
-// criterion fails rather than passing vacuously. The criterion id, the glob
-// and the pattern are all capture groups; the pattern runs undelimited to
-// the end of the line, like `stdout matches`, so a regexp carrying its own
-// alternation and word boundaries needs no escaping.
+// assertStoryCriterionDescNoMatch is the per-criterion twin of
+// assertStoryClauseNoMatch: a NAMED criterion's description must NOT
+// match a forbidden regexp. Resolved by id; no such criterion fails.
 func assertStoryCriterionDescNoMatch(state *State, args []string) error {
 	criterionID := args[0]
 
@@ -462,16 +411,9 @@ func assertStoryCriterionDescNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionDescMatch pins that the description of a NAMED
-// acceptance criterion DOES match a required regexp — the positive twin of
-// assertStoryCriterionDescNoMatch. It is how a scenario proves the fix loop
-// drove a criterion's description INTO a required shape (a rule-based
-// "must"/"should" claim), where the negative twin only proves it was driven
-// away from a forbidden one. The criterion is resolved by id; a story that
-// carries no such criterion fails rather than passing vacuously. The
-// criterion id, the glob and the pattern are all capture groups; the pattern
-// runs undelimited to the end of the line, like `stdout matches`, so a regexp
-// carrying its own alternation and word boundaries needs no escaping.
+// assertStoryCriterionDescMatch is the positive twin of
+// assertStoryCriterionDescNoMatch: a NAMED criterion's description MUST
+// match a required regexp (e.g. a "must"/"should" claim).
 func assertStoryCriterionDescMatch(state *State, args []string) error {
 	criterionID := args[0]
 
@@ -501,17 +443,9 @@ func assertStoryCriterionDescMatch(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionStepsNoMatch pins that NONE of the Given/When/Then step
-// texts of a NAMED acceptance criterion match a forbidden regexp — how a
-// scenario proves the fix loop drove a forbidden action verb out of a
-// criterion's steps until each step names an observable action. It is the
-// step-text twin of assertStoryCriterionDescNoMatch, which speaks only of a
-// criterion's description. The criterion is resolved by id; a story that
-// carries no such criterion, or a criterion carrying no steps, fails rather
-// than passing vacuously. The criterion id, the glob and the pattern are all
-// capture groups; the pattern runs undelimited to the end of the line, like
-// `stdout matches`, so a regexp carrying its own alternation and word
-// boundaries needs no escaping.
+// assertStoryCriterionStepsNoMatch is the step-text twin of
+// assertStoryCriterionDescNoMatch: NONE of a NAMED criterion's step texts
+// may match a forbidden regexp. A criterion with no steps fails.
 func assertStoryCriterionStepsNoMatch(state *State, args []string) error {
 	criterionID := args[0]
 
@@ -556,14 +490,9 @@ func assertStoryCriterionStepsNoMatch(state *State, args []string) error {
 	return nil
 }
 
-// collectStepText gathers the human-readable text of a story step node,
-// descending into the single-key `and:`-style continuation mappings and the
-// lists a step list may hold: a scalar node is the step text itself, and a
-// mapping node's values carry the continuation text while its keys
-// (given/when/then/and) do not. It is what lets a steps assertion read the
-// wording of every step of a criterion whether it was written as a bare
-// string or an `and:` continuation, so matching a forbidden verb never
-// silently skips a step because of how it was phrased.
+// collectStepText gathers a story step node's text, descending into
+// `and:`-style continuation mappings and lists, so a step's wording is
+// read whether written as a bare string or a continuation.
 func collectStepText(node *yaml.Node, out *[]string) {
 	switch node.Kind {
 	case yaml.ScalarNode:

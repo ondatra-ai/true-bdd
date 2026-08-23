@@ -50,11 +50,9 @@ type FixApplier struct {
 	systemLoader *template.TemplateLoader[FixApplierData]
 	userLoader   *template.TemplateLoader[FixApplierData]
 	tmpDir       string
-	// useEditMode toggles the Claude tool-permission set used by
-	// Apply. Default false → ThinkMode (Edit disallowed) for handlers
-	// that emit FILE_START/FILE_END markers. Set true via
-	// UseEditMode() for handlers that mutate the scratch file in
-	// place via the Edit tool (us apply's F: prompts).
+	// useEditMode toggles Apply's tool-permission set: false (default) is
+	// ThinkMode for FILE_START/FILE_END handlers; true, set via
+	// UseEditMode(), is EditMode for handlers that mutate the scratch file directly (us apply's F: prompts).
 	useEditMode bool
 	// writeRoots are project trees outside tmp this applier may write,
 	// for the `build` commands whose whole job is authoring source. Set
@@ -91,22 +89,16 @@ func NewFixApplierWithPaths(
 	}
 }
 
-// UseEditMode configures this applier to allow the Edit and
-// MultiEdit tools against the scratch path on each Apply call.
-// Required for the us-apply F: handlers, whose prompts instruct
-// Claude to edit the scratch registry directly.
+// UseEditMode configures this applier to allow the Edit and MultiEdit tools
+// against the scratch path on each Apply call — required for the us-apply
+// F: handlers, whose prompts instruct Claude to edit the scratch registry directly.
 func (a *FixApplier) UseEditMode() {
 	a.useEditMode = true
 }
 
-// UseWriteRoots grants this applier write access to project trees
-// outside tmp — the `services/*` production roots for build code, the
-// test roots for build tests.
-//
-// These turns are instructed by their system prompt to author files
-// there, and ExecutionMode is what the crush guard and codex sandbox
-// enforce, so without this the instruction and the permission disagree
-// and every write is denied.
+// UseWriteRoots grants this applier write access to project trees outside
+// tmp — the `services/*` roots for build code, test roots for build tests.
+// Without it, ExecutionMode (crush guard, codex sandbox) denies every write the system prompt instructs.
 func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
 }
@@ -176,10 +168,9 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		slog.Warn("Failed to save result file", "path", resultPath, "error", writeErr)
 	}
 
-	// A turn that ran to completion is not the same as a fix that
-	// landed: the applier can report `applied: false` when the write it
-	// was told to make is impossible. Treating that as success is what
-	// let a blocked applier spin the fix loop until an external timeout.
+	// A turn that ran to completion is not the same as a fix that landed: the
+	// applier can report `applied: false` when the write it was told to make is
+	// impossible — treating that as success let a blocked applier spin until an external timeout.
 	appliedErr := checkFixApplied(content)
 	if appliedErr != nil {
 		slog.Warn("Fix was NOT applied",
@@ -196,10 +187,9 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	return content, nil
 }
 
-// applyResultYAML is the confirmation block the fix-applier templates
-// ask for. Applied is a POINTER so an absent field is distinguishable
-// from an explicit false: the us create/refine applier emits a story
-// body with no `applied:` key at all, and must keep succeeding.
+// applyResultYAML is the confirmation block the fix-applier templates ask
+// for. Applied is a POINTER: nil (no `applied:` key, as us create/refine's
+// story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
 	Applied *bool  `yaml:"applied"`
 	Target  string `yaml:"target"`
@@ -207,17 +197,14 @@ type applyResultYAML struct {
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
-// that it wrote nothing. Content it cannot parse is passed through:
-// several appliers return a document body rather than a confirmation
-// block, and those are not this function's business.
+// that it wrote nothing. Content it cannot parse is passed through: several
+// appliers return a document body rather than a confirmation block.
 func checkFixApplied(content string) error {
 	result, ok := parseApplyResult(content)
 	if !ok {
-		// The block did not decode. Before concluding "not a
-		// confirmation block", look for a literal `applied:` line: a
-		// model that puts an unquoted `": "` in `target:` writes
-		// invalid YAML, and reading that as success turns an explicit
-		// refusal into "Fix applied successfully".
+		// The block did not decode — before concluding "not a confirmation block",
+		// scan for a literal `applied:` line: an unquoted `": "` in `target:` makes
+		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
 		return checkFixAppliedFallback(content)
 	}
 
@@ -236,13 +223,8 @@ func checkFixApplied(content string) error {
 var appliedLinePattern = regexp.MustCompile(`(?mi)^\s*applied:\s*(true|false)\s*$`)
 
 // checkFixAppliedFallback salvages the verdict from unparseable content.
-// Only an explicit `applied: false` is actionable — anything else keeps
-// the pass-through behaviour that non-confirmation appliers rely on.
-//
-// EVERY status line is scanned, not just the first: unparseable content
-// can hold more than one, and a refusal must not be masked by an
-// earlier success. Any false present means the applier did not write
-// what it was asked to, so false wins over true regardless of order.
+// Only an explicit `applied: false` is actionable. Every status line is
+// scanned, not just the first, so a later refusal can never be masked by an earlier success.
 func checkFixAppliedFallback(content string) error {
 	matches := appliedLinePattern.FindAllStringSubmatch(stripMarkdownFences(content), -1)
 	if len(matches) == 0 {
@@ -264,10 +246,9 @@ func checkFixAppliedFallback(content string) error {
 	return nil
 }
 
-// parseApplyResult decodes an applier confirmation block. Content that
-// is not one — a story body from us create/refine, or prose — reports
-// ok=false rather than an error, because not being a confirmation block
-// is normal for several of the appliers sharing this code path.
+// parseApplyResult decodes an applier confirmation block. Content that is
+// not one — a story body from us create/refine, or prose — reports ok=false
+// rather than an error: not being a confirmation block is normal here.
 func parseApplyResult(content string) (applyResultYAML, bool) {
 	var result applyResultYAML
 
@@ -278,10 +259,9 @@ func parseApplyResult(content string) (applyResultYAML, bool) {
 	return result, true
 }
 
-// selectMode returns the execution mode for this Apply call —
-// SourceEditMode when project write roots were declared, EditMode
-// (Edit/MultiEdit allowed on scratch) when the applier was configured
-// via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
+// selectMode returns the execution mode for this Apply call: SourceEditMode
+// when write roots were declared, EditMode (Edit/MultiEdit on scratch) when
+// configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
 	if len(a.writeRoots) > 0 {
 		return a.modeFactory.GetSourceEditMode(a.writeRoots)

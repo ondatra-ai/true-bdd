@@ -13,9 +13,8 @@ import (
 )
 
 // TestRecordSurvivesGoexit pins the reason Finish is wired through
-// t.Cleanup rather than a statement at the end of runFixture: a failing
-// fixture leaves via t.Fatalf, which is runtime.Goexit, and the record
-// is most valuable exactly then.
+// t.Cleanup, not a statement at the end of runFixture: t.Fatalf leaves
+// via runtime.Goexit, skipping later statements — Cleanup still runs.
 func TestRecordSurvivesGoexit(t *testing.T) {
 	session := t.TempDir()
 	rec := NewHarnessRecorder(session, "fx", ProxyModeLive, nil)
@@ -55,9 +54,8 @@ func TestRecordSurvivesGoexit(t *testing.T) {
 }
 
 // TestPostRunWriteIsNotInDiff pins the placement invariant: the record
-// lands in SpawnLogDir, inside the tree the judge grades, and is safe
-// there only because both snapshots are already taken when it is
-// written. Moving the write inside Execute would break this.
+// lands inside the tree the judge grades, safe only because both
+// snapshots are already taken — moving the write inside Execute would break this.
 func TestPostRunWriteIsNotInDiff(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -78,8 +76,7 @@ func TestPostRunWriteIsNotInDiff(t *testing.T) {
 
 	// Exactly the ordering Execute + the t.Cleanup produce. Every file
 	// Finish writes goes through one of these two calls, so covering both
-	// here is what keeps the judge transcript and the manifest snapshot
-	// out of the diff the judge itself graded.
+	// keeps the judge transcript and manifest snapshot out of the graded diff.
 	logDir := filepath.Join(tmpDir, SpawnLogDir)
 
 	writeSidecars(logDir, map[string]string{
@@ -97,10 +94,8 @@ func TestPostRunWriteIsNotInDiff(t *testing.T) {
 }
 
 // TestSidecarsRecordOnlyWhatLanded pins that HarnessRecord.Artifacts
-// advertises files a reader can actually open. A record naming a file
-// that was never written is worse than one that admits nothing was:
-// the report uses this list to tell "the judge was never reached" from
-// "this session predates the transcript".
+// advertises only files a reader can actually open — the report uses
+// this list to tell "judge never reached" from "predates the transcript".
 func TestSidecarsRecordOnlyWhatLanded(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), SpawnLogDir)
 

@@ -16,13 +16,8 @@ var ErrGoldenUnreadable = errors.New("golden tree unreadable")
 const goldenDiffLines = 12
 
 // CompareGolden checks a run's diff against the recorded outcome and
-// returns one failure line per discrepancy.
-//
-// Strict in both directions: a file the recording has and the run did
-// not produce is a failure, and so is one the run produced that the
-// recording does not have. A regression that only ADDS output is still a
-// regression, and the whole point of replaying is that nothing about the
-// engine's output is supposed to have moved.
+// returns one failure line per discrepancy — strict in both directions:
+// a missing recorded file fails, and so does an unrecorded extra one.
 func CompareGolden(golden *GoldenTree, diff []FileChange) []string {
 	expected := make(map[string]GoldenEntry, len(golden.Files))
 	for _, entry := range golden.Files {
@@ -127,11 +122,8 @@ func divergedAt(wantLines, gotLines []string) int {
 }
 
 // renderLine formats one line of the difference, reporting false once
-// both sides are exhausted.
-//
-// Lines that agree print once, unmarked: rendering them as a ± pair
-// makes an identical tail look like a wall of differences and buries the
-// one line that moved.
+// both sides are exhausted. Agreeing lines print once, unmarked — a ±
+// pair would make an identical tail look like a wall of differences.
 func renderLine(wantLines, gotLines []string, index int) (string, bool) {
 	want, hasWant := lineAt(wantLines, index)
 	got, hasGot := lineAt(gotLines, index)

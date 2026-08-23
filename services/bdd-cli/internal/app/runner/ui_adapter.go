@@ -6,10 +6,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 )
 
-// fixLoopUI adapts the true-bdd's UserInputCollector + display helpers
-// into the engine's FixLoopUI interface. The engine drives the
-// clarify/apply/refine/exit loop and calls back through this adapter
-// for each user-facing step.
+// fixLoopUI adapts true-bdd's UserInputCollector + display helpers into
+// the engine's FixLoopUI interface: the engine drives the
+// clarify/apply/refine/exit loop and calls back through this adapter.
 type fixLoopUI struct {
 	collector *input.UserInputCollector
 }

@@ -18,33 +18,28 @@ var ErrUnknownDocKey = errors.New("unknown document key")
 // `documents.*` config entry the host project left blank.
 var ErrDocPathNotConfigured = errors.New("document path not configured")
 
-// ErrDocFileMissing is returned when a document resolves to a path
-// that does not exist on disk. This is the one that used to pass
-// silently: the prompt still carried a `Read(<path>)` instruction, the
-// model found nothing there, and answered from whatever else it had.
+// ErrDocFileMissing is returned when a document resolves to a path that
+// does not exist on disk. This is the one that used to pass silently: the
+// prompt carried a `Read(<path>)` instruction and the model just answered from whatever else it had.
 var ErrDocFileMissing = errors.New("document file does not exist")
 
 // ErrDocNotRegularFile is returned when a document path exists but is a
-// directory, a device or a socket. Same class of silent failure as
-// ErrDocFileMissing — os.Stat succeeds, preflight passes, and the model
-// is then asked to read something it cannot read.
+// directory, device or socket — same class of silent failure as
+// ErrDocFileMissing: os.Stat succeeds, preflight passes, and the model can't actually read it.
 var ErrDocNotRegularFile = errors.New("document path is not a regular file")
 
 // Document keys a checklist may name under a prompt's `docs:` list.
 // KeyScenariosYAML doubles as the cmd layer's route to the scenario
-// registry path (`documents.scenarios_yaml`) — the engine has no
-// hardcoded default for it.
+// registry path — the engine has no hardcoded default for it.
 const (
 	KeyProduct          = "product"
 	KeyArchitectureYAML = "architecture_yaml"
 	KeyScenariosYAML    = "scenarios_yaml"
 )
 
-// keyToConfigPath maps a checklist `docs:` key to the `documents.*`
-// config entry holding its path. Single source of truth — the
-// evaluator, the fix-prompt generator, and the runner's up-front
-// validation all resolve through here, so they can never disagree
-// about what a key means.
+// keyToConfigPath maps a checklist `docs:` key to its `documents.*` config
+// entry. Single source of truth: the evaluator, fix-prompt generator, and
+// runner's up-front validation all resolve through here, so they can't disagree.
 func keyToConfigPath() map[string]string {
 	return map[string]string{
 		KeyProduct:          "documents." + KeyProduct,
@@ -84,10 +79,8 @@ func (r *Resolver) Resolve(key string) (string, error) {
 	}
 
 	// A directory satisfies os.Stat but cannot be handed to a prompt as a
-	// document. Without this the run passes preflight and then dispatches
-	// AI turns carrying a Read instruction for a directory — which is
-	// exactly the silent, mid-run failure the up-front validation exists
-	// to prevent.
+	// document — same silent mid-run failure ErrDocNotRegularFile guards
+	// against, caught here before the AI turn dispatches.
 	if !info.Mode().IsRegular() {
 		return "", fmt.Errorf("%w: %q -> %s", ErrDocNotRegularFile, key, filePath)
 	}
@@ -95,12 +88,9 @@ func (r *Resolver) Resolve(key string) (string, error) {
 	return filePath, nil
 }
 
-// ResolveAll resolves every key and reports EVERY failure at once
-// rather than stopping at the first. A run missing two documents
-// should tell you about both, not make you fix them one round-trip at
-// a time. Keys are visited in sorted order so the message is stable.
-//
-// The returned map is complete only when err is nil.
+// ResolveAll resolves every key and reports EVERY failure at once, not
+// just the first; keys are visited in sorted order so the message is
+// stable. The returned map is complete only when err is nil.
 func (r *Resolver) ResolveAll(keys []string) (map[string]string, error) {
 	unique := make([]string, 0, len(keys))
 	seen := make(map[string]bool, len(keys))

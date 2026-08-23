@@ -57,9 +57,7 @@ type resolvedConfig struct {
 }
 
 // resolveConfig reads <folder>/true-bdd/true-bdd.yaml, classifies the
-// config chip, and returns the resolved (defaulted) relative paths. A
-// missing or unparseable config still yields a usable resolvedConfig
-// backed by canonical defaults.
+// config chip, and returns the resolved (defaulted) relative paths.
 func resolveConfig(folder string) resolvedConfig {
 	defaults := resolvedConfig{
 		configStatus:    StatusMissing,

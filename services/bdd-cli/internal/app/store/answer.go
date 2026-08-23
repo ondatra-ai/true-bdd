@@ -9,20 +9,15 @@ import (
 )
 
 // SubmitAnswer applies the answer lifecycle and returns only the outcome
-// string. Delivery-aware callers use ResolveAnswer, which additionally reports
-// whether this submission is the FIRST accept that must be delivered to the
-// child's stdin (plan §1.4, finding 3).
+// string. Delivery-aware callers should use ResolveAnswer instead, which also
+// reports whether this is the FIRST accept that must reach the child's stdin.
 func (db *DB) SubmitAnswer(req AnswerInput) AnswerOutcome {
 	return db.ResolveAnswer(req).Outcome
 }
 
-// ResolveAnswer applies the answer lifecycle ATOMICALLY (plan §1.4, finding 3):
-// pending-prompt currentness, first-wins, exact-retry, terminal-race rejection,
-// non-empty clarify/freetext validation, and the cross-owner guard (plan §1.1).
-// It returns {Outcome, ShouldDeliver, StoredKind}: an exact retry is Accepted
-// with ShouldDeliver=false (a lost-response retry NEVER re-writes stdin), while
-// the FIRST accept is Accepted with ShouldDeliver=true. Kind/value validation
-// happens BEFORE the commit, so an invalid answer is never persisted.
+// ResolveAnswer applies the answer lifecycle ATOMICALLY: pending-prompt
+// currentness, first-wins, terminal-race rejection, and validation, returning
+// {Outcome, ShouldDeliver, StoredKind} (see answerRetry for retry semantics).
 func (db *DB) ResolveAnswer(req AnswerInput) AnswerResolution {
 	db.writeMu.Lock()
 	defer db.writeMu.Unlock()
@@ -75,10 +70,9 @@ func (db *DB) ResolveAnswer(req AnswerInput) AnswerResolution {
 	return storeFreshAnswer(transaction, req, kind, state)
 }
 
-// answerRetry resolves a submission against an already-answered prompt: an
-// exact retry stays accepted (a lost-response retry) but is NEVER re-delivered
-// (ShouldDeliver=false); any other value conflicts (first-wins). No commit is
-// needed — the transaction is left to roll back unchanged.
+// answerRetry resolves a submission against an already-answered prompt. An
+// exact retry stays Accepted with ShouldDeliver=false — a lost-response retry
+// must never re-write stdin (plan §1.4, finding 3); any other value conflicts.
 func answerRetry(req AnswerInput, kind, storedAnswer string) AnswerResolution {
 	if req.Kind == kind && req.Value == storedAnswer {
 		return AnswerResolution{Outcome: outcomeAccepted, ShouldDeliver: false, StoredKind: kind}
@@ -191,9 +185,8 @@ func (db *DB) BeginDelivery(runID, promptID string) error {
 }
 
 // RecordDeliveryError records that a store-accepted answer could NOT be
-// delivered to the child (no live local executor, or a failed stdin write —
-// finding 3). The caller terminates/classifies the run so it never hangs
-// answered-but-blocked; this column preserves the diagnostic.
+// delivered to the child (no live executor, or a failed stdin write). The
+// caller must terminate/classify the run so it never hangs answered-but-blocked (plan §1.4).
 func (db *DB) RecordDeliveryError(runID, promptID, detail string) error {
 	db.writeMu.Lock()
 	defer db.writeMu.Unlock()

@@ -18,16 +18,13 @@ var ErrEmptyCommand = errors.New("test suite command is empty")
 var ErrUnterminatedQuote = errors.New("unterminated quote in test suite command")
 
 // ErrRerunSelectedNoTests signals a per-test rerun whose filter matched
-// nothing. Reported rather than swallowed because the alternative is
-// indistinguishable from success: a framework that ran no test reports
-// no failure, and the walk would read that as a fix that worked.
+// nothing. Reported rather than swallowed: a framework that ran no test
+// reports no failure, so the walk would misread that as a fix that worked.
 var ErrRerunSelectedNoTests = errors.New("test rerun selected no tests")
 
-// ErrCommandNotMachineReadable signals a command that omits the flag
-// its framework needs to emit machine-readable results. Without it a
-// runner parses a human report, finds no failures in it, and the walk
-// converges on zero items — a false green, which is the one failure
-// mode worth a startup error.
+// ErrCommandNotMachineReadable signals a command missing the flag its
+// framework needs for machine-readable output. Without it a runner parses
+// a human report, finds no failures, and the walk converges on a false green.
 var ErrCommandNotMachineReadable = errors.New(
 	"test suite command must emit machine-readable output")
 
@@ -39,17 +36,14 @@ const (
 	playwrightJSONFlag = "--reporter=json"
 )
 
-// jsonToken is the literal "json" wearing three hats: the flag name
-// `go test` and jest use, the reporter Playwright must be asked for
-// (one item of a possibly comma-separated list), and the extension the
-// captured stdout is saved under. One constant because the linter sees
-// one string where the code means three things.
+// jsonToken is the literal "json" wearing three hats: the flag name `go
+// test`/jest use, the reporter Playwright needs, and captured-stdout's
+// extension — one constant because the linter sees one string, not three meanings.
 const jsonToken = "json"
 
-// outputFlag describes how one framework asks for machine-readable
-// output: the flag's name (without dashes, since `-json` and `--json`
-// are the same flag to Go's parser and every CLI here accepts either),
-// and the value that must be present when the flag takes one.
+// outputFlag describes how one framework asks for machine-readable output:
+// the flag's name without dashes (`-json`/`--json` are the same flag), and
+// the value that must be present when the flag takes one.
 type outputFlag struct {
 	name string
 	// value is the item the flag's value list must contain, or "" when
@@ -62,8 +56,7 @@ type outputFlag struct {
 
 // machineReadableFlag describes the output flag a framework's runner
 // depends on. ok is false for a framework this package does not route —
-// an unknown framework is the dispatcher's error to report, not a
-// second error here for the same mistake.
+// the dispatcher reports that mistake, not a second error here.
 func machineReadableFlag(framework string) (outputFlag, bool) {
 	switch framework {
 	case FrameworkGoTest:
@@ -81,15 +74,9 @@ func machineReadableFlag(framework string) (outputFlag, bool) {
 	return outputFlag{}, false
 }
 
-// SplitCommand splits a command line into argv, honouring single and
-// double quotes.
-//
-// strings.Fields would be enough for a bare `go test ./...`, but not
-// for the filters these commands legitimately carry — `-run '^TestGreen$'`
-// is one argument, and shredding it into two changes which tests run
-// without any error to show for it. Quoting is the only shell feature
-// supported: no expansion, no substitution, no pipelines. A command
-// needing those belongs in a script the spec then names.
+// SplitCommand splits a command line into argv, honouring single and double
+// quotes: strings.Fields would shred `-run '^TestGreen$'` into two arguments,
+// silently changing which tests run. Quoting is the only shell feature supported.
 func SplitCommand(command string) ([]string, error) {
 	var splitter commandSplitter
 
@@ -162,10 +149,9 @@ func (s *commandSplitter) finish(command string) ([]string, error) {
 
 	s.closeArg()
 
-	// Both shapes are the same mistake. `''` closes an argument whose
-	// content is empty, so the token count alone would call it a
-	// command and hand exec an empty binary name — a spawn failure
-	// where a startup refusal belongs.
+	// Both shapes are the same mistake: `''` closes an argument whose content
+	// is empty, so token count alone would call it a command and hand exec an
+	// empty binary name — a spawn failure where a startup refusal belongs.
 	if len(s.args) == 0 || s.args[0] == "" {
 		return nil, fmt.Errorf("%w: %q", ErrEmptyCommand, command)
 	}
@@ -195,14 +181,9 @@ func ValidateCommand(framework, command string) error {
 		ErrCommandNotMachineReadable, framework, command, flag.spelling)
 }
 
-// carriesOutputFlag reports whether argv asks for machine-readable
-// output.
-//
-// Deliberately generous about spelling, because this check refuses a
-// run outright and a host should not have to guess which of several
-// working forms the engine will accept. All of `-json`, `--json`,
-// `--reporter=json`, `--reporter=line,json` and `--reporter json`
-// produce output the runners parse, so all of them pass.
+// carriesOutputFlag reports whether argv asks for machine-readable output.
+// Deliberately generous about spelling — this check refuses a run outright,
+// so `-json`, `--json`, `--reporter=json`, and `--reporter line,json` (space or `=`) all pass.
 func carriesOutputFlag(args []string, flag outputFlag) bool {
 	for idx, arg := range args {
 		if !strings.HasPrefix(arg, "-") {
@@ -231,23 +212,9 @@ func carriesOutputFlag(args []string, flag outputFlag) bool {
 	return false
 }
 
-// CommandDir reports the directory a suite's command runs in: the
-// directory holding its `config:` file when it declares one, and
-// otherwise the empty string, which exec reads as "inherit the engine's
-// own working directory".
-//
-// That inherited directory is whatever the user ran `true-bdd` from —
-// the host repo root in every documented usage, but nothing here checks
-// it, so a command written relative to the repo root resolves against
-// somewhere else if the CLI is invoked from a subdirectory.
-//
-// One rule for all three frameworks, and it reproduces what each runner
-// used to hardcode. The config directory matters because `npx` resolves
-// the local install by walking up from the working directory: a jest or
-// playwright command run from the repo root would miss node_modules and
-// fetch a different version from the registry. A go-test suite declares
-// no config and so runs where the engine does, which is what its `-C`
-// flag used to arrange.
+// CommandDir reports the directory a suite's command runs in: `config:`'s
+// directory if declared, else "" (inherit cwd). This matters because npx
+// resolves the local install walking UP from cwd, so the wrong dir fetches a different registry version.
 func CommandDir(cfg Config) string {
 	if cfg.ConfigFile == "" {
 		return ""

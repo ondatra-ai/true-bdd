@@ -40,10 +40,9 @@ var ErrRemoveRequiresEngine = errors.New(
 var ErrRemovePathUnsafe = errors.New(
 	"fixture.yaml: remove paths must be clean, relative, and inside the target")
 
-// ErrFilterRequiresEngine is returned when checklist_prompts is
-// declared with `base: none` — the filter's whole point is deriving
-// from the LIVE engine checklist, and an input-shipped checklist would
-// be a conflict anyway.
+// ErrFilterRequiresEngine is returned when checklist_prompts is declared
+// with `base: none`: the filter derives from the LIVE engine checklist,
+// which doesn't exist without base: engine.
 var ErrFilterRequiresEngine = errors.New(
 	"fixture.yaml: checklist_prompts requires base: engine — filtering derives from the live checklist")
 
@@ -65,9 +64,8 @@ var ErrFilterOverrideConflict = errors.New(
 	"fixture.yaml: checklist_prompts declared but the input tree also overrides the same checklist")
 
 // Manifest is the on-disk shape of a harness fixture's fixture.yaml.
-// Unlike the BDD runner's manifest there is no cmd/answers/expected:
-// the Playwright test dispatches commands through the harness UI and
-// owns every assertion.
+// Unlike the BDD runner's manifest there is no cmd/answers/expected: the
+// Playwright test dispatches commands and owns every assertion.
 type Manifest struct {
 	// Base selects the starting layer: "engine" or "none". Required.
 	Base string `yaml:"base"`
@@ -82,25 +80,19 @@ type Manifest struct {
 	// up in a test's mutation diff. Optional.
 	Prep []string `yaml:"prep,omitempty"`
 
-	// Teardown is a list of shell commands the materializer validates
-	// and echoes back in its JSON output; the TypeScript harness runs
-	// them in test-scoped teardown. The materializer itself NEVER runs
-	// them. Optional.
+	// Teardown is a list of shell commands the materializer validates and
+	// echoes back in its JSON output for the TypeScript harness to run in
+	// test-scoped teardown; the materializer itself never runs them. Optional.
 	Teardown []string `yaml:"teardown,omitempty"`
 
-	// ChecklistPrompts maps a checklist stem (e.g. "us-refine") to
-	// snippet strings; the target's live checklist is rewritten to
-	// contain only the matched prompts. Semantics are shared with
-	// tests/libraries/runner (whitespace-collapsed substring, exactly one
-	// live non-skipped prompt per snippet). Optional; requires
-	// base: engine.
+	// ChecklistPrompts maps a checklist stem (e.g. "us-refine") to snippet
+	// strings; the live checklist is rewritten to contain only matched
+	// prompts (semantics shared with tests/libraries/runner). Optional; requires base: engine.
 	ChecklistPrompts map[string][]string `yaml:"checklist_prompts,omitempty"`
 
-	// Remove lists target-relative paths deleted AFTER the base
-	// overlay and BEFORE the input overlay — used to engineer
-	// missing-checklist / missing-dir cases from the engine base.
-	// Every listed path must exist at removal time. Optional; requires
-	// base: engine.
+	// Remove lists target-relative paths deleted AFTER the base overlay
+	// and BEFORE the input overlay. Every listed path must exist at
+	// removal time. Optional; requires base: engine.
 	Remove []string `yaml:"remove,omitempty"`
 }
 
@@ -209,10 +201,8 @@ func validateRemove(manifest *Manifest) error {
 }
 
 // validateChecklistPrompts checks everything about the filter
-// declaration that does not require the materialized tree: base
-// compatibility, non-empty declaration, non-blank snippets, and the
-// input-override conflict. Snippet↔prompt matching happens later in
-// Materialize via runner.FilterChecklistFile against the target tree.
+// declaration that does not require the materialized tree. Snippet↔prompt
+// matching happens later, in Materialize via runner.FilterChecklistFile.
 func validateChecklistPrompts(manifest *Manifest, raw []byte, fixtureDir string) error {
 	if declaredEmptyChecklistPrompts(raw, manifest) {
 		return ErrFilterDeclaredEmpty

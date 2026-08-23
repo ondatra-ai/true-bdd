@@ -40,16 +40,13 @@ type logSegment struct {
 }
 
 // partitionPathRe recovers the partition basename from a logged file
-// path. Must track fs.RunDirectory's `2006-01-02-15-04-05-<pid>` naming
-// (partitionRe in run_scanner.go is the directory-side twin); the older
-// minute-granular form stays matchable for previously retained runs.
+// path; must track partitionRe in run_scanner.go, including its
+// backward-compat match for older, minute-granular retained runs.
 var partitionPathRe = regexp.MustCompile(`tmp/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}(?:-\d{2}(?:-\d+)?)?)/`)
 
 // parseLogSpine reads the slog JSON stream and splits it into one
-// segment per "Loaded prompts" boundary. A zero-byte log yields nil.
-// The second return value counts malformed (non-JSON, non-empty)
-// lines — silent event loss would corrupt chronological attribution,
-// so callers must surface it.
+// segment per "Loaded prompts" boundary. A zero-byte log yields nil;
+// the second return value counts malformed (non-JSON, non-empty) lines.
 func parseLogSpine(path string) ([]logSegment, int, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -185,11 +182,9 @@ func attributeApplies(seg logSegment) []applyAttribution {
 	return attributions
 }
 
-// cleanWalkProven reports whether the segment shows a complete clean
-// walk after its last apply: strictly more result saves than one full
-// items×prompts pass (a bare post-fix restart alone is not enough —
-// this rejects the fix-on-final-attempt MaxAttemptsExhausted edge) and
-// zero fix generations after the last apply.
+// cleanWalkProven reports a complete clean walk after the last apply:
+// strictly more result saves than one items×prompts pass (see the
+// maxAttempts case in TestCleanWalkProven) and no fix generations after it.
 func cleanWalkProven(seg logSegment) bool {
 	lastApply, items, prompts := walkShape(seg)
 	if lastApply == -1 || items == 0 || prompts == 0 {

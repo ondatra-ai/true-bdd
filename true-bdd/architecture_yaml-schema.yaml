@@ -19,15 +19,13 @@
 
 architecture: include('architecture')
 # The BDD vocabulary `us refine` enforces on steps and AC descriptions.
-# Its preferred home is the product document, but a host may keep it
-# here instead — the engine's own fixtures do — so it is optional in
-# both schemas rather than required in neither.
+# Preferred home is the product document; a host may keep it here instead
+# (the engine's own fixtures do) — optional in both schemas, not just one.
 vocabulary: include('vocabulary', required=False)
 
 ---
-# One `testing:` section for the whole repository, beside the services
-# it exercises. Test suites are a property of the project, not of any
-# one service: a suite is named once, says how it runs, and names the
+# One `testing:` section for the whole repository, beside the services it
+# exercises: a suite is named once, says how it runs, and names the
 # service whose source `build code` may edit when it fails.
 architecture:
   testing: include('testing')
@@ -44,10 +42,9 @@ testing:
 suite:
   # Suite name. Appears in progress lines and in every failing test's id.
   name: str()
-  # The one service this suite exercises. Must name an entry in
-  # `services[]`; `build code` takes that service's `path:` as the only
-  # root its fix applier may write. A suite covering two services is two
-  # suites — otherwise a failure names no single place to fix.
+  # The one service this suite exercises; must name an entry in services[].
+  # build code takes that service's path: as the only root its fix applier
+  # may write — a suite covering two services is two suites.
   service: str()
   # Repo-relative root the suite's specs live under. `build tests`
   # authors missing tests here.
@@ -58,10 +55,9 @@ suite:
   # from wherever the engine was invoked.
   config: str(required=False)
   pattern: str(required=False)
-  # The test helpers available in this suite. `us refine` reads these
-  # when it sketches a scenario's steps — its checklist tells the model
-  # to "use only what is declared in architecture.yaml", so a host that
-  # omits them gets invented ones.
+  # Test helpers available in this suite. `us refine` reads these when
+  # sketching steps ("use only what's declared in architecture.yaml") — a
+  # host that omits them gets invented ones.
   helpers: list(include('helper'), required=False)
   commands: include('commands')
 
@@ -109,16 +105,9 @@ code_gate:
   config: str()
 
 ---
-# How to run this suite, per AI-dependency mode. There is no engine
-# default to fall back on — an invocation the spec does not state is one
-# no reader can audit — so all three are mandatory even though
-# `build code` runs only `replay` today.
-#
-# Each is a complete, framework-native command line INCLUDING the flag
-# that makes its output machine-readable (`-json` for go-test, `--json`
-# for jest, `--reporter=json` for playwright); without it the runner
-# parses prose, finds no failures, and the walk goes falsely green. The
-# engine appends only a name filter when it re-runs a single test.
+# How to run this suite, per AI-dependency mode — all 3 mandatory (no
+# engine default; build code runs only replay today). Each MUST include
+# the machine-readable flag (-json/--json/--reporter=json) — without it the runner parses prose, finds no failures, and the walk goes falsely green.
 commands:
   # Real AI CLIs, recording their calls for later replay.
   record: str()
@@ -126,23 +115,9 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
-  # Reports which registry steps bind to no step definition, WITHOUT
-  # running a scenario, by writing JSON to the file named in
-  # $TRUEBDD_COVERAGE_REPORT. `build tests` runs this before it walks
-  # anything and hands the walk only the scenarios with gaps, so a
-  # converged repository costs no AI turn.
-  #
-  # The report is `{schema, suite, examined[], unbound[], ambiguous[],
-  # failure?}`. `examined` is what makes an empty `unbound` mean
-  # anything: a scenario the suite never looked at is walked rather
-  # than assumed bound.
-  #
-  # The one optional command. A suite that declares none falls back to
-  # `build tests` asking a model the same question in prose, so adding
-  # this key is an upgrade a host takes rather than a break when it
-  # does not. Its exit status is ignored — a coverage check
-  # legitimately fails when it finds gaps — but a missing report file
-  # is a refusal: "could not answer" is not "nothing to report".
+  # Unbound steps, without running a scenario: JSON written to
+  # $TRUEBDD_COVERAGE_REPORT. `examined[]` matters — an empty `unbound[]`
+  # means nothing for a scenario missing from it. A MISSING report file is a refusal, not "nothing to report".
   coverage: str(required=False)
 
 ---
@@ -151,10 +126,9 @@ helper:
   description: str()
 
 ---
-# Mirrors the `vocabulary` block in product-schema.yaml. Duplicated
-# rather than shared because yamale has no cross-file include and the
-# block may legitimately live in either document — but the two must stay
-# in step, since one checklist reads whichever one the host wrote.
+# Mirrors `vocabulary` in product-schema.yaml — duplicated (yamale has no
+# cross-file include) because the block may live in either document. The
+# two must stay in step: one checklist reads whichever the host wrote.
 vocabulary:
   actions: list(include('action'), min=1)
   forbidden_qualifiers: list(str(), min=1)

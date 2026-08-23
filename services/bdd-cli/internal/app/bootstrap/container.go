@@ -21,9 +21,8 @@ import (
 )
 
 // scenarioTriple bundles the (evaluator, fix-prompt-generator,
-// fix-applier) trio that every scenario-walking command depends on.
-// Used internally by NewContainer to keep the bootstrap function under
-// the configured complexity / length budgets.
+// fix-applier) trio that every scenario-walking command depends on,
+// keeping NewContainer under the configured complexity budget.
 type scenarioTriple struct {
 	evaluator    *validate.ChecklistEvaluator
 	fixGenerator *validate.FixPromptGenerator
@@ -98,11 +97,9 @@ type Container struct {
 	BuildTestsEvaluator          *validate.ChecklistEvaluator
 	BuildTestsFixPromptGenerator *validate.FixPromptGenerator
 	BuildTestsFixApplier         *validate.FixApplier
-	// Build-code triple drives `build code`. Templates live under
-	// templates.prompts.build_code_* and the fix-applier runs in
-	// EditMode so Claude can Write/Edit production source files under
-	// services/* in place. The dispatcher routes test discovery and
-	// per-test reruns to one of the framework-specific runners.
+	// Build-code triple drives `build code`: templates under
+	// templates.prompts.build_code_*, fix-applier in EditMode writing
+	// services/* files. The dispatcher below routes per-framework runs.
 	TestRunnerDispatcher        *testrunner.Dispatcher
 	BuildCodeEvaluator          *validate.ChecklistEvaluator
 	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
@@ -193,9 +190,8 @@ func NewContainer() (*Container, error) {
 }
 
 // newAIRouter resolves the model-tier table and builds the one
-// provider router every checklist role shares. Which CLI actually runs
-// a turn is decided per call by the tier the checklist selected, so a
-// single router serves claude, crush, and codex alike.
+// provider router every checklist role shares — which CLI runs a turn
+// is decided per call by the tier, not by which router served it.
 func newAIRouter(cfg *config.ViperConfig, runDir *fs.RunDirectory) (*ai.Router, *provider.Registry, error) {
 	models, err := NewModelRegistry(cfg)
 	if err != nil {
@@ -212,10 +208,9 @@ func newAIRouter(cfg *config.ViperConfig, runDir *fs.RunDirectory) (*ai.Router, 
 	return ai.NewRouter(workDir, runDir.GetTmpOutPath()), models, nil
 }
 
-// testWriteGlobs resolves the roots `build tests --fix` may author
-// into. The fallback matches the roots the build-tests fix-applier
-// prompt names, so a host config that omits the key still gets an
-// applier whose permissions agree with its instructions.
+// testWriteGlobs resolves `build tests --fix` write roots. Keep this in
+// sync with the build-tests fix-applier prompt's stated roots — a
+// mismatch would grant permissions that disagree with instructions.
 func testWriteGlobs(cfg *config.ViperConfig) []string {
 	globs := cfg.GetStringSlice("paths.test_write_globs")
 	if len(globs) > 0 {
@@ -226,14 +221,8 @@ func testWriteGlobs(cfg *config.ViperConfig) []string {
 }
 
 // newTestRunnerDispatcher wires the three framework-specific runners
-// behind the testrunner.Dispatcher used by `build code`. Each runner is
-// constructed once; the dispatcher routes by the `framework:` field
-// declared in architecture.yaml.
-//
-// All three share one Artifacts writer rooted at the run directory, so
-// every framework's captured output lands beside the prompts the engine
-// built from it and the sequence numbers order the whole run's test
-// spawns against each other.
+// behind the `build code` Dispatcher, routed by architecture.yaml's
+// `framework:` field. All three share one Artifacts writer.
 func newTestRunnerDispatcher(runDir *fs.RunDirectory) *testrunner.Dispatcher {
 	artifacts := testrunner.NewArtifacts(runDir.GetTmpOutPath())
 

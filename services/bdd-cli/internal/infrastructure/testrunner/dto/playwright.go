@@ -5,11 +5,9 @@ package dto
 // ignored by encoding/json.
 type PlaywrightReport struct {
 	Suites []PlaywrightSuite `json:"suites"`
-	// Errors holds run-level failures that belong to no individual
-	// test — a webServer that could not boot, a config that would not
-	// load. Playwright puts these on stdout inside the report rather
-	// than on stderr, so this is the only place the reason a suite
-	// never started can be read.
+	// Errors holds run-level failures that belong to no individual test —
+	// a webServer that failed to boot, a config that wouldn't load.
+	// Playwright writes these to the report on stdout, never stderr.
 	Errors []PlaywrightError `json:"errors,omitempty"`
 	Stats  PlaywrightStats   `json:"stats"`
 }

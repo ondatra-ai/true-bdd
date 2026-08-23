@@ -78,9 +78,8 @@ func reap(child *managedChild) <-chan error {
 }
 
 // TestFolderLockInheritedByChild proves the parent-death safety of the
-// host folder flock (plan §3.7): the fd is inherited by the child, so even
-// after the parent's own handle is gone the lock is held until the child
-// exits.
+// host folder flock (plan §3.7): the inherited fd keeps the lock held even
+// after the parent's own handle is gone, until the child exits.
 func TestFolderLockInheritedByChild(t *testing.T) {
 	lockPath := filepath.Join(t.TempDir(), "true-bdd-harness.lock")
 

@@ -78,20 +78,9 @@ func (r *JestRunner) Discover(
 	return failures, nil
 }
 
-// RunOne re-executes one failing Jest assertion by appending
-// `--testNamePattern` (anchored to the escaped fullName) to the suite's
-// own command. Only the pattern is appended, never the spec file: Jest
-// treats bare positionals as an OR-ed set of path patterns, so a file
-// added next to the path the command already carries would widen the
-// rerun instead of isolating it. `--testNamePattern` is ANDed with the
-// paths and narrows correctly.
-//
-// It narrows which tests RUN, not which files are loaded: Jest still
-// transforms every file the command's own path patterns select. Scoping
-// that down would mean rewriting the host's positionals rather than
-// appending to them — `--runTestsByPath` changes how ALL positionals are
-// interpreted, so it cannot simply be added — and a command the engine
-// rewrites is no longer the command the spec declared.
+// RunOne re-executes one failing Jest assertion via `--testNamePattern`
+// (ANDed with the paths) appended to the suite's command. Never appends the
+// spec file itself: Jest OR-s bare positionals, so an added file would widen the rerun instead of isolating it.
 func (r *JestRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -137,10 +126,9 @@ func (r *JestRunner) RunOne(
 	return true, "", nil
 }
 
-// jestRanNothing reports whether the rerun executed no assertion at
-// all. A pattern that matches nothing produces a report with no
-// failures in it — the same shape as a test that passed — so without
-// this the engine would read a mistyped filter as a successful fix.
+// jestRanNothing reports whether the rerun executed no assertion at all:
+// a pattern matching nothing produces a report with no failures — the
+// same shape as a passing test — so without this a mistyped filter reads as a successful fix.
 func jestRanNothing(report *dto.JestReport) bool {
 	for _, testResult := range report.TestResults {
 		if len(testResult.AssertionResults) > 0 {
@@ -151,10 +139,9 @@ func jestRanNothing(report *dto.JestReport) bool {
 	return true
 }
 
-// exec runs the suite's command with the supplied argv. cwd is the
-// directory holding the suite's config so `npx` resolves the local Jest
-// install. phase labels the invocation in the log and in the captured
-// output's filename. Non-zero exit codes are expected on test failure.
+// exec runs the suite's command with the supplied argv. cwd is the config
+// directory so `npx` resolves the local Jest install (see CommandDir).
+// phase labels the invocation in log/filename; non-zero exit is expected on test failure.
 func (r *JestRunner) exec(
 	ctx context.Context,
 	cwd, phase string,
@@ -183,12 +170,9 @@ func splitJestName(name string) (string, string, error) {
 	return file, fullName, nil
 }
 
-// parseJestReport decodes the JSON document on stdout. Jest writes only
-// the JSON on stdout when `--json` is set, so no log-noise stripping is
-// required; falls back to nil report on empty payload. The decoded
-// shape lives in the `dto` package because it mirrors a third-party
-// wire format (camelCase keys), which the linter excludes from
-// tagliatelle there.
+// parseJestReport decodes the JSON document on stdout: Jest with `--json`
+// writes ONLY the JSON there (no log-noise stripping needed), falling back
+// to an empty report on an empty payload. Lives in `dto` since its camelCase mirrors a third-party wire format.
 func parseJestReport(payload []byte) (*dto.JestReport, error) {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 {
@@ -210,11 +194,9 @@ func parseJestReport(payload []byte) (*dto.JestReport, error) {
 	return &report, nil
 }
 
-// jestReportToFailingTests walks the testResults tree and collects one
-// FailingTest per failed assertion, tagging each with the supplied
-// service and suite. The file path is rebased on cwd to keep it
-// repo-relative for prompt display. Free function rather than a method
-// on dto.JestReport so the dto package stays passive.
+// jestReportToFailingTests walks testResults and collects one FailingTest
+// per failed assertion, tagged with service/suite; the file path is rebased
+// on cwd for repo-relative prompt display. Free function so dto stays passive.
 func jestReportToFailingTests(
 	report *dto.JestReport,
 	service, suite, cwd string,
@@ -245,15 +227,9 @@ func jestReportToFailingTests(
 	return out
 }
 
-// jestRepoRelative rebases the absolute path Jest emits into a path
-// relative to the supplied cwd, falling back to the absolute path if
-// the relative computation fails.
-//
-// A suite that declares no `config:` has no cwd to rebase against —
-// filepath.Rel cannot make an absolute path relative to a relative one
-// — so its paths stay absolute and reach the prompt that way. Fixing
-// that means resolving the engine's own working directory, which is a
-// change to what the prompt says and wants its own test.
+// jestRepoRelative rebases Jest's absolute path onto cwd, falling back to
+// absolute if the rebase fails — e.g. a suite with no `config:` has no cwd,
+// and filepath.Rel can't relate an absolute path to a relative one.
 func jestRepoRelative(cwd, absolutePath string) string {
 	if !filepath.IsAbs(absolutePath) {
 		return absolutePath

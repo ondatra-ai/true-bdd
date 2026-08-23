@@ -10,18 +10,13 @@ import (
 )
 
 // runtimeDir is the single declared runtime path excluded from tree
-// hashes: the engine's `./tmp/**` working directory (per
-// true-bdd.yaml paths.tmp_glob and plan §4.5 — "excluding only
-// declared runtime paths (`tmp/**`), not broad directories"). Only
-// the ROOT-level tmp/ subtree is excluded; a nested
-// services/foo/tmp/ would still be hashed.
+// hashes (true-bdd.yaml paths.tmp_glob): only the root-level tmp/
+// subtree — a nested services/foo/tmp/ is still hashed.
 const runtimeDir = "tmp"
 
-// HashTree returns a path → sha256(hex) map for every file under
-// root. Keys are slash-separated paths relative to root, so the map
-// is directly comparable with the TypeScript oracle
-// (tests/legacy/bdd-web-playwright/helpers/tree-hash.ts), which implements the
-// identical algorithm.
+// HashTree returns a path → sha256(hex) map for every file under root.
+// Keys are slash-separated paths relative to root, directly comparable
+// with the TypeScript oracle (tests/legacy/bdd-web-playwright/helpers/tree-hash.ts).
 func HashTree(root string) (map[string]string, error) {
 	out := make(map[string]string)
 

@@ -180,8 +180,7 @@ finish() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────
-# STAGES — author this section. One stage() per step the human takes.
-# Replace the example below. Set TOTAL_STAGES to match the stages you write.
+# STAGES — author this section: one stage() per step, replace the example, set TOTAL_STAGES.
 # ──────────────────────────────────────────────────────────────────────────
 
 TOTAL_STAGES=1

@@ -9,9 +9,8 @@ import (
 )
 
 // TestRunDirNameSecondsAndPID proves the seconds+PID naming (plan §3.2):
-// the basename carries both the second-precision timestamp and the pid,
-// so distinct (second, pid) pairs never collide the way the minute-only
-// name did under sequential same-minute runs.
+// distinct (second, pid) pairs never collide, unlike the old minute-only
+// scheme.
 func TestRunDirNameSecondsAndPID(t *testing.T) {
 	t.Parallel()
 

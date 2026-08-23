@@ -13,20 +13,18 @@ import (
 
 const childrenFilePerm = 0o600
 
-// childEntry is one line in the remote's children pids file. The test
-// harness's teardown reads exactly these fields (plan §3.2 / §4.1): the
-// PGID is the signal target, the start identity guards against a
-// recycled pid, and the run id ties the entry to its run.
+// childEntry is one line in the remote's children pids file (JSONL): PGID is
+// the signal target, start identity guards a recycled pid, and run id ties
+// the entry to its run — these fields are also read by the legacy TS test harness's teardown (plan §3.2/§4.1).
 type childEntry struct {
 	PGID          int    `json:"pgid"`
 	StartIdentity string `json:"start_identity,omitempty"`
 	RunID         string `json:"run_id,omitempty"`
 }
 
-// ChildrenRegistry maintains <folder>/tmp/true-bdd-remote-children.pids
-// as JSONL — one line per live command child. The file lets scoped
-// teardown reap child process groups the remote owned even after a
-// timeout (plan §4.1).
+// ChildrenRegistry maintains <folder>/tmp/true-bdd-remote-children.pids as
+// JSONL, one line per live command child, so scoped teardown can reap child
+// process groups the remote owned even after a timeout (plan §4.1).
 type ChildrenRegistry struct {
 	path    string
 	mu      sync.Mutex
@@ -64,10 +62,9 @@ func (r *ChildrenRegistry) Remove(pgid int) {
 	r.flush()
 }
 
-// flush rewrites the pids file from the in-memory entries and fsyncs it, so the
-// recorded group identity is durable before the supervisor is released to run
-// the mutating command (finding 4). Best-effort: a write failure only degrades
-// emergency teardown hygiene.
+// flush rewrites the pids file from the in-memory entries and fsyncs it, so
+// the recorded group identity is durable before the supervisor is released
+// to run the mutating command (finding 4); errors are ignored — best-effort only.
 func (r *ChildrenRegistry) flush() {
 	var buffer bytes.Buffer
 

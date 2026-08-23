@@ -24,24 +24,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// -mode mirrors the CLI suite's flag so one architectural spec can
-// declare all three commands for both suites in the same vocabulary.
-// The web scenarios reach no model yet, so today the value only travels
-// with the run for the report to state.
+// -mode mirrors the CLI suite's flag; the web suite reaches no model yet, so the value only travels with the report.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var proxyMode = flag.String("mode", runner.ProxyModeLive,
 	"AI CLI mode: live, record, or replay")
 
-// -allow-missing-toolchain downgrades a missing node/npm from a failure
-// to a skip.
-//
-// Off by default, and that is the whole point of the flag existing. A
-// suite that silently skips when a tool is absent reports the same green
-// as one that ran, and this suite is in no gate to catch the difference.
-// Someone who genuinely wants the skip — a laptop without node, a
-// half-provisioned container — says so on the command line, where it is
-// visible in the invocation rather than invisible in the output.
+// -allow-missing-toolchain skips instead of failing on missing node/npm; off by default so it can't silently go green.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var allowMissingToolchain = flag.Bool("allow-missing-toolchain", false,
@@ -170,10 +159,9 @@ func bootHarness(t *testing.T) (string, error) {
 	return "", nil
 }
 
-// missingTools names every tool the suite needs and cannot find.
-//
-// All of them, not the first: a machine missing node is missing npm too,
-// and reporting one at a time turns provisioning into a guessing game.
+// missingTools names every tool the suite needs and cannot find — all
+// of them, not the first, since reporting one at a time turns
+// provisioning into a guessing game.
 func missingTools() []string {
 	var missing []string
 

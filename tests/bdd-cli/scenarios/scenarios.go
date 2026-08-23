@@ -30,29 +30,16 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
-// -mode selects how scenarios reach the AI CLIs. Usage:
-//
-//	go test -tags bdd ./tests/bdd-cli/ -mode=replay
-//
-// live (default) — real claude/crush, no shim, today's behavior.
-// record — real CLIs behind the aiproxy shim; cassettes are (re)written
-// under each selected fixture's cassettes/ dir. Filter with -run.
-// replay — cassettes served by the shim; real AI CLIs not required
-// (the judge does not run at all). A scenario without cassettes FAILS:
-// silence about an un-recorded scenario would let the suite go green
-// while covering less than it claims.
+// -mode selects how scenarios reach the AI CLIs: live, record, or replay.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var proxyMode = flag.String("mode", runner.ProxyModeLive,
 	"AI CLI mode for scenarios: live, record, or replay")
 
 const (
-	// scenarioTimeout caps the CLI run alone — prep and teardown have
-	// their own budgets. Deliberately tight: past five minutes a run is
-	// not slow, it is wrong — a fix prompt that cannot land, or a cell
-	// whose verdict no fix can move. A fixture whose invocation
-	// legitimately does heavy external work overrides it with its
-	// scenario's `timeout:` key.
+	// scenarioTimeout caps the CLI run alone; prep/teardown have their own
+	// budgets. Kept tight on purpose — a run past five minutes is wrong,
+	// not slow. A fixture needing more overrides via its `timeout:` key.
 	scenarioTimeout = 5 * time.Minute
 	// judgeTimeout caps the post-run judge call. The judge gets its own
 	// fresh context so it can still produce a verdict when the CLI run
@@ -79,10 +66,9 @@ var (
 	teardowns []func()
 )
 
-// Main is the suite's TestMain body. It returns rather than exits so the
-// caller can os.Exit after the deferred teardowns have run — TestMain
-// has no *testing.T, so t.Cleanup is not available and the teardowns
-// have to be explicit.
+// Main is the suite's TestMain body. It returns instead of calling os.Exit
+// directly, so the caller can run deferred teardowns first — TestMain has
+// no *testing.T, so t.Cleanup is unavailable.
 func Main(m *testing.M) int {
 	// Parsed explicitly: m.Run parses too late for a flag Main reads.
 	flag.Parse()
@@ -122,11 +108,8 @@ func Main(m *testing.M) int {
 }
 
 // New returns the Run a generated test drives, bringing the harness up
-// on the first call.
-//
-// Lazily, and that matters: a coverage guard asking whether the registry
-// and the generated files agree would otherwise pay for a binary build
-// and an aiproxy shim to answer a question about two files on disk.
+// lazily on the first call — eager init here would cost every coverage
+// guard a binary build and an aiproxy shim just to compare two files.
 func New(t *testing.T, scenarioID string) *bddgo.Run[steps.State] {
 	t.Helper()
 
@@ -151,13 +134,9 @@ func CheckFixtureTrees(t *testing.T) {
 	suite.CheckFixtureTrees(t, FixturesDir, steps.FixtureName)
 }
 
-// CheckStepCoverage reports every registry step that binds to no step
-// definition, and writes the report `build tests` reads.
-//
-// The engine asks this question by running this test rather than by
-// parsing the source, because the patterns live here: some are built at
-// registration rather than written as literals, so a reader of the
-// source can only approximate what the resolver actually does.
+// CheckStepCoverage reports every registry step with no bound definition
+// and writes the report `build tests` reads. It runs the real resolver
+// rather than parsing source: some patterns are built at registration.
 func CheckStepCoverage(t *testing.T) {
 	t.Helper()
 
@@ -188,10 +167,9 @@ func ensureHarness(t *testing.T) {
 func bootHarness(t *testing.T) (string, error) {
 	mode := *proxyMode
 
-	// Replay needs no model anywhere: the engine's turns come from
-	// cassettes and the verdict comes from the recording. That is what
-	// makes it runnable in CI, offline, and on a machine that has never
-	// installed an agent CLI — so it must NOT skip for a missing one.
+	// Replay needs no model: turns and verdict both come from the
+	// cassette. That's what lets it run in CI and offline, so it must
+	// NOT skip for a missing agent CLI.
 	if mode != runner.ProxyModeReplay {
 		why, err := missingCLI()
 		if err != nil {
@@ -280,10 +258,9 @@ func writeSessionMeta(sessionRoot, mode string) error {
 		return fmt.Errorf("resolve planned scenarios: %w", err)
 	}
 
-	// Recorded as fixture names, not function names: every reader
-	// downstream — the report server, the coverage tool, the on-disk run
-	// directories — keys on the tree a scenario drives, and renaming that
-	// key would be a change to all of them for no gain here.
+	// Recorded as fixture names, not function names: the report server,
+	// the coverage tool, and the run directories all key on the fixture
+	// name — renaming this key would ripple through all three for no gain.
 	fixtures := make([]string, 0, len(planned))
 
 	for _, name := range planned {
@@ -307,10 +284,9 @@ func writeSessionMeta(sessionRoot, mode string) error {
 	return nil
 }
 
-// missingCLI reports why the suite cannot run against real models: the
-// judge's own CLI, or one the engine config binds a model tier to.
-// Without this a `coder: "crush:…"` tier on a machine without crush
-// fails deep inside a fix loop, minutes in, looking like a product bug.
+// missingCLI reports why the suite can't run against real models: the
+// judge's CLI, or one an engine config tier binds to — checked up front
+// so a missing CLI doesn't surface as a mystery failure mid fix-loop.
 func missingCLI() (string, error) {
 	// The judge runs on claude regardless of which CLIs the engine
 	// config routes a scenario's own turns to.
@@ -336,10 +312,9 @@ func missingCLI() (string, error) {
 	return "", nil
 }
 
-// installShimDir builds the aiproxy shim and installs it as claude /
-// crush / codex in a temp dir. Prepended to the CLI subprocess's PATH
-// (never the test process's), it intercepts every AI-CLI spawn — the
-// engine's own binary resolution is untouched.
+// installShimDir builds the aiproxy shim and installs it as claude/crush/
+// codex in a temp dir, prepended only to the CLI subprocess's PATH — never
+// the test process's — so it intercepts spawns without touching resolution.
 func installShimDir() (string, error) {
 	dir, err := os.MkdirTemp("", "true-bdd-shim-")
 	if err != nil {

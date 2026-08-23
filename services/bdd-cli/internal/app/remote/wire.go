@@ -8,10 +8,7 @@ import (
 
 // This file defines the v2 register / poll / reply wire DTOs (plan §2) the
 // remote speaks to the STATELESS RELAY, plus the browser-facing projection
-// shapes the query handler PRODUCES as JSON. The relay carries the query /
-// dispatch / answer work items to the CLI and relays the CLI's reply body
-// back to the browser verbatim, so these projection shapes must match
-// tests/legacy/bdd-web-playwright/helpers/api-client.ts exactly.
+// shapes, which must match tests/legacy/bdd-web-playwright/helpers/api-client.ts exactly.
 
 // ── Agent protocol (plan §2) ──
 
@@ -26,11 +23,8 @@ type registerRequest struct {
 }
 
 // registerResult is the reply to a successful register: the negotiated
-// connection epoch, reply byte budget (the streamed reply cap), capability
-// token, and the inventory-fit budget (the full-request budget the remote fits
-// its snapshot under — configurable per server, distinct from the large
-// streamed reply cap so a tiny inventory budget degrades the snapshot without
-// 413-ing every read).
+// connection epoch, reply byte budget, capability token, and the
+// inventory-fit budget — distinct from the reply cap: a tiny one degrades the snapshot, not 413s reads.
 type registerResult struct {
 	ConnectionEpoch      int    `json:"connection_epoch"`
 	ReplyBudgetBytes     int    `json:"reply_budget_bytes"`

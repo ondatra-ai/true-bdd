@@ -15,16 +15,9 @@ const (
 	phaseRerun = "rerun"
 )
 
-// TestRun is one framework-runner subprocess as the engine recorded it
-// after the fact: how it ended, how long it took, and the streams it
-// produced.
-//
-// This is the row's evidence. The engine's parsed view of a run is
-// lossy — it becomes a list of failing tests and nothing else — so a
-// span that returned zero failures used to be indistinguishable from
-// one that never executed. The captured stdout is the framework's own
-// report, verbatim, which settles that question without re-running
-// anything.
+// TestRun is one framework-runner subprocess as the engine recorded it: how
+// it ended, how long it took, and its streams. The engine's own parsed view
+// is lossy (just a list of failures), so stdout settles zero-failures-vs-never-executed.
 type TestRun struct {
 	Framework string
 	Phase     string
@@ -33,16 +26,13 @@ type TestRun struct {
 	HasExit  bool
 	Duration time.Duration
 
-	// At is when the exit record was written, i.e. when the subprocess
-	// was already gone. With Duration it places the run on the wall
-	// clock, which is what lets the timeline show a rerun as its own
-	// slice instead of hiding it inside the engine's gap.
+	// At is when the exit record was written; with Duration it places the run
+	// on the wall clock, letting a rerun show as its own timeline slice.
 	At time.Time
 
-	// Stdout and Stderr are the persisted streams. A stream that was
-	// captured but empty still loads — a zero-byte stderr is the
-	// evidence that the framework printed nothing there, which is
-	// exactly what a JSON-reporter run looks like.
+	// Stdout and Stderr are the persisted streams. A captured-but-empty
+	// stream still loads — a zero-byte stderr is evidence the framework
+	// printed nothing, not that nothing was captured.
 	Stdout Artifact
 	Stderr Artifact
 
@@ -50,12 +40,9 @@ type TestRun struct {
 	Error string
 }
 
-// TestRuns lists every framework-runner subprocess of the run, in the
-// order they were spawned, with their captured streams loaded.
-//
-// Driven by the exit record rather than the spawn record: a spawn is
-// written before the fork and so proves only intent, while the exit
-// record is written after the process is gone and carries what it did.
+// TestRuns lists every framework-runner subprocess of the run, in the order
+// they were spawned, with their captured streams loaded. Driven by the exit
+// record, not the spawn record: a spawn only proves intent.
 func (l *EngineLog) TestRuns(fixtureDir string) []TestRun {
 	var runs []TestRun
 
@@ -101,10 +88,9 @@ func newTestRun(record *LogRecord, fixtureDir string) TestRun {
 	return run
 }
 
-// IsDiscovery reports whether the run is the opening whole-suite
-// invocation — the one the timeline's pre-dispatch test-run slice is
-// bounded by. Every other phase is a fix-loop rerun, which gets its own
-// slice inside the gap it actually ran in (see appendGap).
+// IsDiscovery reports whether the run is the opening whole-suite invocation
+// — the one the timeline's pre-dispatch slice is bounded by. Every other
+// phase is a fix-loop rerun, with its own slice (see appendGap).
 func (t TestRun) IsDiscovery() bool {
 	return t.Phase == phaseDiscover
 }

@@ -41,10 +41,7 @@ func firstLine(text string) string {
 	return line
 }
 
-// staged is the commit-message context, bounded.
-//
-// An unbounded diff is what failed with 'Prompt is too long' and no diagnostic
-// on PR #70.
+// staged is the commit-message context, bounded — see defaultDiffBudget.
 func (r *Run) staged() string {
 	stat := r.gitChecked("diff", "--cached", "--stat")
 	body := r.gitChecked("diff", "--cached")
@@ -69,17 +66,9 @@ func (r *Run) staged() string {
 		"=== Diff — this is %s ===\n%s\n", recent, stat, shape, body)
 }
 
-// commit commits and pushes what this round's fixes changed.
-//
-// No decisions of its own: Main has already established that this round
-// planned fixes and that they changed the tree, so there is no "nothing to do"
-// path in here to hide the reason a run stopped early. It follows that the
-// last round never reaches this function — split empties its fix band, and the
-// loop leaves first.
-//
-// Deliberately not the pr-commit skill: that path also runs scan-recordings, a
-// local review round, the ledger, doc-universe and memory sync. Those belong to
-// a human's commit. A merge round's commit is a fix commit.
+// commit commits and pushes what this round's fixes changed. Not the
+// pr-commit skill: that also runs scan-recordings, review, doc-universe and
+// memory sync — a merge round's commit is a fix commit only.
 func (r *Run) commit() {
 	r.gitChecked("add", "-A")
 	r.logf("running the gates before committing")
@@ -124,24 +113,12 @@ func (r *Run) headSHA() string {
 		r.gh("pr", "view", strconv.Itoa(r.pr), "--json", "headRefOid", "--jq", ".headRefOid"))
 }
 
-// reviewedSHA is the commit the last REAL CodeRabbit review was posted against.
-//
-// A non-empty body is the test, because `@coderabbitai approve` posts an
-// APPROVED review with body_len=0 while an actual review is kilobytes of
-// COMMENTED. Measured on PR #76:
+// reviewedSHA is the last commit with a REAL review — body_len is the test:
+// auto-approve is body_len=0 (PR #76, below); so is "nothing found" (PR #83) — check reviewedThisRun first.
 //
 //	CHANGES_REQUESTED  9cc2545  body=9138   <- a real review
 //	COMMENTED          41f85a5  body=3872   <- also a real review
 //	APPROVED           14e327a  body=0      <- `@coderabbitai approve`
-//
-// Not sufficient on its own, and merge checks reviewedThisRun first: a review
-// that found nothing is also body_len=0, so this test alone rejects a clean PR.
-// Measured on PR #83, whose only in-scope change was one doc comment —
-// CodeRabbit reviewed it, had nothing to say, and this returned "".
-//
-// Deliberately no `--jq`: `gh api --paginate` applies the filter to each page
-// and concatenates, so a filter ending in `last` emits one SHA per page rather
-// than one overall.
 func (r *Run) reviewedSHA() string {
 	reviewed := ""
 
@@ -154,22 +131,9 @@ func (r *Run) reviewedSHA() string {
 	return reviewed
 }
 
-// checkPushed insists origin already holds this HEAD. It does not make that
-// true.
-//
-// Committing or pushing on the caller's behalf is how a merge run puts work on
-// origin that the caller never decided to publish. So this only ever answers
-// the question, and a "no" ends the run.
-//
-// Two questions, and neither goes through `@{u}`. A tracking ref describes
-// LOCAL CONFIG, not what origin holds — pr-commit/commit.sh pushes with
-// `git push origin HEAD` and no `-u`, so its branches are fully pushed and have
-// no upstream at all, and asking `@{u}` refused those branches while saying
-// "push it yourself" about a commit origin already had. `git log @{u}..HEAD` is
-// no better: it compares against a local ref that only moves on fetch or push,
-// so it can be stale in either direction. Comparing HEAD to the PR's own head
-// SHA asks GitHub what the pull request is built on, which is the thing that
-// actually has to be true.
+// checkPushed insists origin already holds HEAD (does not make it true).
+// Not @{u}: pr-commit/commit.sh pushes with no -u, so branches have no
+// upstream — @{u} errors outright; git log @{u}..HEAD can go stale either way.
 func (r *Run) checkPushed() {
 	if dirty := r.worktreeChanges(); dirty != "" {
 		r.dief("the working tree is dirty — commit it yourself before merging:\n%s",

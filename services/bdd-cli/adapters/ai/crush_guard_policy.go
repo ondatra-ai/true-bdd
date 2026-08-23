@@ -25,11 +25,9 @@ const (
 	CrushGuardDenyExitCode = 2
 )
 
-// crushReadOnlyTools are the tools that cannot mutate anything and are
-// therefore always safe. Everything not listed here and not explicitly
-// handled is DENIED — `download` writes files and would slip through a
-// deny-list, so unknown tools are treated as writers until proven
-// otherwise.
+// crushReadOnlyTools are tools that cannot mutate anything, so they're
+// always safe. Everything else is DENIED by default (fail closed): a
+// deny-list would let an unlisted writer like `download` slip through.
 func crushReadOnlyTools() []string {
 	return []string{"view", "ls", "grep", "glob", "sourcegraph", "diagnostics", "fetch"}
 }
@@ -44,12 +42,9 @@ func crushReadOnlyToolPrefixes() []string {
 	return []string{"mcp_context7", "context7"}
 }
 
-// CrushGuardPolicy is the write gate for one crush turn.
-//
-// `crush run` has no permission gate of its own, so this policy —
-// enforced by a PreToolUse hook — is the only enforcement. It is
-// derived from the same ExecutionMode that drives Claude's
-// --allowedTools, so all three CLIs share one permission model.
+// CrushGuardPolicy is the write gate for one crush turn, enforced by a
+// PreToolUse hook — crush run has no permission gate of its own — and
+// derived from the same ExecutionMode that backs Claude's --allowedTools.
 type CrushGuardPolicy struct {
 	// WriteRoots are absolute directory prefixes a file-writing tool
 	// may target. Empty means no writes at all.
@@ -61,8 +56,7 @@ type CrushGuardPolicy struct {
 
 // NewCrushGuardPolicy projects an ExecutionMode onto the crush guard,
 // resolving the mode's write globs against workDir into absolute
-// roots. A glob's fixed prefix is the root: `./tmp/**` under
-// /repo becomes /repo/tmp/.
+// write roots (see absoluteGlobRoot).
 func NewCrushGuardPolicy(mode ExecutionMode, workDir string) CrushGuardPolicy {
 	globs := mode.WriteGlobs()
 	roots := make([]string, 0, len(globs))
@@ -132,13 +126,9 @@ func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 	return p.allowsWriteTo(targetPath)
 }
 
-// allowsWriteTo checks a file tool's target against the write roots.
-//
-// Both sides are resolved through symlinks before comparison. A lexical
-// check is not enough: `crush run` has no permission gate of its own, so
-// this policy is the ONLY enforcement, and a symlink planted inside a
-// granted root (say `<tmp>/link` → `/etc`) would otherwise let
-// `<tmp>/link/passwd` pass a prefix test and write outside the root.
+// allowsWriteTo checks a target against the write roots after resolving
+// symlinks on both sides: a lexical-only check would let a symlink inside
+// a granted root (`<tmp>/link` → `/etc`) pass the prefix test and escape.
 func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	if len(p.WriteRoots) == 0 {
 		return false, "this mode grants no write roots"
@@ -163,13 +153,9 @@ func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	return false, "write target " + resolved + " is outside " + strings.Join(p.WriteRoots, ", ")
 }
 
-// resolveThroughSymlinks resolves the deepest existing ancestor of a
-// path and re-appends the part that does not exist yet.
-//
-// A write target usually does not exist — that is the point of the
-// write — so EvalSymlinks on the whole path fails. Walking up to the
-// first component that does exist still catches the attack, because a
-// symlink can only be traversed if it exists.
+// resolveThroughSymlinks resolves the deepest existing ancestor and
+// re-appends what doesn't exist: a write target usually doesn't exist
+// yet, so plain EvalSymlinks on the full path would fail outright.
 func resolveThroughSymlinks(path string) string {
 	remainder := ""
 	current := filepath.Clean(path)
@@ -219,11 +205,9 @@ func isCrushReadOnlyTool(name string) bool {
 	return false
 }
 
-// absoluteGlobRoot reduces a glob to the absolute directory prefix it
-// can never escape: everything before the first wildcard segment,
-// resolved against workDir and terminated with a separator so
-// prefix matching cannot leak into a sibling directory
-// (`/repo/tmp/` never matches `/repo/tmpfoo`).
+// absoluteGlobRoot reduces a glob to the absolute directory prefix it can
+// never escape (everything before the first wildcard), so `/repo/tmp/`
+// can't prefix-match a sibling like `/repo/tmpfoo`.
 func absoluteGlobRoot(glob, workDir string) string {
 	fixed := glob
 

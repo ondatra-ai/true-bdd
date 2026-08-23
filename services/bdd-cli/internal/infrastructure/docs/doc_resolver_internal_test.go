@@ -20,9 +20,8 @@ const (
 )
 
 // newTestResolver builds a Resolver over a throwaway project whose
-// `documents:` block is exactly the supplied mapping, then creates
-// every file named in `present`. ViperConfig always reads
-// ./true-bdd/true-bdd.yaml, so the test chdirs into the temp project.
+// `documents:` block is exactly the supplied mapping, then creates every
+// file named in `present`.
 func newTestResolver(t *testing.T, documents map[string]string, present []string) *Resolver {
 	t.Helper()
 
@@ -84,10 +83,9 @@ func TestResolveAcceptsExistingDocument(t *testing.T) {
 	}
 }
 
-// TestResolveRejectsMissingFile covers the defect this type exists
-// for: the key is known and configured, but nothing is at the path. It
-// used to resolve happily and put a dead Read() instruction into every
-// prompt that declared it.
+// TestResolveRejectsMissingFile guards a real regression: Resolve used to
+// succeed on a configured-but-absent path, handing prompts a dead Read()
+// instruction.
 func TestResolveRejectsMissingFile(t *testing.T) {
 	resolver := newTestResolver(t,
 		map[string]string{KeyArchitectureYAML: archPath},
@@ -104,11 +102,9 @@ func TestResolveRejectsMissingFile(t *testing.T) {
 	}
 }
 
-// TestResolveRejectsDirectory pins that a path which merely EXISTS is
-// not good enough. os.Stat succeeds on a directory, so without an
-// explicit regular-file check the run passes preflight and then hands a
-// model a Read instruction for a directory — the same silent mid-run
-// failure the up-front validation was built to stop.
+// TestResolveRejectsDirectory pins that a path which merely exists is not
+// enough: os.Stat succeeds on directories too, so Resolve must explicitly
+// check for a regular file.
 func TestResolveRejectsDirectory(t *testing.T) {
 	resolver := newTestResolver(t,
 		map[string]string{KeyArchitectureYAML: archPath},

@@ -1,18 +1,8 @@
 package inventory_test
 
 // Size-discipline goldens (plan §1a/§4 "Go"): the request-budget degrade
-// ladder, the always-fit FLOOR, the below-floor cannot-fit state, and the
-// whole-file decoding parity for oversized epics.
-//
-// The degrade ladder is driven through a PINNED env knob,
-// TRUE_BDD_INVENTORY_BUDGET_BYTES — the fit budget the remote derives from
-// the server's negotiated inventory limit, exposed as an env override so
-// the ladder is unit-testable without a running server. The implementer
-// wires the fit step (inside Scan or a Scan-internal helper) to honor it.
-// Compile-safe: every assertion decodes the REAL Scan output into the local
-// target schema (content_extraction_golden_test.go), so the tests fail
-// (red) — Scan ignores the budget today — and go green once the ladder
-// emits the omission metadata. t.Setenv forbids t.Parallel here.
+// ladder, the always-fit FLOOR, the below-floor cannot-fit state, and
+// whole-file decoding parity for oversized epics. t.Setenv forbids t.Parallel.
 
 import (
 	"fmt"
@@ -117,10 +107,9 @@ func TestGoldenBelowFloorIsCannotFit(t *testing.T) {
 }
 
 func TestGoldenOversizedEpicDecodingParity(t *testing.T) {
-	// The 256 KiB cap applies ONLY to retained story raw, never to what is
-	// read/decoded: a valid oversized epic decodes IDENTICALLY to us create
-	// (parseable, declared content extracted), and an invalid-tail epic
-	// beyond 256 KiB is STILL detected as invalid.
+	// The 256 KiB cap applies only to retained story raw (see
+	// retainedRawCap); decoding is always over the whole file, so an
+	// oversized-but-valid epic still decodes and an invalid one still fails.
 	pad := strings.Repeat("x", 300*1024) // > 256 KiB of valid content
 
 	validOversized := "epic:\n  id: 70\n  name: Oversized Epic\n  context: \"" + pad + "\"\n" +

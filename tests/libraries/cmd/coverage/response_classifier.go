@@ -29,9 +29,8 @@ func (c VerdictClass) Credits() bool {
 }
 
 // evaluatorResult mirrors the production resultYAML exactly: a flexible
-// answer node plus typed context and fix_prompt — a wrongly typed
-// auxiliary field is a production parse failure and must classify as
-// protocol_bad_yaml here too.
+// answer node plus typed context and fix_prompt, so a wrongly typed
+// auxiliary field classifies as protocol_bad_yaml here too.
 type evaluatorResult struct {
 	Answer    yaml.Node `yaml:"answer"`
 	Context   []string  `yaml:"context,omitempty"`

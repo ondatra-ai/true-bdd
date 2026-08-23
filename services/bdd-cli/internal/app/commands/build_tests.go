@@ -22,32 +22,22 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
-// ErrBuildTestsNotConverged is returned when the build-tests walk
-// finishes with one or more scenarios still missing a corresponding
-// test. Sets a non-zero CLI exit code. It wraps
-// runner.ErrExpectedNonconvergence so the terminal envelope classifies it
-// not_fixed (finalization OK) rather than a finalization failure — the CLI
-// exit behavior is unchanged (finding 7).
+// ErrBuildTestsNotConverged is returned when the build-tests walk finishes
+// with scenarios still missing a test, for a non-zero exit code. It wraps
+// runner.ErrExpectedNonconvergence so the envelope classifies it not_fixed, not a failure (finding 7).
 var ErrBuildTestsNotConverged = fmt.Errorf(
 	"one or more scenarios have no corresponding executable test: %w",
 	runner.ErrExpectedNonconvergence,
 )
 
-// ErrGeneratedTestsStale signals generated test files that are not what
-// the registry renders.
-//
-// A startup refusal rather than a finding, because everything after it
-// would be measured against the wrong tree: walking a suite whose tests
-// no longer transcribe the registry answers a question about a
-// repository that does not exist. `--fix` writes them, so the fix is one
-// flag away and the message says so.
+// ErrGeneratedTestsStale signals generated test files that are not what the
+// registry renders. Refused at startup, not as a per-scenario finding: every
+// scenario walked after would be measured against the wrong tree; --fix regenerates them.
 var ErrGeneratedTestsStale = errors.New("generated test files are not what the registry renders")
 
-// ErrFixTouchedGeneratedTests signals a fix walk that left a generated
-// file changed. The applier's write roots include the whole test tree,
-// so a model asked to author a step definition CAN edit the test that
-// asserts the scenario — and a scenario "fixed" that way is one nothing
-// checks any more.
+// ErrFixTouchedGeneratedTests signals a fix walk that left a generated file
+// changed. The applier's write roots cover the whole test tree, so a step
+// fix CAN edit the test asserting the scenario, and nothing else re-checks it.
 var ErrFixTouchedGeneratedTests = errors.New("the fix walk modified a generated test file")
 
 // BuildTestsDeps bundles what `build tests` needs at the command
@@ -64,13 +54,9 @@ type BuildTestsDeps struct {
 	RunDir                       *fs.RunDirectory
 }
 
-// RunBuildTests drives `build tests`. Walks every scenario in the
-// requirements registry against the build-tests checklist. Each cell's
-// fix asks Claude to author the missing step definition under the
-// `path:` of the suite that owns the scenario — the entry in
-// `architecture.testing.suites[]` whose `service:` matches the
-// scenario's. Exits non-zero if any scenario is still uncovered after
-// the walk.
+// RunBuildTests drives `build tests`: walks every scenario in the
+// requirements registry against the build-tests checklist, fixing each gap
+// via its owning suite. Exits non-zero if any scenario is still uncovered.
 func RunBuildTests(
 	ctx context.Context,
 	deps BuildTestsDeps,
@@ -108,12 +94,9 @@ func RunBuildTests(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,
 	})
-	// After the walk, not before it: the applier may write anywhere under
-	// the test tree, so the only moment this can be checked is once it
-	// has stopped writing. And regardless of how the walk ended — a walk
-	// that failed is exactly when a fix turn is most likely to have
-	// written something desperate, so returning early on `err` would
-	// skip the check on the runs that need it most.
+	// Runs unconditionally, even when err != nil: a failed walk is exactly
+	// when a desperate fix turn is most likely to have touched a generated
+	// file, so returning early on `err` would skip the check when it matters most.
 	clobberErr := prep.checkGeneratedTestsSurvived()
 
 	if err != nil {
@@ -132,22 +115,14 @@ type buildTestsPrep struct {
 
 	repoRoot string
 	plan     *scenariogen.Plan
-	// walking records that preparation finished, so the post-walk
-	// re-check runs only when a fix turn could actually have written
-	// something. Without it a refusal raised AFTER the plan was built —
-	// an unwritable file, a suite that could not answer — reports the
-	// leftover drift as "the fix walk modified a generated test file",
-	// which accuses a walk that never started.
+	// walking marks that Prepare finished, so the post-walk re-check runs
+	// only once a fix turn could actually have written something — without
+	// it, a refusal raised after the plan builds would misreport as clobbering.
 	walking bool
 }
 
-// run is the Prepare hook: it renders the generated tests, then narrows
-// the walk to the scenarios a suite reports as unbound.
-//
-// Two stages in one hook because they answer two halves of the same
-// question — "are the tests this registry describes present?" and "does
-// every step they run bind to something?" — and both are answerable
-// without a model.
+// run is the Prepare hook: it renders the generated tests, then narrows the
+// walk to the scenarios a suite reports as unbound — both answerable without a model.
 func (p *buildTestsPrep) run(
 	ctx context.Context,
 	scenarios []*registry.RegistryScenario,
@@ -216,11 +191,8 @@ func (p *buildTestsPrep) renderTests() error {
 }
 
 // scenariosWithGaps asks every suite which of its steps bind and returns
-// only the scenarios that need a fix turn.
-//
-// A suite with no `coverage:` command cannot be asked, so its scenarios
-// all go to the walk — the old behaviour, kept deliberately so declaring
-// the command is an upgrade rather than a requirement.
+// only the scenarios needing a fix turn. A suite with no `coverage:` command
+// sends all its scenarios to the walk rather than skipping them.
 func (p *buildTestsPrep) scenariosWithGaps(
 	ctx context.Context,
 	arch *architecture.Architecture,
@@ -234,11 +206,9 @@ func (p *buildTestsPrep) scenariosWithGaps(
 	selected := make([]*registry.RegistryScenario, 0, len(scenarios))
 
 	for _, scenario := range scenarios {
-		// Narrowed on what a suite says it EXAMINED, never on the mere
-		// existence of a coverage command. A suite reads its own
-		// configured registry, so `--requirements <other>` asks about a
-		// document the suite has never heard of — and a scenario it never
-		// looked at must be walked, not assumed bound.
+		// Gated on EXAMINED, not merely having a coverage command: a suite
+		// reads its own configured registry, so a scenario from a different
+		// `--requirements <other>` was never examined and must still be walked.
 		if examined[scenario.ID] && len(gaps[scenario.ID]) == 0 {
 			continue
 		}
@@ -267,10 +237,9 @@ func (p *buildTestsPrep) askSuites(
 	ctx context.Context,
 	arch *architecture.Architecture,
 ) (map[string]bool, map[string][]string, error) {
-	// Everything checkable about every suite's command, before the first
-	// subprocess: finding suite three unrunnable after suites one and two
-	// have each compiled a test binary costs minutes for a verdict the
-	// spec could have given immediately.
+	// Everything checkable about every suite's command is checked before the
+	// first subprocess, so an unrunnable suite is reported immediately rather
+	// than after earlier suites have already paid to compile a test binary.
 	err := stepcoverage.Validate(arch.Suites)
 	if err != nil {
 		return nil, nil, err
@@ -318,11 +287,9 @@ func (p *buildTestsPrep) checkGeneratedTestsSurvived() error {
 		return nil
 	}
 
-	// Both, like every other refusal in this repository. The console line
-	// is for whoever ran the command; stdout is also the only channel a
-	// fixture can assert on — `stdout_regex` matches stdout alone, and in
-	// replay the judge never runs — so a message left on stderr is one no
-	// scenario can hold the engine to.
+	// Both: the console line is for whoever ran the command, and stdout is
+	// the only channel a fixture can assert on (`stdout_regex`, replay mode)
+	// — a message left on stderr alone is one no scenario can hold the engine to.
 	slog.Error("A fix turn modified a generated test file",
 		"files", len(drifted),
 	)
@@ -359,10 +326,9 @@ func buildTestsOnItemStart(idx, total int, item *registry.RegistryScenario) {
 	)
 }
 
-// buildTestsPostFix is the PostFix implementation for build-tests. The
-// fix already wrote test files to disk via Claude's Write/Edit tools,
-// so the item itself is unchanged — Run's next Query iteration will
-// re-search the test trees from disk.
+// buildTestsPostFix is the PostFix implementation for build-tests. The fix
+// already wrote test files to disk via Claude's tools, so the item itself is
+// unchanged; Run's next Query iteration re-reads the test trees from disk.
 func buildTestsPostFix(
 	_ context.Context,
 	item *registry.RegistryScenario,

@@ -13,10 +13,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 )
 
-// handleWork dispatches one work item to its handler and replies. Each work
-// item is handled in its own goroutine (the poll loop already repolled), so a
-// slow inventory scan never blocks the poll. Mutations are serialized by the
-// store (one nonterminal run per owner) and the single active executor.
+// handleWork dispatches one work item to its handler and replies. Each item
+// runs in its own goroutine (the poll loop already repolled) so a slow scan
+// never blocks polling; mutations stay serialized by the store and the single active executor.
 func (a *Agent) handleWork(ctx context.Context, item workItem) {
 	switch item.Type {
 	case workQuery:
@@ -141,13 +140,9 @@ func (a *Agent) sessionDetail() SessionDetail {
 	return detail
 }
 
-// inventoryBudget derives the snapshot-fit budget from the negotiated
-// inventory budget minus the MEASURED reply envelope (the wrapper around the
-// snapshot), so the serialized snapshot fits the server's full-request budget
-// (plan §1.5). A non-negotiated (zero) budget falls back to a floor. This is
-// the INVENTORY budget (configurable per server), NOT the large streamed reply
-// cap — a tiny inventory budget degrades the snapshot (snapshot_truncated /
-// limit_too_small) without 413-ing the read.
+// inventoryBudget derives the snapshot-fit budget: negotiated inventory
+// budget minus the MEASURED reply envelope (plan §1.5), floored when
+// zero. This is the INVENTORY budget (not the streamed reply cap): too small degrades the snapshot, never 413s.
 func (a *Agent) inventoryBudget(status SessionStatus) int {
 	budget := a.getInventoryBudget()
 	if budget <= 0 {
@@ -185,9 +180,8 @@ func (a *Agent) runDetailReply(runID string) replyEnvelope {
 }
 
 // handleChat runs one chat turn (deterministic driver or a real Claude call,
-// plan Slice 5) and replies with the structured result. Never a blind write:
-// the browser applies `edit.new_content` to the buffer and the NORMAL
-// debounced doc_write persists it (S1's single persistence path).
+// plan Slice 5) and replies with the structured result; never a blind write —
+// the browser applies edit.new_content and the normal doc_write persists it (S1).
 func (a *Agent) handleChat(ctx context.Context, item workItem) {
 	var payload chatPayload
 
@@ -202,10 +196,9 @@ func (a *Agent) handleChat(ctx context.Context, item workItem) {
 	a.reply(ctx, item, replyEnvelope{Status: http.StatusOK, Body: result})
 }
 
-// handleDispatch runs the store dispatch transaction, replies with the mapped
-// status, and (on created) spawns the run (plan §1.4/§3). The reply is sent
-// BEFORE the spawn so lock acquisition never delays the browser's dispatch
-// response.
+// handleDispatch runs the store dispatch transaction, replies with the
+// mapped status, and (on created) spawns the run (plan §1.4/§3) — the reply
+// is sent BEFORE spawn, so lock acquisition never delays the browser's response.
 func (a *Agent) handleDispatch(ctx context.Context, item workItem) {
 	var payload dispatchPayload
 
@@ -275,11 +268,9 @@ func (a *Agent) spawnRun(ctx context.Context, runID string) {
 	a.setActive(nil)
 }
 
-// handleAnswer resolves an answer through the store's atomic answer lifecycle,
-// replies with the mapped status, and (only on the FIRST accept) delivers it to
-// the child's stdin under the at-most-once + matching-local-executor guards
-// (plan §1.4, finding 3). Kind/value are validated BEFORE the store commits, so
-// an invalid answer is never persisted then rejected at delivery.
+// handleAnswer resolves an answer through the store's atomic lifecycle,
+// replies with the mapped status, and (only on the FIRST accept) delivers it
+// under the at-most-once + matching-local-executor guards (plan §1.4, finding 3).
 func (a *Agent) handleAnswer(ctx context.Context, item workItem) {
 	var payload answerPayload
 
@@ -329,12 +320,9 @@ func (a *Agent) handleAnswer(ctx context.Context, item workItem) {
 	a.reply(ctx, item, answerReply(resolution.Outcome))
 }
 
-// deliverAnswer delivers a FRESHLY-accepted answer to the child's stdin under
-// the at-most-once guard (plan §1.4, finding 3): it requires a matching LOCAL
-// executor, commits delivery_started_at BEFORE the write, and stamps
-// consumed_at ONLY after a SUCCESSFUL write. If there is no matching executor
-// or the write fails, it records delivery_error and terminates the run
-// (interrupting the child) so the run never hangs answered-but-blocked.
+// deliverAnswer delivers a FRESHLY-accepted answer under the at-most-once
+// guard (plan §1.4, finding 3): commits delivery_started_at BEFORE the write
+// and stamps consumed_at ONLY after success; any failure records delivery_error and terminates the run.
 func (a *Agent) deliverAnswer(exec *RunExecutor, payload answerPayload, kind string) {
 	// Matching-local-executor guard (plan §1.1): the run must be executing HERE
 	// for the answer to be deliverable.

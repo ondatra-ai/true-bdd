@@ -69,10 +69,9 @@ type (
 	}
 )
 
-// authorOf names a comment's author.
-//
-// GitHub returns author: null for a deleted account, and reaching through it
-// would abort the one routine whose job is to miss nothing.
+// authorOf names a comment's author. GitHub returns author: null for a
+// deleted account; reaching through it would abort the one routine whose
+// job is to miss nothing.
 func authorOf(comment threadComment) string {
 	if comment.Author == nil || comment.Author.Login == "" {
 		return "(deleted account)"
@@ -241,12 +240,9 @@ func claimedCounts(reviews []ghReview) map[string]int {
 	return counts
 }
 
-// reconcile compares what we extracted against what the reviews claim.
-//
-// A WARNING, never a stop. CodeRabbit over-counts — review 4960672409
-// announced "Actionable comments posted: 6" and posted 5 — so treating the gap
-// as fatal made the guard unsatisfiable and stalled PR #76's merge. A gap can
-// mean a missed finding OR a bot over-count; both get printed.
+// reconcile compares extracted findings against what reviews claim — a
+// WARNING, never a stop. CodeRabbit over-counts (review 4960672409 claimed 6,
+// posted 5); treating the gap as fatal stalled PR #76's merge.
 func (r *Run) reconcile(threads []reviewThread, bodyOnly []bodyFinding, reviews []ghReview, uniqueCount int) {
 	claimed := claimedCounts(reviews)
 

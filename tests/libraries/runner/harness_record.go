@@ -12,33 +12,23 @@ import (
 // HarnessRecordFile is the record's name inside SpawnLogDir.
 const HarnessRecordFile = "harness.json"
 
-// harnessSchema versions the on-disk shape. A reader that does not
-// recognise it should say so rather than render a report from fields it
-// guessed at.
-//
-// 2 added the judge transcript and the manifest snapshot.
-// 3 added the AI-CLI mode the fixture ran under.
+// harnessSchema versions the on-disk shape: 2 added the judge transcript
+// and manifest snapshot; 3 added the AI-CLI mode. A reader that doesn't
+// recognise a schema should say so, not render fields it guessed at.
 const harnessSchema = 3
 
 // The sidecar files the recorder writes beside the record, all inside
 // SpawnLogDir.
 const (
 	// JudgeSystemFile, JudgeUserFile and JudgeResponseFile are the judge
-	// call verbatim. Separate files rather than fields on the record
-	// because the user prompt embeds the whole run diff and runs to tens
-	// of kilobytes — inlining it would make the record unreadable and
-	// force every reader to parse it just to learn the verdict.
+	// call verbatim, kept as separate files rather than record fields: the
+	// user prompt runs to tens of KB and would make the record unreadable.
 	JudgeSystemFile   = "judge-system.txt"
 	JudgeUserFile     = "judge-user.txt"
 	JudgeResponseFile = "judge-response.txt"
 	// ManifestSnapshotFile is the fixture's resolved manifest as this run
-	// saw it.
-	//
-	// fixture.yaml is never copied into the tmpdir, so without this a
-	// report reads "expected" from whatever the source tree says TODAY.
-	// Two runs then show identical expectations even when the rubric
-	// changed between them, which makes comparing expected-vs-actual
-	// across runs structurally impossible.
+	// saw it — snapshotted because fixture.yaml is never copied into the
+	// tmpdir (see ObserveFixture for why that matters across runs).
 	ManifestSnapshotFile = "manifest.json"
 )
 
@@ -51,12 +41,8 @@ const (
 )
 
 // FileChangeRecord is one entry of the run's diff without its content:
-// what changed, where, and how big it ended up.
-//
-// Content is deliberately absent. The bodies are already handed to the
-// judge and already on disk inside the preserved tmpdir; copying them
-// here would make the record grow with the size of whatever the model
-// wrote, for a report that renders one line per entry.
+// what changed, where, and how big it ended up. Content is deliberately
+// absent — already on disk in the preserved tmpdir and handed to the judge.
 type FileChangeRecord struct {
 	Kind        string `json:"kind"`
 	Path        string `json:"path"`
@@ -64,12 +50,9 @@ type FileChangeRecord struct {
 	BytesAfter  int    `json:"bytes_after"`
 }
 
-// JudgeRecord is the harness judge's single model call.
-//
-// StartedAt/EndedAt bracket the call itself. EndedAt is the far edge on
-// purpose: the report measures the trailing harness block as the span
-// from the engine's last log record to the end of the judge, so the near
-// edge would leave the model call unaccounted for.
+// JudgeRecord is the harness judge's single model call. EndedAt is the
+// far edge on purpose: the report measures the trailing harness block
+// from the engine's last log record to the judge's end.
 type JudgeRecord struct {
 	StartedAt    time.Time      `json:"started_at"`
 	EndedAt      time.Time      `json:"ended_at"`
@@ -81,18 +64,14 @@ type JudgeRecord struct {
 }
 
 // HarnessRecord is everything about one fixture run that exists only in
-// the test process. The engine writes its own JSON log from inside its
-// own process; this is the same idea one level up, for the four facts
-// the engine cannot see: what the harness decided, how long the whole
-// fixture took, what changed on disk, and what the judge spent.
+// the test process — the engine's own JSON log covers its own process;
+// this covers what it cannot see: verdict, duration, diff, judge cost.
 type HarnessRecord struct {
 	Schema  int    `json:"schema"`
 	Fixture string `json:"fixture"`
 	// Mode is the AI-CLI mode this fixture ran under: live, record or
-	// replay. Empty for a session recorded before the shim existed.
-	// Carried per fixture as well as per session so a test page still
-	// states how the run reached the models when the session record is
-	// missing — and so the two can be seen to disagree if they ever do.
+	// replay. Empty for a pre-shim session. Carried per fixture as well as
+	// per session so the two can be seen to disagree if they ever do.
 	Mode      string    `json:"mode,omitempty"`
 	Verdict   string    `json:"verdict"`
 	StartedAt time.Time `json:"started_at"`
@@ -146,18 +125,14 @@ type HarnessRecorder struct {
 	usage   *UsageSink
 
 	// sidecars are the extra files to write beside the record, by name.
-	// Accumulated rather than written as they arrive so that every
-	// filesystem touch happens in Finish — which is the only moment the
-	// harness is guaranteed to be past the post-run snapshot.
+	// Accumulated rather than written as they arrive, so every filesystem
+	// touch happens in Finish (see writeHarnessRecord for why that matters).
 	sidecars map[string]string
 }
 
-// NewHarnessRecorder starts the fixture's clock.
-//
-// The directory is derived from sessionRoot and the fixture name rather
-// than taken from RunResult.TmpDir, because a fixture that fails inside
-// prepareRunDir returns an empty TmpDir — and that is precisely a run
-// worth recording.
+// NewHarnessRecorder starts the fixture's clock. The directory is
+// derived from sessionRoot and the name, not RunResult.TmpDir — a
+// fixture that fails inside prepareRunDir has an empty TmpDir but is still worth recording.
 func NewHarnessRecorder(sessionRoot, name, mode string, usage *UsageSink) *HarnessRecorder {
 	started := time.Now()
 
@@ -170,11 +145,9 @@ func NewHarnessRecorder(sessionRoot, name, mode string, usage *UsageSink) *Harne
 	}
 }
 
-// ObserveFixture snapshots the manifest this run resolved.
-//
-// Taken here rather than read back from the source tree at report time,
-// because the tmpdir never receives a copy of fixture.yaml: a report
-// built later would show today's expectations for yesterday's run.
+// ObserveFixture snapshots the manifest this run resolved, rather than
+// reading it back from the source tree at report time — fixture.yaml
+// isn't copied into the tmpdir, so a later read would show today's rubric.
 func (r *HarnessRecorder) ObserveFixture(fixture *Fixture) {
 	if fixture == nil {
 		return
@@ -208,11 +181,9 @@ func (r *HarnessRecorder) ObserveFixture(fixture *Fixture) {
 	r.sidecars[ManifestSnapshotFile] = string(blob) + "\n"
 }
 
-// ObserveRun folds in what the CLI invocation left behind.
-//
-// The exit code is recorded only when Execute got far enough to have
-// one: a fixture that died in prep has no exit status, and reporting the
-// zero value as "exit 0" would be a lie in the direction of "it worked".
+// ObserveRun folds in what the CLI invocation left behind. The exit
+// code is recorded only when Execute got far enough to have one — a
+// died-in-prep fixture has none, and 0 would lie as "it worked".
 func (r *HarnessRecorder) ObserveRun(result *RunResult, err error) {
 	if result == nil {
 		return
@@ -260,11 +231,8 @@ func (r *HarnessRecorder) AddFailure(msg string) {
 }
 
 // Finish stamps the wall clock, bills the judge, and writes the record.
-//
-// The stamp is taken FIRST. Everything below it — the sink scan, the
-// marshal, the mkdir, the write — is the recorder's own cost, and
-// charging that to the fixture would push it into the report's one
-// residual slice, where it would be indistinguishable from prep.
+// The stamp is taken FIRST — everything below (sink scan, marshal,
+// write) is the recorder's own cost, not billable to the fixture.
 func (r *HarnessRecorder) Finish(failed, skipped bool) string {
 	ended := time.Now()
 
@@ -286,11 +254,8 @@ func (r *HarnessRecorder) Finish(failed, skipped bool) string {
 }
 
 // writeSidecars persists the judge transcript and manifest snapshot,
-// returning the names that landed, sorted.
-//
-// Safe here for exactly the reason writeHarnessRecord is: Finish runs
-// after Execute has taken both snapshots, so nothing written now can
-// enter the diff the judge graded.
+// returning the names that landed, sorted. Safe for the same reason
+// writeHarnessRecord is (see its doc): Finish runs after both snapshots.
 func writeSidecars(dir string, bodies map[string]string) []string {
 	if len(bodies) == 0 {
 		return nil
@@ -323,11 +288,9 @@ func writeSidecars(dir string, bodies map[string]string) []string {
 	return written
 }
 
-// billJudge claims the usage records stamped inside this fixture's judge
-// window. Fixtures run sequentially and the window brackets the model
-// call itself, so no record can belong to two fixtures — and a fixture
-// that died before reaching its judge claims nothing, rather than
-// inheriting the next one's cost.
+// billJudge claims the usage records stamped inside this fixture's
+// judge window: fixtures run sequentially, so no record can belong to
+// two (see Between and TestUsageOutsideJudgeWindowIsNotBilled).
 func (r *HarnessRecorder) billJudge() {
 	if r.usage == nil || r.record.Judge.StartedAt.IsZero() {
 		return
@@ -372,17 +335,9 @@ func diffRecords(changes []FileChange) []FileChangeRecord {
 	return records
 }
 
-// writeHarnessRecord persists one fixture's record and returns its path.
-//
-// It lands in SpawnLogDir for the same reason the CLI's streams do:
-// evidence next to the run it explains. It is SAFE there only because
-// this runs after Execute has taken BOTH snapshots (the "before" at the
-// snapshotTree call preceding the CLI exec, the "after" at the one
-// following it). Calling it from inside Execute, before the post-run
-// snapshot, would put harness.json into the diff the judge grades.
-//
-// A recorder that cannot write must never fail a fixture, so every error
-// here is reported and swallowed — same contract as the spawn log.
+// writeHarnessRecord persists one fixture's record. SAFE only after
+// Execute's post-run snapshot (else harness.json enters the judge's
+// diff); errors are reported and swallowed, never failing the fixture.
 func writeHarnessRecord(dir string, record HarnessRecord) string {
 	err := os.MkdirAll(dir, spawnLogDirPerm)
 	if err != nil {
@@ -400,11 +355,9 @@ func writeHarnessRecord(dir string, record HarnessRecord) string {
 
 	path := filepath.Join(dir, HarnessRecordFile)
 
-	// Write-then-rename, because this file is also the signal that the
-	// fixture is finished: the report server treats its presence as "this
-	// run is final, cache it forever". A reader that catches a plain
-	// WriteFile mid-flight sees valid-looking truncated JSON. Rename is
-	// atomic within a directory, so the file never exists half-written.
+	// Write-then-rename: this file's presence signals "the fixture is
+	// final, cache it forever" to the report server. A plain WriteFile
+	// risks a reader catching valid-looking truncated JSON mid-write.
 	tmp := path + ".tmp"
 
 	err = os.WriteFile(tmp, append(blob, '\n'), spawnLogFilePerm)

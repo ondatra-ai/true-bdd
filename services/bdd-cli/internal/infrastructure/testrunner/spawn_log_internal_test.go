@@ -10,11 +10,9 @@ import (
 	"testing"
 )
 
-// TestExitStatusClassification pins the distinction the exit record
-// exists to make: a framework that ran and failed must be reported with
-// the code it returned, while a process that never started must be
-// reported as -1 with a reason. Collapsing the two is what made a
-// failed run indistinguishable from a run that never happened.
+// TestExitStatusClassification pins the distinction the exit record exists
+// to make: a framework that ran and failed reports the code it returned,
+// while a process that never started reports -1 with a reason.
 func TestExitStatusClassification(t *testing.T) {
 	t.Parallel()
 
@@ -51,12 +49,9 @@ func TestExitStatusClassification(t *testing.T) {
 	}
 }
 
-// TestRunLoggedCapturesBothStreams checks that routing every runner
-// through runLogged did not change what the callers receive: they
-// branch on stdout being empty, so a swapped or dropped stream would
-// silently turn a real report into a discovery error. It also pins the
-// on-disk capture, which is the whole point of the detour — a run whose
-// output only ever existed in memory left nothing to audit.
+// TestRunLoggedCapturesBothStreams pins that runLogged doesn't swap or drop
+// stdout/stderr — callers branch on stdout being empty — and that both
+// land on disk as the audit trail.
 func TestRunLoggedCapturesBothStreams(t *testing.T) {
 	t.Parallel()
 
@@ -91,11 +86,9 @@ func TestRunLoggedCapturesBothStreams(t *testing.T) {
 	assertFile(t, filepath.Join(dir, "testrun-001-playwright-discover-stderr.txt"), "err\n")
 }
 
-// TestArtifactsCaptureSequencesAcrossFrameworks pins the shared counter:
-// one writer serves all three runners, so the numbers have to order a
-// run's spawns against each other rather than restarting per framework.
-// It also covers the empty-stream case — a zero-byte file is the
-// evidence that a framework printed nothing there.
+// TestArtifactsCaptureSequencesAcrossFrameworks pins the shared counter: one
+// writer serves all three runners, so sequence numbers order a run's spawns
+// instead of restarting per framework; it also covers the empty-stream case.
 func TestArtifactsCaptureSequencesAcrossFrameworks(t *testing.T) {
 	t.Parallel()
 

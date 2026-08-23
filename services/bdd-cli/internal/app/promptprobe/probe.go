@@ -7,11 +7,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 )
 
-// Drive runs the deterministic choice → clarify → freetext prompt sequence
-// through the REAL answer collector reading from stdin (plan §4), returning the
-// answers the collector recorded (in order). When TRUE_BDD_EVENTS_FILE is set
-// (under `true-bdd remote`), the collector's emitter publishes the three prompt
-// events the remote relays to the browser.
+// Drive runs the deterministic choice → clarify → freetext prompt
+// sequence through the real stdin-backed answer collector, returning
+// the answers in order; publishes prompt events when TRUE_BDD_EVENTS_FILE is set (see `true-bdd remote`).
 func Drive(stdin io.Reader) []string {
 	collector := input.NewUserInputCollectorFrom(stdin)
 

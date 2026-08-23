@@ -101,10 +101,9 @@ roles:
       - "Reads a build tests failure as a sign that a scenario cannot be observed, not just that a test is missing"
       - "Often the same person as the Product Owner; the accountability stays separate"
 
-# The allowed BDD language for stories and scenarios. Read by `us refine`:
-# every step must use a declared action, and the forbidden lists reject
-# vague wording. Its preferred home is here in the product document; a
-# host may keep it in architecture.yaml instead (the fixtures do).
+# The allowed BDD language for stories and scenarios, read by `us refine`:
+# every step needs a declared action, forbidden lists reject vague wording.
+# Preferred home is here; a host may keep it in architecture.yaml instead (the fixtures do).
 vocabulary:
   # Allowed action verbs with their concrete meaning.
   actions:
@@ -141,11 +140,7 @@ vocabulary:
       reason: "Describes internal mechanics, not user-observable behavior."
       replacement: "Describe the visible result of reading the input."
 
-# Product glossary — empty on purpose for now.
-#
-# The key stays declared so the empty list is a recorded decision, not an
-# oversight. Fill it when a `us create` run mis-classifies one of our own
-# words: those checks count "internal implementation terms" in a story's
-# clauses, and a term listed here is declared to be the user's world, not
-# our implementation.
+# Product glossary — empty on purpose (a recorded decision, not an
+# oversight). Fill it when `us create` mis-classifies one of our own words
+# as an "internal implementation term" — listing it here declares it user-world, not implementation.
 glossary: []

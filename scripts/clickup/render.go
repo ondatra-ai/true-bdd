@@ -14,10 +14,8 @@ import (
 const bodyLimit = 4000
 
 // Render turns a queue into one markdown document, one `## ` heading per
-// ticket.
-//
-// Written so a ticket can be picked up cold — the repository's rule for a
-// deferral — and so the model's job is transcription, not authorship.
+// ticket — written so it can be picked up cold and the model's job is
+// transcription, not authorship.
 func Render(queue []Finding, tag, pr string) string {
 	origin := "a local review"
 	if pr != "" {

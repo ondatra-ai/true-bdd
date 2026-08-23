@@ -59,10 +59,8 @@ func mapTestSummary(fixture *reporter.Fixture) TestSummary {
 		ManifestSource:    string(manifestSource(fixture.Manifest)),
 	}
 
-	// Drift is the timeline's own self-check: how far the accounted
-	// phases land from the wall clock the harness measured. Reported per
-	// test rather than logged, because a number that is not near zero
-	// means the phase model has a hole.
+	// Drift is the timeline's own self-check (see buildPhases): a number
+	// not near zero means the phase model has a hole.
 	if fixture.HasWall {
 		summary.DriftSeconds = fixture.Wall.Seconds() - fixture.PhaseTotal
 	}
@@ -80,12 +78,9 @@ func mapTestSummary(fixture *reporter.Fixture) TestSummary {
 	return summary
 }
 
-// manifestSource names where a manifest came from, tolerating both a nil
-// manifest and one that never recorded its source. text_source.go
-// already guards the nil case, so guarding it here too keeps the package
-// consistent rather than leaving one site to panic an HTTP handler —
-// mapTestSummary especially, since buildCell calls it for every cell and
-// one bad fixture would cost the whole matrix response.
+// manifestSource names where a manifest came from, tolerating a nil
+// manifest: buildCell calls mapTestSummary for every cell, so one
+// unguarded fixture would panic the whole matrix response.
 func manifestSource(manifest *reporter.Manifest) reporter.ManifestSource {
 	if manifest == nil || manifest.Source == "" {
 		return reporter.ManifestAbsent
@@ -317,12 +312,9 @@ func mapArtifacts(
 	return refs
 }
 
-// artifactRepoPath locates an artifact from the repo root.
-//
-// Artifact.Path is whatever the engine logged, which is normally
-// relative to the fixture's own directory but is occasionally absolute.
-// Both are handled: an absolute path is re-anchored on the fixture dir
-// first, a relative one is joined straight on.
+// artifactRepoPath locates an artifact from the repo root. Artifact.Path is
+// whatever the engine logged — normally relative to the fixture's own
+// directory, occasionally absolute; an absolute one is re-anchored first.
 func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) string {
 	if artifact.Path == "" || fixture.RelDir == "" {
 		return ""
@@ -346,15 +338,9 @@ func artifactRepoPath(fixture *reporter.Fixture, artifact reporter.Artifact) str
 	return containedPath(fixture.RelDir, rel)
 }
 
-// containedPath joins rel onto base and returns it only if the result is
-// still inside base.
-//
-// filepath.Join CLEANS as it joins, so a "../.." inside rel silently
-// collapses and produces a path pointing somewhere else entirely — the
-// report would then display, and offer to copy, a location that has
-// nothing to do with the run. These paths are never opened by the server
-// (artifact bodies resolve through opaque refs and a map lookup), so this
-// is about not stating a falsehood rather than about file access.
+// containedPath joins rel onto base, returning it only if still inside base
+// — filepath.Join CLEANS as it joins, so a "../.." would otherwise silently
+// point elsewhere. Never opened by the server: this guards a display, not a file-access risk.
 func containedPath(base, rel string) string {
 	joined := filepath.Join(base, rel)
 

@@ -5,15 +5,8 @@ import (
 )
 
 // ChecklistPrompt is one entry of the flattened prompt list a run walked.
-//
-// SectionName is the human name the checklist author gave the section
-// ("Scenario Merge"); the artifact filenames only ever carry the id
-// ("merge"), so this is the only place the readable name exists.
-//
-// HasFix says the prompt declares an `F:` fix template. That matters for
-// naming a turn: the validation prompt embeds F and asks the model to
-// render a fix_prompt from it, so a prompt WITH an F was answered
-// against Q and F both, and one without was answered against Q alone.
+// SectionName is the checklist author's human name ("Scenario Merge");
+// filenames only carry the id. HasFix says the prompt has an `F:` (see turnRef).
 type ChecklistPrompt struct {
 	SectionID   string
 	SectionName string
@@ -21,13 +14,8 @@ type ChecklistPrompt struct {
 }
 
 // ChecklistDoc is the run's own checklist, flattened exactly the way the
-// engine flattened it.
-//
-// Read from the run's tmpdir rather than from the working tree: a
-// fixture's `checklist_prompts:` filter generates a reduced checklist
-// into the tmpdir (runner/checklist_filter.go), and a fixture may ship
-// its own override under input/true-bdd/. Only the run's own copy has
-// the prompt indices the run actually used.
+// engine flattened it — read from the run's tmpdir, not the working tree,
+// since only the run's own copy has the prompt indices it actually used (see nameOperations).
 type ChecklistDoc struct {
 	Path   string
 	Loaded bool
@@ -36,10 +24,9 @@ type ChecklistDoc struct {
 	Prompts []ChecklistPrompt
 }
 
-// Prompt returns the entry for a 1-based prompt index, as it appears in
-// an artifact filename. Not-ok for a doc that never loaded or an index
-// past the end — both are ordinary for a session recorded before this
-// file existed, and the caller degrades rather than guessing.
+// Prompt returns the entry for a 1-based prompt index, as it appears in an
+// artifact filename. Not-ok for a doc that never loaded or an index past
+// the end; the caller degrades rather than guessing.
 func (d ChecklistDoc) Prompt(index int) (ChecklistPrompt, bool) {
 	if index < 1 || index > len(d.Prompts) {
 		return ChecklistPrompt{}, false
@@ -65,16 +52,9 @@ type rawChecklist struct {
 	} `yaml:"sections"`
 }
 
-// loadChecklistDoc reads the checklist the run logged and flattens it.
-//
-// The flattening MUST match checklist_loader.go:73 — sections in file
-// order, prompts in file order, skipping any prompt with a non-empty
-// `skip:`. That walk is what assigns the %02d index in every artifact
-// filename, so a different order here would mislabel every turn.
-//
-// A missing or unreadable file yields an unloaded doc. The label then
-// falls back to the raw section id from the filename, which is what
-// every session recorded before these records existed will do.
+// loadChecklistDoc reads the checklist the run logged and flattens it,
+// matching checklist_loader.go's own walk exactly — see
+// TestLoadChecklistDocFlattensLikeTheEngine and TestLoadChecklistDocDegrades.
 func loadChecklistDoc(fixtureDir, logged string) ChecklistDoc {
 	doc := ChecklistDoc{Path: logged}
 
@@ -82,11 +62,8 @@ func loadChecklistDoc(fixtureDir, logged string) ChecklistDoc {
 		return doc
 	}
 
-	// The path comes out of the run's own log, which is a file on disk
-	// like any other. An absolute path, or a relative one that climbs out
-	// of the fixture, would make loading a report read YAML from anywhere
-	// on the machine and surface its section names in the UI. Neither
-	// shape is one the engine ever writes, so both are simply refused.
+	// The path comes from the run's own log, so it is refused if it would
+	// escape the fixture (see ContainedFile).
 	data, ok := ReadContained(fixtureDir, logged)
 	if !ok {
 		return doc

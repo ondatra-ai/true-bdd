@@ -7,11 +7,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner/dto"
 )
 
-// startupReportJSON is the report Playwright 1.62 writes when its
-// webServer command exits before the suite starts — captured verbatim
-// from a real run. Every field the engine used to discard is present:
-// the run-level errors[] block and the stats[] summary, with an empty
-// suites[] because no test ever executed.
+// startupReportJSON is Playwright 1.62's actual webServer-startup-failure
+// report, captured verbatim: an empty suites[] with the run-level errors[]
+// and stats[] blocks the engine used to discard.
 const startupReportJSON = `{
   "suites": [],
   "errors": [
@@ -25,11 +23,9 @@ const startupReportJSON = `{
   }
 }`
 
-// TestParsePlaywrightReportKeepsRunLevelEvidence covers the decode gap
-// that left a startup failure invisible: the reason a suite never ran
-// lives only in the run-level errors[] block (Playwright writes it into
-// the report on stdout, never to stderr), and stats.startTime is the
-// only field attesting the process itself executed.
+// TestParsePlaywrightReportKeepsRunLevelEvidence covers the decode gap that
+// hid a startup failure (see PlaywrightReport.Errors): only errors[] and
+// stats.startTime attest that a run even started.
 func TestParsePlaywrightReportKeepsRunLevelEvidence(t *testing.T) {
 	t.Parallel()
 
@@ -83,13 +79,9 @@ func TestParsePlaywrightReportPassingRun(t *testing.T) {
 	}
 }
 
-// Playwright matches --grep against the test's whole title PATH — root,
-// project, file, describes, title — joined with SPACES
-// (Suite._grepTitleWithTags). The chain the JSON report gives us is a
-// suffix of that path with " > " separators, so the pattern must be
-// respaced and left unanchored. `^chain$`, the obvious-looking form,
-// matches nothing at all — and a rerun that selects nothing reports no
-// failures, which the walk would read as a fix that worked.
+// Playwright's --grep matches the whole space-joined title path
+// (Suite._grepTitleWithTags), not the report's " > "-joined chain: an
+// anchored pattern matches nothing, silently reporting a fix as passed.
 func TestPlaywrightGrepMatchesTheRealTitlePath(t *testing.T) {
 	t.Parallel()
 

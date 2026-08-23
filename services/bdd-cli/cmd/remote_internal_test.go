@@ -20,10 +20,9 @@ func newRemoteCmdForTest(t *testing.T) *cobra.Command {
 	return cmd
 }
 
-// TestResolveServerURL covers every plan-mandated case (Codex r1 #5):
-// unset env, env-only, explicit flag overrides env, empty env, and HTTPS URL
-// normalization. Subtests are NOT parallel because t.Setenv mutates the process
-// environment; sequential execution is the only safe mode.
+// TestResolveServerURL covers every plan-mandated case (Codex r1 #5): unset
+// env, env-only, explicit flag override, empty env, and HTTPS normalization.
+// Subtests stay sequential since t.Setenv cannot run under t.Parallel.
 func TestResolveServerURL(t *testing.T) {
 	t.Run("unset env returns the loopback default", func(t *testing.T) {
 		// Explicitly clear so a developer's exported TRUE_BDD_SERVER cannot

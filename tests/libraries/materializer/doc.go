@@ -10,7 +10,7 @@
 //
 // Materialize a fixture:
 //
-//	go run ./tests/libraries/materializer \
+//	go run ./tests/libraries/materializer \\
 //	    -fixture <fixture-dir> -target <target-dir> [-repo <repo-root>]
 //
 // Recompute the baseline hash of an already-materialized tree:
@@ -19,26 +19,16 @@
 //
 // Flags:
 //
-//   - -fixture: path of the fixture directory (contains fixture.yaml).
-//     Required unless -list-baseline is set.
-//   - -target: directory to materialize into. Created if missing; if it
-//     already exists it must be empty. Required.
-//   - -repo: repository root supplying the engine layer (`true-bdd/` +
-//     `templates/`) for `base: engine` fixtures. Defaults to walking up
-//     from cwd until a `.git` directory is found.
-//   - -list-baseline: skip materialization; hash the existing -target
-//     tree and print {"target", "baseline"} JSON. Used by tests that
-//     want the Go-side oracle recomputed after a run.
+//   - -fixture: fixture directory (has fixture.yaml). Required unless -list-baseline is set.
+//   - -target: dir to materialize into, created if missing, must be empty if it exists. Required.
+//   - -repo: repo root for the engine layer (true-bdd/, templates/); walks up from cwd to a .git dir.
+//   - -list-baseline: skip materialization; hash -target, print {"target","baseline"} JSON.
 //
 // On success the process exits 0 and prints a single JSON object:
 //
-//	{
-//	  "fixture":  "<fixture dir basename>",
-//	  "target":   "/abs/target/dir",
-//	  "base":     "engine" | "none",
-//	  "baseline": { "<slash/relative/path>": "<sha256 hex>", ... },
-//	  "teardown": [ "<shell command>", ... ]
-//	}
+//	{"fixture": "<fixture dir basename>", "target": "/abs/target/dir",
+//	 "base": "engine"|"none", "baseline": {"<slash/relative/path>": "<sha256 hex>", ...},
+//	 "teardown": ["<shell command>", ...]}
 //
 // "baseline" is the tree-hash map taken AFTER base overlay, remove,
 // input overlay, checklist filtering, and prep — the mutation-oracle
@@ -53,17 +43,12 @@
 //
 // # Manifest (fixture.yaml)
 //
-//	base: engine            # required: engine | none
-//	input: input            # optional: dir (relative to fixture) overlaid onto target
-//	prep:                   # optional: shell commands, `bash -c`, cwd=target,
-//	  - npm install         #   run BEFORE the baseline hash
-//	teardown:               # optional: validated + echoed back only
-//	  - docker compose down
-//	checklist_prompts:      # optional: filter live checklists to selected prompts
-//	  us-refine:
-//	    - "rule-based format"
-//	remove:                 # optional: paths deleted after the base overlay,
-//	  - true-bdd/checklists/us-apply.yaml   # before the input overlay
+//	base: engine                    # required: engine | none
+//	input: input                    # optional: dir overlaid onto target
+//	prep: [npm install]             # optional: bash -c, cwd=target, before baseline hash
+//	teardown: [docker compose down] # optional: validated + echoed back only, never run
+//	checklist_prompts: {us-refine: ["rule-based format"]}  # filter live checklists
+//	remove: [true-bdd/checklists/us-apply.yaml]            # deleted after base, before input
 //
 // Layering order: (1) base — `engine` copies the live `true-bdd/` and
 // `templates/` trees from the repo root, `none` starts from an empty
@@ -78,14 +63,10 @@
 //   - unknown manifest keys are rejected (strict schema);
 //   - base must be exactly "engine" or "none";
 //   - a declared input directory must exist;
-//   - remove requires base: engine; paths must be clean, relative, and
-//     non-escaping, and must exist at removal time;
-//   - checklist_prompts requires base: engine; the key must not be
-//     declared empty; each stem must resolve to a live checklist file
-//     in the materialized tree (wrong stem ⇒ error); the fixture must
-//     not ALSO ship an input override for the same checklist file;
-//     each snippet must match exactly one live NON-SKIPPED prompt
-//     (empty, unmatched, ambiguous, and duplicate-resolution snippets
-//     all fail) — semantics shared verbatim with tests/libraries/runner via
-//     runner.FilterChecklistFile.
+//   - remove requires base: engine; paths must be clean, relative, non-escaping, and must exist at removal time;
+//   - checklist_prompts requires base: engine, and the key must not be declared empty;
+//   - each stem must resolve to a live checklist file in the target (wrong stem is an error);
+//   - the fixture must not also ship an input override for the same checklist file;
+//   - each snippet must match exactly one live NON-SKIPPED prompt (empty, unmatched, ambiguous, duplicate all fail);
+//   - semantics shared with tests/libraries/runner via runner.FilterChecklistFile.
 package main

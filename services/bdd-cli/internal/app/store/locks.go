@@ -18,9 +18,8 @@ const (
 )
 
 // Locks models the two host-tmp lock files (scan.lock, command-intent.lock)
-// plus the folder flock, with the exact linearizable acquisition order of plan
-// §1.5. flock is per-open-file-description, so each acquisition opens its own
-// fd; a lease's Release closes them, releasing the OS locks.
+// plus the folder flock. flock is per-open-file-description, so each
+// acquisition opens its own fd; a lease's Release closes them to release the OS locks.
 type Locks struct {
 	dir        string
 	scanPath   string
@@ -131,9 +130,8 @@ func (l *Locks) BeginCommand() (LeaseHandle, string) {
 	}
 
 	// Drain in-flight scans: take scan.lock EXCLUSIVE with a bounded wait, then
-	// release it immediately — the planted intent keeps new scans out, so the
-	// exclusive scan.lock is only needed to wait for scans that started before
-	// the intent was planted.
+	// release immediately — planted intent already blocks NEW scans, so this
+	// only waits out scans that started before the intent was planted.
 	if !drainScans(l.scanPath) {
 		release(intentFile)
 

@@ -8,21 +8,17 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/queryserver"
 )
 
-// Bounded scheduling policy (plan §2, finding 6): mutations are SERIALIZED
-// (exactly one at a time, answer > dispatch), reads are bounded to
-// maxConcurrentReads, and inventory scans to maxConcurrentInventory. Every
-// polled work item flows through the scheduler instead of starting an
-// unbounded goroutine per poll.
+// Bounded scheduling policy (plan §2, finding 6): mutations are SERIALIZED,
+// reads bounded to maxConcurrentReads, inventory scans to
+// maxConcurrentInventory — every polled item flows through the scheduler.
 const (
 	maxConcurrentReads     = 4
 	maxConcurrentInventory = 1
 )
 
 // workScheduler is the runtime concurrency gate built on the query-server
-// WorkerPool scheduling model (finding 6). Submit records a unit and starts
-// every now-runnable unit on a bounded worker goroutine; when a unit finishes
-// it frees its slot and re-pumps, so the number of concurrent handlers can
-// never exceed the pool's bounds.
+// WorkerPool scheduling model (finding 6): Submit starts every now-runnable
+// unit, and a finished unit frees its slot and re-pumps, staying within bounds.
 type workScheduler struct {
 	pool   *queryserver.WorkerPool
 	handle func(ctx context.Context, item workItem)

@@ -15,12 +15,8 @@ import (
 var ErrNoPage = errors.New("no step has opened a page yet")
 
 // State is one scenario's world: its own browser context and the page it
-// is looking at.
-//
-// A context per scenario, not a page per suite: cookies, storage and
-// service workers all live on the context, and two scenarios sharing one
-// would make the second's result depend on the first's — which is the
-// class of flake a browser suite is most often actually suffering from.
+// is looking at. A context per scenario, not a page per suite — sharing
+// one would leak cookies/storage between scenarios, the classic browser-suite flake.
 type State struct {
 	T        *testing.T
 	Scenario bddgo.Scenario
@@ -61,10 +57,7 @@ func (s *State) page() (playwright.Page, error) {
 	return s.Page, nil
 }
 
-// fail prefixes a step failure with the scenario id, so a failure read
-// out of a long log says which scenario produced it without scrolling
-// up. The caller's own `%w` survives: the id is spliced into the format
-// string rather than wrapped around a second Errorf.
+// fail prefixes a step failure with the scenario id via format-string splicing, preserving the caller's `%w`.
 //
 //nolint:err113 // the message IS the failure; callers pass %w wherever a sentinel exists.
 func (s *State) fail(format string, args ...any) error {

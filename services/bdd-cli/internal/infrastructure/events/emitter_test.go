@@ -173,11 +173,9 @@ func TestEmitResultFinalizationOKTrue(t *testing.T) {
 	}
 }
 
-// TestSharedOrdinalAcrossProducers proves finding 7's shared child-local
-// ordinal source: the collector (prompts) and the runner (result) each call
-// NewEmitter() independently, but because a child process has ONE event
-// channel they get the SAME instance, so the result ordinal FOLLOWS the
-// prompt ordinals instead of restarting at 1.
+// TestSharedOrdinalAcrossProducers proves finding 7's shared ordinal
+// source: the collector and the runner call NewEmitter() independently
+// but share one instance, so the result ordinal follows the prompts.
 func TestSharedOrdinalAcrossProducers(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.jsonl")
 	t.Setenv(events.EventsFileEnv, path)
@@ -216,10 +214,9 @@ func TestEmitDisabledWithoutEnv(t *testing.T) {
 	emitter.EmitResult("ok", true, "")
 }
 
-// TestEmitFailClosed proves the fail-closed contract: an append that
-// cannot land prints the stderr sentinel and exits non-zero, so a prompt
-// can never block invisibly (plan §3.2). The child re-execs this test
-// with the event-channel pointed at a DIRECTORY (unwritable as a file).
+// TestEmitFailClosed proves an append that cannot land prints the stderr
+// sentinel and exits non-zero (plan §3.2). It re-execs itself as a child
+// with the event-channel pointed at a directory, which is unwritable as a file.
 func TestEmitFailClosed(t *testing.T) {
 	if os.Getenv("TRUE_BDD_EMIT_FAILCLOSED_CHILD") == "1" {
 		events.NewEmitter().EmitResult("ok", true, "")

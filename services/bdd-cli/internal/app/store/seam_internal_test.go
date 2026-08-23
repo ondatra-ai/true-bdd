@@ -1,11 +1,8 @@
 package store
 
-// The target-schema INTERFACE SEAM the v2 CLI store satisfies (plan §1). Every
-// test in this package drives the store exclusively through this seam. The
-// production constructors (Open / OpenLocks) now exist, so requireStore /
-// requireLocks call them directly and adapt the production DTOs to the seam's
-// field-identical test types via the seamStore / seamLocks bridge
-// (bridge_internal_test.go).
+// The target-schema INTERFACE SEAM the v2 CLI store satisfies. Every test in
+// this package drives the store only through this seam; requireStore /
+// requireLocks adapt production DTOs via the seamStore / seamLocks bridge.
 
 import (
 	"path/filepath"
@@ -33,9 +30,8 @@ type DispatchRequest struct {
 }
 
 // DispatchResult.Kind ∈ created | deduped | conflict | invalid | not_found.
-// Pruned is true for an exact retry whose run row was pruned but whose
-// dispatch receipt was retained (plan §1.1 — the run read then 404s
-// run_pruned).
+// Pruned is true for an exact retry whose run row was already pruned but the
+// dispatch receipt was retained — the caller's run read then 404s (run_pruned).
 type DispatchResult struct {
 	Kind   string
 	RunID  string
@@ -97,10 +93,9 @@ type AnswerRequest struct {
 	Value    string
 }
 
-// AnswerDelivery is the seam view of the atomic answer outcome (finding 3): the
-// Outcome PLUS whether this submission is the FIRST accept that must be
-// delivered (ShouldDeliver — false for an exact retry, so a lost-response retry
-// never re-writes stdin) and the prompt's StoredKind.
+// AnswerDelivery is the seam view of ResolveAnswer's outcome: Outcome plus
+// ShouldDeliver (false for an exact retry — see answerRetry in answer.go for
+// why) and the prompt's StoredKind.
 type AnswerDelivery struct {
 	Outcome       AnswerResult
 	ShouldDeliver bool

@@ -58,13 +58,9 @@ func TestIdenticalTurnsAllMatch(t *testing.T) {
 	}
 }
 
-// TestExtraRetryIsOneInsert is the case ordinal pairing gets wrong, and
-// the reason this uses a real sequence diff.
-//
-// One extra attempt at `format` early in the run must show up as a
-// single insertion inside that cell. Pairing turn-1-to-turn-1 would
-// instead shift every later turn by one and report all eight remaining
-// rows as changed, hiding the one real difference in the noise.
+// TestExtraRetryIsOneInsert is the case ordinal pairing gets wrong: one
+// extra attempt at `format` must show as a single insertion, not shift
+// every later turn by one and report all eight remaining rows as changed.
 func TestExtraRetryIsOneInsert(t *testing.T) {
 	left := happyPath()
 
@@ -131,10 +127,9 @@ func TestRolesDoNotCollapse(t *testing.T) {
 	}
 }
 
-// TestEveryElementAppearsExactlyOnce is the structural invariant of any
-// sequence diff, asserted instead of a golden: the library documents its
-// output as unstable across minor versions, so pinning exact edit
-// streams would break on an upgrade that is still correct.
+// TestEveryElementAppearsExactlyOnce asserts the structural invariant
+// instead of a golden: znkr.io/diff documents its output as unstable
+// across minor versions, so pinning exact edit streams would break on a correct upgrade.
 func TestEveryElementAppearsExactlyOnce(t *testing.T) {
 	left := happyPath()
 	right := []*reporter.Turn{
@@ -256,11 +251,8 @@ func TestChangedFieldsIgnoreTimings(t *testing.T) {
 	}
 }
 
-// TestDifferentFailuresOfEqualLengthAreAChange pins that failures are
-// compared by content, not by count. Two runs can each fail one check
-// for entirely unrelated reasons — a timeout in one, a rejected diff in
-// the other — and reporting that as unchanged is the most misleading
-// thing the comparison could say.
+// TestDifferentFailuresOfEqualLengthAreAChange pins changedFields' content
+// comparison (see its "Content, not just count" comment).
 func TestDifferentFailuresOfEqualLengthAreAChange(t *testing.T) {
 	left := TestSummary{Name: "fx", Verdict: runnerVerdictFail, Failures: []string{failKilled}}
 	right := TestSummary{Name: "fx", Verdict: runnerVerdictFail, Failures: []string{
@@ -279,11 +271,8 @@ func TestDifferentFailuresOfEqualLengthAreAChange(t *testing.T) {
 	}
 }
 
-// TestOneOversizedLineCannotBlowTheCap pins that the byte budget counts
-// the line it is about to append. Checking only the running total let a
-// single line longer than the entire budget through in full, which is
-// precisely the case the cap exists for — a minified bundle or an
-// embedded blob on one line.
+// TestOneOversizedLineCannotBlowTheCap pins DiffText's "Measured BEFORE
+// appending" budget check against a single oversized line.
 func TestOneOversizedLineCannotBlowTheCap(t *testing.T) {
 	huge := strings.Repeat("x", maxDiffBytes*2)
 
@@ -310,10 +299,8 @@ func TestOneOversizedLineCannotBlowTheCap(t *testing.T) {
 	}
 }
 
-// TestComparisonSurvivesAnAbsentManifest pins that a fixture without a
-// manifest degrades to "absent" rather than panicking the handler. The
-// matrix calls this path for every cell, so one bad fixture would
-// otherwise cost the whole response.
+// TestComparisonSurvivesAnAbsentManifest pins manifestSource's nil guard
+// (see its doc): one bad fixture must not panic the whole matrix response.
 func TestComparisonSurvivesAnAbsentManifest(t *testing.T) {
 	loaded := &reporter.Manifest{Command: "us create 99.1", Source: reporter.ManifestSnapshot}
 
@@ -332,12 +319,7 @@ func TestComparisonSurvivesAnAbsentManifest(t *testing.T) {
 	}
 }
 
-// TestPathsCannotEscapeTheFixtureDir pins the containment guard.
-//
-// filepath.Join cleans as it joins, so a "../.." inside a logged artifact
-// path silently collapses and yields a location with nothing to do with
-// the run. The report displays these paths and offers to copy them, so a
-// path that escaped would be a confident statement of something false.
+// TestPathsCannotEscapeTheFixtureDir pins containedPath's guard (see its doc).
 func TestPathsCannotEscapeTheFixtureDir(t *testing.T) {
 	const base = "tmp/test_run/2026-01-01_00-00-00/fx"
 

@@ -150,18 +150,6 @@ func (m *mockHandler) Handle(_ *subprocess.ProcessContext, _ *subprocess.Transpo
 	return m.shouldReturn
 }
 
-// Note on Transport Channel Testing:
-//
-// Tests that verify ErrorSender and MessageSender correctly interact with
-// Transport channels are in stdout_handler_transport_test.go (subprocess_test
-// package). Those tests use helpers from export_test.go to verify channel
-// behavior without accessing unexported fields:
-//
-// 1. ErrorSender sends errors to Transport.errChan
-// 2. MessageSender sends messages to Transport.msgChan
-// 3. Both handlers respect the done channel
-// 4. Multiple messages are all delivered
-//
-// This separation follows Mat Ryer's black-box testing approach, keeping the
-// main test suite in subprocess_test and exposing only minimal helpers via
-// export_test.go for channel assertions.
+// Channel-interaction tests for ErrorSender/MessageSender live in
+// stdout_handler_transport_test.go (subprocess_test package), using
+// export_test.go helpers — Mat Ryer's black-box testing approach.

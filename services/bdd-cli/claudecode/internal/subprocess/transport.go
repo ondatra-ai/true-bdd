@@ -475,11 +475,9 @@ func (t *Transport) setupCommand(ctx context.Context) {
 		}
 	}
 
-	// This is the only place the claude argv exists — BuildCommand
-	// assembles it and hands it straight to exec. Logging it here (same
-	// record shape crush and codex use in cli_invocation.go) is what
-	// lets a run report show the real command instead of a plausible
-	// reconstruction of one.
+	// This is the only place the claude argv exists — BuildCommand assembles it
+	// and hands it straight to exec. Logging it here (same shape crush/codex use
+	// in cli_invocation.go) shows the real command, not a reconstruction.
 	slog.Debug("Spawning agent CLI",
 		"binary", args[0],
 		"args", redactPromptArgs(args[1:]),
@@ -487,10 +485,9 @@ func (t *Transport) setupCommand(ctx context.Context) {
 	)
 }
 
-// redactPromptArgs replaces prompt payloads with their size. The
-// rendered system prompt is passed as an argv element and runs to
-// kilobytes; inlining it would bury every other field in the record,
-// and it is already archived as a prompt artifact next to the run.
+// redactPromptArgs replaces prompt payloads with their size: the rendered
+// system prompt is an argv element that runs to kilobytes and would bury
+// every other log field, and it's already archived as a prompt artifact.
 func redactPromptArgs(args []string) []string {
 	redacted := make([]string, len(args))
 	copy(redacted, args)

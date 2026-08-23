@@ -5,11 +5,9 @@ import (
 	"sync"
 )
 
-// lockedBuffer is a mutex-guarded byte buffer. The stdin tee goroutine
-// can still be blocked on a read when the child exits (the engine may
-// hold the pipe open past the child's lifetime), so the recorder must
-// take a consistent snapshot of what has been teed so far without
-// racing that goroutine's next write.
+// lockedBuffer is a mutex-guarded byte buffer: the stdin tee goroutine can
+// still be running (the engine may hold the pipe open past the child's
+// lifetime), so reads must not race its writes.
 type lockedBuffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer

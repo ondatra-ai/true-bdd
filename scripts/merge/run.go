@@ -52,35 +52,23 @@ const (
 // roleMerge labels this run's own turns in the conversation history.
 const roleMerge = "merge"
 
-// Run is one invocation: one pull request, from one checkout.
-//
-// The fields are set once by Start and never reassigned, because they are
-// properties of the run rather than parameters of it. The round number is NOT
-// one of them — it changes every iteration, and a value that changes is one a
-// reader has to trace, so it is passed to each function that needs it.
+// Run is one invocation: one pull request, from one checkout. Fields are
+// set once by Start and never reassigned — the round number is deliberately
+// not one of them; it changes every iteration, so it's passed as a parameter.
 type Run struct {
 	repo      string
 	pr        int
 	startedAt string
 
-	// reviewedThisRun holds the commits this run WATCHED a review land
-	// against.
-	//
-	// A review that found nothing has an empty body — the same signature as
-	// the `@coderabbitai approve` rubber stamp — so the body test in
-	// reviewedSHA alone rejects a legitimately clean PR. Witnessing is what
-	// separates them: PR #76's stamp appeared on a commit this loop never
-	// asked anyone to review, while a clean review is one we requested and
-	// saw arrive. Recorded as it happens, because once `approve` has run the
-	// two are indistinguishable in the API.
+	// reviewedThisRun holds commits this run WATCHED a review land against —
+	// the tiebreaker reviewedSHA's body_len test can't provide on its own
+	// (see reviewedSHA), recorded live since post-approve the two look identical.
 	reviewedThisRun map[string]bool
 }
 
-// Start answers where we are, and whether this is a thing that can be merged
-// at all.
-//
-// Everything that must be true before the first round, answered once and in
-// one place, so the loop is only ever the algorithm.
+// Start answers where we are, and whether this can be merged at all —
+// every precondition checked once, up front, so the loop is only the
+// algorithm.
 func Start(args []string) *Run {
 	if len(args) > 0 {
 		usage("usage: merge — no arguments. The PR comes from the current branch.")
@@ -130,13 +118,9 @@ func (r *Run) Main() {
 		fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
 		r.resolveConversations(fixed, created, ignored)
 
-		// This round fixed nothing, so HEAD will not move and the next round
-		// would buy a review of a byte-identical tree at a quarter of the
-		// hourly quota. On PR #77 all three rounds reviewed the same commit
-		// and found nothing to fix in any of them.
-		//
-		// The converse needs no test here: fix refuses to return having
-		// changed no file, so a non-empty toFix always has a commit.
+		// Empty toFix: HEAD won't move, so the next round reviews a byte-identical
+		// tree for a quarter of the quota (PR #77: all 3 rounds reviewed one commit).
+		// fix() refuses to return having changed no file, so a non-empty toFix always commits.
 		if len(toFix) == 0 {
 			break
 		}

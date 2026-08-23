@@ -90,10 +90,9 @@ func TestSplitCommandRejectsEmptyCommand(t *testing.T) {
 	}
 }
 
-// The runners parse machine-readable output. A command without the flag
-// that produces it yields a report with no failures in it, so the walk
-// converges on zero items and reports a false green — the one failure
-// mode worth refusing at startup.
+// The runners parse machine-readable output; a command missing the flag
+// that produces it yields a report with no failures, so the walk converges
+// on zero items and reports a false green — refused at startup.
 func TestValidateCommandRequiresMachineReadableOutput(t *testing.T) {
 	t.Parallel()
 
@@ -108,11 +107,9 @@ func TestValidateCommandRequiresMachineReadableOutput(t *testing.T) {
 		"playwright with reporter":      {FrameworkPlaywright, "npx playwright test --reporter=json", false},
 		"playwright with html reporter": {FrameworkPlaywright, "npx playwright test --reporter=html", true},
 		"playwright without reporter":   {FrameworkPlaywright, "npx playwright test", true},
-		// Every spelling below produces output the runners parse, so
-		// refusing any of them would send a host guessing at a form the
-		// engine will accept. `go test` takes either dash count; a
-		// composite reporter still emits the JSON, in either position;
-		// and a value-taking flag may be separated by a space.
+		// Every spelling below is output the runners actually parse: go test
+		// accepts either dash count, a composite reporter emits JSON in
+		// either position, and a value-taking flag may be space-separated.
 		"go-test with --json":               {FrameworkGoTest, "go test --json ./...", false},
 		"playwright with json,line":         {FrameworkPlaywright, "npx playwright test --reporter=json,line", false},
 		"playwright with line,json":         {FrameworkPlaywright, "npx playwright test --reporter=line,json", false},

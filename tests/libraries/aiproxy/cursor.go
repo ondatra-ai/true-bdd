@@ -10,11 +10,9 @@ import (
 	"syscall"
 )
 
-// nextCallIndex returns this call's 1-based sequence number for the
-// given binary name, atomically incrementing a cursor file under the
-// state dir. The engine's turn loop is sequential, but the increment is
-// flock-guarded anyway so the numbering stays correct if a future
-// engine ever runs turns concurrently.
+// nextCallIndex returns this call's 1-based sequence number for the given
+// binary name, atomically incrementing a flock-guarded cursor file under
+// the state dir.
 func nextCallIndex(stateDir, name string) (int, error) {
 	err := os.MkdirAll(stateDir, dirPerm)
 	if err != nil {

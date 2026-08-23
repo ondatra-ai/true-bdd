@@ -5,11 +5,7 @@ import (
 )
 
 func TestProcessTermination(t *testing.T) {
-	// Note: Testing process termination requires a real running process
-	// which is complex to set up in unit tests. The termination logic is
-	// tested in integration tests where we can spawn actual processes.
-	//
-	// This file exists to document that process termination is covered
-	// by integration tests rather than unit tests.
+	// Process termination needs a real running process, so it's covered by
+	// integration tests rather than here.
 	t.Skip("Process termination is tested in integration tests")
 }

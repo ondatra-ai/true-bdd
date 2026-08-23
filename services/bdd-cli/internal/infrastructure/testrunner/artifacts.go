@@ -13,38 +13,24 @@ import (
 // Matches the mode the engine uses for its prompt/response artifacts.
 const fileModeArtifact = 0644
 
-// Artifacts persists the raw streams of every test-runner subprocess
-// into the engine's run directory, alongside the prompts the engine
-// built from them.
-//
-// The parsed report is lossy by design: it collapses into a list of
-// FailingTest values, and everything else — the run-level errors, the
-// per-test timings, whatever the framework printed on the way — is
-// dropped as soon as the walk begins. Keeping both streams verbatim is
-// what lets a finished run be audited instead of re-run: the exit
-// record says a suite failed, these files say what it said.
+// Artifacts persists the raw streams of every test-runner subprocess into
+// the engine's run directory. The parsed report is lossy by design (it
+// collapses to a list of FailingTest values), so these files are what lets a finished run be audited instead of re-run.
 type Artifacts struct {
 	dir string
 	seq atomic.Uint64
 }
 
-// NewArtifacts builds a writer rooted at dir, the engine's run
-// directory. One instance is shared by every framework runner, so the
-// sequence numbers order all of a run's test-runner spawns against each
-// other rather than restarting per framework.
+// NewArtifacts builds a writer rooted at dir, the engine's run directory.
+// One instance is shared by every framework runner, so sequence numbers
+// order all of a run's test-runner spawns together, not restarting per framework.
 func NewArtifacts(dir string) *Artifacts {
 	return &Artifacts{dir: dir}
 }
 
-// Capture writes one subprocess's stdout and stderr and returns their
-// paths for the exit log record. A nil receiver — a runner built
-// without a run directory, as in unit tests — captures nothing and
-// returns empty paths.
-//
-// Empty streams are still written: a zero-byte stderr file is the
-// evidence that the framework really did print nothing there, which is
-// exactly the fact that made Playwright's startup failures look like
-// missing output rather than output in the other stream.
+// Capture writes one subprocess's stdout/stderr and returns their paths.
+// A nil receiver (a runner built without a run directory) captures nothing.
+// Empty streams are still written — that's what made a Playwright startup failure look like missing output.
 func (a *Artifacts) Capture(
 	framework, phase string,
 	stdout, stderr *bytes.Buffer,
@@ -61,10 +47,9 @@ func (a *Artifacts) Capture(
 	return stdoutPath, stderrPath
 }
 
-// write persists one stream, returning the path it landed at or "" if
-// it could not be written. Failures are logged and swallowed: capturing
-// evidence is worth a warning, never worth failing a test run that
-// otherwise completed.
+// write persists one stream, returning its path or "" if it could not be
+// written. Failures are logged and swallowed: capturing evidence is worth
+// a warning, never worth failing a test run that otherwise completed.
 func (a *Artifacts) write(name string, payload []byte) string {
 	path := filepath.Join(a.dir, name)
 

@@ -12,10 +12,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// TestMain returns through scenarios.Main rather than exiting inside it,
-// so the teardowns registered while the harness came up actually run —
-// os.Exit skips deferred work, and the shim directory and the built
-// binary would otherwise outlive every run.
+// TestMain returns through scenarios.Main instead of calling os.Exit
+// directly, so deferred teardowns run: os.Exit skips them, and the shim
+// dir and built binary would leak on every run.
 func TestMain(m *testing.M) {
 	os.Exit(scenarios.Main(m))
 }

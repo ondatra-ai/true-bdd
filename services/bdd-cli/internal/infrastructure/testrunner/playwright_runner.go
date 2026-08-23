@@ -15,10 +15,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner/dto"
 )
 
-// playwrightTitleSeparator joins nested describe titles and the leaf
-// test title into the chain stored on FailingTest.TestName. Playwright's
-// own CLI uses " > " for the same concept in `--list` output, so we
-// follow suit.
+// playwrightTitleSeparator joins nested describe titles and the leaf test
+// title into the chain on FailingTest.TestName — matches the " > "
+// Playwright's own CLI uses for `--list` output.
 const playwrightTitleSeparator = " > "
 
 // playwrightNameSeparator joins the spec file path with the test title
@@ -26,11 +25,9 @@ const playwrightTitleSeparator = " > "
 // round-tripping through RunOne.
 const playwrightNameSeparator = "::"
 
-// playwrightStartupMarker is the FailingTest.TestName used for the
-// synthetic entry Discover emits when Playwright exits non-zero before
-// any per-test failure was captured — typically a webServer / fixture
-// setup failure. RunOne re-runs the whole suite for this marker rather
-// than trying to grep a non-existent test title.
+// playwrightStartupMarker is the FailingTest.TestName for the synthetic
+// entry Discover emits on a webServer/fixture setup failure. RunOne
+// reruns the whole suite for it rather than grep a non-existent title.
 const playwrightStartupMarker = "<startup>"
 
 // ErrInvalidPlaywrightName signals that a FailingTest.TestName intended
@@ -54,13 +51,9 @@ func NewPlaywrightRunner(artifacts *Artifacts) *PlaywrightRunner {
 	return &PlaywrightRunner{artifacts: artifacts}
 }
 
-// Discover runs the full Playwright suite declared by cfg and returns
-// one FailingTest per failed test. When Playwright exits non-zero
-// without any per-test failure landing in the JSON report (typically
-// because the webServer command itself failed — e.g. `docker compose
-// up` couldn't build), Discover synthesizes one startup-marker
-// FailingTest so the engine has something to drive Claude against
-// instead of silently converging on zero items.
+// Discover runs the full Playwright suite and returns one FailingTest per
+// failed test. When Playwright exits non-zero with none landing in the
+// JSON report, it synthesizes a startup-marker FailingTest instead of silently converging on zero.
 func (r *PlaywrightRunner) Discover(
 	ctx context.Context,
 	cfg Config,
@@ -118,17 +111,9 @@ func newPlaywrightStartupFailure(
 	}
 }
 
-// RunOne re-executes a single failing test in isolation by appending a
-// `--grep` regex to the suite's own command. Only `--grep` is appended,
-// never the spec file: Playwright ORs positional path filters, so a
-// file argument alongside the path the command already carries would
-// WIDEN the rerun rather than isolate it. `--grep` is ANDed with the
-// paths.
-//
-// For the synthetic startup-marker FailingTest, RunOne instead re-runs
-// the whole suite — the test title is not a real Playwright test name —
-// and reports passed iff the rerun emits zero per-test failures with a
-// clean exit.
+// RunOne re-executes one failing test via `--grep` (ANDed with the paths)
+// appended to the suite's command. Never appends the spec file: Playwright
+// ORs positional path filters, so an added file would widen the rerun instead of isolating it.
 func (r *PlaywrightRunner) RunOne(
 	ctx context.Context,
 	failingTest *FailingTest,
@@ -182,30 +167,17 @@ func (r *PlaywrightRunner) RunOne(
 }
 
 // playwrightGrep builds the `--grep` pattern for one test's title chain.
-//
-// Two things about Playwright's matching decide the shape, both read off
-// its own source (`Suite._grepTitleWithTags`): the pattern is tested
-// against the test's whole title PATH — root, project, file, describes,
-// title, plus tags — and that path is joined with SPACES.
-//
-// So the chain's own `" > "` separators have to become spaces, and the
-// pattern must not be anchored: `^…$` could only match if we
-// reconstructed the project and root segments too, which the JSON report
-// does not give us. An unanchored, escaped chain is a substring of the
-// real path and matches exactly the intended test — while `^chain$`, the
-// obvious-looking form, matches nothing at all and makes every rerun
-// look like a pass.
+// Per Playwright's source (`Suite._grepTitleWithTags`), it's tested
+// unanchored against the SPACE-joined title path — `^chain$` matches nothing and every rerun reports as a pass.
 func playwrightGrep(titleChain string) string {
 	spaced := strings.ReplaceAll(titleChain, playwrightTitleSeparator, " ")
 
 	return playwrightRegexMeta.ReplaceAllString(spaced, `\$0`)
 }
 
-// playwrightRanNothing reports whether the rerun executed no test at
-// all. Playwright emits its stats block even then, so an all-zero block
-// separates "the filter selected nothing" from "the test passed" —
-// which otherwise both arrive as a report with no failures in it, and
-// the first would be reported to the engine as a fix that worked.
+// playwrightRanNothing reports whether the rerun executed no test at all.
+// Playwright emits its stats block even then, so an all-zero block
+// separates "filter selected nothing" from "test passed" — without it, the former reads as a fix that worked.
 func playwrightRanNothing(report *dto.PlaywrightReport) bool {
 	stats := report.Stats
 
@@ -252,11 +224,9 @@ func (r *PlaywrightRunner) runOneStartup(
 	return false, TruncateTail(output, FailureOutputCap), nil
 }
 
-// exec runs the suite's command with the supplied argv. cwd is the
-// directory holding the suite's config so `npx` resolves the local
-// Playwright install. phase labels the invocation in the log and in the
-// captured output's filename. Non-zero exit codes are expected on test
-// failure.
+// exec runs the suite's command with the supplied argv. cwd is the config
+// directory so `npx` resolves the local Playwright install (see CommandDir).
+// phase labels the invocation in log/filename; non-zero exit is expected on test failure.
 func (r *PlaywrightRunner) exec(
 	ctx context.Context,
 	cwd, phase string,
@@ -285,11 +255,9 @@ func splitPlaywrightName(name string) (string, string, error) {
 	return file, title, nil
 }
 
-// parsePlaywrightReport decodes the single JSON document emitted by the
-// `--reporter=json` reporter. Trims any leading log noise written by
-// Playwright before the JSON document. The decoded shape lives in the
-// `dto` package because it mirrors a third-party wire format (camelCase
-// keys), which the linter excludes from tagliatelle there.
+// parsePlaywrightReport decodes the JSON document from `--reporter=json`,
+// trimming leading log noise Playwright writes before it (unlike Jest,
+// which writes only JSON). Lives in `dto` since its camelCase mirrors a third-party wire format.
 func parsePlaywrightReport(payload []byte) (*dto.PlaywrightReport, error) {
 	start := bytes.IndexByte(payload, '{')
 	if start < 0 {
@@ -306,18 +274,9 @@ func parsePlaywrightReport(payload []byte) (*dto.PlaywrightReport, error) {
 	return &report, nil
 }
 
-// logPlaywrightReport records what Playwright itself said about the run
-// it just finished, so the log carries the framework's own account and
-// not only the engine's interpretation of it.
-//
-// The exit code alone cannot distinguish a suite that ran and failed
-// from a process that died before the first test: both are exit 1 with
-// an empty failure list. `stats.startTime` and `stats.duration` are
-// Playwright's own attestation that it executed, and the run-level
-// `errors[]` — which Playwright writes into the report on stdout, never
-// to stderr — carries the reason when it did not. Both are dropped from
-// the FailingTest projection, so without this record they leave no
-// trace anywhere in the run's artifacts.
+// logPlaywrightReport records what Playwright said about the run: exit
+// code alone can't tell "ran and failed" from "died before the first
+// test" — stats/errors[] (see Capture) are the only trace once FailingTest drops them.
 func logPlaywrightReport(phase string, report *dto.PlaywrightReport, failures int) {
 	slog.Debug("Playwright report decoded",
 		"phase", phase,
@@ -335,8 +294,7 @@ func logPlaywrightReport(phase string, report *dto.PlaywrightReport, failures in
 
 // playwrightErrorMessages flattens the run-level error block to its
 // messages. Stacks are omitted: for a webServer failure the stack
-// duplicates the message, and the log record is an index into the
-// failure, not a replacement for reading it.
+// duplicates the message, and this log record indexes the failure, not replaces reading it.
 func playwrightErrorMessages(errs []dto.PlaywrightError) []string {
 	out := make([]string, 0, len(errs))
 	for _, err := range errs {
@@ -347,9 +305,8 @@ func playwrightErrorMessages(errs []dto.PlaywrightError) []string {
 }
 
 // playwrightReportToFailingTests walks the suite tree and collects one
-// FailingTest per failed result, tagging each with the supplied service
-// and suite. Free function rather than a method on dto.PlaywrightReport
-// so the dto package stays passive.
+// FailingTest per failed result, tagged with service/suite. Free function
+// so dto stays passive, matching jestReportToFailingTests.
 func playwrightReportToFailingTests(
 	report *dto.PlaywrightReport,
 	service, suite string,

@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Usage: lint-layout.sh
-# Every Go file in this repository lives under services/, tests/ or scripts/.
+# Two shape rules: this repository is Go and sh, and its Go lives in three
+# roots.
+#
+# NO PYTHON. PR #85 ported the last three Python scripts to Go, and the same
+# commit shipped a stale `__pycache__/merge.cpython-314.pyc` — bytecode of the
+# very file it deleted — because the ignore rule went in that commit while the
+# artifact was still on disk and `commit.sh` stages with `git add -A`. Nothing
+# caught it. This does. Untracked files count too, so running a Python tool in
+# the tree fails here rather than at the next `git add -A`.
 #
 # Three roots and no fourth. `services/<name>/` is product code, `tests/<name>/`
 # is what exercises it, and `scripts/` is the tooling that drives the
@@ -22,6 +30,18 @@ cd "$(dirname "$0")/.."
 
 ROOTS='services tests scripts'
 PATTERN="^($(echo "$ROOTS" | tr ' ' '|'))/"
+
+python=$(git ls-files -co --exclude-standard '*.py' '*.pyi' '*.pyc' '*.pyo' |
+	grep -vE '^tests/(legacy|bdd-cli/fixtures)/' || true)
+pycache=$(git ls-files -co --exclude-standard | grep '__pycache__/' || true)
+
+if [ -n "$python$pycache" ]; then
+	echo "lint-layout: Python in a Go and sh repository:" >&2
+	printf '%s\n%s\n' "$python" "$pycache" | grep -v '^$' | sort -u | sed 's/^/    /' >&2
+	echo >&2
+	echo "    Port it to Go under scripts/, or delete it. Bytecode: rm -rf the __pycache__." >&2
+	exit 1
+fi
 
 stray=$(git ls-files -co --exclude-standard '*.go' | grep -vE "$PATTERN" || true)
 

@@ -47,10 +47,9 @@ var ErrSnippetEmpty = errors.New("checklist_prompts: empty snippet list or blank
 // document/sections structure the filter needs.
 var ErrChecklistShape = errors.New("checklist_prompts: checklist has no sections to filter")
 
-// ErrUnsupportedYAML is returned for checklist YAML features the
-// filter deliberately refuses: anchors/aliases and merge keys (pruning
-// could orphan an alias and emit an unparsable file) and multi-document
-// streams (only the first document would survive).
+// ErrUnsupportedYAML is returned for checklist YAML features the filter
+// deliberately refuses: aliases/merge keys (rejectAliases) and
+// multi-document streams (parseSingleDocument).
 var ErrUnsupportedYAML = errors.New(
 	"checklist_prompts: checklist uses YAML aliases, merge keys, or multiple documents — not supported")
 
@@ -96,9 +95,8 @@ func validateChecklistFilters(fixture *Fixture) error {
 }
 
 // applyChecklistFilters rewrites each declared checklist inside the
-// tmpdir to contain only the prompts selected by the fixture's
-// snippets. Runs after the input overlay and before the pre-run
-// snapshot, so the generated file never pollutes the judge diff.
+// tmpdir to contain only the fixture's selected prompts. Must run after
+// the input overlay and before the pre-run snapshot, or it pollutes the judge diff.
 func applyChecklistFilters(fixture *Fixture, tmpDir string) error {
 	for stem, snippets := range fixture.ChecklistPrompts {
 		path := filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml")
@@ -130,16 +128,8 @@ func commandChecklistStem(cmd string) string {
 }
 
 // FilterChecklistFile loads a checklist YAML, keeps only the prompts
-// matched by the snippets, and writes it back. The document is edited
-// as a yaml.Node tree so everything else — the config block, section
-// metadata, and the surviving prompts' exact text — round-trips
-// unchanged in value.
-//
-// Each snippet must match exactly one live (non-skipped) prompt, and
-// two snippets must not resolve to the same prompt; violations return
-// the exported ErrSnippet* / ErrChecklistShape / ErrUnsupportedYAML
-// errors. Exported for reuse by the harness fixture materializer,
-// which applies the identical filtering semantics to its fixtures.
+// matched by the snippets, and writes it back as a yaml.Node tree so
+// everything else (config, metadata, prompt text) round-trips unchanged.
 func FilterChecklistFile(path string, snippets []string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -252,9 +242,8 @@ func selectPrompts(sections *yaml.Node, snippets []string) (map[*yaml.Node]bool,
 }
 
 // findPromptsBySnippet returns every SELECTABLE prompt node whose Q
-// text contains the collapsed snippet. Skipped prompts are not
-// selectable: production drops them after the overlay, so selecting one
-// would leave the fixture walking nothing and passing vacuously.
+// text contains the collapsed snippet. Skipped prompts are excluded —
+// selecting one would leave the fixture walking nothing and passing vacuously.
 func findPromptsBySnippet(sections *yaml.Node, snippet string) []*yaml.Node {
 	hits := make([]*yaml.Node, 0)
 
@@ -283,10 +272,9 @@ func findPromptsBySnippet(sections *yaml.Node, snippet string) []*yaml.Node {
 	return hits
 }
 
-// promptSkipped mirrors the production skip rule exactly: a prompt is
-// skipped only when its `skip` value is a NON-EMPTY STRING — booleans
-// and other types decode to "" in the production map-based decoder and
-// do not skip.
+// promptSkipped mirrors the production skip rule exactly: skipped only
+// when `skip` is a NON-EMPTY STRING — booleans and other types decode
+// to "" in the production map-based decoder and don't skip.
 func promptSkipped(prompt *yaml.Node) bool {
 	skip := mappingValue(prompt, "skip")
 	if skip == nil || skip.Kind != yaml.ScalarNode {

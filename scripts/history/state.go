@@ -24,12 +24,8 @@ const (
 )
 
 // loadCurrent reads the task file the session is appending to, or "" when
-// there is none and a fresh one should be opened.
-//
-// Any read failure reads as "no current file". The Python caught only a
-// missing file and let anything else escape, but an escaping error here is a
-// hook that fails on every prompt, and the recovery — open a new task file —
-// is the same in either case.
+// none is active. Any read failure reads as "no current file" (unlike the
+// Python, which only caught ENOENT) — recovery is the same either way.
 func (h *Hook) loadCurrent() string {
 	raw, err := os.ReadFile(h.stateFile())
 	if err != nil {

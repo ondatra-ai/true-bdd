@@ -19,37 +19,22 @@ var (
 // quotes back. Enough to see what the run did print instead.
 const stdoutTailBytes = 2048
 
-// Verdict captures how one fixture was graded ABOVE its scenario.
-//
-// The scenario's own Then steps already asserted the exit code and the
-// stdout patterns — on every run, in every mode, by the suite's step
-// definitions. What is left here is the part no step can state: whether
-// the files a run produced still match what was recorded, and whether a
-// new model response satisfies the rubric.
-//
-// A run gets one of those two, never both. Live and record call the
-// JUDGE, because the output is new and only a reader can say whether it
-// satisfies the rubric. Replay compares the recorded OUTCOME, because
-// every AI-written file was materialised from a cassette — the only
-// thing that can have moved is the engine, and a byte comparison says so
-// exactly, for free, and the same way every time. Whichever check did
-// not run is left true; Pass requires both.
+// Verdict captures how one fixture was graded ABOVE its scenario. Live
+// and record call the judge; replay compares the golden diff instead —
+// the check that didn't run defaults true, so Pass requires both.
 type Verdict struct {
 	JudgeOK  bool
 	GoldenOK bool
 	JudgeMsg string
 	Failures []string
-	// JudgeStartedAt/JudgeEndedAt bracket the judge's model call. The
-	// run report measures the trailing harness block from the far edge —
-	// it is the only stamp that exists after the engine's log goes
-	// quiet — and the window is what pairs a usage record with the
-	// fixture that caused it.
+	// JudgeStartedAt/JudgeEndedAt bracket the judge's model call — used to
+	// pair a usage record with the fixture that caused it (see billJudge
+	// in harness_record.go).
 	JudgeStartedAt time.Time
 	JudgeEndedAt   time.Time
-	// The verbatim text of the judge call. Empty when the judge never
-	// got as far as being asked. Persisted by the recorder so a later
-	// comparison of two runs can diff what the judge was told, not just
-	// what it concluded.
+	// The verbatim text of the judge call. Empty when the judge never got
+	// as far as being asked. Persisted so a later comparison of two runs
+	// can diff what the judge was told, not just what it concluded.
 	JudgeSystemPrompt string
 	JudgeUserPrompt   string
 	JudgeResponse     string
@@ -61,11 +46,8 @@ func (v Verdict) Pass() bool {
 }
 
 // EvaluateRecorded grades a replay run against its recording: every
-// cassette consumed, and the resulting tree byte for byte.
-//
-// No model is asked anything. That is the point — a replay verdict that
-// depended on a model would inherit the model's variance, and this suite
-// has already watched one grade the same bytes PASS, FAIL and PASS.
+// cassette consumed, and the resulting tree byte for byte. No model is
+// asked — this suite has watched one judge the same bytes PASS, FAIL, and PASS.
 func EvaluateRecorded(
 	result *RunResult,
 	golden *GoldenTree,
@@ -87,11 +69,8 @@ func EvaluateRecorded(
 }
 
 // Evaluate asks the judge to rule on a run. The call may take several
-// seconds.
-//
-// The request is built by the caller rather than derived from a Fixture,
-// because what a judge rules on is now the scenario's clauses — and the
-// scenario is something the runner has never had a handle on.
+// seconds. The request is built by the caller, since what a judge rules
+// on is the scenario's clauses, which the runner has no handle on.
 func Evaluate(ctx context.Context, req JudgeRequest, judge Judge) Verdict {
 	verdict := Verdict{GoldenOK: true}
 
@@ -138,9 +117,8 @@ func CheckExitCode(actual, expected int) error {
 }
 
 // CheckStdout reports the failure line for a pattern the run's stdout
-// never printed. The tail of stdout rides along: a fixture is read long
-// after the run, and "did not match" without the output beside it sends
-// the reader to a file they have to go find.
+// never printed, with the tail of stdout riding along — a fixture is
+// read long after the run, and "did not match" alone sends the reader hunting.
 func CheckStdout(stdout string, pattern *regexp.Regexp) error {
 	if pattern.MatchString(stdout) {
 		return nil

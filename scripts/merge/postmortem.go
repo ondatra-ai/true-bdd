@@ -80,11 +80,8 @@ func (r *Run) postmortem() {
 }
 
 // historyExtract is the merge-related part of this session's history file.
-//
-// The live file runs to tens of megabytes, so it is never handed whole to a
-// model. It does not need to be: every headless turn this package makes is
-// labelled by CLAUDE_HISTORY_ROLE, so the merge turns are addressable by their
-// own headings. A plain turn stamped inside the run window is kept too.
+// Never handed whole (it runs to tens of MB): CLAUDE_HISTORY_ROLE labels
+// every headless turn, so merge turns are addressable by heading.
 func (r *Run) historyExtract() string {
 	name := r.currentHistoryFile()
 	if name == "" {

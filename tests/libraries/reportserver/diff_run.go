@@ -53,12 +53,9 @@ type Deltas struct {
 	DiffCount   int     `json:"diff_count"`
 }
 
-// CompareRuns aligns two runs' fixtures with a real sequence diff.
-//
-// Both sides arrive sorted (os.ReadDir), so on today's data this agrees
-// with a merge join — but a rename or a reordering is exactly the case
-// where hand-rolled pairing quietly mismatches rows, and the algorithm
-// costs three lines.
+// CompareRuns aligns two runs' fixtures with a real sequence diff — a merge
+// join would agree on today's sorted data, but silently mismatch rows on a
+// rename or reordering, and the real algorithm costs three lines.
 func CompareRuns(version int64, left, right *Run) RunComparison {
 	comparison := RunComparison{
 		Version: version,
@@ -112,11 +109,8 @@ func CompareRuns(version int64, left, right *Run) RunComparison {
 }
 
 // changedFields names what moved between two runs of the same test.
-//
 // Durations and costs are excluded on purpose: they differ on every
-// model-driven run, so flagging them would mark all 19 rows changed and
-// make the signal useless. They travel as deltas instead, for the reader
-// to weigh.
+// model-driven run, which would mark every row changed. They travel as deltas instead.
 func changedFields(left, right TestSummary) []string {
 	fields := []string{}
 
@@ -136,10 +130,8 @@ func changedFields(left, right TestSummary) []string {
 		fields = append(fields, "diff_count")
 	}
 
-	// Content, not just count. Two runs can each fail one check for
-	// entirely different reasons — a timeout in one, a rejected diff in
-	// the other — and comparing lengths alone would call that unchanged,
-	// which is the single most misleading thing this table could say.
+	// Content, not just count: two runs can each fail one check for
+	// different reasons, and comparing lengths alone would call that unchanged.
 	if !slices.Equal(left.Failures, right.Failures) {
 		fields = append(fields, "failures")
 	}

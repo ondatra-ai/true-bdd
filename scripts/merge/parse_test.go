@@ -20,15 +20,8 @@ type golden struct {
 }
 
 // TestParsesLikeThePython pins the comment machinery against the script it
-// replaces.
-//
-// This is the part of the merge loop with no other check on it: a helper that
-// queried reviewThreads alone saw 16 of 28 findings on PR #70, and nothing
-// failed — the run simply missed twelve. The fixture carries every branch that
-// mattered there: three-deep nesting, denylisted machinery blocks, the
-// cr-comment markers a finding ends at, the footer after the last marker that
-// is not a finding, and a severity label whose emoji sits inside the
-// underscores.
+// replaces — the part of the merge loop with no other check (see parse.go's
+// package comment for the PR #70 miss this guards against).
 func TestParsesLikeThePython(t *testing.T) {
 	t.Parallel()
 

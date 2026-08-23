@@ -8,10 +8,8 @@ import (
 	"testing"
 )
 
-// A FIFO inside the fixture is contained by every path rule there is,
-// and reading it blocks until a writer appears. ContainedFile is
-// therefore asserted DIRECTLY: routing this through ReadContained would
-// not fail the test if the guard regressed, it would hang it.
+// ContainedFile is asserted DIRECTLY, not via ReadContained: if the FIFO
+// guard regressed, going through ReadContained would hang this test rather than fail it.
 func TestContainedFileRejectsFIFO(t *testing.T) {
 	t.Parallel()
 

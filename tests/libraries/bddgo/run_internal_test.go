@@ -57,9 +57,8 @@ func TestCrossCheckAcceptsAFaithfulTranscription(t *testing.T) {
 }
 
 // A file whose step text drifted from the registry is refused, and the
-// refusal shows BOTH sides of the step that differs — the whole reason
-// to keep the text in the file is that a reader can see it, so a drift
-// report that only says "they differ" wastes that.
+// refusal shows BOTH sides of the differing step — so a reader can see
+// exactly what drifted, not just that something did.
 func TestCrossCheckReportsTheFirstDifferingStep(t *testing.T) {
 	t.Parallel()
 

@@ -8,10 +8,9 @@ type MatrixRun struct {
 	// Label is the run's start time as a reader says it out loud,
 	// "2026-08-10 23:02:40", rather than the directory's underscored form.
 	Label string `json:"label"`
-	// Mode is the column's AI-CLI mode, "" when unknown. A replayed
-	// column proves the engine still behaves as recorded; a live one
-	// proves the models still do. Reading the grid without it compares
-	// two different claims.
+	// Mode is the column's AI-CLI mode, "" when unknown: a replayed column
+	// proves the engine still behaves as recorded, a live one proves the
+	// models still do — different claims, so the reader needs to know which.
 	Mode     string `json:"mode"`
 	Fixtures int    `json:"fixtures"`
 	Complete bool   `json:"complete"`
@@ -65,11 +64,9 @@ const partialThreshold = 0.8
 // "2006-01-02_15-04-05".
 const sessionNameLength = len("2006-01-02_15-04-05")
 
-// BuildMatrix projects every run and every test onto one grid.
-//
-// Columns run oldest to newest so the eye reads history left to right —
-// the opposite of the run list, which leads with the newest because that
-// is the one you came to look at.
+// BuildMatrix projects every run and every test onto one grid. Columns run
+// oldest to newest, the opposite of the run list (which leads with the
+// newest, the one you came to look at).
 func BuildMatrix(snapshot *Snapshot) MatrixResponse {
 	response := MatrixResponse{
 		Version: snapshot.Version,
@@ -110,10 +107,8 @@ func matrixRuns(snapshot *Snapshot) []MatrixRun {
 }
 
 // runLabel turns a session directory name into a readable timestamp:
-// "2026-08-10_23-02-40" becomes "2026-08-10 23:02:40".
-//
-// Formatted here rather than in the browser so every surface that shows
-// a run says it the same way.
+// "2026-08-10_23-02-40" becomes "2026-08-10 23:02:40". Formatted here, not
+// in the browser, so every surface that shows a run says it the same way.
 func runLabel(id string) string {
 	if len(id) != sessionNameLength {
 		return id
@@ -124,11 +119,9 @@ func runLabel(id string) string {
 	return date + " " + clock[0:2] + ":" + clock[3:5] + ":" + clock[6:8]
 }
 
-// testNames is every test seen in any run, sorted.
-//
-// The union rather than the newest run's list: a fixture that was
-// deleted, renamed, or only ever ran in older sessions still has history
-// worth showing, and dropping its row would silently rewrite the past.
+// testNames is every test seen in any run, sorted — the union rather than
+// the newest run's list, so a fixture deleted or renamed since still has
+// history worth showing.
 func testNames(snapshot *Snapshot) []string {
 	seen := map[string]struct{}{}
 

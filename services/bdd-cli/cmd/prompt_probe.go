@@ -7,12 +7,8 @@ import (
 )
 
 // newPromptProbeCmd builds the hidden `prompt-probe` subcommand (plan §4): a
-// deterministic, non-Claude prompt driver that emits choice → clarify →
-// freetext prompts through the real answer collector and reads answers from
-// stdin. Protocol tests dispatch it to exercise the prompt dialogs, the
-// execution barrier (a blocked child holding the folder flock), and the answer
-// path without spawning `claude`. Like `version`, it builds no bootstrap
-// container, so it runs honestly in any folder.
+// deterministic, non-Claude prompt driver protocol tests dispatch to exercise
+// dialogs and the execution barrier — like `version`, it builds no container.
 func newPromptProbeCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:    "prompt-probe",
