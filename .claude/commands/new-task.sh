@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 # Invoked by /new-task (.claude/commands/new-task.md).
 #
-# Rolls the task history state, then resets the repository to a clean state:
-# all local changes are discarded, untracked files removed (ignored files
-# like tmp/ and docs/history/ are kept), and the current branch is
-# fast-forwarded from origin. The branch is never switched.
+# Rolls the task history state, and nothing else: the state file goes, so the
+# next prompt opens a fresh file under docs/history/. It does NOT touch the
+# working tree — starting a task must not be able to discard uncommitted work.
 set -euo pipefail
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 
 "$ROOT/.claude/hooks/history.py" new-task
 
-git -C "$ROOT" restore --staged --worktree -- .
-git -C "$ROOT" clean -fd
-BRANCH=$(git -C "$ROOT" branch --show-current)
-git -C "$ROOT" pull --ff-only origin "$BRANCH" || echo "WARNING: pull failed; continuing on local $BRANCH"
-
-echo "repo reset: $BRANCH @ $(git -C "$ROOT" rev-parse --short HEAD), working tree clean"
+# history.py is silent by design, so say what happened — otherwise /new-task
+# prints nothing and reads as a no-op.
+echo "history rolled: the next prompt opens a fresh file in docs/history/"
