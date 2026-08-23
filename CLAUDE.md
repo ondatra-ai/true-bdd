@@ -77,11 +77,12 @@ reference.
 `true-bdd/` config and the five `docs/` documents (contract: README →
 Configuration); the root `true-bdd/` here is the fixtures' seed.
 
-**Go and sh only — everywhere, tests included.** Scripts are Go (`scripts/`,
-run via `go run`) or bash; `go test` everywhere, `playwright-go` for the
-browser, no jest. `yamale` stays a PATH tool. The engine still *supports*
-both as host `framework:` values (`build-code-playwright-nextjs` covers
-it); parked `tests/legacy/bdd-web-playwright/` is the one exception.
+**Go and sh where it counts.** Engine and tooling are Go (`scripts/`, via
+`go run`) or bash; `go test` everywhere, `playwright-go`, no jest. `yamale`,
+`alint` and `markdownlint-cli2` are PATH tools. The engine still *supports*
+both as host `framework:` values (`build-code-playwright-nextjs` covers it).
+`.alint.yml` fences JS to `services/bdd-web/`, the report UI's `web/`,
+fixtures and `tests/legacy/`.
 
 ## Scoped context
 
@@ -139,7 +140,7 @@ hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 
 ## Project Structure
 
-Three roots, gated by `lint-layout.sh`: `services/<name>/` + `tests/<name>/`
+Three roots, gated by `.alint.yml`: `services/<name>/` + `tests/<name>/`
 mirror what TrueBDD asks of a host (plus `tests/libraries/`); `scripts/` is
 this repo's tooling. `ls` for the tree; package docs carry descriptions.
 
@@ -199,13 +200,9 @@ Brevity is not omission — report failures and skipped work plainly.
 
 ## Notes
 
-- Gated by `scripts/lint-claude.md.sh`: <215 lines, ≤80 columns, and the
-  `KARPATHY` block a verbatim upstream mirror — never edit inside it.
+- CLAUDE.md: ≤214 lines, ≤80 cols, and the `KARPATHY` block byte-verbatim.
 - Never `cd` — run from the repo root with absolute paths or `-C <path>`;
   a `cd`-prefixed command matches no `Bash(...)` allow rule, so it prompts.
-- Never add a tracked `.crush.json`/`crush.json` at the repo root: crush
-  merges every config it finds walking up from its cwd, so one there
-  silently blocks every fixture's apply turn.
 - Session-temporary files go to `./tmp/` (gitignored), never system temp
   dirs or scratchpads. Never edit `.golangci.yaml` without permission.
 - **CRITICAL**: NEVER merge a pull request without an explicit command.

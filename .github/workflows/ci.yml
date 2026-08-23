@@ -28,11 +28,24 @@ jobs:
       - name: Install yamale
         run: pip install yamale
 
+      # Pinned: brew swapped markdownlint-cli for cli2 under a running branch
+      # and the gate broke silently. ubuntu-latest ships Node, so no setup step.
+      - name: Install markdownlint-cli2
+        run: npm i -g markdownlint-cli2@0.23.2
+
+      - name: Install alint
+        run: npm i -g @asamarts/alint@0.15.2
+
       - name: Lint document schemas
         run: ./scripts/lint-schemas.sh
 
-      - name: Lint CLAUDE.md
-        run: ./scripts/lint-claude.md.sh
+      # Repository shape plus CLAUDE.md: .alint.yml holds the rules and
+      # shells out to lint-claude.md.sh for the two alint cannot express.
+      - name: Lint repository shape
+        run: alint check
+
+      - name: Lint markdown
+        run: ./scripts/lint-markdown.sh
 
       - name: Lint
         uses: golangci/golangci-lint-action@v8
