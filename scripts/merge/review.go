@@ -56,9 +56,9 @@ type ghReview struct {
 	User     ghUser `json:"user"`
 }
 
-// requestReview asks for a full review, waiting out the rate limit for as
-// long as it takes. Precondition: HEAD must already be pushed, or the
-// review targets the wrong commit.
+// requestReview asks round 1 for a full review and later rounds for an
+// incremental one: those add only fix commits, so a full re-review re-reports
+// what round 1 already triaged. HEAD must be pushed, or the review misses it.
 func (r *Run) requestReview(round int) {
 	headline := fmt.Sprintf("round %d of %d", round, lastRound)
 	if round > lastFixRound {
@@ -68,11 +68,16 @@ func (r *Run) requestReview(round int) {
 	r.banner(headline)
 	r.checkPushed()
 
+	command, kind := "@coderabbitai review", "an incremental review"
+	if round == 1 {
+		command, kind = "@coderabbitai full review", "a full review"
+	}
+
 	for attempt := 1; ; attempt++ {
 		baselineReview, baselineComment := r.newestReviewID(), r.newestCommentID()
 
-		r.logf("requesting a full review of %s (attempt %d)", short(r.headSHA()), attempt)
-		r.sh([]string{"gh", "pr", "comment", strconv.Itoa(r.pr), "--body", "@coderabbitai full review"},
+		r.logf("requesting %s of %s (attempt %d)", kind, short(r.headSHA()), attempt)
+		r.sh([]string{"gh", "pr", "comment", strconv.Itoa(r.pr), "--body", command},
 			options{check: true})
 
 		answer, ackID := r.awaitAcknowledgement(baselineComment)

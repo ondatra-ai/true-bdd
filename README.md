@@ -361,12 +361,12 @@ drifting.
 - *Constitutional SDD*, arXiv (Feb 2026).
 - Augment Code, *6 Best Spec-Driven Development Tools* (Mar 2026).
 - ThoughtWorks Technology Radar Vol 33 (2025).
-- GitHub Spec Kit — https://github.com/github/spec-kit
-- Kiro — https://kiro.dev
-- BMAD-METHOD — https://github.com/bmad-code-org/BMAD-METHOD
-- OpenSpec — https://github.com/Fission-AI/OpenSpec
-- Tessl — https://tessl.io
-- LeanSpec — https://lean-spec.dev
+- GitHub Spec Kit — <https://github.com/github/spec-kit>
+- Kiro — <https://kiro.dev>
+- BMAD-METHOD — <https://github.com/bmad-code-org/BMAD-METHOD>
+- OpenSpec — <https://github.com/Fission-AI/OpenSpec>
+- Tessl — <https://tessl.io>
+- LeanSpec — <https://lean-spec.dev>
 
 ## Contributing
 

@@ -16,7 +16,7 @@ Every workspace page (every mockup page except `sessions.html`, the
 pre-workspace list) renders three persistent regions, ClickUp's information
 architecture rendered in the S&F Swiss/editorial skin:
 
-```
+```text
 ┌───────────────┬──────────────────────────────────────────┐
 │               │  breadcrumb (48px, hairline bottom border) │
 │   sidebar     ├──────────────────────────────────────────┤
