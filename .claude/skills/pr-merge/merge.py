@@ -76,6 +76,15 @@ HISTORY_BUDGET_BYTES = 300_000
 # it is passed to each function that needs it.
 REPO = ""
 PR = 0
+
+# Commits this run WATCHED a review land against. A review that found nothing
+# has `body_len=0` — the same signature as the `@coderabbitai approve` rubber
+# stamp — so the body test in `reviewed_sha` alone rejects a legitimately clean
+# PR. Witnessing is what separates them: PR #76's stamp appeared on a commit
+# this loop never asked anyone to review, while a clean review is one we
+# requested and saw arrive. Recorded as it happens, because once `approve` has
+# run the two are indistinguishable in the API.
+REVIEWED_THIS_RUN = set()
 STARTED_AT = ""
 
 
@@ -304,6 +313,20 @@ def await_acknowledgement(repo, pr, baseline_comment):
     return "silent", None
 
 
+def record_reviews_after(repo, pr, since_id):
+    """Note which commits the reviews newer than `since_id` were posted against.
+
+    Called the moment a requested review lands, which is the only point at
+    which "reviewed and found nothing" is still distinguishable from "rubber
+    stamped" — see REVIEWED_THIS_RUN.
+    """
+    reviews = json.loads(
+        gh("api", "--paginate", f"repos/{repo}/pulls/{pr}/reviews?per_page=100") or "[]")
+    for r in reviews:
+        if r.get("id", 0) > since_id and is_bot((r.get("user") or {}).get("login")):
+            REVIEWED_THIS_RUN.add(r.get("commit_id", ""))
+
+
 def await_review(repo, pr, baseline_review, ack_id):
     """Wait for a review OBJECT, not an acknowledgement. -> True, or False if
     the acknowledgement turned out to be a rate limit after all.
@@ -320,6 +343,7 @@ def await_review(repo, pr, baseline_review, ack_id):
         waited += POLL
         if newest_review_id(repo, pr) > baseline_review:
             log(f"review posted after {waited}s")
+            record_reviews_after(repo, pr, baseline_review)
             return True
         if ACK_RATE_LIMITED in comment_body(repo, pr, ack_id):
             log(f"the acknowledgement was edited to a rate limit after {waited}s")
@@ -1101,6 +1125,11 @@ def reviewed_sha():
         COMMENTED          41f85a5  body=3872   <- also a real review
         APPROVED           14e327a  body=0      <- `@coderabbitai approve`
 
+    Not sufficient on its own, and `merge` checks REVIEWED_THIS_RUN first: a
+    review that found nothing is also `body_len=0`, so this test alone rejects
+    a clean PR. Measured on PR #83, whose only in-scope change was one doc
+    comment — CodeRabbit reviewed it, had nothing to say, and this returned "".
+
     Deliberately no `--jq`: `gh api --paginate` applies the filter to each
     page and concatenates, so a filter ending in `last` emits one SHA per
     page rather than one overall.
@@ -1181,14 +1210,22 @@ def merge():
     # stamps whatever HEAD happens to be. On PR #76 that was `14e327a`, a
     # commit no review had ever been posted against.
     head, reviewed = head_sha(), reviewed_sha()
-    if not reviewed:
-        die(f"no CodeRabbit review with a body was ever posted on #{PR}. "
-            f"There is nothing to approve.")
-    if reviewed != head:
+    if head in REVIEWED_THIS_RUN:
+        # A review this run requested and watched arrive. Its body may be
+        # empty — with `path_filters` narrowing review to part of the tree, a
+        # PR touching nothing in scope draws a genuine review with nothing to
+        # say — and that is not the PR #76 failure, which was a stamp on a
+        # commit no review had been posted against at all.
+        log(f"HEAD {head[:7]} was reviewed during this run")
+    elif not reviewed:
+        die(f"no CodeRabbit review was posted against {head[:7]} during this run, and no "
+            f"earlier review\n  with a body exists on #{PR}. There is nothing to approve.")
+    elif reviewed != head:
         die(f"the last review was posted against {reviewed[:7]}, but #{PR} is now at "
             f"{head[:7]}.\n  Approving would stamp a commit nothing has reviewed — the "
             f"exact\n  PR #76 failure. Nothing was merged; re-run to review {head[:7]}.")
-    log(f"HEAD {head[:7]} is the commit the last review was posted against")
+    else:
+        log(f"HEAD {head[:7]} is the commit the last review was posted against")
 
     log("requesting approval")
     sh(["gh", "pr", "comment", str(PR), "--body", "@coderabbitai approve"], check=True)
