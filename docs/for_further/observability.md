@@ -66,7 +66,7 @@ what must be single, not the language: OTLP on the wire, three SDKs above it.
 | Signal | How it arrives |
 | --- | --- |
 | **Traces** | The backbone. Every producer emits spans |
-| **Logs** | Existing output (`slog`, `merge.py`'s prints) attached as **span events**, so a log line always knows which operation it belongs to. Not a separate instrumentation pass |
+| **Logs** | Existing output (`slog`, the merge loop's prints) attached as **span events**, so a log line always knows which operation it belongs to. Not a separate instrumentation pass |
 | **Metrics** | **Derived** from spans by the backend. Nothing hand-instrumented until a specific number proves it gets watched weekly |
 
 ## 5. Identity — three levels, all computed independently
@@ -96,7 +96,7 @@ session, so either question is a filter.
 
 | Producer | Language | Instrumentation |
 | --- | --- | --- |
-| `merge.py` | Python | OTel Python SDK, in place. **No rewrite** — it is 1,424 lines rewritten two commits ago (#77) from 2,248 across seven files, and its design principles are documented at length in CLAUDE.md. A Go rewrite is a separate ticket judged on its own merits, and a better one once spans prove behaviour is unchanged across it |
+| `tools/merge` | Go | OTel Go SDK, in place — the same SDK as the harness and the engine, now that the merge loop is Go too. Superseded the Python plan: the "separate ticket judged on its own merits" this document anticipated was raised and landed, porting `merge.py`, `clickup.py` and `history.py` so the repository is Go and sh only |
 | test harness | Go | OTel Go SDK |
 | the engine | Go | Keeps its existing derivation — `reporter/` already reconstructs phases and turns from `tmp/true-bdd.log.json`, 3,375 LOC of it. Do not re-derive what is paid for |
 | `gates.sh`, `commit.sh` | bash | [`otel-cli`](https://github.com/equinix-labs/otel-cli) — purpose-built for shell, and **non-recording when unconfigured**, so an uninstrumented environment is silent rather than broken |
@@ -104,11 +104,11 @@ session, so either question is a filter.
 
 **New producers emit structure; the engine derives it.** Emitting is roughly
 one line per call site; deriving cost 1,838 LOC for the six timeline files
-alone, against a log format that is owned and stable. `merge.py`'s stdout is
+alone, against a log format that is owned and stable. The merge loop's stdout is
 prose written for a human and changes whenever the prose improves — deriving
 from it would make every wording change a silent data regression.
 
-### `merge.py` span tree
+### `tools/merge` span tree
 
 ```
 merge (root)                     attrs: pr, repo, head_sha, session, source
@@ -236,7 +236,7 @@ before upload and refuse on a hit, so the rule stays "nothing leaves unscanned".
 
 All three land in one attempt, by the maintainer's decision:
 
-1. Instrument `merge.py`, the harness and the bash gates.
+1. Instrument `tools/merge`, the harness and the bash gates.
 2. Build the Go + Postgres OTLP monolith on Railway.
 3. Port the four screens with playwright goldens proving parity.
 
@@ -259,7 +259,7 @@ Why each branch went the way it did, so this can be picked up cold.
 | # | Decision | Reason |
 | --- | --- | --- |
 | 1 | Purpose is scaffolding efficiency, not general observability | "Observe everything" has no failure mode and cannot be designed against |
-| 2 | Cloud store | Runs happen local, in CI and on Claude cloud, with no visibility across them. `/new-task` also wipes `tmp/`, and `merge.py`'s `STATE_DIR` is not run-scoped, so each merge overwrites the last — n=1 by construction |
+| 2 | Cloud store | Runs happen local, in CI and on Claude cloud, with no visibility across them. `/new-task` also wipes `tmp/`, and the merge loop's `StateDir` is not run-scoped, so each merge overwrites the last — n=1 by construction |
 | 3 | Internal experiment, this repo only | Must earn extension before becoming anything more |
 | 4 | Scope: merge, commit, tests, skills | Production is observed separately |
 | 5 | "Worked as expected" = didn't take too long, didn't run what wasn't needed | From the 3×10-minute merge where round 1 changed nothing |
@@ -268,7 +268,7 @@ Why each branch went the way it did, so this can be picked up cold.
 | 12 | Total time is the metric; kind of time is an attribute | Delivery latency is what hurts, whoever caused it |
 | 15 | All three signals, one instrumentation pass | Logs as span events, metrics derived |
 | 16 | Custom Go UI, Grafana as a neighbour | Comparison across runs is the thing actually used, and it is not a Grafana motion |
-| 17 | Instrument in place, no Go rewrite of `merge.py` | It was rewritten two commits ago; telemetry is not a reason to reopen it |
+| 17 | ~~Instrument in place, no Go rewrite of `merge.py`~~ **Superseded** — the merge loop is `tools/merge`, in Go | The reasoning held: telemetry was not a reason to reopen it, and it was not reopened for telemetry. It was reopened to make the repository Go and sh only, judged on its own merits as this row said such a ticket would be. Parity was pinned by goldens generated from the Python before it was deleted |
 | 18 | Trace per process run, correlate by attributes | Propagation across processes that never call each other is the most expensive item on the list |
 | 19 | Railway Postgres | Grafana's Mongo data source is Enterprise-only; Postgres is free and in the same Railway project |
 | 23 | Upload the text | Without it the UI cannot show what it shows today, and the remote runs have no local files to fall back on |

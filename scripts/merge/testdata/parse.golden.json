@@ -1,0 +1,49 @@
+{
+  "body_findings": [
+    {
+      "section": "Nitpick comments",
+      "path": "services/foo/bar.go",
+      "lines": "12-15",
+      "text": "`12-15`: **Guard the nil dereference**\n\n_🟠 Major_\n\n`cfg` can be nil when the loader skips an absent file, and line 14 reaches\nthrough it without checking.\n\n  ▸ Committable suggestion\n```go\nif cfg == nil {\n    return ErrNoConfig\n}\n```",
+      "severity": "major",
+      "title": "through it without checking.",
+      "line_from_body": "12-15"
+    },
+    {
+      "section": "Nitpick comments",
+      "path": "services/foo/bar.go",
+      "lines": "40-44",
+      "text": "---\n\n`40-44`: **Second finding in the same file**\n\n_🟡 Minor_\n\nThe error message names a path that `$HERE` already holds.",
+      "severity": "minor",
+      "title": "The error message names a path that `$HERE` already holds.",
+      "line_from_body": "40-44"
+    },
+    {
+      "section": "Nitpick comments",
+      "path": "docs/reference.md",
+      "lines": "7-7",
+      "text": "`7-7`: **A documentation nit with nesting**\n\n_Trivial_\n\n  ▸ Proposed change\n▸ Inner block three deep\ndeeply nested content that must survive\n\nouter content after the inner block",
+      "severity": "trivial",
+      "title": "deeply nested content that must survive",
+      "line_from_body": "7-7"
+    },
+    {
+      "section": "Outside diff range comments",
+      "path": "tests/bdd-cli/runner.go",
+      "lines": "88-90",
+      "text": "`88-90`: **A finding with no severity label at all**\n\nPlain prose, no bold marker on the first line and no underscore severity.",
+      "severity": "?",
+      "title": "Plain prose, no bold marker on the first line and no underscore severity.",
+      "line_from_body": "88-90"
+    }
+  ],
+  "claimed_counts": {
+    "actionable": 2,
+    "Nitpick comments": 3,
+    "Outside diff range comments": 1,
+    "Duplicate comments": 0
+  },
+  "thread_clean": "_⚠️ Potential issue_ | _🟠 Major_\n\n**`head -n 1` closes the pipe and kills `sed` with SIGPIPE**\n\nUnder `set -o pipefail` the whole script aborts with nothing printed, which is\nthe \"aborts with no diagnostic\" failure mode.\n\n  ▸ Proposed guard\nuse `sed -n 1p` instead",
+  "thread_severity": "major",
+  "thread_title": "`head -n 1` closes the pipe and kills `sed` with SIGPIPE"
+}

@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.py prompt-submit",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh prompt-submit",
             "timeout": 10
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.py prompt-submit",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh prompt-submit",
             "timeout": 15
           }
         ]

@@ -77,11 +77,11 @@ reference.
 `true-bdd/` config and the five `docs/` documents (contract: README →
 Configuration); the root `true-bdd/` here is the fixtures' seed.
 
-**This repository tests in Go, and only in Go** — `go test` everywhere,
-`playwright-go` for the browser; no jest, no `@playwright/test`. The
-engine still *supports* both as host `framework:` values (the
-`build-code-playwright-nextjs` fixture covers that); the parked
-`tests/legacy/bdd-web-playwright/` suite is the one exception.
+**Go and sh only — everywhere, tests included.** Scripts are Go (`scripts/`,
+run via `go run`) or bash; `go test` everywhere, `playwright-go` for the
+browser, no jest. `yamale` stays a PATH tool. The engine still *supports*
+both as host `framework:` values (`build-code-playwright-nextjs` covers
+it); parked `tests/legacy/bdd-web-playwright/` is the one exception.
 
 ## Scoped context
 
@@ -108,11 +108,11 @@ pins the refusal); the `us-refine-fix-*` fixtures pass only because
 ## Development Commands
 
 ```bash
+./scripts/lint-layout.sh       # Go only under services/ tests/ scripts/
 ./scripts/lint-schemas.sh      # schema gate (yamale); rule in its header
 ./scripts/lint-claude.md.sh    # this file: size, width, upstream mirror
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
-go test ./...                  # unit only — BDD tree is behind -tags bdd
-golangci-lint run
+go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
 go run ./tests/libraries/cmd/report-server    # report UI on :7331
 # BDD suites. `-mode` MUST come after the package path.
 go test -tags bdd ./tests/bdd-cli/ -mode=replay       # hermetic, <1 min
@@ -140,9 +140,9 @@ hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 
 ## Project Structure
 
-`services/<name>/` + `tests/<name>/`, mirroring what TrueBDD asks of a
-host, plus `tests/libraries/`. `ls` for the tree; package doc comments
-carry the descriptions.
+Three roots, gated by `lint-layout.sh`: `services/<name>/` + `tests/<name>/`
+mirror what TrueBDD asks of a host (plus `tests/libraries/`); `scripts/` is
+this repo's tooling. `ls` for the tree; package docs carry descriptions.
 
 - `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
   not show it: the bdd-web scenarios and suite are the spec.
@@ -168,8 +168,8 @@ Tasks live in ClickUp, reached via the MCP tools (list `901523097822`):
 <https://app.clickup.com/90151491867/v/l/li/901523097822>
 **"Defer this" means create a task there** — never the session todo list,
 which evaporates when the session ends. Write it to be picked up cold, in
-`markdownContent`, with the four headings `.claude/skills/lib/clickup.py`
-renders: **Why / What to change (`file:line`) / Verification / Context**.
+`markdownContent`, with the four headings `scripts/clickup` renders:
+**Why / What to change (`file:line`) / Verification / Context**.
 
 ## Response Style
 
@@ -181,8 +181,8 @@ Brevity is not omission — report failures and skipped work plainly.
 - **`./start.sh` starts a session** — it exports `.env` before launching
   `claude`; a key sourced mid-session never reaches the skill scripts.
 - Commit → `pr-commit`; merge → `pr-merge`; deferred `fix-now` tickets →
-  `fix-queue`. `merge.py`'s docstrings ARE the design record (measured
-  failures on PRs #70/#76/#77) — read them before editing it.
+  `fix-queue`. `scripts/merge`'s doc comments ARE the design record
+  (measured failures on PRs #70/#76/#77) — read them before editing.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
   Claude Code's built-in skill of that name.
