@@ -163,6 +163,15 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		return err
 	}
 
+	// Asking for --fix against a checklist that carries no fix template
+	// is asking for something the walk cannot deliver: the fix turn would
+	// run per failed cell with nothing to say. Refused here rather than
+	// discovered one paid turn at a time.
+	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
+	if err != nil {
+		return refuseStartup(spec.Name, err)
+	}
+
 	// Execution phase.
 	console.Header(headerLine(spec.Name, spec.StoryNumber), SeparatorWidth)
 

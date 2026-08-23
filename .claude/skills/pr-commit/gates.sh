@@ -5,7 +5,8 @@
 # for gating production-ready code.
 set -euo pipefail
 
-./scripts/validate-schemas.sh
+./scripts/lint-schemas.sh
+./scripts/lint-claude.md.sh
 golangci-lint run
 mkdir -p ./bin
 go build -o ./bin/true-bdd ./services/bdd-cli

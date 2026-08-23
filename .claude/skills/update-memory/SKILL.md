@@ -5,61 +5,35 @@ description: Check the pending diff against CLAUDE.md and update it when the cha
 
 # Update Memory
 
-The project memory is CLAUDE.md plus the path-scoped rules in
-`.claude/rules/` (`bdd-harness.md`, `engine-internals.md`,
-`go-conventions.md`): repository layout, CLI subcommands, dev commands,
-conventions, and workflow rules. A commit that changes any of those makes
-the memory stale. This skill checks the pending diff and updates the file
-whose scope the change belongs to, so the fix lands in the same commit.
-Scoping rule: always-relevant facts go in CLAUDE.md; facts needed only
-when working under a rule's `paths:` go in that rule file.
+CLAUDE.md is a **cache of the repository**, and a cache earns its load only where the lookup is
+expensive. You are its write path, `audit-memory` the compaction pass: delete freely, add reluctantly.
 
-CLAUDE.md is loaded into every session — every line spends context on every
-turn, whether or not it matters that turn. A line earns its place only if
-Claude would behave differently without it.
+**Never edit between the `KARPATHY:BEGIN`/`END` markers**; keep the file under 215 lines and 80
+columns. `scripts/lint-claude.md.sh` fails the commit on any of the three.
 
 ## Steps
 
-1. **Scope the pending diff.** `git --no-pager diff HEAD --stat` plus
-   `git status --short`. If nothing changed, report `memory: nothing to
-   update` and stop.
-2. **Compare against CLAUDE.md.** For each change, ask: does CLAUDE.md
-   state something this diff makes wrong or incomplete? Typical triggers:
-   - files/directories moved, added, or removed from the documented layout;
-   - CLI subcommands, flags, or behaviour added or changed;
-   - dev commands (build, test, lint, run) changed;
-   - a convention, rule, or workflow added or altered
-     (including new/changed `.claude/skills/`);
-   - config keys or document paths renamed.
-3. **Update the owning file** — CLAUDE.md or the matching
-   `.claude/rules/*.md`; edit only the sections the diff invalidates.
-   Deleting is as much the update as adding: a line the diff made stale or
-   redundant comes out, it does not get a correcting neighbour. Cosmetic
-   diffs (wording, formatting, content-only doc edits) need no update:
-   report `memory: no update needed` and stop.
-4. **Report** what was updated in one line. No staging needed when run
-   from pr-commit — its commit step stages everything.
+1. **Scope.** `git --no-pager diff HEAD --stat` + `git status --short`. Nothing changed →
+   report `memory: nothing to update` and stop.
+2. **Per change, preferring earlier outcomes:** **correct** a line the diff made false;
+   **delete** one it made redundant (you documented the fact at its point of use, or added
+   a gate that now enforces it — enforcement beats prose); **add**, last resort, and only
+   after step 3.
+3. **Before adding, find a cheaper home and use that instead:** a doc comment, a script
+   header, `README.md`, a config file's comments, `docs/for_further/`, a ClickUp ticket, a
+   linter rule, a `settings.json` deny rule — or `.claude/rules/<topic>.md` when the fact
+   matters in one part of the tree only, since a path-scoped rule loads just for files it
+   matches. Write it there in the same commit. Only a fact needed in EVERY session with no
+   such home earns a line: the unwritten convention, the reason behind a choice, the gotcha
+   no file confesses.
+4. **Verify, never assume.** Grep that the fact is not already documented and that every
+   name you write exists. Report `memory: +N/-M in ## <section>`, or `memory: no update needed`.
 
-## What earns a line
+## Never write
 
-- **Record the unwritten**: conventions, rationale, gotchas, and refusal
-  behaviours nothing else states. The test for a candidate line: without
-  it, would Claude do the wrong thing?
-- **Never cache a source of truth.** Anything stated by the code, a
-  script's docstring, a config's own comments, a skill's SKILL.md, or
-  discoverable by `ls`/`--help` gets at most a one-line pointer
-  (e.g. "design rationale lives in merge.py's docstrings"). A restated
-  copy goes stale the day its source changes.
-- **Match the file's density**: compressed prose, bold lead phrases,
-  tables over paragraphs. New material at the same altitude as its
-  section — no war stories, no narration.
+What `ls`, `--help` or a doc comment answers · design rationale and post-mortem narrative
+(→ a docstring or `docs/for_further/`) · code examples (point at one real file) · historical
+notes ("X replaced Y", "Y is gone") · volatile counts · emphasis without content.
 
-## Rules
-
-- Never record session-temporary facts, task narration, or anything
-  derivable from the code itself.
-- Never touch the sections marked CRITICAL without the change clearly
-  requiring it.
-- CLAUDE.md files are the ONLY memory. A durable user preference belongs
-  in CLAUDE.md's Notes section — never in the auto-memory directory,
-  which this project does not use.
+Cosmetic diffs need no update. Leave `CRITICAL` lines alone unless the change demands it.
+A durable *user* preference is not a repo fact — it belongs in `~/.claude/CLAUDE.md`.

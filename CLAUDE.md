@@ -1,128 +1,214 @@
+<!-- KARPATHY:BEGIN — verbatim upstream mirror, do not edit -->
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
-## Repository
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-`github.com/ondatra-ai/true-bdd` — owner `ondatra-ai`, GitHub user `@killev`.
+## 1. Think Before Coding
 
-**TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI that drives Claude-mediated checklists over user stories. See `README.md` for the vision, the three-levels-of-SDD taxonomy, and configuration reference.
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-**This repository tests in Go, and only in Go** — `go-test` for every suite, with `playwright-go` driving the browser inside the web suite. The engine still *supports* `jest`/`playwright` as `framework:` values a host project may declare (the `build-code-playwright-nextjs` fixture keeps that path covered); this repo declares neither. The parked TypeScript suite at `tests/legacy/bdd-web-playwright/` is the one exception, and it exists to be deleted.
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
 
-This repo is the **engine**: Go source (`services/bdd-cli/`), prompt templates (`templates/`), the engine config seed (`true-bdd/`), and the BDD harness (`tests/`). A *host project* supplies its own `true-bdd/` config dir plus five documents under `docs/`: `architecture/architecture.yaml`, `product/product.yaml` (roles and BDD vocabulary), `product/epics/*.yaml`, `product/stories/*.yaml`, `scenarios.yaml` (the scenario registry). Those are conventional defaults — every location is driven by `true-bdd.yaml` (`documents:` for paths, `paths:` for directories). The repo's own root `true-bdd/` is a harness seed pre-copied into fixture tmpdirs, not a complete host configuration.
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+<!-- KARPATHY:END — enforced by scripts/lint-claude.md.sh -->
+
+## Repository Overview
+
+**TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to
+Spec-as-Source) driving Claude-mediated checklists over user stories.
+`README.md` carries the vision, the SDD taxonomy, and the configuration
+reference.
+
+**This repo is the engine, not a host project.** A host supplies its own
+`true-bdd/` config and the five `docs/` documents (contract: README →
+Configuration); the root `true-bdd/` here is the fixtures' seed.
+
+**This repository tests in Go, and only in Go** — `go test` everywhere,
+`playwright-go` for the browser; no jest, no `@playwright/test`. The
+engine still *supports* both as host `framework:` values (the
+`build-code-playwright-nextjs` fixture covers that); the parked
+`tests/legacy/bdd-web-playwright/` suite is the one exception.
 
 ## Scoped context
 
-`.claude/rules/` holds path-scoped rules that load when a matching file is read. Working in one of those areas before any file is open? Read the rule file directly:
+`.claude/rules/` holds path-scoped rules that load when Claude reads a
+matching file. Working in one of these areas before opening a file? Read
+the rule directly:
 
-- `bdd-harness.md` (`tests/**`, `docs/scenarios.yaml`) — fixtures, cassettes, record/replay, grading, step conventions, go.mod sentinels, run dirs.
-- `engine-internals.md` (`services/bdd-cli/**`, `true-bdd/**`, `templates/**`) — build tests/build code deep behaviour, startup refusals, model tiers, crush gotchas, package notes.
-- `go-conventions.md` (`**/*.go`) — slog vs console, file naming.
+- `bdd-harness.md` — `tests/**`, `docs/scenarios.yaml`
+- `engine-internals.md` — `services/bdd-cli/**`, `true-bdd/**`,
+  `templates/**`: command depth, startup refusals, model tiers, crush
+- `go-conventions.md` — `**/*.go`
 
 ## CLI Subcommands
 
-Two supergroups. `us` (story workflow): `us create <id>` extracts a story from its epic and runs the `us-create` checklist; `us refine <id>` runs `us-refine` on a story; `us apply <id>` walks every AC and merges scenarios into the registry (`documents.scenarios_yaml`). `build` (Spec-as-Source regeneration): `build tests` renders every scenario's Go test then makes sure every step binds (a converged repo costs zero AI turns); `build code` walks every declared suite's failing tests against the `build-code` checklist. Neither ever modifies the registry; `build code` never modifies test files.
+`us create/refine/apply <id>`, `build tests`, `build code` — see
+`README.md` and `--help`.
 
-Every command accepts `--fix` (interactive loop: Claude proposes edits, the user applies/refines/exits). Checklists resolve by convention via `paths.checklists_dir`: hyphenate the command path (`us apply` → `us-apply.yaml`). Precondition failures are reported as `Cannot start: …` on stdout plus a `Refusing to start` slog record — the BDD judge reads the log, not the terminal.
+**`--fix` refuses to start when any walked prompt lacks an `F:` template**
+(`runner.validateFixTemplates`). Consequence: `us create --fix` and
+`us refine --fix` refuse against the shipped checklists today (E2E-029
+pins the refusal); the `us-refine-fix-*` fixtures pass only because
+`checklist-prompts.yaml` narrows the walk to F-carrying prompts.
 
 ## Development Commands
 
 ```bash
-# Validate every document against its schema (requires yamale: pip install yamale).
-# Runs in CI and gates.sh. Pairing convention and its traps: engine-internals rule.
-./scripts/validate-schemas.sh
-
-# Build (requires Go 1.25 and the `claude` CLI on $PATH)
+./scripts/lint-schemas.sh      # schema gate (yamale); rule in its header
+./scripts/lint-claude.md.sh    # this file: size, width, upstream mirror
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
-
-# Unit tests
-go test ./...
-
-# End-to-end BDD scenarios — real Claude calls, ~3-5 min per scenario
-go test -tags bdd -timeout=180m ./tests/bdd-cli/...
-
-# Web suite: builds services/bdd-web, boots it on a free port, drives chromium
-# via playwright-go. Out of every gate on purpose; FAILS (not skips) when
-# node/npm are missing — -allow-missing-toolchain asks for the skip explicitly.
-go test -tags bdd -timeout=25m ./tests/bdd-web/
-
-# Hermetic record/replay (the -mode flag comes AFTER the package path).
-# replay serves per-fixture cassettes/ and spawns NO model — not even the
-# judge; a scenario without a recording FAILS. Whole suite replays in under
-# a minute for zero cost. record publishes cassettes only if the fixture passes.
-go test -tags bdd ./tests/bdd-cli/ -mode=replay
-# One scenario, by its generated test's name (every re-recordable failure
-# prints this exact line with the fixture named in a trailing comment):
-go test -tags bdd -run '^TestE2E016$' ./tests/bdd-cli/ -mode=record
-
-# The three guards, in under a second, no toolchain needed
-go test -tags bdd -run '^Test(ScenarioCoverage|FixtureTreesArePaired|StepCoverage)$' ./tests/bdd-cli/
-
-# Run report — every session, live (rescans tmp/test_run every 15s;
-# -addr 0.0.0.0:7331 to reach it from another machine)
-go run ./tests/libraries/cmd/report-server   # http://127.0.0.1:7331
-
-# Lint
+go test ./...                  # unit only — BDD tree is behind -tags bdd
 golangci-lint run
+go run ./tests/libraries/cmd/report-server    # report UI on :7331
+# BDD suites. `-mode` MUST come after the package path.
+go test -tags bdd ./tests/bdd-cli/ -mode=replay       # hermetic, <1 min
+go test -tags bdd -timeout=180m ./tests/bdd-cli/...   # live, ~3-5 min ea
+go test -tags bdd -timeout=25m ./tests/bdd-web/       # needs node+browser
+go test -tags bdd -run '^TestE2E016$' ./tests/bdd-cli/ -mode=record
+go test -tags bdd ./tests/bdd-cli/ \
+  -run '^Test(ScenarioCoverage|FixtureTreesArePaired|StepCoverage)$'
 ```
 
-The CLI spawns `claude` as a subprocess — unset `CLAUDECODE` when invoking it from inside a Claude Code session: `env -u CLAUDECODE ./bin/true-bdd us create 4.1`. `us refine` drives many sequential Claude calls and takes **about 5 minutes**; poll or wait rather than killing the process.
+Run the CLI from inside a session as
+`env -u CLAUDECODE ./bin/true-bdd us create 4.1` — the child needs a clean
+env. `us refine` drives many sequential Claude calls, ~5 min end-to-end:
+wait or poll, never kill it early.
 
-**BDD in one breath**: `docs/scenarios.yaml` is the spec; every `// Code generated` test file under `tests/*/` is written by `true-bdd build tests --fix` and nothing else; replay runs in both gates (exit 86 = stale cassette → re-record; golden mismatch = the regression signal); never hand-edit a cassette. Full harness contract: `.claude/rules/bdd-harness.md`.
+## BDD Harness
+
+`docs/scenarios.yaml` is the spec — no feature files. Every
+`// Code generated` test under `tests/*/` is written by
+`true-bdd build tests --fix` and nothing else, as are the
+`tests/*/steps/` definitions; never hand-edit either. A step no
+definition binds FAILS. Replay runs in both gates: exit 86 means a stale
+cassette (re-record), a golden mismatch is the regression signal. Never
+hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 
 ## Project Structure
 
-Same `services/<name>/` + `tests/<name>/` layout TrueBDD asks of a host: one suite per service, `tests/libraries/` for shared code, `tests/legacy/` for what is on its way out.
+`services/<name>/` + `tests/<name>/`, mirroring what TrueBDD asks of a
+host, plus `tests/libraries/`. `ls` for the tree; package doc comments
+carry the descriptions.
 
-- `services/bdd-cli/` — the Go module (`github.com/ondatra-ai/true-bdd`); builds to `./bin/true-bdd` (gitignored). `cmd/` (cobra tree), `claudecode/` (Claude Code subprocess SDK wrapper), `adapters/ai/`, `internal/app/` (bootstrap container, commands, checklist engine, scenario generator), `internal/domain/` (models and ports), `internal/infrastructure/` (loaders, template rendering, test runners, step coverage, fs, console input), `internal/pkg/` (`console`, `errors`).
-- `services/bdd-web/` — Next.js relay + UI (a **sentinel nested Go module** so root Go tooling never descends into `node_modules`). Its `src/` is GENERATED and gitignored — the scenarios and suite are the spec. `design/` holds the design system, `SPEC.md`, `proto-workspace/`.
-- `templates/` — prompt templates, `<command>.<role>.prompt.tpl` (Go text/template + sprig).
-- `true-bdd/` — the engine's canonical config seed, pre-copied with `templates/` into every fixture tmpdir.
-- `tests/bdd-cli/`, `tests/bdd-web/` — per-suite: generated `*_test.go`, hand-written `main_test.go` + `coverage_test.go` + `scenarios/` (the TestMain shim and state binding), `steps/`, and (bdd-cli only) `fixtures/`.
-- `tests/libraries/` — `bddgo/` (registry-driven scenario runner, generic over suite state), `runner/` (fixture loading, tmpdir assembly, CLI invocation, per-run diff, judge, goldens, recorder), `aiproxy/`, `fstree/`, `reporter/` + `reportserver/`, `materializer/`, `cmd/{report-server,coverage}/`.
-- `tests/legacy/bdd-web-playwright/` — the PARKED TypeScript suite; every spec is now a registry scenario (`E2E-048`…`E2E-290`) but the scenarios are not executable yet, so this suite is still the only thing testing the web surface. Delete per family, in the same commit that binds that family's steps. Do not add to it.
-- `docs/for_further/` — agreed designs for unstarted work, one file per idea with its own decision log; deliberately outside the doc universe.
-- **`docs/*.html` are published pages; merging a change to `main` IS its deploy** (`.github/workflows/deploy-pages.yml` is a `cp` per page; each page is self-contained). Never publish one as a Claude artifact instead. Adding a page needs BOTH a `cp` line and a `paths:` trigger — missing `cp` 404s, missing `paths:` silently never redeploys. `docs/roadmap.md` is `roadmap.html`'s Markdown twin; the ClickUp "Idea" whiteboard stays the source. Repo-local like `for_further/` — `sync-doc-universe` does not audit them.
-- `docs/history/` — conversation history from `.claude/hooks/history.py` (gitignored); `hook-state` holds the current file's name, shared across sessions. `/new-task` deletes it and resets the repo to clean.
-- `tmp/` — runtime working dir (gitignored). `tmp/test_run/` holds per-fixture run dirs (layout: bdd-harness rule); browse them with the report server.
+- `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
+  not show it: the bdd-web scenarios and suite are the spec.
+- Sentinel `go.mod`s fence root `go test`/lint out of `services/bdd-web/`,
+  `tests/legacy/…` and `tests/bdd-cli/fixtures/`; each states its trap.
+- `tests/legacy/bdd-web-playwright/` exists to be DELETED per spec
+  family, in the same commit binding that family's steps. Never add to
+  it.
+- `docs/*.html`: merging to `main` IS the deploy — never publish one as a
+  Claude artifact; a new page needs a `cp` line AND a `paths:` trigger in
+  `deploy-pages.yml`.
 
 ## Architecture Principles
 
-**Quality over cost — time, price, and token usage are lowest priority.** Always choose the approach with the best output: multi-stage generation, full articles embedded in prompts, multiple validation passes, self-critique loops are all acceptable. Never compromise quality for speed or token savings.
-
-**Direct data flow — no caching, no loaders, no unnecessary interfaces.** `Epic File → StoryFactory → StoryDocument → Generators`: load once at the factory level into a complete domain structure, pass concrete types, extend domain models instead of creating loaders, avoid interfaces without a genuine second implementation, question every layer.
-
-## Shell Usage
-
-**Do not use `cd`.** Run commands from the repository root using absolute paths or `-C <path>` flags, so paths stay predictable and the working directory never drifts.
+**When an AI turn must happen, spend freely on it** — multi-stage
+generation, critique passes, full embedded context; never trim a prompt
+to save tokens. This governs the *engine's runtime* model spend, not the
+volume of code you write: Simplicity First still applies there.
 
 ## Task Management
 
-**ClickUp is the task manager**: <https://app.clickup.com/90151491867/v/l/li/901523097822> (list id `901523097822`), via the ClickUp MCP tools. **"Defer this" means: write it to that ClickUp list** — never the session todo list, which evaporates. Write each ticket so it can be picked up cold, using `markdownContent` with four parts: **Why** (the problem), **What to change** (concrete edits with `file:line`, grepped not remembered), **Verification** (commands that prove it, and what it could silently break), **Context** (why deferred). Deferring is a scope decision: it keeps unrelated work out of the change in hand.
+Tasks live in ClickUp, reached via the MCP tools (list `901523097822`):
+<https://app.clickup.com/90151491867/v/l/li/901523097822>
+**"Defer this" means create a task there** — never the session todo list,
+which evaporates when the session ends. Write it to be picked up cold, in
+`markdownContent`, with the four headings `.claude/skills/lib/clickup.py`
+renders: **Why / What to change (`file:line`) / Verification / Context**.
 
 ## Response Style
 
-Lead with the answer or result; drop restatement, framing sentences, and narration of what a tool did. Tables and short bullets over paragraphs. Findings and caveats stay — the prose around them goes. One-line result, then only the details that change a decision. Still report failures and skipped work plainly — brevity is not omission.
+Answer first; no "what landed / what I verified" recaps unless asked.
+Brevity is not omission — report failures and skipped work plainly.
 
-## Commit / Merge Workflow
+## Commit / Merge Skills
 
-`.claude/skills/` holds the commit-and-merge skills plus `lib/` for shared pieces. **`./start.sh` is how a session begins** — it sources `.env` (gitignored) so `CODERABBIT_API_KEY` and `CLICKUP_API_TOKEN` reach the scripts; a key sourced mid-session does not.
-
-**24 skills are vendored from `mattpocock/skills` (MIT), project-scoped on purpose** — `.claude/skills/VENDORED-mattpocock.md` is the manifest: what was taken, what was stripped, how to re-sync, and the consequence that `code-review` shadows Claude Code's built-in skill of the same name.
-
-- **`pr-merge`** = `python3 ./.claude/skills/pr-merge/merge.py`, no arguments — the repo and PR come from the current checkout. Up to three bounded CodeRabbit review rounds (rounds 1-2 fix ≥9 and file 6-8 as ClickUp tickets; round 3 files everything ≥6 and changes no code, so the reviewed commit is the approved commit), then merge. It stops rather than improvises, leaves state alone on failure, waits out CodeRabbit's rate limit, and never commits or pushes on the caller's behalf. **The design rationale lives in merge.py's own docstrings and comments — read those before changing it.**
-- **`fix-queue`** works the `fix-now` tickets back into merged changes, one ticket per PR. `.claude/skills/lib/clickup.py` is its deliberately-separate ClickUp client; the four-heading ticket shape above is the contract between them.
-- **`.coderabbit.yaml`**: `auto_review` is OFF deliberately — pushes are free, and each merge round buys one `@coderabbitai full review` when the branch is ready. Rationale in the file's own comments. The required `CodeRabbit` status check does not exist until the first review is requested. `path_filters` keep cassettes, generated tests and `doc-universe.html` out of review.
-- **`main` is protected by the "Main Protection" ruleset** (id `20972312`); read the live rules with `gh api repos/ondatra-ai/true-bdd/rules/branches/main`. Classic branch protection is deleted — `/branches/main/protection` 404s, which does not mean unprotected. Gotchas the API won't volunteer: the admin role bypasses everything on PR merges, so a merge succeeding proves nothing about the preconditions; every push voids the approval (`dismiss_stale_reviews_on_push` + `require_last_push_approval`) — get the re-review *after* the last commit; only `killev` has write access and GitHub forbids self-approval, so the approval comes from CodeRabbit's review; `require_code_owner_review` is inert until a `CODEOWNERS` file exists — adding one makes it bite.
+- **`./start.sh` starts a session** — it exports `.env` before launching
+  `claude`; a key sourced mid-session never reaches the skill scripts.
+- Commit → `pr-commit`; merge → `pr-merge`; deferred `fix-now` tickets →
+  `fix-queue`. `merge.py`'s docstrings ARE the design record (measured
+  failures on PRs #70/#76/#77) — read them before editing it.
+- 24 skills vendored from `mattpocock/skills` (manifest:
+  `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
+  Claude Code's built-in skill of that name.
+- **CodeRabbit reviews `tests/` only, and never automatically**
+  (`.coderabbit.yaml` carries every reason). Gotcha the YAML cannot
+  state: the required `CodeRabbit` check does not exist until the first
+  review is requested — on a fresh PR it is absent, not red. A review
+  that finds nothing has an empty body; that is not a rubber stamp.
+- **`main` is guarded by ruleset `20972312`** — live via
+  `gh api repos/ondatra-ai/true-bdd/rules/branches/main`, provenance in
+  `docs/for_further/github-main-ruleset.md`. Classic protection is gone,
+  so `/branches/main/protection` 404s, which is not "unprotected". Admin
+  holds a `pull_request` merge bypass, so a merge succeeding proves
+  nothing; every push dismisses the approval.
 
 ## Notes
 
-- **Temporary files go to `./tmp/`** (the repo's gitignored runtime dir) — plan files, scratch scripts, intermediate outputs, anything session-temporary. Do not use system temp dirs or session scratchpads for repo work.
-- **`.claude/plugins-local/`** — repo-local plugin marketplace (`true-bdd-local`) carrying `go-bdd-lsp`: gopls with `-tags=bdd` and `tmp/`/`tests/legacy/` filtered (config in `go-bdd-lsp/.lsp.json`). One-time per machine: `claude plugin marketplace add ./.claude/plugins-local`. After editing the plugin, bump its `version` and run `claude plugin marketplace update true-bdd-local` — installs are version-keyed cache copies. Keep `gopls-lsp@claude-plugins-official` disabled in settings: when two LSP servers claim `.go`, only the first registered starts.
-- Never add a tracked `.crush.json`/`crush.json` at the repo root — crush config discovery merges every one it finds walking up from cwd, and a root config silently hijacks every fixture's apply turn.
-- Environment variables should be stored in .env files (excluded from git)
-- Invoke the Vercel CLI via `npx vercel` (no global install)
-- Never update `.golangci.yaml` without my permission
-- **CRITICAL**: NEVER merge pull requests without explicit user command to merge
-- **CRITICAL**: NEVER use `git commit --amend` or `git push --force`/`--force-with-lease`. Always create new commits.
+- Gated by `scripts/lint-claude.md.sh`: <215 lines, ≤80 columns, and the
+  `KARPATHY` block a verbatim upstream mirror — never edit inside it.
+- Never `cd` — run from the repo root with absolute paths or `-C <path>`;
+  a `cd`-prefixed command matches no `Bash(...)` allow rule, so it prompts.
+- Never add a tracked `.crush.json`/`crush.json` at the repo root: crush
+  merges every config it finds walking up from its cwd, so one there
+  silently blocks every fixture's apply turn.
+- Session-temporary files go to `./tmp/` (gitignored), never system temp
+  dirs or scratchpads. Never edit `.golangci.yaml` without permission.
+- **CRITICAL**: NEVER merge a pull request without an explicit command.
+- **CRITICAL**: NEVER `git commit --amend`, `git push --force`, or
+  `git push --force-with-lease` — always create new commits.

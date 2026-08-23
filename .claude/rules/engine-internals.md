@@ -28,5 +28,5 @@ The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per
 
 - `internal/app/generators/scenariogen/` renders registry → Go test. `BuildPlan` refuses the whole registry before writing a byte; `Render` always runs `format.Source`; `Write` refuses a target without the generated marker. Its template is `//go:embed`ed (it must compile against bddgo's API), not under `templates/`.
 - `internal/infrastructure/stepcoverage/` runs a suite's `commands.coverage` and reads the report back.
-- `internal/infrastructure/architecture/loader.go` decodes ONLY `testing.suites[]` and each service's `name`/`path`/`language`; everything else under `architecture:` stays undecoded — only `scripts/validate-schemas.sh` would notice a typo there.
-- `true-bdd/` schemas are host lint contracts, not engine inputs — only `scripts/validate-schemas.sh` enforces them; the pairing key is the WHOLE document key, underscores included (`architecture_yaml-schema.yaml`), and a schema whose key names no document HARD-FAILS the gate.
+- `internal/infrastructure/architecture/loader.go` decodes ONLY `testing.suites[]` and each service's `name`/`path`/`language`; everything else under `architecture:` stays undecoded — only `scripts/lint-schemas.sh` would notice a typo there.
+- `true-bdd/` schemas are host lint contracts, not engine inputs — only `scripts/lint-schemas.sh` enforces them; the pairing key is the WHOLE document key, underscores included (`architecture_yaml-schema.yaml`), and a schema whose key names no document HARD-FAILS the gate.

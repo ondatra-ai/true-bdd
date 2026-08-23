@@ -19,6 +19,10 @@ const (
 	testProductRel  = "docs/product/product.yaml"
 	testProductPath = "./" + testProductRel
 	testArchPath    = "./docs/architecture/architecture.yaml"
+
+	// testChecklistName is the stem validateFixTemplates must name in
+	// its refusal, so the reader knows which YAML to open.
+	testChecklistName = "us-create"
 )
 
 // seedVersionManager builds a StoryVersionManager with one saved version
@@ -269,5 +273,116 @@ func TestValidateRequiredDocsAllowsChecklistWithoutDocs(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("a checklist declaring no docs must pass, got %v", err)
+	}
+}
+
+// promptFixing builds a flattened prompt in the shape
+// validateFixTemplates reads: the section it sits under, the question it
+// asks, and the F: template that would guide its fix.
+func promptFixing(section, question, fixTemplate string) checklistmodels.PromptWithContext {
+	return checklistmodels.PromptWithContext{
+		SectionID:   testChecklistName,
+		CriterionID: section,
+		Prompt: checklistmodels.Prompt{
+			Question:    question,
+			FixTemplate: fixTemplate,
+		},
+	}
+}
+
+// TestValidateFixTemplatesAcceptsFullyFixableChecklist is the green
+// path: every prompt carries an F:, so --fix has something to apply at
+// every cell and the walk is allowed to start. us-apply, build-code and
+// build-tests all ship this shape.
+func TestValidateFixTemplatesAcceptsFullyFixableChecklist(t *testing.T) {
+	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("format", "Does the story follow the format?", "Rewrite it."),
+		promptFixing("why", "Does the so_that clause describe a benefit?", "State the benefit."),
+	})
+	if err != nil {
+		t.Fatalf("validateFixTemplates: unexpected error %v", err)
+	}
+}
+
+// TestValidateFixTemplatesRejectsMissingFixTemplate is the regression
+// this check exists for: without an F: the validation turn never asks
+// for a fix_prompt, so the fix turn runs with nothing to say. The
+// refusal has to name the checklist and locate the prompt inside it.
+func TestValidateFixTemplatesRejectsMissingFixTemplate(t *testing.T) {
+	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("who", "Does the as_a clause use a known role?\nRead the product doc.", ""),
+	})
+	if !errors.Is(err, errChecklistNotFixable) {
+		t.Fatalf("error = %v, want errChecklistNotFixable", err)
+	}
+
+	for _, want := range []string{
+		testChecklistName,
+		"us-create/who #1",
+		"Does the as_a clause use a known role?",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal must name %q, got %q", want, err)
+		}
+	}
+}
+
+// TestValidateFixTemplatesReportsAllMissing proves one run names every
+// unfixable prompt rather than stopping at the first, and leaves the
+// fixable one out of the list.
+func TestValidateFixTemplatesReportsAllMissing(t *testing.T) {
+	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("format", "Q one", ""),
+		promptFixing("format", "Q two", "Fix it."),
+		promptFixing("why", "Q three", ""),
+	})
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+
+	for _, want := range []string{"us-create/format #1", "us-create/why #3"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal must name %q, got %q", want, err)
+		}
+	}
+
+	if strings.Contains(err.Error(), "Q two") {
+		t.Errorf("refusal must not name the fixable prompt, got %q", err)
+	}
+}
+
+// TestValidateFixTemplatesTreatsBlankTemplateAsMissing closes the hole a
+// present-but-empty F: would leave: it renders nothing into the prompt,
+// so it is absent for every purpose that matters.
+func TestValidateFixTemplatesTreatsBlankTemplateAsMissing(t *testing.T) {
+	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("what", "Q one", "  \n\t "),
+	})
+	if !errors.Is(err, errChecklistNotFixable) {
+		t.Fatalf("a blank F: must be treated as missing; error = %v", err)
+	}
+}
+
+// TestValidateFixTemplatesAllowsEmptyPromptList keeps the check inert
+// when there is nothing to walk — a narrowed or empty checklist is a
+// different refusal's business, not this one's.
+func TestValidateFixTemplatesAllowsEmptyPromptList(t *testing.T) {
+	err := validateFixTemplates(true, testChecklistName, nil)
+	if err != nil {
+		t.Fatalf("an empty prompt list must pass, got %v", err)
+	}
+}
+
+// TestValidateFixTemplatesIsInertWithoutTheFlag is the other half of the
+// contract: a checklist with no F: anywhere still walks fine without
+// --fix, because nothing was going to be fixed. us-create and us-refine
+// are exactly that checklist, so this is the shape most runs take.
+func TestValidateFixTemplatesIsInertWithoutTheFlag(t *testing.T) {
+	err := validateFixTemplates(false, testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("format", "Q one", ""),
+		promptFixing("why", "Q two", ""),
+	})
+	if err != nil {
+		t.Fatalf("a walk without --fix must not be refused, got %v", err)
 	}
 }
