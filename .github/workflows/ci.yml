@@ -28,11 +28,11 @@ jobs:
       - name: Install yamale
         run: pip install yamale
 
-      - name: Validate document schemas
-        run: ./scripts/validate-schemas.sh
+      - name: Lint document schemas
+        run: ./scripts/lint-schemas.sh
 
-      - name: CLAUDE.md mirrors upstream guidelines
-        run: ./scripts/check-karpathy-block.sh
+      - name: Lint CLAUDE.md
+        run: ./scripts/lint-claude.md.sh
 
       - name: Lint
         uses: golangci/golangci-lint-action@v8

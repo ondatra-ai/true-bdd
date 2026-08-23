@@ -7,7 +7,7 @@ description: Audit CLAUDE.md band by band, one read-only memory-auditor agent pe
 
 0. **Skip the fenced region.** `CLAUDE.md` opens with a block between
    `<!-- KARPATHY:BEGIN … -->` and `<!-- KARPATHY:END -->` — a verbatim mirror of an
-   upstream file, enforced by `scripts/check-karpathy-block.sh`. It contains `##`
+   upstream file, enforced by `scripts/lint-claude.md.sh`. It contains `##`
    headings, so step 1 would band it like any other section: don't. Never audit,
    budget, rewrite or spawn an agent for anything inside those markers, and subtract
    its line count from the target before setting budgets. Auditing it can only produce

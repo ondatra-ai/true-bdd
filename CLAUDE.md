@@ -1,4 +1,4 @@
-<!-- KARPATHY:BEGIN — verbatim upstream mirror, do not edit; enforced by scripts/check-karpathy-block.sh -->
+<!-- KARPATHY:BEGIN — verbatim upstream mirror, do not edit; enforced by scripts/lint-claude.md.sh -->
 # CLAUDE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
@@ -93,8 +93,8 @@ finds walking UP from its cwd (nearest last; see `warnOnHostCrushConfig` in
 ## Development Commands
 
 ```bash
-./scripts/validate-schemas.sh                       # schema gate (yamale); pairing rule in its header
-./scripts/check-karpathy-block.sh                   # the fenced block at the top of this file still matches upstream
+./scripts/lint-schemas.sh                           # schema gate (yamale); pairing rule in its header
+./scripts/lint-claude.md.sh                         # this file: under 200 lines, fenced block still matches upstream
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./...                                       # unit only — the BDD tree is behind -tags bdd
 go test -tags bdd -timeout=180m ./tests/bdd-cli/... # live e2e: real Claude, ~3-5 min per scenario
@@ -188,7 +188,7 @@ Answer first; no "what landed / what I verified" recaps unless asked. Brevity is
 
 ## Notes
 
-- The block at the top of this file between the `KARPATHY:BEGIN`/`END` markers is a verbatim upstream mirror. Never edit inside it; `scripts/check-karpathy-block.sh` fetches upstream and diffs.
+- This file stays under 200 lines and the `KARPATHY:BEGIN`/`END` block is a verbatim upstream mirror — never edit inside it. `scripts/lint-claude.md.sh` enforces both.
 - Session-temporary files (plans, scratch scripts, intermediate outputs) go to `./tmp/` (gitignored) — never system temp dirs or session scratchpads. Never edit `.golangci.yaml` without permission.
 - **CRITICAL**: NEVER merge a pull request without an explicit user command.
 - **CRITICAL**: NEVER `git commit --amend` or `git push --force`/`--force-with-lease` — always new commits.

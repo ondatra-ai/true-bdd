@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: validate-schemas.sh
+# Usage: lint-schemas.sh
 # Validates every document that has a schema against it, with yamale.
 #
 # The pairing is by convention and driven by config, so a new schema needs

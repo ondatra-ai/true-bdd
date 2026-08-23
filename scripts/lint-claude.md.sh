@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
-# Assert CLAUDE.md opens with the upstream behavioural guidelines, byte for byte.
+# Usage: lint-claude.md.sh
+# Lint CLAUDE.md. Two checks, cheapest first.
 #
-# Upstream IS the source of truth — this fetches it live on every run:
-#   https://github.com/multica-ai/andrej-karpathy-skills/blob/main/CLAUDE.md
+# 1. SIZE — the file stays under MAX_LINES. CLAUDE.md is a cache of the
+#    repository loaded into every session, so its cost is paid constantly
+#    and its growth is invisible one commit at a time. The `update-memory`
+#    skill states the same limit in prose; this is what makes it true.
 #
-# Two consequences to know, both deliberate:
-#   * No network, no verdict. The fetch failing is a hard failure, not a pass —
-#     "could not check" must never read as "checked and fine".
-#   * An upstream edit turns this red on branches that never touched CLAUDE.md.
-#     That is the point: the block is a mirror, and a mirror that silently
-#     stops matching is not one. Re-sync with:
-#       curl -sL "$UPSTREAM" > /tmp/k.md   # then paste between the markers
+# 2. MIRROR — the fenced block at the top matches upstream byte for byte:
+#      https://github.com/multica-ai/andrej-karpathy-skills/blob/main/CLAUDE.md
+#    Fetched live on every run. Two consequences, both deliberate:
+#      * No network, no verdict. A failed fetch is a hard failure, never a
+#        pass — "could not check" must not read as "checked and fine".
+#      * An upstream edit turns this red on branches that never touched
+#        CLAUDE.md. That is the point: a mirror that silently stops
+#        matching is not one. Re-sync by pasting the new upstream bytes
+#        between the markers.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 CLAUDE_MD=CLAUDE.md
+MAX_LINES=200
 UPSTREAM=https://raw.githubusercontent.com/multica-ai/andrej-karpathy-skills/main/CLAUDE.md
 BEGIN='<!-- KARPATHY:BEGIN'
 END='<!-- KARPATHY:END'
 
-fail() { echo "check-karpathy-block: $*" >&2; exit 1; }
+fail() { echo "lint-claude.md: $*" >&2; exit 1; }
 
+# ---- 1. size ----------------------------------------------------------
+lines=$(wc -l < "$CLAUDE_MD" | tr -d ' ')
+[ "$lines" -lt "$MAX_LINES" ] ||
+	fail "$CLAUDE_MD is $lines lines, limit is $MAX_LINES.
+Free lines before adding: prefer the point of use — a package doc comment, a
+script header, README.md, a config file's comments, docs/for_further/."
+
+# ---- 2. upstream mirror -----------------------------------------------
 begin_n=$(grep -c "^$BEGIN" "$CLAUDE_MD" || true)
 end_n=$(grep -c "^$END" "$CLAUDE_MD" || true)
 [ "$begin_n" = 1 ] || fail "expected exactly one '$BEGIN' line in $CLAUDE_MD, found $begin_n"
@@ -53,4 +67,4 @@ if ! sed -n "$((begin_at + 1)),$((end_at - 1))p" "$CLAUDE_MD" | diff -u "$upstre
 Paste the upstream bytes back between the markers — see the header of this script."
 fi
 
-echo "check-karpathy-block: OK (lines $begin_at-$end_at match $UPSTREAM)"
+echo "lint-claude.md: OK ($lines/$MAX_LINES lines; mirror at $begin_at-$end_at matches upstream)"

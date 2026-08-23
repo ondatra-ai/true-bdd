@@ -8,8 +8,8 @@ description: Check the pending diff against CLAUDE.md and update it when the cha
 CLAUDE.md is a **cache of the repository**, and a cache earns its load only where the lookup is
 expensive. You are its write path, `audit-memory` the compaction pass: delete freely, add reluctantly.
 
-**Never edit between the `KARPATHY:BEGIN`/`END` markers** — `scripts/check-karpathy-block.sh` fails
-the commit. Keep the file **under 200 lines**; an addition that would breach it frees its lines first.
+**Never edit between the `KARPATHY:BEGIN`/`END` markers**, and keep the file **under 200 lines** —
+`scripts/lint-claude.md.sh` fails the commit on either, so an addition that would breach frees lines first.
 
 ## Steps
 
