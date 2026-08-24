@@ -154,6 +154,8 @@ this repo's tooling. `ls` for the tree; package docs carry descriptions.
 - `docs/*.html`: merging to `main` IS the deploy — never publish one as a
   Claude artifact; a new page needs a `cp` line AND a `paths:` trigger in
   `deploy-pages.yml`.
+- `CONTEXT.md` is the glossary: take domain words from it, write settled
+  ones back. A decision that is hard to reverse gets an ADR in `docs/adr/`.
 
 ## Architecture Principles
 
