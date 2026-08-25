@@ -31,6 +31,36 @@ const (
 	scratchFilePerm      = 0o644
 )
 
+// errIncompleteGeneratorTriple is the canonical error returned by
+// validateGenerators.
+var errIncompleteGeneratorTriple = errors.New(
+	"command is wired without its full generator triple")
+
+// validateGenerators refuses a Spec missing a generator the engine's
+// closures dereference unconditionally, so a command wired with a nil
+// one is refused at startup rather than panicking mid-walk.
+func validateGenerators[I any](spec Spec[I]) error {
+	missing := make([]string, 0)
+
+	if spec.Evaluator == nil {
+		missing = append(missing, "Evaluator")
+	}
+
+	if spec.FixGenerator == nil {
+		missing = append(missing, "FixGenerator")
+	}
+
+	if spec.FixApplier == nil {
+		missing = append(missing, "FixApplier")
+	}
+
+	if len(missing) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s", errIncompleteGeneratorTriple, strings.Join(missing, ", "))
+}
+
 // errInvalidStoryNumberFormat is the canonical error returned by
 // validateStoryNumber. Wraps the package error so callers can both
 // errors.Is-match and format a useful message.
@@ -52,6 +82,26 @@ func validateStoryNumber(storyNumber string) error {
 	}
 
 	return nil
+}
+
+// errChecklistHasNoPrompts is the canonical error returned by
+// validateChecklistHasPrompts, kept free of regex metacharacters since
+// fixtures pin it with an undelimited `stdout matches` pattern.
+var errChecklistHasNoPrompts = errors.New(
+	"checklist has no prompts, so every item would pass without being checked")
+
+// validateChecklistHasPrompts refuses a walk whose checklist flattened to
+// nothing: an empty prompt set satisfies every later check vacuously, and
+// the walk converges having asked no question of any item.
+func validateChecklistHasPrompts(
+	checklistName string,
+	prompts []checklistmodels.PromptWithContext,
+) error {
+	if len(prompts) > 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%s: %w", checklistName, errChecklistHasNoPrompts)
 }
 
 // errUnsatisfiableChecklistDocs is the canonical error returned by

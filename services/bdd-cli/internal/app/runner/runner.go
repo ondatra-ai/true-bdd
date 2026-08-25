@@ -100,44 +100,9 @@ type Spec[I any] struct {
 // load, build and run the engine, render, then finalize — closures wrap
 // Evaluator/FixGenerator/FixApplier so per-command code never touches them.
 func Run[I any](ctx context.Context, spec Spec[I]) error {
-	// Validation phase: everything here must fail before the header, any
-	// item load, or the first AI turn, so a misconfigured run costs
-	// nothing.
-	if spec.StoryNumber != "" {
-		err := validateStoryNumber(spec.StoryNumber)
-		if err != nil {
-			return refuseStartup(spec.Name, fmt.Errorf("invalid story number: %w", err))
-		}
-	}
-
-	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
+	doc, prompts, err := validateSpec(spec)
 	if err != nil {
-		return refuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
-	}
-
-	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
-
-	err = validateRequiredDocs(prompts, spec.DocResolver)
-	if err != nil {
-		// Both, deliberately: console is for whoever ran the command, the
-		// log record is what a harness, CI scrape or BDD judge reads
-		// afterwards — an unattributed refusal is barely better than the degradation it replaced.
-		slog.Error("Refusing to start: checklist documents unsatisfiable",
-			"command", spec.Name,
-			"checklist", spec.ChecklistName,
-			"error", err,
-		)
-		console.Println("Cannot start: " + err.Error())
-
 		return err
-	}
-
-	// Asking for --fix against a checklist with no fix template asks for
-	// something the walk can't deliver — refused here, before any paid
-	// turn, rather than discovered one fix at a time.
-	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
-	if err != nil {
-		return refuseStartup(spec.Name, err)
 	}
 
 	// Execution phase.
@@ -184,6 +149,64 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	emitRunResult(result.Reason, finErr)
 
 	return finErr
+}
+
+// validateSpec runs the whole validation phase: everything here must
+// fail before the header, any item load, or the first AI turn, so a
+// misconfigured run costs nothing.
+func validateSpec[I any](spec Spec[I]) (
+	*checklistmodels.Checklist,
+	[]checklistmodels.PromptWithContext,
+	error,
+) {
+	err := validateGenerators(spec)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, err)
+	}
+
+	if spec.StoryNumber != "" {
+		err = validateStoryNumber(spec.StoryNumber)
+		if err != nil {
+			return nil, nil, refuseStartup(spec.Name, fmt.Errorf("invalid story number: %w", err))
+		}
+	}
+
+	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
+	}
+
+	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
+
+	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, err)
+	}
+
+	err = validateRequiredDocs(prompts, spec.DocResolver)
+	if err != nil {
+		// Both, deliberately: console is for whoever ran the command, the
+		// log record is what a harness, CI scrape or BDD judge reads
+		// afterwards — an unattributed refusal is barely better than the degradation it replaced.
+		slog.Error("Refusing to start: checklist documents unsatisfiable",
+			"command", spec.Name,
+			"checklist", spec.ChecklistName,
+			"error", err,
+		)
+		console.Println("Cannot start: " + err.Error())
+
+		return nil, nil, err
+	}
+
+	// Asking for --fix against a checklist with no fix template asks for
+	// something the walk can't deliver — refused here, before any paid
+	// turn, rather than discovered one fix at a time.
+	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, err)
+	}
+
+	return doc, prompts, nil
 }
 
 // loadAndPrepare sources the items and lets the command narrow or

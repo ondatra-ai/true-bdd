@@ -1,0 +1,24 @@
+# Zero-prompt variant of true-bdd/checklists/build-tests.yaml, for
+# `build-tests-empty-checklist`.
+#
+# The tmpdir overlay puts fixture files on top of the repo layer, so this
+# file IS the checklist the run loads. It parses — `LoadFull` is a plain
+# unmarshal with no validation of its own — and its one section declares
+# no prompts, so the walk flattens to zero.
+#
+# The failure this guards is the false green symmetrical to
+# `build-tests-empty-registry`: a walk with no prompts visits every
+# scenario, asks nothing of any of them, and reports that all passed. An
+# unasked question is not a satisfied one.
+#
+# It cannot be written as a `checklist-prompts.yaml` narrowing instead —
+# the harness refuses that file present-but-empty.
+
+version: "2.0"
+last_updated: "2026-08-24"
+
+sections:
+  - id: implementation
+    name: "Step Coverage"
+    description: "Every step of every registry scenario must bind to a step definition in the suite that owns the scenario."
+    validation_prompts: []
