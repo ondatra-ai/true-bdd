@@ -107,10 +107,17 @@ func listFixtures(t *testing.T) []string {
 }
 
 // allowedOverrideFixtures is the explicit allowlist for checked-in
-// checklist override files. Empty on purpose — every current fixture
-// declares checklist_prompts instead; adding an entry must be reviewed.
+// checklist overrides. A fixture belongs here only when the override IS
+// the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]bool {
-	return map[string]bool{}
+	return map[string]bool{"build-tests-empty-checklist": true}
+}
+
+// zeroPromptOverrideFixtures names the fixtures whose override is
+// deliberately empty: E2E-297 measures the refusal of a checklist with
+// nothing to ask, so "would walk nothing" is what it pins.
+func zeroPromptOverrideFixtures() map[string]bool {
+	return map[string]bool{"build-tests-empty-checklist": true}
 }
 
 // TestNoUnsanctionedChecklistOverrides enforces the no-copied-checklists
@@ -170,8 +177,17 @@ func TestOverridePromptsMatchShipped(t *testing.T) {
 			continue
 		}
 
-		if len(prompts) == 0 {
-			t.Errorf("%s: override has no active prompts — the fixture would walk nothing", override.Fixture)
+		deliberatelyEmpty := zeroPromptOverrideFixtures()[override.Fixture]
+
+		if len(prompts) == 0 && !deliberatelyEmpty {
+			t.Errorf("%s: override has no active prompts — the fixture would walk nothing; "+
+				"add it to zeroPromptOverrideFixtures if that is the behaviour under test",
+				override.Fixture)
+		}
+
+		if len(prompts) > 0 && deliberatelyEmpty {
+			t.Errorf("%s: listed in zeroPromptOverrideFixtures but its override has %d prompt(s)",
+				override.Fixture, len(prompts))
 		}
 
 		for _, prompt := range prompts {

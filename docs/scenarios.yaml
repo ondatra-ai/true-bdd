@@ -5217,3 +5217,21 @@ scenarios:
         - and: the browser's write receipt names that path and the file's hash
         - and: the relay's audit holds the CLI's receipt for the same work, revision and hash
         - and: the remote spawned at most 3 AI calls
+
+  E2E-297:
+    description: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-empty-checklist" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start: build-tests: checklist has no prompts, so every item would pass without being checked'
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

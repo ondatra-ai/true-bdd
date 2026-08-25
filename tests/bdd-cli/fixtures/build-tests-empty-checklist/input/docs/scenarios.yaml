@@ -1,0 +1,30 @@
+# Registry seed for `build-tests-empty-checklist`.
+#
+# Deliberately NOT empty. The refusal under test belongs to the
+# checklist, and an empty registry would raise
+# `build-tests-empty-registry`'s refusal instead — a different guard,
+# measured by a different scenario.
+#
+# One scenario is also what proves the ordering: the checklist guard
+# runs in the validation phase, before the items are ever loaded, so
+# this entry is never walked and never reported on.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-24"
+  description: "One scenario, so the run has something it could have walked"
+
+scenarios:
+  E2E-001:
+    description: The MCP service answers a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping
+      then:
+        - the service answers pong

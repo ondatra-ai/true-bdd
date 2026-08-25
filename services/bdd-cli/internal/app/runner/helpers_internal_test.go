@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
@@ -379,5 +380,66 @@ func TestValidateFixTemplatesIsInertWithoutTheFlag(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("a walk without --fix must not be refused, got %v", err)
+	}
+}
+
+// TestValidateGeneratorsAcceptsAFullTriple is the green path: every
+// command in the binary is wired this way, so the check must stay
+// invisible to all of them.
+func TestValidateGeneratorsAcceptsAFullTriple(t *testing.T) {
+	err := validateGenerators(Spec[*story.Story]{
+		Evaluator:    &validate.ChecklistEvaluator{},
+		FixGenerator: &validate.FixPromptGenerator{},
+		FixApplier:   &validate.FixApplier{},
+	})
+	if err != nil {
+		t.Fatalf("validateGenerators: unexpected error %v", err)
+	}
+}
+
+// TestValidateGeneratorsNamesEveryMissingGenerator proves one run lists
+// them all: a wiring mistake is fixed by reading the Spec once, and a
+// refusal naming one at a time makes that three runs instead of one.
+func TestValidateGeneratorsNamesEveryMissingGenerator(t *testing.T) {
+	err := validateGenerators(Spec[*story.Story]{
+		FixGenerator: &validate.FixPromptGenerator{},
+	})
+	if !errors.Is(err, errIncompleteGeneratorTriple) {
+		t.Fatalf("error = %v, want errIncompleteGeneratorTriple", err)
+	}
+
+	for _, want := range []string{"Evaluator", "FixApplier"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal must name %q, got %q", want, err)
+		}
+	}
+
+	if strings.Contains(err.Error(), "FixGenerator") {
+		t.Errorf("refusal must not name the generator that is wired, got %q", err)
+	}
+}
+
+// TestValidateChecklistHasPromptsAcceptsAWalkableChecklist is the green
+// path: one prompt is enough for the walk to ask something of an item.
+func TestValidateChecklistHasPromptsAcceptsAWalkableChecklist(t *testing.T) {
+	err := validateChecklistHasPrompts(testChecklistName, []checklistmodels.PromptWithContext{
+		promptFixing("format", "Does the story follow the format?", "Rewrite it."),
+	})
+	if err != nil {
+		t.Fatalf("validateChecklistHasPrompts: unexpected error %v", err)
+	}
+}
+
+// TestValidateChecklistHasPromptsRejectsAnEmptyChecklist is the false
+// green this guard exists for: with nothing to ask, every item converges
+// unexamined, so the refusal must name the checklist to open.
+func TestValidateChecklistHasPromptsRejectsAnEmptyChecklist(t *testing.T) {
+	err := validateChecklistHasPrompts(testChecklistName, nil)
+	if !errors.Is(err, errChecklistHasNoPrompts) {
+		t.Fatalf("error = %v, want errChecklistHasNoPrompts", err)
+	}
+
+	if !strings.Contains(err.Error(), testChecklistName) {
+		t.Errorf("refusal must name the checklist, got %q", err)
 	}
 }
