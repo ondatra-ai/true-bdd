@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: history.sh prompt-submit | new-task
+# Usage: history.sh prompt-submit | new-task | bind <id> | bound | unbind
 # The entry point .claude/settings.json wires to UserPromptSubmit and Stop.
 #
 # A shim, not the tool: the Go source lives under scripts/, because the Go tool
@@ -12,7 +12,7 @@
 #   HERE  — where the Go module is, resolved from this script's own path,
 #           because that is the only thing that is always true of it.
 #   CLAUDE_PROJECT_DIR — which repository to log. Claude Code sets it when it
-#           invokes a hook; the `!`-invoked /new-task command gets no hook
+#           invokes a hook; the `!`-invoked /task-start skill gets no hook
 #           environment, so it falls back to HERE. Exported either way: a
 #           `go run` binary lives in a temporary directory and cannot find the
 #           repository from its own path the way the Python found it from

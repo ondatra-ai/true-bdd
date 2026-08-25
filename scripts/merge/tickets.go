@@ -9,7 +9,7 @@ import (
 )
 
 // create files one ClickUp ticket per finding, tagged fix-now, via the
-// shared clickup package (also scripts/cmd/clickup, what fix-queue calls).
+// shared clickup package (also scripts/cmd/clickup, run by hand).
 // Timeout env var renamed in the port: was MERGE_CLICKUP_TIMEOUT, now CLICKUP_CLAUDE_TIMEOUT (same 900s default).
 func (r *Run) create(toCreate []clickup.Finding, round int) []clickup.Finding {
 	if len(toCreate) == 0 {

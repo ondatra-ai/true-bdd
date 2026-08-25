@@ -47,6 +47,11 @@ jobs:
       - name: Lint markdown
         run: ./scripts/lint-markdown.sh
 
+      # Absent here until scripts/gates' conformance test went red on it:
+      # gates.sh had run it locally for months and CI never did.
+      - name: Lint comments
+        run: ./scripts/lint-comments.sh
+
       - name: Lint
         uses: golangci/golangci-lint-action@v8
         with:

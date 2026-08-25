@@ -39,21 +39,27 @@ func (h *Hook) loadCurrent() string {
 // shared across sessions, so a half-written name would strand every one of
 // them.
 func (h *Hook) saveCurrent(filename string) error {
+	return h.writeAtomic(h.stateFile(), filename)
+}
+
+// writeAtomic replaces a single-line state file under historyDir in one
+// rename. Shared with the Ticket binding, which has the same requirement.
+func (h *Hook) writeAtomic(path, content string) error {
 	err := os.MkdirAll(h.historyDir(), dirMode)
 	if err != nil {
 		return fmt.Errorf("creating %s: %w", h.historyDir(), err)
 	}
 
-	temporary := fmt.Sprintf("%s.tmp.%d", h.stateFile(), os.Getpid())
+	temporary := fmt.Sprintf("%s.tmp.%d", path, os.Getpid())
 
-	err = os.WriteFile(temporary, []byte(filename), fileMode)
+	err = os.WriteFile(temporary, []byte(content), fileMode)
 	if err != nil {
 		return fmt.Errorf("writing %s: %w", temporary, err)
 	}
 
-	err = os.Rename(temporary, h.stateFile())
+	err = os.Rename(temporary, path)
 	if err != nil {
-		return fmt.Errorf("replacing %s: %w", h.stateFile(), err)
+		return fmt.Errorf("replacing %s: %w", path, err)
 	}
 
 	return nil

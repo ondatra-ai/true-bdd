@@ -137,8 +137,8 @@ func asScore(value any) (int, bool) {
 	}
 }
 
-// split decides what happens to each finding. Rounds 1-2: >=9 fixed, 6-8
-// ticketed, <6 dropped. Round 3: nothing fixed, >=6 ticketed, <6 dropped.
+// split decides what happens to each finding, against r.floors — manual by
+// default, automatic under a mandate. Round 3 fixes nothing either way.
 // Body-only findings never fix inline: no thread or diff position to report a fix back to.
 func (r *Run) split(
 	issues []clickup.Finding, round int,
@@ -149,9 +149,9 @@ func (r *Run) split(
 
 	for _, finding := range issues {
 		switch {
-		case finding.Score < ticketFloor:
+		case finding.Score < r.floors.Ticket:
 			toIgnore = append(toIgnore, finding)
-		case finding.Score >= fixFloor && !terminal && finding.Source == "thread":
+		case finding.Score >= r.floors.Fix && !terminal && finding.Source == "thread":
 			toFix = append(toFix, finding)
 		default:
 			toCreate = append(toCreate, finding)

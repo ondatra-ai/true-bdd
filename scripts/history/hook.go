@@ -43,7 +43,7 @@ func Role() string {
 }
 
 // RepoRoot locates the repository being logged: CLAUDE_PROJECT_DIR (set by
-// Claude Code, exported by the shim for /new-task, which isn't a hook) or
+// Claude Code, exported by the shim for /task-start, which isn't a hook) or
 // `git rev-parse --show-toplevel` — a `go run` binary's own path is a temp dir.
 func RepoRoot() string {
 	if dir := os.Getenv("CLAUDE_PROJECT_DIR"); dir != "" {

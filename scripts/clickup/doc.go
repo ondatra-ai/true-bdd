@@ -18,9 +18,9 @@
 // artifact: it is what a person reads before anything is uploaded, and it is
 // what the model is asked to transcribe rather than invent.
 //
-// The command is the single ClickUp interface, because the fix-queue skill
-// invokes it by path and its four-heading ticket shape is that skill's
-// contract:
+// The command is the single ClickUp interface for anything running OUTSIDE a
+// Claude session, which has no MCP server to inherit. The /task-* skills and
+// handle-loop run inside one and call MCP directly:
 //
 //	clickup render --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
 //	clickup file   --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
