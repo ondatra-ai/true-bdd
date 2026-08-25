@@ -1,0 +1,6 @@
+# Which prompts of the shipped checklist this fixture's run walks.
+# Narrowed to the one prompt that rules on the description alone: it
+# declares no `docs:`, so the tree needs no product document, and the
+# walk costs one AI turn per scenario rather than eight.
+scen-check:
+- whether this scenario's description follows the rule-based format

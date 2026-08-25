@@ -40,6 +40,12 @@ templates:
     build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
     build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
     build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+    scen_check_checklist: "./templates/scen-check.checklist.prompt.tpl"
+    scen_check_checklist_system: "./templates/scen-check.checklist.system.prompt.tpl"
+    scen_check_fix_generator: "./templates/scen-check.fix-generator.prompt.tpl"
+    scen_check_fix_generator_system: "./templates/scen-check.fix-generator.system.prompt.tpl"
+    scen_check_fix_applier: "./templates/scen-check.fix-applier.prompt.tpl"
+    scen_check_fix_applier_system: "./templates/scen-check.fix-applier.system.prompt.tpl"
 
 paths:
   tmp_dir: "./tmp"

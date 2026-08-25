@@ -104,6 +104,12 @@ type Container struct {
 	BuildCodeEvaluator          *validate.ChecklistEvaluator
 	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
 	BuildCodeFixApplier         *validate.FixApplier
+	// Scen-check triple drives `scen check`. Templates live under
+	// templates.prompts.scen_check_* and the fix pair is wired but
+	// unreachable: the checklist ships no F, so --fix refuses at startup.
+	ScenCheckEvaluator          *validate.ChecklistEvaluator
+	ScenCheckFixPromptGenerator *validate.FixPromptGenerator
+	ScenCheckFixApplier         *validate.FixApplier
 }
 
 // NewContainer builds the Container.
@@ -125,39 +131,7 @@ func NewContainer() (*Container, error) {
 		return nil, err
 	}
 
-	applyTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-		checklistSystem:    "templates.prompts.apply_checklist_system",
-		checklist:          "templates.prompts.apply_checklist",
-		fixGeneratorSystem: "templates.prompts.apply_fix_generator_system",
-		fixGenerator:       "templates.prompts.apply_fix_generator",
-		fixApplierSystem:   "templates.prompts.apply_fix_applier_system",
-		fixApplier:         "templates.prompts.apply_fix_applier",
-	})
-	applyTrip.fixApplier.UseEditMode()
-
-	buildTestsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-		checklistSystem:    "templates.prompts.build_tests_checklist_system",
-		checklist:          "templates.prompts.build_tests_checklist",
-		fixGeneratorSystem: "templates.prompts.build_tests_fix_generator_system",
-		fixGenerator:       "templates.prompts.build_tests_fix_generator",
-		fixApplierSystem:   "templates.prompts.build_tests_fix_applier_system",
-		fixApplier:         "templates.prompts.build_tests_fix_applier",
-	})
-	buildTestsTrip.fixApplier.UseEditMode()
-	// build tests authors test files outside tmp. Unlike build code it
-	// has no architecture.yaml to read roots from — its fixtures ship
-	// none — so the roots are host config.
-	buildTestsTrip.fixApplier.UseWriteRoots(testWriteGlobs(cfg))
-
-	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
-		checklistSystem:    "templates.prompts.build_code_checklist_system",
-		checklist:          "templates.prompts.build_code_checklist",
-		fixGeneratorSystem: "templates.prompts.build_code_fix_generator_system",
-		fixGenerator:       "templates.prompts.build_code_fix_generator",
-		fixApplierSystem:   "templates.prompts.build_code_fix_applier_system",
-		fixApplier:         "templates.prompts.build_code_fix_applier",
-	})
-	buildCodeTrip.fixApplier.UseEditMode()
+	trips := newTriples(aiClient, cfg, models)
 
 	testRunnerDispatcher := newTestRunnerDispatcher(runDir)
 
@@ -175,17 +149,20 @@ func NewContainer() (*Container, error) {
 		Evaluator:                    validate.NewChecklistEvaluator(aiClient, cfg, models),
 		FixGenerator:                 validate.NewFixPromptGenerator(aiClient, cfg, models),
 		FixApplier:                   validate.NewFixApplier(aiClient, cfg, models),
-		ApplyEvaluator:               applyTrip.evaluator,
-		ApplyFixPromptGenerator:      applyTrip.fixGenerator,
-		ApplyFixApplier:              applyTrip.fixApplier,
+		ApplyEvaluator:               trips.apply.evaluator,
+		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
+		ApplyFixApplier:              trips.apply.fixApplier,
 		RegistryLoader:               registry.NewRegistryLoader(),
-		BuildTestsEvaluator:          buildTestsTrip.evaluator,
-		BuildTestsFixPromptGenerator: buildTestsTrip.fixGenerator,
-		BuildTestsFixApplier:         buildTestsTrip.fixApplier,
+		BuildTestsEvaluator:          trips.buildTests.evaluator,
+		BuildTestsFixPromptGenerator: trips.buildTests.fixGenerator,
+		BuildTestsFixApplier:         trips.buildTests.fixApplier,
 		TestRunnerDispatcher:         testRunnerDispatcher,
-		BuildCodeEvaluator:           buildCodeTrip.evaluator,
-		BuildCodeFixPromptGenerator:  buildCodeTrip.fixGenerator,
-		BuildCodeFixApplier:          buildCodeTrip.fixApplier,
+		BuildCodeEvaluator:           trips.buildCode.evaluator,
+		BuildCodeFixPromptGenerator:  trips.buildCode.fixGenerator,
+		BuildCodeFixApplier:          trips.buildCode.fixApplier,
+		ScenCheckEvaluator:           trips.scenCheck.evaluator,
+		ScenCheckFixPromptGenerator:  trips.scenCheck.fixGenerator,
+		ScenCheckFixApplier:          trips.scenCheck.fixApplier,
 	}, nil
 }
 
@@ -231,4 +208,75 @@ func newTestRunnerDispatcher(runDir *fs.RunDirectory) *testrunner.Dispatcher {
 		testrunner.FrameworkPlaywright: testrunner.NewPlaywrightRunner(artifacts),
 		testrunner.FrameworkJest:       testrunner.NewJestRunner(artifacts),
 	})
+}
+
+// triples groups the four command-flavoured generator triples, so
+// NewContainer stays a wiring list rather than a construction site.
+type triples struct {
+	apply      scenarioTriple
+	buildTests scenarioTriple
+	buildCode  scenarioTriple
+	scenCheck  scenarioTriple
+}
+
+// newTriples builds each command's generator triple and applies the
+// per-command applier mode. Which appliers may write, and where, is
+// decided here and nowhere else.
+func newTriples(
+	aiClient ports.AIPort,
+	cfg *config.ViperConfig,
+	models *provider.Registry,
+) triples {
+	applyTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.apply_checklist_system",
+		checklist:          "templates.prompts.apply_checklist",
+		fixGeneratorSystem: "templates.prompts.apply_fix_generator_system",
+		fixGenerator:       "templates.prompts.apply_fix_generator",
+		fixApplierSystem:   "templates.prompts.apply_fix_applier_system",
+		fixApplier:         "templates.prompts.apply_fix_applier",
+	})
+	applyTrip.fixApplier.UseEditMode()
+
+	buildTestsTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.build_tests_checklist_system",
+		checklist:          "templates.prompts.build_tests_checklist",
+		fixGeneratorSystem: "templates.prompts.build_tests_fix_generator_system",
+		fixGenerator:       "templates.prompts.build_tests_fix_generator",
+		fixApplierSystem:   "templates.prompts.build_tests_fix_applier_system",
+		fixApplier:         "templates.prompts.build_tests_fix_applier",
+	})
+	buildTestsTrip.fixApplier.UseEditMode()
+	// build tests authors test files outside tmp. Unlike build code it
+	// has no architecture.yaml to read roots from — its fixtures ship
+	// none — so the roots are host config.
+	buildTestsTrip.fixApplier.UseWriteRoots(testWriteGlobs(cfg))
+
+	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.build_code_checklist_system",
+		checklist:          "templates.prompts.build_code_checklist",
+		fixGeneratorSystem: "templates.prompts.build_code_fix_generator_system",
+		fixGenerator:       "templates.prompts.build_code_fix_generator",
+		fixApplierSystem:   "templates.prompts.build_code_fix_applier_system",
+		fixApplier:         "templates.prompts.build_code_fix_applier",
+	})
+	buildCodeTrip.fixApplier.UseEditMode()
+
+	// No UseEditMode and no write roots: every scen-check prompt is
+	// read-only, and the applier this triple carries exists only so
+	// runner.Run has a non-nil dependency to refuse --fix against.
+	scenCheckTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
+		checklistSystem:    "templates.prompts.scen_check_checklist_system",
+		checklist:          "templates.prompts.scen_check_checklist",
+		fixGeneratorSystem: "templates.prompts.scen_check_fix_generator_system",
+		fixGenerator:       "templates.prompts.scen_check_fix_generator",
+		fixApplierSystem:   "templates.prompts.scen_check_fix_applier_system",
+		fixApplier:         "templates.prompts.scen_check_fix_applier",
+	})
+
+	return triples{
+		apply:      applyTrip,
+		buildTests: buildTestsTrip,
+		buildCode:  buildCodeTrip,
+		scenCheck:  scenCheckTrip,
+	}
 }

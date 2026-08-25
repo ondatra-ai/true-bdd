@@ -89,13 +89,16 @@ until those tests pass.
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; the registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
+| `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one AI turn per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Advisory by design: a failed check is reported and the CLI still exits 0, so it cannot gate a commit. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
 Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
-refines, or exits. `build tests` also takes `--requirements <path>`
-and `build code` takes `--architecture <path>` to override the
-configured spec locations (`documents.scenarios_yaml` and
-`documents.architecture_yaml` in `true-bdd.yaml`).
+refines, or exits — except `scen check`, which registers the flag and
+refuses it at startup, because no `scen-check` prompt carries a fix
+template. `build tests` and `scen check` also take
+`--requirements <path>` and `build code` takes `--architecture <path>`
+to override the configured spec locations (`documents.scenarios_yaml`
+and `documents.architecture_yaml` in `true-bdd.yaml`).
 
 ## Install
 
@@ -117,6 +120,7 @@ env -u CLAUDECODE ./bin/true-bdd us refine 4.1 --fix
 env -u CLAUDECODE ./bin/true-bdd us apply  4.1 --fix
 env -u CLAUDECODE ./bin/true-bdd build tests --fix
 env -u CLAUDECODE ./bin/true-bdd build code  --fix
+env -u CLAUDECODE ./bin/true-bdd scen check E2E-001
 ```
 
 `us refine` issues many sequential Claude calls and typically takes

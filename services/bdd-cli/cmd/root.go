@@ -48,6 +48,7 @@ func Execute() {
 	rootCmd.AddCommand(newCrushGuardCmd())
 	rootCmd.AddCommand(NewUSCommand(provide))
 	rootCmd.AddCommand(NewBuildCommand(provide))
+	rootCmd.AddCommand(NewScenCommand(provide))
 
 	err := rootCmd.Execute()
 	if err != nil {

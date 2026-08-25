@@ -1,0 +1,24 @@
+# Registry seed for `scen-check-unknown-id`.
+#
+# The run asks for E2E-999, which is not here. The filter refuses
+# rather than selecting nothing and reporting every check passed.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-25"
+  description: "One scenario the run never reaches"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong within 200 milliseconds
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping
+      then:
+        - the service answers pong

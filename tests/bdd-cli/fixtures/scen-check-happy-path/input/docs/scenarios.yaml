@@ -1,0 +1,27 @@
+# Registry seed for `scen-check-happy-path`.
+#
+# One scenario written to satisfy every one of the eight scen-check
+# prompts, so a single un-narrowed walk observes all eight passing: a
+# one-sentence `must` rule, all three step kinds, no forbidden qualifier
+# or action verb, observable behaviour, a measurable threshold, and an
+# outcome a reader decides without taste.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-25"
+  description: "One scenario that satisfies every scen-check prompt"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong within 200 milliseconds
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping request
+      then:
+        - the service returns the body "pong" within 200 milliseconds

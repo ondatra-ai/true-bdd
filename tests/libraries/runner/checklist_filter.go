@@ -117,7 +117,10 @@ func commandChecklistStem(cmd string) string {
 	words := make([]string, 0)
 
 	for _, field := range strings.Fields(cmd) {
-		if strings.HasPrefix(field, "-") || (field != "" && field[0] >= '0' && field[0] <= '9') {
+		// The command path is lowercase words; the first field that is
+		// not one is an argument. Testing the whole field, not its first
+		// byte: `scen check E2E-002` reads as a path word by that test.
+		if !isCommandWord(field) {
 			break
 		}
 
@@ -125,6 +128,22 @@ func commandChecklistStem(cmd string) string {
 	}
 
 	return strings.Join(words, "-")
+}
+
+// isCommandWord reports whether a cmd field is part of the command path
+// rather than a flag or an argument.
+func isCommandWord(field string) bool {
+	if field == "" {
+		return false
+	}
+
+	for _, r := range field {
+		if r < 'a' || r > 'z' {
+			return false
+		}
+	}
+
+	return true
 }
 
 // FilterChecklistFile loads a checklist YAML, keeps only the prompts

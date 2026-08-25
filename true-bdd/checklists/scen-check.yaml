@@ -1,0 +1,148 @@
+# Checklist for `true-bdd scen check [scenario-id...]`.
+#
+# One cell per (scenario, prompt): each prompt reads ONE registry entry
+# and rules on it alone. Derived from the `us-refine` acceptance-criteria
+# checklist, which asks the same questions of an AC before it is merged —
+# these are the eight of its twelve that still mean something applied to
+# a single scenario rather than to a story's whole AC set.
+#
+# The four that were dropped threshold over a set (AC count 3-7, at least
+# one happy path, at least two error scenarios, at least 80% convertible)
+# and have no reading here. Why that is deliberate rather than an
+# oversight: docs/adr/0001-scen-check-is-advisory-and-per-scenario.md.
+#
+# No prompt carries an `F:`. The command registers `--fix` and refuses it
+# at startup, because a fix loop over the registry is a different command
+# than an advisory read of it.
+
+version: "1.0"
+last_updated: "2026-08-25"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+
+      - Q: |
+          Decide whether this scenario's steps carry all three
+          Given/When/Then kinds. A violation is any of:
+          - no given step
+          - no when step
+          - no then step
+
+          Pass when the scenario has at least one step of each kind.
+          Fail when any kind is missing.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: missing <given|when|then> step"
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+
+      - Q: |
+          Decide whether this scenario's description contains a vague word
+          from the forbidden_qualifiers list in the product document
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when the description contains no forbidden qualifier.
+          Fail when it contains one or more.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: contains '<word>'[, '<word2>'...]"
+        rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
+        docs:
+          - product
+
+      - Q: |
+          Decide whether any of this scenario's steps contains a vague
+          word from the forbidden_qualifiers list in the product document
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+          Check the given, when and then steps.
+
+          Pass when no step contains a forbidden qualifier.
+          Fail when one or more steps contain them.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+        rationale: "A step definition binds to wording; a vague qualifier in it makes the binding a matter of taste."
+        docs:
+          - product
+
+      - Q: |
+          Decide whether any of this scenario's steps uses an action verb
+          from the forbidden_actions list in the product document.
+
+          Pass when no step uses a forbidden action verb.
+          Fail when one or more do.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: forbidden verb '<verb>' in <given|when|then>"
+        rationale: "A verb from that list names an intent rather than an interaction, and no step definition can be written against an intent."
+        docs:
+          - product
+
+      - Q: |
+          Decide whether this scenario describes observable behaviour
+          rather than implementation (endpoint created, database updated,
+          schema migrated, function called, struct added).
+
+          A command-line program's observable behaviour INCLUDES its exit
+          code, what it writes to stdout, the files it creates or changes,
+          and the subprocesses it spawns. "The engine spawned exactly 1
+          test runner" is behaviour, not implementation, because a person
+          can watch it happen from outside the program.
+
+          Pass when the scenario describes observable behaviour.
+          Fail when it describes implementation.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: implementation — '<quoted phrase>'"
+        rationale: "A scenario naming an internal detail is rewritten every time that detail is, and stops being a specification of anything."
+        docs:
+          - product
+
+      - Q: |
+          Decide whether this scenario includes at least one specific
+          measurable criterion — a status code, an exact message, a
+          timeout, an error code, a named field, a count.
+
+          Pass when at least one such criterion appears in the description
+          or in a step.
+          Fail when none does.
+
+          Context: emit one line.
+            - "<scenario id>: measurable — '<criterion>'"
+            - "<scenario id>: not measurable"
+        rationale: "A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose."
+
+      - Q: |
+          Decide whether this scenario has a binary pass/fail outcome —
+          whether a reviewer can decide pass or fail without subjective
+          judgement, with no ambiguity about what counts as correct.
+
+          Pass when the outcome is binary.
+          Fail when it is subjective.
+
+          Context: emit one line.
+            - "<scenario id>: binary"
+            - "<scenario id>: subjective — '<reason>'"
+        rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."

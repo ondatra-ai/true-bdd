@@ -1,0 +1,35 @@
+# Registry seed for `scen-check-validation-fails`.
+#
+# One scenario carrying a designed defect for every one of the eight
+# scen-check prompts, so a single un-narrowed walk observes all eight
+# failing. Which defect answers which prompt:
+#
+#   1 description is a gerund phrase with neither must nor should
+#   2 no given step
+#   3 "properly" in the description
+#   4 "correctly" in the when step
+#   5 "handles" — a forbidden action verb
+#   6 "updating the database schema" is implementation, not behaviour
+#   7 no measurable criterion anywhere
+#   8 "the response is helpful" cannot be decided without taste
+#
+# The walk reports every failure and the CLI still exits 0 — the command
+# is advisory, per docs/adr/0001-scen-check-is-advisory-and-per-scenario.md.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-25"
+  description: "One scenario that fails every scen-check prompt"
+
+scenarios:
+  E2E-001:
+    description: Handling the request properly and updating the database schema
+    service: mcp-service
+    path: tests/mcp/request_test.go
+    user_stories: []
+    merged_steps:
+      when:
+        - the client handles the request correctly
+      then:
+        - the response is helpful

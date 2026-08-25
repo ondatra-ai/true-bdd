@@ -1,0 +1,42 @@
+# Product document for the scen-check fixture host project.
+#
+# Four of the eight scen-check prompts declare `docs: [product]` and are
+# handed this file to read: the forbidden-qualifier and forbidden-action
+# vocabularies below are what those prompts rule against. Kept small on
+# purpose — a fixture host declares what its scenarios need and no more.
+#
+# runner.validateRequiredDocs resolves every declared document before the
+# walk, so a tree missing this file refuses with "checklist documents
+# unsatisfiable" instead of reaching the behaviour its scenario pins.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+vocabulary:
+  # Vague words that must not appear in a scenario description or step.
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - appropriate
+    - appropriately
+    - user-friendly
+    - fast
+    - quickly
+    - helpful
+
+  # Action verbs too abstract to automate: they hide the interaction
+  # mechanism.
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: returns, rejects, closes."
+    - name: "process"
+      reason: "Does not specify the mechanism or the visible outcome."
+      replacement: "Name the observable action: returns, rejects, closes."
+    - name: "parse"
+      reason: "Describes internal mechanics, not observable behaviour."
+      replacement: "Name what the caller sees: returns, rejects."

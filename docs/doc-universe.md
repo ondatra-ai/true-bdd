@@ -3,8 +3,8 @@
 > Interactive companion: [`doc-universe.html`](./doc-universe.html) — same content with a hoverable join map; open it in a browser.
 
 A host project hands TrueBDD five YAML documents under `docs/` plus an engine configuration
-directory. Five CLI commands walk them in order — each one reads some documents, validates
-against a checklist, and writes exactly one thing. Every arrow below is a real cross-reference
+directory. Six CLI commands walk them in order — each one reads some documents, validates
+against a checklist, and writes exactly one thing, except `scen check`, which writes nothing. Every arrow below is a real cross-reference
 you can grep for.
 
 ## The hierarchy
@@ -123,7 +123,8 @@ test suite says what running it actually means.
 
 The pipeline runs left to right through the map: each command consumes the previous command's
 output. Every command validates its subject against its own checklist, and with `--fix` drives a
-Claude-mediated loop until the walk is clean.
+Claude-mediated loop until the walk is clean — except `scen check`, which refuses `--fix` at
+startup because no prompt in its checklist carries a fix template.
 
 | Command | Reads | Checklist | Writes |
 | --- | --- | --- | --- |
@@ -132,6 +133,7 @@ Claude-mediated loop until the walk is clean.
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:` | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` (the dev compose stack, when declared, backs the run) | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
+| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself | scen-check.yaml | **nothing**. Advisory: findings are reported and the CLI exits 0, so it cannot gate a commit |
 
 ## Every cross-reference, with real values
 
@@ -161,4 +163,4 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-23.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-25.*

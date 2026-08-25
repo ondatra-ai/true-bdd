@@ -56,28 +56,30 @@ func NewScenarioApplyData(
 // FormatSteps renders the AC's Given / When / Then for display in the
 // apply prompt templates.
 func (d *ScenarioApplyData) FormatSteps() string {
+	return formatMergedSteps(d.Steps)
+}
+
+// formatMergedSteps renders a Given / When / Then block, omitting any
+// kind the subject has none of. Shared by every subject type whose
+// templates display steps.
+func formatMergedSteps(steps MergedSteps) string {
 	var result strings.Builder
 
-	if len(d.Steps.Given) > 0 {
-		result.WriteString("Given:\n")
-
-		for _, step := range d.Steps.Given {
-			fmt.Fprintf(&result, "  - %s\n", step)
+	for _, block := range []struct {
+		label string
+		lines []string
+	}{
+		{"Given", steps.Given},
+		{"When", steps.When},
+		{"Then", steps.Then},
+	} {
+		if len(block.lines) == 0 {
+			continue
 		}
-	}
 
-	if len(d.Steps.When) > 0 {
-		result.WriteString("When:\n")
+		result.WriteString(block.label + ":\n")
 
-		for _, step := range d.Steps.When {
-			fmt.Fprintf(&result, "  - %s\n", step)
-		}
-	}
-
-	if len(d.Steps.Then) > 0 {
-		result.WriteString("Then:\n")
-
-		for _, step := range d.Steps.Then {
+		for _, step := range block.lines {
 			fmt.Fprintf(&result, "  - %s\n", step)
 		}
 	}

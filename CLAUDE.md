@@ -98,14 +98,16 @@ the rule directly:
 
 ## CLI Subcommands
 
-`us create/refine/apply <id>`, `build tests`, `build code` — see
-`README.md` and `--help`.
+`us create/refine/apply <id>`, `build tests`, `build code`,
+`scen check [id...]` — see `README.md` and `--help`.
 
 **`--fix` refuses to start when any walked prompt lacks an `F:` template**
 (`runner.validateFixTemplates`). Consequence: `us create --fix` and
 `us refine --fix` refuse against the shipped checklists today (E2E-029
 pins the refusal); the `us-refine-fix-*` fixtures pass only because
-`checklist-prompts.yaml` narrows the walk to F-carrying prompts.
+`checklist-prompts.yaml` narrows the walk to F-carrying prompts, and
+`scen check --fix` refuses always (E2E-293) — `scen-check` ships no
+`F:` at all.
 
 ## Development Commands
 
