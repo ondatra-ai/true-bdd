@@ -389,3 +389,27 @@ func TestLoadFixtureRejectsEmptyFilterDeclaration(t *testing.T) {
 		}
 	}
 }
+
+// TestCommandChecklistStemStopsAtTheFirstArgument pins the boundary
+// between the command path and what follows it: a story number, a
+// scenario id and a flag are all arguments, and none names a checklist.
+func TestCommandChecklistStemStopsAtTheFirstArgument(t *testing.T) {
+	t.Parallel()
+
+	const scenCheck = "scen-check"
+
+	for cmd, want := range map[string]string{
+		"us create 99.1":             "us-create",
+		"us apply 95.1 --fix":        "us-apply",
+		"build tests --fix":          "build-tests",
+		"scen check":                 scenCheck,
+		"scen check --fix":           scenCheck,
+		"scen check E2E-002 E2E-001": scenCheck,
+		"scen check e2e-002":         scenCheck,
+		"scen check subcmd":          "scen-check-subcmd",
+	} {
+		if got := commandChecklistStem(cmd); got != want {
+			t.Errorf("commandChecklistStem(%q) = %q, want %q", cmd, got, want)
+		}
+	}
+}

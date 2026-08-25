@@ -39,6 +39,7 @@ func declaredSelections() map[string]declaredSelection {
 		"us-refine-fix-step-qualifier": {Stem: usRefineStem, QShort: "7cfe4b20", RequireF: true},
 		"us-refine-fix-forbidden-verb": {Stem: usRefineStem, QShort: "bb57188d", RequireF: true},
 		"us-apply-rewalk-converges":    {Stem: "us-apply", QShort: "6da54561", RequireF: true},
+		"scen-check-id-filter":         {Stem: "scen-check", QShort: "30469152", RequireF: false},
 	}
 }
 

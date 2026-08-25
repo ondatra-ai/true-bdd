@@ -1,0 +1,14 @@
+# Registry seed for `scen-check-empty-registry`.
+#
+# Parses, is configured, and has an empty `scenarios:` map — the state a
+# host is in before its first `us apply`. `scen check` loads through
+# registry.RegistryLoader, so it inherits that loader's refusal rather
+# than walking zero items to a trivial success.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-25"
+  description: "Empty seed — nothing has been applied yet"
+
+scenarios: {}

@@ -281,9 +281,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <h1>The <span class="grad">document universe</span></h1>
     <p class="lede">
       A host project hands TrueBDD five YAML documents under <code>docs/</code> plus an engine
-      configuration directory. Five CLI commands walk them in order — each one reads some documents,
-      validates against a checklist, and writes exactly one thing. Every arrow below is a real
-      cross-reference you can grep for.
+      configuration directory. Six CLI commands walk them in order — each one reads some documents,
+      validates against a checklist, and writes exactly one thing, except <code>scen check</code>,
+      which writes nothing. Every arrow below is a real cross-reference you can grep for.
     </p>
   </div>
 </header>
@@ -533,7 +533,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <h2>Who reads what, who writes what</h2>
     <p class="sub">The pipeline runs left to right through the map: each command consumes the previous
     command's output. Every command validates its subject against its own checklist, and with
-    <code>--fix</code> drives a Claude-mediated loop until the walk is clean.</p>
+    <code>--fix</code> drives a Claude-mediated loop until the walk is clean — except
+    <code>scen check</code>, which refuses <code>--fix</code> at startup because no prompt in its
+    checklist carries a fix template.</p>
     <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
       <table>
         <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
@@ -567,6 +569,12 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td>every <strong>suite</strong> under <code>architecture.testing.suites[]</code>; discovers failing tests by running the suite's own declared <code>commands.replay</code> (the dev compose stack, when declared, backs the run)</td>
             <td><span class="cl">build-code.yaml</span></td>
             <td>with <code>--fix</code>: <strong>production source</strong> under the declared service paths only — tests and registry are never touched</td>
+          </tr>
+          <tr>
+            <td><span class="cmd">scen check [id...]</span></td>
+            <td>one <strong>registry scenario</strong> at a time — its own description, <code>service:</code>, <code>path:</code>, lineage and steps, and never the registry file itself</td>
+            <td><span class="cl">scen-check.yaml</span></td>
+            <td><strong>nothing</strong>. Advisory: findings are reported and the CLI exits 0, so it cannot gate a commit</td>
           </tr>
         </tbody>
       </table>
@@ -626,7 +634,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-23 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-25 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>

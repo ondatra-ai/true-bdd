@@ -5218,6 +5218,118 @@ scenarios:
         - and: the relay's audit holds the CLI's receipt for the same work, revision and hash
         - and: the remote spawned at most 3 AI calls
 
+  E2E-291:
+    description: A registry scenario that satisfies every walked prompt must pass the walk and report success
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-happy-path" project tree
+      when:
+        - the System Architect runs "scen check"
+      then:
+        - the command exits with code 0
+        - stdout matches SCEN CHECK
+        - and: stdout matches ALL CHECKS PASSED!
+        - and: stdout matches SCEN CHECK COMPLETE
+        - and: the engine dispatched 8 AI turns
+        - and: no file outside "tmp" changed
+
+  E2E-292:
+    description: A registry scenario that fails a walked prompt must be reported as failed and still exit 0, because the command is advisory
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-validation-fails" project tree
+      when:
+        - the System Architect runs "scen check"
+      then:
+        - the command exits with code 0
+        - stdout matches SCEN CHECK
+        - and: stdout matches Validation failed
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the engine dispatched 8 AI turns
+        - and: no file outside "tmp" changed
+
+  E2E-293:
+    description: A --fix run must be refused before the walk, because the scen-check checklist ships no fix template for any prompt
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-fix-refused" project tree
+      when:
+        - the System Architect runs "scen check --fix"
+      then:
+        - the command exits with code 1
+        - 'stdout matches Cannot start: checklist has prompts with no F fix template'
+        - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  E2E-294:
+    description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-unknown-id" project tree
+      when:
+        - the System Architect runs "scen check E2E-999"
+      then:
+        - the command exits with code 1
+        - stdout matches SCEN CHECK
+        - and: 'stdout matches Cannot start: .*no scenario in the registry has id E2E-999'
+        - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  E2E-295:
+    description: A registry that parses but holds no scenarios must be refused, so the walk never reports success over nothing
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-empty-registry" project tree
+      when:
+        - the System Architect runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches SCEN CHECK
+        - and: 'stdout matches Cannot start: .*requirements registry has no scenarios to walk'
+        - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  E2E-296:
+    description: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-id-filter" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+        - the System Architect runs "scen check E2E-002 E2E-001"
+      then:
+        - the command exits with code 0
+        - stdout matches SCEN CHECK
+        - and: stdout matches ALL CHECKS PASSED!
+        - and: the engine dispatched 2 AI turns
+        - but: stdout does not match E2E-003
+        - and: no file outside "tmp" changed
+
   E2E-297:
     description: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
     service: bdd-cli
