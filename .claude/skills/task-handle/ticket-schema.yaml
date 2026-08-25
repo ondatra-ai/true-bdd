@@ -1,6 +1,6 @@
 # Definition of ready for a ClickUp Ticket an agent may take unattended.
 #
-# Read by handle-loop when it grooms a Ticket, and by anything that files one
+# Read by task-handle when it grooms a Ticket, and by anything that files one
 # (scripts/clickup, the pr-merge triage). It lives here rather than under
 # true-bdd/ for two reasons: lint-schemas.sh FAILS any true-bdd/*-schema.yaml
 # whose key names no documents.<key>, and a Ticket has no document file to
@@ -58,7 +58,7 @@ fields:
     required: true
     purpose: >-
       "formally ready for automation", not "looks easy". Set by hand today.
-      Unchecking it is how handle-loop removes a Ticket from the queue without
+      Unchecking it is how task-handle removes a Ticket from the queue without
       touching its status.
 
 # The description, rendered by scripts/clickup and read cold by whoever takes
@@ -73,15 +73,3 @@ body:
       holds: a command that can be run — this is what decides DONE
     - name: "### Context"
       holds: what a person who was not in the originating conversation needs
-
-# What grooming can repair, and what it cannot.
-grooming:
-  derivable:
-    - Expected Changes, from Scope and the What to change heading
-    - Scope, from the paths the Ticket names
-    - Triage Score, from the finding's severity
-    - Context, from the code and the commit history
-  not_derivable:
-    - A Verification command for a Ticket that describes no observable
-      outcome. Nothing can judge such a Ticket done, so comment what is
-      missing, uncheck Good For Agent, and leave it in TO DO.

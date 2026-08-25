@@ -5,7 +5,7 @@
 //
 //	.claude/skills/pr-commit/gates.sh — runs them. Bare, it runs every gate;
 //	    with --changed <base> it runs only those the diff needs, which is what
-//	    handle-loop uses to spend ~2s on a documentation ticket instead of
+//	    task-handle uses to spend ~2s on a documentation ticket instead of
 //	    ~140s. Selection is LOCAL ONLY.
 //	.github/workflows/ci.yml — runs every gate, always. Narrowing CI would
 //	    buy nothing the loop cares about and would delete the backstop that

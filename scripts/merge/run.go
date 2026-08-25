@@ -85,7 +85,7 @@ type Run struct {
 	pr        int
 	startedAt string
 
-	// floors is chosen once, from whether handle-loop stamped a mandate for
+	// floors is chosen once, from whether task-handle stamped a mandate for
 	// the Ticket that is bound right now.
 	floors Floors
 

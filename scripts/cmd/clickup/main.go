@@ -1,7 +1,7 @@
 // Command clickup files deferred findings as ClickUp tasks.
 //
 // It is the single ClickUp interface: the merge loop calls the package and
-// handle-loop's grooming reads it back, and both get the same
+// task-handle's grooming reads it back, and both get the same
 // four-heading ticket shape.
 //
 //	clickup render --queue tmp/merge/defer-queue.json --tag fix-now --pr 76

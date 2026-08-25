@@ -82,7 +82,7 @@ and meaning intact are **not** inconsistencies — do not flag them.
    any content present or stated differently in only one is an
    inconsistency.
 7. **Ask about every inconsistency** — unless invoked with the argument
-   `auto`, which is what `handle-loop` passes: under a mandate there is
+   `auto`, which is what `task-handle` passes: under a mandate there is
    nobody to ask, so resolve each one by the fixed rule in **Unattended
    mode** below instead, and list every resolution in step 9.
 
@@ -110,7 +110,7 @@ and meaning intact are **not** inconsistencies — do not flag them.
 ## Unattended mode (`auto`)
 
 Invoked with the argument `auto`, resolve every inconsistency by these rules
-and ask nothing. `handle-loop` passes it; a person never should.
+and ask nothing. `task-handle` passes it; a person never should.
 
 - **The document is truth → the universe is updated.** The universe
   *describes*; the ticket being worked just changed the thing described.

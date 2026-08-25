@@ -17,13 +17,14 @@ a **Ticket** is the ClickUp unit; a **Task** is the session unit, one history
 file under `docs/history/`. `/task-start` starts a Task and binds a Ticket to
 it. One Task, one Ticket, one branch, one PR.
 
-The whole design is one split: **the `/task-*` family owns state, `handle-loop`
-owns the work.** Everything else follows from it.
+The whole design is one split: **the `/task-*` family owns state, `task-handle`
+owns the work, `task-loop` owns only the queue.** Everything else follows.
 
 | Component | Owns | Does not |
 | --- | --- | --- |
-| a human | everything `handle-loop` owns, when driving by hand | — |
-| `handle-loop` | the queue; grooming a Ticket up to §4; the work; the scope check; gates; review; retries ≤5; **deciding** `DONE` vs `FAILED`; the mandate | touch session history; write a status itself |
+| a human | everything `task-loop` and `task-handle` own, when driving by hand | — |
+| `task-loop` | the queue: the predicate, the ordering, iteration, the tally | anything inside one Ticket |
+| `task-handle` | one Ticket end to end — grooming to §4, the work, the scope check, gates, review, retries ≤5, **deciding** `DONE` vs `FAILED`, the mandate | touch session history; write a status itself |
 | `/task-start` | rolling session history; the Ticket's existence (id given — verify; none — interview and create); the binding; `TO DO → PROCESSING` | groom, branch, work, or check anything about the previous Task |
 | `/task-done` | `PROCESSING → DONE`; clearing the binding | decide whether the work deserves it |
 | `/task-fail` | `PROCESSING → FAILED` plus the reason as a comment; clearing the binding | decide whether the work deserves it |
@@ -34,7 +35,7 @@ Two of those cells are already true of the code and were briefly mistaken for
 new requirements. `commit.sh` cuts the branch itself when it finds the
 checkout on `main`, naming it from the staged diff via `claude -p`; and the
 merge ends in `git checkout main` (`scripts/merge/land.go`). Neither belongs
-to `handle-loop` and neither needs writing.
+to `task-handle` and neither needs writing.
 
 **The modes are binary.** Either the loop runs and drives every step, or a
 human drives every step. There is no half-attended mode in which a person
@@ -45,7 +46,7 @@ hands *one finished ticket* to a human to merge, and the loop carries on.
 Each of the three is one deterministic transition. Whether a Ticket is worth
 taking, whether the work is good enough to merge, whether the previous Task is
 finished, whether the tree is clean — none of that is theirs. It belongs to
-whoever chose to call them, which is `handle-loop` or a human. Splitting it
+whoever chose to call them, which is `task-handle` or a human. Splitting it
 that way is what makes the manual path identical to the automatic one: the
 same three transitions, typed instead of invoked.
 
@@ -56,7 +57,8 @@ design around: the instance *is* the mutex.
 
 ```text
 mandate granted
-  └─ handle-loop ──────► take the top-scoring ready Ticket
+  └─ task-loop ────────► take the top-scoring ready Ticket
+     └─ task-handle <id>
        ├─ groom it to §4, or refuse it and take the next
        ├─ /task-start <id> ─► history rolled, Ticket bound, TO DO → PROCESSING
        ├─ do the work
@@ -69,7 +71,7 @@ mandate granted
                           the loop continues with the next Ticket
 ```
 
-`handle-loop` iterates; `/task-start` hands off to nothing. The first draft
+`task-loop` iterates; `/task-start` hands off to nothing. The first draft
 had the recursion the other way round — the merge calling `/new-task` as its
 second-to-last step to pass the baton — and that is gone. The baton belongs to
 the component that owns the queue, and a merge that starts the next ticket
@@ -125,8 +127,8 @@ one, `${CLAUDE_*}` does not carry it. **Keying on the bound Ticket does the
 same job better.** `mandate.Active` honours the file only while
 `docs/history/bound-ticket` names the same Ticket, and `/task-done` and
 `/task-fail` clear that binding — so the mandate is live for exactly the
-window `handle-loop` merges in, and a file left by a dead run matches nothing.
-`handle-loop` re-stamps at every Ticket.
+window `task-handle` merges in, and a file left by a dead run matches nothing.
+`task-handle` re-stamps at every Ticket.
 
 One consequence to expect rather than debug: a `FAILED` Ticket leaves
 `mandate.json` on disk, inert, until the next stamp overwrites it. Cancellation
@@ -160,7 +162,7 @@ no `verification` field and there should not be: the body already has a
 `### Verification` heading, and two homes for one fact is how they diverge.
 
 Readiness itself is defined by
-`.claude/skills/handle-loop/ticket-schema.yaml`. An earlier draft put it at
+`.claude/skills/task-handle/ticket-schema.yaml`. An earlier draft put it at
 `true-bdd/ticket-schema.yaml` on the grounds that `lint-schemas.sh` already
 validates that convention — which is exactly backwards: that script **fails**
 any `true-bdd/*-schema.yaml` whose key names no `documents.<key>`, and a
@@ -177,7 +179,7 @@ being wrong rises:
 - **before taking** — refuse, comment what is missing, do not enter
   `PROCESSING`.
 
-**Before taking** is `handle-loop`'s, or the human's when driving by hand.
+**Before taking** is `task-handle`'s, or the human's when driving by hand.
 Called with an id, `/task-start` re-runs none of it — the Ticket is already
 ready, and a refusal from it would be a second opinion nobody asked for.
 
@@ -319,7 +321,7 @@ each inconsistency by a fixed rule:
 - a `lint-schemas.sh` failure is not an inconsistency to resolve at all. It is
   a red gate, and it already fails `gates.sh`.
 
-Enforcement is not left to good intentions. `handle-loop` declares
+Enforcement is not left to good intentions. Both loop skills declare
 `disallowed-tools: AskUserQuestion`, which the skills documentation names for
 precisely this case — "autonomous skills that should never call certain tools,
 such as `AskUserQuestion` for a background loop".
@@ -364,7 +366,7 @@ the possibility of closing a Ticket nobody worked on. Both clear the binding,
 which is what makes its lifetime exactly `[/task-start, /task-done|/task-fail]`
 and therefore exactly `PROCESSING`.
 
-Splitting the two terminal transitions out of `handle-loop` costs nothing and
+Splitting the two terminal transitions out of `task-handle` costs nothing and
 buys the thing §1 is built on: the manual path and the automatic path perform
 the *same three writes*, so a human picking up an abandoned run (§10) closes
 the Ticket the same way the loop would have.
@@ -467,12 +469,12 @@ to retake".
   else, in either mode. `FAILED → TO DO` and `COMPLETED` stay human moves in
   the ClickUp UI; no skill writes them.
 - The branch and the return to `main` are already implemented, in `commit.sh`
-  and `scripts/merge/land.go`. They are not `handle-loop`'s to build.
-- `fix-queue` is deleted rather than converged with `handle-loop`, and the
+  and `scripts/merge/land.go`. They are not `task-handle`'s to build.
+- `fix-queue` is deleted rather than converged with `task-loop`, and the
   `CLAUDE.md` line naming it goes with it.
-- Invoking `handle-loop` *is* the mandate. The file in §3 exists only so
+- Invoking `task-handle` *is* the mandate. The file in §3 exists only so
   `scripts/merge`, which cannot see a skill invocation, can read it.
-- `handle-loop` runs with `disallowed-tools: AskUserQuestion`, and a point
+- `task-loop` and `task-handle` run with `disallowed-tools: AskUserQuestion`, and a point
   where it would have had to ask is a decline, not a stall. The frontmatter is
   best-effort only: the restriction lapses on the user's next message, which
   is the cancellation case itself — so the rule lives in the prose and the

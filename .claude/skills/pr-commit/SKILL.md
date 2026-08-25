@@ -5,13 +5,13 @@ description: Run quality gates, commit and push, and update the PR. Use when the
 
 # PR Commit
 
-Invoked with the argument `auto` (only `handle-loop` does), step 3 runs
+Invoked with the argument `auto` (only `task-handle` does), step 3 runs
 non-interactively — everything else is unchanged. Without it, ask as usual.
 A trailing `--changed <base>` is passed straight through to step 1.
 
 1. Run `./.claude/skills/pr-commit/gates.sh [--changed <base>]`. Bare it
    runs every gate; `--changed main` runs only the ones the diff needs,
-   which is what `handle-loop` passes. The pipeline itself is data in
+   which is what `task-handle` passes. The pipeline itself is data in
    `scripts/gates` — read that package's doc comment before changing it.
 2. Run `./.claude/skills/pr-commit/scan-recordings.sh` — a deterministic
    sweep of the fixture recordings for home paths, session inventory,

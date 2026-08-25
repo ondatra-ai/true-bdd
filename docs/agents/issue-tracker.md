@@ -9,7 +9,7 @@ user to run `/setup-matt-pocock-skills` when it does not.
 
 **ClickUp is where work is planned.** List `901523097822` holds every Ticket:
 what to change, why, how to verify it, and the fields
-`.claude/skills/handle-loop/ticket-schema.yaml` requires of anything an agent
+`.claude/skills/task-handle/ticket-schema.yaml` requires of anything an agent
 may take unattended. A Ticket is the **spec** — when a review asks "what did
 this change set out to do", the answer is a Ticket body.
 
@@ -27,12 +27,12 @@ but the backlog does not live there. A bare `#42` in a commit message is a
 | a branch name | `gh pr list --head <branch> --json number,title,body` |
 | nothing at all | the spec was passed as an argument, or there is none — see below |
 
-The PR body is the bridge: `pr-update` and `handle-loop` both put the ClickUp
+The PR body is the bridge: `pr-update` and `task-handle` both put the ClickUp
 URL there, so a PR resolves to its Ticket without guessing.
 
 ## When a skill is run unattended
 
-`handle-loop` passes the fixed point (`main`) and the spec (the Ticket body)
+`task-handle` passes the fixed point (`main`) and the spec (the Ticket body)
 to `code-review` as arguments, precisely so neither lookup above is reached
 and neither of that skill's two "ask the user" branches can fire. If you are
 reading this during an automatic run and still do not have a spec, that is a

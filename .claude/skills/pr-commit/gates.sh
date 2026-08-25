@@ -9,7 +9,7 @@
 #
 # Bare, this runs every gate; that is what CI and every human commit do.
 # `--changed main` narrows it to the gates the diff needs, which is how
-# handle-loop spends ~2s on a documentation ticket instead of ~140s. Selection
+# task-handle spends ~2s on a documentation ticket instead of ~140s. Selection
 # is LOCAL ONLY: CI stays exhaustive, so whatever the selector skips is still
 # caught before the merge.
 set -euo pipefail

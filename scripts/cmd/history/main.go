@@ -107,7 +107,7 @@ func run(args []string) error {
 }
 
 // binding runs the Ticket-binding and mandate verbs the /task-* skills and
-// handle-loop call. An unrecognised argument is silence, as it was in Python:
+// task-handle call. An unrecognised argument is silence, as it was in Python:
 // this is wired into the harness, and failing loudly fails on every prompt.
 func binding(hook *history.Hook, args []string) error {
 	switch args[0] {

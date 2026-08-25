@@ -184,9 +184,9 @@ Brevity is not omission — report failures and skipped work plainly.
 
 - **`./start.sh` starts a session** — it exports `.env` before launching
   `claude`; a key sourced mid-session never reaches the skill scripts.
-- Commit → `pr-commit`; merge → `pr-merge`; a ClickUp Ticket end to end →
-  `handle-loop`; only `/task-{start,done,fail}` write a Ticket's status.
-  Read `scripts/merge`'s doc comments before editing it: PRs #70/#76/#77.
+- Commit → `pr-commit`; merge → `pr-merge`; one Ticket end to end →
+  `task-handle`, the whole queue → `task-loop`; only `/task-{start,done,fail}`
+  write a status. `scripts/merge`'s doc comments: PRs #70/#76/#77.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
   Claude Code's built-in skill of that name.

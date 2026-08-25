@@ -20,7 +20,7 @@
 //
 // The command is the single ClickUp interface for anything running OUTSIDE a
 // Claude session, which has no MCP server to inherit. The /task-* skills and
-// handle-loop run inside one and call MCP directly:
+// task-handle run inside one and call MCP directly:
 //
 //	clickup render --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
 //	clickup file   --queue tmp/merge/defer-queue.json --tag fix-now --pr 76

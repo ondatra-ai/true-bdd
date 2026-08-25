@@ -1,4 +1,4 @@
-// Package mandate records that a run is being driven by handle-loop, so a
+// Package mandate records that a run is being driven by task-handle, so a
 // separate process — scripts/merge — can tell an unattended merge from a
 // human one and apply the right triage floors.
 //
@@ -12,7 +12,7 @@
 // Because nothing prunes it, a mandate left by a dead session would otherwise
 // sit there authorising merges forever. So it carries the Ticket it was
 // stamped for, and Active honours it only while that same Ticket is still
-// bound — which is the exact window handle-loop merges in. handle-loop
+// bound — which is the exact window task-handle merges in. task-handle
 // re-stamps at every Ticket; a stale file can never match.
 package mandate
 
