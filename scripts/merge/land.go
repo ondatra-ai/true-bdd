@@ -21,6 +21,7 @@ func (r *Run) merge() {
 	r.assertHeadWasReviewed()
 	r.waitForChecks()
 	r.approve()
+	r.waitForMergeable()
 	r.land()
 	r.returnToTrunk(current)
 }
@@ -196,6 +197,68 @@ func (r *Run) pendingChecks(checks []requiredCheck) []string {
 // squashArgs is the merge command.
 func (r *Run) squashArgs() []string {
 	return []string{ghBin, "pr", "merge", strconv.Itoa(r.pr), "--squash", "--delete-branch"}
+}
+
+// waitForMergeable holds until GitHub itself calls the PR mergeable. It runs
+// AFTER approve() on purpose: BLOCKED is ambiguous while the approval is
+// missing, and means only the checks once it is in hand.
+func (r *Run) waitForMergeable() {
+	r.logf("waiting for GitHub to call #%d mergeable", r.pr)
+
+	for waited := time.Duration(0); ; waited += poll {
+		state := strings.TrimSpace(r.gh("pr", "view", strconv.Itoa(r.pr),
+			"--json", "mergeStateStatus", "--jq", ".mergeStateStatus"))
+
+		if r.mergeableNow(state) {
+			r.logf("%s after %s", state, waited)
+
+			return
+		}
+
+		if waited >= checksBudget {
+			r.dief("GitHub still reports #%d as %s after %s. Nothing was merged and the\n"+
+				"  branch is intact.\n  %s", r.pr, state, checksBudget, r.checkSummary())
+		}
+
+		r.logf("%s — waiting", state)
+		time.Sleep(poll)
+	}
+}
+
+// mergeableNow reads MergeStateStatus. UNSTABLE merges: the failing checks it
+// names are the ones the ruleset does not require. UNKNOWN is not an answer —
+// mergeability is computed by a job this very query starts.
+func (r *Run) mergeableNow(state string) bool {
+	switch state {
+	case "CLEAN", "UNSTABLE", "HAS_HOOKS":
+		return true
+	case "BLOCKED", "UNKNOWN":
+		return false
+	default:
+		r.dief("GitHub reports #%d as %s — nothing was merged and the branch is intact.\n"+
+			"  BEHIND wants main merged in, DIRTY a conflict resolved, DRAFT the PR\n"+
+			"  marked ready.", r.pr, state)
+
+		return false
+	}
+}
+
+// checkSummary says where the required checks stand, because MergeStateStatus
+// reports that a merge is blocked without ever saying by what — on #97 the
+// required `gates` run took 4m24s to register, and until then was absent.
+func (r *Run) checkSummary() string {
+	checks := r.requiredChecks()
+	if len(checks) == 0 {
+		return "No required check has reported yet."
+	}
+
+	seen := make([]string, 0, len(checks))
+	for _, check := range checks {
+		seen = append(seen, check.Name+"="+check.State)
+	}
+
+	return "Reporting: " + strings.Join(seen, ", ") +
+		". A required check absent from that list has not registered yet."
 }
 
 // land squashes, or stops. The admin bypass is gone: it fired on a pending
