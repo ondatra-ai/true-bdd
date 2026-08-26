@@ -1,5 +1,6 @@
-Below is the transcript of a pull-request merge run, extracted from this
-session's history: every headless turn the merge script made, in order.
+Below are two records of one pull-request merge run: the phase timings the
+run measured, and the transcript extracted from this session's history —
+every headless turn the merge script made, in order.
 
 Diagnose the RUN, not the code it was merging. What to look for:
   - A round whose findings existed only because an earlier round's fix
@@ -7,12 +8,17 @@ Diagnose the RUN, not the code it was merging. What to look for:
   - Review quota spent on anything that bought nothing.
   - A wait that was longer than it needed to be, or a stop that was not
     diagnosed well enough to act on.
+  - A phase in the timing table below that took over five minutes and
+    changed nothing, or a round whose phases add up to more than the
+    findings it disposed of were worth. Quote the seconds.
   - A prompt that got an answer the script then had to work around.
 
 Propose improvements to EXACTLY these files, and no others:
   scripts/merge/
   scripts/clickup/
+  scripts/cmd/postmortem/
   .claude/skills/pr-merge/SKILL.md
+  .claude/skills/postmortem/SKILL.md
 
 Read them before proposing anything — a proposal that misreads the current
 code is worse than none. You have read-only tools; do not attempt to edit.
@@ -26,6 +32,10 @@ Return ONLY a JSON array, no prose and no code fence:
   "severity": "postmortem",
   "source": "postmortem",
   "body": "<markdown: what the transcript shows, with numbers; then the concrete change>"}]
+
+--- BEGIN TIMINGS ---
+{timings}
+--- END TIMINGS ---
 
 --- BEGIN TRANSCRIPT ---
 {transcript}

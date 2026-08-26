@@ -17,7 +17,12 @@
 set -uo pipefail
 
 ROOT=$(git rev-parse --show-toplevel) || exit 1
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
+
+# Written on both exits, and this script has two.
+START=$(date +%s)
+trap '"$HERE/timings.sh" add scan-recordings "$(($(date +%s) - START))" || true' EXIT
 
 RECORDINGS='tests/bdd-cli/fixtures/*/cassettes'
 FOUND=0

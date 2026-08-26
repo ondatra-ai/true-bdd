@@ -1,6 +1,11 @@
 # Scaffolding observability — spec
 
-**Status**: design agreed 2026-08-21, not started.
+**Status**: design agreed 2026-08-21. **Durations are done, locally**: every
+gate of `gates.sh`, every step of `pr-commit` (`tmp/timings.tsv`) and every
+phase of the merge loop (`tmp/merge/timings.json`) is timed, printed as a table
+and handed to the postmortem, using the §6 span names. Everything else is still
+design — no OTel SDK, no `otel-cli`, no OTLP, no store, no UI, and none of the
+§5 identity levels.
 **Kind**: internal experiment for this repository only. Not a TrueBDD product
 feature, so it owes no registry scenarios and no `services/` entry.
 

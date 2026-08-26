@@ -92,6 +92,20 @@ type Run struct {
 	// the tiebreaker reviewedSHA's body_len test can't provide on its own
 	// (see reviewedSHA), recorded live since post-approve the two look identical.
 	reviewedThisRun map[string]bool
+
+	// timings is the phase clock. A pointer: the run appends to it, and the
+	// standalone postmortem leaves it nil because it has no phases to time.
+	timings *timeline
+}
+
+// floorsNow is the triage row this run gets, read from whether task-handle's
+// mandate for the bound Ticket is live.
+func floorsNow() Floors {
+	if mandate.Active(".") {
+		return automatic
+	}
+
+	return manual
 }
 
 // Start answers where we are, and whether this can be merged at all —
@@ -116,9 +130,10 @@ func Start(args []string) *Run {
 
 	requireTools()
 
-	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
-	if mandate.Active(".") {
-		run.floors = automatic
+	run := &Run{
+		reviewedThisRun: map[string]bool{},
+		floors:          floorsNow(),
+		timings:         newTimeline(readLedger(ledgerPath)),
 	}
 
 	branch := run.currentBranch()
@@ -142,26 +157,57 @@ func Start(args []string) *Run {
 // Main is the whole loop.
 func (r *Run) Main() {
 	for round := 1; round <= lastRound; round++ {
-		r.requestReview(round)
-
-		issues := r.triage(r.readComments(), round)
-		toFix, toCreate, toIgnore := r.split(issues, round)
-
-		fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
-		r.resolveConversations(fixed, created, ignored)
-
-		// Empty toFix: HEAD won't move, so the next round reviews a byte-identical
-		// tree for a quarter of the quota (PR #77: all 3 rounds reviewed one commit).
-		// fix() refuses to return having changed no file, so a non-empty toFix always commits.
-		if len(toFix) == 0 {
+		if !r.round(round) {
 			break
 		}
-
-		r.commit()
 	}
 
+	stop := r.step("merge", 0)
 	r.merge()
-	r.postmortem()
+	stop("merged")
+
+	r.runPostmortem()
+	r.reportTimings()
+}
+
+// round is one review round, timed phase by phase. False ends the loop.
+func (r *Run) round(round int) bool {
+	stop := r.step("request_review", round)
+	r.requestReview(round)
+	stop("requested")
+
+	stop = r.step("read_comments", round)
+	findings := r.readComments()
+	stop(fmt.Sprintf("%d findings", len(findings)))
+
+	stop = r.step("triage_comments", round)
+	issues := r.triage(findings, round)
+	stop(fmt.Sprintf("%d scored", len(issues)))
+
+	stop = r.step("split", round)
+	toFix, toCreate, toIgnore := r.split(issues, round)
+	stop(fmt.Sprintf("%d fix, %d ticket, %d ignore", len(toFix), len(toCreate), len(toIgnore)))
+
+	stop = r.step("dispose", round)
+	fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
+	stop(fmt.Sprintf("%d fixed, %d created, %d ignored", len(fixed), len(created), len(ignored)))
+
+	stop = r.step("resolve_conversations", round)
+	r.resolveConversations(fixed, created, ignored)
+	stop("resolved")
+
+	// HEAD won't move, so the next round reviews a byte-identical tree for a
+	// quarter of the quota (PR #77: all 3 rounds reviewed one commit). fix()
+	// refuses to change no file, so a non-empty toFix always commits.
+	if len(toFix) == 0 {
+		return false
+	}
+
+	stop = r.step("commit", round)
+	r.commit()
+	stop("committed")
+
+	return true
 }
 
 func (r *Run) currentBranch() string {
@@ -217,8 +263,11 @@ func (r *Run) banner(message string) {
 	_, _ = fmt.Fprintf(os.Stdout, "\n══ %s ══\n", message)
 }
 
-// die stops the run with a diagnosis. Nothing here is swallowed.
+// die stops the run with a diagnosis. Nothing here is swallowed. The timing
+// record is written first: a run that stopped is one worth reading back, and
+// the standalone postmortem has no other way to see how long it got.
 func (r *Run) dief(format string, args ...any) {
+	r.persistTimings()
 	fmt.Fprintf(os.Stderr, "\nSTOPPED: "+format+"\n", args...)
 	os.Exit(1)
 }

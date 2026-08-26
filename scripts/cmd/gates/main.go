@@ -69,7 +69,10 @@ func runGates(args []string) error {
 			len(selected), len(gates.All), len(changed), *base)
 	}
 
-	err = gates.Run(os.Stdout, selected)
+	timings, err := gates.Run(os.Stdout, selected)
+
+	gates.RenderSummary(os.Stdout, gates.All, selected, timings)
+
 	if err != nil {
 		return fmt.Errorf("running the pipeline: %w", err)
 	}

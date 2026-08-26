@@ -11,3 +11,9 @@ Call in command in background and create monitor that publish status every 1 min
 ```bash
 go run ./scripts/cmd/merge
 ```
+
+The run ends with a per-phase timing table and writes it to
+`tmp/merge/timings.json`. The postmortem is no longer part of merging: it runs
+here only when the run did not finish automatically, or the whole task took
+over 15 minutes, and otherwise prints that it skipped. Ask for one deliberately
+with the `postmortem` skill.

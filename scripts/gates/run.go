@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var errGateFailed = errors.New("gate failed")
@@ -61,19 +62,29 @@ func dedupe(paths []string) []string {
 }
 
 // Run executes each gate in order and stops at the first failure, the way
-// `set -e` did when this was a list of lines in a shell script.
-func Run(out io.Writer, selected []Gate) error {
+// `set -e` did when this was a list of lines in a shell script. Timings come
+// back even from a failed run: a red gate's duration is the one wanted most.
+func Run(out io.Writer, selected []Gate) ([]Timing, error) {
+	timings := make([]Timing, 0, len(selected))
+
 	for _, gate := range selected {
 		_, _ = fmt.Fprintf(out, "\n=== %s: %s\n", gate.Name, strings.Join(gate.Command, " "))
 
 		cmd := exec.CommandContext(context.Background(), gate.Command[0], gate.Command[1:]...)
 		cmd.Stdout, cmd.Stderr = out, os.Stderr
 
+		started := time.Now()
 		err := cmd.Run()
+		elapsed := time.Since(started)
+
+		timings = append(timings, Timing{Name: gate.Name, Elapsed: elapsed})
+
+		_, _ = fmt.Fprintf(out, "=== %s: %s\n", gate.Name, elapsed.Round(time.Millisecond))
+
 		if err != nil {
-			return fmt.Errorf("%w: %s: %w", errGateFailed, gate.Name, err)
+			return timings, fmt.Errorf("%w: %s: %w", errGateFailed, gate.Name, err)
 		}
 	}
 
-	return nil
+	return timings, nil
 }

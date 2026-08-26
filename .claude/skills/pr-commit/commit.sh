@@ -14,6 +14,13 @@ fi
 # shellcheck source=../lib/diff-context.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/diff-context.sh"
 
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# The two `claude -p` calls are model turns and the git pair is not; timed
+# together they read as one slow commit with nothing to act on. `|| true`: an
+# unwritable ./tmp must leave the commit silent, not failed.
+stamp() { "$HERE/timings.sh" add "$1" "$(($(date +%s) - $2))" || true; }
+
 mkdir -p ./tmp
 COMMIT_MSG_FILE=./tmp/commit-msg.txt
 BRANCH_NAME_FILE=./tmp/branch-name.txt
@@ -37,7 +44,9 @@ if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
   BRANCH_PROMPT='Generate a short git branch name for the staged changes shown below. Rules: lowercase kebab-case; start with a type prefix (feat/, fix/, chore/, docs/, refactor/); max 60 chars total; no trailing slash; no quotes; no explanation. Output the branch name only on a single line.'
 
   emit_diff_context --cached > "$CONTEXT_FILE"
+  T0=$(date +%s)
   run_claude_or_explain branch-name "$BRANCH_PROMPT" "$BRANCH_NAME_FILE" < "$CONTEXT_FILE"
+  stamp "branch-name (claude)" "$T0"
 
   # One awk over the file, no pipeline: `… | head -n 1` makes the upstream
   # stage die of SIGPIPE, and under `set -o pipefail` a command
@@ -68,10 +77,14 @@ PROMPT='Generate a git commit message for the staged changes shown below. Format
   emit_diff_context --cached
 } > "$CONTEXT_FILE"
 
+T0=$(date +%s)
 run_claude_or_explain commit-msg "$PROMPT" "$COMMIT_MSG_FILE" < "$CONTEXT_FILE"
+stamp "commit-msg (claude)" "$T0"
 rm -f "$CONTEXT_FILE"
 sed -i.bak -e '/^```[a-zA-Z]*$/d' -e '/^```$/d' "$COMMIT_MSG_FILE" && rm -f "$COMMIT_MSG_FILE.bak"
 
+T0=$(date +%s)
 git commit -F "$COMMIT_MSG_FILE"
 git push origin HEAD
+stamp "git commit+push" "$T0"
 rm "$COMMIT_MSG_FILE"

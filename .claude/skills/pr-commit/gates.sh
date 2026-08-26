@@ -15,7 +15,19 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+HERE="$(dirname "${BASH_SOURCE[0]}")"
 
 mkdir -p "$ROOT/bin"
 
-exec go -C "$ROOT" run ./scripts/cmd/gates run "$@"
+# No `exec`: the row has to be written whichever way the pipeline exits, and a
+# red run is the one worth timing. `start` is the skill's, never this script's
+# — a merge round runs the gates again and would erase the rows before it.
+START=$(date +%s)
+set +e
+go -C "$ROOT" run ./scripts/cmd/gates run "$@"
+CODE=$?
+set -e
+
+# `|| true`: an unwritable ./tmp must leave the pipeline silent, not red.
+"$HERE/timings.sh" add gates "$(($(date +%s) - START))" || true
+exit "$CODE"

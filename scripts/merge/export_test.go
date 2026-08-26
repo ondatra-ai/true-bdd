@@ -1,5 +1,7 @@
 package merge
 
+import "time"
+
 // The comment machinery is unexported; the parity test reaches it through
 // this export_test.go seam, which the compiler drops from any non-test
 // build.
@@ -52,3 +54,22 @@ func TitleOf(body string) string { return titleOf(body) }
 func ClaimedCounts(body string) map[string]int {
 	return claimedCounts([]ghReview{botReview(body)})
 }
+
+// WorthAPostmortem is the gate the merge loop's tail sits behind.
+func WorthAPostmortem(automatic bool, total time.Duration) (bool, string) {
+	return worthAPostmortem(automatic, total)
+}
+
+// PostmortemFloor is how long a clean automatic run must take to earn one.
+const PostmortemFloor = postmortemFloor
+
+// PostmortemPrompt is the embedded prompt, before anything is substituted.
+func PostmortemPrompt() string { return postmortemPrompt }
+
+// RenderPostmortemPrompt substitutes the transcript and the timing table.
+func RenderPostmortemPrompt(transcript, timings string) string {
+	return renderPostmortemPrompt(transcript, timings)
+}
+
+// ReadLedger sums a pr-commit timing ledger.
+func ReadLedger(path string) time.Duration { return readLedger(path) }
