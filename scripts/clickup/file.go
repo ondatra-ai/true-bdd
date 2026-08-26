@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
@@ -30,7 +31,10 @@ type Ticket struct {
 	Title string `json:"title"`
 	ID    string `json:"id"`
 	URL   string `json:"url"`
-	Error string `json:"error"`
+	// FieldsSet reports whether the custom fields landed. A task whose
+	// fields were refused still exists, so this is a warning, not a failure.
+	FieldsSet bool   `json:"fields_set"`
+	Error     string `json:"error"`
 }
 
 const filePromptTemplate = `Create ClickUp tasks from the markdown document below, using the ClickUp MCP
@@ -42,13 +46,29 @@ For each:
   - markdownContent: everything under that heading, verbatim
   - tag: %s
 
+Then set that task's custom fields with setCustomFieldValue, from the FIELDS
+row whose "ticket" is that heading's number:
+  - field %s — the "triage_score_orderindex" integer, passed VERBATIM. It
+    addresses the dropdown option by POSITION, so passing the score instead
+    sets the wrong one. When the row omits it, leave this field alone.
+  - field %s — the "expected_changes" string.
+
+Set no other custom field: Scope and Good For Agent are a person's to fill.
+
 Transcribe. Do not summarise, rewrite, merge, split, reorder or improve any
 ticket, and do not create a task that is not in the document. If a task
 cannot be created, leave its "id" null and put the error in "error" — do not
-retry silently and do not omit the row.
+retry silently and do not omit the row. A task that was created but whose
+custom fields were refused is "fields_set": false, with the id still filled.
 
 Return ONLY a JSON array, no prose and no code fence:
-[{"title": "<heading text>", "id": "<clickup task id or null>", "url": "<url or null>", "error": "<empty if created>"}]
+[{"title": "<heading text>", "id": "<clickup task id or null>",
+  "url": "<url or null>", "fields_set": <true|false>,
+  "error": "<empty if created>"}]
+
+--- BEGIN FIELDS ---
+%s
+--- END FIELDS ---
 
 --- BEGIN DOCUMENT ---
 %s
@@ -76,7 +96,13 @@ func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
 
 	_, _ = fmt.Fprintf(out, "%d ticket(s) -> %s\n", len(queue), TicketsMarkdown)
 
-	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), tag, document)
+	plans, err := json.MarshalIndent(planFields(queue), "", "  ")
+	if err != nil {
+		return fmt.Errorf("encoding the custom fields: %w", err)
+	}
+
+	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), tag,
+		triageScoreField, expectedChangesField, plans, document)
 
 	created, err := createTickets(prompt)
 	if err != nil {
@@ -162,9 +188,33 @@ func report(out, errOut io.Writer, queue []Finding, created []Ticket) error {
 		return ErrNotFiled
 	}
 
+	warnUnfilled(errOut, filed)
+
 	_, _ = fmt.Fprintf(out, "%d ticket(s) filed; record in %s\n", len(filed), FiledRecord)
 
 	return nil
+}
+
+// warnUnfilled names the tickets whose custom fields were refused. Not an
+// error: the task exists and a Ticket short a field halts task-handle rather
+// than misleading it, so this asks for a hand-fill instead of failing a merge.
+func warnUnfilled(errOut io.Writer, filed []Ticket) {
+	var bare []string
+
+	for _, ticket := range filed {
+		if !ticket.FieldsSet {
+			bare = append(bare, ticket.ID)
+		}
+	}
+
+	if len(bare) == 0 {
+		return
+	}
+
+	_, _ = fmt.Fprintf(errOut,
+		"custom fields were NOT set on %d ticket(s): %s\n"+
+			"  Fill Triage Score and Expected Changes by hand.\n",
+		len(bare), strings.Join(bare, " "))
 }
 
 func split(created []Ticket) ([]Ticket, []Ticket) {
