@@ -109,16 +109,16 @@ type requiredCheck struct {
 	Link   string `json:"link"`
 }
 
-// waitForChecks blocks until every required check has reported. Nothing
-// bypasses a refusal any more, so an unfinished check is a stop rather than
-// the silent merge over IN_PROGRESS gates that #93 got.
+// waitForChecks blocks until no required check gh can SEE is still running —
+// one absent from the rollup is invisible here, and left to land()'s refusal.
+// Nothing bypasses that any more, so #93's silent merge over IN_PROGRESS is a stop.
 func (r *Run) waitForChecks() {
 	r.logf("waiting for the required checks")
 
 	for waited := time.Duration(0); ; waited += poll {
 		pending := r.pendingChecks(r.requiredChecks())
 		if len(pending) == 0 {
-			r.logf("every required check has reported after %s", waited)
+			r.logf("every required check gh reports has finished, after %s", waited)
 
 			return
 		}
