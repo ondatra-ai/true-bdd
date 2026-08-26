@@ -56,6 +56,18 @@ a bind with no status change is a Task that can still be closed; a status
 change with no bind strands the Ticket, because `/task-done` and `/task-fail`
 read the binding to know what they are closing.
 
+**Refused → undo the bind, then refuse.** Half a Task is worse than none: the
+Ticket stays in `TO DO`, where `task-loop`'s queue predicate hands it out
+again while it is already being worked.
+
+```bash
+"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" unbind
+```
+
+Report the refusal verbatim and stop — never substitute a status that does
+exist. `ITEM_114 Status does not exist` means the list's status set has
+drifted from the one this workflow assumes; a human fixes ClickUp.
+
 ### 4. Report
 
 One line: the Ticket id, its title, and its URL. Then hand back to the caller —
