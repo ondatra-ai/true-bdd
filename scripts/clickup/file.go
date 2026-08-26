@@ -26,6 +26,11 @@ const (
 	failedTitleWidth = 60
 )
 
+// matchWidth is the title prefix a queued finding and an open task are paired
+// by — the same 60 runes ticketURL pairs a finding with its ticket at
+// (scripts/merge/resolve.go:30).
+const matchWidth = 60
+
 // Ticket is one row of the filing turn's answer, and of FiledRecord.
 type Ticket struct {
 	Title string `json:"title"`
@@ -78,6 +83,44 @@ Return ONLY a JSON array, no prose and no code fence:
 // File renders the queue and asks a headless turn to create one ClickUp task
 // per heading.
 func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
+	return file(out, errOut, queuePath, tag, pullRequest, false)
+}
+
+// FileDeduped files only what no open task under tag already covers. The
+// postmortem's door: a review finding recurring across PRs is news, a process
+// proposal recurring while its ticket sits unimplemented is a duplicate.
+func FileDeduped(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
+	return file(out, errOut, queuePath, tag, pullRequest, true)
+}
+
+// dropAlreadyOpen returns the findings no open task already covers, naming
+// each one it drops. Dropping before the render keeps the heading count, the
+// field plan and report's count check on the same shortened queue.
+func dropAlreadyOpen(out io.Writer, queue []Finding, open []Task) []Finding {
+	byTitle := make(map[string]Task, len(open))
+
+	for _, task := range open {
+		byTitle[textutil.Truncate(task.Name, matchWidth)] = task
+	}
+
+	kept := make([]Finding, 0, len(queue))
+
+	for _, finding := range queue {
+		task, found := byTitle[textutil.Truncate(finding.Title, matchWidth)]
+		if !found {
+			kept = append(kept, finding)
+
+			continue
+		}
+
+		_, _ = fmt.Fprintf(out, "already open %-12s %s\n",
+			task.ID, textutil.Truncate(task.Name, filedTitleWidth))
+	}
+
+	return kept
+}
+
+func file(out, errOut io.Writer, queuePath, tag, pullRequest string, dedupe bool) error {
 	queue, err := LoadQueue(queuePath)
 	if err != nil {
 		return err
@@ -87,6 +130,19 @@ func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
 		_, _ = fmt.Fprintf(out, "nothing to file from %s\n", queuePath)
 
 		return nil
+	}
+
+	if dedupe {
+		queue, err = withoutOpen(out, queue, tag)
+		if err != nil {
+			return err
+		}
+
+		if len(queue) == 0 {
+			_, _ = fmt.Fprintf(out, "every ticket in %s is already open\n", queuePath)
+
+			return nil
+		}
 	}
 
 	document, err := WriteRendered(queue, tag, pullRequest)
@@ -110,6 +166,18 @@ func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
 	}
 
 	return report(out, errOut, queue, created)
+}
+
+// withoutOpen lists the open tickets under tag and drops what they cover. A
+// listing that fails files nothing: not knowing what is open is exactly the
+// state this filters for.
+func withoutOpen(out io.Writer, queue []Finding, tag string) ([]Finding, error) {
+	open, err := openTasks(tag)
+	if err != nil {
+		return nil, fmt.Errorf("%w: the open %s tickets could not be listed: %w", ErrNotFiled, tag, err)
+	}
+
+	return dropAlreadyOpen(out, queue, open), nil
 }
 
 // createTickets runs the filing turn and reads the array back.

@@ -78,7 +78,7 @@ func (r *Run) postmortem() {
 	queue := StateDir + "/postmortem.json"
 	r.save(queue, proposals)
 
-	err = clickup.File(os.Stdout, os.Stderr, queue, "merge-improvements", strconv.Itoa(r.pr))
+	err = clickup.FileDeduped(os.Stdout, os.Stderr, queue, "merge-improvements", strconv.Itoa(r.pr))
 	if err != nil {
 		r.logf("! filing the postmortem's proposals failed: %v", err)
 	}

@@ -31,27 +31,9 @@ If there are none, return [].
 
 // List prints the open tasks carrying tag, oldest first.
 func List(out io.Writer, tag string) error {
-	answer, err := claudecli.Run(fmt.Sprintf(listPromptTemplate, listID(), tag), claudecli.Options{
-		AllowedTools: listTools,
-		Role:         roleClickUp,
-		Timeout:      claudeTimeout(),
-	})
+	tasks, err := openTasks(tag)
 	if err != nil {
-		return fmt.Errorf("listing the queue: %w", err)
-	}
-
-	raw, err := textutil.ExtractJSONArray(answer)
-	if err != nil {
-		return fmt.Errorf("ticket listing returned %w:\n%s",
-			err, textutil.Truncate(answer, diagnosticLimit))
-	}
-
-	var tasks []Task
-
-	err = json.Unmarshal(raw, &tasks)
-	if err != nil {
-		return fmt.Errorf("ticket listing returned invalid JSON (%w):\n%s",
-			err, textutil.Truncate(answer, diagnosticLimit))
+		return err
 	}
 
 	for _, task := range tasks {
@@ -63,4 +45,32 @@ func List(out io.Writer, tag string) error {
 	}
 
 	return nil
+}
+
+// openTasks runs the listing turn and reads its array back.
+func openTasks(tag string) ([]Task, error) {
+	answer, err := claudecli.Run(fmt.Sprintf(listPromptTemplate, listID(), tag), claudecli.Options{
+		AllowedTools: listTools,
+		Role:         roleClickUp,
+		Timeout:      claudeTimeout(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("listing the queue: %w", err)
+	}
+
+	raw, err := textutil.ExtractJSONArray(answer)
+	if err != nil {
+		return nil, fmt.Errorf("ticket listing returned %w:\n%s",
+			err, textutil.Truncate(answer, diagnosticLimit))
+	}
+
+	var tasks []Task
+
+	err = json.Unmarshal(raw, &tasks)
+	if err != nil {
+		return nil, fmt.Errorf("ticket listing returned invalid JSON (%w):\n%s",
+			err, textutil.Truncate(answer, diagnosticLimit))
+	}
+
+	return tasks, nil
 }
