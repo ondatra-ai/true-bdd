@@ -134,9 +134,14 @@ func (r *Run) waitForChecks() {
 	}
 }
 
+// notReportedYet is gh's answer for a PR no check has posted against — the
+// CodeRabbit context before the first review is requested. Absent is "not yet",
+// never red, so it is the one non-zero exit here that is not a failure.
+const notReportedYet = "no checks reported"
+
 // requiredChecks is what gh reports as required. `gh pr view --json
 // statusCheckRollup` carries no isRequired field, so the filtering has to be
-// gh's; empty output is a check not reported YET, never a failure.
+// gh's; with --json, gh prints the rollup and exits 0 whatever it holds.
 func (r *Run) requiredChecks() []requiredCheck {
 	answer := r.sh([]string{
 		ghBin, "pr", "checks", strconv.Itoa(r.pr),
@@ -144,7 +149,14 @@ func (r *Run) requiredChecks() []requiredCheck {
 	}, options{})
 
 	body := strings.TrimSpace(answer.stdout)
-	if body == "" {
+
+	switch {
+	case answer.code != 0 && strings.Contains(answer.stderr, notReportedYet):
+		return nil
+	case answer.code != 0:
+		r.dief("`gh pr checks` failed (%d) — this is not a verdict on the checks:\n%s",
+			answer.code, textutil.Truncate(firstNonEmpty(answer.stderr, body), diagnosticLimit))
+	case body == "":
 		return nil
 	}
 
