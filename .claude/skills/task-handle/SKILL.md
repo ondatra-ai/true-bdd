@@ -28,10 +28,10 @@ Refuse to start if the checkout is not on `main`, or the tree is dirty.
 directory. Every field it lists must be filled, and the body must carry all
 four headings.
 
-**Anything missing, or `Scope: PROJECT` → halt.** Report `not started` and
-exactly which field or heading is empty. Write nothing: no `updateTask`, no
-`setCustomFieldValue`, no comment, no status. The Ticket stays in `TO DO`
-untouched, so it is not a `FAILED` — a human fills it in.
+**Anything missing → halt.** Report `not started` and exactly which field or
+heading is empty. Write nothing: no `updateTask`, no `setCustomFieldValue`, no
+comment, no status. The Ticket stays in `TO DO` untouched, so it is not a
+`FAILED` — a human fills it in.
 
 ## 2. Start
 

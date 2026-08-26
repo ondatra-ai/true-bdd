@@ -18,22 +18,6 @@ predicate:
   Good For Agent: checked
 
 fields:
-  Scope:
-    id: 0c9b7a64-15cb-4dc4-a0b8-6407d53fb35b
-    type: labels
-    required: true
-    options:
-      FILE: one file and whatever sits beside it — its test, its fixture
-      SERVICE: one tree, e.g. services/bdd-cli/** or scripts/merge/**
-      DOCUMENTATION: prose only — README, docs/for_further/**, docs/adr/**, CONTEXT.md, .claude/**/*.md
-      PROJECT: not clear what this touches
-    notes:
-      - PROJECT is a refusal, not a size. It says the Ticket is not thought
-        through, which is the worst candidate for an unattended run. Skip it.
-      - DOCUMENTATION is narrower than "lives under docs/". docs/scenarios.yaml
-        is the BDD spec and pulls the 62s replay; CLAUDE.md has its own gate;
-        docs/architecture/** and docs/product/** are schema-validated.
-
   Triage Score:
     id: 1d43d9f5-99b1-41f9-8250-cfdde01b76e0
     type: drop_down
