@@ -1,6 +1,9 @@
 package merge
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 // The comment machinery is unexported; the parity test reaches it through
 // this export_test.go seam, which the compiler drops from any non-test
@@ -73,3 +76,27 @@ func RenderPostmortemPrompt(transcript, timings string) string {
 
 // ReadLedger sums a pr-commit timing ledger.
 func ReadLedger(path string) time.Duration { return readLedger(path) }
+
+// SkipPostmortem drives the skip branch and returns what it printed, so the
+// "visibly skipped" requirement is tested rather than assumed.
+func SkipPostmortem(before time.Duration) string {
+	read, write, err := os.Pipe()
+	if err != nil {
+		return ""
+	}
+
+	saved := os.Stdout
+	os.Stdout = write
+
+	(&Run{timings: newTimeline(before)}).postmortemOrSkip(true)
+
+	os.Stdout = saved
+
+	_ = write.Close()
+
+	printed := make([]byte, 4096)
+
+	count, _ := read.Read(printed)
+
+	return string(printed[:count])
+}

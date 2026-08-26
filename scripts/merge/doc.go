@@ -10,7 +10,12 @@
 //	    resolve every thread
 //	    break if this round changed nothing, else commit
 //	merge
-//	postmortem
+//	postmortem, only if the run did not finish automatically or the whole
+//	           task took over 15 minutes — scripts/cmd/postmortem asks for
+//	           one deliberately
+//	print the phase timings, and write them to StateDir
+//
+// Every phase above is timed; see timeline.go.
 //
 // Rounds 1 and 2 fix what scores 9-10 and file 6-8 as ClickUp tickets. Round 3
 // fixes nothing — everything >= 6 becomes a ticket.

@@ -173,8 +173,7 @@ func (r *Run) Main() {
 // round is one review round, timed phase by phase. False ends the loop.
 func (r *Run) round(round int) bool {
 	stop := r.step("request_review", round)
-	r.requestReview(round)
-	stop("requested")
+	stop(r.requestReview(round))
 
 	stop = r.step("read_comments", round)
 	findings := r.readComments()

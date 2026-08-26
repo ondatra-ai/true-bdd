@@ -59,7 +59,7 @@ type ghReview struct {
 // requestReview asks round 1 for a full review and later rounds for an
 // incremental one: those add only fix commits, so a full re-review re-reports
 // what round 1 already triaged. HEAD must be pushed, or the review misses it.
-func (r *Run) requestReview(round int) {
+func (r *Run) requestReview(round int) string {
 	headline := fmt.Sprintf("round %d of %d", round, lastRound)
 	if round > lastFixRound {
 		headline += " — triage only, nothing is fixed"
@@ -92,10 +92,10 @@ func (r *Run) requestReview(round int) {
 			// doesn't reject the empty-bodied APPROVED CodeRabbit already posted.
 			r.reviewedThisRun[r.headSHA()] = true
 
-			return
+			return outcomeAfter("nothing to review", attempt)
 		case verdictAccepted:
 			if r.awaitReview(baselineReview, ackID) {
-				return
+				return outcomeAfter("posted", attempt)
 			}
 		case verdictRateLimited:
 		}
@@ -130,6 +130,16 @@ func (r *Run) awaitAcknowledgement(baselineComment int) (verdict, int) {
 	}
 
 	return verdictSilent, 0
+}
+
+// outcomeAfter names how many requests it took: a rate limit costs a wait per
+// attempt, which is the attempt count the span tree asks these phases to carry.
+func outcomeAfter(outcome string, attempts int) string {
+	if attempts == 1 {
+		return outcome
+	}
+
+	return fmt.Sprintf("%s (%d attempts)", outcome, attempts)
 }
 
 // awaitReview waits for a review OBJECT; false means the ack was later

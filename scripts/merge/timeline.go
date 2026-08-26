@@ -15,8 +15,8 @@ import (
 const ledgerPath = "tmp/timings.tsv"
 
 // Phase is one timed step of the run, named after the span tree in
-// docs/for_further/observability.md so the later OTel slice and this one do
-// not invent two vocabularies for the same phases.
+// docs/for_further/observability.md wherever that tree names the operation.
+// `split` and `dispose` are ours — the tree has no span for either.
 type Phase struct {
 	Name    string  `json:"name"`
 	Round   int     `json:"round,omitempty"`
@@ -83,8 +83,9 @@ func newTimeline(before time.Duration) *timeline {
 
 func (t *timeline) add(entry Phase) { t.phases = append(t.phases, entry) }
 
-// total is the whole task-handling process: the commit that produced the PR,
-// plus this run so far. It is what decides whether the postmortem runs.
+// total is the commit that produced the PR plus this run so far — what §3 of
+// the ticket measures, not every minute task-handle spent. A task's Work and
+// Review steps are agent turns no shell brackets, so they are not in here.
 func (t *timeline) total() time.Duration {
 	return t.before + time.Since(t.started)
 }

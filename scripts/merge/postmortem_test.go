@@ -186,3 +186,21 @@ func TestPostmortemTimingRecordRoundTrips(t *testing.T) {
 			original.Render(), decoded.Render())
 	}
 }
+
+// Verification 6: the skip has to reach stdout. Not parallel — it swaps
+// os.Stdout for a pipe to read what the run printed.
+func TestPostmortemSkipIsPrinted(t *testing.T) {
+	printed := merge.SkipPostmortem(time.Minute)
+
+	if !strings.Contains(printed, "postmortem") {
+		t.Errorf("the skip did not announce which step it was: %q", printed)
+	}
+
+	if !strings.Contains(printed, "skipped") {
+		t.Errorf("a skipped postmortem was silently absent: %q", printed)
+	}
+
+	if !strings.Contains(printed, merge.PostmortemFloor.String()) {
+		t.Errorf("the printed skip does not name the floor: %q", printed)
+	}
+}

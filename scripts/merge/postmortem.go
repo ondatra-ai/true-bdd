@@ -83,11 +83,18 @@ func worthAPostmortem(automatic bool, total time.Duration) (bool, string) {
 	}
 }
 
-// runPostmortem spends the loop's most expensive turn only on a run that
-// earned it. The mandate is read live, not from Start: task-handle revokes it
-// the moment the user interjects, which is mid-run for a background merge.
+// runPostmortem reads the mandate live rather than from Start: task-handle
+// revokes it the moment the user interjects, mid-run for a background merge.
+// A run that stopped never reaches here — that is scripts/cmd/postmortem's job.
 func (r *Run) runPostmortem() {
-	worth, why := worthAPostmortem(mandate.Active("."), r.timings.total())
+	r.postmortemOrSkip(mandate.Active("."))
+}
+
+// postmortemOrSkip spends the loop's most expensive turn only on a run that
+// earned it, and prints the skip when it does not — a postmortem that is
+// silently absent reads exactly like one that ran and found nothing.
+func (r *Run) postmortemOrSkip(automatic bool) {
+	worth, why := worthAPostmortem(automatic, r.timings.total())
 	if !worth {
 		r.banner("postmortem")
 		r.logf("skipped — %s", why)
