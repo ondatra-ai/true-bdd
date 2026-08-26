@@ -134,10 +134,10 @@ func (r *Run) waitForChecks() {
 	}
 }
 
-// notReportedYet is gh's answer for a PR no check has posted against — the
-// CodeRabbit context before the first review is requested. Absent is "not yet",
-// never red, so it is the one non-zero exit here that is not a failure.
-const notReportedYet = "no checks reported"
+// notReportedYet is the substring shared by gh's "no checks reported" and
+// "no required checks reported" — the CodeRabbit context before the first
+// review is requested. Absent is "not yet", never red.
+const notReportedYet = "checks reported on the"
 
 // requiredChecks is what gh reports as required. `gh pr view --json
 // statusCheckRollup` carries no isRequired field, so the filtering has to be
