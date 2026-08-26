@@ -1,10 +1,13 @@
 // Package history captures the conversation into docs/history/.
 //
-// Two entry points:
+// Entry points:
 //
 //	prompt-submit  — wired to BOTH the UserPromptSubmit and Stop hooks with
 //	                 the same command.
-//	new-task       — invoked from .claude/commands/new-task.sh.
+//	new-task       — invoked from .claude/skills/task-start/roll-history.sh.
+//	bind <id>      — invoked from /task-start, once a Ticket is chosen.
+//	bound          — invoked from /task-done and /task-fail; prints the id.
+//	unbind         — invoked from all three, after the status write lands.
 //
 // UserPromptSubmit (payload has a `prompt`): append it under a heading keyed
 // on the writer's role. The main interactive session (default role "claude")
@@ -27,12 +30,19 @@
 //	A single line: the current task file's name. Nothing else.
 //	Shared across sessions — a new session continues the same file.
 //
+// Binding file: docs/history/bound-ticket
+//
+//	A single line: the ClickUp Ticket this Task is working on, written by
+//	/task-start and cleared by /task-done and /task-fail. Its span is
+//	PROCESSING exactly. Beside hook-state, which is gitignored, so it never
+//	reaches a commit.
+//
 // History file: docs/history/<UTC-ts>-<session8>-<slug>.md
 //
 // Off switch: CLAUDE_HISTORY_ROLE=0 skips all logging.
 //
-// Rollover: /new-task removes the state file so the next prompt opens a fresh
-// task file. Its own UserPromptSubmit (prompt == "/new-task") is filtered so
+// Rollover: /task-start removes the state file so the next prompt opens a fresh
+// task file. Its own UserPromptSubmit (prompt == "/task-start") is filtered so
 // it doesn't recreate the state file it just deleted.
 //
 // One thing changed in the port. The Python found the repository root from

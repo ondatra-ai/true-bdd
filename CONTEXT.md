@@ -31,3 +31,15 @@ _Avoid_: check, cell-run
 **Walk**:
 One full traversal of every Cell in a run. A fix applied mid-walk restarts the traversal from the first Cell.
 _Avoid_: pass, sweep, iteration
+
+## Repository vocabulary
+
+Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.
+
+**Ticket**:
+One unit of planned work, held in ClickUp. Carries the four headings `scripts/clickup` renders and, when it may be taken unattended, the fields `true-bdd/ticket-schema.yaml` requires.
+_Avoid_: task (for this sense), issue, card, story
+
+**Task**:
+One session's unit of work — the history file under `docs/history/` that `/task-start` opens. At most one Ticket is bound to it, from `/task-start` until `/task-done` or `/task-fail`.
+_Avoid_: session, run, thread

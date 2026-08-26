@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"github.com/ondatra-ai/true-bdd/scripts/mandate"
 )
 
 // Gates is the quality pipeline a fix must leave green.
@@ -25,8 +26,30 @@ const StateDir = "tmp/merge"
 const (
 	lastFixRound = 2
 	lastRound    = 3
-	fixFloor     = 9
-	ticketFloor  = 6
+)
+
+// Floors is the row Start picks from whether task-handle stamped a mandate.
+// Under one nothing is fixed inline — that is what the Ticket is for.
+//
+//	            drop    ticket   fix inline
+//	manual      1-5     6-8      9-10
+//	automatic   1-8     9-10     never
+type Floors struct {
+	Fix        int // fix inline at or above this
+	Ticket     int // file a ClickUp Ticket at or above this; below it, drop
+	Postmortem int // file a postmortem proposal at or above this
+}
+
+const (
+	severe   = 9
+	worth    = 6
+	neverFix = 11
+)
+
+//nolint:gochecknoglobals // the two rows of the table above.
+var (
+	manual    = Floors{Fix: severe, Ticket: worth, Postmortem: worth}
+	automatic = Floors{Fix: neverFix, Ticket: severe, Postmortem: severe}
 )
 
 // Waiting. CodeRabbit's free tier allows roughly four PR reviews an hour.
@@ -60,6 +83,10 @@ type Run struct {
 	pr        int
 	startedAt string
 
+	// floors is chosen once, from whether task-handle stamped a mandate for
+	// the Ticket that is bound right now.
+	floors Floors
+
 	// reviewedThisRun holds commits this run WATCHED a review land against —
 	// the tiebreaker reviewedSHA's body_len test can't provide on its own
 	// (see reviewedSHA), recorded live since post-approve the two look identical.
@@ -88,7 +115,11 @@ func Start(args []string) *Run {
 
 	requireTools()
 
-	run := &Run{reviewedThisRun: map[string]bool{}}
+	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
+	if mandate.Active(".") {
+		run.floors = automatic
+	}
+
 	branch := run.currentBranch()
 
 	switch branch {

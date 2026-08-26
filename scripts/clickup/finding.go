@@ -8,7 +8,7 @@ import (
 
 // Finding is one row of a queue file: a review finding on its way to
 // becoming a ticket. One type for the whole pipeline (merge writes it, file
-// hands it off, fix-queue reads it back) — absent and empty both render `?`, unlike the Python it ports.
+// hands it off, the rendered markdown shows it) — absent and empty both render `?`, unlike the Python it ports.
 type Finding struct {
 	ID       string `json:"id"`
 	Source   string `json:"source"`

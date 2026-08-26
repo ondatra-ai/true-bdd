@@ -98,14 +98,11 @@ flowchart LR
   REG -. "⑥ user_stories[].story" .-> STORY
 
   ARCH["docs/architecture/architecture.yaml<br/>testing.suites[] (service · path · commands) · services[] · dependencies · environment (optional)"]
-  GEN["tests/&lt;suite&gt;/&lt;family&gt;_test.go<br/>generated: func Test&lt;Id&gt;"]
-  TESTS["tests/&lt;suite&gt;/steps/<br/>suite.Step(`^…$`, fn)"]
+  TESTS["tests/&lt;suite&gt;/<br/>&lt;family&gt;_test.go (generated) · steps/"]
   SRC["services/&lt;service&gt;/"]
   COMPOSE["docker-compose.yaml ·<br/>docker-compose.dev.yaml"]
 
   REG -- "⑧ build tests" --> TESTS
-  REG -- "⑧b build tests (codegen)" --> GEN
-  GEN -- "runs" --> TESTS
   TESTS -- "⑫ build code" --> SRC
   REG -. "⑦ service:" .-> ARCH
   ARCH -. "⑨ testing.suites[].service" .-> TESTS
@@ -148,8 +145,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | 5 | AC position in story | user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-%03d` (AC-1 of story 95.1 → `"95.1-001"`) and merges the scenario in |
 | 6 | user_stories[].story | story file path | each registry entry names its source stories: `docs/product/stories/95.1-duplicate-collapse.yaml` |
 | 7 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
-| 8 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package. It asks the suite that question through `commands.coverage` and walks only the scenarios with gaps, so a converged repository spends no model at all |
-| 8b | scenario `path:` | generated `<suite>/<family>_test.go` | **build tests** renders one `func Test<Id>` per scenario into the file its `path:` names, with the steps stated literally. Deterministic codegen, not a model turn — `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing. Several scenarios may share a file and are emitted in id order |
+| 8 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package. It asks the suite that question through `commands.coverage` and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Id>` that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
 | 9 | scenario service: | testing.suites[].service | the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code |
 | 10 | services[].path | services/&lt;name&gt;/ | `path: services/bdd-cli` tells **build code** where production source lives — any path works; the fixtures use `src/service1` |
 | 11 | environment.{dev,prod} | docker-compose files | optional — architecture.yaml declares the stack per environment (`dev → docker-compose.dev.yaml`, `prod → docker-compose.yaml`); a host without a compose-backed environment omits the key |

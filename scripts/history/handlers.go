@@ -26,10 +26,10 @@ func (h *Hook) PromptSubmit(event Event) error {
 
 	prompt := strings.TrimSpace(firstNonEmpty(event.str("prompt"), event.str("user_message")))
 
-	// /new-task rolls history over; logging it would recreate the state file
-	// it just deleted. Drop it — the Stop that follows finds no active file
-	// and is skipped too, so the ack response is dropped for free.
-	if fields := strings.Fields(prompt); len(fields) > 0 && fields[0] == "/new-task" {
+	// /task-start rolls history over; logging it would recreate the state file
+	// it just deleted. Its Stop then finds no active file and is skipped too.
+	// /task-done and /task-fail are absent on purpose: they belong in the file.
+	if fields := strings.Fields(prompt); len(fields) > 0 && fields[0] == "/task-start" {
 		return nil
 	}
 

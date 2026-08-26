@@ -10,7 +10,10 @@ Installing via `claude plugins install mattpocock-skills` or
 `npx skills add` would have put them on every project instead.
 
 Not taken: `setup-matt-pocock-skills` — it configures the upstream author's
-issue-tracker and domain conventions, which are not this repo's.
+issue-tracker and domain conventions, which are not this repo's. The one
+artifact it would have produced, `docs/agents/issue-tracker.md`, is written
+for this repo instead, so `code-review`'s "tell the user to run
+`/setup-matt-pocock-skills`" branch never fires.
 
 Also stripped: each skill's `agents/openai.yaml`. Upstream ships every skill
 for Codex as well as Claude Code, and that file is the Codex half — a

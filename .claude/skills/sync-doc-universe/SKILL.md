@@ -1,6 +1,6 @@
 ---
 name: sync-doc-universe
-description: Audit the current state of the documents declared in true-bdd/true-bdd.yaml (documents:, document dirs in paths:, templates) against the doc universe (docs/doc-universe.md + docs/doc-universe.html), in both directions, and resolve every inconsistency by asking the user. Not diff-based — it checks what exists now. Invoked from pr-commit before every commit; also usable standalone when the user asks to align the doc universe.
+description: Audit the current state of the documents declared in true-bdd/true-bdd.yaml (documents:, document dirs in paths:, templates) against the doc universe (docs/doc-universe.md + docs/doc-universe.html), in both directions, and resolve every inconsistency by asking the user — or, with the argument `auto`, by its documented fixed rules without asking. Not diff-based — it checks what exists now. Invoked from pr-commit before every commit; also usable standalone when the user asks to align the doc universe.
 ---
 
 # Sync Doc Universe
@@ -81,7 +81,12 @@ and meaning intact are **not** inconsistencies — do not flag them.
 6. **md ↔ html.** Compare the two renderings' content claim by claim;
    any content present or stated differently in only one is an
    inconsistency.
-7. **Ask about every inconsistency.** Use AskUserQuestion — one question
+7. **Ask about every inconsistency** — unless invoked with the argument
+   `auto`, which is what `task-handle` passes: under a mandate there is
+   nobody to ask, so resolve each one by the fixed rule in **Unattended
+   mode** below instead, and list every resolution in step 9.
+
+   Use AskUserQuestion — one question
    per inconsistency (batch up to 4 per call), quoting the exact text on
    both sides. Every option label must state the direction explicitly:
    **what is truth → what gets updated**. The standard options:
@@ -102,9 +107,26 @@ and meaning intact are **not** inconsistencies — do not flag them.
    (or `doc universe: consistent` when none were found). No staging
    needed when run from pr-commit — its commit step stages everything.
 
+## Unattended mode (`auto`)
+
+Invoked with the argument `auto`, resolve every inconsistency by these rules
+and ask nothing. `task-handle` passes it; a person never should.
+
+- **The document is truth → the universe is updated.** The universe
+  *describes*; the ticket being worked just changed the thing described.
+- **`doc-universe.md` is truth → the `.html` is updated.** The html is a
+  rendering of the md, which is where content is written.
+- **A `lint-schemas.sh` failure is not an inconsistency to resolve.** It is a
+  red gate, it already fails `gates.sh`, and pretending otherwise would edit a
+  document to match a schema nobody reviewed.
+
+Report every resolution in step 9 exactly as if it had been asked about, so
+the commit shows what was decided on the user's behalf.
+
 ## Rules
 
 - Never resolve an inconsistency without asking — even an "obvious" one.
+  The single exception is the `auto` argument above.
 - Never publish `doc-universe.html` as an artifact or anywhere else —
   merging it to main IS its deploy (GitHub Pages).
 - Do not invent inconsistencies from style or wording; structure only.

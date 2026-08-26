@@ -29,6 +29,21 @@ const (
 	scannerMax   = 16 * 1024 * 1024
 )
 
+// abovePostmortemFloor drops proposals the run's triage row would not have
+// ticketed. Under a mandate the floor is 9, so it will usually stay silent —
+// which is the point: it is the only step that notices the loop degrading.
+func (r *Run) abovePostmortemFloor(proposals []clickup.Finding) []clickup.Finding {
+	var kept []clickup.Finding
+
+	for _, proposal := range proposals {
+		if proposal.Score >= r.floors.Postmortem {
+			kept = append(kept, proposal)
+		}
+	}
+
+	return kept
+}
+
 // postmortem reads the run back and files what it suggests. Changes nothing.
 func (r *Run) postmortem() {
 	r.banner("postmortem")
@@ -53,9 +68,9 @@ func (r *Run) postmortem() {
 		return
 	}
 
-	proposals := parseJSONArrayInto[clickup.Finding](r, answer, "postmortem")
+	proposals := r.abovePostmortemFloor(parseJSONArrayInto[clickup.Finding](r, answer, "postmortem"))
 	if len(proposals) == 0 {
-		r.logf("the postmortem proposed nothing")
+		r.logf("the postmortem proposed nothing above the floor")
 
 		return
 	}

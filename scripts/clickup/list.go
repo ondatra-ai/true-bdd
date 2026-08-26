@@ -33,7 +33,7 @@ If there are none, return [].
 func List(out io.Writer, tag string) error {
 	answer, err := claudecli.Run(fmt.Sprintf(listPromptTemplate, listID(), tag), claudecli.Options{
 		AllowedTools: listTools,
-		Role:         "clickup",
+		Role:         roleClickUp,
 		Timeout:      claudeTimeout(),
 	})
 	if err != nil {
