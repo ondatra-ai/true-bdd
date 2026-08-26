@@ -59,6 +59,7 @@ const (
 	reviewBudget   = 900 * time.Second // then takes minutes to post the review
 	poll           = 30 * time.Second
 	approveBudget  = 600 * time.Second
+	checksBudget   = 900 * time.Second // gates runs ~3 min, CodeRabbit in seconds
 )
 
 // historyBudgetBytes caps the transcript the postmortem is handed.
@@ -232,17 +233,23 @@ func usage(message string) {
 
 // save writes a round's artifact.
 func (r *Run) save(path string, payload any) {
-	err := os.MkdirAll(filepath.Dir(path), dirMode)
-	if err != nil {
-		r.dief("creating %s: %v", filepath.Dir(path), err)
-	}
-
 	encoded, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		r.dief("encoding %s: %v", path, err)
 	}
 
-	err = os.WriteFile(path, encoded, fileMode)
+	r.saveText(path, string(encoded))
+}
+
+// saveText writes an artifact meant to be read rather than parsed — JSON
+// would quote a stop's stderr into escaped newlines.
+func (r *Run) saveText(path, payload string) {
+	err := os.MkdirAll(filepath.Dir(path), dirMode)
+	if err != nil {
+		r.dief("creating %s: %v", filepath.Dir(path), err)
+	}
+
+	err = os.WriteFile(path, []byte(payload), fileMode)
 	if err != nil {
 		r.dief("writing %s: %v", path, err)
 	}
