@@ -159,4 +159,4 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 
 ---
 
-*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-25.*
+*Drawn from the engine seed (`true-bdd/`, `templates/`) and the `tests/bdd-cli` fixture documents — 2026-08-26.*

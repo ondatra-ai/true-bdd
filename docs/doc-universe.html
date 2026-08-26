@@ -626,7 +626,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
             <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/lint-schemas.sh</code>, a CI gate), not by a command</td></tr>
           <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
-            <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default</td></tr>
+            <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default. A fourth key, <code>coverage</code>, is the one optional one: <strong>build tests</strong> runs it to learn which steps bind (writing JSON to <code>$TRUEBDD_COVERAGE_REPORT</code>), and a suite declaring none falls back to a model reading the source in prose</td></tr>
         </tbody>
       </table>
     </div>
@@ -634,7 +634,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-25 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-26 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>
