@@ -1,10 +1,13 @@
 package merge
 
 import (
-	"os"
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
 // merge approves, then lands it. HEAD is trustworthy because the loop only
@@ -16,6 +19,7 @@ func (r *Run) merge() {
 	current := r.branchStillOurs()
 	r.refuseDirtyMerge()
 	r.assertHeadWasReviewed()
+	r.waitForChecks()
 	r.approve()
 	r.land()
 	r.returnToTrunk(current)
@@ -95,33 +99,118 @@ func (r *Run) approve() {
 	r.logf("! no approval within %s — trying the merge anyway", approveBudget)
 }
 
-// squashArgs is the merge command, with whatever escalation it needs.
-func (r *Run) squashArgs(extra ...string) []string {
-	return append([]string{
-		ghBin, "pr", "merge", strconv.Itoa(r.pr), "--squash", "--delete-branch",
-	}, extra...)
+// requiredCheck is one row of `gh pr checks --required`. bucket is gh's own
+// normalisation of the CheckRun and StatusContext states into pass, fail,
+// pending, skipping or cancel.
+type requiredCheck struct {
+	Name   string `json:"name"`
+	State  string `json:"state"`
+	Bucket string `json:"bucket"`
+	Link   string `json:"link"`
 }
 
-func (r *Run) land() {
-	err := os.MkdirAll(StateDir, dirMode)
-	if err != nil {
-		r.dief("creating %s: %v", StateDir, err)
+// waitForChecks blocks until no required check gh can SEE is still running —
+// one absent from the rollup is invisible here, and left to land()'s refusal.
+// Nothing bypasses that any more, so #93's silent merge over IN_PROGRESS is a stop.
+func (r *Run) waitForChecks() {
+	r.logf("waiting for the required checks")
+
+	for waited := time.Duration(0); ; waited += poll {
+		pending := r.pendingChecks(r.requiredChecks())
+		if len(pending) == 0 {
+			r.logf("every required check gh reports has finished, after %s", waited)
+
+			return
+		}
+
+		if waited >= checksBudget {
+			r.dief("still waiting on %s after %s. Nothing was merged and the branch\n"+
+				"  is intact — let CI finish, then re-run.",
+				strings.Join(pending, ", "), checksBudget)
+		}
+
+		r.logf("waiting on %s", strings.Join(pending, ", "))
+		time.Sleep(poll)
+	}
+}
+
+// notReportedYet is the substring shared by gh's "no checks reported" and
+// "no required checks reported" — the CodeRabbit context before the first
+// review is requested. Absent is "not yet", never red.
+const notReportedYet = "checks reported on the"
+
+// requiredChecks is what gh reports as required. `gh pr view --json
+// statusCheckRollup` carries no isRequired field, so the filtering has to be
+// gh's; with --json, gh prints the rollup and exits 0 whatever it holds.
+func (r *Run) requiredChecks() []requiredCheck {
+	answer := r.sh([]string{
+		ghBin, "pr", "checks", strconv.Itoa(r.pr),
+		"--required", "--json", "name,state,bucket,link",
+	}, options{})
+
+	body := strings.TrimSpace(answer.stdout)
+
+	switch {
+	case answer.code != 0 && strings.Contains(answer.stderr, notReportedYet):
+		return nil
+	case answer.code != 0:
+		r.dief("`gh pr checks` failed (%d) — this is not a verdict on the checks:\n%s",
+			answer.code, textutil.Truncate(firstNonEmpty(answer.stderr, body), diagnosticLimit))
+	case body == "":
+		return nil
 	}
 
+	var checks []requiredCheck
+
+	err := json.Unmarshal([]byte(body), &checks)
+	if err != nil {
+		r.dief("could not read `gh pr checks`:\n%s", textutil.Truncate(body, diagnosticLimit))
+	}
+
+	return checks
+}
+
+// pendingChecks names the checks still running, and stops on any verdict the
+// merge cannot survive — including a bucket gh grew after this was written.
+func (r *Run) pendingChecks(checks []requiredCheck) []string {
+	if len(checks) == 0 {
+		return []string{"any required check to report"}
+	}
+
+	var pending []string
+
+	for _, check := range checks {
+		switch check.Bucket {
+		case "pass", "skipping":
+		case "pending":
+			pending = append(pending, fmt.Sprintf("%s (%s)", check.Name, check.State))
+		default:
+			r.dief("required check %q is %s — nothing was merged and the branch is intact.\n"+
+				"  %s", check.Name, check.State, check.Link)
+		}
+	}
+
+	return pending
+}
+
+// squashArgs is the merge command.
+func (r *Run) squashArgs() []string {
+	return []string{ghBin, "pr", "merge", strconv.Itoa(r.pr), "--squash", "--delete-branch"}
+}
+
+// land squashes, or stops. The admin bypass is gone: it fired on a pending
+// check, a failing one, a conflict and a missing approval identically, and
+// merged #93 over a required check still IN_PROGRESS.
+func (r *Run) land() {
 	attempt := r.sh(r.squashArgs(), options{})
 	if attempt.code == 0 {
 		return
 	}
 
-	r.logf("ordinary merge refused:")
-
-	for line := range strings.SplitSeq(attempt.stderr, "\n") {
-		r.logf("  %s", line)
-	}
-
-	r.logf("escalating to --admin (the ruleset grants the admin role a " +
-		"pull_request-scoped bypass)")
-	r.sh(r.squashArgs("--admin"), options{check: true, stream: true})
+	r.saveText(StateDir+"/merge-err.txt", attempt.stderr)
+	r.dief("the merge was refused and nothing was bypassed:\n%s\n"+
+		"  The branch is intact. Read the refusal, fix it, and re-run.",
+		indent(attempt.stderr, "    "))
 }
 
 func (r *Run) returnToTrunk(merged string) {
