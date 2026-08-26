@@ -1,9 +1,9 @@
 ---
 name: task-start
-description: Start a new Task — roll session history, bind a ClickUp Ticket to it, and move that Ticket TO DO → PROCESSING. Pass a ticket id to take an existing one; with no argument it asks which Ticket to take or creates one from what you describe. Leaves the repo and the current branch untouched.
-disable-model-invocation: true
-argument-hint: "[ticket-id]"
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/roll-history.sh) Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__listTasks mcp__claude_ai_ClickUP__createTask mcp__claude_ai_ClickUP__updateTask
+description: Start a new Task — roll session history, bind one ClickUp Ticket to it, and move that Ticket TO DO → PROCESSING. Takes the ticket id; without one it refuses. Use when task-handle reaches its Start step, or when the user names a ticket to start. Leaves the repo and the current branch untouched.
+disallowed-tools: AskUserQuestion
+argument-hint: "<ticket-id>"
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/roll-history.sh) Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__updateTask
 ---
 
 # Task Start
@@ -32,32 +32,16 @@ say so to the user **before** anything else. That Ticket is still `PROCESSING`
 in ClickUp and nothing else will ever mention it. Then carry on — this is a
 report, not a refusal.
 
-### 1. Get a Ticket
+### 1. Get the Ticket
 
-**With an id in `$ARGUMENTS`** — `getTask` it. It must exist and its status
-must be `TO DO`. If it is already `PROCESSING`, `DONE` or `FAILED`, stop and
-say so: that Ticket is somebody's work, not a fresh start.
+`getTask` the id in `$ARGUMENTS`. It must exist and its status must be
+`TO DO`. If it is already `PROCESSING`, `DONE` or `FAILED`, stop and say so:
+that Ticket is somebody's work, not a fresh start.
 
-**With no argument** — ask the user, and do not let up until one of these two
-is chosen. There is no third "no ticket" option, and no "skip for now":
-
-- **take an existing one** — `listTasks` on list `901523097822` filtered to
-  `TO DO`, show them, let the user pick;
-- **create one** — ask what needs doing, then write it up and `createTask` in
-  that list.
-
-A Ticket you create carries the four headings `scripts/clickup` renders:
-
-```text
-### Why
-### What to change
-### Verification
-### Context
-```
-
-Write it to be picked up cold by someone who was not in this conversation.
-`What to change` names `file:line`. `Verification` is a command that can be
-run — it is what will later decide `DONE`.
+**An empty `$ARGUMENTS` is a refusal.** Report that the ticket id is missing
+and stop, having written nothing — no bind, no status. Choosing which Ticket
+to take, and writing one that does not exist yet, are the caller's job: the
+user picks from ClickUp, or `task-loop` reads the queue.
 
 ### 2. Bind it
 
@@ -74,8 +58,9 @@ read the binding to know what they are closing.
 
 ### 4. Report
 
-One line: the Ticket id, its title, and its URL. Then stop and wait — the work
-itself is the next prompt's business, not this skill's.
+One line: the Ticket id, its title, and its URL. Then hand back to the caller —
+the work itself belongs to `task-handle`, or to the user's next prompt, not to
+this skill.
 
 ## Rules
 

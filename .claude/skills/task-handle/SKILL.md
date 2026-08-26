@@ -35,9 +35,8 @@ untouched, so it is not a `FAILED` — a human fills it in.
 
 ## 2. Start
 
-```text
-/task-start <ticket-id>
-```
+Invoke `task-start` with the ticket id. It rolls the history, binds the
+Ticket and moves it to `PROCESSING`.
 
 ```bash
 "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" mandate <ticket-id>
