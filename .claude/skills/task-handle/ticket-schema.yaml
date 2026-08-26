@@ -57,9 +57,9 @@ fields:
     type: checkbox
     required: true
     purpose: >-
-      "formally ready for automation", not "looks easy". Set by hand today.
-      Unchecking it is how task-handle removes a Ticket from the queue without
-      touching its status.
+      "formally ready for automation", not "looks easy". A human's checkbox,
+      set and cleared by hand: no skill writes it. task-handle only reads this
+      file — an incomplete Ticket halts it, untouched.
 
 # The description, rendered by scripts/clickup and read cold by whoever takes
 # the Ticket. All four headings, in this order.

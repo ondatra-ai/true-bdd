@@ -37,7 +37,7 @@ func TestEveryGlobIsSupported(t *testing.T) {
 func TestDocumentationDiffSkipsTheExpensiveGates(t *testing.T) {
 	t.Parallel()
 
-	got := names(gates.Select([]string{"docs/for_further/task-automation.md", "README.md"}))
+	got := names(gates.Select([]string{"docs/for_further/observability.md", "README.md"}))
 	want := []string{"Lint repository shape", "Lint markdown"}
 
 	if !slices.Equal(got, want) {

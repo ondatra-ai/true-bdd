@@ -10,9 +10,9 @@ import (
 
 const workflow = "../../.github/workflows/ci.yml"
 
-// The invariant §6 of docs/for_further/task-automation.md is built on: the
-// LIST of gates is single-sourced even though the SELECTION is local-only.
-// This pair has drifted before — gates.sh ran lint-comments.sh, CI did not.
+// The LIST of gates is single-sourced even though the SELECTION is local-only
+// (see this package's doc comment). This pair has drifted before — gates.sh
+// ran lint-comments.sh and CI did not, for months.
 func TestCIRunsEveryGate(t *testing.T) {
 	t.Parallel()
 

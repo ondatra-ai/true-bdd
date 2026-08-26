@@ -28,27 +28,25 @@ const (
 	lastRound    = 3
 )
 
-// Floors is where a finding's score sends it. Two sets, because an
-// unattended run cannot afford to stop for anything a human would shrug at,
-// and it has no human to shrug.
+// Floors is the row Start picks from whether task-handle stamped a mandate.
+// Under one nothing is fixed inline — that is what the Ticket is for.
+//
+//	            drop    ticket   fix inline
+//	manual      1-5     6-8      9-10
+//	automatic   1-8     9-10     never
 type Floors struct {
 	Fix        int // fix inline at or above this
 	Ticket     int // file a ClickUp Ticket at or above this; below it, drop
 	Postmortem int // file a postmortem proposal at or above this
 }
 
-// The band edges §8 of docs/for_further/task-automation.md tabulates.
-// neverFix is above the 1-10 scale on purpose: under a mandate nothing is
-// fixed inline, because a fix nobody reviewed is what the Ticket was for.
 const (
 	severe   = 9
 	worth    = 6
 	neverFix = 11
 )
 
-// manual is what the code did before the mandate existed.
-//
-//nolint:gochecknoglobals // two named rows of a table; see docs §8.
+//nolint:gochecknoglobals // the two rows of the table above.
 var (
 	manual    = Floors{Fix: severe, Ticket: worth, Postmortem: worth}
 	automatic = Floors{Fix: neverFix, Ticket: severe, Postmortem: severe}

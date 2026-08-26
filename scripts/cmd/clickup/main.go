@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 )
@@ -45,9 +46,27 @@ func run(args []string) error {
 		return runFile(command, rest)
 	case "list":
 		return runList(command, rest)
+	case "status":
+		return runStatus(rest)
 	default:
 		return fmt.Errorf("%w: %q\n%s", errUnknownCommand, command, usage)
 	}
+}
+
+// runStatus closes one Ticket. The three arguments are positional because
+// the callers are .claude/skills/lib/close-task.sh and nothing else.
+func runStatus(args []string) error {
+	const wanted = 3
+	if len(args) < wanted {
+		return fmt.Errorf("%w\n%s", errMissingFlag, usage)
+	}
+
+	err := clickup.Status(os.Stdout, args[0], args[1], strings.Join(args[2:], " "))
+	if err != nil {
+		return fmt.Errorf("closing the ticket: %w", err)
+	}
+
+	return nil
 }
 
 func runRender(command string, args []string) error {

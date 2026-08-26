@@ -90,7 +90,7 @@ func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
 func createTickets(prompt string) ([]Ticket, error) {
 	answer, err := claudecli.Run(prompt, claudecli.Options{
 		AllowedTools: createTools,
-		Role:         "clickup",
+		Role:         roleClickUp,
 		Timeout:      claudeTimeout(),
 	})
 	if err != nil {

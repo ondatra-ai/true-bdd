@@ -21,7 +21,7 @@ Bind exactly one ClickUp Ticket to this Task and move it to `PROCESSING`.
 **That is the whole job.** Do not create a branch, do not start the work, do
 not check whether the previous Task was finished, do not judge whether this
 Ticket is well written. Those belong to whoever called you — `task-handle` or
-the user. Design record: `docs/for_further/task-automation.md`.
+the user.
 
 ## Steps
 

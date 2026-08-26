@@ -22,11 +22,16 @@ const (
 const (
 	createTools = "mcp__claude_ai_ClickUP__createTask,mcp__claude_ai_ClickUP__addTagToTask"
 	listTools   = "mcp__claude_ai_ClickUP__listTasks,mcp__claude_ai_ClickUP__getTask"
+	// No updateTask beyond the status field is possible here: the tool can
+	// write a description, so the prompt forbids it and this line cannot.
+	statusTools = "mcp__claude_ai_ClickUP__updateTask,mcp__claude_ai_ClickUP__addTaskComment"
 )
 
 const (
 	defaultListID  = "901523097822"
 	defaultTimeout = 900 * time.Second
+	// roleClickUp labels this package's headless turns in the history.
+	roleClickUp = "clickup"
 )
 
 // Permissions for what this package writes: artifacts a person reads, in a
