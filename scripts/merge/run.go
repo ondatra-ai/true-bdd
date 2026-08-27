@@ -92,6 +92,10 @@ type Run struct {
 	// the Ticket that is bound right now.
 	floors Floors
 
+	// postmortemEnabled is scripts/.config.json's switch — not Floors.Postmortem,
+	// which is the score a proposal must reach once the postmortem has run.
+	postmortemEnabled bool
+
 	// reviewedThisRun holds commits this run WATCHED a review land against —
 	// the tiebreaker reviewedSHA's body_len test can't provide on its own
 	// (see reviewedSHA), recorded live since post-approve the two look identical.
@@ -123,6 +127,13 @@ func Start(args []string) *Run {
 	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
 	if state.Get(".", state.MandateKey) != "" {
 		run.floors = automatic
+	}
+
+	// Read before the first round: a config that does not parse must stop the
+	// run here, not after the merge has landed.
+	run.postmortemEnabled, err = loadPostmortem(configPath)
+	if err != nil {
+		usage(err.Error())
 	}
 
 	branch := run.currentBranch()
@@ -165,6 +176,14 @@ func (r *Run) Main() {
 	}
 
 	r.merge()
+
+	if !r.postmortemEnabled {
+		r.banner("postmortem")
+		r.logf("switched off in %s — skipping", configPath)
+
+		return
+	}
+
 	r.postmortem()
 }
 

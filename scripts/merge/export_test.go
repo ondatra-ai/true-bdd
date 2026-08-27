@@ -39,6 +39,9 @@ func ParseReviewBody(body string) []ParsedFinding {
 	return parsed
 }
 
+// LoadPostmortem reads the postmortem switch out of a config file.
+func LoadPostmortem(path string) (bool, error) { return loadPostmortem(path) }
+
 // Clean drops the machinery blocks from a comment body.
 func Clean(body string) string { return clean(body) }
 
