@@ -16,7 +16,12 @@
       "Bash(go test:*)",
       "Bash(golangci-lint run:*)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(git checkout -b:*)",
+      "Bash(git checkout -B:*)",
+      "Bash(git switch -c:*)",
+      "Bash(git switch -C:*)"
+    ],
     "ask": []
   },
   "hooks": {
@@ -34,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh prompt-submit",
+            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/history prompt-submit",
             "timeout": 10
           }
         ]
@@ -46,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/lint-changed.sh",
+            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/lint hook",
             "timeout": 120,
             "statusMessage": "Linting the file just written"
           }
@@ -59,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh prompt-submit",
+            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/history prompt-submit",
             "timeout": 15
           }
         ]

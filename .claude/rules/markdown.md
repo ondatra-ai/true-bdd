@@ -5,10 +5,10 @@ paths:
 
 # Markdown
 
-`./scripts/lint-markdown.sh [FILE...]` gates every `.md` this repository
+`go run ./scripts/cmd/lint markdown [FILE...]` gates every `.md` this repository
 authors, with markdownlint-cli2 and `.markdownlint-cli2.yaml`. Named files are
 auto-fixed; bare, it only reports. It runs per-edit from the PostToolUse hook
-and again in `gates.sh` and CI, so a breach surfaces at the edit that made it.
+and again in the gates and CI, so a breach surfaces at the edit that made it.
 
 **Write long lines.** `MD013` is off: prose runs to whatever length the
 sentence wants, and hand-wrapping at 80 columns is churn the gate will not

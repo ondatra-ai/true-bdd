@@ -2,7 +2,7 @@
 # `documents.scenarios_yaml` in true-bdd.yaml, conventionally
 # docs/scenarios.yaml).
 #
-# The filename is not free: scripts/lint-schemas.sh pairs
+# The filename is not free: the schema gate pairs
 # `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
 # `scenarios_yaml` — the `_yaml` suffix included.
 #

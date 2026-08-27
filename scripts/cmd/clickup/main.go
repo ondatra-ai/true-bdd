@@ -22,6 +22,7 @@ const usage = `usage:
   clickup render --queue <path> --tag <tag> [--pr <number>]
   clickup file   --queue <path> --tag <tag> [--pr <number>]
   clickup list   --tag <tag>
+  clickup close  <STATUS> <comment...>
 `
 
 func main() {
@@ -48,13 +49,15 @@ func run(args []string) error {
 		return runList(command, rest)
 	case "status":
 		return runStatus(rest)
+	case "close":
+		return runClose(rest)
 	default:
 		return fmt.Errorf("%w: %q\n%s", errUnknownCommand, command, usage)
 	}
 }
 
-// runStatus closes one Ticket. The three arguments are positional because
-// the callers are .claude/skills/lib/close-task.sh and nothing else.
+// runStatus closes the named Ticket, leaving the binding alone. `close` is
+// what the /task-* skills call; this is the by-hand form.
 func runStatus(args []string) error {
 	const wanted = 3
 	if len(args) < wanted {

@@ -1,0 +1,1 @@
+Generate a short git branch name for the staged changes shown below. Rules: lowercase kebab-case; start with a type prefix (feat/, fix/, chore/, docs/, refactor/); max 60 chars total; no trailing slash; no quotes; no explanation. Output the branch name only on a single line.

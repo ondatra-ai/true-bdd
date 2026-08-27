@@ -53,7 +53,7 @@ Cost is one extra headless turn with `LIST_TOOLS`; it replaces 9 duplicate Click
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -101,7 +101,7 @@ Saves ~290s per occurrence plus the manual investigation.
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -145,7 +145,7 @@ No new flag and no behaviour change for existing callers — just an artifact th
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -187,7 +187,7 @@ In `await_acknowledgement`, before returning either terminal verdict (`nothing-t
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -229,7 +229,7 @@ At line 1259, before `log("requesting approval")`, read `reviewDecision` once. I
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context

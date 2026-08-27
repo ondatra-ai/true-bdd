@@ -1,0 +1,10 @@
+Read .claude/skills/update-memory/SKILL.md and execute that skill now.
+
+You are running headless, from the commit program, immediately before it
+stages. Anything you write lands in this commit.
+
+Do not stage or commit anything yourself.
+
+Finish by printing the skill's step 4 report and nothing else: either
+`memory: +N/-M in ## <section>`, `memory: no update needed`, or
+`memory: nothing to update`.

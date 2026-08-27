@@ -1,6 +1,6 @@
 ---
 name: sync-doc-universe
-description: Audit the current state of the documents declared in true-bdd/true-bdd.yaml (documents:, document dirs in paths:, templates) against the doc universe (docs/doc-universe.md + docs/doc-universe.html), in both directions, and resolve every inconsistency by asking the user — or, with the argument `auto`, by its documented fixed rules without asking. Not diff-based — it checks what exists now. Invoked from pr-commit before every commit; also usable standalone when the user asks to align the doc universe.
+description: Audit the current state of the documents declared in true-bdd/true-bdd.yaml (documents:, document dirs in paths:, templates) against the doc universe (docs/doc-universe.md + docs/doc-universe.html), in both directions, and resolve every inconsistency by asking the user — or, with the argument `auto`, by its documented fixed rules without asking. Not diff-based — it checks what exists now. Invoked with `auto` by scripts/commit before every commit; also usable standalone when the user asks to align the doc universe.
 ---
 
 # Sync Doc Universe
@@ -10,7 +10,7 @@ The doc universe — `docs/doc-universe.md` and its interactive twin
 which files exist, which fields they carry, how they join, and what each
 command reads and writes. This skill audits the **current state** of both
 sides — not the diff; drift is found wherever it came from — and resolves
-every inconsistency **by asking the user — never silently**.
+every inconsistency **by asking the user**, unless it was invoked with `auto`.
 
 ## The two sides
 
@@ -33,7 +33,7 @@ the universe's prose and still violate its schema. Check each schema
 against both its document and the universe's account of that document —
 a field the universe describes but the schema forbids (or omits) is an
 inconsistency, and so is a schema constraint no longer true of the
-document. `./scripts/lint-schemas.sh` (also a CI gate) settles the
+document. `go run ./scripts/cmd/lint schemas` (also a CI gate) settles the
 document-vs-schema half mechanically; run it first and treat any failure
 as a finding to ask about.
 
@@ -66,7 +66,7 @@ and meaning intact are **not** inconsistencies — do not flag them.
 1. **Resolve the scope.** Read `true-bdd/true-bdd.yaml` and collect the
    in-scope paths per the table above.
 2. **Validate documents against schemas.** Run
-   `./scripts/lint-schemas.sh`. Every failure is an inconsistency for
+   `go run ./scripts/cmd/lint schemas`. Every failure is an inconsistency for
    step 6 — do not fix it silently, and do not skip this because CI also
    runs it; the point is to catch it before the push.
 3. **Inventory the universe's claims.** Read both universe files and list
@@ -82,9 +82,9 @@ and meaning intact are **not** inconsistencies — do not flag them.
    any content present or stated differently in only one is an
    inconsistency.
 7. **Ask about every inconsistency** — unless invoked with the argument
-   `auto`, which is what `task-handle` passes: under a mandate there is
-   nobody to ask, so resolve each one by the fixed rule in **Unattended
-   mode** below instead, and list every resolution in step 9.
+   `auto`, which is what `scripts/commit` passes on every commit: a headless
+   program has nobody to ask, so resolve each one by the fixed rule in
+   **Unattended mode** below instead, and list every resolution in step 9.
 
    Use AskUserQuestion — one question
    per inconsistency (batch up to 4 per call), quoting the exact text on
@@ -104,20 +104,24 @@ and meaning intact are **not** inconsistencies — do not flag them.
    story; in the html, remember the join map (card anchors, `#joins`
    table, the SVG edges) may also encode the claim being fixed.
 9. **Report** the list of inconsistencies and how each one was resolved
-   (or `doc universe: consistent` when none were found). No staging
-   needed when run from pr-commit — its commit step stages everything.
+   (or `doc universe: consistent` when none were found). Never stage or
+   commit — `scripts/commit` stages everything after this step.
 
 ## Unattended mode (`auto`)
 
 Invoked with the argument `auto`, resolve every inconsistency by these rules
-and ask nothing. `task-handle` passes it; a person never should.
+and ask nothing. **Every commit passes it**: `scripts/commit` runs this skill
+headless, where there is no one to ask, so the alternative to resolving by rule
+is not resolving at all. The decisions land in the commit and are reviewed in
+the diff instead of before the fact — which is why step 9's report is not
+optional.
 
 - **The document is truth → the universe is updated.** The universe
   *describes*; the ticket being worked just changed the thing described.
 - **`doc-universe.md` is truth → the `.html` is updated.** The html is a
   rendering of the md, which is where content is written.
-- **A `lint-schemas.sh` failure is not an inconsistency to resolve.** It is a
-  red gate, it already fails `gates.sh`, and pretending otherwise would edit a
+- **A schema-lint failure is not an inconsistency to resolve.** It is a red
+  gate, it already fails the gates, and pretending otherwise would edit a
   document to match a schema nobody reviewed.
 
 Report every resolution in step 9 exactly as if it had been asked about, so
@@ -125,8 +129,8 @@ the commit shows what was decided on the user's behalf.
 
 ## Rules
 
-- Never resolve an inconsistency without asking — even an "obvious" one.
-  The single exception is the `auto` argument above.
+- Interactively, never resolve an inconsistency without asking — even an
+  "obvious" one. Under `auto` the fixed rules replace every question.
 - Never publish `doc-universe.html` as an artifact or anywhere else —
   merging it to main IS its deploy (GitHub Pages).
 - Do not invent inconsistencies from style or wording; structure only.

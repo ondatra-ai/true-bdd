@@ -11,8 +11,8 @@ import (
 const workflow = "../../.github/workflows/ci.yml"
 
 // The LIST of gates is single-sourced even though the SELECTION is local-only
-// (see this package's doc comment). This pair has drifted before — gates.sh
-// ran lint-comments.sh and CI did not, for months.
+// (see this package's doc comment). This pair has drifted before — the local
+// pipeline ran the comment gate and CI did not, for months.
 func TestCIRunsEveryGate(t *testing.T) {
 	t.Parallel()
 

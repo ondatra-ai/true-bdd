@@ -3,7 +3,7 @@ name: task-start
 description: Start a new Task — roll session history, bind one ClickUp Ticket to it, and move that Ticket TO DO → PROCESSING. Takes the ticket id; without one it refuses. Use when task-handle reaches its Start step, or when the user names a ticket to start. Leaves the repo and the current branch untouched.
 disallowed-tools: AskUserQuestion
 argument-hint: "<ticket-id>"
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/roll-history.sh) Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__updateTask
+allowed-tools: Bash(go *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__updateTask
 ---
 
 # Task Start
@@ -11,7 +11,7 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/roll-history.sh) Bash(${CLAUDE_PROJECT_D
 Session history is already rolled by the time you read this — the injection
 below ran first:
 
-!`${CLAUDE_SKILL_DIR}/roll-history.sh`
+!`go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history roll`
 
 Ticket argument: `$ARGUMENTS`
 
@@ -46,7 +46,7 @@ user picks from ClickUp, or `task-loop` reads the queue.
 ### 2. Bind it
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" bind <ticket-id>
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history bind <ticket-id>
 ```
 
 ### 3. Move it to PROCESSING
@@ -61,7 +61,7 @@ Ticket stays in `TO DO`, where `task-loop`'s queue predicate hands it out
 again while it is already being worked.
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" unbind
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history unbind
 ```
 
 Report the refusal verbatim and stop — never substitute a status that does

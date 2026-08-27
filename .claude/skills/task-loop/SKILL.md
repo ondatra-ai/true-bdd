@@ -3,7 +3,7 @@ name: task-loop
 description: Work the ClickUp queue unattended — take ready Tickets highest Triage Score first, hand each to task-handle, and continue until the queue is dry. Use when the user says "work the queue", "run the loop", or "task-loop". For a single named ticket use task-handle.
 disable-model-invocation: true
 disallowed-tools: AskUserQuestion
-allowed-tools: Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) Bash(git *) mcp__claude_ai_ClickUP__listTasks mcp__claude_ai_ClickUP__getTask
+allowed-tools: Bash(go *) Bash(git *) mcp__claude_ai_ClickUP__listTasks mcp__claude_ai_ClickUP__getTask
 ---
 
 # Task Loop
@@ -11,7 +11,7 @@ allowed-tools: Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) Bash(git *
 ```!
 git -C "${CLAUDE_PROJECT_DIR}" rev-parse --abbrev-ref HEAD
 git -C "${CLAUDE_PROJECT_DIR}" status --short
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" bound
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history bound
 ```
 
 You own the **queue and nothing else**. One Ticket at a time — this instance is

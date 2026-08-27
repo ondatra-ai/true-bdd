@@ -1,5 +1,5 @@
-# alint config — the repository-shape gate. `scripts/lints.sh` and
-# `gates.sh` run it as `alint check`; CI runs it too.
+# alint config — the repository-shape gate. `go run ./scripts/cmd/lint` and
+# the gate table run it as `alint check`; CI runs it too.
 #
 # Deliberately no `extends:`. The bundled rulesets carry 22 sets of opinions
 # this repository never chose; every rule here is one it did.
@@ -39,6 +39,24 @@ rules:
         - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: "rm -rf the __pycache__ — this repository runs no Python."
+
+  # start.sh exports .env before `claude` starts, which nothing inside a
+  # session can do. Everything else is Go under scripts/, where the compiler,
+  # the tests and golangci-lint can see it — which shell never was.
+  - id: no-shell
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/*.sh"
+        - "**/*.bash"
+      exclude:
+        - "start.sh"
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: >-
+      Shell in a Go repository. Port it to Go under scripts/ and invoke it as
+      `go run ./scripts/cmd/<x>`; start.sh is the only exception.
 
   # Three roots and no fourth: services/<name>/ is product code, tests/<name>/
   # exercises it, scripts/ is the tooling that drives the repository. A fourth
@@ -126,13 +144,13 @@ rules:
     message: "CLAUDE.md must open with the KARPATHY:BEGIN marker."
 
   # Shelled out because alint cannot express either: line_max_width has no
-  # per-line exemption and the mirror needs a live upstream fetch. The script
+  # per-line exemption and the mirror needs a live upstream fetch. The command
   # is the whole rule; its exit code and stderr are the verdict.
   - id: claude-md-width-and-mirror
     kind: command
     level: error
     paths: "CLAUDE.md"
-    command: ["./scripts/lint-claude.md.sh"]
+    command: ["go", "run", "./scripts/cmd/lint", "claude-md"]
     timeout: 60
 
   # crush merges every config it finds walking up from its cwd, so one here

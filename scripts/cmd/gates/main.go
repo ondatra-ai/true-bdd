@@ -1,7 +1,7 @@
 // Command gates runs this repository's quality pipeline.
 //
-// Invoked by .claude/skills/pr-commit/gates.sh, which is what CI and every
-// human commit run. The table lives in scripts/gates; this is only its CLI.
+// Invoked by scripts/commit and by hand; CI runs the same table step by step.
+// The table lives in scripts/gates — this is only its CLI.
 //
 //	gates run                    every gate
 //	gates run --changed main     only the gates the diff against main needs

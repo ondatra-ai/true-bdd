@@ -37,20 +37,20 @@ jobs:
         run: npm i -g @asamarts/alint@0.15.2
 
       - name: Lint document schemas
-        run: ./scripts/lint-schemas.sh
+        run: go run ./scripts/cmd/lint schemas
 
       # Repository shape plus CLAUDE.md: .alint.yml holds the rules and
-      # shells out to lint-claude.md.sh for the two alint cannot express.
+      # shells out to `lint claude-md` for the two alint cannot express.
       - name: Lint repository shape
         run: alint check
 
       - name: Lint markdown
-        run: ./scripts/lint-markdown.sh
+        run: go run ./scripts/cmd/lint markdown
 
       # Absent here until scripts/gates' conformance test went red on it:
-      # gates.sh had run it locally for months and CI never did.
+      # the local pipeline had run it for months and CI never did.
       - name: Lint comments
-        run: ./scripts/lint-comments.sh
+        run: go run ./scripts/cmd/lint comments
 
       - name: Lint
         uses: golangci/golangci-lint-action@v8
@@ -76,6 +76,6 @@ jobs:
       # suite itself stays manual. TestStepCoverage stays OUT: only 4 of
       # 244 scenarios' steps bind — adding it would make this job UNSATISFIABLE, not just fail it.
       #	~1680 unbound steps across those 243 would block EVERY PR, not just
-      #	the port's. Land it here and in gates.sh's matching line: ClickUp 86cb6fjwy.
+      #	the port's. Land it here and in the gate table's row: ClickUp 86cb6fjwy.
       - name: BDD web coverage guards
         run: go test -tags bdd -count=1 -run '^TestScenarioCoverage$' ./tests/bdd-web/

@@ -12,11 +12,15 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
-	"github.com/ondatra-ai/true-bdd/scripts/mandate"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
-// Gates is the quality pipeline a fix must leave green.
-const Gates = "./.claude/skills/pr-commit/gates.sh"
+// Gates is the quality pipeline a fix must leave green, as a command line for
+// the prompt and the tool allowlist. GatesArgv is the same thing to exec.
+const Gates = "go run ./scripts/cmd/gates run"
+
+//nolint:gochecknoglobals // Gates split into argv; a constant in all but syntax.
+var GatesArgv = []string{"go", "run", "./scripts/cmd/gates", "run"}
 
 // StateDir holds every artifact a round produces, so a score can be argued
 // with after the fact.
@@ -117,7 +121,7 @@ func Start(args []string) *Run {
 	requireTools()
 
 	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
-	if mandate.Active(".") {
+	if state.Get(".", state.MandateKey) != "" {
 		run.floors = automatic
 	}
 

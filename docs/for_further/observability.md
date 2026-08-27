@@ -99,7 +99,7 @@ session, so either question is a filter.
 | `tools/merge` | Go | OTel Go SDK, in place — the same SDK as the harness and the engine, now that the merge loop is Go too. Superseded the Python plan: the "separate ticket judged on its own merits" this document anticipated was raised and landed, porting `merge.py`, `clickup.py` and `history.py` so the repository is Go and sh only |
 | test harness | Go | OTel Go SDK |
 | the engine | Go | Keeps its existing derivation — `reporter/` already reconstructs phases and turns from `tmp/true-bdd.log.json`, 3,375 LOC of it. Do not re-derive what is paid for |
-| `gates.sh`, `commit.sh` | bash | [`otel-cli`](https://github.com/equinix-labs/otel-cli) — purpose-built for shell, and **non-recording when unconfigured**, so an uninstrumented environment is silent rather than broken |
+| `tools/commit`, `tools/gates` | Go | OTel Go SDK, as above — the shell these were is gone, and with it the `otel-cli` plan this row used to carry |
 | `code-review` and other skills | mixed | `otel-cli` around the invocation |
 
 **New producers emit structure; the engine derives it.** Emitting is roughly
@@ -229,14 +229,14 @@ prompt bodies, so the report's contents are not secret and the service needs
   in a span, never in an artifact.
 - **`.env` values** and anything sourced from them.
 
-Run `.claude/skills/pr-commit/scan-recordings.sh`'s sweep over an artifact body
+Run `scripts/commit`'s recording sweep over an artifact body
 before upload and refuse on a hit, so the rule stays "nothing leaves unscanned".
 
 ## 12. Sequencing
 
 All three land in one attempt, by the maintainer's decision:
 
-1. Instrument `tools/merge`, the harness and the bash gates.
+1. Instrument `tools/merge`, `tools/commit`, the harness and the gates.
 2. Build the Go + Postgres OTLP monolith on Railway.
 3. Port the four screens with playwright goldens proving parity.
 

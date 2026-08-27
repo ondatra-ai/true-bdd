@@ -34,7 +34,7 @@
 /tests/legacy/bdd-web-playwright/.tmp/
 /tests/legacy/bdd-web-playwright/tmp/
 
-# Conversation history captured by .claude/hooks/history.sh
+# Conversation history captured by scripts/cmd/history
 /docs/history/
 coverage.txt
 coverage.out

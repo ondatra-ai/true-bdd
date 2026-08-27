@@ -13,7 +13,7 @@ import (
 var errGateFailed = errors.New("gate failed")
 
 // Changed lists what this work touches against base — committed, uncommitted
-// and untracked. Two-dot, NOT base...HEAD: gates.sh runs before commit.sh
+// and untracked. Two-dot, NOT base...HEAD: the gates run before commit
 // cuts the branch, and on main three-dot resolves to an empty diff.
 func Changed(base string) ([]string, error) {
 	tracked, err := gitLines("diff", "--name-only", base)
