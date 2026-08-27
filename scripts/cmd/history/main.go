@@ -1,9 +1,11 @@
 // Command history captures the conversation into docs/history/, and holds
 // the Ticket binding that names what the current Task is working on.
 //
-// Invoked by .claude/hooks/history.sh, which is wired to UserPromptSubmit and
-// Stop with the same `prompt-submit` argument, and by the /task-* skills with
-// `new-task`, `bind`, `bound` and `unbind`.
+// .claude/settings.json wires it to UserPromptSubmit and Stop with the same
+// `prompt-submit` argument; the /task-* skills call `roll`, `new-task`,
+// `bind`, `bound` and `unbind`. The repository is CLAUDE_PROJECT_DIR when
+// Claude Code sets it, and `git rev-parse` for the `!`-injected skills that
+// get no hook environment — see history.RepoRoot.
 package main
 
 import (
@@ -84,6 +86,8 @@ func run(args []string) error {
 	hook := history.New(history.RepoRoot(), role)
 
 	switch args[0] {
+	case "roll":
+		return rollTask(hook)
 	case "new-task":
 		// Never touches stdin. The `!`-invoked slash command may inherit an
 		// interactive one, and a read would block forever, hanging the

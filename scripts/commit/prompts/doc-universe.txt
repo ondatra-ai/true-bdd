@@ -1,0 +1,14 @@
+Read .claude/skills/sync-doc-universe/SKILL.md and execute that skill now with
+the argument `auto`.
+
+You are running headless, from the commit program, with nobody to ask. Follow
+the skill's "Unattended mode (`auto`)" section exactly: resolve every
+inconsistency by its fixed rules and ask nothing.
+
+Do not stage or commit anything — the commit program stages everything after
+you. Do not publish docs/doc-universe.html anywhere; merging it to main IS its
+deploy.
+
+Finish by printing the skill's step 9 report and nothing else: every
+inconsistency found and how it was resolved, or the single line
+`doc universe: consistent` when there were none.

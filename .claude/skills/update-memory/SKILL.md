@@ -1,6 +1,6 @@
 ---
 name: update-memory
-description: Check the pending diff against CLAUDE.md and update it when the changes alter something it records — repo structure, commands, conventions, workflows. Invoked from pr-commit before every commit; also usable standalone when the user asks to sync CLAUDE.md.
+description: Check the pending diff against CLAUDE.md and update it when the changes alter something it records — repo structure, commands, conventions, workflows. Invoked headless by scripts/commit before every commit; also usable standalone when the user asks to sync CLAUDE.md.
 ---
 
 # Update Memory
@@ -9,7 +9,7 @@ CLAUDE.md is a **cache of the repository**, and a cache earns its load only wher
 expensive. You are its write path, `audit-memory` the compaction pass: delete freely, add reluctantly.
 
 **Never edit between the `KARPATHY:BEGIN`/`END` markers**; keep the file under 215 lines and 80
-columns. `scripts/lint-claude.md.sh` fails the commit on any of the three.
+columns. `go run ./scripts/cmd/lint claude-md` fails the commit on any of the three.
 
 ## Steps
 

@@ -80,7 +80,7 @@ func renderTicket(number int, finding Finding, origin string) []string {
 		"### Verification",
 		"",
 		"```bash",
-		"./.claude/skills/pr-commit/gates.sh",
+		"go run ./scripts/cmd/gates run",
 		"```",
 		"",
 		"### Context",

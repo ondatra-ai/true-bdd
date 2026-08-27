@@ -1,4 +1,4 @@
-# Config for markdownlint-cli2, driven by scripts/lint-markdown.sh.
+# Config for markdownlint-cli2, driven by scripts/lint.
 # Two rules are off repo-wide because this repository breaks them by design;
 # MD041 is off only for the file kinds that legitimately open with prose,
 # which is what `overrides` buys over a single flat config.

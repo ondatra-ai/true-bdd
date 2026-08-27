@@ -4,7 +4,7 @@ description: Take one ClickUp Ticket from TO DO to merged and DONE, unattended �
 disable-model-invocation: true
 disallowed-tools: AskUserQuestion
 argument-hint: "<ticket-id>"
-allowed-tools: Bash(${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh *) Bash(${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh *) Bash(git *) Bash(gh *) Bash(go *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__editPage
+allowed-tools: Bash(git *) Bash(gh *) Bash(go *) mcp__claude_ai_ClickUP__getTask mcp__claude_ai_ClickUP__editPage
 ---
 
 # Task Handle
@@ -44,7 +44,7 @@ Invoke `task-start` with the ticket id. It rolls the history, binds the
 Ticket and moves it to `PROCESSING`.
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" mandate <ticket-id>
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history mandate <ticket-id>
 ```
 
 The mandate tells `scripts/merge` to use the automatic triage row (1–8 skip,
@@ -62,8 +62,8 @@ chance: narrow to scope, or decline.
 
 ## 5. Commit
 
-Invoke `pr-commit` with `auto --changed main`. Put the ClickUp URL in the PR
-body.
+Invoke `pr-commit`. It takes no arguments — the mandate above is what
+narrows its gates. Put the ClickUp URL in the PR body.
 
 Gates red → fix and retry. **Five retries across the whole Ticket**; the sixth
 is a decline.
@@ -83,7 +83,7 @@ Has the user said anything since step 2? Then the mandate for this Ticket is
 cancelled:
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" unmandate
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history unmandate
 ```
 
 Leave the PR open, report `awaiting merge`, stop. The user merges and runs
@@ -94,7 +94,7 @@ Otherwise invoke `pr-merge`. It ends in `git checkout main`.
 ## 8. Close
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh" DONE "merged: <pr url> (<sha>)"
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/clickup close DONE "merged: <pr url> (<sha>)"
 ```
 
 The body of `/task-done`, called directly because that skill is
@@ -110,7 +110,7 @@ exceptions are the two recoveries the steps name for themselves, and only
 inside their shared cap of five; the sixth is a halt.
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/hooks/history.sh" unmandate
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history unmandate
 ```
 
 - **Cancel the mandate**, above. The user is coming, so nothing may merge on
@@ -131,7 +131,7 @@ Refusing to merge on the merits: unasked-for work, a scope mismatch that would
 not narrow, gates red after five retries, or any point needing a question.
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh" FAILED "<why, one or two sentences>"
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/clickup close FAILED "<why, one or two sentences>"
 ```
 
 Leave the branch and the PR as the failure left them — no close, no delete, no

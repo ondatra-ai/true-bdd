@@ -39,7 +39,7 @@ func write(t *testing.T, dir, name, body string) {
 }
 
 // repoOnMain is a checkout sitting on main with one commit, which is where
-// task-handle calls Changed from: commit.sh has not cut the branch yet.
+// task-handle calls Changed from: scripts/commit has not cut the branch yet.
 func repoOnMain(t *testing.T) string {
 	t.Helper()
 

@@ -2,7 +2,7 @@
 #
 # Read by task-handle when it grooms a Ticket, and by anything that files one
 # (scripts/clickup, the pr-merge triage). It lives here rather than under
-# true-bdd/ for two reasons: lint-schemas.sh FAILS any true-bdd/*-schema.yaml
+# true-bdd/ for two reasons: the schema gate FAILS any true-bdd/*-schema.yaml
 # whose key names no documents.<key>, and a Ticket has no document file to
 # name; and true-bdd/ is host-facing engine config, which this workflow is not.
 #

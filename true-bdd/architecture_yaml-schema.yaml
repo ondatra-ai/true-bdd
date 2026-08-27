@@ -2,7 +2,7 @@
 # `documents.architecture_yaml` in true-bdd.yaml, conventionally
 # docs/architecture/architecture.yaml).
 #
-# The filename is not free: scripts/lint-schemas.sh pairs
+# The filename is not free: the schema gate pairs
 # `true-bdd/<key>-schema.yaml` with `documents.<key>`, and the key is
 # `architecture_yaml`. A file named `architecture-schema.yaml` would
 # resolve no document and fail the gate rather than validate anything.

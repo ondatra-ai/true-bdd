@@ -24,9 +24,11 @@ const (
 	tagsFlag = "-tags"
 	bddTag   = "bdd"
 	registry = "docs/scenarios.yaml"
+	lintCmd  = "./scripts/cmd/lint"
+	runVerb  = "run"
 )
 
-// Order is gates.sh's: cheapest first, so a doomed run dies in under a second.
+// Cheapest first, so a doomed run dies in under a second.
 //
 //nolint:gochecknoglobals // this package IS a table; see the package doc.
 var (
@@ -44,27 +46,27 @@ var (
 	// All is the pipeline. Every entry must also be a step of CI's gates job.
 	All = []Gate{
 		{
-			// Reads the whole file tree, and shells out to lint-claude.md.sh,
+			// Reads the whole file tree, and shells out to `lint claude-md`,
 			// which is why that has no row of its own.
 			Name:    "Lint repository shape",
 			Command: []string{"alint", "check"},
 		},
 		{
 			Name:    "Lint comments",
-			Command: []string{"./scripts/lint-comments.sh"},
+			Command: []string{goBin, runVerb, lintCmd, "comments"},
 			Globs:   []string{"**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml"},
 		},
 		{
 			Name:    "Lint document schemas",
-			Command: []string{"./scripts/lint-schemas.sh"},
+			Command: []string{goBin, runVerb, lintCmd, "schemas"},
 			Globs: []string{
 				"true-bdd/**", "docs/architecture/**", "docs/product/**",
-				registry, "scripts/cmd/yamlkey/**",
+				registry, "scripts/lint/**",
 			},
 		},
 		{
 			Name:    "Lint markdown",
-			Command: []string{"./scripts/lint-markdown.sh"},
+			Command: []string{goBin, runVerb, lintCmd, "markdown"},
 			Globs:   []string{"**/*.md"},
 		},
 		{

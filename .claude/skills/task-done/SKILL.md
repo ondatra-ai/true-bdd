@@ -3,7 +3,7 @@ name: task-done
 description: Close the Ticket bound to this Task as DONE — set the ClickUp status, comment how it landed, clear the binding. Takes the merge commit or PR as its argument. Run it after the merge has landed.
 disable-model-invocation: true
 argument-hint: "<merge commit or PR url>"
-allowed-tools: Bash(${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh *)
+allowed-tools: Bash(go *)
 ---
 
 # Task Done
@@ -11,7 +11,7 @@ allowed-tools: Bash(${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh *)
 Whoever called you already decided the work deserves this. You do not.
 
 ```bash
-"${CLAUDE_PROJECT_DIR}/.claude/skills/lib/close-task.sh" DONE "merged: $ARGUMENTS"
+go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/clickup close DONE "merged: $ARGUMENTS"
 ```
 
 The script reads the bound Ticket, sets the status, adds the comment and

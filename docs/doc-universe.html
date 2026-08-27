@@ -365,14 +365,14 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
             <div class="row hl" id="a-cfg-schema"><span class="k">&lt;key&gt;-schema.yaml</span> <span class="v">shape of documents.&lt;key&gt;</span></div>
           </div>
-          <div class="note">Schemas are the host's lint contract, not the engine's: <code>./scripts/lint-schemas.sh</code> runs them in CI. The engine never parses the documents they pin.</div>
+          <div class="note">Schemas are the host's lint contract, not the engine's: <code>go run ./scripts/cmd/lint schemas</code> runs them in CI. The engine never parses the documents they pin.</div>
         </div>
 
         <div class="card c-cfg" id="card-cl" tabindex="0" style="grid-area:2/1">
-          <header><i class="sw"></i><span class="p">checklists/<wbr>&lt;command&gt;.yaml</span><small>×5</small></header>
+          <header><i class="sw"></i><span class="p">checklists/<wbr>&lt;command&gt;.yaml</span><small>×6</small></header>
           <div class="body">
             <div class="row"><span class="v">us-create · us-refine · us-apply</span></div>
-            <div class="row"><span class="v">build-tests · build-code</span></div>
+            <div class="row"><span class="v">build-tests · build-code · scen-check</span></div>
             <div class="row"><span class="k">sections[].validation_prompts[]:</span></div>
             <div class="row ind1"><span class="k">Q:</span> <span class="v">pass/fail question</span></div>
             <div class="row ind1 hl" id="a-cl-docs"><span class="k">docs:</span> <span class="v">[product, architecture_yaml]</span></div>
@@ -383,7 +383,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
 
         <div class="card c-cfg" id="card-tpl" tabindex="0" style="grid-area:3/1">
-          <header><i class="sw"></i><span class="p">templates/<wbr>*.prompt.tpl</span><small>×24</small></header>
+          <header><i class="sw"></i><span class="p">templates/<wbr>*.prompt.tpl</span><small>×30</small></header>
           <div class="body">
             <div class="row"><span class="v">&lt;command&gt;.&lt;role&gt;.prompt.tpl</span></div>
             <div class="row"><span class="k">roles:</span> <span class="v">checklist · fix_generator ·</span></div>
@@ -448,7 +448,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <div class="card c-reg" id="card-scn" tabindex="0" style="grid-area:1/5/3/6; align-self:center">
           <header><i class="sw"></i><span class="p">docs/<wbr>scenarios.yaml</span><small>registry</small></header>
           <div class="body">
-            <div class="row"><span class="k">metadata:</span> <span class="v">title · version · last_updated</span></div>
+            <div class="row"><span class="k">metadata:</span> <span class="v">title · version · description · last_updated</span></div>
             <div class="row"><span class="k">scenarios:</span></div>
             <div class="row ind1 hl" id="a-scn-id"><span class="k">INT-NNN | E2E-NNN:</span></div>
             <div class="row ind2"><span class="k">description</span></div>
@@ -624,7 +624,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
           <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
-            <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>./scripts/lint-schemas.sh</code>, a CI gate), not by a command</td></tr>
+            <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>go run ./scripts/cmd/lint schemas</code>, a CI gate), not by a command</td></tr>
           <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
             <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default. A fourth key, <code>coverage</code>, is the one optional one: <strong>build tests</strong> runs it to learn which steps bind (writing JSON to <code>$TRUEBDD_COVERAGE_REPORT</code>), and a suite declaring none falls back to a model reading the source in prose</td></tr>
         </tbody>
@@ -634,7 +634,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 </section>
 
 <footer>
-  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-26 — set in the S&amp;F design system.</div>
+  <div class="inner">Drawn from the engine seed (<code>true-bdd/</code>, <code>templates/</code>) and <code>tests/bdd-cli</code> fixture documents — 2026-08-27 — set in the S&amp;F design system.</div>
 </footer>
 
 <script>

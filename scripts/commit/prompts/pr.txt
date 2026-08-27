@@ -1,0 +1,6 @@
+Read the branch context below and output a pull request TITLE and BODY in this exact format:
+LINE 1: the title (max 120 chars, conventional commit prefix like feat:/fix:/chore:/docs:/refactor:)
+LINE 2: blank
+LINE 3 onward: the body — bullet list of changes (lines starting with "- ", no blank lines between bullets), then a blank line, then a brief why-paragraph.
+
+No markdown code fences, no Co-authored-by, no Generated-with trailers, no surrounding quotes, no introduction. Output only the title and body.

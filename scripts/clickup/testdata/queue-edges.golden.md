@@ -30,7 +30,7 @@ worth blocking that merge on.
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -60,7 +60,7 @@ nit
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -90,7 +90,7 @@ worth blocking that merge on.
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context
@@ -120,7 +120,7 @@ start héllo–wörld✅🟠 héllo–wörld✅🟠 héllo–wörld✅🟠 héll
 ### Verification
 
 ```bash
-./.claude/skills/pr-commit/gates.sh
+go run ./scripts/cmd/gates run
 ```
 
 ### Context

@@ -4,7 +4,7 @@
 //
 //	prompt-submit  — wired to BOTH the UserPromptSubmit and Stop hooks with
 //	                 the same command.
-//	new-task       — invoked from .claude/skills/task-start/roll-history.sh.
+//	new-task       — invoked from /task-start, via `history roll`.
 //	bind <id>      — invoked from /task-start, once a Ticket is chosen.
 //	bound          — invoked from /task-done and /task-fail; prints the id.
 //	unbind         — invoked from all three, after the status write lands.

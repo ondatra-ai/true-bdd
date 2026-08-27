@@ -64,7 +64,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-<!-- KARPATHY:END — enforced by scripts/lint-claude.md.sh -->
+<!-- KARPATHY:END — enforced by scripts/cmd/lint claude-md -->
 
 ## Repository Overview
 
@@ -77,12 +77,12 @@ reference.
 `true-bdd/` config and the five `docs/` documents (contract: README →
 Configuration); the root `true-bdd/` here is the fixtures' seed.
 
-**Go and sh where it counts.** Engine and tooling are Go (`scripts/`, via
-`go run`) or bash; `go test` everywhere, `playwright-go`, no jest. `yamale`,
+**Go, and one shell script.** Engine and tooling are Go (`scripts/`, via
+`go run`); `go test` everywhere, `playwright-go`, no jest. `yamale`,
 `alint` and `markdownlint-cli2` are PATH tools. The engine still *supports*
 both as host `framework:` values (`build-code-playwright-nextjs` covers it).
 `.alint.yml` fences JS to `services/bdd-web/`, the report UI's `web/`,
-fixtures and `tests/legacy/`.
+fixtures, `tests/legacy/` — and `no-shell` allows only `start.sh`.
 
 ## Scoped context
 
@@ -112,7 +112,7 @@ pins the refusal); the `us-refine-fix-*` fixtures pass only because
 ## Development Commands
 
 ```bash
-./scripts/lints.sh [FILE...]  # all lint gates; also run per-edit by a hook
+go run ./scripts/cmd/lint [FILE...]   # every gate; a hook runs it per edit
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
 go run ./tests/libraries/cmd/report-server    # report UI on :7331
@@ -183,18 +183,17 @@ Brevity is not omission — report failures and skipped work plainly.
 ## Commit / Merge Skills
 
 - **`./start.sh` starts a session** — it exports `.env` before launching
-  `claude`; a key sourced mid-session never reaches the skill scripts.
+  `claude`; a key sourced mid-session never reaches the commands skills run.
 - Commit → `pr-commit`; merge → `pr-merge`; one Ticket end to end →
   `task-handle`, the whole queue → `task-loop`; a status is written only by
-  `task-start` or `lib/close-task.sh`. `scripts/merge`: PRs #70/#76/#77.
+  `task-start` or `clickup close`. `scripts/merge`: PRs #70/#76/#77.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
   Claude Code's built-in skill of that name.
 - **CodeRabbit reviews `tests/` only, and never automatically**
-  (`.coderabbit.yaml` carries every reason). Gotcha the YAML cannot
+  (`.coderabbit.yaml` carries every reason). Two gotchas the YAML cannot
   state: the required `CodeRabbit` check does not exist until the first
-  review is requested — on a fresh PR it is absent, not red. A review
-  that finds nothing has an empty body; that is not a rubber stamp.
+  review is requested (absent, not red), and an empty body is not a pass.
 - **`main` is guarded by ruleset `20972312`** — live via
   `gh api repos/ondatra-ai/true-bdd/rules/branches/main`, provenance in
   `docs/for_further/github-main-ruleset.md`. Classic protection is gone,
@@ -209,6 +208,7 @@ Brevity is not omission — report failures and skipped work plainly.
   a `cd`-prefixed command matches no `Bash(...)` allow rule, so it prompts.
 - Session-temporary files go to `./tmp/` (gitignored), never system temp
   dirs or scratchpads. Never edit `.golangci.yaml` without permission.
+- **CRITICAL**: NEVER create a branch — only `scripts/commit` cuts one.
 - **CRITICAL**: NEVER merge a pull request without an explicit command.
 - **CRITICAL**: NEVER `git commit --amend`, `git push --force`, or
   `git push --force-with-lease` — always create new commits.

@@ -1,0 +1,61 @@
+package commit
+
+import (
+	"strings"
+	"time"
+
+	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
+)
+
+// skillTools is what a skill turn may reach for. No Bash beyond the gates the
+// skills themselves name: neither of them commits, stages or pushes — this
+// program does that, after they have run.
+const skillTools = "Read,Edit,Write,Glob,Grep," +
+	"Bash(git --no-pager diff *),Bash(git status *),Bash(go run ./scripts/cmd/lint *)"
+
+const defaultSkillTimeout = 1800 * time.Second
+
+func skillTimeout() time.Duration {
+	return envDuration("COMMIT_SKILL_TIMEOUT", defaultSkillTimeout)
+}
+
+// syncDocUniverse audits the declared documents against docs/doc-universe.*.
+// Always `auto`: this program has nobody to ask, so the alternative to
+// resolving by the skill's documented rules is not resolving at all.
+func (r *Run) syncDocUniverse() {
+	r.banner("doc universe")
+	r.runSkill("sync-doc-universe", docUniversePrompt, "sync-doc-universe")
+}
+
+// updateMemory folds anything the pending diff made false in CLAUDE.md into
+// this commit, before the staging step picks it up.
+func (r *Run) updateMemory() {
+	r.banner("memory")
+	r.runSkill("update-memory", memoryPrompt, "update-memory")
+}
+
+// runSkill drives one skill as a headless turn and prints what it decided.
+// The report is the whole point of running it here rather than in the session:
+// nobody watched it happen, so the record has to survive in the output.
+func (r *Run) runSkill(name, prompt, role string) {
+	answer, err := claudecli.Run(prompt, claudecli.Options{
+		AllowedTools:   skillTools,
+		PermissionMode: "acceptEdits",
+		Role:           role,
+		Timeout:        skillTimeout(),
+	})
+	if err != nil {
+		r.dief("the %s skill could not finish: %v\n"+
+			"  Nothing was committed. Run it yourself and read the failure.", name, err)
+	}
+
+	report := strings.TrimSpace(answer)
+	if report == "" {
+		r.dief("the %s skill reported nothing, so there is no record of what it decided.\n"+
+			"  Nothing was committed.", name)
+	}
+
+	for _, line := range strings.Split(report, "\n") {
+		r.logf("%s", line)
+	}
+}
