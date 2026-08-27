@@ -312,7 +312,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
-            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + test-layer commands</span></div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">testing.suites[] + services</span></div>
             <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
           </div>
           <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
@@ -519,9 +519,12 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <h2>Who reads what, who writes what</h2>
     <p class="sub">The pipeline runs left to right through the map: each command consumes the previous
     command's output. Every command validates its subject against its own checklist, and with
-    <code>--fix</code> drives a Claude-mediated loop until the walk is clean — except
-    <code>scen check</code>, which refuses <code>--fix</code> at startup because no prompt in its
-    checklist carries a fix template.</p>
+    <code>--fix</code> drives a Claude-mediated loop until the walk is clean — but
+    <code>--fix</code> refuses at startup when any prompt it would walk carries no <code>F:</code>
+    fix template. Against the shipped checklists that refuses <code>us create --fix</code>,
+    <code>us refine --fix</code> and <code>scen check --fix</code>; only <code>us apply</code>,
+    <code>build tests</code> and <code>build code</code> carry an <code>F:</code> on every
+    prompt.</p>
     <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
       <table>
         <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
@@ -582,7 +585,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">epic stories[].id</td><td class="to">story file</td>
             <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/product/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
           <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
-            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the role list</td></tr>
+            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the role list — roles (responsibilities), not personas (invented individuals)</td></tr>
           <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">product vocabulary</td><td class="to">AC description + steps</td>
             <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block may also live in architecture.yaml (the engine's fixtures keep it there), though <code>product-schema.yaml</code> requires one in the product document</td></tr>
           <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>5</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>

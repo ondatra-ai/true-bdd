@@ -170,10 +170,10 @@ volume of code you write: Simplicity First still applies there.
 
 Tasks live in ClickUp, reached via the MCP tools (list `901523097822`):
 <https://app.clickup.com/90151491867/v/l/li/901523097822>
-**"Defer this" means create a task there** — never the session todo list,
-which evaporates when the session ends. Write it to be picked up cold, in
-`markdownContent`, with the four headings `scripts/clickup` renders:
-**Why / What to change (`file:line`) / Verification / Context**.
+**"Defer this" means `clickup defer`** — not MCP `createTask`, not the
+session todo list. It and `clickup file` are the only creation paths, both
+stamping `backlog` (`to do` is what `task-loop` works). Every ticket's
+headings are declared in `scripts/clickup/ticket.yaml`.
 
 ## Response Style
 
@@ -185,7 +185,7 @@ Brevity is not omission — report failures and skipped work plainly.
 - **`./start.sh` starts a session** — it exports `.env` before launching
   `claude`; a key sourced mid-session never reaches the commands skills run.
 - Commit → `pr-commit`; merge → `pr-merge`; one Ticket end to end →
-  `task-handle`, the whole queue → `task-loop`; a status is written only by
+  `task-handle`, the whole queue → `task-loop`; a status is *moved* only by
   `task-start` or `clickup close`. `scripts/merge`: PRs #70/#76/#77.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows

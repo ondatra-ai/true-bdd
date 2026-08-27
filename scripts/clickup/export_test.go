@@ -2,6 +2,7 @@ package clickup
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -23,4 +24,42 @@ func PlanFieldsForTest(queue []Finding) []byte {
 // render; the listing turn it feeds on cannot run in a test.
 func DropAlreadyOpenForTest(out io.Writer, queue []Finding, open []Task) []Finding {
 	return dropAlreadyOpen(out, queue, open)
+}
+
+// WarnMisplacedForTest is the backlog check report runs; the filing turn that
+// produces the statuses it reads cannot run in a test.
+func WarnMisplacedForTest(errOut io.Writer, filed []Ticket) {
+	warnMisplaced(errOut, filed)
+}
+
+// CountHeadingsForTest is the count FileDocument tells the filing turn to
+// create; the turn itself cannot run in a test.
+func CountHeadingsForTest(document string) int {
+	return countHeadings(document)
+}
+
+// DocumentPromptForTest is the document turn's prompt, as it is sent.
+func DocumentPromptForTest(document, tag string) string {
+	return fmt.Sprintf(documentPromptTemplate,
+		countHeadings(document), listID(), ticketStatus(), tag, statusRule(), document)
+}
+
+// TicketStatusForTest is the status ticket.yaml declares, and
+// StatusRuleForTest the sentence both filing turns carry to state it.
+func TicketStatusForTest() string {
+	return ticketStatus()
+}
+
+func StatusRuleForTest() string {
+	return statusRule()
+}
+
+// HeadingNamesForTest is the heading order ticket.yaml declares.
+func HeadingNamesForTest() []string {
+	names := make([]string, 0, len(shape().Headings))
+	for _, section := range shape().Headings {
+		names = append(names, section.Name)
+	}
+
+	return names
 }

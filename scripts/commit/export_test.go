@@ -25,3 +25,8 @@ func Reports() []string {
 }
 
 const RecordingsGlob = recordingsGlob
+
+// SanitizeBranchName is the branch step's repair of the model's answer.
+func SanitizeBranchName(answer string) string {
+	return sanitizeBranchName(answer)
+}
