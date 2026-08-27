@@ -116,8 +116,10 @@ test suite says what running it actually means.
 
 The pipeline runs left to right through the map: each command consumes the previous command's
 output. Every command validates its subject against its own checklist, and with `--fix` drives a
-Claude-mediated loop until the walk is clean — except `scen check`, which refuses `--fix` at
-startup because no prompt in its checklist carries a fix template.
+Claude-mediated loop until the walk is clean — but `--fix` refuses at startup when any prompt it
+would walk carries no `F:` fix template. Against the shipped checklists that refuses
+`us create --fix`, `us refine --fix` and `scen check --fix`; only `us apply`, `build tests` and
+`build code` carry an `F:` on every prompt.
 
 | Command | Reads | Checklist | Writes |
 | --- | --- | --- | --- |

@@ -14,6 +14,29 @@ import (
 // and the message inside it stays.
 var fenceLineRE = regexp.MustCompile("(?m)^\\s*```[a-zA-Z]*\\s*$")
 
+// The prompt asks for a `feat/` prefix and a model reading that as a
+// conventional-commit subject answers `feat: x`, which git refuses outright.
+var (
+	commitStyleRE  = regexp.MustCompile(`^([a-z]+)\s*:\s*`)
+	unsafeBranchRE = regexp.MustCompile(`[^a-z0-9._/-]+`)
+	repeatedDashRE = regexp.MustCompile(`-{2,}`)
+)
+
+// sanitizeBranchName turns the answer into something git can accept, rather
+// than failing a run that has already passed every gate.
+func sanitizeBranchName(answer string) string {
+	name := strings.ToLower(firstMeaningfulLine(answer))
+	name = commitStyleRE.ReplaceAllString(name, "$1/")
+	name = repeatedDashRE.ReplaceAllString(unsafeBranchRE.ReplaceAllString(name, "-"), "-")
+
+	if len(name) > branchNameLimit {
+		name = name[:branchNameLimit]
+	}
+
+	// Truncation and substitution both leave edges git rejects in a ref.
+	return strings.Trim(name, "-/.")
+}
+
 const (
 	defaultMessageTimeout = 600 * time.Second
 	branchNameLimit       = 60
@@ -56,19 +79,16 @@ func (r *Run) ensureBranch() {
 
 	r.banner("branch")
 
-	name := firstMeaningfulLine(r.ask(branchPrompt, "branch-name"))
+	answer := r.ask(branchPrompt, "branch-name")
+
+	name := sanitizeBranchName(answer)
 	if name == "" {
-		r.dief("the generated branch name came back empty")
+		r.dief("the generated branch name came back empty or unusable: %q", answer)
 	}
 
-	// A name starting with '-' would be read by git as a flag rather than as
-	// a ref, and quoting does not help with that.
-	if strings.HasPrefix(name, "-") {
-		r.dief("refusing branch name %q: git would read it as a flag", name)
-	}
-
-	if len(name) > branchNameLimit {
-		name = name[:branchNameLimit]
+	// git owns the ref rules, so git is asked rather than reimplemented.
+	if r.git("check-ref-format", "--branch", name).code != 0 {
+		r.dief("refusing branch name %q (from %q): git will not take it as a ref", name, answer)
 	}
 
 	r.logf("on %s — cutting branch %q for this commit", current, name)

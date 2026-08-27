@@ -33,9 +33,10 @@ const matchWidth = 60
 
 // Ticket is one row of the filing turn's answer, and of FiledRecord.
 type Ticket struct {
-	Title string `json:"title"`
-	ID    string `json:"id"`
-	URL   string `json:"url"`
+	Title  string `json:"title"`
+	ID     string `json:"id"`
+	URL    string `json:"url"`
+	Status string `json:"status"`
 	// FieldsSet reports whether the custom fields landed. A task whose
 	// fields were refused still exists, so this is a warning, not a failure.
 	FieldsSet bool   `json:"fields_set"`
@@ -49,7 +50,10 @@ For each:
   - list id: %s
   - name: the heading text, without its leading number
   - markdownContent: everything under that heading, verbatim
+  - status: %s
   - tag: %s
+
+%s
 
 Then set that task's custom fields with setCustomFieldValue, from the FIELDS
 row whose "ticket" is that heading's number:
@@ -68,8 +72,8 @@ custom fields were refused is "fields_set": false, with the id still filled.
 
 Return ONLY a JSON array, no prose and no code fence:
 [{"title": "<heading text>", "id": "<clickup task id or null>",
-  "url": "<url or null>", "fields_set": <true|false>,
-  "error": "<empty if created>"}]
+  "url": "<url or null>", "status": "<the task's status after creation>",
+  "fields_set": <true|false>, "error": "<empty if created>"}]
 
 --- BEGIN FIELDS ---
 %s
@@ -157,15 +161,15 @@ func file(out, errOut io.Writer, queuePath, tag, pullRequest string, dedupe bool
 		return fmt.Errorf("encoding the custom fields: %w", err)
 	}
 
-	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), tag,
-		triageScoreField, expectedChangesField, plans, document)
+	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), ticketStatus(), tag,
+		statusRule(), triageScoreField, expectedChangesField, plans, document)
 
 	created, err := createTickets(prompt)
 	if err != nil {
 		return err
 	}
 
-	return report(out, errOut, queue, created)
+	return report(out, errOut, len(queue), created)
 }
 
 // withoutOpen lists the open tickets under tag and drops what they cover. A
@@ -213,7 +217,7 @@ func createTickets(prompt string) ([]Ticket, error) {
 }
 
 // report writes the per-ticket record and decides whether the filing stands.
-func report(out, errOut io.Writer, queue []Finding, created []Ticket) error {
+func report(out, errOut io.Writer, wanted int, created []Ticket) error {
 	filed, failed := split(created)
 
 	err := saveRecord(created)
@@ -242,25 +246,47 @@ func report(out, errOut io.Writer, queue []Finding, created []Ticket) error {
 
 	// A count that does not match is a silent drop, which is the whole
 	// failure this queue exists to prevent — so it is an error, not a note.
-	if len(created) != len(queue) {
+	if len(created) != wanted {
 		_, _ = fmt.Fprintf(errOut,
 			"MISMATCH: %d ticket(s) in the queue, %d row(s) returned. Nothing is trustworthy here.\n",
-			len(queue), len(created))
+			wanted, len(created))
 
 		return ErrNotFiled
 	}
 
 	if len(failed) > 0 {
-		_, _ = fmt.Fprintf(errOut, "%d of %d ticket(s) were NOT created.\n", len(failed), len(queue))
+		_, _ = fmt.Fprintf(errOut, "%d of %d ticket(s) were NOT created.\n", len(failed), wanted)
 
 		return ErrNotFiled
 	}
 
 	warnUnfilled(errOut, filed)
+	warnMisplaced(errOut, filed)
 
 	_, _ = fmt.Fprintf(out, "%d ticket(s) filed; record in %s\n", len(filed), FiledRecord)
 
 	return nil
+}
+
+// warnMisplaced names tickets the filing turn left outside the backlog. Not
+// an error — the task exists — but naming it is the only thing between a
+// misfiled proposal and an unattended run picking it up.
+func warnMisplaced(errOut io.Writer, filed []Ticket) {
+	var wrong []string
+
+	for _, ticket := range filed {
+		if !strings.EqualFold(ticket.Status, ticketStatus()) {
+			wrong = append(wrong, ticket.ID+" ("+orUnknown(ticket.Status)+")")
+		}
+	}
+
+	if len(wrong) == 0 {
+		return
+	}
+
+	_, _ = fmt.Fprintf(errOut,
+		"NOT IN BACKLOG: %s — move them back before a task-loop picks them up.\n",
+		strings.Join(wrong, ", "))
 }
 
 // warnUnfilled names the tickets whose custom fields were refused. Not an

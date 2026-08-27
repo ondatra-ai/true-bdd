@@ -6,6 +6,7 @@
 //
 //	clickup render --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
 //	clickup file   --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
+//	clickup defer  --doc tmp/deferral.md --tag deferred
 //	clickup list   --tag fix-now
 package main
 
@@ -21,6 +22,7 @@ import (
 const usage = `usage:
   clickup render --queue <path> --tag <tag> [--pr <number>]
   clickup file   --queue <path> --tag <tag> [--pr <number>]
+  clickup defer  --doc <path> --tag <tag>
   clickup list   --tag <tag>
   clickup close  <STATUS> <comment...>
 `
@@ -45,6 +47,8 @@ func run(args []string) error {
 		return runRender(command, rest)
 	case "file":
 		return runFile(command, rest)
+	case "defer":
+		return runDefer(command, rest)
 	case "list":
 		return runList(command, rest)
 	case "status":
@@ -90,6 +94,26 @@ func runFile(command string, args []string) error {
 	err = clickup.File(os.Stdout, os.Stderr, queue, tag, pullRequest)
 	if err != nil {
 		return fmt.Errorf("filing the queue: %w", err)
+	}
+
+	return nil
+}
+
+// runDefer files a hand-written deferral. The document already carries the
+// four headings, so it is transcribed rather than rendered from a finding.
+func runDefer(command string, args []string) error {
+	set := flag.NewFlagSet(command, flag.ContinueOnError)
+	doc := set.String("doc", "", "path to the markdown document (required)")
+	tag := set.String("tag", "", "the ClickUp tag to apply (required)")
+
+	err := parse(set, args, doc, tag)
+	if err != nil {
+		return err
+	}
+
+	err = clickup.FileDocument(os.Stdout, os.Stderr, *doc, *tag)
+	if err != nil {
+		return fmt.Errorf("filing %s: %w", *doc, err)
 	}
 
 	return nil

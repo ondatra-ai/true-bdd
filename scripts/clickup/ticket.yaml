@@ -1,0 +1,50 @@
+# The shape of every ticket this repository files.
+#
+# One file because this was stated in four places that could disagree: the
+# renderer's Go literals, the two filing prompts, and CLAUDE.md's prose. A
+# ticket is written to be picked up cold by someone who was not in the room,
+# so the headings are fixed and the wording is prose, kept here rather than
+# in Go string literals.
+version: 1
+
+# Where a filed ticket lands. Both filing turns are told this, and the filed
+# record is checked against it afterwards, because a prompt is an instruction
+# and not a guarantee.
+status: backlog
+
+# The sentence both turns carry. It names the status above; a test pins that
+# it still does, so editing one without the other fails rather than silently
+# filing to the wrong queue.
+status_rule: |
+  Every task is created in `backlog`. Never `to do`: that is the queue
+  task-loop works unattended, and a filed proposal waits for a person.
+
+# The four headings, in order, rendered as `### ` under the ticket's `## `
+# title. `body` is a Go text/template over one review finding; a hand-written
+# deferral supplies its own prose and is transcribed instead (clickup defer).
+headings:
+  - name: Why
+    body: |
+      CodeRabbit raised this on {{.Origin}}; triage scored it **{{.Score}}/10** — real, but not
+      worth blocking that merge on.
+
+      > {{.Reason}}
+
+  - name: What to change
+    body: |
+      `{{.File}}:{{.Line}}`
+
+      {{.Body}}
+
+  - name: Verification
+    body: |
+      ```bash
+      go run ./scripts/cmd/gates run
+      ```
+
+  - name: Context
+    body: |
+      Deferred rather than fixed inline: the merge loop caps fixing at two
+      review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
+      hour and PR #76 exhausted that by fixing everything inline over four
+      rounds. Reviewer severity `{{.Severity}}`, source `{{.Source}}`.

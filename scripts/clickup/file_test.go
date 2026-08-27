@@ -11,6 +11,16 @@ import (
 // the boundary case fails if it ever moves.
 const matchWidth = 60
 
+// backlog is the status ticket.yaml declares; the tests assert against the
+// literal rather than the accessor, so a change there has to be deliberate.
+const backlog = "backlog"
+
+// The two ticket ids both the dedupe filter and the backlog check reuse.
+const (
+	openWindowID = "86cb9fedx"
+	openStateID  = "86cb9feh1"
+)
+
 // Two proposals PR #89's postmortem filed, and one PR #90's proposed fresh.
 const (
 	windowTitle = "Filter the history extract to this run's own window, not the whole file"
@@ -26,8 +36,8 @@ func TestDropAlreadyOpenKeepsWhatIsNotOpen(t *testing.T) {
 
 	queue := []clickup.Finding{{Title: windowTitle}, {Title: skillTitle}, {Title: stateTitle}}
 	open := []clickup.Task{
-		{ID: "86cb9fedx", Name: windowTitle},
-		{ID: "86cb9feh1", Name: stateTitle},
+		{ID: openWindowID, Name: windowTitle},
+		{ID: openStateID, Name: stateTitle},
 	}
 
 	var out strings.Builder
@@ -108,4 +118,45 @@ func titlesOf(findings []clickup.Finding) []string {
 	}
 
 	return titles
+}
+
+// TestWarnMisplacedNamesEveryTicketOutsideBacklog pins the check that stands
+// between a misfiled proposal and an unattended task-loop picking it up: the
+// filing turn stamps `backlog`, and anything else has to be seen.
+func TestWarnMisplacedNamesEveryTicketOutsideBacklog(t *testing.T) {
+	t.Parallel()
+
+	var out strings.Builder
+
+	clickup.WarnMisplacedForTest(&out, []clickup.Ticket{
+		{ID: "86cbaymyq", Status: "to do"},
+		{ID: openWindowID, Status: backlog},
+		{ID: openStateID, Status: "BACKLOG"},
+		{ID: "86cb9fej4", Status: ""},
+	})
+
+	for _, want := range []string{"86cbaymyq (to do)", "86cb9fej4 (?)"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("output %q does not name %q", out.String(), want)
+		}
+	}
+
+	// Case is the list's presentation, not a second status.
+	for _, unwanted := range []string{openWindowID, openStateID} {
+		if strings.Contains(out.String(), unwanted) {
+			t.Errorf("output %q names %q, which is in the backlog", out.String(), unwanted)
+		}
+	}
+}
+
+func TestWarnMisplacedIsSilentWhenEverythingIsFiled(t *testing.T) {
+	t.Parallel()
+
+	var out strings.Builder
+
+	clickup.WarnMisplacedForTest(&out, []clickup.Ticket{{ID: openWindowID, Status: backlog}})
+
+	if out.String() != "" {
+		t.Fatalf("output %q, want silence", out.String())
+	}
 }
