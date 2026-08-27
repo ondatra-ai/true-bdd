@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
-	"github.com/ondatra-ai/true-bdd/scripts/mandate"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 // Gates is the quality pipeline a fix must leave green, as a command line for
@@ -121,7 +121,7 @@ func Start(args []string) *Run {
 	requireTools()
 
 	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
-	if mandate.Active(".") {
+	if state.Get(".", state.MandateKey) != "" {
 		run.floors = automatic
 	}
 

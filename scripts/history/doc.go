@@ -19,31 +19,27 @@
 // the last user prompt, read from the transcript — under the writer's role
 // heading (CLAUDE_HISTORY_ROLE, default "claude"). The payload's
 // `last_assistant_message` backstops the final block in case the transcript's
-// tail hasn't been flushed yet. A per-session cursor
-// (tmp/history-cursor/<session8>.json, keyed by prompt_id) records how many
-// blocks of the current turn are already logged, so a blocking Stop hook that
-// forces the turn to continue doesn't make the next Stop re-append the whole
-// turn — only the continuation's new blocks land.
+// tail hasn't been flushed yet. A per-session cursor records how many blocks
+// of the current turn are already logged, so a blocking Stop hook that forces
+// the turn to continue doesn't make the next Stop re-append the whole turn —
+// only the continuation's new blocks land.
 //
-// State file: docs/history/hook-state
+// State: scripts/state, one append-only docs/history/state.jsonl.
 //
-//	A single line: the current task file's name. Nothing else.
-//	Shared across sessions — a new session continues the same file.
+//	This package owns no state file. It reads `task` for the stem it appends
+//	to — shared across sessions, so a new session continues the same file —
+//	and `cursor:<session8>` for its own turn progress. `ticket` and `mandate`
+//	live in the same file and belong to the /task-* skills.
 //
-// Binding file: docs/history/bound-ticket
-//
-//	A single line: the ClickUp Ticket this Task is working on, written by
-//	/task-start and cleared by /task-done and /task-fail. Its span is
-//	PROCESSING exactly. Beside hook-state, which is gitignored, so it never
-//	reaches a commit.
-//
-// History file: docs/history/<UTC-ts>-<session8>-<slug>.md
+// History file: docs/history/<task>.md, derived from the stem rather than
+// stored, and opened O_APPEND|O_CREATE by whichever writer arrives first.
 //
 // Off switch: CLAUDE_HISTORY_ROLE=0 skips all logging.
 //
-// Rollover: /task-start removes the state file so the next prompt opens a fresh
-// task file. Its own UserPromptSubmit (prompt == "/task-start") is filtered so
-// it doesn't recreate the state file it just deleted.
+// Rollover: /task-start removes the state file so the next prompt opens a
+// fresh Task. Its own UserPromptSubmit (prompt == "/task-start") is filtered
+// so it doesn't recreate the state it just deleted. One file holds all four
+// keys, so `new-task` clears the Ticket binding and the mandate with them.
 //
 // One thing changed in the port. The Python found the repository root from
 // its own `__file__` when CLAUDE_PROJECT_DIR was unset; a `go run` binary

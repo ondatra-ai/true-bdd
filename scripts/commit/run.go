@@ -13,7 +13,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
-	"github.com/ondatra-ai/true-bdd/scripts/mandate"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 const (
@@ -65,7 +65,7 @@ func Start(args []string) *Run {
 		}
 	}
 
-	return &Run{unattended: mandate.Active(".")}
+	return &Run{unattended: state.Get(".", state.MandateKey) != ""}
 }
 
 // Main is the whole sequence. Any step that cannot finish stops the run.

@@ -7,6 +7,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 // runClose is the whole terminal transition /task-done and /task-fail need.
@@ -18,9 +19,9 @@ func runClose(args []string) error {
 		return fmt.Errorf("%w\n%s", errMissingFlag, usage)
 	}
 
-	hook := history.New(history.RepoRoot(), history.Role())
+	repo := history.RepoRoot()
 
-	ticket := hook.Bound()
+	ticket := state.Get(repo, state.TicketKey)
 	if ticket == "" {
 		return errNoTicketBound
 	}
@@ -30,7 +31,7 @@ func runClose(args []string) error {
 		return fmt.Errorf("closing the ticket: %w", err)
 	}
 
-	err = hook.Unbind()
+	err = state.Set(repo, state.TicketKey, "")
 	if err != nil {
 		return fmt.Errorf("unbinding the ticket: %w", err)
 	}

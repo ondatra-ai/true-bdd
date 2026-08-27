@@ -2,18 +2,16 @@ package history
 
 import (
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
-// NewTask drops the state file so the next prompt opens a fresh task file.
+// NewTask drops the state file so the next prompt opens a fresh Task. It
+// takes the Ticket binding, the mandate and every cursor with it: one file
+// holds all four, and all four belong to the Task that just ended.
 func (h *Hook) NewTask() error {
-	err := os.Remove(h.stateFile())
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("removing %s: %w", h.stateFile(), err)
-	}
-
-	return nil
+	return state.Init(h.repo) //nolint:wrapcheck // Init already names the file it could not remove.
 }
 
 // PromptSubmit handles both hooks it is wired to: a UserPromptSubmit carries
@@ -27,7 +25,7 @@ func (h *Hook) PromptSubmit(event Event) error {
 	prompt := strings.TrimSpace(firstNonEmpty(event.str("prompt"), event.str("user_message")))
 
 	// /task-start rolls history over; logging it would recreate the state file
-	// it just deleted. Its Stop then finds no active file and is skipped too.
+	// it just deleted. Its Stop then finds no active Task and is skipped too.
 	// /task-done and /task-fail are absent on purpose: they belong in the file.
 	if fields := strings.Fields(prompt); len(fields) > 0 && fields[0] == "/task-start" {
 		return nil
@@ -40,7 +38,7 @@ func (h *Hook) PromptSubmit(event Event) error {
 	return h.logTurn(event)
 }
 
-// logPrompt opens a task file if none is active, then appends the prompt.
+// logPrompt opens a Task if none is active, then appends the prompt.
 // Default role -> "## user" (a human turn); non-default (headless
 // `claude -p` worker) -> "## claude to @<role>".
 func (h *Hook) logPrompt(event Event, prompt string) error {
@@ -49,30 +47,20 @@ func (h *Hook) logPrompt(event Event, prompt string) error {
 		heading = "claude to @" + h.role
 	}
 
-	filename := h.loadCurrent()
-	if filename == "" {
-		opened, err := h.openNewFile(event.str("session_id"), prompt)
-		if err != nil {
-			return err
-		}
-
-		err = h.saveCurrent(opened)
-		if err != nil {
-			return err
-		}
-
-		filename = opened
+	task, err := state.Task(h.repo, event.str("session_id"), prompt)
+	if err != nil {
+		return fmt.Errorf("opening the task: %w", err)
 	}
 
-	return h.appendEntry(filename, heading, prompt)
+	return h.appendEntry(task, heading, prompt)
 }
 
 // logTurn appends the whole assistant turn — every text block since the
 // last prompt. The event's final message backstops the tail in case the
 // transcript hasn't flushed it yet.
 func (h *Hook) logTurn(event Event) error {
-	filename := h.loadCurrent()
-	if filename == "" {
+	task := state.Get(h.repo, state.TaskKey)
+	if task == "" {
 		return nil
 	}
 
@@ -91,7 +79,7 @@ func (h *Hook) logTurn(event Event) error {
 
 	done := min(h.cursorRead(sessionID, promptID), len(blocks))
 	if text := strings.Join(blocks[done:], "\n\n"); text != "" {
-		err := h.appendEntry(filename, h.role, text)
+		err := h.appendEntry(task, h.role, text)
 		if err != nil {
 			return err
 		}

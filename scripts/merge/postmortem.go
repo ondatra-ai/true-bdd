@@ -3,7 +3,6 @@ package merge
 import (
 	"bufio"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 // historyRoles are the headings this run's own headless turns wrote under.
@@ -98,12 +98,12 @@ func (r *Run) postmortem() {
 // Never handed whole (it runs to tens of MB): CLAUDE_HISTORY_ROLE labels
 // every headless turn, so merge turns are addressable by heading.
 func (r *Run) historyExtract() string {
-	name := r.currentHistoryFile()
+	name := state.Get(".", state.TaskKey)
 	if name == "" {
 		return ""
 	}
 
-	path := filepath.Join("docs/history", name)
+	path := state.HistoryFile(".", name)
 
 	handle, err := os.Open(path) //nolint:gosec // the name comes from the repository's own state file.
 	if err != nil {
@@ -133,25 +133,6 @@ func (r *Run) historyExtract() string {
 	r.logf("history extract: %d bytes from %s -> %s", utf8.RuneCountInString(text), name, out)
 
 	return text
-}
-
-func (r *Run) currentHistoryFile() string {
-	raw, err := os.ReadFile("docs/history/hook-state")
-	if err != nil {
-		return ""
-	}
-
-	name := strings.TrimSpace(string(raw))
-	if name == "" {
-		return ""
-	}
-
-	_, err = os.Stat(filepath.Join("docs/history", name))
-	if err != nil {
-		return ""
-	}
-
-	return name
 }
 
 // keepWantedSections walks the history file and keeps the sections this run

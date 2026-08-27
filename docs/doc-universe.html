@@ -312,20 +312,18 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
-            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + test-layer commands + optional dev/prod environments</span></div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">services + test-layer commands</span></div>
             <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
           </div>
           <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
-          <div class="trow"><span class="nm t-code">docker-compose.yaml</span><span class="cm">optional prod stack — path declared in architecture.yaml</span></div>
-          <div class="trow"><span class="nm t-code">docker-compose.dev.yaml</span><span class="cm">optional dev stack for local runs</span></div>
           <div class="trow"><span class="nm t-code">tests/&lt;suite&gt;/steps/</span><span class="cm">the code a scenario's steps bind to</span></div>
         </div>
       </div>
       <div class="legend">
         <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — epic — story</small></span></div>
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>one testing section (the suites), services, optional dev/prod environment stacks</small></span></div>
-        <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source, compose stacks</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>one testing section (the suites), services</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source</small></span></div>
         <div><i class="sw" style="--cat:var(--c-cfg)"></i><span><span class="lab" style="color:var(--c-cfg)">Engine config</span><small>dashed lines — wiring and document schemas, not data flow</small></span></div>
       </div>
     </div>
@@ -407,7 +405,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
             <div class="row"><span class="k">glossary[]:</span> <span class="v">terms of the user's world (may be empty)</span></div>
           </div>
-          <div class="note">Embedded verbatim into prompts — the engine never parses it. Vocabulary's preferred home is here; keeping it in architecture.yaml also works (the engine fixtures do that today).</div>
+          <div class="note">Embedded verbatim into prompts — the engine never parses it. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
         </div>
 
         <!-- col 3 · epic -->
@@ -491,17 +489,14 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- row 3 · architecture -->
         <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/7">
-          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services + environments</small></header>
+          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services</small></header>
           <div class="body">
-            <div>
-              <div class="row hl" id="a-arch-env"><span class="k">environment:</span> <span class="v">(optional)</span></div>
-              <div class="row ind1"><span class="k">dev:</span> <span class="v">compose: docker-compose.dev.yaml</span></div>
-              <div class="row ind1"><span class="k">prod:</span> <span class="v">compose: docker-compose.yaml</span></div>
-            </div>
             <div>
               <div class="row"><span class="k">testing.suites[]:</span></div>
               <div class="row ind1 hl" id="a-arch-qg"><span class="k">name · service · path · framework · config · helpers[]</span></div>
               <div class="row ind2 hl" id="a-arch-cmds"><span class="k">commands:</span> <span class="v">record · replay · live · coverage (optional)</span></div>
+            </div>
+            <div>
               <div class="row"><span class="k">services[]:</span></div>
               <div class="row ind1 hl" id="a-arch-name"><span class="k">name:</span> <span class="v">"mcp-service"</span> <span class="v">· type · language · frameworks[]</span></div>
               <div class="row ind1 hl" id="a-arch-path"><span class="k">path:</span> <span class="v">services/&lt;name&gt;</span></div>
@@ -511,15 +506,6 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             </div>
           </div>
           <div class="note">Runtime <code>dependencies</code>: <code>protocol</code> = cli / http / redis / …; <code>scope</code> = <code>internal</code> (a service declared here) / <code>self_hosted</code> (we run the instance) / <code>third_party</code> (a vendor's service behind it, wherever the binary lives). Scope drives build-time mocking: <code>third_party</code> gets record/replay doubles, everything else runs live.</div>
-        </div>
-
-        <!-- row 4 · environment stacks -->
-        <div class="card c-code" id="card-compose" tabindex="0" style="grid-area:4/2/5/4">
-          <header><i class="sw"></i><span class="p">docker-compose.yaml · docker-compose.dev.yaml</span><small>env stacks</small></header>
-          <div class="body">
-            <div class="row"><span class="v">one stack per environment — services, ports, volumes</span></div>
-          </div>
-          <div class="note">Optional — paths declared in <code>architecture.yaml environment:</code>. The dev stack backs local test runs (e.g. a Playwright <code>webServer</code> bringing up <code>docker compose</code>).</div>
         </div>
       </div>
     </div>
@@ -566,7 +552,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </tr>
           <tr>
             <td><span class="cmd">build code</span></td>
-            <td>every <strong>suite</strong> under <code>architecture.testing.suites[]</code>; discovers failing tests by running the suite's own declared <code>commands.replay</code> (the dev compose stack, when declared, backs the run)</td>
+            <td>every <strong>suite</strong> under <code>architecture.testing.suites[]</code>; discovers failing tests by running the suite's own declared <code>commands.replay</code></td>
             <td><span class="cl">build-code.yaml</span></td>
             <td>with <code>--fix</code>: <strong>production source</strong> under the declared service paths only — tests and registry are never touched</td>
           </tr>
@@ -598,7 +584,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
             <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the role list</td></tr>
           <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">product vocabulary</td><td class="to">AC description + steps</td>
-            <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); vocabulary may also live in architecture.yaml</td></tr>
+            <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block may also live in architecture.yaml (the engine's fixtures keep it there), though <code>product-schema.yaml</code> requires one in the product document</td></tr>
           <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>5</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>
             <td><strong>us apply</strong> bridges the gap between story and registry — it derives the lineage id <code>&lt;story-id&gt;-%03d</code> (AC-1 of story 95.1 → <code>"95.1-001"</code>) and merges the scenario in</td></tr>
           <tr data-edge="6"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>6</td><td class="from">user_stories[].story</td><td class="to">story file path</td>
@@ -610,22 +596,20 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
             <td>the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code</td></tr>
           <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
-            <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>src/service1</code></td></tr>
-          <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>11</td><td class="from">environment.{dev,prod}</td><td class="to">docker-compose files</td>
-            <td>optional — architecture.yaml declares the stack per environment (<code>dev → docker-compose.dev.yaml</code>, <code>prod → docker-compose.yaml</code>); a host without a compose-backed environment omits the key</td></tr>
-          <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>12</td><td class="from">failing test</td><td class="to">production source</td>
+            <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>services/calc</code></td></tr>
+          <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>11</td><td class="from">failing test</td><td class="to">production source</td>
             <td><strong>build code --fix</strong> edits the service's source (its <code>services[].path</code>) until the runner's <code>LastRunPassed</code> flips to true</td></tr>
-          <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
+          <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>12</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
             <td><code>docs: [product, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
-          <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">command name</td><td class="to">checklist file</td>
+          <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">command name</td><td class="to">checklist file</td>
             <td><code>paths.checklists_dir</code> + hyphenation: <code>us apply</code> → <code>checklists/us-apply.yaml</code></td></tr>
-          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · epics · stories dirs</td>
+          <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · epics · stories dirs</td>
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
-          <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
+          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
-          <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>17</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
+          <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
             <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>go run ./scripts/cmd/lint schemas</code>, a CI gate), not by a command</td></tr>
-          <tr data-edge="18"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>18</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
+          <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>17</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
             <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default. A fourth key, <code>coverage</code>, is the one optional one: <strong>build tests</strong> runs it to learn which steps bind (writing JSON to <code>$TRUEBDD_COVERAGE_REPORT</code>), and a suite declaring none falls back to a model reading the source in prose</td></tr>
         </tbody>
       </table>
@@ -658,14 +642,13 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     { n: 8,  from: 'a-scn-id',       fs: 'R',        to: 'a-tests-ref',    ts: 'L',        kind: 'code',  cmd: 'build tests' },
     { n: 9,  from: 'a-arch-qg',      fs: 'T', ff: .55, to: 'card-tests',   ts: 'B', tf: .55, kind: 'arch' },
     { n: 10, from: 'a-arch-path',    fs: 'T', ff: .85, to: 'card-svc',     ts: 'B', tf: .5, kind: 'arch' },
-    { n: 11, from: 'a-arch-env',     fs: 'B', ff: .3,  to: 'card-compose', ts: 'T', tf: .5, kind: 'arch' },
-    { n: 12, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
-    { n: 13, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
-    { n: 14, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
-    { n: 15, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
-    { n: 16, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
-    { n: 17, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
-    { n: 18, from: 'a-arch-cmds',    fs: 'T', ff: .45, to: 'card-tests',   ts: 'B', tf: .35, kind: 'arch' },
+    { n: 11, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
+    { n: 12, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
+    { n: 13, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
+    { n: 14, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
+    { n: 15, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
+    { n: 16, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
+    { n: 17, from: 'a-arch-cmds',    fs: 'T', ff: .45, to: 'card-tests',   ts: 'B', tf: .35, kind: 'arch' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
 

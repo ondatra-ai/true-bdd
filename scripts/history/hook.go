@@ -66,19 +66,6 @@ func RepoRoot() string {
 	return working
 }
 
-func (h *Hook) historyDir() string {
-	return filepath.Join(h.repo, "docs", "history")
-}
-
-// stateFile holds a single line: the current task file's name, nothing else.
-func (h *Hook) stateFile() string {
-	return filepath.Join(h.historyDir(), "hook-state")
-}
-
-func (h *Hook) cursorDir() string {
-	return filepath.Join(h.repo, "tmp", "history-cursor")
-}
-
 // gitSHA stamps each entry with the commit it was written against, or "-"
 // when git cannot say. Never an error: a missing stamp is not a reason to
 // drop a turn.
