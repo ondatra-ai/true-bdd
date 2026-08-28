@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 )
 
@@ -24,6 +25,13 @@ func skillTimeout() time.Duration {
 // resolving by the skill's documented rules is not resolving at all.
 func (r *Run) syncDocUniverse() {
 	r.banner("doc universe")
+
+	if !r.docUniverseEnabled {
+		r.logf("switched off in %s — skipping", config.Path)
+
+		return
+	}
+
 	r.runSkill("sync-doc-universe", docUniversePrompt, "sync-doc-universe")
 }
 
@@ -31,6 +39,13 @@ func (r *Run) syncDocUniverse() {
 // this commit, before the staging step picks it up.
 func (r *Run) updateMemory() {
 	r.banner("memory")
+
+	if !r.updateMemoryEnabled {
+		r.logf("switched off in %s — skipping", config.Path)
+
+		return
+	}
+
 	r.runSkill("update-memory", memoryPrompt, "update-memory")
 }
 

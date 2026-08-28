@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
@@ -131,10 +132,12 @@ func Start(args []string) *Run {
 
 	// Read before the first round: a config that does not parse must stop the
 	// run here, not after the merge has landed.
-	run.postmortemEnabled, err = loadPostmortem(configPath)
+	switches, err := config.Load(config.Path)
 	if err != nil {
 		usage(err.Error())
 	}
+
+	run.postmortemEnabled = config.On(switches.Postmortem)
 
 	branch := run.currentBranch()
 
@@ -179,7 +182,7 @@ func (r *Run) Main() {
 
 	if !r.postmortemEnabled {
 		r.banner("postmortem")
-		r.logf("switched off in %s — skipping", configPath)
+		r.logf("switched off in %s — skipping", config.Path)
 
 		return
 	}

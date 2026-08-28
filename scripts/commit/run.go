@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
@@ -38,6 +39,10 @@ type Run struct {
 	// unattended reports that task-handle stamped a mandate: nobody is at the
 	// terminal, so the gates narrow to the ones this diff needs.
 	unattended bool
+
+	// The two skill turns scripts/.config.json can switch off.
+	docUniverseEnabled  bool
+	updateMemoryEnabled bool
 }
 
 // Start answers where we are and whether this can be committed at all — every
@@ -65,7 +70,18 @@ func Start(args []string) *Run {
 		}
 	}
 
-	return &Run{unattended: state.Get(".", state.MandateKey) != ""}
+	// Read up front: a config that does not parse must stop the run before the
+	// gates, not between two skill turns that have already edited the tree.
+	switches, err := config.Load(config.Path)
+	if err != nil {
+		usage(err.Error())
+	}
+
+	return &Run{
+		unattended:          state.Get(".", state.MandateKey) != "",
+		docUniverseEnabled:  config.On(switches.DocUniverse),
+		updateMemoryEnabled: config.On(switches.UpdateMemory),
+	}
 }
 
 // Main is the whole sequence. Any step that cannot finish stops the run.
