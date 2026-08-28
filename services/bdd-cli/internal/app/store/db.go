@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	_ "modernc.org/sqlite" // pure-Go SQLite driver (no cgo)
 )
 
@@ -47,11 +48,13 @@ type DB struct {
 func Open(dbPath string) (*DB, error) {
 	dir := filepath.Dir(dbPath)
 
-	err := os.MkdirAll(dir, dirPerm)
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
 		return nil, fmt.Errorf("create store dir: %w", err)
 	}
 
+	//nolint:forbidigo // SQLite owns these files; chmod'ing what we do not
+	// hold is not a pkg/disk access.
 	_ = os.Chmod(dir, dirPerm)
 
 	dsn := "file:" + dbPath +
@@ -149,6 +152,7 @@ func (db *DB) bootCheck() error {
 // tightenPerms restricts the db + WAL/SHM sidecars to 0600.
 func (db *DB) tightenPerms() {
 	for _, suffix := range []string{"", "-wal", "-shm"} {
+		//nolint:forbidigo // SQLite owns the db, -wal and -shm files.
 		_ = os.Chmod(db.dbPath+suffix, filePerm)
 	}
 }

@@ -14,6 +14,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"log/slog"
 )
 
 // errWriteAndCheck rejects the ambiguous flag combination: checking a
@@ -47,9 +51,11 @@ type options struct {
 }
 
 func main() {
-	err := run(os.Args[1:], os.Stdout)
+	logging.Install(logging.Stderr, "", "coverage")
+
+	err := run(os.Args[1:], console.Out())
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "coverage: %v\n", err)
+		slog.Error("coverage failed", "error", err)
 
 		os.Exit(1)
 	}

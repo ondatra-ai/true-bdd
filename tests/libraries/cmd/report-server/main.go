@@ -18,6 +18,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/reportserver"
 )
 
@@ -31,9 +32,11 @@ const (
 )
 
 func main() {
+	logging.Install(logging.Stderr, "", "report-server")
+
 	err := run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "report-server: %v\n", err)
+		slog.Error("report-server failed", "error", err)
 		os.Exit(1)
 	}
 }

@@ -6,12 +6,12 @@ package inventory_test
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"unicode/utf8"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
@@ -194,7 +194,7 @@ func TestGoldenContentHappyFlattensAndAndBut(t *testing.T) {
 	}
 
 	// Raw is the verbatim file (byte-exact) — tied to the file, not duplicated.
-	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "product", "stories", "60.2-summary-shared-docs.yaml"))
+	rawBytes, err := disk.Read(filepath.Join(folder, "docs", "product", "stories", "60.2-summary-shared-docs.yaml"))
 	if err != nil {
 		t.Fatalf("read story file: %v", err)
 	}
@@ -278,7 +278,7 @@ func TestGoldenSyntaxInvalidStoryCarriesRawAndError(t *testing.T) {
 	}
 
 	// Raw is preserved verbatim even for an unparseable file (the modal Raw tab).
-	rawBytes, err := os.ReadFile(filepath.Join(folder, "docs", "product", "stories", "70.1-broken.yaml"))
+	rawBytes, err := disk.Read(filepath.Join(folder, "docs", "product", "stories", "70.1-broken.yaml"))
 	if err != nil {
 		t.Fatalf("read broken story: %v", err)
 	}

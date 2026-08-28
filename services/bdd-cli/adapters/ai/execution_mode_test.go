@@ -6,6 +6,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 )
@@ -160,7 +161,7 @@ func testConfig(t *testing.T) *config.ViperConfig {
 
 	dir := t.TempDir()
 
-	mkdirErr := os.MkdirAll(filepath.Join(dir, "true-bdd"), 0o755)
+	mkdirErr := disk.Dir(filepath.Join(dir, "true-bdd"), disk.Shared)
 	if mkdirErr != nil {
 		t.Fatalf("mkdir: %v", mkdirErr)
 	}

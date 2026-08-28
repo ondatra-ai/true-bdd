@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
@@ -19,8 +19,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
-
-const fixPromptFilePermissions = 0o644
 
 // FixPromptData represents data needed for fix prompt generation templates.
 type FixPromptData struct {
@@ -229,7 +227,7 @@ func (g *FixPromptGenerator) parseAndSaveResponse(response, resultPath string) (
 		return checklist.GenerateResult{}, nil
 	}
 
-	err := os.WriteFile(resultPath, []byte(fixPrompt), fixPromptFilePermissions)
+	err := disk.Write(resultPath, []byte(fixPrompt), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save fix prompt file", "path", resultPath, "error", err)
 	} else {
@@ -253,7 +251,7 @@ func (g *FixPromptGenerator) savePromptFile(tmpDir, storyID string, promptIndex 
 	// Follow naming convention: XX-<storyID>-<suffix>.txt
 	filePath := fmt.Sprintf("%s/%02d-%s-%s.txt", tmpDir, promptIndex, sanitizeID(storyID), suffix)
 
-	err := os.WriteFile(filePath, []byte(content), fixPromptFilePermissions)
+	err := disk.Write(filePath, []byte(content), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save prompt file", "error", err)
 	} else {

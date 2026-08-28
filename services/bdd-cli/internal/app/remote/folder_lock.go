@@ -23,6 +23,8 @@ type FolderLock struct {
 // AcquireFolderLock takes a non-blocking exclusive flock on path.
 // Returns errFolderLocked when another holder owns it.
 func AcquireFolderLock(path string) (*FolderLock, error) {
+	//nolint:forbidigo // the fd is inherited by the child on purpose, so the
+	// lock survives parent death — the one hold that must outlive its call.
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, folderLockPerm)
 	if err != nil {
 		return nil, fmt.Errorf("open lock file: %w", err)

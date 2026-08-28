@@ -4,13 +4,12 @@ import (
 	"bufio"
 	"io"
 	"log/slog"
-	"os"
 	"strconv"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 const separatorWidth = 60
@@ -21,11 +20,11 @@ type UserInputCollector struct {
 	emitter *events.Emitter
 }
 
-// NewUserInputCollector creates a new UserInputCollector reading os.Stdin.
+// NewUserInputCollector creates a new UserInputCollector reading console.In().
 // The emitter is a no-op unless TRUE_BDD_EVENTS_FILE is set (under
 // `true-bdd remote`), so default CLI behavior is unchanged.
 func NewUserInputCollector() *UserInputCollector {
-	return newUserInputCollector(os.Stdin)
+	return newUserInputCollector(console.In())
 }
 
 // NewUserInputCollectorFrom builds a collector over an arbitrary reader. The

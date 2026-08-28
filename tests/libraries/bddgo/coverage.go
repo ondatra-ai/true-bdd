@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // generatedMarker is Go's own convention for a machine-written file, and
@@ -277,7 +279,7 @@ func checkGeneratedMarkers(t *testing.T, calls []ScenarioCall, repoRoot string) 
 
 		checked[call.File] = true
 
-		data, err := os.ReadFile(filepath.Join(repoRoot, call.File))
+		data, err := disk.Read(filepath.Join(repoRoot, call.File))
 		if err != nil {
 			t.Errorf("read %s: %v", call.File, err)
 
@@ -411,8 +413,6 @@ func (s *Suite[S]) Unbound() (map[string][]Step, error) {
 // duplicated in the engine's stepcoverage package — a language-agnostic wire protocol.
 const coverageReportEnv = "TRUEBDD_COVERAGE_REPORT"
 
-const reportPerm = 0o644
-
 // coverageSchema is the report format's version. The engine refuses a
 // number it does not know rather than reading a future shape with
 // today's meanings.
@@ -520,7 +520,7 @@ func writeCoverageReport(t *testing.T, report coverageReport) {
 		t.Fatalf("render the coverage report: %v", err)
 	}
 
-	err = os.WriteFile(path, data, reportPerm)
+	err = disk.Write(path, data, disk.Shared)
 	if err != nil {
 		t.Fatalf("write the coverage report: %v", err)
 	}

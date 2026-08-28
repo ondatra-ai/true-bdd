@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // GoldenFile is the recorded outcome's name inside a fixture's
@@ -95,7 +97,7 @@ func WriteGolden(dir string, golden GoldenTree) error {
 		return fmt.Errorf("encode golden tree: %w", err)
 	}
 
-	err = os.WriteFile(goldenPath(dir), append(blob, '\n'), filePerm)
+	err = disk.Write(goldenPath(dir), append(blob, '\n'), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("write golden tree: %w", err)
 	}
@@ -107,7 +109,7 @@ func WriteGolden(dir string, golden GoldenTree) error {
 // was recorded before goldens existed, which the caller must report
 // rather than silently treat as "nothing was expected".
 func ReadGolden(dir string) (*GoldenTree, error) {
-	blob, err := os.ReadFile(goldenPath(dir))
+	blob, err := disk.Read(goldenPath(dir))
 	if err != nil {
 		return nil, fmt.Errorf("read golden tree: %w", err)
 	}

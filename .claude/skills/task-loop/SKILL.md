@@ -11,7 +11,7 @@ allowed-tools: Bash(go *) Bash(git *) mcp__claude_ai_ClickUP__listTasks mcp__cla
 ```!
 git -C "${CLAUDE_PROJECT_DIR}" rev-parse --abbrev-ref HEAD
 git -C "${CLAUDE_PROJECT_DIR}" status --short
-go -C "${CLAUDE_PROJECT_DIR}" run ./scripts/cmd/history bound
+jq -r 'select(.k=="ticket").v' "${CLAUDE_PROJECT_DIR}/docs/history/state.jsonl" 2>/dev/null | tail -1
 ```
 
 You own the **queue and nothing else**. One Ticket at a time — this instance is

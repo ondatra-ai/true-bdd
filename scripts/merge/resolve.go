@@ -3,9 +3,9 @@ package merge
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 )
 
@@ -16,7 +16,7 @@ const resolveMutation = "query=mutation($id:ID!)" +
 func ticketURL(finding clickup.Finding) string {
 	const matchWidth = 60
 
-	raw, err := os.ReadFile(filedRecord)
+	raw, err := disk.Read(filedRecord)
 	if err != nil {
 		return ""
 	}

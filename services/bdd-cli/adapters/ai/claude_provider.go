@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"log/slog"
 	"strings"
 
@@ -158,23 +159,23 @@ func (c *ClaudeProvider) processMessage(message any, result *strings.Builder) (b
 		c.processAssistantMessage(msg, result)
 	case *claudecode.UserMessage:
 		slog.Debug("UserMessage received")
-		slog.Debug("UserMessage content", "msg", fmt.Sprintf("%+v", msg))
+		slog.Debug("UserMessage content", "content", fmt.Sprintf("%+v", msg))
 	case *claudecode.SystemMessage:
 		slog.Debug("SystemMessage received")
-		slog.Debug("SystemMessage content", "msg", fmt.Sprintf("%+v", msg))
+		slog.Debug("SystemMessage content", "content", fmt.Sprintf("%+v", msg))
 	case *claudecode.ResultMessage:
 		return c.processResultMessage(msg)
 	default:
 		slog.Debug("Unhandled message type", "type", fmt.Sprintf("%T", message))
-		slog.Debug("Unhandled message content", "msg", fmt.Sprintf("%+v", message))
+		slog.Debug("Unhandled message content", "content", fmt.Sprintf("%+v", message))
 	}
 
 	return false, nil
 }
 
 func (c *ClaudeProvider) processAssistantMessage(msg *claudecode.AssistantMessage, result *strings.Builder) {
-	slog.Debug("AssistantMessage received", "content_blocks", len(msg.Content))
-	slog.Debug("AssistantMessage content", "msg", fmt.Sprintf("%+v", msg))
+	slog.Debug(enginelog.MsgAssistant, "content_blocks", len(msg.Content))
+	slog.Debug("AssistantMessage content", "content", fmt.Sprintf("%+v", msg))
 
 	for i, block := range msg.Content {
 		slog.Debug("Processing content block", "index", i, "type", fmt.Sprintf("%T", block))
@@ -217,7 +218,7 @@ func (c *ClaudeProvider) logUnknownBlock(block any) {
 }
 
 func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bool, error) {
-	slog.Debug("ResultMessage received", "is_error", msg.IsError, "result", msg.Result)
+	slog.Debug(enginelog.MsgResult, "is_error", msg.IsError, "result", msg.Result)
 
 	logTurnUsage(msg)
 
@@ -257,7 +258,7 @@ func logTurnUsage(msg *claudecode.ResultMessage) {
 
 	// Nothing beyond the cli tag means the CLI reported no usage block;
 	// a record saying so beats a silently missing one in a cost report.
-	slog.Info("AI turn usage", fields...)
+	slog.Info(enginelog.MsgUsage, fields...)
 }
 
 func (c *ClaudeProvider) handleExecutionResult(resultStr string, err error) (string, error) {

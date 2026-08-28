@@ -12,17 +12,23 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
 
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
+	"log/slog"
 )
 
 var errNoCommand = errors.New("usage: gates run [--changed <base>] | gates list")
 
 func main() {
+	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "gates")
+
 	err := run(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		slog.Error("gates failed", "error", err)
 		os.Exit(1)
 	}
 }
@@ -35,7 +41,7 @@ func run(args []string) error {
 	switch args[0] {
 	case "list":
 		for _, gate := range gates.All {
-			_, _ = fmt.Fprintln(os.Stdout, gate.Name)
+			slog.Info("Gate", "name", gate.Name)
 		}
 
 		return nil
@@ -65,11 +71,12 @@ func runGates(args []string) error {
 
 		selected = gates.Select(changed)
 
-		_, _ = fmt.Fprintf(os.Stdout, "%d/%d gates for %d changed path(s) vs %s\n",
-			len(selected), len(gates.All), len(changed), *base)
+		slog.Info("Gates selected by the diff",
+			"selected", len(selected), "total", len(gates.All),
+			"changed", len(changed), "base", *base)
 	}
 
-	err = gates.Run(os.Stdout, selected)
+	err = gates.Run(selected)
 	if err != nil {
 		return fmt.Errorf("running the pipeline: %w", err)
 	}

@@ -3,7 +3,6 @@ package clickup
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 )
 
 // The field plan is unexported and reaches the filing turn as JSON, so the
@@ -22,14 +21,14 @@ func PlanFieldsForTest(queue []Finding) []byte {
 
 // DropAlreadyOpenForTest is the dedupe filter FileDeduped runs before the
 // render; the listing turn it feeds on cannot run in a test.
-func DropAlreadyOpenForTest(out io.Writer, queue []Finding, open []Task) []Finding {
-	return dropAlreadyOpen(out, queue, open)
+func DropAlreadyOpenForTest(queue []Finding, open []Task) ([]Finding, []Task) {
+	return dropAlreadyOpen(queue, open)
 }
 
-// WarnMisplacedForTest is the backlog check report runs; the filing turn that
+// MisplacedForTest is the backlog check report runs; the filing turn that
 // produces the statuses it reads cannot run in a test.
-func WarnMisplacedForTest(errOut io.Writer, filed []Ticket) {
-	warnMisplaced(errOut, filed)
+func MisplacedForTest(filed []Ticket) []string {
+	return misplaced(filed)
 }
 
 // CountHeadingsForTest is the count FileDocument tells the filing turn to

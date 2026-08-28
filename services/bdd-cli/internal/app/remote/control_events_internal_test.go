@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 )
 
@@ -59,7 +60,7 @@ func TestControlEventNeverDroppedOnTransientFailure(t *testing.T) {
 
 	first := `{"type":"prompt","prompt_id":"p1","kind":"choice","payload":{"actions":["apply","refine","exit"]}}` + "\n"
 
-	writeErr := os.WriteFile(eventsPath, []byte(first), 0o600)
+	writeErr := disk.Write(eventsPath, []byte(first), disk.Shared)
 	if writeErr != nil {
 		t.Fatalf("write events: %v", writeErr)
 	}

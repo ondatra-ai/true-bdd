@@ -1,6 +1,7 @@
 package clickup_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,18 +41,20 @@ func TestDropAlreadyOpenKeepsWhatIsNotOpen(t *testing.T) {
 		{ID: openStateID, Name: stateTitle},
 	}
 
-	var out strings.Builder
+	keptFindings, dropped := clickup.DropAlreadyOpenForTest(queue, open)
 
-	kept := titlesOf(clickup.DropAlreadyOpenForTest(&out, queue, open))
-
+	kept := titlesOf(keptFindings)
 	if len(kept) != 1 || kept[0] != skillTitle {
 		t.Fatalf("kept %q, want only %q", kept, skillTitle)
 	}
 
-	for _, want := range []string{"already open 86cb9fedx", "already open 86cb9feh1"} {
-		if !strings.Contains(out.String(), want) {
-			t.Errorf("output %q does not name the drop %q", out.String(), want)
-		}
+	named := make([]string, 0, len(dropped))
+	for _, task := range dropped {
+		named = append(named, task.ID)
+	}
+
+	if len(named) != 2 || !slices.Contains(named, openWindowID) || !slices.Contains(named, openStateID) {
+		t.Errorf("dropped %q, want both open tickets named", named)
 	}
 }
 
@@ -77,9 +80,7 @@ func TestDropAlreadyOpenComparesOnlyTheWindow(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			var out strings.Builder
-
-			kept := clickup.DropAlreadyOpenForTest(&out,
+			kept, _ := clickup.DropAlreadyOpenForTest(
 				[]clickup.Finding{{Title: window + ", proposed again"}},
 				[]clickup.Task{{ID: "86cb9fu0g", Name: testCase.open}})
 
@@ -97,16 +98,14 @@ func TestDropAlreadyOpenWithNothingOpen(t *testing.T) {
 
 	queue := []clickup.Finding{{Title: windowTitle}, {Title: stateTitle}}
 
-	var out strings.Builder
-
-	kept := clickup.DropAlreadyOpenForTest(&out, queue, nil)
+	kept, dropped := clickup.DropAlreadyOpenForTest(queue, nil)
 
 	if len(kept) != len(queue) {
 		t.Errorf("kept %d finding(s), want all %d", len(kept), len(queue))
 	}
 
-	if out.String() != "" {
-		t.Errorf("output = %q, want nothing dropped", out.String())
+	if len(dropped) != 0 {
+		t.Errorf("dropped %v, want nothing dropped", dropped)
 	}
 }
 
@@ -126,25 +125,23 @@ func titlesOf(findings []clickup.Finding) []string {
 func TestWarnMisplacedNamesEveryTicketOutsideBacklog(t *testing.T) {
 	t.Parallel()
 
-	var out strings.Builder
-
-	clickup.WarnMisplacedForTest(&out, []clickup.Ticket{
+	named := strings.Join(clickup.MisplacedForTest([]clickup.Ticket{
 		{ID: "86cbaymyq", Status: "to do"},
 		{ID: openWindowID, Status: backlog},
 		{ID: openStateID, Status: "BACKLOG"},
 		{ID: "86cb9fej4", Status: ""},
-	})
+	}), ", ")
 
 	for _, want := range []string{"86cbaymyq (to do)", "86cb9fej4 (?)"} {
-		if !strings.Contains(out.String(), want) {
-			t.Errorf("output %q does not name %q", out.String(), want)
+		if !strings.Contains(named, want) {
+			t.Errorf("%q does not name %q", named, want)
 		}
 	}
 
 	// Case is the list's presentation, not a second status.
 	for _, unwanted := range []string{openWindowID, openStateID} {
-		if strings.Contains(out.String(), unwanted) {
-			t.Errorf("output %q names %q, which is in the backlog", out.String(), unwanted)
+		if strings.Contains(named, unwanted) {
+			t.Errorf("%q names %q, which is in the backlog", named, unwanted)
 		}
 	}
 }
@@ -152,11 +149,9 @@ func TestWarnMisplacedNamesEveryTicketOutsideBacklog(t *testing.T) {
 func TestWarnMisplacedIsSilentWhenEverythingIsFiled(t *testing.T) {
 	t.Parallel()
 
-	var out strings.Builder
+	named := clickup.MisplacedForTest([]clickup.Ticket{{ID: openWindowID, Status: backlog}})
 
-	clickup.WarnMisplacedForTest(&out, []clickup.Ticket{{ID: openWindowID, Status: backlog}})
-
-	if out.String() != "" {
-		t.Fatalf("output %q, want silence", out.String())
+	if len(named) != 0 {
+		t.Fatalf("named %v, want silence", named)
 	}
 }

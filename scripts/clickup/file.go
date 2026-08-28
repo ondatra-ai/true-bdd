@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
+	"log/slog"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
@@ -19,12 +18,6 @@ var ErrNotFiled = errors.New("tickets were not filed")
 
 // diagnosticLimit matches the quoting width the rest of the tooling uses.
 const diagnosticLimit = 600
-
-// titleWidth caps a title in the filed/FAILED lines, wide and narrow.
-const (
-	filedTitleWidth  = 70
-	failedTitleWidth = 60
-)
 
 // matchWidth is the title prefix a queued finding and an open task are paired
 // by — the same 60 runes ticketURL pairs a finding with its ticket at
@@ -86,21 +79,21 @@ Return ONLY a JSON array, no prose and no code fence:
 
 // File renders the queue and asks a headless turn to create one ClickUp task
 // per heading.
-func File(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
-	return file(out, errOut, queuePath, tag, pullRequest, false)
+func File(queuePath, tag, pullRequest string) error {
+	return file(queuePath, tag, pullRequest, false)
 }
 
 // FileDeduped files only what no open task under tag already covers. The
 // postmortem's door: a review finding recurring across PRs is news, a process
 // proposal recurring while its ticket sits unimplemented is a duplicate.
-func FileDeduped(out, errOut io.Writer, queuePath, tag, pullRequest string) error {
-	return file(out, errOut, queuePath, tag, pullRequest, true)
+func FileDeduped(queuePath, tag, pullRequest string) error {
+	return file(queuePath, tag, pullRequest, true)
 }
 
 // dropAlreadyOpen returns the findings no open task already covers, naming
 // each one it drops. Dropping before the render keeps the heading count, the
 // field plan and report's count check on the same shortened queue.
-func dropAlreadyOpen(out io.Writer, queue []Finding, open []Task) []Finding {
+func dropAlreadyOpen(queue []Finding, open []Task) ([]Finding, []Task) {
 	byTitle := make(map[string]Task, len(open))
 
 	for _, task := range open {
@@ -108,6 +101,8 @@ func dropAlreadyOpen(out io.Writer, queue []Finding, open []Task) []Finding {
 	}
 
 	kept := make([]Finding, 0, len(queue))
+
+	var dropped []Task
 
 	for _, finding := range queue {
 		task, found := byTitle[textutil.Truncate(finding.Title, matchWidth)]
@@ -117,33 +112,32 @@ func dropAlreadyOpen(out io.Writer, queue []Finding, open []Task) []Finding {
 			continue
 		}
 
-		_, _ = fmt.Fprintf(out, "already open %-12s %s\n",
-			task.ID, textutil.Truncate(task.Name, filedTitleWidth))
+		dropped = append(dropped, task)
 	}
 
-	return kept
+	return kept, dropped
 }
 
-func file(out, errOut io.Writer, queuePath, tag, pullRequest string, dedupe bool) error {
+func file(queuePath, tag, pullRequest string, dedupe bool) error {
 	queue, err := LoadQueue(queuePath)
 	if err != nil {
 		return err
 	}
 
 	if len(queue) == 0 {
-		_, _ = fmt.Fprintf(out, "nothing to file from %s\n", queuePath)
+		slog.Info("Nothing to file", "queue", queuePath)
 
 		return nil
 	}
 
 	if dedupe {
-		queue, err = withoutOpen(out, queue, tag)
+		queue, err = withoutOpen(queue, tag)
 		if err != nil {
 			return err
 		}
 
 		if len(queue) == 0 {
-			_, _ = fmt.Fprintf(out, "every ticket in %s is already open\n", queuePath)
+			slog.Info("Every ticket in the queue is already open", "queue", queuePath)
 
 			return nil
 		}
@@ -154,7 +148,7 @@ func file(out, errOut io.Writer, queuePath, tag, pullRequest string, dedupe bool
 		return err
 	}
 
-	_, _ = fmt.Fprintf(out, "%d ticket(s) -> %s\n", len(queue), TicketsMarkdown)
+	slog.Info("Tickets rendered", "count", len(queue), "path", TicketsMarkdown)
 
 	plans, err := json.MarshalIndent(planFields(queue), "", "  ")
 	if err != nil {
@@ -169,19 +163,24 @@ func file(out, errOut io.Writer, queuePath, tag, pullRequest string, dedupe bool
 		return err
 	}
 
-	return report(out, errOut, len(queue), created)
+	return report(len(queue), created)
 }
 
 // withoutOpen lists the open tickets under tag and drops what they cover. A
 // listing that fails files nothing: not knowing what is open is exactly the
 // state this filters for.
-func withoutOpen(out io.Writer, queue []Finding, tag string) ([]Finding, error) {
+func withoutOpen(queue []Finding, tag string) ([]Finding, error) {
 	open, err := openTasks(tag)
 	if err != nil {
 		return nil, fmt.Errorf("%w: the open %s tickets could not be listed: %w", ErrNotFiled, tag, err)
 	}
 
-	return dropAlreadyOpen(out, queue, open), nil
+	kept, dropped := dropAlreadyOpen(queue, open)
+	for _, task := range dropped {
+		slog.Info("Already open", "ticket", task.ID, "title", task.Name)
+	}
+
+	return kept, nil
 }
 
 // createTickets runs the filing turn and reads the array back.
@@ -217,7 +216,7 @@ func createTickets(prompt string) ([]Ticket, error) {
 }
 
 // report writes the per-ticket record and decides whether the filing stands.
-func report(out, errOut io.Writer, wanted int, created []Ticket) error {
+func report(wanted int, created []Ticket) error {
 	filed, failed := split(created)
 
 	err := saveRecord(created)
@@ -226,8 +225,7 @@ func report(out, errOut io.Writer, wanted int, created []Ticket) error {
 	}
 
 	for _, ticket := range filed {
-		_, _ = fmt.Fprintf(out, "filed %-12s %s\n",
-			ticket.ID, textutil.Truncate(ticket.Title, filedTitleWidth))
+		slog.Info("Ticket filed", "ticket", ticket.ID, "title", ticket.Title)
 	}
 
 	for _, ticket := range failed {
@@ -241,37 +239,45 @@ func report(out, errOut io.Writer, wanted int, created []Ticket) error {
 			reason = "no id returned"
 		}
 
-		_, _ = fmt.Fprintf(errOut, "FAILED %-11s %s — %s\n", "-", textutil.Truncate(title, failedTitleWidth), reason)
+		slog.Error("Ticket was not created", "title", title, "reason", reason)
 	}
 
 	// A count that does not match is a silent drop, which is the whole
 	// failure this queue exists to prevent — so it is an error, not a note.
 	if len(created) != wanted {
-		_, _ = fmt.Fprintf(errOut,
-			"MISMATCH: %d ticket(s) in the queue, %d row(s) returned. Nothing is trustworthy here.\n",
-			wanted, len(created))
+		slog.Error("Queue and result disagree; nothing here is trustworthy",
+			"queued", wanted, "returned", len(created))
 
 		return ErrNotFiled
 	}
 
 	if len(failed) > 0 {
-		_, _ = fmt.Fprintf(errOut, "%d of %d ticket(s) were NOT created.\n", len(failed), wanted)
+		slog.Error("Tickets were not created", "failed", len(failed), "queued", wanted)
 
 		return ErrNotFiled
 	}
 
-	warnUnfilled(errOut, filed)
-	warnMisplaced(errOut, filed)
+	unfilled := unfilled(filed)
+	if len(unfilled) > 0 {
+		slog.Warn("Custom fields were not set; fill Triage Score and Expected Changes by hand",
+			"tickets", strings.Join(unfilled, " "))
+	}
 
-	_, _ = fmt.Fprintf(out, "%d ticket(s) filed; record in %s\n", len(filed), FiledRecord)
+	wrong := misplaced(filed)
+	if len(wrong) > 0 {
+		slog.Warn("Tickets are not in the backlog; move them back before a task-loop picks them up",
+			"tickets", strings.Join(wrong, ", "))
+	}
+
+	slog.Info("Filing complete", "filed", len(filed), "record", FiledRecord)
 
 	return nil
 }
 
-// warnMisplaced names tickets the filing turn left outside the backlog. Not
-// an error — the task exists — but naming it is the only thing between a
-// misfiled proposal and an unattended run picking it up.
-func warnMisplaced(errOut io.Writer, filed []Ticket) {
+// misplaced names tickets the filing turn left outside the backlog. Not an
+// error — the task exists — but naming it is the only thing between a misfiled
+// proposal and an unattended run picking it up.
+func misplaced(filed []Ticket) []string {
 	var wrong []string
 
 	for _, ticket := range filed {
@@ -280,19 +286,13 @@ func warnMisplaced(errOut io.Writer, filed []Ticket) {
 		}
 	}
 
-	if len(wrong) == 0 {
-		return
-	}
-
-	_, _ = fmt.Fprintf(errOut,
-		"NOT IN BACKLOG: %s — move them back before a task-loop picks them up.\n",
-		strings.Join(wrong, ", "))
+	return wrong
 }
 
-// warnUnfilled names the tickets whose custom fields were refused. Not an
-// error: the task exists and a Ticket short a field halts task-handle rather
-// than misleading it, so this asks for a hand-fill instead of failing a merge.
-func warnUnfilled(errOut io.Writer, filed []Ticket) {
+// unfilled names the tickets whose custom fields were refused. Not an error:
+// the task exists and a Ticket short a field halts task-handle rather than
+// misleading it, so this asks for a hand-fill instead of failing a merge.
+func unfilled(filed []Ticket) []string {
 	var bare []string
 
 	for _, ticket := range filed {
@@ -301,14 +301,7 @@ func warnUnfilled(errOut io.Writer, filed []Ticket) {
 		}
 	}
 
-	if len(bare) == 0 {
-		return
-	}
-
-	_, _ = fmt.Fprintf(errOut,
-		"custom fields were NOT set on %d ticket(s): %s\n"+
-			"  Fill Triage Score and Expected Changes by hand.\n",
-		len(bare), strings.Join(bare, " "))
+	return bare
 }
 
 func split(created []Ticket) ([]Ticket, []Ticket) {
@@ -328,19 +321,14 @@ func split(created []Ticket) ([]Ticket, []Ticket) {
 }
 
 func saveRecord(created []Ticket) error {
-	err := os.MkdirAll(filepath.Dir(FiledRecord), dirMode)
-	if err != nil {
-		return fmt.Errorf("creating %s: %w", filepath.Dir(FiledRecord), err)
-	}
-
 	payload, err := json.MarshalIndent(created, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encoding the filing record: %w", err)
 	}
 
-	err = os.WriteFile(FiledRecord, payload, fileMode)
+	err = disk.Write(FiledRecord, payload, disk.Shared)
 	if err != nil {
-		return fmt.Errorf("writing %s: %w", FiledRecord, err)
+		return err
 	}
 
 	return nil

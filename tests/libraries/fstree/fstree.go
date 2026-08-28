@@ -10,10 +10,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // ErrSymlinkInTree is returned when a snapshot meets a symbolic link: the
@@ -69,7 +70,7 @@ func Snapshot(root string, skipDirs ...string) (map[string][]byte, error) {
 			return escapeErr
 		}
 
-		data, readErr := os.ReadFile(path)
+		data, readErr := disk.Read(path)
 		if readErr != nil {
 			return fmt.Errorf("read %s: %w", path, readErr)
 		}

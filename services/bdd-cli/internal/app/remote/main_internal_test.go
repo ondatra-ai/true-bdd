@@ -10,6 +10,9 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Environment keys the re-exec helper child reads: the process-supervision
@@ -63,7 +66,7 @@ const testChildReady = "READY"
 
 // emitReady tells the parent the child's signal handlers are in place.
 func emitReady() {
-	_, _ = io.WriteString(os.Stdout, testChildReady+"\n")
+	_, _ = io.WriteString(console.Out(), testChildReady+"\n")
 }
 
 // blockStdinChild ignores SIGINT and blocks reading stdin until EOF, then
@@ -72,7 +75,7 @@ func blockStdinChild() {
 	signal.Ignore(syscall.SIGINT)
 	emitReady()
 
-	_, _ = io.Copy(io.Discard, os.Stdin)
+	_, _ = io.Copy(io.Discard, console.In())
 }
 
 // ignoreSignalsChild ignores SIGINT and SIGTERM and blocks (on a timer, so
@@ -98,10 +101,10 @@ func spawnGrandchildChild() {
 	}
 
 	pidFile := os.Getenv(testGrandchildPidEnv)
-	_ = os.WriteFile(pidFile, []byte(strconv.Itoa(grandchild.Process.Pid)), 0o644)
+	_ = disk.Write(pidFile, []byte(strconv.Itoa(grandchild.Process.Pid)), disk.Shared)
 
 	signal.Ignore(syscall.SIGINT)
 	emitReady()
 
-	_, _ = io.Copy(io.Discard, os.Stdin)
+	_, _ = io.Copy(io.Discard, console.In())
 }

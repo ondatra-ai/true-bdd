@@ -142,9 +142,9 @@ hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 
 ## Project Structure
 
-Three roots, gated by `.alint.yml`: `services/<name>/` + `tests/<name>/`
+Four roots, gated by `.alint.yml`: `services/<name>/` + `tests/<name>/`
 mirror what TrueBDD asks of a host (plus `tests/libraries/`); `scripts/` is
-this repo's tooling. `ls` for the tree; package docs carry descriptions.
+this repo's tooling; `pkg/` is the three IO channels. `ls` for the tree.
 
 - `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
   not show it: the bdd-web scenarios and suite are the spec.

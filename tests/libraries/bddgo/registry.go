@@ -27,11 +27,11 @@ package bddgo
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -160,7 +160,7 @@ type rawRegistry struct {
 // it, sorted by id so a run's order is a property of the document rather
 // than of Go's map iteration.
 func LoadRegistry(path string) ([]Scenario, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("read scenario registry %s: %w", path, err)
 	}

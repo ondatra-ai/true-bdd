@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
 
@@ -257,7 +257,7 @@ func NewRegistryLoader() *RegistryLoader {
 // slice sorted by id, one RegistryScenario per entry. The sort matters:
 // YAML maps are unordered in Go, so output and naming would otherwise vary across runs.
 func (l *RegistryLoader) Load(path string) ([]*RegistryScenario, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read requirements registry %s: %w", path, err)
 	}

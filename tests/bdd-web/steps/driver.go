@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/playwright-community/playwright-go"
 )
 
@@ -49,12 +51,12 @@ func ensureDriver(ctx context.Context, repoRoot string) (string, error) {
 func installDriverPackage(ctx context.Context, dir, version string) error {
 	staging := dir + ".staging"
 
-	err := os.RemoveAll(staging)
+	err := disk.RemoveTree(staging)
 	if err != nil {
 		return fmt.Errorf("clear the driver staging dir: %w", err)
 	}
 
-	err = os.MkdirAll(staging, dirPerm)
+	err = disk.Dir(staging, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("create the driver staging dir: %w", err)
 	}
@@ -65,31 +67,33 @@ func installDriverPackage(ctx context.Context, dir, version string) error {
 	install := exec.CommandContext(installCtx, "npm", "install",
 		"--no-save", "--no-package-lock", "--prefix", staging,
 		"playwright-core@"+version)
-	install.Stdout = os.Stderr
-	install.Stderr = os.Stderr
+	install.Stdout = console.Err()
+	install.Stderr = console.Err()
 
 	err = install.Run()
 	if err != nil {
 		return fmt.Errorf("fetch playwright-core@%s: %w", version, err)
 	}
 
-	err = os.RemoveAll(dir)
+	err = disk.RemoveTree(dir)
 	if err != nil {
 		return fmt.Errorf("clear the driver dir: %w", err)
 	}
 
-	err = os.MkdirAll(dir, dirPerm)
+	err = disk.Dir(dir, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("create the driver dir: %w", err)
 	}
 
+	//nolint:forbidigo // a directory publish, not a file write: pkg/disk's
+	// verbs are about one file's bytes and cannot express this.
 	err = os.Rename(filepath.Join(staging, "node_modules", "playwright-core"),
 		filepath.Join(dir, "package"))
 	if err != nil {
 		return fmt.Errorf("install the driver package: %w", err)
 	}
 
-	err = os.RemoveAll(staging)
+	err = disk.RemoveTree(staging)
 	if err != nil {
 		return fmt.Errorf("clear the driver staging dir: %w", err)
 	}
@@ -108,7 +112,7 @@ func linkNode(dir string) error {
 
 	link := filepath.Join(dir, "node")
 
-	err = os.RemoveAll(link)
+	err = disk.RemoveTree(link)
 	if err != nil {
 		return fmt.Errorf("clear the driver's node link: %w", err)
 	}

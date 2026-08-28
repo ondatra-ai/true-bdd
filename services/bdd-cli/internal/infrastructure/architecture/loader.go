@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"sort"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -120,7 +120,7 @@ type rawArchitecture struct {
 // suites and service source roots the build pipeline needs, and returns
 // both sorted by name. Purely path-driven — the cmd layer resolves the path before calling it.
 func Load(path string) (*Architecture, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read architecture file %s: %w", path, err)
 	}

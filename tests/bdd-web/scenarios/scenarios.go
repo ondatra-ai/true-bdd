@@ -11,17 +11,19 @@ package scenarios
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-web/steps"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"log/slog"
 )
 
 // -mode mirrors the CLI suite's flag; the web suite reaches no model yet, so the value only travels with the report.
@@ -40,13 +42,17 @@ var allowMissingToolchain = flag.Bool("allow-missing-toolchain", false,
 // so a CI log search finds it without parsing Go test output.
 const toolchainMissingMarker = "BDD-WEB: TOOLCHAIN MISSING"
 
+// errToolchainMissing is the refusal a missing toolchain raises when the
+// suite was not told it may skip.
+var errToolchainMissing = errors.New("toolchain missing")
+
 //nolint:gochecknoglobals // process-wide suite state, built once in Main
 var (
 	suite    *bddgo.Suite[steps.State]
 	repoRoot string
 
 	bootOnce  sync.Once
-	bootErr   error
+	errBoot   error
 	skipWhy   string
 	teardowns []func()
 )
@@ -54,11 +60,13 @@ var (
 // Main is the suite's TestMain body. It returns rather than exits so the
 // caller can os.Exit after the teardowns have run.
 func Main(m *testing.M) int {
+	logging.Install(logging.Stderr, "", "bdd-web")
+
 	flag.Parse()
 
 	mode := *proxyMode
 	if mode != runner.ProxyModeLive && mode != runner.ProxyModeRecord && mode != runner.ProxyModeReplay {
-		fmt.Fprintf(os.Stderr, "invalid -mode %q: want live, record, or replay\n", mode)
+		slog.Error("invalid -mode", "mode", mode, "want", "live, record, or replay")
 
 		return 1
 	}
@@ -67,14 +75,14 @@ func Main(m *testing.M) int {
 
 	repoRoot, err = runner.FindRepoRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "find repo root: %v\n", err)
+		slog.Error("find repo root", "error", err)
 
 		return 1
 	}
 
 	suite, err = bddgo.New[steps.State](steps.Options(repoRoot))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		slog.Error("build suite", "error", err)
 
 		return 1
 	}
@@ -119,10 +127,10 @@ func CheckStepCoverage(t *testing.T) {
 func ensureHarness(t *testing.T) {
 	t.Helper()
 
-	bootOnce.Do(func() { skipWhy, bootErr = bootHarness(t) })
+	bootOnce.Do(func() { skipWhy, errBoot = bootHarness(t) })
 
-	if bootErr != nil {
-		t.Fatalf("bring the suite up: %v", bootErr)
+	if errBoot != nil {
+		t.Fatalf("bring the suite up: %v", errBoot)
 	}
 
 	if skipWhy != "" {
@@ -134,6 +142,8 @@ func ensureHarness(t *testing.T) {
 // non-empty first result is a reason to skip; a non-nil second is a
 // failure.
 func bootHarness(t *testing.T) (string, error) {
+	t.Helper()
+
 	missing := missingTools()
 	if len(missing) > 0 {
 		reason := fmt.Sprintf("%s: %s — the bdd-web suite cannot build its subject",
@@ -143,7 +153,8 @@ func bootHarness(t *testing.T) (string, error) {
 			return reason, nil
 		}
 
-		return "", fmt.Errorf("%s\n  pass -allow-missing-toolchain to skip instead", reason)
+		return "", fmt.Errorf("%w: %s\n  pass -allow-missing-toolchain to skip instead",
+			errToolchainMissing, reason)
 	}
 
 	harness, stop, err := steps.NewHarness(context.Background(), *proxyMode, repoRoot)
@@ -152,6 +163,7 @@ func bootHarness(t *testing.T) (string, error) {
 	}
 
 	teardowns = append(teardowns, stop)
+
 	t.Logf("application under test: %s", harness.BaseURL)
 
 	suite.Init(steps.NewState(harness))

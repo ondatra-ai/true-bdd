@@ -9,11 +9,16 @@
 package main
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
 
 	"github.com/ondatra-ai/true-bdd/scripts/commit"
 )
 
 func main() {
+	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "commit")
+
 	commit.Start(os.Args[1:]).Main()
 }

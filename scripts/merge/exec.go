@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
@@ -63,7 +64,7 @@ func (r *Run) sh(cmd []string, opt options) result {
 	var stdout, stderr bytes.Buffer
 
 	if opt.stream {
-		command.Stdout, command.Stderr = os.Stdout, os.Stderr
+		command.Stdout, command.Stderr = console.Out(), console.Err()
 	} else {
 		command.Stdout, command.Stderr = &stdout, &stderr
 	}

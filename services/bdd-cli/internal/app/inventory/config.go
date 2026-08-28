@@ -1,10 +1,10 @@
 package inventory
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -69,7 +69,7 @@ func resolveConfig(folder string) resolvedConfig {
 		architectureRel: defaultArchitecturePath,
 	}
 
-	data, err := os.ReadFile(filepath.Join(folder, configRelPath))
+	data, err := disk.Read(filepath.Join(folder, configRelPath))
 	if err != nil {
 		return defaults
 	}

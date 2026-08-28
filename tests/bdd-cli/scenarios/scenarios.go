@@ -25,9 +25,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/steps"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"log/slog"
 )
 
 // -mode selects how scenarios reach the AI CLIs: live, record, or replay.
@@ -50,8 +54,6 @@ const (
 	FixturesDir = "fixtures"
 	// buildTimeout caps each `go build` the harness runs.
 	buildTimeout = 2 * time.Minute
-	// shimPerm is the mode of the directory the aiproxy shim lands in.
-	shimPerm = 0o755
 )
 
 //nolint:gochecknoglobals // process-wide suite state, built once in Main
@@ -60,7 +62,7 @@ var (
 	repoRoot string
 
 	bootOnce  sync.Once
-	bootErr   error
+	errBoot   error
 	skipWhy   string
 	harness   *steps.Harness
 	teardowns []func()
@@ -70,12 +72,14 @@ var (
 // directly, so the caller can run deferred teardowns first — TestMain has
 // no *testing.T, so t.Cleanup is unavailable.
 func Main(m *testing.M) int {
+	logging.Install(logging.Stderr, "", "bdd-cli")
+
 	// Parsed explicitly: m.Run parses too late for a flag Main reads.
 	flag.Parse()
 
 	mode := *proxyMode
 	if mode != runner.ProxyModeLive && mode != runner.ProxyModeRecord && mode != runner.ProxyModeReplay {
-		fmt.Fprintf(os.Stderr, "invalid -mode %q: want live, record, or replay\n", mode)
+		slog.Error("invalid -mode", "mode", mode, "want", "live, record, or replay")
 
 		return 1
 	}
@@ -84,14 +88,14 @@ func Main(m *testing.M) int {
 
 	repoRoot, err = runner.FindRepoRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "find repo root: %v\n", err)
+		slog.Error("find repo root", "error", err)
 
 		return 1
 	}
 
 	suite, err = bddgo.New[steps.State](steps.Options(repoRoot))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		slog.Error("build suite", "error", err)
 
 		return 1
 	}
@@ -147,10 +151,10 @@ func CheckStepCoverage(t *testing.T) {
 func ensureHarness(t *testing.T) {
 	t.Helper()
 
-	bootOnce.Do(func() { skipWhy, bootErr = bootHarness(t) })
+	bootOnce.Do(func() { skipWhy, errBoot = bootHarness(t) })
 
-	if bootErr != nil {
-		t.Fatalf("bring the suite up: %v", bootErr)
+	if errBoot != nil {
+		t.Fatalf("bring the suite up: %v", errBoot)
 	}
 
 	// A skip per scenario rather than one for the whole suite: `go test`
@@ -165,6 +169,8 @@ func ensureHarness(t *testing.T) {
 // judge and this process's log sink. A non-empty first result is a
 // reason to skip; a non-nil second is a failure.
 func bootHarness(t *testing.T) (string, error) {
+	t.Helper()
+
 	mode := *proxyMode
 
 	// Replay needs no model: turns and verdict both come from the
@@ -316,16 +322,16 @@ func missingCLI() (string, error) {
 // codex in a temp dir, prepended only to the CLI subprocess's PATH — never
 // the test process's — so it intercepts spawns without touching resolution.
 func installShimDir() (string, error) {
-	dir, err := os.MkdirTemp("", "true-bdd-shim-")
+	dir, err := disk.TempDir("", "true-bdd-shim-")
 	if err != nil {
 		return "", fmt.Errorf("create shim dir: %w", err)
 	}
 
-	teardowns = append(teardowns, func() { _ = os.RemoveAll(dir) })
+	teardowns = append(teardowns, func() { _ = disk.RemoveTree(dir) })
 
 	shimDir := filepath.Join(dir, "shim")
 
-	err = os.MkdirAll(shimDir, shimPerm)
+	err = disk.Dir(shimDir, disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("create shim dir: %w", err)
 	}
@@ -348,12 +354,12 @@ func installShimDir() (string, error) {
 }
 
 func buildTrueBDD() (string, error) {
-	dir, err := os.MkdirTemp("", "true-bdd-bin-")
+	dir, err := disk.TempDir("", "true-bdd-bin-")
 	if err != nil {
 		return "", fmt.Errorf("create bin dir: %w", err)
 	}
 
-	teardowns = append(teardowns, func() { _ = os.RemoveAll(dir) })
+	teardowns = append(teardowns, func() { _ = disk.RemoveTree(dir) })
 
 	binPath := filepath.Join(dir, "true-bdd")
 
@@ -371,8 +377,8 @@ func goBuild(binPath, pkg string) error {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "build", "-C", repoRoot, "-o", binPath, pkg)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = console.Out()
+	cmd.Stderr = console.Err()
 
 	err := cmd.Run()
 	if err != nil {

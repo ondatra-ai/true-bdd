@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -53,7 +54,7 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 		return trace, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
 	}
 
-	answer, readErr := os.ReadFile(answerPath)
+	answer, readErr := disk.Read(answerPath)
 	if readErr != nil {
 		return trace, pkgerrors.ErrProviderExecutionFailed(p.Name(), readErr)
 	}

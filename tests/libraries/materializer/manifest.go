@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -102,7 +103,7 @@ type Manifest struct {
 func LoadManifest(fixtureDir string) (*Manifest, error) {
 	path := filepath.Join(fixtureDir, "fixture.yaml")
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("read fixture.yaml: %w", err)
 	}

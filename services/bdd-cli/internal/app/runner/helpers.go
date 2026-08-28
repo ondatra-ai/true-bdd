@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -14,13 +12,14 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -225,7 +224,6 @@ func refuseStartup(command string, err error) error {
 		"command", command,
 		"error", err,
 	)
-	console.Println("Cannot start: " + err.Error())
 
 	return err
 }
@@ -290,7 +288,7 @@ func writeNewStoryFile(storyData *story.Story, storiesDir string) (string, error
 	filename := fmt.Sprintf("%s-%s.yaml", storyData.ID, slug)
 	filePath := filepath.Join(storiesDir, filename)
 
-	err := os.MkdirAll(storiesDir, storyDirPermissions)
+	err := disk.Dir(storiesDir, disk.Shared)
 	if err != nil {
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
@@ -304,7 +302,7 @@ func writeNewStoryFile(storyData *story.Story, storiesDir string) (string, error
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
 
-	err = os.WriteFile(filePath, data, storyFilePermissions)
+	err = disk.Write(filePath, data, disk.Shared)
 	if err != nil {
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
@@ -340,7 +338,7 @@ func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir s
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
 
-	err = os.WriteFile(filePath, data, storyFilePermissions)
+	err = disk.Write(filePath, data, disk.Shared)
 	if err != nil {
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
@@ -427,10 +425,8 @@ func StoryPostFix(
 			return nil, pkgerrors.ErrSaveStoryVersionFailed(err)
 		}
 
-		console.Printf(
-			"\nFix applied (v%d) — re-running validation...\n",
-			versionMgr.GetCurrentVersion(),
-		)
+		slog.Info("Fix applied; re-running validation",
+			"version", versionMgr.GetCurrentVersion())
 
 		latest, err := versionMgr.LoadLatest()
 		if err != nil {
@@ -454,24 +450,19 @@ func StoryFinalize(
 		case engine.Converged:
 			return writeConvergedStory(versionMgr, storiesDir, storyNumber, writeNew)
 		case engine.NotFixed:
-			console.BlankLine()
-
 			if fix {
-				console.Println("Validation failed. No fix was applied.")
+				slog.Warn("Validation failed. No fix was applied.")
 			} else {
-				console.Println("Validation failed. Use --fix flag to enter interactive fix mode.")
+				slog.Warn("Validation failed. Use --fix flag to enter interactive fix mode.")
 			}
 
 			return nil
 		case engine.UserExit:
-			console.Printf(
-				"\nExiting. Latest version saved at: %s\n",
-				versionMgr.GetLatestPath(),
-			)
+			slog.Info("Exiting", "latest_version", versionMgr.GetLatestPath())
 
 			return nil
 		case engine.MaxAttemptsExhausted:
-			console.Println("Hit max apply attempts without convergence.")
+			slog.Warn("Hit max apply attempts without convergence.")
 
 			return nil
 		}
@@ -488,11 +479,11 @@ func writeConvergedStory(
 	storiesDir, storyNumber string,
 	writeNew bool,
 ) error {
-	console.Header("ALL CHECKS PASSED!", SeparatorWidth)
+	slog.Info("ALL CHECKS PASSED!")
 
 	latest, err := versionMgr.LoadLatest()
 	if err != nil {
-		console.Printf("Error: could not load latest story for writing: %v\n", err)
+		slog.Error("Could not load latest story for writing", "error", err)
 
 		return fmt.Errorf("load latest story for writing: %w", err)
 	}
@@ -506,12 +497,12 @@ func writeConvergedStory(
 	}
 
 	if err != nil {
-		console.Printf("Error: could not write story file: %v\n", err)
+		slog.Error("Could not write story file", "error", err)
 
 		return fmt.Errorf("write story file: %w", err)
 	}
 
-	console.Printf("Story saved to: %s\n", storyPath)
+	slog.Info("Story saved", "path", storyPath)
 
 	return nil
 }
@@ -520,33 +511,5 @@ func writeConvergedStory(
 // parent directory if needed. Used by `us apply` to seed the scratch
 // requirements registry.
 func CopyFile(src, dst string) error {
-	err := os.MkdirAll(filepath.Dir(dst), storyDirPermissions)
-	if err != nil {
-		return fmt.Errorf("failed to create scratch directory: %w", err)
-	}
-
-	srcFile, err := os.Open(filepath.Clean(src))
-	if err != nil {
-		return fmt.Errorf("failed to open source %s: %w", src, err)
-	}
-
-	defer func() {
-		_ = srcFile.Close()
-	}()
-
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, scratchFilePerm)
-	if err != nil {
-		return fmt.Errorf("failed to open destination %s: %w", dst, err)
-	}
-
-	defer func() {
-		_ = dstFile.Close()
-	}()
-
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		return fmt.Errorf("failed to copy %s -> %s: %w", src, dst, err)
-	}
-
-	return nil
+	return disk.Copy(dst, src, disk.Shared)
 }

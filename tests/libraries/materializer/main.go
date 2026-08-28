@@ -9,7 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"log/slog"
 )
 
 // ErrUsage is returned for invalid flag combinations; see doc.go for
@@ -18,6 +21,8 @@ var ErrUsage = errors.New(
 	"usage: materializer -fixture <dir> -target <dir> [-repo <dir>] | -list-baseline -target <dir>")
 
 func main() {
+	logging.Install(logging.Stderr, "", "materializer")
+
 	fixtureDir := flag.String("fixture", "", "fixture directory containing fixture.yaml")
 	targetDir := flag.String("target", "", "directory to materialize into (or hash with -list-baseline)")
 	repoRoot := flag.String("repo", "", "repo root supplying the engine layer (default: walk up from cwd)")
@@ -25,9 +30,9 @@ func main() {
 
 	flag.Parse()
 
-	err := run(*fixtureDir, *targetDir, *repoRoot, *listBaseline, os.Stdout)
+	err := run(*fixtureDir, *targetDir, *repoRoot, *listBaseline, console.Out())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "materializer: %v\n", err)
+		slog.Error("materializer failed", "error", err)
 		os.Exit(1)
 	}
 }

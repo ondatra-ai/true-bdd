@@ -2,11 +2,11 @@ package runner
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
@@ -58,7 +58,7 @@ func TestStoryFinalizeSurfacesWriteFailure(t *testing.T) {
 	// os.MkdirAll inside writeNewStoryFile fails deterministically.
 	blocker := filepath.Join(t.TempDir(), "blocker")
 
-	err := os.WriteFile(blocker, []byte("not a dir"), 0o644)
+	err := disk.Write(blocker, []byte("not a dir"), disk.Shared)
 	if err != nil {
 		t.Fatalf("write blocker: %v", err)
 	}
@@ -141,12 +141,12 @@ func newDocResolver(t *testing.T, documents map[string]string, present []string)
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 
-	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	err := disk.Dir(filepath.Dir(path), disk.Shared)
 	if err != nil {
 		t.Fatalf("MkdirAll %s: %v", path, err)
 	}
 
-	err = os.WriteFile(path, []byte(content), 0o644)
+	err = disk.Write(path, []byte(content), disk.Shared)
 	if err != nil {
 		t.Fatalf("WriteFile %s: %v", path, err)
 	}

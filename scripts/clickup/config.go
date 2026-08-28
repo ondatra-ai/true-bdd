@@ -35,13 +35,6 @@ const (
 	roleClickUp = "clickup"
 )
 
-// Permissions for what this package writes: artifacts a person reads, in a
-// directory a person browses.
-const (
-	dirMode  = 0o755
-	fileMode = 0o600
-)
-
 // listID is the ClickUp list tickets are filed into.
 func listID() string {
 	if id := os.Getenv("CLICKUP_LIST_ID"); id != "" {

@@ -4,17 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 )
 
-// msgAITurnUsage is the record src/adapters/ai/claude_provider.go emits
-// after every claude turn. In THIS process only the judge can emit it —
-// see InstallHarnessLogging.
-const msgAITurnUsage = "AI turn usage"
+// msgAITurnUsage is the record the engine emits after every claude turn,
+// taken from the shared contract. In THIS process only the judge can emit it
+// — see InstallHarnessLogging.
+const msgAITurnUsage = enginelog.MsgUsage
 
 // HarnessLogFile is where the TEST PROCESS's own records land, one file
 // per `go test` invocation. A file at the session root, where the run
@@ -114,68 +117,48 @@ func numberOf(value slog.Value) float64 {
 // harnessHandler fans every record out to the session's JSON log and to
 // the console, and files the judge's usage into the sink on the way past.
 type harnessHandler struct {
-	file    slog.Handler
-	console slog.Handler
-	sink    *UsageSink
+	slog.Handler
+
+	sink *UsageSink
 }
 
-func (h *harnessHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.file.Enabled(ctx, level) || h.console.Enabled(ctx, level)
-}
-
+// Handle taps the billing record on its way past and leaves every other
+// decision to pkg/logging.
 func (h *harnessHandler) Handle(ctx context.Context, record slog.Record) error {
 	if record.Message == msgAITurnUsage {
 		h.sink.add(record)
 	}
 
-	_ = h.file.Handle(ctx, record)
-
-	if !h.console.Enabled(ctx, record.Level) {
-		return nil
-	}
-
-	err := h.console.Handle(ctx, record)
+	err := h.Handler.Handle(ctx, record)
 	if err != nil {
-		return fmt.Errorf("console handler: %w", err)
+		return fmt.Errorf("harness handler: %w", err)
 	}
 
 	return nil
 }
 
+// WithAttrs keeps the tap across a logger that carries attributes.
 func (h *harnessHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &harnessHandler{
-		file:    h.file.WithAttrs(attrs),
-		console: h.console.WithAttrs(attrs),
-		sink:    h.sink,
-	}
+	return &harnessHandler{Handler: h.Handler.WithAttrs(attrs), sink: h.sink}
 }
 
+// WithGroup keeps the tap across a logger that carries a group.
 func (h *harnessHandler) WithGroup(name string) slog.Handler {
-	return &harnessHandler{
-		file:    h.file.WithGroup(name),
-		console: h.console.WithGroup(name),
-		sink:    h.sink,
-	}
+	return &harnessHandler{Handler: h.Handler.WithGroup(name), sink: h.sink}
 }
 
 // InstallHarnessLogging points this process's default slog at the
 // session, returning the billing sink and a log closer. The engine runs
 // as a SUBPROCESS with its own slog — this sink sees only the harness's own records.
 func InstallHarnessLogging(sessionRoot string) (*UsageSink, func(), error) {
-	path := filepath.Join(sessionRoot, HarnessLogFile)
-
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, spawnLogFilePerm)
-	if err != nil {
-		return nil, nil, fmt.Errorf("open harness log %s: %w", path, err)
-	}
-
 	sink := &UsageSink{}
 
 	slog.SetDefault(slog.New(&harnessHandler{
-		file:    slog.NewJSONHandler(file, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		console: slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		Handler: logging.Handler(console.Err(), filepath.Join(sessionRoot, HarnessLogFile)),
 		sink:    sink,
 	}))
 
-	return sink, func() { _ = file.Close() }, nil
+	// Nothing to close: pkg/logging appends each record through pkg/disk, so
+	// no handle outlives the write.
+	return sink, func() {}, nil
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 	"gopkg.in/yaml.v3"
 )
@@ -80,7 +81,7 @@ func materializeInto(t *testing.T, fixtureDir, repoRoot string) (*Result, string
 func readTargetFile(t *testing.T, target, rel string) string {
 	t.Helper()
 
-	data, err := os.ReadFile(filepath.Join(target, rel))
+	data, err := disk.Read(filepath.Join(target, rel))
 	if err != nil {
 		t.Fatalf("read %s: %v", rel, err)
 	}

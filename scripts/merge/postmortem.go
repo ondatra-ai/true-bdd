@@ -2,13 +2,15 @@ package merge
 
 import (
 	"bufio"
-	"os"
+	"bytes"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
@@ -78,7 +80,7 @@ func (r *Run) postmortem() {
 	queue := StateDir + "/postmortem.json"
 	r.save(queue, proposals)
 
-	err = clickup.FileDeduped(os.Stdout, os.Stderr, queue, "merge-improvements", strconv.Itoa(r.pr))
+	err = clickup.FileDeduped(queue, "merge-improvements", strconv.Itoa(r.pr))
 	if err != nil {
 		r.logf("! filing the postmortem's proposals failed: %v", err)
 	}
@@ -105,14 +107,12 @@ func (r *Run) historyExtract() string {
 
 	path := state.HistoryFile(".", name)
 
-	handle, err := os.Open(path) //nolint:gosec // the name comes from the repository's own state file.
+	raw, err := disk.Read(path)
 	if err != nil {
 		return ""
 	}
 
-	defer handle.Close() //nolint:errcheck // read-only.
-
-	text := r.keepWantedSections(handle)
+	text := r.keepWantedSections(bytes.NewReader(raw))
 
 	if utf8.RuneCountInString(text) > historyBudgetBytes {
 		text = "…earlier turns omitted…\n\n" + lastRunes(text, historyBudgetBytes)
@@ -120,14 +120,9 @@ func (r *Run) historyExtract() string {
 
 	out := StateDir + "/history-extract.md"
 
-	err = os.MkdirAll(StateDir, dirMode)
+	err = disk.Write(out, []byte(text), disk.Shared)
 	if err != nil {
-		r.dief("creating %s: %v", StateDir, err)
-	}
-
-	err = os.WriteFile(out, []byte(text), fileMode)
-	if err != nil {
-		r.dief("writing %s: %v", out, err)
+		r.dief("%v", err)
 	}
 
 	r.logf("history extract: %d bytes from %s -> %s", utf8.RuneCountInString(text), name, out)
@@ -137,7 +132,7 @@ func (r *Run) historyExtract() string {
 
 // keepWantedSections walks the history file and keeps the sections this run
 // wrote, plus any plain turn stamped after it started.
-func (r *Run) keepWantedSections(handle *os.File) string {
+func (r *Run) keepWantedSections(handle io.Reader) string {
 	wanted := map[string]bool{}
 	for _, role := range historyRoles {
 		wanted["## claude to @"+role] = true

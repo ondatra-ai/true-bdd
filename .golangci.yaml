@@ -3,6 +3,11 @@ version: "2"
 run:
   timeout: 5m
   tests: true
+  # Without this the whole bdd-tagged tree is never analysed at all. No !bdd
+  # constraint exists, so the union is linted; `generated: lax` still skips
+  # the generated tests, which is why the vet -tags bdd gate stays.
+  build-tags:
+    - bdd
 
 linters:
   default: standard
@@ -18,7 +23,7 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    # - depguard
+    - depguard
     - dogsled
     - dupl
     - dupword
@@ -124,20 +129,94 @@ linters:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2
+    # sloglint's defaults struct carries NoMixedArgs: true and YAML decodes
+    # OVER it, so naming a settings block does not switch that default off.
+    sloglint:
+      kv-only: true
+      # static-msg is OFF on purpose: it takes only a literal or a bare ident,
+      # so it rejects `enginelog.MsgDispatch`, the constant pinning the wire.
+
+      # slog's own envelope fields. An attribute of the same name emits the
+      # key twice, and a JSON reader keeps whichever it saw last.
+      forbidden-keys: [time, level, msg, source]
+    loggercheck:
+      require-string-key: true
+      no-printf-like: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    depguard:
+      rules:
+        logging:
+          # depguard matches by PREFIX, so a bare `log` would deny log/slog
+          # with it; the trailing $ makes it exact. Globs run against ABSOLUTE
+          # paths, hence the leading **/.
+          files:
+            - "$all"
+            - "!**/pkg/logging/**"
+          deny:
+            - pkg: "log$"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "github.com/sirupsen/logrus"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "go.uber.org/zap"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "github.com/rs/zerolog"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "github.com/go-kit/log"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "k8s.io/klog"
+              desc: 'log/slog only, and only through pkg/logging'
+            - pkg: "github.com/hashicorp/go-hclog"
+              desc: 'log/slog only, and only through pkg/logging'
+        # scripts/ answers a caller or narrates; narration is a log. Each of
+        # the five exemptions holds a DESCRIPTOR, never a print.
+        scripts-console:
+          files:
+            - "**/scripts/**"
+            - "!**/scripts/cmd/history/main.go"
+            - "!**/scripts/cmd/lint/main.go"
+            - "!**/scripts/gates/run.go"
+            - "!**/scripts/commit/run.go"
+            - "!**/scripts/merge/exec.go"
+            - "!**/*_test.go"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/pkg/console"
+              desc: 'scripts narrate: use log/slog, which reaches the shared tools log'
+    # forbidigo matches IDENTIFIERS, never call expressions — it never sees an
+    # argument. The `^fmt\.Errorf\([^,)]*\)$` pattern that stood here could
+    # therefore never fire; err113's checkWrap is what forbids a %w-less Errorf.
     forbidigo:
+      # Buys the aliased `import osx "os"` case, which walks past a name-only
+      # rule. Free: golangci loads type info for forbidigo either way.
+      analyze-types: true
       forbid:
-        - pattern: '^fmt\.(Print(f|ln)?)$'
-          msg: 'use slog for logging'
-        # Allow fmt.Errorf for error wrapping (required by wrapcheck linter)
-        # but forbid it for simple error creation without %w
-        - pattern: '^fmt\.Errorf\([^,)]*\)$'
-          msg: 'use errors.New for simple errors, or fmt.Errorf with %w for wrapping'
+        # Banning the three descriptors is what makes banning fmt.Fprint*
+        # unnecessary, so the 48 `fmt.Fprintf(&buf, ...)` string-building sites
+        # stay untouched — and it is what catches `cmd.Stdout = os.Stdout`.
+        - pattern: '^os\.Std(out|err|in)$'
+          msg: 'three channels: reach a terminal through pkg/console'
+        # os.Stat/os.Lstat/os.ReadDir/os.Symlink are deliberately absent: they
+        # move no bytes, so they cannot observe a half-written file.
+        - pattern: '^os\.(Chmod|Create|CreateTemp|Mkdir|MkdirAll|MkdirTemp|Open|OpenFile|ReadFile|Remove|RemoveAll|Rename|Truncate|WriteFile)$'
+          msg: 'three channels: read and write files through pkg/disk'
+        # Carries no `three channels:` marker, so the migration entries below
+        # do not switch it off: the tree already satisfies it everywhere.
+        - pattern: '^(fmt\.Print(|f|ln)|print|println)$'
+          msg: 'use pkg/console for terminal output, pkg/logging for logs'
+        # forbidigo can ban SetDefault outright but can never ban "SetDefault
+        # with a foreign handler" — it never sees an argument.
+        - pattern: '^slog\.(New|NewTextHandler|NewJSONHandler|NewLogLogger|SetDefault)$'
+          msg: 'log construction: build and install handlers through pkg/logging'
     wrapcheck:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
       ignore-package-globs:
         - "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/*"
         - "*/internal/*"
+        # Same reason as internal/pkg/errors above: every error pkg/disk
+        # returns already names the path and the operation that failed.
+        - "github.com/ondatra-ai/true-bdd/pkg/*"
       ignore-sig-regexps:
         - 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors\.Err.*'
     tagliatelle:
@@ -176,7 +255,41 @@ linters:
       - path: _test\.go
         linters:
           - err113
-      # Allow fmt.Print in console package - it wraps fmt for terminal UI output
-      - path: services/bdd-cli/internal/pkg/console/.*\.go
+      # Permanent. Each channel is exempt from its OWN pattern only; pkg/
+      # logging gets no entry, since it reaches stdout and its file through the
+      # other two — so the linter proves that layering instead of ignoring it.
+      - path: ^pkg/console/
         linters:
           - forbidigo
+        text: 'three channels: reach a terminal'
+      - path: ^pkg/disk/
+        linters:
+          - forbidigo
+        text: 'three channels: read and write files'
+      # A test writes fixtures a lock would only slow down, and writes ones
+      # deliberately malformed. The terminal patterns still apply here.
+      - path: _test\.go
+        linters:
+          - forbidigo
+        text: 'three channels: read and write files'
+      # pkg/logging IS the constructor; the harness wraps its handler to tap
+      # usage records; a test swaps the default around a capture and restores.
+      - path: ^pkg/logging/
+        linters:
+          - forbidigo
+        text: 'log construction:'
+      - path: ^tests/libraries/runner/harness_logging\.go$
+        linters:
+          - forbidigo
+        text: 'log construction:'
+      - path: _test\.go
+        linters:
+          - forbidigo
+        text: 'log construction:'
+
+
+# The defaults (3 same-issue, 50 per-linter) silently truncate a report, so a
+# fix-everything pass is told it is finished when it is not.
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0

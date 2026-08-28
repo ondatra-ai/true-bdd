@@ -16,7 +16,8 @@ that step alone, for a branch already committed and pushed.
 
 It reads the branch's commits and diff vs `origin/main` (falling back to
 `origin/master`), generates a conventional-commit title and body, then creates
-a new PR or edits the existing one. It prints the PR URL.
+a new PR or edits the existing one. The URL arrives as a log record —
+`msg="Pull request updated" result=<url>` — not as a bare line.
 
 ```bash
 go run ./scripts/cmd/pr-update

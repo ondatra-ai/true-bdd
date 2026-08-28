@@ -1,10 +1,11 @@
 package reporter
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Records naming an artifact the engine wrote.
@@ -80,7 +81,7 @@ func loadArtifact(fixtureDir, logged string) Artifact {
 		Path: logged,
 	}
 
-	content, err := os.ReadFile(path)
+	content, err := disk.Read(path)
 	if err != nil {
 		artifact.Missing = true
 

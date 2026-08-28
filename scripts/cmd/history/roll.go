@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log/slog"
 
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
@@ -21,13 +21,11 @@ func rollTask(repo string) error {
 		return fmt.Errorf("rolling the task state: %w", err)
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout,
-		"history rolled: the next prompt opens a fresh file in docs/history/")
+	slog.Info("History rolled; the next prompt opens a fresh file in docs/history/")
 
 	if orphan != "" {
-		_, _ = fmt.Fprintf(os.Stdout,
-			"WARNING: ticket %s was still bound and is now unbound.\n"+
-				"It is still PROCESSING in ClickUp — nobody closed it. Tell the user.\n", orphan)
+		slog.Warn("Ticket was still bound and is now unbound; it is still "+
+			"PROCESSING in ClickUp and nobody closed it — tell the user", "ticket", orphan)
 	}
 
 	return nil

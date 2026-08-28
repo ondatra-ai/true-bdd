@@ -2,11 +2,11 @@ package architecture_test
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 )
 
@@ -34,7 +34,7 @@ func writeSpec(t *testing.T, body string) string {
 
 	path := filepath.Join(t.TempDir(), "architecture.yaml")
 
-	err := os.WriteFile(path, []byte(body), 0o600)
+	err := disk.Write(path, []byte(body), disk.Shared)
 	if err != nil {
 		t.Fatalf("write spec: %v", err)
 	}

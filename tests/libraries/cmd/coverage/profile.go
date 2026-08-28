@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // sortObservations orders observations deterministically so profiles
@@ -36,7 +37,6 @@ const (
 )
 
 // filePerm is the mode for files this tool writes.
-const filePerm = 0o644
 
 // evidenceQualityReconstructed labels every bootstrap profile: derived
 // from retained artifacts, without ratchet authority.
@@ -136,7 +136,7 @@ func (p *Profile) WriteJSON(path string) error {
 		return fmt.Errorf("marshaling profile: %w", err)
 	}
 
-	err = os.WriteFile(path, append(data, '\n'), filePerm)
+	err = disk.Write(path, append(data, '\n'), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("writing profile %s: %w", path, err)
 	}

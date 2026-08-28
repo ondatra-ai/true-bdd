@@ -38,7 +38,7 @@ var (
 	// replayInputs is what tests/libraries/runner copies into each fixture
 	// tmpdir, plus the trees the binary is rebuilt from.
 	replayInputs = []string{
-		"services/bdd-cli/**", "true-bdd/**", "templates/**", registry,
+		"services/bdd-cli/**", "pkg/**", "true-bdd/**", "templates/**", registry,
 		"tests/bdd-cli/**", "tests/libraries/bddgo/**",
 		"tests/libraries/runner/**", "tests/libraries/aiproxy/**",
 	}
@@ -78,7 +78,7 @@ var (
 		{
 			Name:    "Build",
 			Command: []string{goBin, "build", "-o", "./bin/true-bdd", "./services/bdd-cli"},
-			Globs:   []string{"services/bdd-cli/**", "go.mod", "go.sum"},
+			Globs:   []string{"services/bdd-cli/**", "pkg/**", "go.mod", "go.sum"},
 		},
 		{
 			Name:    "Test",
@@ -86,8 +86,9 @@ var (
 			Globs:   goSources,
 		},
 		{
-			// go vet ./... and golangci-lint both skip the bdd-tagged tree:
-			// without this a generated Testfoo compiles, never runs, and passes.
+			// golangci-lint reaches the bdd tree now (run.build-tags), but
+			// `generated: lax` skips the generated tests — where a Testfoo
+			// that compiles, never runs and passes is exactly the risk.
 			Name:    "Vet the BDD tree",
 			Command: []string{goBin, "vet", tagsFlag, bddTag, "./tests/..."},
 			Globs:   []string{"tests/**"},

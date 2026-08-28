@@ -2,10 +2,10 @@ package clickup
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Render turns a queue into one markdown document, one `## ` heading per
@@ -63,14 +63,9 @@ func renderTicket(number int, finding Finding, origin string) []string {
 func WriteRendered(queue []Finding, tag, pr string) (string, error) {
 	document := Render(queue, tag, pr)
 
-	err := os.MkdirAll(filepath.Dir(TicketsMarkdown), dirMode)
+	err := disk.Write(TicketsMarkdown, []byte(document), disk.Shared)
 	if err != nil {
-		return "", fmt.Errorf("creating %s: %w", filepath.Dir(TicketsMarkdown), err)
-	}
-
-	err = os.WriteFile(TicketsMarkdown, []byte(document), fileMode)
-	if err != nil {
-		return "", fmt.Errorf("writing %s: %w", TicketsMarkdown, err)
+		return "", err
 	}
 
 	return document, nil

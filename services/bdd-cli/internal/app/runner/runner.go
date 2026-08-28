@@ -13,7 +13,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 // ErrExpectedNonconvergence marks a legitimately non-converged build
@@ -106,7 +105,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	}
 
 	// Execution phase.
-	console.Header(headerLine(spec.Name, spec.StoryNumber), SeparatorWidth)
+	slog.Info("Walk starting", "header", headerLine(spec.Name, spec.StoryNumber))
 
 	items, err := loadAndPrepare(ctx, spec)
 	if err != nil {
@@ -139,10 +138,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	// Trailing banner has no em-dash so fixture regexes like
 	// "APPLY COMPLETE" / "CREATE COMPLETE" match as a contiguous
 	// substring of the upper-cased command name.
-	console.Header(
-		strings.ToUpper(spec.Name)+" COMPLETE",
-		SeparatorWidth,
-	)
+	slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
 
 	finErr := spec.Finalize(result)
 
@@ -193,7 +189,6 @@ func validateSpec[I any](spec Spec[I]) (
 			"checklist", spec.ChecklistName,
 			"error", err,
 		)
-		console.Println("Cannot start: " + err.Error())
 
 		return nil, nil, err
 	}
@@ -313,10 +308,8 @@ func reWalkBanner(attempt, maxAttempts int) {
 		return
 	}
 
-	console.Header(
-		fmt.Sprintf("RE-WALK %d/%d (fixes applied — verifying)", attempt, maxAttempts),
-		SeparatorWidth,
-	)
+	slog.Info("RE-WALK (fixes applied, verifying)",
+		"attempt", attempt, "max_attempts", maxAttempts)
 }
 
 // itemBannerDispatcher adapts the engine's index-only OnItemStart to

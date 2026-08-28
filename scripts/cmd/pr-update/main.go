@@ -8,12 +8,17 @@
 package main
 
 import (
-	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
+	"log/slog"
 	"os"
 
 	"github.com/ondatra-ai/true-bdd/scripts/commit"
 )
 
 func main() {
-	_, _ = fmt.Fprintln(os.Stdout, commit.Start(os.Args[1:]).UpdatePR())
+	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "pr-update")
+
+	slog.Info("Pull request updated", "result", commit.Start(os.Args[1:]).UpdatePR())
 }

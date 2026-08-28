@@ -6,6 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 var (
@@ -36,7 +39,7 @@ func replay(cfg config, name string, argv []string) (int, error) {
 		return 0, fmt.Errorf("%w (%s: %w)", errCassetteMissing, dir, err)
 	}
 
-	recordedStdin, err := os.ReadFile(filepath.Join(dir, stdinFile))
+	recordedStdin, err := disk.Read(filepath.Join(dir, stdinFile))
 	if err != nil {
 		return 0, fmt.Errorf("read recorded stdin: %w", err)
 	}
@@ -87,7 +90,7 @@ func applyFSDiff(dir string, manifest *meta, cwd string) error {
 			return fmt.Errorf("map fsdiff path %s: %w", rel, err)
 		}
 
-		err = os.Remove(filepath.Join(cwd, livePath))
+		err = disk.Remove(filepath.Join(cwd, livePath))
 		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("apply fsdiff delete %s: %w", livePath, err)
 		}
@@ -99,7 +102,7 @@ func applyFSDiff(dir string, manifest *meta, cwd string) error {
 // applyOneWrite materializes one created/modified cassette entry at its
 // live location.
 func applyOneWrite(dir, rel, cwd, runDir string) error {
-	data, err := os.ReadFile(filepath.Join(dir, fsdiffDir, afterDir, rel))
+	data, err := disk.Read(filepath.Join(dir, fsdiffDir, afterDir, rel))
 	if err != nil {
 		return fmt.Errorf("read fsdiff for %s: %w", rel, err)
 	}
@@ -116,12 +119,12 @@ func applyOneWrite(dir, rel, cwd, runDir string) error {
 
 	target := filepath.Join(cwd, livePath)
 
-	err = os.MkdirAll(filepath.Dir(target), dirPerm)
+	err = disk.Dir(filepath.Dir(target), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("create dir for %s: %w", livePath, err)
 	}
 
-	err = os.WriteFile(target, []byte(liveContent), filePerm)
+	err = disk.Write(target, []byte(liveContent), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("apply fsdiff %s: %w", livePath, err)
 	}
@@ -135,7 +138,7 @@ func applyOneWrite(dir, rel, cwd, runDir string) error {
 func emitStreams(dir, cwd string) error {
 	runDir := findCurrentRunDir(cwd)
 
-	stdout, err := os.ReadFile(filepath.Join(dir, stdoutFile))
+	stdout, err := disk.Read(filepath.Join(dir, stdoutFile))
 	if err != nil {
 		return fmt.Errorf("read recorded stdout: %w", err)
 	}
@@ -145,19 +148,19 @@ func emitStreams(dir, cwd string) error {
 		return fmt.Errorf("map recorded stdout: %w", err)
 	}
 
-	_, err = os.Stdout.WriteString(liveStdout)
+	_, err = console.Out().WriteString(liveStdout)
 	if err != nil {
 		return fmt.Errorf("emit stdout: %w", err)
 	}
 
-	stderrBytes, readErr := os.ReadFile(filepath.Join(dir, stderrFile))
+	stderrBytes, readErr := disk.Read(filepath.Join(dir, stderrFile))
 	if readErr == nil {
 		liveStderr, mapErr := denormalize(string(stderrBytes), cwd, runDir)
 		if mapErr != nil {
 			return fmt.Errorf("map recorded stderr: %w", mapErr)
 		}
 
-		_, _ = os.Stderr.WriteString(liveStderr)
+		_, _ = console.Err().WriteString(liveStderr)
 	}
 
 	return nil

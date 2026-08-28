@@ -2,9 +2,10 @@ package clickup
 
 import (
 	"fmt"
-	"io"
-	"os"
+	"log/slog"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // documentPromptTemplate files a document that is already written. Render
@@ -43,8 +44,8 @@ Return ONLY a JSON array, no prose and no code fence:
 // FileDocument files a markdown document written by hand — one task per
 // `## ` heading, transcribed. It is the deferral path for anything that is
 // not a review finding, which is what File's rendered queue carries.
-func FileDocument(out, errOut io.Writer, path, tag string) error {
-	raw, err := os.ReadFile(path) //nolint:gosec // the path is an operator's argument.
+func FileDocument(path, tag string) error {
+	raw, err := disk.Read(path) //nolint:gosec // the path is an operator's argument.
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
@@ -57,7 +58,7 @@ func FileDocument(out, errOut io.Writer, path, tag string) error {
 			ErrNotFiled, path)
 	}
 
-	_, _ = fmt.Fprintf(out, "%d ticket(s) from %s\n", wanted, path)
+	slog.Info("Document split into tickets", "count", wanted, "document", path)
 
 	created, err := createTickets(fmt.Sprintf(documentPromptTemplate,
 		wanted, listID(), ticketStatus(), tag, statusRule(), document))
@@ -65,7 +66,7 @@ func FileDocument(out, errOut io.Writer, path, tag string) error {
 		return err
 	}
 
-	return report(out, errOut, wanted, created)
+	return report(wanted, created)
 }
 
 // countHeadings counts what the turn is told to create. A `## ` inside a

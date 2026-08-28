@@ -3,11 +3,11 @@ package story
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -55,7 +55,7 @@ func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
 
 	storyFile := matches[0]
 
-	data, err := os.ReadFile(storyFile)
+	data, err := disk.Read(storyFile)
 	if err != nil {
 		slog.Error("Failed to read story file", "file", storyFile, "error", err)
 

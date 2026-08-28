@@ -3,7 +3,7 @@ package clickup
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+	"log/slog"
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
@@ -30,18 +30,18 @@ If there are none, return [].
 `
 
 // List prints the open tasks carrying tag, oldest first.
-func List(out io.Writer, tag string) error {
+func List(tag string) error {
 	tasks, err := openTasks(tag)
 	if err != nil {
 		return err
 	}
 
 	for _, task := range tasks {
-		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\n", task.ID, task.Status, task.Name)
+		slog.Info("Open ticket", "ticket", task.ID, "status", task.Status, "title", task.Name)
 	}
 
 	if len(tasks) == 0 {
-		_, _ = fmt.Fprintln(out, "(queue empty)")
+		slog.Info("Queue empty", "tag", tag)
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -22,8 +23,6 @@ const (
 	// crushGuardTimeoutSeconds bounds one guard invocation.
 	crushGuardTimeoutSeconds = 15
 	// crushConfigDirMode / crushConfigFileMode for the generated config.
-	crushConfigDirMode  = 0o755
-	crushConfigFileMode = 0o644
 )
 
 // CrushProvider runs a turn through the `crush` CLI. Verified against the
@@ -140,7 +139,7 @@ type crushHook struct {
 // writeCrushConfig generates the per-run config directory and returns
 // its path for CRUSH_GLOBAL_CONFIG.
 func writeCrushConfig(req Request, executable string) (string, error) {
-	err := os.MkdirAll(req.TmpDir, crushConfigDirMode)
+	err := disk.Dir(req.TmpDir, disk.Shared)
 	if err != nil {
 		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
 	}
@@ -148,7 +147,7 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 	// One directory per turn: a fixed name under a shared TmpDir would let
 	// two concurrent turns share crush.json, handing the second turn the
 	// first's write roots — possibly broader than what it was actually granted.
-	configDir, err := os.MkdirTemp(req.TmpDir, "crush-config-")
+	configDir, err := disk.TempDir(req.TmpDir, "crush-config-")
 	if err != nil {
 		return "", pkgerrors.ErrWriteProviderConfigFailed(req.TmpDir, err)
 	}
@@ -172,7 +171,7 @@ func writeCrushConfig(req Request, executable string) (string, error) {
 
 	configPath := filepath.Join(configDir, "crush.json")
 
-	err = os.WriteFile(configPath, encoded, crushConfigFileMode)
+	err = disk.Write(configPath, encoded, disk.Shared)
 	if err != nil {
 		return "", pkgerrors.ErrWriteProviderConfigFailed(configPath, err)
 	}
@@ -277,7 +276,7 @@ func warnOnHostCrushConfig(workDir string) {
 // host config declares — only `permissions` and `hooks` can narrow what
 // the apply turn may do, so those are the only ones worth a warning.
 func hostCrushConfigKeys(path string) ([]string, bool) {
-	raw, err := os.ReadFile(path) //nolint:gosec // operator-controlled host config path
+	raw, err := disk.Read(path) //nolint:gosec // operator-controlled host config path
 	if err != nil {
 		return nil, false
 	}

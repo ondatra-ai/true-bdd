@@ -3,9 +3,10 @@ package lint
 import (
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 const manifestPath = ".claude/skills/VENDORED-mattpocock.md"
@@ -100,7 +101,7 @@ func markdownFiles(specs []string, excluded *regexp.Regexp) ([]string, error) {
 // markdownExclusions reads the vendored skill names out of the manifest
 // rather than repeating them here, so taking a 25th skill needs no edit.
 func markdownExclusions() (*regexp.Regexp, error) {
-	raw, err := os.ReadFile(manifestPath)
+	raw, err := disk.Read(manifestPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", manifestPath, err)
 	}

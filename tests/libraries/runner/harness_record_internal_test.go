@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
 
@@ -32,7 +33,7 @@ func TestRecordSurvivesGoexit(t *testing.T) {
 
 	path := filepath.Join(RunDir(session, "fx"), SpawnLogDir, HarnessRecordFile)
 
-	blob, err := os.ReadFile(path)
+	blob, err := disk.Read(path)
 	if err != nil {
 		t.Fatalf("record not written after Goexit: %v", err)
 	}
@@ -59,7 +60,7 @@ func TestRecordSurvivesGoexit(t *testing.T) {
 func TestPostRunWriteIsNotInDiff(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	err := os.WriteFile(filepath.Join(tmpDir, "src.txt"), []byte("x"), spawnLogFilePerm)
+	err := disk.Write(filepath.Join(tmpDir, "src.txt"), []byte("x"), disk.Shared)
 	if err != nil {
 		t.Fatalf("seed tree: %v", err)
 	}

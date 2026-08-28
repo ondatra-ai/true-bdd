@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -61,7 +62,7 @@ func materialize(t *testing.T, fixture string) string {
 	}
 
 	for _, rel := range manifest.Remove {
-		err := os.RemoveAll(filepath.Join(target, rel))
+		err := disk.RemoveTree(filepath.Join(target, rel))
 		if err != nil {
 			t.Fatalf("remove %s: %v", rel, err)
 		}
@@ -78,7 +79,7 @@ func materialize(t *testing.T, fixture string) string {
 func readManifest(t *testing.T, path string) fixtureManifest {
 	t.Helper()
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		t.Fatalf("read manifest %s: %v", path, err)
 	}
@@ -103,7 +104,7 @@ func copyTree(t *testing.T, src, dst string) {
 		t.Fatalf("read dir %s: %v", src, err)
 	}
 
-	err = os.MkdirAll(dst, 0o755)
+	err = disk.Dir(dst, disk.Shared)
 	if err != nil {
 		t.Fatalf("mkdir %s: %v", dst, err)
 	}

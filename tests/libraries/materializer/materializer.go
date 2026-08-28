@@ -8,10 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
-
-const dirPerm = 0o755
 
 // ErrTargetNotEmpty is returned when the target directory already
 // exists and contains entries — materializing on top of stale state
@@ -117,7 +117,7 @@ func prepareTarget(targetDir string) (string, error) {
 		return "", fmt.Errorf("resolve target %s: %w", targetDir, err)
 	}
 
-	err = os.MkdirAll(target, dirPerm)
+	err = disk.Dir(target, disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("create target %s: %w", target, err)
 	}
@@ -174,7 +174,7 @@ func applyRemove(manifest *Manifest, target string) error {
 			return fmt.Errorf("%w: %s", ErrRemovePathMissing, cleaned)
 		}
 
-		err = os.RemoveAll(path)
+		err = disk.RemoveTree(path)
 		if err != nil {
 			return fmt.Errorf("remove %s: %w", cleaned, err)
 		}
@@ -224,8 +224,8 @@ func runPrepCommands(ctx context.Context, manifest *Manifest, target string) err
 	for idx, command := range manifest.Prep {
 		cmd := exec.CommandContext(ctx, "bash", "-c", command)
 		cmd.Dir = target
-		cmd.Stdout = os.Stderr
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = console.Err()
+		cmd.Stderr = console.Err()
 
 		err := cmd.Run()
 		if err != nil {

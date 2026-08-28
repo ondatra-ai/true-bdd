@@ -3,10 +3,10 @@ package reporter
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
@@ -30,7 +30,7 @@ func HarnessRecordPath(dir string) string {
 // reports whether there was one. Absent or unreadable is not an error: it
 // still renders from the engine log alone, minus wall clock, verdict and judge cost.
 func applyHarnessRecord(fixture *Fixture, dir string) bool {
-	blob, err := os.ReadFile(HarnessRecordPath(dir))
+	blob, err := disk.Read(HarnessRecordPath(dir))
 	if err != nil {
 		return false
 	}

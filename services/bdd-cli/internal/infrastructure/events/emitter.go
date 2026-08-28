@@ -16,6 +16,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // EventsFileEnv is the environment variable naming the JSONL event
@@ -26,8 +29,6 @@ const EventsFileEnv = "TRUE_BDD_EVENTS_FILE"
 // exits the process non-zero, so the remote's error(no_result) exit
 // classification has a legible cause in the captured log.
 const FailClosedSentinel = "true-bdd: FATAL event-channel append failed"
-
-const eventFilePerm = 0o600
 
 // Kind enumerates the prompt kinds the fix loop can publish.
 type Kind string
@@ -155,15 +156,7 @@ func (e *Emitter) append(event map[string]any) {
 		return
 	}
 
-	file, err := os.OpenFile(e.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, eventFilePerm)
-	if err != nil {
-		e.fail(err)
-
-		return
-	}
-	defer func() { _ = file.Close() }()
-
-	_, err = file.Write(append(line, '\n'))
+	err = disk.Append(e.path, line, disk.Private)
 	if err != nil {
 		e.fail(err)
 	}
@@ -172,6 +165,6 @@ func (e *Emitter) append(event map[string]any) {
 // fail prints the sentinel and exits non-zero. A telemetry append that
 // cannot land must never let a prompt block invisibly.
 func (e *Emitter) fail(err error) {
-	fmt.Fprintf(os.Stderr, "%s: %v\n", FailClosedSentinel, err)
+	console.New(console.Err()).Printf("%s: %v\n", FailClosedSentinel, err)
 	os.Exit(1)
 }

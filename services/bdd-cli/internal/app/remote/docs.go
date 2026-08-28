@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -18,6 +17,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -31,10 +31,6 @@ const storyGlobDir = "docs/product/stories/"
 // existingFixedDocCount bounds tree()'s slice preallocation (the 4 fixed
 // documents; story files are appended on top).
 const existingFixedDocCount = 4
-
-// newFilePerm is the mode a newly-CREATED document gets (an update instead
-// PRESERVES the existing file's mode — plan Slice 0 (d)).
-const newFilePerm = 0o644
 
 // The fixed (non-glob) workspace document paths (plan Target state) —
 // deliberately independent of the engine config: this is the workspace
@@ -297,7 +293,7 @@ func (d *docStore) tree() docTreeResult {
 	for _, p := range paths {
 		abs := filepath.Join(d.folder, filepath.FromSlash(p))
 
-		data, err := os.ReadFile(abs) //nolint:gosec // p is drawn from the fixed allowlist + a directory scan under docs/
+		data, err := disk.Read(abs) //nolint:gosec // p is drawn from the fixed allowlist + a directory scan under docs/
 		exists := err == nil
 		nodes = append(nodes, docNode{Path: p, Exists: exists, Revision: revisionOf(exists, data)})
 	}
@@ -336,7 +332,7 @@ func (d *docStore) read(relPath string) (docReadResult, error) {
 		return docReadResult{}, err
 	}
 
-	data, readErr := os.ReadFile(resolved) //nolint:gosec // resolved is containment-checked by validatePath
+	data, readErr := disk.Read(resolved) //nolint:gosec // resolved is containment-checked by validatePath
 	exists := readErr == nil
 
 	status := parseStatusMissing
@@ -396,7 +392,7 @@ func (d *docStore) write(payload docWritePayload) docWriteOutcome {
 	lock.Lock()
 	defer lock.Unlock()
 
-	exists, currentRevision, ioErr := d.currentState(resolved)
+	_, currentRevision, ioErr := d.currentState(resolved)
 	if ioErr {
 		return docWriteOutcome{kind: docWriteIOError}
 	}
@@ -407,7 +403,7 @@ func (d *docStore) write(payload docWritePayload) docWriteOutcome {
 
 	content := []byte(payload.Content)
 
-	writeErr := atomicWrite(resolved, content, targetMode(resolved, exists))
+	writeErr := disk.Write(resolved, content, disk.Shared)
 	if writeErr != nil {
 		return docWriteOutcome{kind: docWriteIOError}
 	}
@@ -427,27 +423,11 @@ func (d *docStore) write(payload docWritePayload) docWriteOutcome {
 	return docWriteOutcome{kind: docWriteOK, receipt: receipt}
 }
 
-// targetMode is the mode the atomic commit applies up front (plan Slice 0 (d)):
-// an UPDATE preserves the existing file's mode; a CREATE uses newFilePerm. A
-// stat failure on an existing file falls back to newFilePerm.
-func targetMode(resolved string, exists bool) os.FileMode {
-	if !exists {
-		return os.FileMode(newFilePerm)
-	}
-
-	info, statErr := os.Stat(resolved)
-	if statErr != nil {
-		return os.FileMode(newFilePerm)
-	}
-
-	return info.Mode().Perm()
-}
-
 // currentState treats only a genuine ErrNotExist as "absent"; any OTHER read
 // error (EACCES, EISDIR, transient I/O) returns ioErr=true so the write is
 // refused instead of collapsing to "absent", which would let a client CLOBBER an unreadable-but-existing file.
 func (d *docStore) currentState(resolved string) (bool, string, bool) {
-	existing, readErr := os.ReadFile(resolved) //nolint:gosec // resolved is containment-checked by validatePath
+	existing, readErr := disk.Read(resolved) //nolint:gosec // resolved is containment-checked by validatePath
 	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
 		return false, "", true
 	}
@@ -510,70 +490,4 @@ func docRequestHash(cleanPath, content, baseRevision string) string {
 	sum := sha256.Sum256([]byte(cleanPath + "\x00" + contentHash + "\x00" + baseRevision))
 
 	return hex.EncodeToString(sum[:])
-}
-
-// atomicWrite commits bytes durably (plan Slice 0 (d)): a same-dir temp file
-// with the INTENDED mode applied up front → write → file fsync → atomic
-// rename over the target → parent-dir fsync → clean up any abandoned temp.
-func atomicWrite(target string, data []byte, mode os.FileMode) error {
-	dir := filepath.Dir(target)
-
-	tmp, err := os.CreateTemp(dir, ".true-bdd-docwrite-*")
-	if err != nil {
-		return fmt.Errorf("create temp file: %w", err)
-	}
-
-	tmpName := tmp.Name()
-	renamed := false
-
-	defer func() {
-		if !renamed {
-			_ = os.Remove(tmpName)
-		}
-	}()
-
-	chmodErr := tmp.Chmod(mode)
-	if chmodErr != nil {
-		_ = tmp.Close()
-
-		return fmt.Errorf("chmod temp file: %w", chmodErr)
-	}
-
-	_, writeErr := tmp.Write(data)
-	if writeErr != nil {
-		_ = tmp.Close()
-
-		return fmt.Errorf("write temp file: %w", writeErr)
-	}
-
-	syncErr := tmp.Sync()
-	if syncErr != nil {
-		_ = tmp.Close()
-
-		return fmt.Errorf("fsync temp file: %w", syncErr)
-	}
-
-	closeErr := tmp.Close()
-	if closeErr != nil {
-		return fmt.Errorf("close temp file: %w", closeErr)
-	}
-
-	renameErr := os.Rename(tmpName, target)
-	if renameErr != nil {
-		return fmt.Errorf("rename into place: %w", renameErr)
-	}
-
-	renamed = true
-
-	dirHandle, err := os.Open(dir) //nolint:gosec // dir is the target's own parent, already validated
-	if err != nil {
-		// The rename already succeeded; the dir-fsync below is best-effort
-		// durability polish, not part of the commit itself.
-		return nil
-	}
-	defer func() { _ = dirHandle.Close() }()
-
-	_ = dirHandle.Sync()
-
-	return nil
 }

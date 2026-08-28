@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
@@ -44,12 +45,12 @@ func repoWithModule(t *testing.T) string {
 
 	root := t.TempDir()
 
-	err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/repo\n"), 0o600)
+	err := disk.Write(filepath.Join(root, "go.mod"), []byte("module example.com/repo\n"), disk.Shared)
 	if err != nil {
 		t.Fatalf("write go.mod: %v", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(root, suitePath), 0o750)
+	err = disk.Dir(filepath.Join(root, suitePath), disk.Shared)
 	if err != nil {
 		t.Fatalf("create suite dir: %v", err)
 	}
@@ -350,7 +351,7 @@ func TestWriteRefusesToClobberAHandWrittenFile(t *testing.T) {
 
 	target := filepath.Join(root, filepath.FromSlash(testFile))
 
-	err := os.WriteFile(target, []byte("package steps\n\n// hand written\n"), 0o600)
+	err := disk.Write(target, []byte("package steps\n\n// hand written\n"), disk.Shared)
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -360,7 +361,7 @@ func TestWriteRefusesToClobberAHandWrittenFile(t *testing.T) {
 		t.Fatalf("want ErrWouldClobberHandWritten, got %v", err)
 	}
 
-	after, err := os.ReadFile(target)
+	after, err := disk.Read(target)
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}
@@ -392,12 +393,12 @@ func TestVerifyReportsMissingAndStale(t *testing.T) {
 
 	target := filepath.Join(root, filepath.FromSlash(testFile))
 
-	source, err := os.ReadFile(target)
+	source, err := disk.Read(target)
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
 
-	err = os.WriteFile(target, append(source, byte('\n')), 0o600)
+	err = disk.Write(target, append(source, byte('\n')), disk.Shared)
 	if err != nil {
 		t.Fatalf("perturb: %v", err)
 	}

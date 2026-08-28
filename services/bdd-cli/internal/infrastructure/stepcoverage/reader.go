@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -26,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
@@ -226,12 +228,12 @@ func checkReport(suite architecture.Suite, report *Report, output string) error 
 // reportFile allocates the path the suite writes to, and the cleanup
 // that removes it.
 func reportFile(suite architecture.Suite) (string, func(), error) {
-	dir, err := os.MkdirTemp("", "true-bdd-coverage-")
+	dir, err := disk.TempDir("", "true-bdd-coverage-")
 	if err != nil {
 		return "", nil, fmt.Errorf("%s: create coverage report dir: %w", suite.Label(), err)
 	}
 
-	return filepath.Join(dir, "coverage.json"), func() { _ = os.RemoveAll(dir) }, nil
+	return filepath.Join(dir, "coverage.json"), func() { _ = disk.RemoveTree(dir) }, nil
 }
 
 // commandDir is where the coverage command runs: the directory holding
@@ -282,8 +284,8 @@ func runCoverage(ctx context.Context, argv []string, dir, reportPath string) (st
 }
 
 func readReport(path string) (*Report, error) {
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
+	data, err := disk.Read(path)
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, ErrNoReport
 	}
 

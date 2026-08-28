@@ -22,11 +22,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"log/slog"
 )
 
 var errUnknownMode = errors.New("unknown TRUE_BDD_AIPROXY_MODE")
 
 func main() {
+	logging.Install(logging.Stderr, "", "aiproxy")
+
 	name := filepath.Base(os.Args[0])
 
 	cfg, err := loadConfig()
@@ -57,6 +62,6 @@ func run(cfg config, name string, argv []string) (int, error) {
 // distinctive proxy code — the message lands in the engine's combined CLI
 // transcript, which is where a failed fixture gets read.
 func fail(err error) {
-	fmt.Fprintln(os.Stderr, "aiproxy:", err)
+	slog.Error("aiproxy failed", "error", err)
 	os.Exit(exitProxyFailure)
 }

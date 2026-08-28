@@ -58,10 +58,10 @@ rules:
       Shell in a Go repository. Port it to Go under scripts/ and invoke it as
       `go run ./scripts/cmd/<x>`; start.sh is the only exception.
 
-  # Three roots and no fourth: services/<name>/ is product code, tests/<name>/
-  # exercises it, scripts/ is the tooling that drives the repository. A fourth
-  # root is the same code somewhere a reader has to learn about.
-  - id: go-three-roots
+  # Four roots and no fifth: product code, what exercises it, the tooling, and
+  # what all three share. pkg/ is the fourth because Go's internal/ rule made a
+  # shared package impossible otherwise (docs/adr/0003). A fifth is code adrift.
+  - id: go-known-roots
     kind: file_absent
     level: error
     paths:
@@ -71,10 +71,29 @@ rules:
         - "services/**"
         - "tests/**"
         - "scripts/**"
+        - "pkg/**"
     message: >-
-      Go outside the three roots. Move it into the one that owns it:
+      Go outside the four roots. Move it into the one that owns it:
       services/<name>/ product code, tests/<name>/ what exercises it,
-      scripts/ tooling that drives this repository.
+      scripts/ tooling that drives this repository, pkg/ what they share.
+
+  # A build tag golangci-lint is not told about hides its file from every Go
+  # gate. `bdd` is in run.build-tags; the platform pair is analysed on the
+  # host. Anything else must be added there before it is added here.
+  - id: go-build-tag-allowlist
+    kind: for_each_match
+    level: error
+    paths:
+      include:
+        - "**/*.go"
+    select: '^//go:build (.+)$'
+    require:
+      matches:
+        - '^//go:build (bdd|unix|!unix)$'
+    message: >-
+      Build tag outside the allowlist: a tag golangci-lint is not configured
+      for makes its file invisible to every Go gate. Add it to
+      run.build-tags in .golangci.yaml, then to this rule.
 
   # JS belongs to the frontend, the report UI's browser code, and the fenced
   # fixture and legacy trees. This repository authors no other JavaScript:

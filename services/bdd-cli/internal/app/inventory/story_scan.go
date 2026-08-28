@@ -2,10 +2,10 @@ package inventory
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"unicode/utf8"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	storymodel "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"gopkg.in/yaml.v3"
 )
@@ -120,7 +120,7 @@ func resolveStory(storiesDir, declaredID string) storyResolution {
 
 	resolution := storyResolution{matchCount: 1, sourceFile: filepath.Base(matches[0])}
 
-	data, err := os.ReadFile(matches[0]) //nolint:gosec // path is a globbed host story file
+	data, err := disk.Read(matches[0]) //nolint:gosec // path is a globbed host story file
 	if err != nil {
 		resolution.created = CreatedInvalid
 		resolution.parseErr = err.Error()

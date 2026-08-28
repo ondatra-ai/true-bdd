@@ -2,10 +2,11 @@ package remote
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // TestChildrenRegistryPidsFileFormat proves the pids file the scoped
@@ -42,7 +43,7 @@ func TestChildrenRegistryPidsFileFormat(t *testing.T) {
 func readPidLines(t *testing.T, path string) []childEntry {
 	t.Helper()
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		t.Fatalf("read pids file: %v", err)
 	}

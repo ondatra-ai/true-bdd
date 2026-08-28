@@ -14,8 +14,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,13 +25,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
 
-const (
-	dirPerm  fs.FileMode = 0o755
-	filePerm fs.FileMode = 0o644
-)
+const ()
 
 // ErrRepoRootNotFound is returned when FindRepoRoot walks above cwd
 // without finding a .git directory.
@@ -61,7 +59,7 @@ func NewSessionRoot() (string, error) {
 	stamp := time.Now().Format("2006-01-02_15-04-05")
 	root := filepath.Join(repoRoot, "tmp", "test_run", stamp)
 
-	err = os.MkdirAll(root, dirPerm)
+	err = disk.Dir(root, disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("mkdir session root %s: %w", root, err)
 	}
@@ -224,7 +222,7 @@ func loadFixtureScripts(fixture *Fixture) error {
 func readOptionalChecklistPrompts(dir string) (map[string][]string, error) {
 	path := filepath.Join(dir, ChecklistPromptsFile)
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return map[string][]string{}, nil
 	}
@@ -251,7 +249,7 @@ func readOptionalChecklistPrompts(dir string) (map[string][]string, error) {
 // list, or nothing when the fixture ships none. A blank file counts as
 // absent too — declared scaffolding that supplies nothing shouldn't pass.
 func readOptionalScript(dir, name string) ([]string, error) {
-	data, err := os.ReadFile(filepath.Join(dir, name))
+	data, err := disk.Read(filepath.Join(dir, name))
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
@@ -379,12 +377,12 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	// Wipe any leftover from a same-second collision (e.g. `go test
 	// -run X -count=2` re-entering within one second). MkdirAll alone
 	// would mix new content with stale files from the prior run.
-	err := os.RemoveAll(tmpDir)
+	err := disk.RemoveTree(tmpDir)
 	if err != nil {
 		return "", fmt.Errorf("clean run dir %s: %w", tmpDir, err)
 	}
 
-	err = os.MkdirAll(tmpDir, dirPerm)
+	err = disk.Dir(tmpDir, disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("create run dir %s: %w", tmpDir, err)
 	}
@@ -495,11 +493,8 @@ func runTeardownCommands(tmpDir string, teardownCmds []string) {
 		flush()
 
 		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"BDD runner: teardown[%d] failed (%q): %v\n",
-				idx, trimmed, err,
-			)
+			slog.Warn("BDD runner: teardown failed",
+				"index", idx, "command", trimmed, "error", err)
 		}
 	}
 }
@@ -534,7 +529,7 @@ func CopyTree(src, dst string) error {
 		target := filepath.Join(dst, rel)
 
 		if entry.IsDir() {
-			mkErr := os.MkdirAll(target, dirPerm)
+			mkErr := disk.Dir(target, disk.Shared)
 			if mkErr != nil {
 				return fmt.Errorf("mkdir %s: %w", target, mkErr)
 			}
@@ -552,31 +547,7 @@ func CopyTree(src, dst string) error {
 }
 
 func copyFile(src, dst string) error {
-	err := os.MkdirAll(filepath.Dir(dst), dirPerm)
-	if err != nil {
-		return fmt.Errorf("mkdir parent of %s: %w", dst, err)
-	}
-
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("open src %s: %w", src, err)
-	}
-
-	defer func() { _ = srcFile.Close() }()
-
-	dstFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePerm)
-	if err != nil {
-		return fmt.Errorf("open dst %s: %w", dst, err)
-	}
-
-	defer func() { _ = dstFile.Close() }()
-
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		return fmt.Errorf("copy %s -> %s: %w", src, dst, err)
-	}
-
-	return nil
+	return disk.Copy(dst, src, disk.Shared)
 }
 
 // Snapshotting and diffing live in tests/libraries/fstree, shared with

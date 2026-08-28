@@ -3,9 +3,13 @@ package runner
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // SpawnLogDir is the tmpdir subdirectory holding the harness's own
@@ -31,9 +35,9 @@ type spawnLog struct {
 func newSpawnLog(tmpDir string) *spawnLog {
 	dir := filepath.Join(tmpDir, SpawnLogDir)
 
-	err := os.MkdirAll(dir, spawnLogDirPerm)
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot create %s: %v\n", dir, err)
+		slog.Warn("BDD runner: cannot create", "path", dir, "error", err)
 
 		return &spawnLog{}
 	}
@@ -50,9 +54,9 @@ func (s *spawnLog) Write(name, stream string, payload []byte) string {
 
 	path := filepath.Join(s.dir, fmt.Sprintf("%s-%s.txt", name, stream))
 
-	err := os.WriteFile(path, payload, spawnLogFilePerm)
+	err := disk.Write(path, payload, disk.Shared)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot write %s: %v\n", path, err)
+		slog.Warn("BDD runner: cannot write", "path", path, "error", err)
 
 		return ""
 	}
@@ -71,7 +75,7 @@ func (s *spawnLog) Tee(name string) (io.Writer, io.Writer, func() (string, strin
 		return stdout.close(), stderr.close()
 	}
 
-	return stdout.writer(os.Stdout), stderr.writer(os.Stderr), flush
+	return stdout.writer(console.Out()), stderr.writer(console.Err()), flush
 }
 
 // stream is one live half of a process's output: the artifact file it
@@ -90,9 +94,11 @@ func (s *spawnLog) open(name, kind string) stream {
 
 	path := filepath.Join(s.dir, fmt.Sprintf("%s-%s.txt", name, kind))
 
+	//nolint:forbidigo // the tee holds this open for the spawn's life; buffering
+	// would lose a timeout-killed child's output, which pkg/disk cannot express.
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, spawnLogFilePerm)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot write %s: %v\n", path, err)
+		slog.Warn("BDD runner: cannot write", "path", path, "error", err)
 
 		return stream{}
 	}
@@ -119,7 +125,7 @@ func (s stream) close() string {
 
 	err := s.file.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot close %s: %v\n", s.path, err)
+		slog.Warn("BDD runner: cannot close", "path", s.path, "error", err)
 
 		return ""
 	}

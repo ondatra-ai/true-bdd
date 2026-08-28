@@ -7,13 +7,13 @@ package inventory_test
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
@@ -27,12 +27,12 @@ func manyLargeStoriesFolder(t *testing.T, storyCount, fileKiB int) string {
 	write := func(rel, content string) {
 		path := filepath.Join(root, rel)
 
-		mkdirErr := os.MkdirAll(filepath.Dir(path), 0o755)
+		mkdirErr := disk.Dir(filepath.Dir(path), disk.Shared)
 		if mkdirErr != nil {
 			t.Fatalf("mkdir %s: %v", rel, mkdirErr)
 		}
 
-		writeErr := os.WriteFile(path, []byte(content), 0o600)
+		writeErr := disk.Write(path, []byte(content), disk.Shared)
 		if writeErr != nil {
 			t.Fatalf("write %s: %v", rel, writeErr)
 		}

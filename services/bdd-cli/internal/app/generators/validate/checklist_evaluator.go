@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
@@ -19,9 +19,7 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-const (
-	filePermissions = 0o644 // File permissions for saved prompts
-)
+const ()
 
 // ChecklistPromptData represents data needed for checklist validation prompts.
 type ChecklistPromptData struct {
@@ -224,7 +222,7 @@ func (e *ChecklistEvaluator) parseResultFile(response, path string) ParsedResult
 	content = stripMarkdownFences(content)
 
 	// Save the extracted content to file
-	err := os.WriteFile(path, []byte(content), filePermissions)
+	err := disk.Write(path, []byte(content), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save result file", "path", path, "error", err)
 	} else {
@@ -352,7 +350,7 @@ func (e *ChecklistEvaluator) savePromptFile(sectionPath string, promptIndex int,
 	filePath := fmt.Sprintf("%s/%02d-%s-checklist-%s-%s.txt",
 		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath, suffix)
 
-	err := os.WriteFile(filePath, []byte(content), filePermissions)
+	err := disk.Write(filePath, []byte(content), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save prompt file", "error", err)
 	} else {

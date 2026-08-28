@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // TestExitStatusClassification pins the distinction the exit record exists
@@ -132,7 +133,7 @@ func TestArtifactsNilCapturesNothing(t *testing.T) {
 func assertFile(t *testing.T, path, want string) {
 	t.Helper()
 
-	got, err := os.ReadFile(path)
+	got, err := disk.Read(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -126,7 +126,7 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 		return nil, "", err
 	}
 
-	data, err := os.ReadFile(storyPath)
+	data, err := disk.Read(storyPath)
 	if err != nil {
 		return nil, storyPath, pkgerrors.ErrReadStoryFileFailed(storyPath, err)
 	}

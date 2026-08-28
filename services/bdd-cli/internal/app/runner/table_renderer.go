@@ -3,10 +3,10 @@ package runner
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 )
 
@@ -26,7 +26,7 @@ type TableRenderer struct {
 // NewTableRenderer creates a new table renderer writing to stdout.
 func NewTableRenderer() *TableRenderer {
 	return &TableRenderer{
-		writer: os.Stdout,
+		writer: console.Out(),
 	}
 }
 

@@ -1,10 +1,10 @@
 package inventory_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 	storymodel "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"gopkg.in/yaml.v3"
@@ -58,12 +58,12 @@ func writeInto(t *testing.T, root, rel, content string) {
 
 	path := filepath.Join(root, rel)
 
-	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	err := disk.Dir(filepath.Dir(path), disk.Shared)
 	if err != nil {
 		t.Fatalf("mkdir for %s: %v", rel, err)
 	}
 
-	err = os.WriteFile(path, []byte(content), 0o600)
+	err = disk.Write(path, []byte(content), disk.Shared)
 	if err != nil {
 		t.Fatalf("write %s: %v", rel, err)
 	}

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"znkr.io/diff/textdiff"
 )
 
@@ -26,7 +26,7 @@ const (
 // ClaudeMD lints CLAUDE.md: no line over maxCols outside the mirrored block,
 // and the block itself byte-identical to upstream. Cheapest check first.
 func ClaudeMD(out io.Writer) error {
-	raw, err := os.ReadFile(claudeMD)
+	raw, err := disk.Read(claudeMD)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", claudeMD, err)
 	}

@@ -3,7 +3,9 @@ package merge
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"log/slog"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -189,18 +191,33 @@ func (r *Run) printTable(toFix, toCreate, toIgnore []clickup.Finding) {
 		return
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout)
-	_, _ = fmt.Fprintln(os.Stdout, "| Score | Band | Finding | File:line | Source |")
-	_, _ = fmt.Fprintln(os.Stdout, "|-------|------|---------|-----------|--------|")
+	var table strings.Builder
+
+	table.WriteString("| Score | Band | Finding | File:line | Source |\n")
+	table.WriteString("|-------|------|---------|-----------|--------|\n")
 
 	for _, row := range rows {
 		title := strings.ReplaceAll(truncate(row.finding.Title, bandTitleWidth), "|", `\|`)
-		_, _ = fmt.Fprintf(os.Stdout, "| %d | %s | %s | `%s:%s` | %s |\n",
+		fmt.Fprintf(&table, "| %d | %s | %s | `%s:%s` | %s |\n",
 			row.finding.Score, row.band, title, row.finding.File, row.finding.Line, row.finding.Source)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "\n**%d to fix, %d ticketed, %d ignored**\n\n",
+	fmt.Fprintf(&table, "\n**%d to fix, %d ticketed, %d ignored**\n",
 		len(toFix), len(toCreate), len(toIgnore))
+
+	// A markdown table is an answer pr-merge reads, and per-line log framing
+	// would destroy it. It goes to a file; the log names the path.
+	path := filepath.Join(StateDir, "triage.md")
+
+	err := disk.Write(path, []byte(table.String()), disk.Shared)
+	if err != nil {
+		r.logf("could not write the triage table: %v", err)
+
+		return
+	}
+
+	slog.Info("Triage table written",
+		"path", path, "fix", len(toFix), "ticket", len(toCreate), "ignore", len(toIgnore))
 }
 
 // answerLimit is how much of an unusable answer a stop quotes back.

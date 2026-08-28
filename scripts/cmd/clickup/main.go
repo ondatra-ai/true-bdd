@@ -13,10 +13,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"log/slog"
 )
 
 const usage = `usage:
@@ -28,9 +32,11 @@ const usage = `usage:
 `
 
 func main() {
+	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "clickup")
+
 	err := run(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		slog.Error("clickup failed", "error", err)
 		os.Exit(1)
 	}
 }
@@ -68,7 +74,7 @@ func runStatus(args []string) error {
 		return fmt.Errorf("%w\n%s", errMissingFlag, usage)
 	}
 
-	err := clickup.Status(os.Stdout, args[0], args[1], strings.Join(args[2:], " "))
+	err := clickup.Status(args[0], args[1], strings.Join(args[2:], " "))
 	if err != nil {
 		return fmt.Errorf("closing the ticket: %w", err)
 	}
@@ -91,7 +97,7 @@ func runFile(command string, args []string) error {
 		return err
 	}
 
-	err = clickup.File(os.Stdout, os.Stderr, queue, tag, pullRequest)
+	err = clickup.File(queue, tag, pullRequest)
 	if err != nil {
 		return fmt.Errorf("filing the queue: %w", err)
 	}
@@ -111,7 +117,7 @@ func runDefer(command string, args []string) error {
 		return err
 	}
 
-	err = clickup.FileDocument(os.Stdout, os.Stderr, *doc, *tag)
+	err = clickup.FileDocument(*doc, *tag)
 	if err != nil {
 		return fmt.Errorf("filing %s: %w", *doc, err)
 	}
@@ -128,7 +134,7 @@ func runList(command string, args []string) error {
 		return err
 	}
 
-	err = clickup.List(os.Stdout, *tag)
+	err = clickup.List(*tag)
 	if err != nil {
 		return fmt.Errorf("listing the queue: %w", err)
 	}
@@ -147,7 +153,7 @@ func render(queuePath, tag, pullRequest string) error {
 		return fmt.Errorf("rendering the queue: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "%d ticket(s) -> %s\n", len(queue), clickup.TicketsMarkdown)
+	slog.Info("Tickets rendered", "count", len(queue), "path", clickup.TicketsMarkdown)
 
 	return nil
 }

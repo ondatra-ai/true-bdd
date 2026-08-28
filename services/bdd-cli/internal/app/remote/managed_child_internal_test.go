@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // spawnHelper re-execs THIS test binary as an engineered helper child in
@@ -213,7 +215,7 @@ func waitForPid(t *testing.T, pidFile string) int {
 
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		data, err := os.ReadFile(pidFile)
+		data, err := disk.Read(pidFile)
 		if err == nil && len(strings.TrimSpace(string(data))) > 0 {
 			pid, convErr := strconv.Atoi(strings.TrimSpace(string(data)))
 			if convErr == nil {

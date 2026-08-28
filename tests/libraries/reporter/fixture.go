@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
@@ -191,7 +192,7 @@ func findDiscovery(dir string, log *EngineLog, windowStart, windowEnd time.Time)
 	discovery := Discovery{Framework: "test runner", End: end, Found: true}
 
 	for _, path := range promptArtifacts(dir) {
-		content, err := os.ReadFile(path)
+		content, err := disk.Read(path)
 		if err != nil {
 			continue
 		}
@@ -242,7 +243,7 @@ func findEmptyFailurePrompts(dir string) []string {
 	var hits []string
 
 	for _, path := range promptArtifacts(dir) {
-		content, err := os.ReadFile(path)
+		content, err := disk.Read(path)
 		if err != nil {
 			continue
 		}
