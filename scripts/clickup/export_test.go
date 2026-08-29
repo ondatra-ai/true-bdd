@@ -131,12 +131,17 @@ func StatusRuleForTest() string {
 	return statusRule()
 }
 
-// HeadingNamesForTest is the heading order ticket.yaml declares.
-func HeadingNamesForTest() []string {
-	names := make([]string, 0, len(shape().Headings))
-	for _, section := range shape().Headings {
-		names = append(names, section.Name)
-	}
+// HeadingNamesForTest is the heading order ticket.yaml declares. Now a
+// delegation: Headings is exported, so the seam must not be a second copy.
+func HeadingNamesForTest() []string { return Headings() }
 
-	return names
+// FieldIDs is every custom-field UUID this package writes, by field name, so
+// the conformance test can hold them against ticket-schema.yaml.
+func FieldIDs() map[string]string {
+	return map[string]string{
+		"Triage Score":     triageScoreField,
+		"Expected Changes": expectedChangesField,
+		"Triage Date":      triageDateField,
+		"Triage Commit":    triageCommitField,
+	}
 }

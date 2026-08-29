@@ -71,3 +71,10 @@ func GateTimings(payload []byte) (GateRun, bool) {
 
 	return GateRun{Total: folded.total, PerGate: folded.perGate, Attrs: folded.attrs()}, true
 }
+
+// PanicStop unwinds the way dief and usage do, so a test can prove guard
+// converts a stop and re-panics anything else.
+func PanicStop(message string) { panic(stopSentinel{message: message}) }
+
+// Guard is the recover-to-error wrapper Execute and Embed are built on.
+func Guard(body func()) error { return guard(body) }

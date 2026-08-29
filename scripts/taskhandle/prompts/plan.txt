@@ -1,0 +1,40 @@
+You are planning ONE ticket's implementation in this repository. You are not
+writing the code — a second turn does that from what you return here.
+
+Read the repository before you plan. CLAUDE.md, the package doc comments and
+`.claude/rules/` carry the conventions this change has to satisfy.
+
+## The Ticket
+
+{ticket}
+
+## Expected Changes
+
+The Ticket says the change belongs under these globs, and a later step checks
+the real diff against them:
+
+{globs}
+
+## What the repository already looks like
+
+{context}
+
+## What to return
+
+`plan`: the implementation, step by step, concrete enough to execute without
+re-deriving anything — name files, name functions, name what each test asserts.
+**The last step MUST be running the quality gates and getting them green**:
+
+    {gates}
+
+A plan whose final step is not that is incomplete, because the turn that
+implements it is judged on leaving the gates green.
+
+`files`: every path you expect the implementation to create or change.
+
+`refusal`: empty when the work is worth doing. Otherwise say — in one or two
+sentences, with the evidence — why it must not proceed: the change is already
+in the code, or the Ticket is wrong about this repository. A refusal is a
+respectable answer and is much cheaper here than after the work.
+
+Do not edit anything. This turn plans.

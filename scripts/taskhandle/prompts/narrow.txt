@@ -1,0 +1,27 @@
+This branch changed files the Ticket did not ask for. Narrow it back to scope.
+
+## The Ticket
+
+{ticket}
+
+## Expected Changes — the only globs this work may touch
+
+{globs}
+
+## Out of scope right now
+
+{stray}
+
+Revert each of those paths to what `main` has, unless the change is genuinely
+required by the in-scope work — in which case say so in `summary` and leave it.
+Do not delete work that IS in scope to make the diff smaller.
+
+Then run the gates and leave them green:
+
+    {gates}
+
+## What to return
+
+`files_changed`: every path you reverted or edited.
+`gates_green`: whether the gates passed on your final run.
+`summary`: what you narrowed, and anything you deliberately left.

@@ -1,0 +1,34 @@
+Implement this plan in the repository. It was written against this tree by a
+turn that read it first.
+
+## The Ticket
+
+{ticket}
+
+## The plan
+
+{plan}
+
+## Scope
+
+Change only what the Ticket describes. Growing past it is not thoroughness —
+a later step checks the diff against the Ticket's Expected Changes and the run
+is declined if it grew:
+
+{globs}
+
+## The gates decide whether you are finished
+
+Run them, and keep working until they are green:
+
+    {gates}
+
+Do not commit, do not stage, do not push, do not open or edit a pull request —
+a later step does all of that, and doing it here breaks it.
+
+## What to return
+
+`files_changed`: every path you actually edited, as git would name it.
+`gates_green`: whether the gates passed on your final run. Answer honestly —
+a false green is caught by the commit step seconds later and costs a retry.
+`summary`: what you did, in a sentence or two.

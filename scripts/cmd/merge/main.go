@@ -7,16 +7,20 @@
 package main
 
 import (
-	"github.com/ondatra-ai/true-bdd/pkg/logging"
-	"github.com/ondatra-ai/true-bdd/scripts/history"
-	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
 
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/merge"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 func main() {
 	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "merge")
 
-	merge.Start(os.Args[1:]).Main()
+	// No slog.Error here: dief and usage logged before unwinding, and logging
+	// twice would mark the report node failed twice over.
+	if merge.Execute(os.Args[1:]) != nil {
+		os.Exit(1)
+	}
 }

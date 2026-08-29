@@ -6,9 +6,10 @@
 # whose key names no documents.<key>, and a Ticket has no document file to
 # name; and true-bdd/ is host-facing engine config, which this workflow is not.
 #
-# Not machine-validated today — nothing reads it but a model. That is the
-# point: it is the shared definition two skills would otherwise each carry
-# their own drifting copy of.
+# Validated by scripts/taskhandle step 1, which reads a Ticket and names every
+# requirement it does not meet. The field ids and the headings are held against
+# scripts/clickup by schema_conformance_test.go, so this file and the Go cannot
+# drift apart in silence.
 
 list_id: "901523097822"
 

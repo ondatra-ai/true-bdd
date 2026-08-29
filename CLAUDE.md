@@ -184,8 +184,8 @@ Brevity is not omission — report failures and skipped work plainly.
 
 - **`./start.sh` starts a session** — it exports `.env` before launching
   `claude`; a key sourced mid-session never reaches the commands skills run.
-- Commit → `pr-commit`; merge → `pr-merge`; one Ticket end to end →
-  `task-handle`, the whole queue → `task-loop`; a status is *moved* only by
+- Commit → `pr-commit`; merge → `pr-merge`; one Ticket → `task-handle` (Go,
+  imports both); the whole queue → `task-loop`; a status is *moved* only by
   `task-start`, `clickup close` or `clickup triage`. merge: PRs #70/#76/#77.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
