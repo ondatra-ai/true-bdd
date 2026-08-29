@@ -4,6 +4,8 @@ package merge
 // this export_test.go seam, which the compiler drops from any non-test
 // build.
 
+import "time"
+
 func botReview(body string) ghReview {
 	return ghReview{ID: 1, Body: body, User: ghUser{Login: "coderabbitai[bot]"}}
 }
@@ -51,4 +53,21 @@ func TitleOf(body string) string { return titleOf(body) }
 // ClaimedCounts is what a review body says about itself.
 func ClaimedCounts(body string) map[string]int {
 	return claimedCounts([]ghReview{botReview(body)})
+}
+
+// GateRun is a folded CI gates job, for the gate-time test.
+type GateRun struct {
+	Total   time.Duration
+	PerGate []string
+	Attrs   []any
+}
+
+// GateTimings folds a jobs payload exactly as reportGateTime does.
+func GateTimings(payload []byte) (GateRun, bool) {
+	folded, ok := gateTimings(payload)
+	if !ok {
+		return GateRun{}, false
+	}
+
+	return GateRun{Total: folded.total, PerGate: folded.perGate, Attrs: folded.attrs()}, true
 }
