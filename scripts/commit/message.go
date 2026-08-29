@@ -8,6 +8,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // A fenced answer is stripped line by line, so a fence on its own line goes
@@ -50,7 +51,8 @@ func diffBudget() int { return envInt("DIFF_BUDGET_BYTES", diffctx.DefaultBudget
 
 // stage puts everything in the index, including whatever steps 1-4 touched.
 func (r *Run) stage() {
-	r.banner("staging")
+	defer report.Open("staging")()
+
 	r.gitChecked("add", "-A")
 
 	if r.git("diff", "--cached", "--quiet").code == 0 {
@@ -77,7 +79,7 @@ func (r *Run) ensureBranch() {
 		return
 	}
 
-	r.banner("branch")
+	defer report.Open("branch")()
 
 	answer := r.ask(branchPrompt, "branch-name")
 
@@ -97,7 +99,7 @@ func (r *Run) ensureBranch() {
 
 // commit writes the message, commits and pushes.
 func (r *Run) commit() {
-	r.banner("commit")
+	defer report.Open("commit")()
 
 	message := strings.TrimSpace(fenceLineRE.ReplaceAllString(r.ask(commitPrompt, "commit-msg"), ""))
 	if message == "" {

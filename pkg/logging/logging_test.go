@@ -133,3 +133,58 @@ func TestAnEmptyPathIsTextOnly(t *testing.T) {
 		t.Fatalf("text-only handler wrote %d files", len(entries))
 	}
 }
+
+// Install is what the seven scripts/ programs call, and its two attributes are
+// what makes their one shared Task log parseable. Not parallel: it replaces
+// the process default.
+func TestInstallStampsTheWriterAndItsRun(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "task.log.json")
+
+	logging.Install(logging.Stderr, path, "gates")
+	slog.Info("Gate", "name", "alint")
+
+	records := jsonLines(t, path)
+	if len(records) != 1 {
+		t.Fatalf("file holds %d records, want 1", len(records))
+	}
+
+	if got := records[0]["tool"]; got != "gates" {
+		t.Errorf("tool = %v, want gates", got)
+	}
+
+	if got := records[0]["run"]; got != logging.Run() {
+		t.Errorf("run = %v, want %q", got, logging.Run())
+	}
+}
+
+// The engine passes no tool, binds the Stdout text handler, and 22 scenario
+// steps regex those lines against goldens: a run id there is a golden diff
+// every run.
+func TestInstallStampsNothingWithoutATool(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "engine.log.json")
+
+	logging.Install(logging.Stdout, path, "")
+	slog.Info("engine says")
+
+	records := jsonLines(t, path)
+	if _, ok := records[0]["run"]; ok {
+		t.Errorf("record carries a run id: %v", records[0])
+	}
+
+	if _, ok := records[0]["tool"]; ok {
+		t.Errorf("record carries a tool: %v", records[0])
+	}
+}
+
+// E2E-019 asserts the engine dispatched no AI turns by reading its log, so a
+// run that records nothing must still leave a file to read.
+func TestInstallCreatesTheFileUpFront(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "unwritten.log.json")
+
+	logging.Install(logging.Stderr, path, "history")
+
+	_, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Install left no file to read (%v)", err)
+	}
+}

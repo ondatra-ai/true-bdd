@@ -10,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // A fenced answer is stripped line by line, so a fence on its own line goes
@@ -43,6 +44,8 @@ func (r *Run) staged() string {
 // that also runs scan-recordings, doc-universe and memory sync — a merge
 // round's commit is a fix commit only.
 func (r *Run) commit() {
+	defer report.Open("commit")()
+
 	r.gitChecked("add", "-A")
 	r.logf("running the gates before committing")
 

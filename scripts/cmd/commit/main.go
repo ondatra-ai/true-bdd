@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "commit")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "commit")
 
 	commit.Start(os.Args[1:]).Main()
 }

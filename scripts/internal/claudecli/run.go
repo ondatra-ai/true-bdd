@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // Errors a caller distinguishes. Everything else is reported as it arrived.
@@ -86,6 +87,10 @@ func (o Options) environ() []string {
 	return append(env, roleKey+"="+o.Role)
 }
 
+// turnName labels an AI turn in the report. Every model call in scripts/ comes
+// through here, so this is the one place their cost is visible at all.
+const turnName = "ai turn"
+
 // Run performs one headless turn and returns its stdout.
 func Run(prompt string, opts Options) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), opts.Timeout)
@@ -98,13 +103,18 @@ func Run(prompt string, opts Options) (string, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	started := time.Now()
 	err := cmd.Run()
 
 	if ctx.Err() != nil {
+		report.Leaf(turnName, started, "role", opts.Role, report.KeyStatus, report.StatusFailed)
+
 		return "", fmt.Errorf("%w after %s", ErrTimeout, opts.Timeout)
 	}
 
 	if err != nil {
+		report.Leaf(turnName, started, "role", opts.Role, report.KeyStatus, report.StatusFailed)
+
 		diagnostic := stderr.String()
 		if diagnostic == "" {
 			diagnostic = stdout.String()
@@ -113,6 +123,8 @@ func Run(prompt string, opts Options) (string, error) {
 		return "", fmt.Errorf("%w (%s): %s",
 			ErrFailed, exitCode(err), textutil.Truncate(diagnostic, diagnosticLimit))
 	}
+
+	report.Leaf(turnName, started, "role", opts.Role)
 
 	return stdout.String(), nil
 }

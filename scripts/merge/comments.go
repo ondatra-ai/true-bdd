@@ -7,6 +7,8 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
+	"log/slog"
 )
 
 const threadQuery = `
@@ -111,6 +113,8 @@ func (r *Run) fetchThreads() []reviewThread {
 // readComments is every finding on the PR: unresolved threads plus body-only
 // findings.
 func (r *Run) readComments() []clickup.Finding {
+	defer report.Open("read comments")()
+
 	threads := r.fetchThreads()
 	reviews := r.reviews()
 
@@ -274,8 +278,8 @@ func (r *Run) reconcile(threads []reviewThread, bodyOnly []bodyFinding, reviews 
 	r.logf("%d thread(s), %d body-only, %d after dedupe", len(threads), len(bodyOnly), uniqueCount)
 
 	if len(gaps) > 0 {
-		r.logf("! reconciliation gap — %s", strings.Join(gaps, "; "))
-		r.logf("  (CodeRabbit over-counts; continuing with what is actually there)")
+		slog.Warn("reconciliation gap — CodeRabbit over-counts; "+
+			"continuing with what is actually there", "gaps", strings.Join(gaps, "; "))
 
 		return
 	}

@@ -24,7 +24,7 @@ import (
 var errNoCommand = errors.New("usage: gates run [--changed <base>] | gates list")
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "gates")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "gates")
 
 	err := run(os.Args[1:])
 	if err != nil {

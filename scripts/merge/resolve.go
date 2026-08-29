@@ -7,6 +7,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 const resolveMutation = "query=mutation($id:ID!)" +
@@ -61,6 +62,8 @@ type answer struct {
 // resolution, so an open one blocks merge. Body-only findings are skipped:
 // GitHub gives them no id, reply target, or resolvable state.
 func (r *Run) resolveConversations(fixed, created, ignored []clickup.Finding) {
+	defer report.Open("resolve conversations")()
+
 	answers := make([]answer, 0, len(fixed)+len(created)+len(ignored))
 
 	for _, finding := range fixed {

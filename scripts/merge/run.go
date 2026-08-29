@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
@@ -154,7 +156,7 @@ func Start(args []string) *Run {
 	run.pr = run.openPullRequest(branch)
 	run.startedAt = time.Now().UTC().Format("2006-01-02T15:04:05Z")
 
-	run.banner(fmt.Sprintf("merging %s #%d", run.repo, run.pr))
+	slog.Info("Merging", "repo", run.repo, "pr", run.pr)
 
 	return run
 }
@@ -162,34 +164,43 @@ func Start(args []string) *Run {
 // Main is the whole loop.
 func (r *Run) Main() {
 	for round := 1; round <= lastRound; round++ {
-		r.requestReview(round)
-
-		issues := r.triage(r.readComments(), round)
-		toFix, toCreate, toIgnore := r.split(issues, round)
-
-		fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
-		r.resolveConversations(fixed, created, ignored)
-
-		// Empty toFix: HEAD won't move, so the next round reviews a byte-identical
-		// tree for a quarter of the quota (PR #77: all 3 rounds reviewed one commit).
-		// fix() refuses to return having changed no file, so a non-empty toFix always commits.
-		if len(toFix) == 0 {
+		if !r.round(round) {
 			break
 		}
-
-		r.commit()
 	}
 
 	r.merge()
+	r.postmortem()
+	r.finish()
+}
 
-	if !r.postmortemEnabled {
-		r.banner("postmortem")
-		r.logf("switched off in %s — skipping", config.Path)
+// finish renders this run's own tree, out of the log it has been writing all
+// along — which makes every run a round-trip test of the log's structure.
+func (r *Run) finish() {
+	report.Render(state.TaskLog("."), logging.Run(), StateDir+"/report.md")
+}
 
-		return
+// round is one pass of the loop, and reports whether another is worth buying.
+// Empty toFix: HEAD won't move, so the next round reviews a byte-identical tree
+// for a quarter of the quota (PR #77: all 3 rounds reviewed one commit).
+func (r *Run) round(round int) bool {
+	defer report.Open(fmt.Sprintf("round %d of %d", round, lastRound), "round", round)()
+
+	r.requestReview(round)
+
+	issues := r.triage(r.readComments(), round)
+	toFix, toCreate, toIgnore := r.split(issues, round)
+
+	fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
+	r.resolveConversations(fixed, created, ignored)
+
+	if len(toFix) == 0 {
+		return false
 	}
 
-	r.postmortem()
+	r.commit()
+
+	return true
 }
 
 func (r *Run) currentBranch() string {
@@ -241,13 +252,12 @@ func (r *Run) logf(format string, args ...any) {
 	slog.Info(fmt.Sprintf(format, args...))
 }
 
-func (r *Run) banner(message string) {
-	slog.Info("Entering stage", "stage", message)
-}
-
-// die stops the run with a diagnosis. Nothing here is swallowed.
+// dief stops the run with a diagnosis. Nothing here is swallowed. The ERROR is
+// logged BEFORE the report is folded: it is what tells the operations left open
+// apart from a run that was killed outright.
 func (r *Run) dief(format string, args ...any) {
 	slog.Error("STOPPED: " + fmt.Sprintf(format, args...))
+	r.finish()
 	os.Exit(1)
 }
 

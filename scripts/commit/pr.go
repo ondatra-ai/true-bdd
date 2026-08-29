@@ -6,13 +6,14 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // UpdatePR writes the pull request's title and body from the branch, creates
 // or edits it, and returns its URL. Exported because scripts/cmd/pr-update is
 // the same step on its own, for a branch already committed.
 func (r *Run) UpdatePR() string {
-	r.banner("pull request")
+	defer report.Open("pull request")()
 
 	title, body := r.splitAnswer(r.askAboutBranch())
 

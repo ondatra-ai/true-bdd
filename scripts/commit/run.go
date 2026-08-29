@@ -14,9 +14,11 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
@@ -94,26 +96,36 @@ func (r *Run) Main() {
 	r.ensureBranch()
 	r.commit()
 
-	r.banner("pull request: " + r.UpdatePR())
+	slog.Info("Pull request", "url", r.UpdatePR())
+
+	r.finish()
+}
+
+// finish renders this run's own tree, out of the log it has been writing all
+// along — which makes every run a round-trip test of the log's structure.
+func (r *Run) finish() {
+	report.Render(state.TaskLog("."), logging.Run(), StateDir+"/report.md")
 }
 
 // gates runs the quality pipeline. Under a mandate it narrows to the gates the
 // diff needs, which is ~2s on a documentation ticket against ~140s; selection
 // is LOCAL ONLY, so CI still catches whatever the selector skipped.
 func (r *Run) gates() {
-	r.banner("gates")
+	defer report.Open("gates")()
 
 	selected := gates.All
 
 	if r.unattended {
+		started := time.Now()
+
 		changed, err := gates.Changed(r.trunkRef())
 		if err != nil {
 			r.dief("selecting gates: %v", err)
 		}
 
 		selected = gates.Select(changed)
-		r.logf("%d/%d gates for %d changed path(s) vs %s",
-			len(selected), len(gates.All), len(changed), r.trunkRef())
+		report.Leaf("select gates", started, "selected", len(selected),
+			"total", len(gates.All), "changed", len(changed), "base", r.trunkRef())
 	}
 
 	err := gates.Run(selected)
@@ -141,13 +153,12 @@ func (r *Run) logf(format string, args ...any) {
 	slog.Info(fmt.Sprintf(format, args...))
 }
 
-func (r *Run) banner(message string) {
-	slog.Info("Entering stage", "stage", message)
-}
-
-// dief stops the run with a diagnosis. Nothing here is swallowed.
+// dief stops the run with a diagnosis. Nothing here is swallowed. The ERROR is
+// logged BEFORE the report is folded: it is what tells the operations left open
+// apart from a run that was killed outright.
 func (r *Run) dief(format string, args ...any) {
 	slog.Error("STOPPED: " + fmt.Sprintf(format, args...))
+	r.finish()
 	os.Exit(1)
 }
 

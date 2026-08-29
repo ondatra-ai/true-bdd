@@ -3,8 +3,10 @@ package merge
 import (
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // create files one ClickUp ticket per finding, tagged fix-now, via the
@@ -51,9 +53,32 @@ func (r *Run) disposeConcurrently(
 
 	group.Add(3) //nolint:mnd // the three dispositions, named on the next three lines.
 
-	go func() { defer group.Done(); fixed = r.fix(toFix) }()
-	go func() { defer group.Done(); created = r.create(toCreate, round) }()
-	go func() { defer group.Done(); ignored = r.ignore(toIgnore, round) }()
+	// Each times ITSELF rather than opening a node: three concurrent start/end
+	// pairs interleave, and a tree parsed from order cannot survive that.
+	go func() {
+		defer group.Done()
+
+		started := time.Now()
+		fixed = r.fix(toFix)
+
+		report.Leaf("fix", started, "findings", len(toFix))
+	}()
+	go func() {
+		defer group.Done()
+
+		started := time.Now()
+		created = r.create(toCreate, round)
+
+		report.Leaf("create tickets", started, "tickets", len(created))
+	}()
+	go func() {
+		defer group.Done()
+
+		started := time.Now()
+		ignored = r.ignore(toIgnore, round)
+
+		report.Leaf("ignore", started, "findings", len(ignored))
+	}()
 
 	group.Wait()
 
