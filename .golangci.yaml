@@ -147,6 +147,54 @@ linters:
       require-specific: true
     depguard:
       rules:
+        # pkg/ is the floor: every root imports it, it imports none. The
+        # `**/pkg/**` glob also matches services/bdd-cli/internal/pkg/, which
+        # is not the floor — hence the negations.
+        root-pkg-floor:
+          files:
+            - "**/pkg/**"
+            - "!**/services/**"
+            - "!**/scripts/**"
+            - "!**/tests/**"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/services"
+              desc: 'pkg is the floor: every root imports it, it imports none'
+            - pkg: "github.com/ondatra-ai/true-bdd/scripts"
+              desc: 'pkg is the floor: every root imports it, it imports none'
+            - pkg: "github.com/ondatra-ai/true-bdd/tests"
+              desc: 'pkg is the floor: every root imports it, it imports none'
+        root-services:
+          files:
+            - "**/services/**"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/scripts"
+              desc: 'product code never imports this repo tooling or its tests'
+            - pkg: "github.com/ondatra-ai/true-bdd/tests"
+              desc: 'product code never imports this repo tooling or its tests'
+        root-scripts:
+          files:
+            - "**/scripts/**"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/services"
+              desc: 'tooling shells out to the binary; it does not link it'
+            - pkg: "github.com/ondatra-ai/true-bdd/tests"
+              desc: 'tooling shells out to the binary; it does not link it'
+        # The domain defines; it does not reach outward. A port that names its
+        # own implementation is a seam that breaks nothing.
+        hex-domain:
+          files:
+            - "**/services/bdd-cli/internal/domain/**"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure"
+              desc: 'the domain defines; it does not reach outward'
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app"
+              desc: 'the domain defines; it does not reach outward'
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters"
+              desc: 'a port names domain types only — never its own implementation'
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode"
+              desc: 'the domain defines; it does not reach outward'
+            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
+              desc: 'the domain defines; it does not reach outward'
         logging:
           # depguard matches by PREFIX, so a bare `log` would deny log/slog
           # with it; the trailing $ makes it exact. Globs run against ABSOLUTE

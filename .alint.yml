@@ -95,6 +95,83 @@ rules:
       for makes its file invisible to every Go gate. Add it to
       run.build-tags in .golangci.yaml, then to this rule.
 
+  # ADR 0003 admitted pkg/ for the three IO channels; enginelog arrived later
+  # with nothing to announce it. Same idiom as go-known-roots: the allowlist
+  # IS the decision record, so a fourth root cannot become a parking lot.
+  - id: pkg-is-the-declared-channels
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "pkg/**/*.go"
+      exclude:
+        - "pkg/console/**"
+        - "pkg/disk/**"
+        - "pkg/logging/**"
+        - "pkg/enginelog/**"
+    message: >-
+      A new package under pkg/. pkg/ is the floor every root may import, not
+      somewhere to park code: it holds the three IO channels plus enginelog.
+      Write the ADR and add it here, or put it in the root that owns it.
+
+  # Verified: a planted `*_windows.go` calling fmt.Fprintln(os.Stdout, …) drew
+  # 0 issues from golangci-lint on this host AND on CI's — a GOOS suffix hides
+  # a file with no build tag for go-build-tag-allowlist to catch.
+  - id: go-no-platform-filenames
+    kind: file_absent
+    level: error
+    paths:
+      include:
+        - "**/*_windows.go"
+        - "**/*_linux.go"
+        - "**/*_darwin.go"
+        - "**/*_plan9.go"
+        - "**/*_js.go"
+        - "**/*_wasm.go"
+        - "**/*_android.go"
+        - "**/*_ios.go"
+        - "**/*_freebsd.go"
+        - "**/*_openbsd.go"
+        - "**/*_netbsd.go"
+        - "**/*_solaris.go"
+        - "**/*_aix.go"
+        - "**/*_dragonfly.go"
+        - "**/*_illumos.go"
+        - "**/*_386.go"
+        - "**/*_amd64.go"
+        - "**/*_arm.go"
+        - "**/*_arm64.go"
+        - "**/*_riscv64.go"
+        - "**/*_ppc64.go"
+        - "**/*_s390x.go"
+        - "**/*_mips.go"
+        - "**/*_mips64.go"
+        - "**/*_loong64.go"
+      exclude:
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    message: >-
+      A GOOS/GOARCH filename suffix makes this file invisible to golangci-lint
+      on every platform this repository builds on, with no build tag for
+      go-build-tag-allowlist to catch. Use `//go:build unix` instead, or drop
+      the suffix.
+
+  # go-build-tag-allowlist selects `^//go:build`, so the pre-1.17 syntax walks
+  # straight past it — and the go command still honours it.
+  - id: go-no-legacy-build-tag
+    kind: file_content_forbidden
+    level: error
+    paths:
+      include:
+        - "**/*.go"
+      exclude:
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+    pattern: '^// \+build '
+    message: >-
+      Pre-1.17 build-tag syntax; go-build-tag-allowlist only reads //go:build.
+      Use //go:build and add the tag to run.build-tags plus that rule.
+
   # JS belongs to the frontend, the report UI's browser code, and the fenced
   # fixture and legacy trees. This repository authors no other JavaScript:
   # what it refuses is JS in scripts/, services/bdd-cli/ or the bdd-cli tests.
