@@ -152,8 +152,41 @@ func TestApplyAnswersUnderASchema(t *testing.T) {
 		t.Error("the apply turn still asks for a prose answer")
 	}
 
-	if !strings.Contains(clickup.ApplySchemaForTest(), `"required":["ok","error"]`) {
-		t.Error("the apply schema does not require both fields")
+	if !strings.Contains(clickup.ApplySchemaForTest(), `"required":["ok","commented","error"]`) {
+		t.Error("the apply schema does not require all three fields")
+	}
+}
+
+// notifyAll defaults to TRUE. Left unsaid, every sweep notifies every assignee
+// and watcher of every ticket it touches — including the no-change majority —
+// and the audit log lands where nobody reads it. Nothing in Go can enforce it.
+func TestApplyPromptSilencesTheCommentNotification(t *testing.T) {
+	t.Parallel()
+
+	prompt := clickup.ApplyPromptForTest(
+		clickup.Task{ID: "x", Status: backlog},
+		triage.Verdict{Score: 7, Reason: anyReason, Description: anyRefreshed}, 1, "abc")
+
+	if !strings.Contains(prompt, "notifyAll: false") {
+		t.Error("the apply prompt does not silence the comment notification")
+	}
+}
+
+// Both delimited blocks belong after every instruction, as the two filing
+// prompts already do — a block between the steps strands it from the step
+// that references it and buries "Change NOTHING else".
+func TestApplyPromptPutsTheBlocksLast(t *testing.T) {
+	t.Parallel()
+
+	prompt := clickup.ApplyPromptForTest(
+		clickup.Task{ID: "x", Status: backlog},
+		triage.Verdict{Score: 7, Reason: anyReason, Description: anyRefreshed}, 1, "abc")
+
+	bound := strings.Index(prompt, "Change NOTHING else")
+	for _, block := range []string{"--- BEGIN DESCRIPTION ---", "--- BEGIN COMMENT ---"} {
+		if strings.Index(prompt, block) < bound {
+			t.Errorf("%s comes before the instructions end", block)
+		}
 	}
 }
 
@@ -177,6 +210,52 @@ func TestApplyPromptLeavesTheBodyAloneWithoutARefresh(t *testing.T) {
 
 	if !strings.Contains(prompt, `Set its status to "`+notRelevant+`"`) {
 		t.Error("a verdict below the floor did not retire the ticket")
+	}
+
+	// Every triage leaves a note, including one that changed nothing: silence
+	// would be indistinguishable from a ticket the sweep never reached.
+	if !strings.Contains(prompt, "--- BEGIN COMMENT ---") {
+		t.Error("a verdict with no refresh left no note")
+	}
+}
+
+// The note is the ticket's history, so its shape is pinned exactly. An arrow
+// means this sweep moved something; one value means it did not, or that there
+// was nothing readable to move from.
+func TestNoteRecordsWhatTheSweepWrote(t *testing.T) {
+	t.Parallel()
+
+	retired := clickup.NoteForTest("7",
+		triage.Verdict{Score: 3, Reason: "the file is gone"}, "885c7c9deadbeef", backlog)
+
+	want := "**Triage** — HEAD `885c7c9`\n\nScore: 7 → 3\nStatus: backlog → " +
+		notRelevant + "\nBody: left as it is\n\nthe file is gone"
+	if retired != want {
+		t.Errorf("the note reads\n%s\n\nwant\n%s", retired, want)
+	}
+
+	kept := clickup.NoteForTest("",
+		triage.Verdict{Score: 7, Reason: anyReason, Description: anyRefreshed}, "abc", backlog)
+
+	want = "**Triage** — HEAD `abc`\n\nScore: 7\nStatus: " + backlog +
+		"\nBody: rewritten against HEAD\n\n" + anyReason
+	if kept != want {
+		t.Errorf("the note reads\n%s\n\nwant\n%s", kept, want)
+	}
+}
+
+// A prior score outside 1-10 is unusable, and 0 is exactly what a dropdown
+// POSITION looks like. Rendering one would put a wrong number in the record.
+func TestNoteDropsAnUnusablePriorScore(t *testing.T) {
+	t.Parallel()
+
+	for _, was := range []string{"", "0", "11", "abc", "  ", "7"} {
+		note := clickup.NoteForTest(was,
+			triage.Verdict{Score: 7, Reason: anyReason, Description: anyRefreshed}, "abc", backlog)
+
+		if !strings.Contains(note, "Score: 7\n") {
+			t.Errorf("a prior score of %q rendered an arrow:\n%s", was, note)
+		}
 	}
 }
 

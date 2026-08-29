@@ -55,8 +55,19 @@ func DispositionForTest(verdict triage.Verdict, was string) string {
 
 // ApplyPromptForTest is the update turn's prompt, as it is sent.
 func ApplyPromptForTest(ticket Task, verdict triage.Verdict, millis int64, commit string) string {
-	return applyPrompt(ticket, verdict, stamp{Millis: millis, Commit: commit},
-		dispositionOf(verdict, ticket.Status))
+	taken := stamp{Millis: millis, Commit: commit}
+	status := dispositionOf(verdict, ticket.Status)
+
+	return applyPrompt(ticket, verdict, taken, status,
+		noteOf(prior{}, verdict, taken, ticket.Status, status))
+}
+
+// NoteForTest is the record a triage leaves, over a prior score in the raw
+// shape the bodies turn transcribes it in.
+func NoteForTest(was string, verdict triage.Verdict, commit, from string) string {
+	taken := stamp{Millis: 1, Commit: commit}
+
+	return noteOf(prior{Score: was}, verdict, taken, from, dispositionOf(verdict, from))
 }
 
 // ApplySchemaForTest is the shape the update turn is held to.

@@ -26,12 +26,13 @@ const (
 	// No updateTask beyond the status field is possible here: the tool can
 	// write a description, so the prompt forbids it and this line cannot.
 	statusTools = "mcp__claude_ai_ClickUP__updateTask,mcp__claude_ai_ClickUP__addTaskComment"
-	// The sweep rewrites a body, so it is the one path needing updateTask and
-	// setCustomFieldValue together. No create, no tags. getTask because the
-	// turn reaches for it to confirm its own write (observed 2026-08-29).
+	// The sweep rewrites a body and records why, so it is the one path needing
+	// updateTask, setCustomFieldValue and addTaskComment together. No create,
+	// no tags. getTask confirms its own write (observed 2026-08-29).
 	triageTools = "mcp__claude_ai_ClickUP__updateTask," +
 		"mcp__claude_ai_ClickUP__setCustomFieldValue," +
-		"mcp__claude_ai_ClickUP__getTask"
+		"mcp__claude_ai_ClickUP__getTask," +
+		"mcp__claude_ai_ClickUP__addTaskComment"
 )
 
 const (
