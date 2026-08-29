@@ -95,9 +95,9 @@ rules:
       for makes its file invisible to every Go gate. Add it to
       run.build-tags in .golangci.yaml, then to this rule.
 
-  # ADR 0003 admitted pkg/ for the three IO channels; enginelog arrived later
-  # with nothing to announce it. Same idiom as go-known-roots: the allowlist
-  # IS the decision record, so a fourth root cannot become a parking lot.
+  # ADR 0003 admitted pkg/ for three IO channels, 0005 for spawning and its
+  # wrappers; enginelog arrived with nothing to announce it. The allowlist IS
+  # the decision record, so a fourth root cannot become a parking lot.
   - id: pkg-is-the-declared-channels
     kind: file_absent
     level: error
@@ -108,11 +108,52 @@ rules:
         - "pkg/console/**"
         - "pkg/disk/**"
         - "pkg/logging/**"
+        - "pkg/shell/**"
+        - "pkg/cli/**"
         - "pkg/enginelog/**"
     message: >-
       A new package under pkg/. pkg/ is the floor every root may import, not
-      somewhere to park code: it holds the three IO channels plus enginelog.
-      Write the ADR and add it here, or put it in the root that owns it.
+      somewhere to park code: it holds the four IO channels, pkg/cli's typed
+      wrappers over the fourth, and enginelog. Write the ADR and add it here,
+      or put it in the root that owns it.
+
+  # golangci-lint reaches the bdd tree (run.build-tags) but `generated: lax`
+  # skips the generated tests; alint is tag-blind and text-level, so this is
+  # the backstop for exactly those files. ADR 0005.
+  - id: go-spawn-through-shell
+    kind: import_gate
+    level: error
+    language: go
+    paths:
+      include:
+        - "**/*.go"
+      exclude:
+        - "pkg/shell/**"
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+        - "**/*_test.go"
+    forbid: '^os/exec$'
+    message: >-
+      spawn: subprocesses go through pkg/shell — need one? add a pkg/cli
+      wrapper and call that.
+
+  - id: go-shell-through-cli
+    kind: import_gate
+    level: error
+    language: go
+    paths:
+      include:
+        - "**/*.go"
+      exclude:
+        - "pkg/shell/**"
+        - "pkg/cli/**"
+        - "tests/legacy/**"
+        - "tests/bdd-cli/fixtures/**"
+        - "**/*_test.go"
+    forbid: 'true-bdd/pkg/shell$'
+    message: >-
+      spawn: reach a binary through its pkg/cli wrapper — add one if it is
+      missing.
 
   # Verified: a planted `*_windows.go` calling fmt.Fprintln(os.Stdout, …) drew
   # 0 issues from golangci-lint on this host AND on CI's — a GOOS suffix hides

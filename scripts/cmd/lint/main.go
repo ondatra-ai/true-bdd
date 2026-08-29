@@ -20,10 +20,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/lint"
@@ -85,11 +84,10 @@ func repoRoot() string {
 		}
 	}
 
-	out, err := exec.CommandContext(context.Background(),
-		"git", "rev-parse", "--show-toplevel").Output()
+	top, err := git.TopLevel(context.Background())
 	if err != nil {
 		return "."
 	}
 
-	return strings.TrimSpace(string(out))
+	return top
 }

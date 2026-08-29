@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -84,10 +84,10 @@ func (r *ChildrenRegistry) flush() {
 // for the process's life, mirroring the test-side identity check so a
 // recycled pid is never signalled. Empty when ps fails.
 func processStartIdentity(pid int) string {
-	out, err := exec.CommandContext(context.Background(), "ps", "-o", "lstart=", "-p", strconv.Itoa(pid)).Output()
+	out, err := ps.Output(context.Background(), "-o", "lstart=", "-p", strconv.Itoa(pid))
 	if err != nil {
 		return ""
 	}
 
-	return strings.TrimSpace(string(out))
+	return strings.TrimSpace(out)
 }

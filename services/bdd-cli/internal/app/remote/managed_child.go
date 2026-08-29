@@ -3,9 +3,10 @@ package remote
 import (
 	"context"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"io"
 	"os"
-	"os/exec"
 	"sync"
 	"syscall"
 	"time"
@@ -44,7 +45,7 @@ type spawnConfig struct {
 // pipes and a one-shot Wait — the testable unit behind the executor's
 // process supervision (signal-escalation, flock-inheritance, cleanup).
 type managedChild struct {
-	cmd    *exec.Cmd
+	proc   *cli.Process
 	stdin  io.WriteCloser
 	stdout io.ReadCloser
 	stderr io.ReadCloser
@@ -56,42 +57,39 @@ type managedChild struct {
 	releaseWrite *os.File
 	releaseOnce  sync.Once
 
-	done     chan struct{}
-	waitErr  error
-	waitOnce sync.Once
+	done       chan struct{}
+	waitErr    error
+	waitResult cli.Result
+	waitOnce   sync.Once
 }
 
 // spawnProcessGroup starts cfg's binary in a fresh process group (setpgid)
 // with its stdio wired to pipes and cfg.lockFile inherited when present.
 func spawnProcessGroup(cfg spawnConfig) (*managedChild, error) {
-	// context.Background: lifecycle is governed by the explicit Escalate
-	// path, not ctx cancellation, so no CommandContext auto-kill is wanted.
-	//nolint:gosec // remote-owned binary + already-validated args
-	cmd := exec.CommandContext(context.Background(), cfg.binPath, cfg.args...)
-	cmd.Dir = cfg.dir
-	cmd.Env = cfg.env
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
+	options := cli.Options{
+		Dir:    cfg.dir,
+		Env:    cli.Exact(cfg.env),
+		Output: cli.Pipe(),
+		Group:  true,
+	}
 	if cfg.lockFile != nil {
-		cmd.ExtraFiles = []*os.File{cfg.lockFile}
+		options.ExtraFiles = []*os.File{cfg.lockFile}
 	}
 
-	stdin, stdout, stderr, err := commandPipes(cmd)
-	if err != nil {
-		return nil, err
-	}
-
-	err = cmd.Start()
+	// context.Background: lifecycle is governed by the explicit Escalate
+	// path, not ctx cancellation, so no auto-kill on cancel is wanted.
+	proc, err := spec.Start(context.Background(),
+		append([]string{cfg.binPath}, cfg.args...), options)
 	if err != nil {
 		return nil, fmt.Errorf("start child: %w", err)
 	}
 
 	return &managedChild{
-		cmd:    cmd,
-		stdin:  stdin,
-		stdout: stdout,
-		stderr: stderr,
-		pgid:   cmd.Process.Pid,
+		proc:   proc,
+		stdin:  proc.Stdin,
+		stdout: proc.Stdout,
+		stderr: proc.Stderr,
+		pgid:   proc.Pid(),
 		done:   make(chan struct{}),
 	}, nil
 }
@@ -107,22 +105,14 @@ func spawnGatedGroup(cfg spawnConfig) (*managedChild, error) {
 
 	supArgs := append([]string{SupervisorSubcommand}, cfg.args...)
 
-	//nolint:gosec // remote-owned binary + already-validated args
-	cmd := exec.CommandContext(context.Background(), cfg.binPath, supArgs...)
-	cmd.Dir = cfg.dir
-	cmd.Env = cfg.env
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.ExtraFiles = []*os.File{readPipe} // → fd 3 in the supervisor
-
-	stdin, stdout, stderr, err := commandPipes(cmd)
-	if err != nil {
-		_ = readPipe.Close()
-		_ = writePipe.Close()
-
-		return nil, err
-	}
-
-	err = cmd.Start()
+	proc, err := spec.Start(context.Background(),
+		append([]string{cfg.binPath}, supArgs...), cli.Options{
+			Dir:        cfg.dir,
+			Env:        cli.Exact(cfg.env),
+			Output:     cli.Pipe(),
+			Group:      true,
+			ExtraFiles: []*os.File{readPipe}, // → fd 3 in the supervisor
+		})
 	if err != nil {
 		_ = readPipe.Close()
 		_ = writePipe.Close()
@@ -134,11 +124,11 @@ func spawnGatedGroup(cfg spawnConfig) (*managedChild, error) {
 	_ = readPipe.Close()
 
 	return &managedChild{
-		cmd:          cmd,
-		stdin:        stdin,
-		stdout:       stdout,
-		stderr:       stderr,
-		pgid:         cmd.Process.Pid,
+		proc:         proc,
+		stdin:        proc.Stdin,
+		stdout:       proc.Stdout,
+		stderr:       proc.Stderr,
+		pgid:         proc.Pid(),
 		releaseWrite: writePipe,
 		done:         make(chan struct{}),
 	}, nil
@@ -170,11 +160,23 @@ func (c *managedChild) Release() error {
 // can observe exit without racing on Wait.
 func (c *managedChild) Wait() error {
 	c.waitOnce.Do(func() {
-		c.waitErr = c.cmd.Wait()
+		c.waitResult, c.waitErr = c.proc.Wait()
+		// pkg/shell reports a non-zero exit as Result.Code, not an error.
+		// This layer's callers key on waitErr != nil, so it is restored here.
+		if c.waitErr == nil {
+			c.waitErr = c.waitResult.Err()
+		}
+
 		close(c.done)
 	})
 
 	return c.waitErr
+}
+
+// Result is how the child ended, for the callers that need the exit code and
+// signal rather than only whether it failed.
+func (c *managedChild) Result() cli.Result {
+	return c.waitResult
 }
 
 // Escalate runs the forced SIGINT→TERM→KILL shutdown (plan §3.2): SIGINT +

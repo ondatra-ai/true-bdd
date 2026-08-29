@@ -1,18 +1,17 @@
 package commit
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
@@ -58,22 +57,19 @@ func Start(args []string) *Run {
 		usage("usage: commit — no arguments. Everything comes from the checkout.")
 	}
 
-	top, err := exec.CommandContext(context.Background(),
-		gitBin, "rev-parse", "--show-toplevel").Output()
+	top, err := git.TopLevel(context.Background())
 	if err != nil {
 		usage("not inside a git repository")
 	}
 
-	err = os.Chdir(strings.TrimSpace(string(top)))
+	err = os.Chdir(top)
 	if err != nil {
 		usage("cannot enter the repository root: " + err.Error())
 	}
 
-	for _, tool := range []string{gitBin, ghBin, "claude"} {
-		_, err := exec.LookPath(tool)
-		if err != nil {
-			usage(tool + " not found in PATH")
-		}
+	err = cli.Require(gitBin, ghBin, "claude")
+	if err != nil {
+		usage(err.Error())
 	}
 
 	// Read up front: a config that does not parse must stop the run before the
@@ -186,25 +182,26 @@ type result struct {
 	code   int
 }
 
-// sh runs an argv list. No shell, ever.
+// sh runs an argv list. No shell, ever. A command that cannot run at all
+// stops the run; a non-zero exit never does — gitChecked and gh below carry
+// that policy, and merge's helper carries more.
 func (r *Run) sh(argv []string, stream bool) result {
-	//nolint:gosec // every argv in this package is a literal or a parsed value.
-	command := exec.CommandContext(context.Background(), argv[0], argv[1:]...)
-	// Blanked, not removed: a child should know it is not interactive. Only a
-	// nested `claude -p` needs the variable gone — see claudecli.
-	command.Env = append(os.Environ(), "CLAUDECODE=")
-
-	var stdout, stderr bytes.Buffer
-
+	sink := cli.Capture()
 	if stream {
-		command.Stdout, command.Stderr = console.Out(), console.Err()
-	} else {
-		command.Stdout, command.Stderr = &stdout, &stderr
+		sink = cli.Console()
 	}
 
-	err := command.Run()
+	// Blanked, not removed: a child should know it is not interactive. Only a
+	// nested `claude -p` needs the variable gone — see claudecli.
+	finished, err := spec.Run(context.Background(), argv, cli.Options{
+		Env:    cli.Inherit().Blank("CLAUDECODE"),
+		Output: sink,
+	})
+	if err != nil {
+		r.dief("%s could not run: %v", strings.Join(argv, " "), err)
+	}
 
-	return result{stdout: stdout.String(), stderr: stderr.String(), code: exitCode(err)}
+	return result{stdout: finished.Stdout, stderr: finished.Stderr, code: finished.Code}
 }
 
 func (r *Run) git(args ...string) result {
@@ -239,19 +236,6 @@ func (r *Run) write(path, content string) {
 	if err != nil {
 		r.dief("%v", err)
 	}
-}
-
-func exitCode(err error) int {
-	if err == nil {
-		return 0
-	}
-
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		return exitErr.ExitCode()
-	}
-
-	return -1
 }
 
 func firstNonEmpty(values ...string) string {

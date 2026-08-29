@@ -9,13 +9,14 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	spawn "github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode/internal/cli"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode/internal/parser"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode/internal/shared"
@@ -41,7 +42,9 @@ const (
 // Transport implements the Transport interface using subprocess communication.
 type Transport struct {
 	// Process management
-	cmd        *exec.Cmd
+	proc       *spawn.Process
+	argv       []string
+	dir        string
 	cliPath    string
 	options    *shared.Options
 	closeStdin bool
@@ -85,7 +88,7 @@ func (t *Transport) IsConnected() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	return t.connected && t.cmd != nil && t.cmd.Process != nil
+	return t.connected && t.proc != nil
 }
 
 // Connect starts the Claude CLI subprocess.
@@ -98,16 +101,22 @@ func (t *Transport) Connect(ctx context.Context) error {
 	}
 
 	// Set up command and working directory
-	t.setupCommand(ctx)
+	t.setupCommand()
 
-	// Set up I/O pipes
-	err := t.setupIOPipes()
+	// The stderr file must exist before the spawn that writes to it.
+	err := t.setupStderrFile()
 	if err != nil {
 		return err
 	}
 
-	// Start the process
-	err = t.cmd.Start()
+	// Start the process. Stdout and stdin come back as pipes; stderr is the
+	// temp file above, matching the Python SDK — a pipe deadlocks once the
+	// child fills it.
+	t.proc, err = spec.Start(ctx, t.argv, spawn.Options{
+		Dir:    t.dir,
+		Env:    spawn.Inherit().Set("CLAUDE_CODE_ENTRYPOINT=" + t.entrypoint),
+		Output: spawn.Streams(nil, t.stderr),
+	})
 	if err != nil {
 		t.cleanup()
 
@@ -116,6 +125,8 @@ func (t *Transport) Connect(ctx context.Context) error {
 			err,
 		)
 	}
+
+	t.stdin, t.stdout = t.proc.Stdin, t.proc.Stdout
 
 	// Set up context for goroutine management
 	ctx, cancel := context.WithCancel(ctx)
@@ -207,7 +218,7 @@ func (t *Transport) Interrupt(_ context.Context) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if !t.connected || t.cmd == nil || t.cmd.Process == nil {
+	if !t.connected || t.proc == nil {
 		return fmt.Errorf("process not running: %w", pkgerrors.ErrProcessNotRunning)
 	}
 
@@ -217,7 +228,7 @@ func (t *Transport) Interrupt(_ context.Context) error {
 	}
 
 	// Send interrupt signal (Unix/Linux/macOS)
-	err := t.cmd.Process.Signal(os.Interrupt)
+	err := t.proc.Signal(os.Interrupt)
 	if err != nil {
 		return fmt.Errorf("send interrupt signal: %w", err)
 	}
@@ -265,7 +276,7 @@ func (t *Transport) Close() error {
 
 	// Terminate process with 5-second timeout
 	var err error
-	if t.cmd != nil && t.cmd.Process != nil {
+	if t.proc != nil {
 		err = t.terminateProcess()
 	}
 
@@ -397,14 +408,14 @@ func isProcessAlreadyFinishedError(err error) bool {
 
 // sendTerminationSignal sends SIGTERM to the process and handles failures.
 func (t *Transport) sendTerminationSignal() error {
-	err := t.cmd.Process.Signal(syscall.SIGTERM)
+	err := t.proc.Signal(syscall.SIGTERM)
 	if err != nil {
 		// If process is already finished, that's success
 		if isProcessAlreadyFinishedError(err) {
 			return nil
 		}
 		// If SIGTERM fails for other reasons, try SIGKILL immediately
-		killErr := t.cmd.Process.Kill()
+		killErr := t.proc.Signal(os.Kill)
 		if killErr != nil && !isProcessAlreadyFinishedError(killErr) {
 			return fmt.Errorf("kill process after SIGTERM failure: %w", killErr)
 		}
@@ -417,7 +428,7 @@ func (t *Transport) sendTerminationSignal() error {
 
 // terminateProcess implements the 5-second SIGTERM → SIGKILL sequence.
 func (t *Transport) terminateProcess() error {
-	if t.cmd == nil || t.cmd.Process == nil {
+	if t.proc == nil {
 		return nil
 	}
 
@@ -432,19 +443,28 @@ func (t *Transport) terminateProcess() error {
 // waitForProcessTermination waits for process to exit with timeout handling.
 func (t *Transport) waitForProcessTermination() error {
 	done := make(chan error, 1)
-	cmd := t.cmd
+	proc := t.proc
 
 	go func() {
-		done <- cmd.Wait()
+		// A signalled exit is this shutdown working, not a failure, and
+		// pkg/shell reports one as Result.Signal rather than an error.
+		result, waitErr := proc.Wait()
+		if waitErr == nil && result.Signaled() {
+			done <- nil
+
+			return
+		}
+
+		done <- waitErr
 	}()
 
 	select {
 	case err := <-done:
 		return t.handleProcessExit(err)
 	case <-time.After(terminationTimeoutSeconds * time.Second):
-		return terminateProcess(cmd, done, "timeout")
+		return terminateProcess(proc, done, "timeout")
 	case <-t.done:
-		return terminateProcess(cmd, done, "context cancellation")
+		return terminateProcess(proc, done, "context cancellation")
 	}
 }
 
@@ -457,21 +477,15 @@ func (t *Transport) handleProcessExit(err error) error {
 	return err
 }
 
-// setupCommand builds and configures the command with arguments and environment.
-func (t *Transport) setupCommand(ctx context.Context) {
-	// Build command with all options
-	args := cli.BuildCommand(t.cliPath, t.options, t.closeStdin)
-	// Create command context - subprocess execution required for Claude CLI SDK
-	t.cmd = exec.CommandContext(ctx, args[0], args[1:]...)
-
-	// Set up environment
-	t.cmd.Env = append(os.Environ(), "CLAUDE_CODE_ENTRYPOINT="+t.entrypoint)
+// setupCommand resolves the argv and working directory the spawn will use.
+func (t *Transport) setupCommand() {
+	t.argv = cli.BuildCommand(t.cliPath, t.options, t.closeStdin)
 
 	// Set working directory if specified
 	if t.options != nil && t.options.Cwd != nil {
 		err := cli.ValidateWorkingDirectory(*t.options.Cwd)
 		if err == nil {
-			t.cmd.Dir = *t.options.Cwd
+			t.dir = *t.options.Cwd
 		}
 	}
 
@@ -479,9 +493,9 @@ func (t *Transport) setupCommand(ctx context.Context) {
 	// and hands it straight to exec. Logging it here (same shape crush/codex use
 	// in cli_invocation.go) shows the real command, not a reconstruction.
 	slog.Debug("Spawning agent CLI",
-		"binary", args[0],
-		"args", redactPromptArgs(args[1:]),
-		"dir", t.cmd.Dir,
+		"binary", t.argv[0],
+		"args", redactPromptArgs(t.argv[1:]),
+		"dir", t.dir,
 	)
 }
 
@@ -506,29 +520,17 @@ func redactPromptArgs(args []string) []string {
 	return redacted
 }
 
-// setupIOPipes sets up stdin, stdout, and stderr pipes for the command.
-func (t *Transport) setupIOPipes() error {
-	var err error
-
-	t.stdin, err = t.cmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("create stdin pipe failed: %w", pkgerrors.ErrCreateStdinPipeFailed(err))
-	}
-
-	t.stdout, err = t.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("create stdout pipe failed: %w", pkgerrors.ErrCreateStdoutPipeFailed(err))
-	}
-
-	// A temp file rather than a pipe, matching the Python SDK: a pipe
-	// deadlocks once the child fills it.
+// setupStderrFile opens the file the child's stderr is written to. A temp
+// file rather than a pipe, matching the Python SDK: a pipe deadlocks once the
+// child fills it.
+func (t *Transport) setupStderrFile() error {
 	//nolint:forbidigo // a handle held for the child's life.
-	t.stderr, err = os.CreateTemp("", "claude_stderr_*.log")
+	stderr, err := os.CreateTemp("", "claude_stderr_*.log")
 	if err != nil {
 		return fmt.Errorf("create stderr file failed: %w", pkgerrors.ErrCreateStderrFileFailed(err))
 	}
 
-	t.cmd.Stderr = t.stderr
+	t.stderr = stderr
 
 	return nil
 }
@@ -570,5 +572,5 @@ func (t *Transport) cleanup() {
 	}
 
 	// Reset state
-	t.cmd = nil
+	t.proc = nil
 }

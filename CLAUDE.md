@@ -70,8 +70,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **TrueBDD** (binary: `true-bdd`) — a Spec-Anchored CLI (aspiring to
 Spec-as-Source) driving Claude-mediated checklists over user stories.
-`README.md` carries the vision, the SDD taxonomy, and the configuration
-reference.
+`README.md` carries the vision, the SDD taxonomy, and the config reference.
 
 **This repo is the engine, not a host project.** A host supplies its own
 `true-bdd/` config and the five `docs/` documents (contract: README →
@@ -144,15 +143,15 @@ hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 
 Four roots, gated by `.alint.yml`: `services/<name>/` + `tests/<name>/`
 mirror what TrueBDD asks of a host (plus `tests/libraries/`); `scripts/` is
-this repo's tooling; `pkg/` is the three IO channels. `ls` for the tree.
+this repo's tooling; `pkg/` is the four IO channels. `ls` for the tree.
 
+- **Never import `os/exec`** — spawn via `pkg/cli/<tool>` (ADR 0005).
 - `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
   not show it: the bdd-web scenarios and suite are the spec.
 - Sentinel `go.mod`s fence root `go test`/lint out of `services/bdd-web/`,
   `tests/legacy/…` and `tests/bdd-cli/fixtures/`; each states its trap.
-- `tests/legacy/bdd-web-playwright/` exists to be DELETED per spec
-  family, in the same commit binding that family's steps. Never add to
-  it.
+- `tests/legacy/bdd-web-playwright/` exists to be DELETED per spec family,
+  in the same commit binding that family's steps. Never add to it.
 - `docs/*.html`: merging to `main` IS the deploy — never publish one as a
   Claude artifact; a new page needs a `cp` line AND a `paths:` trigger in
   `deploy-pages.yml`.
@@ -179,6 +178,7 @@ triage <N>` re-scores the N stalest and stamps them.
 
 Answer first; no "what landed / what I verified" recaps unless asked.
 Brevity is not omission — report failures and skipped work plainly.
+Cite code repo-relative (`scripts/lint/hook.go:50`), never a basename.
 
 ## Commit / Merge Skills
 
@@ -196,16 +196,15 @@ Brevity is not omission — report failures and skipped work plainly.
   review is requested (absent, not red), and an empty body is not a pass.
 - **`main` is guarded by ruleset `20972312`** — live via
   `gh api repos/ondatra-ai/true-bdd/rules/branches/main`, provenance in
-  `docs/for_further/github-main-ruleset.md`. Classic protection is gone,
-  so `/branches/main/protection` 404s, which is not "unprotected". Admin
-  holds a `pull_request` merge bypass, so a merge succeeding proves
-  nothing; every push dismisses the approval.
+  `docs/for_further/github-main-ruleset.md`. Classic protection is gone, so
+  `/branches/main/protection` 404s, not "unprotected". Admin holds a merge
+  bypass, so a merge proves nothing; every push dismisses approval.
 
 ## Notes
 
 - CLAUDE.md: ≤214 lines, ≤80 cols, and the `KARPATHY` block byte-verbatim.
-- Never `cd` — run from the repo root with absolute paths or `-C <path>`;
-  a `cd`-prefixed command matches no `Bash(...)` allow rule, so it prompts.
+- Never `cd` — it matches no `Bash(...)` allow rule, so it prompts; use
+  absolute paths or `-C <path>` from the repo root.
 - Session-temporary files go to `./tmp/` (gitignored), never system temp
   dirs or scratchpads. Never edit `.golangci.yaml` without permission.
 - **CRITICAL**: NEVER create a branch — only `scripts/commit` cuts one.

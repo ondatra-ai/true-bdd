@@ -1,17 +1,17 @@
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
@@ -98,32 +98,22 @@ type realRun struct {
 // three streams through unbuffered — claude's stream-json conversation
 // is frame-by-frame interactive, so any buffering would deadlock it.
 func runReal(realPath string, argv []string) (*realRun, error) {
-	// Transparent proxy: argv passes through; lifetime is the parent's.
-	cmd := exec.Command(realPath, argv...) //nolint:gosec,noctx // re-exec of the shimmed CLI, argv unchanged.
-
-	stdinPipe, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, fmt.Errorf("stdin pipe: %w", err)
-	}
-
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("stdout pipe: %w", err)
-	}
-
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("stderr pipe: %w", err)
-	}
-
 	start := time.Now()
 
-	err = cmd.Start()
+	// Transparent proxy: argv passes through; lifetime is the parent's, so
+	// the context is deliberately never cancelled here.
+	proc, err := spec.Start(context.Background(),
+		append([]string{realPath}, argv...), cli.Options{Output: cli.Pipe()})
 	if err != nil {
 		return nil, fmt.Errorf("start %s: %w", realPath, err)
 	}
 
-	forwardSignals(cmd)
+	stdinPipe, stdoutPipe, stderrPipe := proc.Stdin, proc.Stdout, proc.Stderr
+
+	// Relays SIGTERM/SIGINT, keeping the child on claude's
+	// stdin-close→SIGTERM→5s→SIGKILL schedule (transport.go) while the shim
+	// finalizes; SIGKILL needs no relay — the engine kills by process group.
+	defer proc.ForwardSignals(syscall.SIGTERM, syscall.SIGINT)()
 
 	var stdinBuf, stdoutBuf, stderrBuf lockedBuffer
 
@@ -153,7 +143,7 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 
 	pumps.Wait()
 
-	code, err := waitExitCode(cmd)
+	code, err := waitExitCode(proc)
 	if err != nil {
 		return nil, err
 	}
@@ -176,37 +166,16 @@ func pump(group *sync.WaitGroup, dst io.Writer, src io.Reader) {
 // waitExitCode reaps the child. A signal-killed child reports exit code 0:
 // the engine's shutdown signals fire only after it has consumed the output
 // it needed, so the recorded turn was a success from the engine's view.
-func waitExitCode(cmd *exec.Cmd) (int, error) {
-	waitErr := cmd.Wait()
-	if waitErr == nil {
-		return 0, nil
-	}
-
-	var exitErr *exec.ExitError
-	if !errors.As(waitErr, &exitErr) {
+func waitExitCode(proc *cli.Process) (int, error) {
+	result, waitErr := proc.Wait()
+	if waitErr != nil {
 		return 0, fmt.Errorf("wait: %w", waitErr)
 	}
 
-	code := exitErr.ExitCode()
+	code := result.Code
 	if code < 0 {
 		code = 0
 	}
 
 	return code, nil
-}
-
-// forwardSignals relays SIGTERM/SIGINT to the child, keeping it on claude's
-// stdin-close→SIGTERM→5s→SIGKILL schedule (transport.go) while the shim
-// finalizes; SIGKILL needs no relay — the engine SIGKILLs by process group, taking the child down with the shim.
-func forwardSignals(cmd *exec.Cmd) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-
-	go func() {
-		for sig := range sigs {
-			if cmd.Process != nil {
-				_ = cmd.Process.Signal(sig)
-			}
-		}
-	}()
 }

@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/linters"
 )
 
 // The gates report their own findings and the caller only needs the verdict,
@@ -39,14 +41,14 @@ func excludedTree(path string) bool {
 func trackedFiles(pathspecs ...string) ([]string, error) {
 	args := append([]string{"ls-files", "-co", "--exclude-standard"}, pathspecs...)
 
-	out, err := exec.CommandContext(context.Background(), "git", args...).Output()
+	out, err := git.Output(context.Background(), args...)
 	if err != nil {
 		return nil, fmt.Errorf("git ls-files: %w", err)
 	}
 
 	var paths []string
 
-	for _, line := range splitLines(string(out)) {
+	for _, line := range splitLines(out) {
 		if line == "" {
 			continue
 		}
@@ -83,7 +85,7 @@ func head(src []byte, n int) []byte {
 // needTool turns a missing PATH tool into the install line for it, which is
 // the only useful thing to say about that failure.
 func needTool(name, install string) error {
-	_, err := exec.LookPath(name)
+	err := linters.Available(name)
 	if err != nil {
 		return fmt.Errorf("%w: %s not found. Install it with: %s", errMissing, name, install)
 	}
@@ -93,12 +95,8 @@ func needTool(name, install string) error {
 
 // runTool streams a gate's own output through; its exit code is the verdict.
 func runTool(out io.Writer, name string, args ...string) error {
-	//nolint:gosec // every argv here is a literal or a repo-relative path.
-	cmd := exec.CommandContext(context.Background(), name, args...)
-	cmd.Stdout, cmd.Stderr, cmd.Stdin = out, out, nil
-
-	err := cmd.Run()
-	if err != nil {
+	result, err := linters.Run(context.Background(), out, name, args...)
+	if err != nil || result.Code != 0 {
 		return ErrFailed
 	}
 

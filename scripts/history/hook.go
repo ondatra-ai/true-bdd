@@ -1,13 +1,12 @@
 package history
 
 import (
-	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
 // DefaultRole is the writer when CLAUDE_HISTORY_ROLE says nothing: the main
@@ -92,15 +91,10 @@ func gitOutput(dir string, args ...string) (string, error) {
 		full = append([]string{"-C", dir}, args...)
 	}
 
-	var stdout bytes.Buffer
-
-	cmd := exec.CommandContext(ctx, "git", full...)
-	cmd.Stdout = &stdout
-
-	err := cmd.Run()
+	out, err := git.Output(ctx, full...)
 	if err != nil {
-		return "", err //nolint:wrapcheck // the caller only asks whether it worked.
+		return "", err
 	}
 
-	return strings.TrimSpace(stdout.String()), nil
+	return out, nil
 }

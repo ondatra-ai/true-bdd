@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -153,8 +152,8 @@ func TestEscalateForcedTermKill(t *testing.T) {
 	elapsed := time.Since(start)
 
 	waitErr := <-waitCh
-	if !killedBySignal(waitErr, syscall.SIGKILL) {
-		t.Fatalf("child should have been SIGKILLed, got %v", waitErr)
+	if !killedBySignal(child, syscall.SIGKILL) {
+		t.Fatalf("child should have been SIGKILLed, got %v (%v)", child.Result().Signal, waitErr)
 	}
 
 	if elapsed > 5*time.Second {
@@ -189,19 +188,12 @@ func TestGroupSignalReapsNestedDescendant(t *testing.T) {
 	}
 }
 
-// killedBySignal reports whether a wait error is a signal-kill by sig.
-func killedBySignal(waitErr error, sig syscall.Signal) bool {
-	var exitErr *exec.ExitError
-	if !errors.As(waitErr, &exitErr) {
-		return false
-	}
+// killedBySignal reports whether the child was signal-killed by sig. The
+// wait status is pkg/shell's to read; what survives here is the assertion.
+func killedBySignal(child *managedChild, sig syscall.Signal) bool {
+	result := child.Result()
 
-	status, ok := exitErr.Sys().(syscall.WaitStatus)
-	if !ok {
-		return false
-	}
-
-	return status.Signaled() && status.Signal() == sig
+	return result.Signaled() && result.Signal == sig
 }
 
 // processAlive reports whether pid is still running.

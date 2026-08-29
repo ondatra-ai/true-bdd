@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
@@ -222,12 +223,14 @@ func applyChecklistFilters(manifest *Manifest, target string) error {
 // result JSON. A non-zero exit aborts the materialization.
 func runPrepCommands(ctx context.Context, manifest *Manifest, target string) error {
 	for idx, command := range manifest.Prep {
-		cmd := exec.CommandContext(ctx, "bash", "-c", command)
-		cmd.Dir = target
-		cmd.Stdout = console.Err()
-		cmd.Stderr = console.Err()
+		result, err := bash.Run(ctx, command, cli.Options{
+			Dir:    target,
+			Output: cli.Streams(console.Err(), console.Err()),
+		})
+		if err == nil {
+			err = result.Err()
+		}
 
-		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("prep[%d] failed (%q): %w", idx, command, err)
 		}

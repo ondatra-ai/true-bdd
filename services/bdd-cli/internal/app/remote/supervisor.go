@@ -2,15 +2,16 @@ package remote
 
 import (
 	"context"
-	"errors"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
@@ -50,24 +51,19 @@ func RunSupervisor(args []string) int {
 		return 1
 	}
 
-	//nolint:gosec // self is our own binary; args are the already-validated command vector
-	cmd := exec.CommandContext(context.Background(), self, args...)
-	cmd.Stdin = console.In()
-	cmd.Stdout = console.Out()
-	cmd.Stderr = console.Err()
-	// No Setpgid: the command inherits the supervisor's group, so the supervisor
-	// stays the verifiable group leader.
-
-	startErr := cmd.Start()
+	// No Group: the command inherits the supervisor's process group, so the
+	// supervisor stays the verifiable group leader.
+	proc, startErr := spec.Start(context.Background(), append([]string{self}, args...),
+		cli.Options{Stdin: console.In(), Output: cli.Console()})
 	if startErr != nil {
 		return 1
 	}
 
-	waitErr := cmd.Wait()
+	exit, waitErr := proc.Wait()
 
 	waitGroupDrain()
 
-	return propagateExit(waitErr)
+	return propagateExit(exit, waitErr)
 }
 
 // awaitRelease blocks until the parent writes the release byte (proceed) or the
@@ -104,14 +100,14 @@ func waitGroupDrain() {
 // groupHasOtherMembers reports whether any process OTHER than the supervisor is
 // still in its process group. An unreadable process table ⇒ do not linger.
 func groupHasOtherMembers(pgid int) bool {
-	out, err := exec.CommandContext(context.Background(), "ps", "-A", "-o", "pgid=,pid=").Output()
+	out, err := ps.Output(context.Background(), "-A", "-o", "pgid=,pid=")
 	if err != nil {
 		return false
 	}
 
 	self := os.Getpid()
 
-	for _, line := range strings.Split(string(out), "\n") {
+	for _, line := range strings.Split(out, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) != psGroupFields {
 			continue
@@ -134,27 +130,17 @@ func groupHasOtherMembers(pgid int) bool {
 
 // propagateExit re-raises the command's terminating signal on the supervisor
 // (so the parent's Wait sees a faithful WaitStatus) or exits with its code.
-func propagateExit(waitErr error) int {
-	if waitErr == nil {
-		return 0
+func propagateExit(exit cli.Result, waitErr error) int {
+	if waitErr != nil {
+		return 1
 	}
 
-	var exitErr *exec.ExitError
-	if errors.As(waitErr, &exitErr) {
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			if status.Signaled() {
-				sig := status.Signal()
-				signal.Reset(sig)
-				_ = syscall.Kill(os.Getpid(), sig)
+	if exit.Signaled() {
+		signal.Reset(exit.Signal)
+		_ = syscall.Kill(os.Getpid(), exit.Signal)
 
-				time.Sleep(supervisorSignalGrace)
-			}
-
-			return status.ExitStatus()
-		}
-
-		return exitErr.ExitCode()
+		time.Sleep(supervisorSignalGrace)
 	}
 
-	return 1
+	return exit.Code
 }

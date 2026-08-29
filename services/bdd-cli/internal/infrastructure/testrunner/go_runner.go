@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os/exec"
 	"sort"
 	"strings"
 
@@ -127,12 +126,9 @@ func (r *GoTestRunner) exec(
 	cwd, phase string,
 	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	// Empty cwd means "inherit the engine's own working directory",
 	// which is what a suite declaring no `config:` file asks for.
-	cmd.Dir = cwd
-
-	return runLogged(cmd, spawnMeta{
+	return runLogged(ctx, argv, cwd, spawnMeta{
 		binary:    argv[0],
 		args:      argv[1:],
 		framework: FrameworkGoTest,

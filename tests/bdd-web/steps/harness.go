@@ -24,12 +24,14 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/cp"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
@@ -78,7 +80,7 @@ type Harness struct {
 	Browser playwright.Browser
 
 	driver *playwright.Playwright
-	server *exec.Cmd
+	server *cli.Process
 }
 
 // NewHarness builds the application, starts it on a free loopback port,
@@ -127,12 +129,14 @@ func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 	buildCtx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 
-	build := exec.CommandContext(buildCtx, "npm", "run", "build")
-	build.Dir = appDir
-	build.Stdout = console.Err()
-	build.Stderr = console.Err()
+	built, err := npm.RunScript(buildCtx, "build", cli.Options{
+		Dir:    appDir,
+		Output: cli.Streams(console.Err(), console.Err()),
+	})
+	if err == nil {
+		err = built.Err()
+	}
 
-	err := build.Run()
 	if err != nil {
 		return "", fmt.Errorf("build the application under test: %w", err)
 	}
@@ -158,7 +162,11 @@ func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 	}
 
 	for _, pair := range copies {
-		copyErr := exec.CommandContext(copyCtx, "cp", "-R", pair[0], pair[1]).Run()
+		copied, copyErr := cp.Recursive(copyCtx, pair[0], pair[1], cli.Options{})
+		if copyErr == nil {
+			copyErr = copied.Err()
+		}
+
 		if copyErr != nil {
 			return "", fmt.Errorf("assemble the bundle (%s): %w", pair[0], copyErr)
 		}
@@ -191,19 +199,13 @@ func freePort(ctx context.Context) (int, error) {
 // to answer. Deliberately not CommandContext — see the nolint below: its
 // lifetime is stop's, not this call's.
 func (h *Harness) startServer(ctx context.Context, bundle string, port int) error {
-	//nolint:noctx // the server outlives this call; stop() owns its lifetime
-	server := exec.Command("node", "server.js")
-
-	server.Dir = bundle
-
-	server.Env = append(os.Environ(),
-		fmt.Sprintf("PORT=%d", port),
-		"HOSTNAME=127.0.0.1",
-	)
-	server.Stdout = console.Err()
-	server.Stderr = console.Err()
-
-	err := server.Start()
+	// context.WithoutCancel: the server outlives this call, and stop() owns
+	// its lifetime rather than the caller's context.
+	server, err := npm.StartNode(context.WithoutCancel(ctx), []string{"server.js"}, cli.Options{
+		Dir:    bundle,
+		Env:    cli.Inherit().Set(fmt.Sprintf("PORT=%d", port), "HOSTNAME=127.0.0.1"),
+		Output: cli.Streams(console.Err(), console.Err()),
+	})
 	if err != nil {
 		return fmt.Errorf("start the application under test: %w", err)
 	}
@@ -285,9 +287,9 @@ func (h *Harness) stop() {
 		_ = h.driver.Stop()
 	}
 
-	if h.server != nil && h.server.Process != nil {
-		_ = h.server.Process.Kill()
-		_, _ = h.server.Process.Wait()
+	if h.server != nil {
+		_ = h.server.Signal(os.Kill)
+		_, _ = h.server.Wait()
 	}
 }
 

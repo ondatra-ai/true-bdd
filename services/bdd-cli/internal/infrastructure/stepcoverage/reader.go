@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
@@ -264,23 +263,18 @@ func runCoverage(ctx context.Context, argv []string, dir, reportPath string) (st
 	ctx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-	cmd.Dir = dir
-
-	cmd.Env = append(os.Environ(), ReportEnv+"="+reportPath)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error {
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-
-		return nil
+	result, err := spec.Run(ctx, argv, cli.Options{
+		Dir:       dir,
+		Env:       cli.Inherit().Set(ReportEnv + "=" + reportPath),
+		Output:    cli.Combined(),
+		Group:     true,
+		WaitDelay: waitDelay,
+	})
+	if err != nil {
+		return result.Stdout, err
 	}
-	cmd.WaitDelay = waitDelay
 
-	output, err := cmd.CombinedOutput()
-
-	return string(output), err
+	return result.Stdout, result.Err()
 }
 
 func readReport(path string) (*Report, error) {

@@ -1,17 +1,16 @@
 package ai
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"log/slog"
 	"strings"
-	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"os/exec"
 )
 
 const (
@@ -38,36 +37,27 @@ type cliInvocation struct {
 // stdout+stderr. A cancelled context takes down the whole group, not
 // just the direct child.
 func (inv cliInvocation) run(ctx context.Context) (string, error) {
-	//nolint:gosec // binary and argv are engine-owned; no user input reaches them
-	cmd := exec.CommandContext(ctx, inv.Binary, inv.Args...)
-	cmd.Dir = inv.Dir
-	cmd.Env = inv.Env
-	cmd.Stdin = strings.NewReader(inv.Stdin)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
-	var output bytes.Buffer
-
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-
-	cmd.Cancel = func() error {
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-
-		return nil
-	}
-	cmd.WaitDelay = cliWaitDelay
-
 	slog.Debug("Spawning agent CLI", "binary", inv.Binary, "args", inv.Args, "dir", inv.Dir)
 
-	runErr := cmd.Run()
-	transcript := output.String()
+	result, runErr := spec.Run(ctx, append([]string{inv.Binary}, inv.Args...), cli.Options{
+		Dir:       inv.Dir,
+		Env:       cli.Exact(inv.Env),
+		Stdin:     strings.NewReader(inv.Stdin),
+		Output:    cli.Combined(),
+		Group:     true,
+		WaitDelay: cliWaitDelay,
+	})
+
+	transcript := result.Stdout
 
 	inv.saveTranscript(transcript)
 
 	if runErr != nil {
 		return transcript, fmt.Errorf("%s: %w", inv.Binary, runErr)
+	}
+
+	if result.Code != 0 {
+		return transcript, fmt.Errorf("%s: %w", inv.Binary, result.Err())
 	}
 
 	return transcript, nil

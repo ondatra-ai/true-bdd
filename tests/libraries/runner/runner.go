@@ -17,7 +17,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -25,6 +24,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
@@ -311,37 +313,31 @@ func Execute(
 	runCtx, cancelRun := context.WithTimeout(ctx, runTimeout)
 	defer cancelRun()
 
-	cmd := exec.CommandContext(runCtx, binPath, args...)
-	cmd.Dir = tmpDir
-
-	cmd.Env = append(envWithoutClaudeCode(os.Environ()), extraEnv...)
-
+	// Stripped, not blanked: the engine under test must look entirely
+	// unlaunched-from-a-session, as claudecli's own child does.
+	options := cli.Options{Dir: tmpDir, Env: cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...)}
 	if fixture.Stdin != nil {
-		cmd.Stdin = bytes.NewReader(fixture.Stdin)
+		options.Stdin = bytes.NewReader(fixture.Stdin)
 	}
 
-	var stdout, stderr bytes.Buffer
+	finished, runErr := spec.Run(runCtx, append([]string{binPath}, args...), options)
 
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	runErr := cmd.Run()
-
-	exitCode := cmd.ProcessState.ExitCode()
+	stdout, stderr := finished.Stdout, finished.Stderr
+	exitCode := finished.Code
 
 	after, snapErr := fstree.Snapshot(tmpDir, runSnapshotSkipDirs()...)
 
 	// Persist the CLI's own streams, after the post-run snapshot so the
 	// transcript never lands in the diff the judge grades.
 	spawn := newSpawnLog(tmpDir)
-	stdoutFile := spawn.Write("cli", "stdout", stdout.Bytes())
-	stderrFile := spawn.Write("cli", "stderr", stderr.Bytes())
+	stdoutFile := spawn.Write("cli", "stdout", []byte(stdout))
+	stderrFile := spawn.Write("cli", "stderr", []byte(stderr))
 
 	if snapErr != nil {
 		return &RunResult{
 			ExitCode:   exitCode,
-			Stdout:     stdout.String(),
-			Stderr:     stderr.String(),
+			Stdout:     stdout,
+			Stderr:     stderr,
 			TmpDir:     tmpDir,
 			StdoutFile: stdoutFile,
 			StderrFile: stderrFile,
@@ -350,8 +346,8 @@ func Execute(
 
 	res := &RunResult{
 		ExitCode:   exitCode,
-		Stdout:     stdout.String(),
-		Stderr:     stderr.String(),
+		Stdout:     stdout,
+		Stderr:     stderr,
 		Diff:       fstree.Diff(before, after),
 		TmpDir:     tmpDir,
 		StdoutFile: stdoutFile,
@@ -359,9 +355,9 @@ func Execute(
 	}
 
 	// Surface execution errors that aren't "the process exited non-zero"
-	// — those are captured by ExitCode and asserted by checks.
-	var exitErr *exec.ExitError
-	if runErr != nil && !errors.As(runErr, &exitErr) {
+	// — those are captured by ExitCode and asserted by checks. shell.Run
+	// already draws that line: a non-zero exit is not an error there.
+	if runErr != nil {
 		return res, fmt.Errorf("exec %s: %w", binPath, runErr)
 	}
 
@@ -433,15 +429,17 @@ func runPrepCommands(tmpDir string, prepCmds []string) error {
 
 		stdout, stderr, flush := spawn.Tee(spawnLogName("prep", idx))
 
-		cmd := exec.CommandContext(ctx, "bash", "-c", trimmed)
-		cmd.Dir = tmpDir
-		cmd.Env = envWithoutClaudeCode(os.Environ())
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-
-		err := cmd.Run()
+		result, err := bash.Run(ctx, trimmed, cli.Options{
+			Dir:    tmpDir,
+			Env:    cli.Inherit().Strip("CLAUDECODE"),
+			Output: cli.Streams(stdout, stderr),
+		})
 
 		flush()
+
+		if err == nil {
+			err = result.Err()
+		}
 
 		if err != nil {
 			return fmt.Errorf("prep[%d] failed (%q): %w", idx, trimmed, err)
@@ -482,34 +480,23 @@ func runTeardownCommands(tmpDir string, teardownCmds []string) {
 
 		stdout, stderr, flush := spawn.Tee(spawnLogName("teardown", idx))
 
-		cmd := exec.CommandContext(ctx, "bash", "-c", trimmed)
-		cmd.Dir = tmpDir
-		cmd.Env = envWithoutClaudeCode(os.Environ())
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-
-		err := cmd.Run()
+		result, err := bash.Run(ctx, trimmed, cli.Options{
+			Dir:    tmpDir,
+			Env:    cli.Inherit().Strip("CLAUDECODE"),
+			Output: cli.Streams(stdout, stderr),
+		})
 
 		flush()
+
+		if err == nil {
+			err = result.Err()
+		}
 
 		if err != nil {
 			slog.Warn("BDD runner: teardown failed",
 				"index", idx, "command", trimmed, "error", err)
 		}
 	}
-}
-
-func envWithoutClaudeCode(env []string) []string {
-	out := make([]string, 0, len(env))
-	for _, kv := range env {
-		if strings.HasPrefix(kv, "CLAUDECODE=") {
-			continue
-		}
-
-		out = append(out, kv)
-	}
-
-	return out
 }
 
 // CopyTree recursively copies the directory tree rooted at src into

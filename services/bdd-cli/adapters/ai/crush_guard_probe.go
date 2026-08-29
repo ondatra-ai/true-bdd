@@ -2,11 +2,10 @@ package ai
 
 import (
 	"context"
-	"errors"
-	"os"
-	"os/exec"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -18,21 +17,17 @@ const crushGuardProbePath = "/true-bdd-guard-probe/must-be-denied"
 // crush turn starts: crush FAILS OPEN if the hook can't execute — observed
 // directly, a binary with no `crush-guard` subcommand let a write through silently.
 func verifyCrushGuardEnforces(ctx context.Context, executable string) error {
-	//nolint:gosec // executable is os.Executable(); no user input reaches it
-	cmd := exec.CommandContext(ctx, executable, crushGuardSubcommand)
-	cmd.Stdin = strings.NewReader("")
-
-	cmd.Env = append(os.Environ(),
-		// A policy that grants nothing: every write must be denied.
-		CrushPolicyEnvVar+`={"write_roots":[],"allow_bash":false}`,
-		CrushToolNameEnvVar+"=write",
-		CrushToolFilePathEnvVar+"="+crushGuardProbePath,
-	)
-
-	err := cmd.Run()
-
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() == CrushGuardDenyExitCode {
+	result, err := spec.Run(ctx, []string{executable, crushGuardSubcommand}, cli.Options{
+		Stdin: strings.NewReader(""),
+		Env: cli.Inherit().Set(
+			// A policy that grants nothing: every write must be denied.
+			CrushPolicyEnvVar+`={"write_roots":[],"allow_bash":false}`,
+			CrushToolNameEnvVar+"=write",
+			CrushToolFilePathEnvVar+"="+crushGuardProbePath,
+		),
+		Output: cli.Discard(),
+	})
+	if err == nil && result.Code == CrushGuardDenyExitCode {
 		return nil
 	}
 

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
@@ -91,7 +91,7 @@ func Start(args []string) (*Run, error) {
 }
 
 func enterRepo() error {
-	top, err := line(gitBin, "rev-parse", "--show-toplevel")
+	top, err := gitOut("rev-parse", "--show-toplevel")
 	if err != nil {
 		return errNotARepo
 	}
@@ -105,11 +105,9 @@ func enterRepo() error {
 }
 
 func requireTools() error {
-	for _, tool := range []string{gitBin, ghBin, "claude"} {
-		_, err := exec.LookPath(tool)
-		if err != nil {
-			return fmt.Errorf("%s %w", tool, errMissing)
-		}
+	err := cli.Require(gitBin, ghBin, "claude")
+	if err != nil {
+		return fmt.Errorf("%w: %w", errMissing, err)
 	}
 
 	return nil
@@ -118,7 +116,7 @@ func requireTools() error {
 // requireCleanTrunk is the refusal task-handle's skill used to carry as prose.
 // In Go it cannot be skipped, and it runs before anything is written.
 func requireCleanTrunk() error {
-	branch, err := line(gitBin, "branch", "--show-current")
+	branch, err := gitOut("branch", "--show-current")
 	if err != nil {
 		return fmt.Errorf("reading the current branch: %w", err)
 	}
@@ -127,7 +125,7 @@ func requireCleanTrunk() error {
 		return fmt.Errorf("%w — on %q; a Ticket starts from %s", errNotOnTrunk, branch, trunk)
 	}
 
-	dirty, err := sh(gitBin, "status", "--short")
+	dirty, err := gitOut("status", "--short")
 	if err != nil {
 		return fmt.Errorf("reading the worktree: %w", err)
 	}

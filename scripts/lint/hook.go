@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
 // `reason` is DISCARDED unless `decision` is "block", so a finding sent
@@ -82,8 +83,8 @@ func inRepository(path string) (string, bool) {
 		return "", false
 	}
 
-	ignored := exec.CommandContext(context.Background(), "git", "check-ignore", "-q", relative)
-	if ignored.Run() == nil {
+	ignored, err := git.IsIgnored(context.Background(), relative)
+	if err != nil || ignored {
 		return "", false
 	}
 

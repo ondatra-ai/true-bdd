@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/playwright-community/playwright-go"
@@ -61,16 +62,15 @@ func installDriverPackage(ctx context.Context, dir, version string) error {
 		return fmt.Errorf("create the driver staging dir: %w", err)
 	}
 
-	installCtx, cancel := context.WithTimeout(ctx, npmInstallTimeout)
-	defer cancel()
+	installed, err := npm.Install(ctx, staging, "playwright-core@"+version,
+		cli.Options{
+			Timeout: npmInstallTimeout,
+			Output:  cli.Streams(console.Err(), console.Err()),
+		})
+	if err == nil {
+		err = installed.Err()
+	}
 
-	install := exec.CommandContext(installCtx, "npm", "install",
-		"--no-save", "--no-package-lock", "--prefix", staging,
-		"playwright-core@"+version)
-	install.Stdout = console.Err()
-	install.Stderr = console.Err()
-
-	err = install.Run()
 	if err != nil {
 		return fmt.Errorf("fetch playwright-core@%s: %w", version, err)
 	}
@@ -105,7 +105,7 @@ func installDriverPackage(ctx context.Context, dir, version string) error {
 // looks for it. A symlink rather than a copy: it is the same binary, and
 // a copy would go stale the next time node is upgraded.
 func linkNode(dir string) error {
-	node, err := exec.LookPath("node")
+	node, err := npm.NodePath()
 	if err != nil {
 		return fmt.Errorf("locate node for the driver: %w", err)
 	}

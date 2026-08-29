@@ -19,13 +19,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/steps"
@@ -296,7 +296,7 @@ func writeSessionMeta(sessionRoot, mode string) error {
 func missingCLI() (string, error) {
 	// The judge runs on claude regardless of which CLIs the engine
 	// config routes a scenario's own turns to.
-	_, err := exec.LookPath("claude")
+	err := cli.Require("claude")
 	if err != nil {
 		return fmt.Sprintf("`claude` CLI not on $PATH: %v", err), nil
 	}
@@ -306,12 +306,12 @@ func missingCLI() (string, error) {
 		return "", fmt.Errorf("read engine config: %w", err)
 	}
 
-	for _, cli := range clis {
-		_, lookErr := exec.LookPath(cli)
+	for _, agent := range clis {
+		lookErr := cli.Require(agent)
 		if lookErr != nil {
 			return fmt.Sprintf(
 				"engine config binds a model tier to `%s`, which is not on $PATH: %v",
-				cli, lookErr), nil
+				agent, lookErr), nil
 		}
 	}
 
@@ -371,21 +371,12 @@ func buildTrueBDD() (string, error) {
 	return binPath, nil
 }
 
-// goBuild builds one package of the repository module into binPath.
+// goBuild builds one package of the repository module into binPath. Captured
+// rather than streamed: a failed build's error then carries the compiler's own
+// message instead of the bare exit status the streamed form returned.
 func goBuild(binPath, pkg string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), buildTimeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "go", "build", "-C", repoRoot, "-o", binPath, pkg)
-	cmd.Stdout = console.Out()
-	cmd.Stderr = console.Err()
-
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("go build %s: %w", pkg, err)
-	}
-
-	return nil
+	return gotool.Build(context.Background(), cli.Options{Timeout: buildTimeout},
+		repoRoot, binPath, pkg)
 }
 
 // flagValue reads one of `go test`'s own flags. Absent reads as empty:

@@ -3,52 +3,12 @@ package testrunner
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
-
-// TestExitStatusClassification pins the distinction the exit record exists
-// to make: a framework that ran and failed reports the code it returned,
-// while a process that never started reports -1 with a reason.
-func TestExitStatusClassification(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-	ranAndFailed := exec.CommandContext(ctx, "sh", "-c", "exit 3").Run()
-	neverStarted := exec.CommandContext(ctx, "true-bdd-no-such-binary").Run()
-
-	tests := []struct {
-		name       string
-		err        error
-		wantCode   int
-		wantReason bool
-	}{
-		{name: "clean exit", err: nil, wantCode: 0},
-		{name: "ran and failed", err: ranAndFailed, wantCode: 3},
-		{name: "wrapped by the caller", err: fmt.Errorf("playwright exec: %w", ranAndFailed), wantCode: 3},
-		{name: "never started", err: neverStarted, wantCode: -1, wantReason: true},
-		{name: "not an exec error", err: errors.New("boom"), wantCode: -1, wantReason: true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			code, reason := exitStatus(test.err)
-			if code != test.wantCode {
-				t.Errorf("exit code = %d, want %d", code, test.wantCode)
-			}
-
-			if (reason != "") != test.wantReason {
-				t.Errorf("reason = %q, want present=%v", reason, test.wantReason)
-			}
-		})
-	}
-}
 
 // TestRunLoggedCapturesBothStreams pins that runLogged doesn't swap or drop
 // stdout/stderr — callers branch on stdout being empty — and that both
@@ -57,9 +17,9 @@ func TestRunLoggedCapturesBothStreams(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	cmd := exec.CommandContext(t.Context(), "sh", "-c", "echo out; echo err >&2; exit 1")
+	argv := []string{"sh", "-c", "echo out; echo err >&2; exit 1"}
 
-	stdout, stderr, err := runLogged(cmd, spawnMeta{
+	stdout, stderr, err := runLogged(t.Context(), argv, "", spawnMeta{
 		binary:    "sh",
 		args:      []string{"-c", "..."},
 		framework: FrameworkPlaywright,
@@ -78,9 +38,8 @@ func TestRunLoggedCapturesBothStreams(t *testing.T) {
 		t.Errorf("stderr = %q, want %q", got, "err\n")
 	}
 
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Errorf("wrapped error lost its *exec.ExitError: %v", err)
+	if !errors.Is(err, cli.ErrExit) {
+		t.Errorf("wrapped error lost the non-zero exit: %v", err)
 	}
 
 	assertFile(t, filepath.Join(dir, "testrun-001-playwright-discover-stdout.json"), "out\n")

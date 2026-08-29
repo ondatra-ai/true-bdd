@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
@@ -116,14 +117,12 @@ func Start(args []string) *Run {
 		usage("usage: merge — no arguments. The PR comes from the current branch.")
 	}
 
-	root := exec.CommandContext(context.Background(), gitBin, "rev-parse", "--show-toplevel")
-
-	top, err := root.Output()
+	top, err := git.TopLevel(context.Background())
 	if err != nil {
 		usage("not inside a git repository")
 	}
 
-	err = os.Chdir(strings.TrimSpace(string(top)))
+	err = os.Chdir(top)
 	if err != nil {
 		usage("cannot enter the repository root: " + err.Error())
 	}
@@ -244,7 +243,7 @@ func requireTools() {
 	var missing []string
 
 	for _, tool := range []string{ghBin, gitBin, "claude"} {
-		_, err := exec.LookPath(tool)
+		err := cli.Require(tool)
 		if err != nil {
 			missing = append(missing, tool)
 		}
