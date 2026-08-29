@@ -2,12 +2,12 @@ package inventory
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	models "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models"
 	storymodel "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"gopkg.in/yaml.v3"
@@ -141,7 +141,7 @@ func parseEpicHeader(path string) (parsedEpic, bool) {
 
 	header := Epic{File: filepath.Base(path), Number: number, NoncanonicalFilename: !canonical}
 
-	data, err := os.ReadFile(path) //nolint:gosec // path is a globbed host epic file
+	data, err := disk.Read(path) //nolint:gosec // path is a globbed host epic file
 	if err != nil {
 		header.Status = EpicInvalid
 		header.Error = err.Error()

@@ -2,11 +2,14 @@ package scenariogen
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // generatedMarker is Go's own convention for machine-written source;
@@ -36,10 +39,7 @@ func hasGeneratedMarker(data []byte) bool {
 }
 
 // dirPerm and filePerm match what the rest of the engine writes with.
-const (
-	dirPerm  = 0o755
-	filePerm = 0o644
-)
+const ()
 
 // Drift is one file whose contents are not what the registry renders.
 type Drift struct {
@@ -61,8 +61,8 @@ func Verify(plan *Plan, repoRoot string) ([]Drift, error) {
 			return nil, err
 		}
 
-		got, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(file.Path)))
-		if os.IsNotExist(err) {
+		got, err := disk.Read(filepath.Join(repoRoot, filepath.FromSlash(file.Path)))
+		if errors.Is(err, fs.ErrNotExist) {
 			drifted = append(drifted, Drift{Path: file.Path, Reason: "no generated test file"})
 
 			continue
@@ -97,9 +97,9 @@ func Write(plan *Plan, repoRoot string) ([]string, error) {
 
 		target := filepath.Join(repoRoot, filepath.FromSlash(file.Path))
 
-		got, err := os.ReadFile(target)
+		got, err := disk.Read(target)
 		switch {
-		case os.IsNotExist(err):
+		case errors.Is(err, fs.ErrNotExist):
 		case err != nil:
 			return nil, fmt.Errorf("read %s: %w", file.Path, err)
 		case bytes.Equal(got, want):
@@ -111,12 +111,12 @@ func Write(plan *Plan, repoRoot string) ([]string, error) {
 			return nil, fmt.Errorf("%s: %w", file.Path, ErrWouldClobberHandWritten)
 		}
 
-		err = os.MkdirAll(filepath.Dir(target), dirPerm)
+		err = disk.Dir(filepath.Dir(target), disk.Shared)
 		if err != nil {
 			return nil, fmt.Errorf("create %s: %w", filepath.Dir(file.Path), err)
 		}
 
-		err = os.WriteFile(target, want, filePerm)
+		err = disk.Write(target, want, disk.Shared)
 		if err != nil {
 			return nil, fmt.Errorf("write %s: %w", file.Path, err)
 		}

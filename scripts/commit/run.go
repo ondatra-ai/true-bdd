@@ -5,12 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
@@ -24,9 +27,6 @@ const (
 	// The trunk, and the base a narrowed gate selection diffs against.
 	trunk    = "main"
 	altTrunk = "master"
-
-	dirMode  = 0o755
-	fileMode = 0o600
 
 	// StateDir holds what a run produces, so a message can be read after it.
 	StateDir = "tmp/commit"
@@ -116,7 +116,7 @@ func (r *Run) gates() {
 			len(selected), len(gates.All), len(changed), r.trunkRef())
 	}
 
-	err := gates.Run(os.Stdout, selected)
+	err := gates.Run(selected)
 	if err != nil {
 		r.dief("the gates are red — nothing was committed:\n  %v", err)
 	}
@@ -138,22 +138,22 @@ func (r *Run) trunkRef() string {
 // ------------------------------------------------------------------ output
 
 func (r *Run) logf(format string, args ...any) {
-	_, _ = fmt.Fprintf(os.Stdout, "  "+format+"\n", args...)
+	slog.Info(fmt.Sprintf(format, args...))
 }
 
 func (r *Run) banner(message string) {
-	_, _ = fmt.Fprintf(os.Stdout, "\n══ %s ══\n", message)
+	slog.Info("Entering stage", "stage", message)
 }
 
 // dief stops the run with a diagnosis. Nothing here is swallowed.
 func (r *Run) dief(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "\nSTOPPED: "+format+"\n", args...)
+	slog.Error("STOPPED: " + fmt.Sprintf(format, args...))
 	os.Exit(1)
 }
 
 // usage stops before the run has a context to report against.
 func usage(message string) {
-	fmt.Fprintln(os.Stderr, message)
+	slog.Error(message)
 	os.Exit(1)
 }
 
@@ -176,7 +176,7 @@ func (r *Run) sh(argv []string, stream bool) result {
 	var stdout, stderr bytes.Buffer
 
 	if stream {
-		command.Stdout, command.Stderr = os.Stdout, os.Stderr
+		command.Stdout, command.Stderr = console.Out(), console.Err()
 	} else {
 		command.Stdout, command.Stderr = &stdout, &stderr
 	}
@@ -214,14 +214,9 @@ func (r *Run) gh(args ...string) string {
 
 // write puts a run's artifact where it can be read after the fact.
 func (r *Run) write(path, content string) {
-	err := os.MkdirAll(StateDir, dirMode)
+	err := disk.Write(path, []byte(content), disk.Shared)
 	if err != nil {
-		r.dief("creating %s: %v", StateDir, err)
-	}
-
-	err = os.WriteFile(path, []byte(content), fileMode)
-	if err != nil {
-		r.dief("writing %s: %v", path, err)
+		r.dief("%v", err)
 	}
 }
 

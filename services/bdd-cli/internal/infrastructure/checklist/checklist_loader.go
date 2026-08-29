@@ -3,11 +3,11 @@ package checklist
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 )
@@ -32,7 +32,7 @@ func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, er
 	path := filepath.Join(l.checklistsDir, commandName+".yaml")
 	slog.Debug("Loading full checklist", "command", commandName, "path", path)
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read checklist %s: %w", path, err)
 	}
@@ -54,7 +54,7 @@ func (l *ChecklistLoader) Load(commandName string) ([]checklist.PromptWithContex
 	path := filepath.Join(l.checklistsDir, commandName+".yaml")
 	slog.Debug("Loading checklist", "command", commandName, "path", path)
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read checklist %s: %w", path, err)
 	}

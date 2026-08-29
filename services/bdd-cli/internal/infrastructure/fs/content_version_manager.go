@@ -3,11 +3,10 @@ package fs
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
-)
 
-const contentFilePermissions = 0o644
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+)
 
 // ContentVersionManager manages versioned copies of raw content in tmp directory.
 // Each operation creates a new version (v01, v02, v03...) for audit trail.
@@ -51,7 +50,7 @@ func (m *ContentVersionManager) SaveNextVersion(data []byte) (string, error) {
 func (m *ContentVersionManager) LoadLatest() ([]byte, error) {
 	path := m.GetLatestPath()
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read version file %s: %w", path, err)
 	}
@@ -74,7 +73,7 @@ func (m *ContentVersionManager) GetCurrentVersion() int {
 func (m *ContentVersionManager) saveVersion(data []byte) error {
 	path := m.GetLatestPath()
 
-	err := os.WriteFile(path, data, contentFilePermissions)
+	err := disk.Write(path, data, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("failed to write version file %s: %w", path, err)
 	}

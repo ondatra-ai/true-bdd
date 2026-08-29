@@ -3,9 +3,10 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // The keys the repository's tooling shares. Named because they are a contract
@@ -14,13 +15,6 @@ const (
 	TaskKey    = "task"
 	TicketKey  = "ticket"
 	MandateKey = "mandate"
-)
-
-// Permissions for the history tree: a directory a person browses, files only
-// this tooling writes.
-const (
-	dirMode  = 0o755
-	fileMode = 0o600
 )
 
 // record is one line of the file.
@@ -40,14 +34,22 @@ func File(repo string) string {
 	return filepath.Join(HistoryDir(repo), "state.jsonl")
 }
 
-// Init removes the file. Whatever the last Task left goes with it.
+// ToolLog is the one log every scripts/ program appends to, each record naming
+// its writer in `tool`. One file is safe because pkg/disk holds the parent
+// directory for each single-syscall append.
+func ToolLog(repo string) string {
+	return filepath.Join(HistoryDir(repo), "tools.log.json")
+}
+
+// Init removes the state file and the tool log. The log shares the Task's
+// lifetime, which is the only thing bounding its growth.
 func Init(repo string) error {
-	err := os.Remove(File(repo))
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("removing %s: %w", File(repo), err)
+	err := disk.Remove(ToolLog(repo))
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return disk.Remove(File(repo))
 }
 
 // Get returns the last value written for key, or "" when nothing set it —
@@ -56,32 +58,15 @@ func Get(repo, key string) string {
 	return fold(repo)[key]
 }
 
-// Set appends one record in ONE write, newline included: a second write for
-// the newline could interleave with a concurrent Set and tear both lines.
+// Set appends one record. disk.Append is what keeps a concurrent Set from
+// tearing a line: one write, newline included.
 func Set(repo, key, value string) error {
 	line, err := json.Marshal(record{K: key, V: value})
 	if err != nil {
 		return fmt.Errorf("encoding %s: %w", key, err)
 	}
 
-	err = os.MkdirAll(HistoryDir(repo), dirMode)
-	if err != nil {
-		return fmt.Errorf("creating %s: %w", HistoryDir(repo), err)
-	}
-
-	handle, err := os.OpenFile(File(repo), os.O_APPEND|os.O_CREATE|os.O_WRONLY, fileMode)
-	if err != nil {
-		return fmt.Errorf("opening %s: %w", File(repo), err)
-	}
-
-	defer handle.Close() //nolint:errcheck // the write below reports the failure that matters.
-
-	_, err = handle.Write(append(line, '\n'))
-	if err != nil {
-		return fmt.Errorf("appending to %s: %w", File(repo), err)
-	}
-
-	return nil
+	return disk.Append(File(repo), line, disk.Private)
 }
 
 // fold replays the file. A line that does not parse is skipped rather than
@@ -89,7 +74,7 @@ func Set(repo, key, value string) error {
 func fold(repo string) map[string]string {
 	values := map[string]string{}
 
-	raw, err := os.ReadFile(File(repo))
+	raw, err := disk.Read(File(repo))
 	if err != nil {
 		return values
 	}

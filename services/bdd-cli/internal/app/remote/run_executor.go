@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
 )
@@ -163,7 +164,7 @@ func (e *RunExecutor) Execute(ctx context.Context) {
 
 	// The events were relayed into the durable store ledger, so drop the
 	// per-run JSONL after the final drain.
-	defer func() { _ = os.Remove(eventsPath) }()
+	defer func() { _ = disk.Remove(eventsPath) }()
 
 	waitErr := e.stream(ctx, child, eventsPath)
 	e.appendTerminal(e.classifyTerminal(ctx, waitErr))
@@ -263,7 +264,7 @@ func (e *RunExecutor) spawnChild() (*managedChild, string, error) {
 	}
 
 	eventsPath := e.eventsPath()
-	_ = os.Remove(eventsPath)
+	_ = disk.Remove(eventsPath)
 
 	child, err := spawnGatedGroup(spawnConfig{
 		binPath: e.binPath,
@@ -421,18 +422,7 @@ func (e *RunExecutor) drainEvents(path string, offset int64) int64 {
 		return offset
 	}
 
-	file, err := os.Open(path) //nolint:gosec // path is a remote-controlled tmp file
-	if err != nil {
-		return offset
-	}
-	defer func() { _ = file.Close() }()
-
-	_, err = file.Seek(offset, io.SeekStart)
-	if err != nil {
-		return offset
-	}
-
-	data, err := io.ReadAll(file)
+	data, err := disk.ReadFrom(path, offset)
 	if err != nil {
 		return offset
 	}

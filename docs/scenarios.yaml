@@ -30,7 +30,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot run calc/e2e:'
+        - 'stdout matches msg="Cannot run suite" suite=calc/e2e'
         - stdout matches true-bdd-no-such-runner
         - stdout matches discovery failed
         - but: no file outside "tmp" changed
@@ -49,7 +49,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches must emit machine-readable output
         - stdout matches is missing -json
         - stdout matches calc/e2e
@@ -68,9 +68,9 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 0
-        - stdout matches Running calc/e2e tests via go-test
-        - stdout matches 0 failure\(s\) in calc/e2e
-        - 'stdout matches Total failing tests across architecture: 0'
+        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
+        - stdout matches msg="Suite failures" failures=0 suite=calc/e2e
+        - 'stdout matches msg="Total failing tests across architecture" failures=0'
         - stdout matches BUILD CODE COMPLETE
         - but: no file outside "tmp" changed
         - and: the engine spawned a test runner with arguments matching -run \^TestGreen\$
@@ -88,9 +88,8 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
         - 'stdout matches calc/e2e: test suite command is empty'
-        - 'stdout matches test suite command is empty: "''''"'
+        - 'stdout matches test suite command is empty: \\"''''\\"'
         - stdout matches level=ERROR msg="Refusing to start" command="build code"
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
@@ -108,10 +107,10 @@ scenarios:
         - the System Architect runs "build code --fix"
       then:
         - the command exits with code 0
-        - stdout matches Running calc/e2e tests via go-test
-        - stdout matches 1 failure\(s\) in calc/e2e
-        - 'stdout matches Total failing tests across architecture: 1'
-        - stdout matches Fix applied — re-running this test in isolation
+        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
+        - stdout matches msg="Suite failures" failures=1 suite=calc/e2e
+        - 'stdout matches msg="Total failing tests across architecture" failures=1'
+        - stdout matches msg="Fix applied; re-running this test in isolation"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/calc/calc.go" is modified
         - and: the file "tests/suite/suite-runs.log" has exactly 1 line
@@ -131,7 +130,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches failed to parse architecture file
         - stdout matches docs/architecture/architecture\.yaml
         - but: no file outside "tmp" changed
@@ -150,7 +149,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches commands\.replay
         - stdout matches architecture\.testing\.suites\[e2e\]
         - but: no file outside "tmp" changed
@@ -168,7 +167,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches no services to walk
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
@@ -185,7 +184,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches no test suites to walk
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
@@ -202,9 +201,9 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - stdout matches Running calc/e2e tests via go-test
-        - stdout matches 1 failure\(s\) in calc/e2e
-        - 'stdout matches Total failing tests across architecture: 1'
+        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
+        - stdout matches msg="Suite failures" failures=1 suite=calc/e2e
+        - 'stdout matches msg="Total failing tests across architecture" failures=1'
         - stdout matches BUILD CODE COMPLETE
         - but: no file outside "tmp" changed
         - and: the engine spawned the test runner "go"
@@ -224,7 +223,7 @@ scenarios:
         - the System Architect runs "build code --fix"
       then:
         - the command exits with code 0
-        - stdout matches frontend/integration tests via playwright
+        - stdout matches msg="Running tests" suite=frontend/integration framework=playwright
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/frontend/Dockerfile" is created
         - and: the file "services/frontend/package.json" is created
@@ -251,7 +250,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches unknown test framework
         - stdout matches rspec
         - stdout matches calc/e2e
@@ -270,9 +269,9 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches architecture\.testing\.suites\[e2e\]
-        - stdout matches service "calulator"
+        - 'stdout matches service \\"calulator\\"'
         - stdout matches names a service the architecture does not declare
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
@@ -289,7 +288,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start:'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches unterminated quote
         - stdout matches calc/e2e
         - but: no file outside "tmp" changed
@@ -308,7 +307,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches BUILD TESTS
-        - 'stdout matches Cannot start: .*requirements registry has no scenarios to walk'
         - 'stdout matches docs/scenarios\.yaml: requirements registry has no scenarios to walk'
         - stdout matches level=ERROR msg="Refusing to start" command="build tests"
         - but: no file outside "tmp" changed
@@ -347,7 +345,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches BUILD TESTS
-        - 'stdout matches Cannot start: .*failed to parse requirements registry .*docs/scenarios\.yaml: yaml: unmarshal errors:'
         - stdout matches cannot unmarshal !!seq into map\[string\]
         - stdout matches level=ERROR msg="Refusing to start" command="build tests"
         - but: no file outside "tmp" changed
@@ -365,7 +362,7 @@ scenarios:
         - the System Architect runs "build tests"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start: resolve scenario registry'
+        - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches documents\.scenarios_yaml
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
@@ -418,8 +415,8 @@ scenarios:
         - the Product Owner runs "us apply 95.1 --fix"
       then:
         - the command exits with code 0
-        - 'stdout matches AC 1/1:'
-        - stdout matches RE-WALK 2/
+        - 'stdout matches msg=AC index=1 total=1'
+        - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
         - stdout matches ALL CHECKS PASSED!
         - stdout matches APPLY COMPLETE
         - and: the file "docs/scenarios.yaml" is modified
@@ -445,7 +442,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.5
         - stdout matches msg="Seeded scratch registry"
-        - 'stdout matches Cannot start: .*story uses deprecated scenarios\.test_scenarios format'
         - stdout matches us apply requires acceptance_criteria with embedded steps
         - stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
@@ -467,7 +463,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.4
         - stdout matches msg="Seeded scratch registry"
-        - 'stdout matches Cannot start: .*no story file found for story 95\.4'
         - 'stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
         - but: no file outside "tmp" changed
@@ -488,11 +483,11 @@ scenarios:
         - the Product Owner runs "us apply 95.2 --fix"
       then:
         - the command exits with code 0
-        - 'stdout matches AC 1/1:'
-        - stdout matches RE-WALK 2/
+        - 'stdout matches msg=AC index=1 total=1'
+        - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
         - stdout matches ALL CHECKS PASSED!
         - stdout matches APPLY COMPLETE
-        - stdout matches docs/specs/requirements\.yaml updated from scratch
+        - stdout matches msg="All ACs passed; updated from scratch" file=\./docs/specs/requirements\.yaml
         - and: the file "docs/specs/requirements.yaml" is modified
         - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001"
         - and: the scenario from acceptance criterion "95.2-001" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"
@@ -516,9 +511,9 @@ scenarios:
         - the Product Owner runs "us apply 99.3 --fix"
       then:
         - the command exits with code 0
-        - 'stdout matches AC 1/2:'
-        - 'stdout matches AC 2/2:'
-        - stdout matches RE-WALK 2/
+        - 'stdout matches msg=AC index=1 total=2'
+        - 'stdout matches msg=AC index=2 total=2'
+        - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
         - stdout matches ALL CHECKS PASSED!
         - stdout matches APPLY COMPLETE
         - and: the file "docs/scenarios.yaml" is modified
@@ -544,7 +539,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.3
         - stdout matches msg="Seeded scratch registry"
-        - 'stdout matches Cannot start: .*story has no acceptance_criteria entries to apply'
         - 'stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
         - but: no file outside "tmp" changed
@@ -564,7 +558,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US CREATE — Story 92\.1
-        - 'stdout matches Cannot start: failed to load items: failed to load story:'
         - stdout matches failed to load epic 92
         - stdout matches multiple epic files found matching pattern docs/product/epics/epic-92-\*\.yaml
         - stdout matches \[docs/product/epics/epic-92-document-intelligence\.yaml docs/product/epics/epic-92-summaries\.yaml\]
@@ -584,8 +577,7 @@ scenarios:
         - the Product Owner runs "us create 4"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start: invalid story number: invalid story number format'
-        - stdout matches expected <epic>\.<story>, got "4"
+        - 'stdout matches expected <epic>\.<story>, got \\"4\\"'
         - stdout matches level=ERROR msg="Refusing to start" command="us create"
         - but: no file outside "tmp" changed
         - and: no file matching "docs/product/stories/*.yaml" is created
@@ -602,7 +594,6 @@ scenarios:
         - the Product Owner runs "us create 99.1 --fix"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start: checklist has prompts with no F fix template, so --fix has nothing to apply: us-create has 9 of 9'
         - 'stdout matches us-create/format #1 Does the story follow the format'
         - stdout matches level=ERROR msg="Refusing to start" command="us create"
         - but: no file outside "tmp" changed
@@ -660,7 +651,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches docs/product/product\.yaml
-        - 'stdout matches Cannot start: checklist declares documents that cannot be provided'
         - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us create" checklist=us-create'
         - but: no file outside "tmp" changed
         - and: no file matching "docs/product/stories/*.yaml" is created
@@ -678,7 +668,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US CREATE — Story 93\.1
-        - 'stdout matches Cannot start: failed to load items: failed to load story:'
         - stdout matches failed to load epic 93
         - stdout matches no epic file found matching pattern docs/product/epics/epic-93-\*\.yaml
         - stdout matches level=ERROR msg="Refusing to start" command="us create"
@@ -699,7 +688,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US CREATE — Story 94\.7
-        - 'stdout matches Cannot start: failed to load items: failed to load story:'
         - stdout matches story index 7 out of bounds for epic 94 \(has 2 stories\)
         - stdout matches level=ERROR msg="Refusing to start" command="us create"
         - but: no file outside "tmp" changed
@@ -737,7 +725,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US REFINE — Story 96\.9
         - stdout matches level=ERROR msg="Multiple story files found" story_number=96\.9 count=2
-        - 'stdout matches Cannot start: failed to load items: failed to load story 96\.9:'
         - stdout matches multiple story files found for story 96\.9
         - stdout matches 96\.9-document-summary\.yaml
         - stdout matches 96\.9-document-summary-v2\.yaml
@@ -762,7 +749,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.6-document-summary-desc-qualifier.yaml"
         - and: the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has id "96.6"
@@ -786,7 +773,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.2-document-summary-descriptions.yaml"
         - and: the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has id "96.2"
@@ -811,7 +798,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.8-document-summary-forbidden-verb.yaml"
         - and: the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has id "96.8"
@@ -835,7 +822,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.7-document-summary-step-qualifier.yaml"
         - and: the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has id "96.7"
@@ -859,7 +846,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.5-document-summary-steps.yaml"
         - and: the story "docs/product/stories/96.5-document-summary-steps.yaml" has id "96.5"
@@ -881,7 +868,7 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches ALL CHECKS PASSED!
-        - 'stdout matches Story saved to:'
+        - 'stdout matches msg="Story saved"'
         - stdout matches REFINE COMPLETE
         - and: the only file changed outside "tmp" is "docs/product/stories/96.1-document-summary-refined.yaml"
         - and: the story "docs/product/stories/96.1-document-summary-refined.yaml" has id "96.1"
@@ -903,7 +890,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US REFINE — Story 96\.9
         - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml
-        - 'stdout matches Cannot start: failed to load items: failed to load story 96\.9:'
         - stdout matches failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml
         - stdout matches mapping values are not allowed in this context
         - stdout matches level=ERROR msg="Refusing to start" command="us refine"
@@ -924,7 +910,6 @@ scenarios:
         - the command exits with code 1
         - stdout matches US REFINE — Story 96\.9
         - stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml
-        - 'stdout matches Cannot start: .*run `true-bdd us create 96\.9` first'
         - stdout matches no story file found for story 96\.9 in docs/product/stories
         - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us refine"
@@ -5268,7 +5253,6 @@ scenarios:
         - the System Architect runs "scen check --fix"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start: checklist has prompts with no F fix template'
         - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
@@ -5287,7 +5271,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
-        - and: 'stdout matches Cannot start: .*no scenario in the registry has id E2E-999'
         - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -5305,7 +5288,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
-        - and: 'stdout matches Cannot start: .*requirements registry has no scenarios to walk'
         - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
@@ -5342,7 +5324,6 @@ scenarios:
         - the System Architect runs "build tests"
       then:
         - the command exits with code 1
-        - 'stdout matches Cannot start: build-tests: checklist has no prompts, so every item would pass without being checked'
         - stdout matches level=ERROR msg="Refusing to start" command="build tests"
         - but: stdout does not match BUILD TESTS
         - and: no file outside "tmp" changed

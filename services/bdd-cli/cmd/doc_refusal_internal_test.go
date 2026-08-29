@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
-	"io"
-	"os"
+	"log/slog"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 )
 
 // errResolve mimics ErrDocPathNotConfigured's real text — the config-key
@@ -32,10 +34,10 @@ func TestRefuseUnresolvedDocPreservesTheErrorContract(t *testing.T) {
 		}
 	})
 
-	// stdout, not the returned error, is what the BDD fixture checks —
-	// cobra's default error printing goes to stderr, which the fixture
-	// never reads.
-	if !strings.Contains(stdout, "Cannot start: resolve scenario registry") {
+	// The log record, not the returned error, is what the BDD fixture checks:
+	// the engine binds slog to stdout, and cobra's own error printing goes to
+	// stderr, which the fixture never reads.
+	if !strings.Contains(stdout, `msg="Refusing to start: document unresolvable"`) {
 		t.Errorf("stdout missing the refusal line, got: %q", stdout)
 	}
 
@@ -44,33 +46,21 @@ func TestRefuseUnresolvedDocPreservesTheErrorContract(t *testing.T) {
 	}
 }
 
-// captureStdout redirects os.Stdout to a pipe and returns what it wrote.
-// Never call t.Parallel() around it: swapping a process global races any
-// parallel test that also touches stdout while this one holds it swapped.
+// captureStdout points the process's slog at a buffer and returns what the
+// refusal wrote. Never call t.Parallel() around it: swapping a process global
+// races any parallel test that also logs while this one holds it swapped.
 func captureStdout(t *testing.T, body func()) string {
 	t.Helper()
 
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("open pipe: %v", err)
-	}
+	var captured bytes.Buffer
 
-	original := os.Stdout
-	os.Stdout = writer
+	original := slog.Default()
 
-	defer func() { os.Stdout = original }()
+	slog.SetDefault(slog.New(logging.Handler(&captured, "")))
+
+	defer slog.SetDefault(original)
 
 	body()
 
-	err = writer.Close()
-	if err != nil {
-		t.Fatalf("close pipe writer: %v", err)
-	}
-
-	captured, err := io.ReadAll(reader)
-	if err != nil {
-		t.Fatalf("read captured stdout: %v", err)
-	}
-
-	return string(captured)
+	return captured.String()
 }

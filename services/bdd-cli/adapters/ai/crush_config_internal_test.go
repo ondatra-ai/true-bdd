@@ -2,10 +2,11 @@ package ai
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // TestCrushGuardCommandQuotesTheExecutable checks the hook command survives
@@ -77,7 +78,7 @@ func TestWriteCrushConfigIsolatesEachTurn(t *testing.T) {
 	}
 
 	for _, dir := range []string{first, second} {
-		content, readErr := os.ReadFile(filepath.Join(dir, "crush.json"))
+		content, readErr := disk.Read(filepath.Join(dir, "crush.json"))
 		if readErr != nil {
 			t.Fatalf("read %s: %v", dir, readErr)
 		}

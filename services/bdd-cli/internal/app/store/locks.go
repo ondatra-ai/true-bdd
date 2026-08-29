@@ -7,6 +7,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 const (
@@ -29,7 +31,7 @@ type Locks struct {
 
 // OpenLocks prepares the lock files under dir.
 func OpenLocks(dir string) (*Locks, error) {
-	err := os.MkdirAll(dir, dirPerm)
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
 		return nil, fmt.Errorf("locks: mkdir: %w", err)
 	}
@@ -42,6 +44,8 @@ func OpenLocks(dir string) (*Locks, error) {
 	}
 
 	for _, p := range []string{locks.scanPath, locks.intentPath, locks.folderPath} {
+		//nolint:forbidigo // a lease handle held across a scan, not a file access.
+		//nolint:forbidigo // a lease handle held across a scan, not a file access.
 		f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, filePerm)
 		if err != nil {
 			return nil, fmt.Errorf("locks: touch %s: %w", p, err)
@@ -186,6 +190,7 @@ func drainScans(scanPath string) bool {
 }
 
 func openLock(path string) (*os.File, error) {
+	//nolint:forbidigo // a lease handle held across a scan, not a file access.
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, filePerm)
 	if err != nil {
 		return nil, fmt.Errorf("open lock %s: %w", path, err)

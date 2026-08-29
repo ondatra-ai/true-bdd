@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
@@ -28,7 +29,6 @@ const StagingDirName = ".cassettes-staging"
 
 // stagingPerm is the mode of the per-fixture staging directory: the
 // same 0o755 every other directory this harness creates uses.
-const stagingPerm = 0o755
 
 // ErrNoCassettes is returned when a replay run finds no recording for a
 // scenario. Not a skip: an un-recorded scenario is an un-run scenario,
@@ -89,12 +89,12 @@ func (h *Harness) CassetteDir(name string) (string, error) {
 func (h *Harness) prepareStaging(name string) (string, error) {
 	staging := filepath.Join(h.SessionRoot, StagingDirName, name)
 
-	err := os.RemoveAll(staging)
+	err := disk.RemoveTree(staging)
 	if err != nil {
 		return "", fmt.Errorf("clear staging cassettes: %w", err)
 	}
 
-	err = os.MkdirAll(staging, stagingPerm)
+	err = disk.Dir(staging, disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("create staging cassettes: %w", err)
 	}
@@ -111,14 +111,14 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 		return err
 	}
 
-	err = os.RemoveAll(dest)
+	err = disk.RemoveTree(dest)
 	if err != nil {
 		return fmt.Errorf("clear cassettes dir: %w", err)
 	}
 
 	// No keep file is needed: golden.json is written for every recording,
-	// including a scenario that spawns no AI CLI at all, so the directory
-	// is never empty and always survives a clone.
+	// even one that spawns no AI CLI, so the dir survives a clone.
+	//nolint:forbidigo // a directory publish, not a file write.
 	err = os.Rename(staging, dest)
 	if err != nil {
 		return fmt.Errorf("publish cassettes to %s: %w", dest, err)

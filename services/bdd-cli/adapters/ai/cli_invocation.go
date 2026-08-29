@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"log/slog"
-	"os"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"os/exec"
 )
 
@@ -20,7 +21,6 @@ const (
 	cliWaitDelay = 10 * time.Second
 	// transcriptFileMode matches the permissions the generators use for
 	// their prompt/response artifacts.
-	transcriptFileMode = 0o644
 )
 
 // cliInvocation is one subprocess turn: a binary, its argv, the prompt
@@ -81,14 +81,14 @@ func (inv cliInvocation) saveTranscript(transcript string) {
 		return
 	}
 
-	err := os.WriteFile(inv.TranscriptPath, []byte(transcript), transcriptFileMode)
+	err := disk.Write(inv.TranscriptPath, []byte(transcript), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save CLI transcript", "path", inv.TranscriptPath, "error", err)
 
 		return
 	}
 
-	slog.Info("CLI transcript saved", "file", inv.TranscriptPath)
+	slog.Info(enginelog.MsgTranscriptSaved, "file", inv.TranscriptPath)
 }
 
 // composePrompt folds the system prompt into the user prompt for CLIs

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 func writeFixtureFile(t *testing.T, folder, relPath, content string) {
@@ -11,12 +13,12 @@ func writeFixtureFile(t *testing.T, folder, relPath, content string) {
 
 	abs := filepath.Join(folder, filepath.FromSlash(relPath))
 
-	mkdirErr := os.MkdirAll(filepath.Dir(abs), 0o755)
+	mkdirErr := disk.Dir(filepath.Dir(abs), disk.Shared)
 	if mkdirErr != nil {
 		t.Fatalf("mkdir: %v", mkdirErr)
 	}
 
-	writeErr := os.WriteFile(abs, []byte(content), 0o644)
+	writeErr := disk.Write(abs, []byte(content), disk.Shared)
 	if writeErr != nil {
 		t.Fatalf("write fixture: %v", writeErr)
 	}
@@ -152,7 +154,7 @@ func TestValidatePathRejectsSymlinkEscape(t *testing.T) {
 	outside := t.TempDir()
 	secretPath := filepath.Join(outside, "secret.yaml")
 
-	writeErr := os.WriteFile(secretPath, []byte("leak: true\n"), 0o644)
+	writeErr := disk.Write(secretPath, []byte("leak: true\n"), disk.Shared)
 	if writeErr != nil {
 		t.Fatalf("write outside secret: %v", writeErr)
 	}
@@ -191,7 +193,7 @@ func TestDocWriteHappyPathAndReceipt(t *testing.T) {
 		t.Fatalf("expected ok, got %+v", outcome)
 	}
 
-	onDisk, readErr := os.ReadFile(filepath.Join(folder, archYAMLPath))
+	onDisk, readErr := disk.Read(filepath.Join(folder, archYAMLPath))
 	if readErr != nil {
 		t.Fatalf("read on disk: %v", readErr)
 	}
@@ -228,7 +230,7 @@ func TestDocWriteRejectsMultiDocumentStream(t *testing.T) {
 	store, folder := newTestDocStore(t)
 
 	initial, _ := store.read(archYAMLPath)
-	before, _ := os.ReadFile(filepath.Join(folder, archYAMLPath))
+	before, _ := disk.Read(filepath.Join(folder, archYAMLPath))
 
 	// A valid first document followed by `---` and a second: Go's decoder would
 	// accept just the first, but the browser's strict YAML.parse() rejects it,
@@ -243,7 +245,7 @@ func TestDocWriteRejectsMultiDocumentStream(t *testing.T) {
 		t.Fatalf("expected invalid_yaml for a multi-document stream, got %+v", outcome)
 	}
 
-	after, _ := os.ReadFile(filepath.Join(folder, archYAMLPath))
+	after, _ := disk.Read(filepath.Join(folder, archYAMLPath))
 	if string(after) != string(before) {
 		t.Fatalf("a rejected multi-document write must not touch disk")
 	}
@@ -383,7 +385,7 @@ func unreadableFileOrSkip(t *testing.T, abs string) {
 
 	t.Cleanup(func() { _ = os.Chmod(abs, 0o644) })
 
-	_, probeErr := os.ReadFile(abs)
+	_, probeErr := disk.Read(abs)
 	if probeErr == nil {
 		t.Skip("environment allows reading a 0000 file (fs/ACL semantics); guard not exercisable here")
 	}
@@ -394,7 +396,7 @@ func TestDocWriteRejectsUnreadableExistingTargetInsteadOfClobbering(t *testing.T
 
 	abs := filepath.Join(folder, productYAMLPath)
 
-	original, origErr := os.ReadFile(abs)
+	original, origErr := disk.Read(abs)
 	if origErr != nil {
 		t.Fatalf("read original: %v", origErr)
 	}
@@ -421,7 +423,7 @@ func TestDocWriteRejectsUnreadableExistingTargetInsteadOfClobbering(t *testing.T
 		t.Fatalf("restore chmod: %v", restoreErr)
 	}
 
-	after, readErr := os.ReadFile(abs)
+	after, readErr := disk.Read(abs)
 	if readErr != nil {
 		t.Fatalf("read back: %v", readErr)
 	}

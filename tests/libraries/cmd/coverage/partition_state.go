@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -96,7 +96,7 @@ func (s *partitionState) classifyFinal(cell cellID, files *cellFiles) {
 		return
 	}
 
-	data, err := os.ReadFile(files.ResponsePath)
+	data, err := disk.Read(files.ResponsePath)
 	if err != nil {
 		s.diagnose("unreadable response " + files.ResponsePath)
 
@@ -183,7 +183,7 @@ func (s *partitionState) resultConflicts(files *cellFiles, responseClass Verdict
 		return false
 	}
 
-	data, err := os.ReadFile(files.ResultPath)
+	data, err := disk.Read(files.ResultPath)
 	if err != nil {
 		return false
 	}
@@ -235,7 +235,7 @@ var actualLineRe = regexp.MustCompile(`(?m)^\*\*Actual:\*\*[ \t]*(.*)$`)
 
 // actualLineValue extracts the anchored "**Actual:**" field value.
 func actualLineValue(path string) (string, bool) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return "", false
 	}

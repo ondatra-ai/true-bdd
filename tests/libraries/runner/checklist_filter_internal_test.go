@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -65,7 +66,7 @@ type loadedChecklist struct {
 func parseGeneratedChecklist(t *testing.T, tmpDir, stem string) loadedChecklist {
 	t.Helper()
 
-	data, err := os.ReadFile(filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml"))
+	data, err := disk.Read(filepath.Join(tmpDir, "true-bdd", "checklists", stem+".yaml"))
 	if err != nil {
 		t.Fatalf("read generated checklist: %v", err)
 	}
@@ -143,12 +144,12 @@ func TestPrepareRunDirWithoutFilterLeavesChecklistIdentical(t *testing.T) {
 		t.Fatalf("find repo root: %v", err)
 	}
 
-	shipped, err := os.ReadFile(filepath.Join(repoRoot, "true-bdd", "checklists", "us-refine.yaml"))
+	shipped, err := disk.Read(filepath.Join(repoRoot, "true-bdd", "checklists", "us-refine.yaml"))
 	if err != nil {
 		t.Fatalf("read shipped checklist: %v", err)
 	}
 
-	generated, err := os.ReadFile(filepath.Join(tmpDir, "true-bdd", "checklists", "us-refine.yaml"))
+	generated, err := disk.Read(filepath.Join(tmpDir, "true-bdd", "checklists", "us-refine.yaml"))
 	if err != nil {
 		t.Fatalf("read tmpdir checklist: %v", err)
 	}

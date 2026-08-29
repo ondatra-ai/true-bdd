@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"regexp"
 	"sort"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -89,16 +89,11 @@ func (b *Baseline) Write(path string, hardDiagnostics []string, allowShrink bool
 		return fmt.Errorf("marshaling baseline: %w", err)
 	}
 
-	tmpPath := path + ".tmp"
-
-	err = os.WriteFile(tmpPath, data, filePerm)
+	// disk.Write commits through its own temp and rename, so a reader never
+	// catches a half-written baseline.
+	err = disk.Write(path, data, disk.Shared)
 	if err != nil {
-		return fmt.Errorf("writing baseline temp file: %w", err)
-	}
-
-	err = os.Rename(tmpPath, path)
-	if err != nil {
-		return fmt.Errorf("renaming baseline into place: %w", err)
+		return fmt.Errorf("writing baseline: %w", err)
 	}
 
 	return nil
@@ -106,7 +101,7 @@ func (b *Baseline) Write(path string, hardDiagnostics []string, allowShrink bool
 
 // LoadBaseline reads a baseline file.
 func LoadBaseline(path string) (*Baseline, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading baseline %s: %w", path, err)
 	}

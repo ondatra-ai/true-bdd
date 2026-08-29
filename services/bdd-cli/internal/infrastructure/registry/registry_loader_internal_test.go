@@ -2,9 +2,10 @@ package registry
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // writeRegistry lays down a registry document whose one scenario has the
@@ -25,7 +26,7 @@ scenarios:
       given:
 ` + givenBlock
 
-	err := os.WriteFile(path, []byte(doc), 0o600)
+	err := disk.Write(path, []byte(doc), disk.Shared)
 	if err != nil {
 		t.Fatalf("write: %v", err)
 	}

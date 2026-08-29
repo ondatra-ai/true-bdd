@@ -5,11 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 )
-
-// guardTestDirMode is the permission for scratch dirs these tests build.
-const guardTestDirMode = 0o755
 
 // TestCrushGuardDeniesSymlinkEscape guards crush's only permission layer:
 // `crush run` has no gate of its own, so a symlink planted inside a
@@ -21,7 +19,7 @@ func TestCrushGuardDeniesSymlinkEscape(t *testing.T) {
 
 	granted := filepath.Join(workDir, "tmp")
 
-	err := os.MkdirAll(granted, guardTestDirMode)
+	err := disk.Dir(granted, disk.Shared)
 	if err != nil {
 		t.Fatalf("create granted root: %v", err)
 	}
@@ -29,7 +27,7 @@ func TestCrushGuardDeniesSymlinkEscape(t *testing.T) {
 	// The escape target: a directory the turn must never write to.
 	forbidden := filepath.Join(workDir, "secrets")
 
-	err = os.MkdirAll(forbidden, guardTestDirMode)
+	err = disk.Dir(forbidden, disk.Shared)
 	if err != nil {
 		t.Fatalf("create forbidden dir: %v", err)
 	}
@@ -74,7 +72,7 @@ func TestCrushGuardDeniesSiblingPrefix(t *testing.T) {
 	workDir := t.TempDir()
 
 	for _, dir := range []string{"tmp", "tmpfoo"} {
-		err := os.MkdirAll(filepath.Join(workDir, dir), guardTestDirMode)
+		err := disk.Dir(filepath.Join(workDir, dir), disk.Shared)
 		if err != nil {
 			t.Fatalf("create %s: %v", dir, err)
 		}

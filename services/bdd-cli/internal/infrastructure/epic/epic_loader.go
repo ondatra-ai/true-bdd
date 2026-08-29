@@ -2,11 +2,11 @@ package epic
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
@@ -78,7 +78,7 @@ func (el *EpicLoader) loadEpicFile(epicNum int) (*models.EpicDocument, error) {
 
 	epicFilePath := matches[0]
 
-	data, err := os.ReadFile(epicFilePath)
+	data, err := disk.Read(epicFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("read epic file failed: %w", pkgerrors.ErrReadEpicFileFailed(epicFilePath, err))
 	}

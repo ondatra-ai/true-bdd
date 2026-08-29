@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"gopkg.in/yaml.v3"
 )
@@ -52,7 +53,7 @@ func scanDocuments(folder string, cfg resolvedConfig) (map[string]string, map[st
 // yamlDoc classifies a document expected to be a parseable YAML file:
 // missing when absent, invalid when it fails to parse, present otherwise.
 func yamlDoc(path string) docResult {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return docResult{status: StatusMissing}
 	}
@@ -87,7 +88,7 @@ type rawWorkspaceArchitectureShape struct {
 // or invalid — on a parse error, or when neither supported schema (see
 // rawWorkspaceArchitectureShape) declares any services.
 func architectureDoc(path string) docResult {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return docResult{status: StatusMissing}
 	}
@@ -132,7 +133,7 @@ func dirDoc(path string) docResult {
 // docs/scenarios.yaml): missing, invalid on a parse error, present_empty
 // when its scenarios map is empty, else present.
 func registryDoc(path string) docResult {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return docResult{status: StatusMissing}
 	}

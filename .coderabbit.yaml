@@ -45,6 +45,7 @@ reviews:
     - "!bin/**"
     - "!docs/**"
     - "!scripts/**"
+    - "!pkg/**"
     - "!services/**"
     - "!templates/**"
     - "!tmp/**"

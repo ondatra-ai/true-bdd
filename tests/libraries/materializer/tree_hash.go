@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // runtimeDir is the single declared runtime path excluded from tree
@@ -38,7 +39,7 @@ func HashTree(root string) (map[string]string, error) {
 			return nil
 		}
 
-		data, readErr := os.ReadFile(path)
+		data, readErr := disk.Read(path)
 		if readErr != nil {
 			return fmt.Errorf("read %s: %w", path, readErr)
 		}

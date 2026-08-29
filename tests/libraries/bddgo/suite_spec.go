@@ -3,9 +3,9 @@ package bddgo
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,7 +36,7 @@ type rawArchitecture struct {
 // suite. The error names every suite the document does declare, since
 // the mistake this catches is almost always a typo.
 func LoadSuiteSpec(path, name string) (SuiteSpec, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return SuiteSpec{}, fmt.Errorf("read architecture %s: %w", path, err)
 	}

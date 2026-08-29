@@ -3,13 +3,13 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strings"
 	"text/template"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,7 +83,7 @@ func (l *TemplateLoader[T]) LoadTemplate(inputData T) (string, error) {
 
 // loadTemplateFile loads the template file from disk.
 func (l *TemplateLoader[T]) loadTemplateFile() (string, error) {
-	content, err := os.ReadFile(l.templateFilePath)
+	content, err := disk.Read(l.templateFilePath)
 	if err != nil {
 		return "", errors.ErrReadTemplateFileFailed(l.templateFilePath, err)
 	}

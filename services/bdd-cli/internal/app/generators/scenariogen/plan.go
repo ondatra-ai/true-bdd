@@ -12,6 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
@@ -418,7 +419,7 @@ func checkPackageClause(dir, want string) error {
 // checkOnePackageClause checks one hand-written test file's package
 // clause against what the suite name derives.
 func checkOnePackageClause(fset *token.FileSet, full, want string) error {
-	source, err := os.ReadFile(full)
+	source, err := disk.Read(full)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", full, err)
 	}

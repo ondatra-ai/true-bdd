@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -105,7 +106,7 @@ func named(files []string, doc string) bool {
 // declaredDocuments reads the `documents:` mapping the schemas pair against.
 // Absorbed from scripts/cmd/yamlkey, which existed only to answer this.
 func declaredDocuments() (map[string]string, error) {
-	raw, err := os.ReadFile(configPath)
+	raw, err := disk.Read(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", configPath, err)
 	}

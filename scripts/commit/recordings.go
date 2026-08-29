@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // recordingsGlob is the RECORDED fixture data — cassettes and goldens.
@@ -90,7 +92,7 @@ func (s sweep) hits(files []string) []string {
 			return found
 		}
 
-		raw, err := os.ReadFile(path)
+		raw, err := disk.Read(path)
 		if err != nil || !s.pattern.Match(raw) {
 			continue
 		}

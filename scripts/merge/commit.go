@@ -2,12 +2,12 @@ package merge
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
 )
@@ -66,14 +66,9 @@ func (r *Run) commit() {
 
 	path := StateDir + "/commit-msg.txt"
 
-	err = os.MkdirAll(StateDir, dirMode)
+	err = disk.Write(path, []byte(message+"\n"), disk.Shared)
 	if err != nil {
-		r.dief("creating %s: %v", StateDir, err)
-	}
-
-	err = os.WriteFile(path, []byte(message+"\n"), fileMode)
-	if err != nil {
-		r.dief("writing %s: %v", path, err)
+		r.dief("%v", err)
 	}
 
 	r.gitChecked("commit", "-F", path)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -14,7 +15,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 // ErrUnknownScenarioID signals an id on the command line that names no
@@ -181,10 +181,7 @@ func scenCheckSubject(item *template.ScenarioCheckData) (string, string) {
 // scenCheckOnItemStart prints the per-scenario banner a long walk is
 // followed by.
 func scenCheckOnItemStart(idx, total int, item *template.ScenarioCheckData) {
-	console.Header(
-		fmt.Sprintf("Scenario %d/%d: %s", idx+1, total, item.ID),
-		runner.SeparatorWidth,
-	)
+	slog.Info("Scenario", "index", idx+1, "total", total, "id", item.ID)
 }
 
 // scenCheckPostFix is unreachable while no prompt carries an `F:` —
@@ -202,17 +199,15 @@ func scenCheckPostFix(
 // reason: the command is advisory, so a failed walk still exits 0 (ADR
 // 0001). Only build tests/code wrap ErrExpectedNonconvergence.
 func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error {
-	console.BlankLine()
-
 	switch result.Reason {
 	case engine.Converged:
-		console.Header("ALL CHECKS PASSED!", runner.SeparatorWidth)
+		slog.Info("ALL CHECKS PASSED!")
 	case engine.NotFixed:
-		console.Println("Validation failed.")
+		slog.Warn("Validation failed.")
 	case engine.UserExit:
-		console.Println("Exiting.")
+		slog.Info("Exiting.")
 	case engine.MaxAttemptsExhausted:
-		console.Println("Hit max apply attempts without convergence.")
+		slog.Warn("Hit max apply attempts without convergence.")
 	}
 
 	return nil

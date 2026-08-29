@@ -2,11 +2,11 @@ package docs
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 )
 
@@ -54,12 +54,12 @@ func newTestResolver(t *testing.T, documents map[string]string, present []string
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 
-	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	err := disk.Dir(filepath.Dir(path), disk.Shared)
 	if err != nil {
 		t.Fatalf("MkdirAll %s: %v", path, err)
 	}
 
-	err = os.WriteFile(path, []byte(content), 0o644)
+	err = disk.Write(path, []byte(content), disk.Shared)
 	if err != nil {
 		t.Fatalf("WriteFile %s: %v", path, err)
 	}
@@ -112,7 +112,7 @@ func TestResolveRejectsDirectory(t *testing.T) {
 	)
 
 	// Create the configured path as a DIRECTORY rather than a file.
-	err := os.MkdirAll(archPath, 0o755)
+	err := disk.Dir(archPath, disk.Shared)
 	if err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}

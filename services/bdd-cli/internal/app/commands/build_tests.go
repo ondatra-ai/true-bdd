@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/scenariogen"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -19,7 +20,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/stepcoverage"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 // ErrBuildTestsNotConverged is returned when the build-tests walk finishes
@@ -167,11 +167,8 @@ func (p *buildTestsPrep) renderTests() error {
 		}
 
 		if len(written) > 0 {
-			console.Println(fmt.Sprintf("Generated %d test file(s) from the registry:", len(written)))
-
-			for _, path := range written {
-				console.Println("  " + path)
-			}
+			slog.Info("Generated test files from the registry",
+				"count", len(written), "files", strings.Join(written, " "))
 		}
 
 		return nil
@@ -293,8 +290,8 @@ func (p *buildTestsPrep) checkGeneratedTestsSurvived() error {
 	slog.Error("A fix turn modified a generated test file",
 		"files", len(drifted),
 	)
-	console.Println("Cannot finish: " + ErrFixTouchedGeneratedTests.Error() + ":")
-	console.Println(scenariogen.DriftReport(drifted))
+	slog.Error("Cannot finish",
+		"error", ErrFixTouchedGeneratedTests, "drift", scenariogen.DriftReport(drifted))
 
 	return fmt.Errorf("%w:\n%s", ErrFixTouchedGeneratedTests, scenariogen.DriftReport(drifted))
 }
@@ -320,10 +317,8 @@ func loadRegistryScenarios(
 // banner before each item walk. The id is included so per-scenario
 // progress is grep-friendly in long runs.
 func buildTestsOnItemStart(idx, total int, item *registry.RegistryScenario) {
-	console.Header(
-		fmt.Sprintf("scenario %d/%d: %s — %s", idx+1, total, item.ID, item.Description),
-		runner.SeparatorWidth,
-	)
+	slog.Info("scenario",
+		"index", idx+1, "total", total, "id", item.ID, "description", item.Description)
 }
 
 // buildTestsPostFix is the PostFix implementation for build-tests. The fix
@@ -334,7 +329,7 @@ func buildTestsPostFix(
 	item *registry.RegistryScenario,
 	_ string,
 ) (*registry.RegistryScenario, error) {
-	console.Println("Fix applied — re-running test-coverage check...")
+	slog.Info("Fix applied; re-running test-coverage check")
 
 	return item, nil
 }

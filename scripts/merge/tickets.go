@@ -1,7 +1,6 @@
 package merge
 
 import (
-	"os"
 	"strconv"
 	"sync"
 
@@ -19,7 +18,7 @@ func (r *Run) create(toCreate []clickup.Finding, round int) []clickup.Finding {
 	queue := r.roundDir(round) + "/ticket-queue.json"
 	r.save(queue, toCreate)
 
-	err := clickup.File(os.Stdout, os.Stderr, queue, "fix-now", strconv.Itoa(r.pr))
+	err := clickup.File(queue, "fix-now", strconv.Itoa(r.pr))
 	if err != nil {
 		r.dief("filing %d ticket(s) failed: %v\n"+
 			"  Threads cannot be answered with a destination that does not exist.",

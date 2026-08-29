@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log/slog"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
@@ -26,7 +26,7 @@ func runClose(args []string) error {
 		return errNoTicketBound
 	}
 
-	err := clickup.Status(os.Stdout, ticket, args[0], strings.Join(args[1:], " "))
+	err := clickup.Status(ticket, args[0], strings.Join(args[1:], " "))
 	if err != nil {
 		return fmt.Errorf("closing the ticket: %w", err)
 	}
@@ -36,7 +36,7 @@ func runClose(args []string) error {
 		return fmt.Errorf("unbinding the ticket: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "closed %s as %s; binding cleared\n", ticket, args[0])
+	slog.Info("Ticket closed and binding cleared", "ticket", ticket, "status", args[0])
 
 	return nil
 }

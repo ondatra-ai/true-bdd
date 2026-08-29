@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/ports"
@@ -17,8 +17,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
-
-const fixApplierFilePermissions = 0o644
 
 // FixApplierData represents data needed for fix applier templates.
 type FixApplierData struct {
@@ -163,7 +161,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	}
 
 	// Save the extracted content
-	writeErr := os.WriteFile(resultPath, []byte(content), fixApplierFilePermissions)
+	writeErr := disk.Write(resultPath, []byte(content), disk.Shared)
 	if writeErr != nil {
 		slog.Warn("Failed to save result file", "path", resultPath, "error", writeErr)
 	}
@@ -282,7 +280,7 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 
 	filePath := fmt.Sprintf("%s/apply-%s-iter%d-%s.txt", a.tmpDir, sanitizeID(storyID), iteration, suffix)
 
-	err := os.WriteFile(filePath, []byte(content), fixApplierFilePermissions)
+	err := disk.Write(filePath, []byte(content), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save prompt file", "error", err)
 	} else {

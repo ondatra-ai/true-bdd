@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Path is relative because every scripts/ entrypoint chdirs to the repository
@@ -33,7 +35,7 @@ func Load(path string) (Switches, error) {
 	var switches Switches
 
 	//nolint:gosec // the path is a constant at every call site; the parameter is the test seam.
-	raw, err := os.ReadFile(path)
+	raw, err := disk.Read(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return switches, nil
 	}

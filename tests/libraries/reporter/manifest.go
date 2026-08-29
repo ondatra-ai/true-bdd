@@ -2,10 +2,10 @@ package reporter
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
@@ -73,7 +73,7 @@ func loadManifest(repoRoot, name, dir string) *Manifest {
 // manifestFromSnapshot reads the manifest this run recorded for itself,
 // or nil when it recorded none.
 func manifestFromSnapshot(dir string) *Manifest {
-	blob, err := os.ReadFile(filepath.Join(dir, runner.SpawnLogDir, runner.ManifestSnapshotFile))
+	blob, err := disk.Read(filepath.Join(dir, runner.SpawnLogDir, runner.ManifestSnapshotFile))
 	if err != nil {
 		return nil
 	}

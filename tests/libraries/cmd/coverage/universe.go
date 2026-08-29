@@ -4,10 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // UniversePrompt is one flattened, non-skipped shipped validation prompt
@@ -137,7 +138,7 @@ func (u *Universe) buildBranches() {
 // production parity (skip = any non-empty string, order preserved,
 // 1-based global index over the filtered list).
 func loadChecklistPrompts(path, stem string) ([]UniversePrompt, error) {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading checklist %s: %w", path, err)
 	}

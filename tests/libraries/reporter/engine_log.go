@@ -2,26 +2,27 @@ package reporter
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 )
 
-// Engine log messages the report folds into turns. Everything else in
-// the log is DEBUG noise from the provider's message stream.
+// The messages the report folds into turns, taken from the shared contract
+// so the compiler catches a rename on either side. Everything else in the log
+// is DEBUG noise from the provider's message stream.
 const (
-	msgDispatch  = "Dispatching AI turn"
-	msgAssistant = "AssistantMessage received"
-	msgResult    = "ResultMessage received"
-	// msgTranscriptSaved is crush's and codex's only result boundary:
-	// they stream nothing, so the archived transcript is the first
-	// evidence the turn produced anything.
-	msgTranscriptSaved = "CLI transcript saved"
-	msgUsage           = "AI turn usage"
-	msgReturned        = "AI turn returned"
-	msgFailed          = "AI turn failed"
+	msgDispatch        = enginelog.MsgDispatch
+	msgAssistant       = enginelog.MsgAssistant
+	msgResult          = enginelog.MsgResult
+	msgTranscriptSaved = enginelog.MsgTranscriptSaved
+	msgUsage           = enginelog.MsgUsage
+	msgReturned        = enginelog.MsgReturned
+	msgFailed          = enginelog.MsgFailed
 )
 
 // Engine logs can carry a single very long line — a rendered prompt or a
@@ -130,14 +131,13 @@ type EngineLog struct {
 // rather than fatal: the log is append-only and a run killed mid-write
 // can leave a torn final line, which should not cost the whole report.
 func loadEngineLog(path string) (*EngineLog, error) {
-	file, err := os.Open(path)
+	raw, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("open engine log: %w", err)
 	}
-	defer func() { _ = file.Close() }()
 
 	log := &EngineLog{}
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
 	scanner.Buffer(make([]byte, 0, initialScanBuffer), maxScanTokenSize)
 
 	for scanner.Scan() {

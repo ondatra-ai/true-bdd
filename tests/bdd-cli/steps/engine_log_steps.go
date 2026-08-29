@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // engineLogRelPath is where the CLI writes its structured log, relative
@@ -21,7 +23,7 @@ const engineLogRelPath = "tmp/true-bdd.log.json"
 // every model turn — the engine's own vocabulary, not a stdout phrasing.
 const (
 	engineMsgSpawnTestRunner = "Spawning test runner"
-	engineMsgDispatchAITurn  = "Dispatching AI turn"
+	engineMsgDispatchAITurn  = enginelog.MsgDispatch
 )
 
 // engineLogRecord is the slice of one slog JSON line these assertions
@@ -48,7 +50,7 @@ func readEngineLog(state *State) ([]engineLogRecord, error) {
 
 	path := filepath.Join(state.Result.TmpDir, engineLogRelPath)
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return nil, state.fail("%w: %s: %v", ErrNoEngineLog, path, err)
 	}

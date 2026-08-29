@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // cassetteName matches the shim's `<binary>-<NNN>` directory naming.
@@ -70,7 +72,7 @@ func countCassettes(dir string) (map[string]int, error) {
 // missing cursor means the binary was never spawned, which is zero
 // served — and a real failure when cassettes exist for it.
 func readCursor(stateDir, binary string) int {
-	blob, err := os.ReadFile(filepath.Join(stateDir, "cursor-"+binary))
+	blob, err := disk.Read(filepath.Join(stateDir, "cursor-"+binary))
 	if err != nil {
 		return 0
 	}

@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
 
@@ -292,7 +293,7 @@ func loadManifestSelection(t *testing.T, fixture string) manifestSelection {
 
 	selection := manifestSelection{Input: runner.DefaultInputDir}
 
-	data, err := os.ReadFile(
+	data, err := disk.Read(
 		filepath.Join(fixturesRootDir, fixture, runner.ChecklistPromptsFile))
 	if errors.Is(err, os.ErrNotExist) {
 		return selection
@@ -337,7 +338,7 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 func loadConfigBlock(t *testing.T, path string) configBlock {
 	t.Helper()
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		t.Fatalf("reading %s: %v", path, err)
 	}

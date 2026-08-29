@@ -14,8 +14,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
+	"log/slog"
 )
 
 var (
@@ -38,7 +41,7 @@ func runMandate(repo string, args []string) error {
 		return set(repo, state.MandateKey, "")
 	default:
 		granted := state.Get(repo, state.MandateKey) != ""
-		_, _ = fmt.Fprintln(os.Stdout, map[bool]string{true: "yes", false: "no"}[granted])
+		slog.Info("Mandate", "granted", granted)
 
 		return nil
 	}
@@ -69,9 +72,13 @@ func set(repo, key, value string) error {
 }
 
 func main() {
+	// Stdout, alone among the scripts: /task-start injects `history roll` with
+	// a ! fence, which captures stdout.
+	logging.Install(logging.Stdout, state.ToolLog(history.RepoRoot()), "history")
+
 	err := run(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		slog.Error("history failed", "error", err)
 		os.Exit(1)
 	}
 }
@@ -103,7 +110,7 @@ func run(args []string) error {
 
 		return nil
 	case "prompt-submit":
-		err := hook.PromptSubmit(history.DecodeEvent(os.Stdin))
+		err := hook.PromptSubmit(history.DecodeEvent(console.In()))
 		if err != nil {
 			return fmt.Errorf("capturing the turn: %w", err)
 		}
@@ -126,7 +133,7 @@ func binding(repo string, args []string) error {
 	case "bound":
 		// Prints an empty line when nothing is bound: /task-done and
 		// /task-fail read this and must tell "none" from a failure.
-		_, _ = fmt.Fprintln(os.Stdout, state.Get(repo, state.TicketKey))
+		slog.Info("Bound ticket", "ticket", state.Get(repo, state.TicketKey))
 
 		return nil
 	case "unbind":

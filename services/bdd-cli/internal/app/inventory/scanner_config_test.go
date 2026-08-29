@@ -1,10 +1,10 @@
 package inventory_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
@@ -34,12 +34,12 @@ func writeConfigTree(t *testing.T, files map[string]string) string {
 	for rel, content := range files {
 		path := filepath.Join(folder, rel)
 
-		err := os.MkdirAll(filepath.Dir(path), 0o755)
+		err := disk.Dir(filepath.Dir(path), disk.Shared)
 		if err != nil {
 			t.Fatalf("MkdirAll %s: %v", path, err)
 		}
 
-		err = os.WriteFile(path, []byte(content), 0o644)
+		err = disk.Write(path, []byte(content), disk.Shared)
 		if err != nil {
 			t.Fatalf("WriteFile %s: %v", path, err)
 		}

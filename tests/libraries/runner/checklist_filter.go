@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -60,7 +61,6 @@ var ErrFilterDeclaredEmpty = errors.New(
 	"checklist_prompts: declared but empty — remove the key or declare a selection")
 
 // checklistFilePerm is the mode of the regenerated checklist file.
-const checklistFilePerm = 0o644
 
 // validateChecklistFilters checks the load-time invariants: every
 // declared stem matches the invoked checklist and does not collide with
@@ -150,7 +150,7 @@ func isCommandWord(field string) bool {
 // matched by the snippets, and writes it back as a yaml.Node tree so
 // everything else (config, metadata, prompt text) round-trips unchanged.
 func FilterChecklistFile(path string, snippets []string) error {
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		return fmt.Errorf("reading checklist: %w", err)
 	}
@@ -175,7 +175,7 @@ func FilterChecklistFile(path string, snippets []string) error {
 		return fmt.Errorf("marshaling filtered checklist: %w", err)
 	}
 
-	err = os.WriteFile(path, out, checklistFilePerm)
+	err = disk.Write(path, out, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("writing filtered checklist: %w", err)
 	}

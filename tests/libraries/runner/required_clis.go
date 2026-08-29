@@ -2,9 +2,10 @@ package runner
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // modelRefPattern matches an `engine.models` entry's `"<cli>:<model>"`
@@ -19,7 +20,7 @@ const supportedCLICount = 3
 // its model tiers to. The suite gates on these, so a missing binary
 // surfaces as an honest skip instead of a confusing mid-walk failure.
 func RequiredCLIs(configPath string) ([]string, error) {
-	raw, err := os.ReadFile(configPath)
+	raw, err := disk.Read(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("read engine config %s: %w", configPath, err)
 	}

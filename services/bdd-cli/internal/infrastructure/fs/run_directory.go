@@ -7,10 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
-
-const fileModeDirectory = 0755 // Standard directory permission
 
 // RunDirectory manages timestamped run directories for organizing tmp files.
 type RunDirectory struct {
@@ -24,7 +23,7 @@ func NewRunDirectory(basePath string) (*RunDirectory, error) {
 	dirName := runDirName(time.Now(), os.Getpid())
 	runPath := filepath.Join(basePath, dirName)
 
-	err := os.MkdirAll(runPath, fileModeDirectory)
+	err := disk.Dir(runPath, disk.Shared)
 	if err != nil {
 		slog.Error("Failed to create run directory", "path", runPath, "error", err)
 

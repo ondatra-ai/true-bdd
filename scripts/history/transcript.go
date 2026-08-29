@@ -1,48 +1,37 @@
 package history
 
 import (
-	"bufio"
 	"encoding/json"
-	"errors"
-	"io"
-	"os"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // readJSONL reads a transcript, dropping any line that will not parse. A
-// partial tail is normal (hook fires mid-write; last_assistant_message backstops it).
-// Streamed via bufio.Reader, not Scanner: a large tool result exceeds Scanner's default line-length limit.
+// partial tail is normal: the hook fires mid-write, and
+// last_assistant_message backstops it.
 func readJSONL(path string) []map[string]any {
-	handle, err := os.Open(path) //nolint:gosec // the path comes from the harness's own event.
+	raw, err := disk.Read(path)
 	if err != nil {
 		return nil
 	}
 
-	defer handle.Close() //nolint:errcheck // read-only.
+	lines := strings.Split(string(raw), "\n")
+	entries := make([]map[string]any, 0, len(lines))
 
-	var (
-		entries []map[string]any
-		reader  = bufio.NewReader(handle)
-	)
-
-	for {
-		line, err := reader.ReadString('\n')
-
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var entry map[string]any
-			if json.Unmarshal([]byte(trimmed), &entry) == nil {
-				entries = append(entries, entry)
-			}
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
 		}
 
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				return entries
-			}
-
-			return entries
+		var entry map[string]any
+		if json.Unmarshal([]byte(trimmed), &entry) == nil {
+			entries = append(entries, entry)
 		}
 	}
+
+	return entries
 }
 
 // content is an entry's content, from `message.content` or the entry itself.

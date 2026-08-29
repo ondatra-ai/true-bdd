@@ -520,8 +520,9 @@ func (t *Transport) setupIOPipes() error {
 		return fmt.Errorf("create stdout pipe failed: %w", pkgerrors.ErrCreateStdoutPipeFailed(err))
 	}
 
-	// Isolate stderr using temporary file to prevent deadlocks
-	// This matches Python SDK pattern to avoid subprocess pipe deadlocks
+	// A temp file rather than a pipe, matching the Python SDK: a pipe
+	// deadlocks once the child fills it.
+	//nolint:forbidigo // a handle held for the child's life.
 	t.stderr, err = os.CreateTemp("", "claude_stderr_*.log")
 	if err != nil {
 		return fmt.Errorf("create stderr file failed: %w", pkgerrors.ErrCreateStderrFileFailed(err))
@@ -563,6 +564,7 @@ func (t *Transport) cleanup() {
 		// Graceful cleanup matching Python SDK pattern
 		// Python: except Exception: pass
 		_ = t.stderr.Close()
+		//nolint:forbidigo // pairs with the CreateTemp above.
 		_ = os.Remove(t.stderr.Name()) // Ignore cleanup errors
 		t.stderr = nil
 	}

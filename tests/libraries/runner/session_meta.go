@@ -2,10 +2,13 @@ package runner
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // SessionMetaFile is the session-level record's name. It sits at the
@@ -47,17 +50,11 @@ func WriteSessionMeta(sessionRoot, mode string, planned []string) error {
 		return fmt.Errorf("encode session meta: %w", err)
 	}
 
-	final := SessionMetaPath(sessionRoot)
-	tmp := final + ".tmp"
-
-	err = os.WriteFile(tmp, append(blob, '\n'), filePerm)
+	// disk.Write commits through its own temp and rename, so the hand-rolled
+	// pair this replaced is gone and the fsync it lacked is not.
+	err = disk.Write(SessionMetaPath(sessionRoot), append(blob, '\n'), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("write session meta: %w", err)
-	}
-
-	err = os.Rename(tmp, final)
-	if err != nil {
-		return fmt.Errorf("publish session meta: %w", err)
 	}
 
 	return nil
@@ -67,9 +64,9 @@ func WriteSessionMeta(sessionRoot, mode string, planned []string) error {
 // this file existed reports (nil, nil) — absent is not an error, it is
 // an older run.
 func ReadSessionMeta(sessionRoot string) (*SessionMeta, error) {
-	blob, err := os.ReadFile(SessionMetaPath(sessionRoot))
+	blob, err := disk.Read(SessionMetaPath(sessionRoot))
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil //nolint:nilnil // absent is a valid, expected state
 		}
 

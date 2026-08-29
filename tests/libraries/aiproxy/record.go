@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
 
@@ -98,7 +99,7 @@ type realRun struct {
 // is frame-by-frame interactive, so any buffering would deadlock it.
 func runReal(realPath string, argv []string) (*realRun, error) {
 	// Transparent proxy: argv passes through; lifetime is the parent's.
-	cmd := exec.Command(realPath, argv...) //nolint:gosec,noctx
+	cmd := exec.Command(realPath, argv...) //nolint:gosec,noctx // re-exec of the shimmed CLI, argv unchanged.
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
@@ -130,7 +131,7 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 	// open past the child's exit, and the copy would block forever.
 	// lockedBuffer makes reading its partial capture safe.
 	go func() {
-		_, _ = io.Copy(io.MultiWriter(stdinPipe, &stdinBuf), os.Stdin)
+		_, _ = io.Copy(io.MultiWriter(stdinPipe, &stdinBuf), console.In())
 		_ = stdinPipe.Close()
 	}()
 
@@ -138,8 +139,8 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 		dst io.Writer
 		src io.Reader
 	}{
-		{io.MultiWriter(os.Stdout, &stdoutBuf), stdoutPipe},
-		{io.MultiWriter(os.Stderr, &stderrBuf), stderrPipe},
+		{io.MultiWriter(console.Out(), &stdoutBuf), stdoutPipe},
+		{io.MultiWriter(console.Err(), &stderrBuf), stderrPipe},
 	}
 
 	var pumps sync.WaitGroup

@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
-)
 
-const childrenFilePerm = 0o600
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+)
 
 // childEntry is one line in the remote's children pids file (JSONL): PGID is
 // the signal target, start identity guards a recycled pid, and run id ties
@@ -78,18 +77,7 @@ func (r *ChildrenRegistry) flush() {
 		buffer.WriteByte('\n')
 	}
 
-	file, err := os.OpenFile(r.path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, childrenFilePerm)
-	if err != nil {
-		return
-	}
-	defer func() { _ = file.Close() }()
-
-	_, err = file.Write(buffer.Bytes())
-	if err != nil {
-		return
-	}
-
-	_ = file.Sync()
+	_ = disk.Write(r.path, buffer.Bytes(), disk.Private)
 }
 
 // processStartIdentity returns `ps -o lstart=` for pid — a value stable

@@ -4,14 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"sync/atomic"
-)
 
-// fileModeArtifact is the permission for a persisted runner stream.
-// Matches the mode the engine uses for its prompt/response artifacts.
-const fileModeArtifact = 0644
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
+)
 
 // Artifacts persists the raw streams of every test-runner subprocess into
 // the engine's run directory. The parsed report is lossy by design (it
@@ -53,7 +50,7 @@ func (a *Artifacts) Capture(
 func (a *Artifacts) write(name string, payload []byte) string {
 	path := filepath.Join(a.dir, name)
 
-	err := os.WriteFile(path, payload, fileModeArtifact)
+	err := disk.Write(path, payload, disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to persist test runner output",
 			"file", path,

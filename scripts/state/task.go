@@ -18,15 +18,11 @@ const (
 	slugCap        = 40
 )
 
-// HistoryFile is the Task's transcript, and LogFile its timing log. Both are
-// DERIVED from the stem rather than stored: two processes that find no file
-// compute the same name, so lazy creation has no "who creates it" race.
+// HistoryFile is the Task's transcript, DERIVED from the stem rather than
+// stored: two processes that find no file compute the same name, so lazy
+// creation has no "who creates it" race.
 func HistoryFile(repo, task string) string {
 	return filepath.Join(HistoryDir(repo), task+".md")
-}
-
-func LogFile(repo, task string) string {
-	return filepath.Join(HistoryDir(repo), task+".log.json")
 }
 
 // CursorKey names one session's slot. Truncated so a key stays an id rather

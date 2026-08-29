@@ -1,11 +1,13 @@
 package runner
 
 import (
+	"bytes"
 	"errors"
-	"io"
-	"os"
+	"log/slog"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 )
 
 // errLoadItems is the error `us apply 95.4` actually produces, copied
@@ -34,7 +36,8 @@ func TestRefuseStartupReturnsTheCauseUnchanged(t *testing.T) {
 	})
 
 	// Only stdout is assertable here — see refuseStartup's doc for why.
-	if !strings.Contains(stdout, "Cannot start: "+errLoadItems.Error()) {
+	if !strings.Contains(stdout, `msg="Refusing to start"`) ||
+		!strings.Contains(stdout, "no story file found for story 95.4") {
 		t.Errorf("stdout missing the refusal line, got: %q", stdout)
 	}
 }
@@ -63,50 +66,22 @@ func TestRefuseStartupStaysSilentForAnAlreadyReportedError(t *testing.T) {
 	}
 }
 
-// captureRunnerStdout runs body with os.Stdout redirected to a pipe,
-// returning what it wrote. It drains concurrently — deferring risks
-// deadlock past the pipe's ~64KB buffer — and stays non-parallel since it swaps a process global.
+// captureRunnerStdout points the process's slog at a buffer — the seam
+// pkg/logging exists to provide, and why this never touches os.Stdout.
 func captureRunnerStdout(t *testing.T, body func()) string {
 	t.Helper()
 
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("open pipe: %v", err)
-	}
+	var captured bytes.Buffer
 
-	captured := make(chan string, 1)
+	original := slog.Default()
 
-	go func() {
-		content, readErr := io.ReadAll(reader)
-		if readErr != nil {
-			captured <- ""
+	slog.SetDefault(slog.New(logging.Handler(&captured, "")))
 
-			return
-		}
-
-		captured <- string(content)
-	}()
-
-	original := os.Stdout
-	os.Stdout = writer
-
-	// Restore, close and drain even when body calls t.Fatalf — that
-	// unwinds via runtime.Goexit, which skips ordinary statements but
-	// still runs deferred functions.
-	defer func() {
-		os.Stdout = original
-		_ = writer.Close()
-		_ = reader.Close()
-	}()
+	// Restore even when body calls t.Fatalf, which unwinds via
+	// runtime.Goexit: that skips statements but still runs defers.
+	defer slog.SetDefault(original)
 
 	body()
 
-	os.Stdout = original
-
-	err = writer.Close()
-	if err != nil {
-		t.Fatalf("close pipe writer: %v", err)
-	}
-
-	return <-captured
+	return captured.String()
 }

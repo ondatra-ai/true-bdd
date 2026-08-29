@@ -17,7 +17,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 // ErrBuildCodeNotConverged is returned when the build-code walk finishes with
@@ -115,7 +114,7 @@ func loadFailingTests(
 			return failures[i].ID < failures[j].ID
 		})
 
-		console.Println(fmt.Sprintf("Total failing tests across architecture: %d", len(failures)))
+		slog.Info("Total failing tests across architecture", "failures", len(failures))
 
 		return failures, nil
 	}
@@ -190,7 +189,7 @@ func walkSuites(
 		}, "\x00")
 
 		if seen[dedupKey] {
-			console.Println(fmt.Sprintf("Skipping %s (already covered by another suite)", suite.Label()))
+			slog.Info("Skipping suite; already covered by another", "suite", suite.Label())
 
 			continue
 		}
@@ -216,7 +215,7 @@ func runSuiteDiscovery(
 	dispatcher *testrunner.Dispatcher,
 	suite architecture.Suite,
 ) ([]*testrunner.FailingTest, error) {
-	console.Println(fmt.Sprintf("Running %s tests via %s...", suite.Label(), suite.Framework))
+	slog.Info("Running tests", "suite", suite.Label(), "framework", suite.Framework)
 
 	runnerImpl, err := dispatcher.For(suite.Framework)
 	if err != nil {
@@ -242,7 +241,7 @@ func runSuiteDiscovery(
 			"command", rcfg.Command,
 			"error", err,
 		)
-		console.Println(fmt.Sprintf("Cannot run %s: %s", suite.Label(), err.Error()))
+		slog.Error("Cannot run suite", "suite", suite.Label(), "error", err)
 
 		// Marked as reported so the generic startup refusal stays quiet: this
 		// already carries a specific diagnosis on both channels, and came
@@ -250,17 +249,14 @@ func runSuiteDiscovery(
 		return nil, runner.Reported(fmt.Errorf("discover %s: %w", suite.Label(), err))
 	}
 
-	console.Println(fmt.Sprintf("  %d failure(s) in %s", len(failures), suite.Label()))
+	slog.Info("Suite failures", "failures", len(failures), "suite", suite.Label())
 
 	return failures, nil
 }
 
 // buildCodeOnItemStart prints the per-item progress banner.
 func buildCodeOnItemStart(idx, total int, item *testrunner.FailingTest) {
-	console.Header(
-		fmt.Sprintf("test %d/%d: %s", idx+1, total, item.ID),
-		runner.SeparatorWidth,
-	)
+	slog.Info("test", "index", idx+1, "total", total, "id", item.ID)
 }
 
 // buildCodePostFix re-runs the failing test and refreshes LastRunPassed /
@@ -274,7 +270,7 @@ func buildCodePostFix(
 		item *testrunner.FailingTest,
 		_ string,
 	) (*testrunner.FailingTest, error) {
-		console.Println("Fix applied — re-running this test in isolation...")
+		slog.Info("Fix applied; re-running this test in isolation")
 
 		runnerImpl, err := deps.TestRunnerDispatcher.For(item.Framework)
 		if err != nil {

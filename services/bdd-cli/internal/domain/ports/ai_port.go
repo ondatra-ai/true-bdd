@@ -3,7 +3,6 @@ package ports
 import (
 	"context"
 
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 )
 
@@ -17,6 +16,6 @@ type AIPort interface {
 		systemPrompt string,
 		userPrompt string,
 		model provider.ModelRef,
-		mode ai.ExecutionMode,
+		mode provider.ExecutionMode,
 	) (string, error)
 }

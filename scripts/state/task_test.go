@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -44,10 +45,8 @@ func TestTaskCreatesNoFile(t *testing.T) {
 		t.Fatalf("Task: %v", err)
 	}
 
-	for _, path := range []string{state.HistoryFile(repo, opened), state.LogFile(repo, opened)} {
-		if fileExists(path) {
-			t.Errorf("%s exists; a derived path is opened by its first writer, not by Task", path)
-		}
+	if path := state.HistoryFile(repo, opened); exists(path) {
+		t.Errorf("%s exists; a derived path is opened by its first writer, not by Task", path)
 	}
 }
 
@@ -58,10 +57,6 @@ func TestDerivedPaths(t *testing.T) {
 
 	if got := state.HistoryFile("/repo", stem); got != "/repo/docs/history/"+stem+".md" {
 		t.Errorf("HistoryFile = %q", got)
-	}
-
-	if got := state.LogFile("/repo", stem); got != "/repo/docs/history/"+stem+".log.json" {
-		t.Errorf("LogFile = %q", got)
 	}
 }
 
@@ -88,4 +83,11 @@ func TestSlugFallsBackWhenThePromptHasNoWords(t *testing.T) {
 	if !strings.HasSuffix(opened, "-msg") {
 		t.Fatalf("the stem is %q, want the msg fallback", opened)
 	}
+}
+
+// exists reports whether a derived path has been opened yet.
+func exists(path string) bool {
+	_, err := os.Stat(path)
+
+	return err == nil
 }

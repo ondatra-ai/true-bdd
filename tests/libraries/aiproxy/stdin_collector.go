@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 // Stdin collection tuning. Collection stops once the byte count reaches the
@@ -37,7 +39,7 @@ func startStdinCollector() *stdinCollector {
 	collector := &stdinCollector{eof: make(chan struct{})}
 
 	go func() {
-		_, _ = io.Copy(&collector.buf, os.Stdin)
+		_, _ = io.Copy(&collector.buf, console.In())
 
 		close(collector.eof)
 	}()

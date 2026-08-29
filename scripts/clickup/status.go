@@ -3,7 +3,7 @@ package clickup
 import (
 	"errors"
 	"fmt"
-	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
@@ -29,7 +29,7 @@ Then reply with one word: OK if both succeeded, or FAILED: <reason>.
 // Status moves one Ticket and records why — /task-done and /task-fail both
 // reach ClickUp through it. The body is off limits: a closing turn that could
 // rewrite the description could rewrite the spec it was just measured against.
-func Status(out io.Writer, ticketID, status, comment string) error {
+func Status(ticketID, status, comment string) error {
 	if strings.TrimSpace(ticketID) == "" ||
 		strings.TrimSpace(status) == "" ||
 		strings.TrimSpace(comment) == "" {
@@ -51,7 +51,7 @@ func Status(out io.Writer, ticketID, status, comment string) error {
 		return fmt.Errorf("%w: %s", errStatusRefused, textutil.Truncate(answer, diagnosticLimit))
 	}
 
-	_, _ = fmt.Fprintf(out, "%s -> %s\n", ticketID, status)
+	slog.Info("Ticket status set", "ticket", ticketID, "status", status)
 
 	return nil
 }

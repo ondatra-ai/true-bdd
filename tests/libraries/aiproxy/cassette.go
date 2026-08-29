@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
 )
 
@@ -49,7 +49,7 @@ func cassetteName(name string, idx int) string {
 }
 
 func readMeta(dir string) (*meta, error) {
-	raw, err := os.ReadFile(filepath.Join(dir, metaFile))
+	raw, err := disk.Read(filepath.Join(dir, metaFile))
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", metaFile, err)
 	}
@@ -68,12 +68,12 @@ func readMeta(dir string) (*meta, error) {
 // meta.json last (write-then-rename), so an interrupted recording
 // leaves a dir without meta.json — ignored, never half-replayed.
 func writeCassette(dir string, manifest *meta, stdin, stdout, stderr []byte, changes []fstree.Change) error {
-	err := os.RemoveAll(dir)
+	err := disk.RemoveTree(dir)
 	if err != nil {
 		return fmt.Errorf("clean cassette dir %s: %w", dir, err)
 	}
 
-	err = os.MkdirAll(dir, dirPerm)
+	err = disk.Dir(dir, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("create cassette dir %s: %w", dir, err)
 	}
@@ -101,7 +101,7 @@ func writeStreams(dir string, stdin, stdout, stderr []byte) error {
 	}
 
 	for name, data := range files {
-		err := os.WriteFile(filepath.Join(dir, name), data, filePerm)
+		err := disk.Write(filepath.Join(dir, name), data, disk.Shared)
 		if err != nil {
 			return fmt.Errorf("write cassette %s: %w", name, err)
 		}
@@ -129,12 +129,12 @@ func writeFSDiff(dir string, changes []fstree.Change) (fsDiffMeta, error) {
 
 		target := filepath.Join(dir, fsdiffDir, afterDir, change.Path)
 
-		err := os.MkdirAll(filepath.Dir(target), dirPerm)
+		err := disk.Dir(filepath.Dir(target), disk.Shared)
 		if err != nil {
 			return diff, fmt.Errorf("create fsdiff dir for %s: %w", change.Path, err)
 		}
 
-		err = os.WriteFile(target, change.After, filePerm)
+		err = disk.Write(target, change.After, disk.Shared)
 		if err != nil {
 			return diff, fmt.Errorf("write fsdiff %s: %w", change.Path, err)
 		}
@@ -149,16 +149,11 @@ func writeMeta(dir string, manifest *meta) error {
 		return fmt.Errorf("encode %s: %w", metaFile, err)
 	}
 
-	tmpPath := filepath.Join(dir, metaFile+".tmp")
-
-	err = os.WriteFile(tmpPath, append(encoded, '\n'), filePerm)
+	// disk.Write's own temp and rename is what keeps an interrupted recording
+	// from leaving a half-written meta.json for replay to pick up.
+	err = disk.Write(filepath.Join(dir, metaFile), append(encoded, '\n'), disk.Shared)
 	if err != nil {
-		return fmt.Errorf("write %s: %w", tmpPath, err)
-	}
-
-	err = os.Rename(tmpPath, filepath.Join(dir, metaFile))
-	if err != nil {
-		return fmt.Errorf("finalize %s: %w", metaFile, err)
+		return fmt.Errorf("write %s: %w", metaFile, err)
 	}
 
 	return nil

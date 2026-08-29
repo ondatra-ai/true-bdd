@@ -12,8 +12,8 @@
 //
 // The keys:
 //
-//	task            the Task's stem — docs/history/<task>.md and
-//	                <task>.log.json derive from it, so no path is stored
+//	task            the Task's stem — docs/history/<task>.md derives from it,
+//	                so no path is stored
 //	ticket          the ClickUp Ticket this Task is working on
 //	mandate         set while task-handle drives the run unattended
 //	cursor:<8>      one session's progress through the current turn

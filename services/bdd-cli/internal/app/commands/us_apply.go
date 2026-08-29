@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
@@ -16,7 +16,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/console"
 )
 
 // scratchRegistryFilename is the scratch copy's basename inside the run
@@ -117,10 +116,7 @@ func scenarioSubject(item *template.ScenarioApplyData) (string, string) {
 // the "AC N/M: <description>" banner that the BDD fixture (and any human
 // watching) uses to track per-AC progress.
 func scenarioOnItemStart(idx, total int, item *template.ScenarioApplyData) {
-	console.Header(
-		fmt.Sprintf("AC %d/%d: %s", idx+1, total, item.Description),
-		runner.SeparatorWidth,
-	)
+	slog.Info("AC", "index", idx+1, "total", total, "description", item.Description)
 }
 
 // scenarioPostFix is the PostFix implementation for apply. The fix already
@@ -131,10 +127,8 @@ func scenarioPostFix(
 	item *template.ScenarioApplyData,
 	_ string,
 ) (*template.ScenarioApplyData, error) {
-	console.Printf(
-		"Fix applied to scratch %s — re-running validation...\n",
-		item.RequirementsScratchPath,
-	)
+	slog.Info("Fix applied to scratch; re-running validation",
+		"scratch", item.RequirementsScratchPath)
 
 	return item, nil
 }
@@ -147,17 +141,17 @@ func commitApplyWalk(
 ) func(*engine.Result[*template.ScenarioApplyData]) error {
 	return func(result *engine.Result[*template.ScenarioApplyData]) error {
 		if result.Reason != engine.Converged {
-			console.Printf(
-				"One or more scenarios did not pass. Canonical %s left unchanged. Scratch: %s\n",
-				requirementsFile, scratchPath,
-			)
+			slog.Warn("One or more scenarios did not pass; the canonical file is unchanged",
+				"canonical", requirementsFile, "scratch", scratchPath)
 
 			return nil
 		}
 
-		console.Header("ALL CHECKS PASSED!", runner.SeparatorWidth)
+		slog.Info("ALL CHECKS PASSED!")
 
-		err := os.Rename(scratchPath, requirementsFile)
+		// Copy then drop the scratch: disk.Copy commits through a rename, so
+		// the canonical registry is never the half-written one.
+		err := disk.Copy(requirementsFile, scratchPath, disk.Shared)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to commit scratch registry to %s: %w",
@@ -165,7 +159,9 @@ func commitApplyWalk(
 			)
 		}
 
-		console.Printf("All ACs passed. %s updated from scratch.\n", requirementsFile)
+		_ = disk.Remove(scratchPath)
+
+		slog.Info("All ACs passed; updated from scratch", "file", requirementsFile)
 
 		return nil
 	}

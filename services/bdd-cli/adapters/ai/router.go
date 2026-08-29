@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"log/slog"
 	"sync/atomic"
 	"time"
@@ -58,7 +59,7 @@ func (r *Router) ExecutePromptWithSystem(
 	turn := r.turns.Add(1)
 	label := fmt.Sprintf("%s-turn%03d", model.CLI, turn)
 
-	slog.Info("Dispatching AI turn",
+	slog.Info(enginelog.MsgDispatch,
 		"turn", turn,
 		"label", label,
 		"role", string(role),
@@ -88,7 +89,7 @@ func (r *Router) ExecutePromptWithSystem(
 	elapsed := time.Since(started)
 
 	if err != nil {
-		slog.Info("AI turn failed",
+		slog.Info(enginelog.MsgFailed,
 			"turn", turn, "label", label, "role", string(role),
 			"cli", string(model.CLI), "model", model.Model,
 			"duration_ms", elapsed.Milliseconds(), "error", err.Error(),
@@ -100,7 +101,7 @@ func (r *Router) ExecutePromptWithSystem(
 		return response, err
 	}
 
-	slog.Info("AI turn returned",
+	slog.Info(enginelog.MsgReturned,
 		"turn", turn,
 		"label", label,
 		"role", string(role),

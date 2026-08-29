@@ -1,9 +1,9 @@
 package inventory
 
 import (
-	"os"
 	"path/filepath"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,7 +46,7 @@ type lineageIndex struct {
 func loadLineageIndex(path string) lineageIndex {
 	index := lineageIndex{covered: make(map[string]map[string]bool)}
 
-	data, err := os.ReadFile(path)
+	data, err := disk.Read(path)
 	if err != nil {
 		index.status = registryMissing
 

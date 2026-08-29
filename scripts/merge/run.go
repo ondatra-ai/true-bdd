@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
@@ -72,10 +73,8 @@ const historyBudgetBytes = 300_000
 
 // The binaries this package drives, and the modes it writes with.
 const (
-	gitBin   = "git"
-	ghBin    = "gh"
-	dirMode  = 0o755
-	fileMode = 0o600
+	gitBin = "git"
+	ghBin  = "gh"
 )
 
 // roleMerge labels this run's own turns in the conversation history.
@@ -125,7 +124,10 @@ func Start(args []string) *Run {
 
 	requireTools()
 
-	run := &Run{reviewedThisRun: map[string]bool{}, floors: manual}
+	run := &Run{
+		reviewedThisRun: map[string]bool{},
+		floors:          manual,
+	}
 	if state.Get(".", state.MandateKey) != "" {
 		run.floors = automatic
 	}
@@ -236,22 +238,22 @@ func requireTools() {
 // ---------------------------------------------------------------- reporting
 
 func (r *Run) logf(format string, args ...any) {
-	_, _ = fmt.Fprintf(os.Stdout, "  "+format+"\n", args...)
+	slog.Info(fmt.Sprintf(format, args...))
 }
 
 func (r *Run) banner(message string) {
-	_, _ = fmt.Fprintf(os.Stdout, "\n══ %s ══\n", message)
+	slog.Info("Entering stage", "stage", message)
 }
 
 // die stops the run with a diagnosis. Nothing here is swallowed.
 func (r *Run) dief(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "\nSTOPPED: "+format+"\n", args...)
+	slog.Error("STOPPED: " + fmt.Sprintf(format, args...))
 	os.Exit(1)
 }
 
 // usage stops before the run has a context to report against.
 func usage(message string) {
-	fmt.Fprintln(os.Stderr, message)
+	slog.Error(message)
 	os.Exit(1)
 }
 
@@ -270,14 +272,9 @@ func (r *Run) save(path string, payload any) {
 // saveText writes an artifact meant to be read rather than parsed — JSON
 // would quote a stop's stderr into escaped newlines.
 func (r *Run) saveText(path, payload string) {
-	err := os.MkdirAll(filepath.Dir(path), dirMode)
+	err := disk.Write(path, []byte(payload), disk.Shared)
 	if err != nil {
-		r.dief("creating %s: %v", filepath.Dir(path), err)
-	}
-
-	err = os.WriteFile(path, []byte(payload), fileMode)
-	if err != nil {
-		r.dief("writing %s: %v", path, err)
+		r.dief("%v", err)
 	}
 }
 

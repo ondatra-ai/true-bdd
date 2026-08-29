@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 // SupervisorSubcommand is the hidden CLI verb that runs the resident gated
@@ -50,9 +52,9 @@ func RunSupervisor(args []string) int {
 
 	//nolint:gosec // self is our own binary; args are the already-validated command vector
 	cmd := exec.CommandContext(context.Background(), self, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdin = console.In()
+	cmd.Stdout = console.Out()
+	cmd.Stderr = console.Err()
 	// No Setpgid: the command inherits the supervisor's group, so the supervisor
 	// stays the verifiable group leader.
 

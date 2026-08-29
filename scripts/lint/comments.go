@@ -3,9 +3,10 @@ package lint
 import (
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // The budget. Prose is argument and argument compresses; a block scheme —
@@ -107,7 +108,7 @@ func scanTracked(specs []string, isGo bool) ([]finding, error) {
 			continue
 		}
 
-		src, err := os.ReadFile(path)
+		src, err := disk.Read(path)
 		if err != nil {
 			continue
 		}

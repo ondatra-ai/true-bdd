@@ -1,11 +1,14 @@
 package scenariogen
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // scenariosPkgDir is the directory, inside a suite, holding the shim
@@ -54,8 +57,8 @@ func findModule(dir string) (string, string, error) {
 // readModulePath reads the `module` directive of a go.mod, reporting
 // whether the file was there at all.
 func readModulePath(modFile string) (string, bool, error) {
-	data, err := os.ReadFile(modFile)
-	if os.IsNotExist(err) {
+	data, err := disk.Read(modFile)
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", false, nil
 	}
 

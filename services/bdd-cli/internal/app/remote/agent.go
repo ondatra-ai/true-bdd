@@ -18,12 +18,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/queryserver"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 )
 
 const (
-	tmpDirPerm = 0o700
 	// dbFileName is the per-project CLI state store (plan §1.1).
 	dbFileName = "true-bdd-state.db"
 )
@@ -100,7 +100,7 @@ func Run(ctx context.Context, opts Options) error {
 
 	tmpDir := filepath.Join(canonical, "tmp")
 
-	err = os.MkdirAll(tmpDir, tmpDirPerm)
+	err = disk.Dir(tmpDir, disk.Shared)
 	if err != nil {
 		return fmt.Errorf("create tmp dir: %w", err)
 	}

@@ -3,7 +3,8 @@ package clickup
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // Finding is one row of a queue file: a review finding on its way to
@@ -44,7 +45,7 @@ func orUnknown(value string) string {
 
 // LoadQueue reads a queue file.
 func LoadQueue(path string) ([]Finding, error) {
-	raw, err := os.ReadFile(path) //nolint:gosec // the path is an operator's argument.
+	raw, err := disk.Read(path) //nolint:gosec // the path is an operator's argument.
 	if err != nil {
 		return nil, fmt.Errorf("reading the queue: %w", err)
 	}

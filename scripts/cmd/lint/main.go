@@ -17,15 +17,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/scripts/history"
+	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/lint"
+	"log/slog"
 )
 
 func main() {
+	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "lint")
+
 	err := run(os.Args[1:])
 	if err == nil {
 		return
@@ -33,7 +40,7 @@ func main() {
 
 	// The gates report their own findings; anything else is a diagnosis.
 	if !errors.Is(err, lint.ErrFailed) {
-		fmt.Fprintln(os.Stderr, err)
+		slog.Error("lint failed", "error", err)
 	}
 
 	os.Exit(1)
@@ -48,23 +55,23 @@ func run(args []string) error {
 	}
 
 	if len(args) == 0 {
-		return lint.Dispatch(os.Stdout, nil) //nolint:wrapcheck // the gate's own verdict.
+		return lint.Dispatch(console.Out(), nil) //nolint:wrapcheck // the gate's own verdict.
 	}
 
 	//nolint:wrapcheck // every branch returns a gate's own verdict, already reported.
 	switch args[0] {
 	case "comments":
-		return lint.Comments(os.Stdout, args[1:])
+		return lint.Comments(console.Out(), args[1:])
 	case "schemas":
-		return lint.Schemas(os.Stdout, args[1:])
+		return lint.Schemas(console.Out(), args[1:])
 	case "markdown":
-		return lint.Markdown(os.Stdout, args[1:])
+		return lint.Markdown(console.Out(), args[1:])
 	case "claude-md":
-		return lint.ClaudeMD(os.Stdout)
+		return lint.ClaudeMD(console.Out())
 	case "hook":
-		return lint.Hook(os.Stdin, os.Stdout)
+		return lint.Hook(console.In(), console.Out())
 	default:
-		return lint.Dispatch(os.Stdout, args)
+		return lint.Dispatch(console.Out(), args)
 	}
 }
 

@@ -18,9 +18,6 @@ const (
 	// exitProxyFailure is the shim's own distinctive failure code, so a
 	// missing/stale cassette is never confused with the wrapped CLI's exit codes.
 	exitProxyFailure = 86
-
-	dirPerm  = 0o755
-	filePerm = 0o644
 )
 
 var errMissingEnv = errors.New("required environment variable missing")

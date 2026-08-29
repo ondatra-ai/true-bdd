@@ -27,8 +27,8 @@ the user.
 
 ### 0. Relay an orphan, if the injection reported one
 
-If the block above carries a `WARNING:` about a ticket that was still bound,
-say so to the user **before** anything else. That Ticket is still `PROCESSING`
+If the block above carries a `level=WARN` record naming a `ticket=`, that
+Ticket was still bound. Say so to the user **before** anything else. That Ticket is still `PROCESSING`
 in ClickUp and nothing else will ever mention it. Then carry on — this is a
 report, not a refusal.
 

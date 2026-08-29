@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // ContainedFile resolves rel underneath base and reports whether the result
@@ -49,7 +51,7 @@ func ReadContained(base, rel string) (string, bool) {
 		return "", false
 	}
 
-	blob, err := os.ReadFile(path)
+	blob, err := disk.Read(path)
 	if err != nil {
 		return "", false
 	}

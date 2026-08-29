@@ -1,11 +1,11 @@
 package reportserver
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/reporter"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 )
@@ -146,7 +146,7 @@ func sidecar(fixture *reporter.Fixture, name string) string {
 		return ""
 	}
 
-	blob, err := os.ReadFile(filepath.Join(fixture.Dir, runner.SpawnLogDir, name))
+	blob, err := disk.Read(filepath.Join(fixture.Dir, runner.SpawnLogDir, name))
 	if err != nil {
 		return ""
 	}
@@ -165,7 +165,7 @@ func recordFile(fixture *reporter.Fixture, pick func(*runner.HarnessRecord) stri
 		return ""
 	}
 
-	blob, err := os.ReadFile(path)
+	blob, err := disk.Read(path)
 	if err != nil {
 		return ""
 	}

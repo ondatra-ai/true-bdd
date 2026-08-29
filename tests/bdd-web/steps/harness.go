@@ -30,6 +30,8 @@ import (
 
 	"github.com/playwright-community/playwright-go"
 
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
 )
 
@@ -57,7 +59,6 @@ const (
 	// copyTimeout caps assembling the bundle from the build output.
 	copyTimeout = 2 * time.Minute
 	// dirPerm is the mode for every directory this suite creates.
-	dirPerm = 0o755
 )
 
 // Harness is everything the suite builds once per `go test` invocation
@@ -128,8 +129,8 @@ func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 
 	build := exec.CommandContext(buildCtx, "npm", "run", "build")
 	build.Dir = appDir
-	build.Stdout = os.Stderr
-	build.Stderr = os.Stderr
+	build.Stdout = console.Err()
+	build.Stderr = console.Err()
 
 	err := build.Run()
 	if err != nil {
@@ -138,12 +139,12 @@ func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 
 	bundle := filepath.Join(repoRoot, "tmp", "bdd-web-bundle")
 
-	err = os.RemoveAll(bundle)
+	err = disk.RemoveTree(bundle)
 	if err != nil {
 		return "", fmt.Errorf("clear the bundle dir: %w", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(bundle, ".next"), dirPerm)
+	err = disk.Dir(filepath.Join(bundle, ".next"), disk.Shared)
 	if err != nil {
 		return "", fmt.Errorf("create the bundle dir: %w", err)
 	}
@@ -199,8 +200,8 @@ func (h *Harness) startServer(ctx context.Context, bundle string, port int) erro
 		fmt.Sprintf("PORT=%d", port),
 		"HOSTNAME=127.0.0.1",
 	)
-	server.Stdout = os.Stderr
-	server.Stderr = os.Stderr
+	server.Stdout = console.Err()
+	server.Stderr = console.Err()
 
 	err := server.Start()
 	if err != nil {

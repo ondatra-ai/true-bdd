@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
+	"log/slog"
 	"os/exec"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 var errGateFailed = errors.New("gate failed")
@@ -62,12 +63,12 @@ func dedupe(paths []string) []string {
 
 // Run executes each gate in order and stops at the first failure, the way
 // `set -e` did when this was a list of lines in a shell script.
-func Run(out io.Writer, selected []Gate) error {
+func Run(selected []Gate) error {
 	for _, gate := range selected {
-		_, _ = fmt.Fprintf(out, "\n=== %s: %s\n", gate.Name, strings.Join(gate.Command, " "))
+		slog.Info("Gate", "name", gate.Name, "command", strings.Join(gate.Command, " "))
 
 		cmd := exec.CommandContext(context.Background(), gate.Command[0], gate.Command[1:]...)
-		cmd.Stdout, cmd.Stderr = out, os.Stderr
+		cmd.Stdout, cmd.Stderr = console.Out(), console.Err()
 
 		err := cmd.Run()
 		if err != nil {

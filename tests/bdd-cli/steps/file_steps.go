@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // changeKindCreated is the diff kind fstree reports for a file the run
@@ -116,7 +118,7 @@ func assertFileLineCount(state *State, args []string) error {
 		return containErr
 	}
 
-	content, readErr := os.ReadFile(full)
+	content, readErr := disk.Read(full)
 	if readErr != nil {
 		return state.fail(
 			"expected file %q to have %d line(s), but it could not be read: %v", path, want, readErr)
@@ -150,7 +152,7 @@ func assertFileMatches(state *State, args []string) error {
 		return containErr
 	}
 
-	content, readErr := os.ReadFile(full)
+	content, readErr := disk.Read(full)
 	if readErr != nil {
 		return state.fail(
 			"expected file %q to match %q, but it could not be read: %v", path, args[1], readErr)

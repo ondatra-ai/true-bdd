@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // logEventKind enumerates the slog records the spine cares about.
@@ -48,18 +50,17 @@ var partitionPathRe = regexp.MustCompile(`tmp/(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}(?:-
 // segment per "Loaded prompts" boundary. A zero-byte log yields nil;
 // the second return value counts malformed (non-JSON, non-empty) lines.
 func parseLogSpine(path string) ([]logSegment, int, error) {
-	file, err := os.Open(path)
+	raw, err := disk.Read(path)
 	if err != nil {
 		return nil, 0, fmt.Errorf("opening log %s: %w", path, err)
 	}
-	defer func() { _ = file.Close() }()
 
 	const (
 		logScanBufInit = 1 << 20
 		logScanBufMax  = 16 << 20
 	)
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
 	scanner.Buffer(make([]byte, 0, logScanBufInit), logScanBufMax)
 
 	segments := make([]logSegment, 0)

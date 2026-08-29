@@ -2,11 +2,12 @@ package runner
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
 // HarnessRecordFile is the record's name inside SpawnLogDir.
@@ -173,7 +174,7 @@ func (r *HarnessRecorder) ObserveFixture(fixture *Fixture) {
 
 	blob, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot encode manifest snapshot: %v\n", err)
+		slog.Warn("BDD runner: cannot encode manifest snapshot", "error", err)
 
 		return
 	}
@@ -261,9 +262,9 @@ func writeSidecars(dir string, bodies map[string]string) []string {
 		return nil
 	}
 
-	err := os.MkdirAll(dir, spawnLogDirPerm)
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot create %s: %v\n", dir, err)
+		slog.Warn("BDD runner: cannot create", "path", dir, "error", err)
 
 		return nil
 	}
@@ -273,9 +274,9 @@ func writeSidecars(dir string, bodies map[string]string) []string {
 	for name, body := range bodies {
 		path := filepath.Join(dir, name)
 
-		writeErr := os.WriteFile(path, []byte(body), spawnLogFilePerm)
+		writeErr := disk.Write(path, []byte(body), disk.Shared)
 		if writeErr != nil {
-			fmt.Fprintf(os.Stderr, "BDD runner: cannot write %s: %v\n", path, writeErr)
+			slog.Warn("BDD runner: cannot write", "path", path, "error", writeErr)
 
 			continue
 		}
@@ -339,37 +340,28 @@ func diffRecords(changes []FileChange) []FileChangeRecord {
 // Execute's post-run snapshot (else harness.json enters the judge's
 // diff); errors are reported and swallowed, never failing the fixture.
 func writeHarnessRecord(dir string, record HarnessRecord) string {
-	err := os.MkdirAll(dir, spawnLogDirPerm)
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot create %s: %v\n", dir, err)
+		slog.Warn("BDD runner: cannot create", "path", dir, "error", err)
 
 		return ""
 	}
 
 	blob, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot encode harness record: %v\n", err)
+		slog.Warn("BDD runner: cannot encode harness record", "error", err)
 
 		return ""
 	}
 
 	path := filepath.Join(dir, HarnessRecordFile)
 
-	// Write-then-rename: this file's presence signals "the fixture is
-	// final, cache it forever" to the report server. A plain WriteFile
-	// risks a reader catching valid-looking truncated JSON mid-write.
-	tmp := path + ".tmp"
-
-	err = os.WriteFile(tmp, append(blob, '\n'), spawnLogFilePerm)
+	// This file's presence tells the report server "fixture final, cache it
+	// forever", so disk.Write's rename is what stops it caching a truncated
+	// harness.json — a plain write leaves a valid-looking partial JSON.
+	err = disk.Write(path, append(blob, '\n'), disk.Shared)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot write %s: %v\n", tmp, err)
-
-		return ""
-	}
-
-	err = os.Rename(tmp, path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "BDD runner: cannot rename %s: %v\n", tmp, err)
+		slog.Warn("BDD runner: cannot write", "path", path, "error", err)
 
 		return ""
 	}
