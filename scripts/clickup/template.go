@@ -144,3 +144,17 @@ func expand(section heading, view findingView) string {
 	// is the blank line between this heading and the next.
 	return out.String()
 }
+
+// Headings is the four `### ` sections every Ticket carries, in order, as
+// ticket.yaml declares them. task-handle's step 1 holds a body against it
+// rather than carrying a second copy that can drift.
+func Headings() []string {
+	sections := shape().Headings
+
+	names := make([]string, 0, len(sections))
+	for _, section := range sections {
+		names = append(names, section.Name)
+	}
+
+	return names
+}

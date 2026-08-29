@@ -19,8 +19,8 @@
 // what the model is asked to transcribe rather than invent.
 //
 // The command is the single ClickUp interface for anything running OUTSIDE a
-// Claude session, which has no MCP server to inherit. The /task-* skills and
-// task-handle run inside one and call MCP directly:
+// Claude session, which has no MCP server to inherit — task-handle included,
+// since it is a Go command now. The /task-* skills call MCP directly:
 //
 //	clickup render --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
 //	clickup file   --queue tmp/merge/defer-queue.json --tag fix-now --pr 76

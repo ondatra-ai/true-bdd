@@ -23,6 +23,7 @@ type Switches struct {
 	Postmortem   *bool `json:"postmortem"`
 	DocUniverse  *bool `json:"doc_universe"`
 	UpdateMemory *bool `json:"update_memory"`
+	CodeReview   *bool `json:"code_review"`
 }
 
 // On is what an unset switch means — what the tooling did before the switch

@@ -1,0 +1,24 @@
+Repair this, in the repository, without changing anything it does not require.
+
+## What went wrong
+
+{brief}
+
+## The Ticket this work belongs to
+
+{ticket}
+
+## The gates decide whether you are finished
+
+Run them, and keep working until they are green:
+
+    {gates}
+
+Do not commit, do not stage, do not push, do not open or edit a pull request —
+a later step does all of that, and doing it here breaks it.
+
+## What to return
+
+`files_changed`: every path you actually edited, as git would name it.
+`gates_green`: whether the gates passed on your final run.
+`summary`: what you changed, in a sentence or two.

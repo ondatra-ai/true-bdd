@@ -1,0 +1,29 @@
+Invoke the `code-review` skill with `main` as the fixed point and the Ticket
+below as the spec, then report what its Spec axis found as structured output.
+
+    /code-review main
+
+Give the skill this Ticket as the spec it reviews against:
+
+## The Ticket
+
+{ticket}
+
+## What to return
+
+Only the **Spec** axis decides anything here. Sort every Spec finding into one
+of three kinds:
+
+  - `missing` — the Ticket asked for it and the branch does not have it;
+  - `wrong`   — the branch has it and it does not do what the Ticket asked;
+  - `unasked` — the branch does work the Ticket did not ask for.
+
+`where` is `file:line` when the finding has one, and the Ticket's heading when
+it does not.
+
+Put the Standards axis in `standards_findings`, one string each. They are
+recorded and they block nothing — do not promote one into a Spec finding
+because it looks important.
+
+Report no finding you cannot point at in the diff. An empty `spec_findings` is
+the expected answer for a branch that did what it was asked.

@@ -42,6 +42,10 @@ type Run struct {
 	// terminal, so the gates narrow to the ones this diff needs.
 	unattended bool
 
+	// embedded reports that a parent imported this package and folds the whole
+	// tree itself, so this run must not render a partial one over the top.
+	embedded bool
+
 	// The two skill turns scripts/.config.json can switch off.
 	docUniverseEnabled  bool
 	updateMemoryEnabled bool
@@ -104,6 +108,10 @@ func (r *Run) Main() {
 // finish renders this run's own tree, out of the log it has been writing all
 // along — which makes every run a round-trip test of the log's structure.
 func (r *Run) finish() {
+	if r.embedded {
+		return
+	}
+
 	report.Render(state.TaskLog("."), logging.Run(), StateDir+"/report.md")
 }
 
@@ -130,7 +138,7 @@ func (r *Run) gates() {
 
 	err := gates.Run(selected)
 	if err != nil {
-		r.dief("the gates are red — nothing was committed:\n  %v", err)
+		r.dief("%s\n  %v", GatesRedPrefix, err)
 	}
 }
 
@@ -157,15 +165,17 @@ func (r *Run) logf(format string, args ...any) {
 // logged BEFORE the report is folded: it is what tells the operations left open
 // apart from a run that was killed outright.
 func (r *Run) dief(format string, args ...any) {
-	slog.Error("STOPPED: " + fmt.Sprintf(format, args...))
+	message := fmt.Sprintf(format, args...)
+
+	slog.Error("STOPPED: " + message)
 	r.finish()
-	os.Exit(1)
+	panic(stopSentinel{message: message})
 }
 
 // usage stops before the run has a context to report against.
 func usage(message string) {
 	slog.Error(message)
-	os.Exit(1)
+	panic(stopSentinel{message: message})
 }
 
 // ------------------------------------------------------------------- shell
