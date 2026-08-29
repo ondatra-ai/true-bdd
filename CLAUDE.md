@@ -168,12 +168,12 @@ volume of code you write: Simplicity First still applies there.
 
 ## Task Management
 
-Tasks live in ClickUp, reached via the MCP tools (list `901523097822`):
-<https://app.clickup.com/90151491867/v/l/li/901523097822>
-**"Defer this" means `clickup defer`** — not MCP `createTask`, not the
-session todo list. It and `clickup file` are the only creation paths, both
-stamping `backlog` (`to do` is what `task-loop` works). Every ticket's
-headings are declared in `scripts/clickup/ticket.yaml`.
+Tasks live in ClickUp: <https://app.clickup.com/90151491867/v/l/li/901523097822>
+**"Defer this" means `clickup defer`** — not MCP `createTask`, not the session
+todo list. It and `clickup file` are the only creation paths, both stamping
+`backlog` (`to do` is what `task-loop` works), headings from `ticket.yaml`,
+scores from the ONE rubric `scripts/triage.Score` — floor 6, vs HEAD. `clickup
+triage <N>` re-scores the N stalest and stamps them.
 
 ## Response Style
 
@@ -186,7 +186,7 @@ Brevity is not omission — report failures and skipped work plainly.
   `claude`; a key sourced mid-session never reaches the commands skills run.
 - Commit → `pr-commit`; merge → `pr-merge`; one Ticket end to end →
   `task-handle`, the whole queue → `task-loop`; a status is *moved* only by
-  `task-start` or `clickup close`. `scripts/merge`: PRs #70/#76/#77.
+  `task-start`, `clickup close` or `clickup triage`. merge: PRs #70/#76/#77.
 - 24 skills vendored from `mattpocock/skills` (manifest:
   `.claude/skills/VENDORED-mattpocock.md`); its `code-review` shadows
   Claude Code's built-in skill of that name.

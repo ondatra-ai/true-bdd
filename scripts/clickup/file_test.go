@@ -12,6 +12,14 @@ import (
 // the boundary case fails if it ever moves.
 const matchWidth = 60
 
+// The strings more than one test in this package repeats: a verdict's two
+// free-text fields, and a creation date the ordering table reuses.
+const (
+	anyReason    = "why"
+	anyRefreshed = "### Why\n\nrefreshed."
+	anyCreated   = "2026-01-01T00:00:00Z"
+)
+
 // backlog is the status ticket.yaml declares; the tests assert against the
 // literal rather than the accessor, so a change there has to be deliberate.
 const backlog = "backlog"

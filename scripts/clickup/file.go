@@ -54,6 +54,10 @@ row whose "ticket" is that heading's number:
     addresses the dropdown option by POSITION, so passing the score instead
     sets the wrong one. When the row omits it, leave this field alone.
   - field %s — the "expected_changes" string.
+  - field %s — the "triage_date_millis" integer, passed VERBATIM. It is a
+    ClickUp date field, which takes unix MILLISECONDS.
+  - field %s — the "triage_commit" string. When the row omits it, leave this
+    field alone.
 
 Set no other custom field: Scope and Good For Agent are a person's to fill.
 
@@ -150,13 +154,14 @@ func file(queuePath, tag, pullRequest string, dedupe bool) error {
 
 	slog.Info("Tickets rendered", "count", len(queue), "path", TicketsMarkdown)
 
-	plans, err := json.MarshalIndent(planFields(queue), "", "  ")
+	plans, err := encodeFields(planFields(queue, now()))
 	if err != nil {
-		return fmt.Errorf("encoding the custom fields: %w", err)
+		return err
 	}
 
 	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), ticketStatus(), tag,
-		statusRule(), triageScoreField, expectedChangesField, plans, document)
+		statusRule(), triageScoreField, expectedChangesField, triageDateField,
+		triageCommitField, plans, document)
 
 	created, err := createTickets(prompt)
 	if err != nil {
@@ -181,6 +186,16 @@ func withoutOpen(queue []Finding, tag string) ([]Finding, error) {
 	}
 
 	return kept, nil
+}
+
+// encodeFields is the FIELDS block both filing prompts embed.
+func encodeFields(plans []fieldPlan) ([]byte, error) {
+	encoded, err := json.MarshalIndent(plans, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("encoding the custom fields: %w", err)
+	}
+
+	return encoded, nil
 }
 
 // createTickets runs the filing turn and reads the array back.
@@ -259,7 +274,7 @@ func report(wanted int, created []Ticket) error {
 
 	unfilled := unfilled(filed)
 	if len(unfilled) > 0 {
-		slog.Warn("Custom fields were not set; fill Triage Score and Expected Changes by hand",
+		slog.Warn("Custom fields were not set; fill them by hand",
 			"tickets", strings.Join(unfilled, " "))
 	}
 

@@ -1,0 +1,13 @@
+
+The subject is an existing ticket body, and it may have gone stale in ways
+that do not change the verdict: a renamed file, a moved symbol, a quoted
+snippet that no longer matches the source.
+
+If you score it 6 or above, ALSO return `description`: the same ticket,
+rewritten against the code as it stands. Keep its four `### ` headings and
+their order. Keep what the ticket asks for — you are refreshing its evidence,
+not renegotiating its scope. Correct every path, symbol and quotation to what
+is there now, and say under `### Why` what had moved.
+
+If you score it 5 or below, return `description` empty. A ticket that is
+about to be retired is not worth rewriting.

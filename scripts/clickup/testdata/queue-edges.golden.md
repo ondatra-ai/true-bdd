@@ -10,8 +10,7 @@ List: `901523097822`   Tag: `fix-now`   Source: PR #76
 
 ### Why
 
-CodeRabbit raised this on PR #76; triage scored it **9/10** — real, but not
-worth blocking that merge on.
+CodeRabbit raised this on PR #76; triage scored it **9/10**.
 
 > A real crash path.
 
@@ -35,10 +34,12 @@ go run ./scripts/cmd/gates run
 
 ### Context
 
-Deferred rather than fixed inline: the merge loop caps fixing at two
-review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
-hour and PR #76 exhausted that by fixing everything inline over four
-rounds. Reviewer severity `major`, source `thread`.
+Reviewer severity `major`, source `thread`.
+
+`Triage Score`, `Triage Date` and `Triage Commit` say what this was
+judged to be worth, when, and against which commit. `clickup triage`
+re-reads the oldest of those against HEAD and either refreshes this body
+or retires the ticket, so a score here is never older than its stamp.
 
 ---
 
@@ -46,8 +47,7 @@ rounds. Reviewer severity `major`, source `thread`.
 
 ### Why
 
-CodeRabbit raised this on PR #76; triage scored it **6/10** — real, but not
-worth blocking that merge on.
+CodeRabbit raised this on PR #76; triage scored it **6/10**.
 
 > (no reason recorded)
 
@@ -65,10 +65,12 @@ go run ./scripts/cmd/gates run
 
 ### Context
 
-Deferred rather than fixed inline: the merge loop caps fixing at two
-review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
-hour and PR #76 exhausted that by fixing everything inline over four
-rounds. Reviewer severity `minor`, source `body-only`.
+Reviewer severity `minor`, source `body-only`.
+
+`Triage Score`, `Triage Date` and `Triage Commit` say what this was
+judged to be worth, when, and against which commit. `clickup triage`
+re-reads the oldest of those against HEAD and either refreshes this body
+or retires the ticket, so a score here is never older than its stamp.
 
 ---
 
@@ -76,8 +78,7 @@ rounds. Reviewer severity `minor`, source `body-only`.
 
 ### Why
 
-CodeRabbit raised this on PR #76; triage scored it **0/10** — real, but not
-worth blocking that merge on.
+An unrecorded source raised this on PR #76; triage scored it **0/10**.
 
 > (no reason recorded)
 
@@ -95,10 +96,12 @@ go run ./scripts/cmd/gates run
 
 ### Context
 
-Deferred rather than fixed inline: the merge loop caps fixing at two
-review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
-hour and PR #76 exhausted that by fixing everything inline over four
-rounds. Reviewer severity `?`, source `?`.
+Reviewer severity `?`, source `?`.
+
+`Triage Score`, `Triage Date` and `Triage Commit` say what this was
+judged to be worth, when, and against which commit. `clickup triage`
+re-reads the oldest of those against HEAD and either refreshes this body
+or retires the ticket, so a score here is never older than its stamp.
 
 ---
 
@@ -106,8 +109,7 @@ rounds. Reviewer severity `?`, source `?`.
 
 ### Why
 
-CodeRabbit raised this on PR #76; triage scored it **7/10** — real, but not
-worth blocking that merge on.
+The merge postmortem raised this on PR #76; triage scored it **7/10**.
 
 > long
 
@@ -125,7 +127,9 @@ go run ./scripts/cmd/gates run
 
 ### Context
 
-Deferred rather than fixed inline: the merge loop caps fixing at two
-review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
-hour and PR #76 exhausted that by fixing everything inline over four
-rounds. Reviewer severity `postmortem`, source `postmortem`.
+Reviewer severity `postmortem`, source `postmortem`.
+
+`Triage Score`, `Triage Date` and `Triage Commit` say what this was
+judged to be worth, when, and against which commit. `clickup triage`
+re-reads the oldest of those against HEAD and either refreshes this body
+or retires the ticket, so a score here is never older than its stamp.

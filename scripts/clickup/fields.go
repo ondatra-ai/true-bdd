@@ -5,12 +5,14 @@ import (
 	"strings"
 )
 
-// The two custom fields a filing turn can write. `Scope` is a ClickUp
+// The custom fields a turn in this package can write. `Scope` is a ClickUp
 // `labels` field the MCP layer stringifies, refused 400 FIELD_144 (86cba13av);
 // `Good For Agent` is a person's, per ticket-schema.yaml.
 const (
 	triageScoreField     = "1d43d9f5-99b1-41f9-8250-cfdde01b76e0"
 	expectedChangesField = "f0c13f08-1762-4c45-8893-6ac4413d3385"
+	triageDateField      = "c5e6a521-c13f-4501-846c-6d46991e66a8"
+	triageCommitField    = "21913797-c413-4a92-bfef-dbae6e556e54"
 )
 
 // The band the Triage Score dropdown offers, which is also the rubric's.
@@ -31,24 +33,49 @@ type fieldPlan struct {
 	// drop_down option by position, so score 7 is index 6. Absent when the
 	// finding carries no score, which leaves the field alone.
 	TriageScoreOrderindex *int   `json:"triage_score_orderindex,omitempty"`
-	ExpectedChanges       string `json:"expected_changes"`
+	ExpectedChanges       string `json:"expected_changes,omitempty"`
+	TriageDateMillis      int64  `json:"triage_date_millis"`
+	TriageCommit          string `json:"triage_commit,omitempty"`
 }
 
 // planFields derives what each ticket's custom fields should hold. Derived
-// rather than asked for: both values already follow from the finding, and a
-// prompt that asks for them is a prompt that can answer wrong.
-func planFields(queue []Finding) []fieldPlan {
+// rather than asked for: every value already follows from the finding or the
+// run, and a prompt that asks for them is a prompt that can answer wrong.
+func planFields(queue []Finding, taken stamp) []fieldPlan {
 	plans := make([]fieldPlan, 0, len(queue))
 
 	for index, finding := range queue {
-		plans = append(plans, fieldPlan{
-			Ticket:                index + 1,
-			TriageScoreOrderindex: orderindexOf(finding.Score),
-			ExpectedChanges:       expectedChanges(finding.File),
-		})
+		row := stampedRow(index, finding, taken)
+		row.ExpectedChanges = expectedChanges(finding.File)
+
+		plans = append(plans, row)
 	}
 
 	return plans
+}
+
+// planStamps is the same for a hand-written deferral, which names no file to
+// derive a blast radius from. Expected Changes stays a person's: a `./*` here
+// would pass task-handle's scope check without ever having bounded anything.
+func planStamps(queue []Finding, taken stamp) []fieldPlan {
+	plans := make([]fieldPlan, 0, len(queue))
+
+	for index, finding := range queue {
+		plans = append(plans, stampedRow(index, finding, taken))
+	}
+
+	return plans
+}
+
+// stampedRow is what both plans share: the verdict, and when and against what
+// it was reached.
+func stampedRow(index int, finding Finding, taken stamp) fieldPlan {
+	return fieldPlan{
+		Ticket:                index + 1,
+		TriageScoreOrderindex: orderindexOf(finding.Score),
+		TriageDateMillis:      taken.Millis,
+		TriageCommit:          taken.Commit,
+	}
 }
 
 // orderindexOf maps a score onto its dropdown position, or nil when there is

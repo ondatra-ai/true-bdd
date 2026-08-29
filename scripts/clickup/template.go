@@ -61,6 +61,7 @@ func statusRule() string {
 // every absent field already resolved to what the ticket should show.
 type findingView struct {
 	Origin   string
+	Raiser   string
 	Score    int
 	Reason   string
 	File     string
@@ -80,6 +81,7 @@ func viewOf(finding Finding, origin string) findingView {
 
 	return findingView{
 		Origin:   origin,
+		Raiser:   raiserOf(finding.Source),
 		Score:    finding.Score,
 		Reason:   reason,
 		File:     orUnknown(finding.File),
@@ -87,6 +89,22 @@ func viewOf(finding Finding, origin string) findingView {
 		Body:     textutil.Truncate(strings.TrimSpace(finding.Body), bodyLimit),
 		Severity: orUnknown(finding.Severity),
 		Source:   orUnknown(finding.Source),
+	}
+}
+
+// raiserOf names who raised a finding, in words. `thread` and `body-only` are
+// where a CodeRabbit comment sat, not who wrote it — the two values
+// scripts/merge/comments.go sets.
+func raiserOf(source string) string {
+	switch source {
+	case "thread", "body-only":
+		return "CodeRabbit"
+	case "postmortem":
+		return "The merge postmortem"
+	case "":
+		return "An unrecorded source"
+	default:
+		return source
 	}
 }
 

@@ -9,12 +9,16 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
-// Task is one row of the listing turn's answer.
+// Task is one row of a listing turn's answer. Created and TriageDate are the
+// two the sweep orders on, and are left empty by the queue listing, which asks
+// for neither.
 type Task struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	URL    string `json:"url"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	URL        string `json:"url"`
+	Created    string `json:"created"`
+	TriageDate string `json:"triage_date"`
 }
 
 const listPromptTemplate = `Use the ClickUp MCP tools to list every OPEN (not closed, not complete) task
