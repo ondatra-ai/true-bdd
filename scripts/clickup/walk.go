@@ -35,8 +35,14 @@ const bodiesPromptTemplate = `Use the ClickUp MCP getTask tool to read these %d 
 Return each one's FULL description, verbatim — listTasks truncates it and the
 truncated form is unusable here.
 
+Also return its "Triage Score": the NAME of the selected option — the number
+ClickUp shows, 1 to 10 — and not the option's orderindex or its id. The 7th
+option is named "7" and sits at orderindex 6, so reporting the position
+reports the wrong score. Leave it "" when the field is unset.
+
 Return ONLY a JSON array, no prose and no code fence:
-[{"id": "<id>", "description": "<the full markdown description>"}]
+[{"id": "<id>", "description": "<the full markdown description>",
+  "score": "<the Triage Score option name, or empty>"}]
 
 Transcribe. Do not summarise, shorten or reformat a description, and do not
 omit a row: leave "description" empty if a task cannot be read.
@@ -59,8 +65,16 @@ func walkableTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+// prior is what a ticket said before this sweep judged it. Score stays raw as
+// transcribed: it is only ever a line in a note, so a bad answer must not be
+// able to skip a ticket the way an unreadable Description does.
+type prior struct {
+	Description string
+	Score       string
+}
+
 // fetchBodies reads the full description of each selected ticket, keyed by id.
-func fetchBodies(stale []Task) (map[string]string, error) {
+func fetchBodies(stale []Task) (map[string]prior, error) {
 	ids := make([]string, 0, len(stale))
 	for _, ticket := range stale {
 		ids = append(ids, "  - "+ticket.ID+"  ("+ticket.Name+")")
@@ -69,6 +83,7 @@ func fetchBodies(stale []Task) (map[string]string, error) {
 	type body struct {
 		ID          string `json:"id"`
 		Description string `json:"description"`
+		Score       string `json:"score"`
 	}
 
 	rows, err := listing[body](
@@ -78,9 +93,9 @@ func fetchBodies(stale []Task) (map[string]string, error) {
 		return nil, err
 	}
 
-	bodies := make(map[string]string, len(rows))
+	bodies := make(map[string]prior, len(rows))
 	for _, row := range rows {
-		bodies[row.ID] = row.Description
+		bodies[row.ID] = prior{Description: row.Description, Score: row.Score}
 	}
 
 	return bodies, nil

@@ -81,21 +81,22 @@ func selectStale(listed []Task, count int) []Task {
 // sweep scores each ticket and applies the verdict, one at a time. A ticket
 // that fails is named and the sweep goes on: the rest are independent, and
 // stopping would leave the run half-stamped with nothing saying where.
-func sweep(stale []Task, bodies map[string]string) error {
+func sweep(stale []Task, bodies map[string]prior) error {
 	applied := 0
 
 	for _, ticket := range stale {
 		// A body that did not come back would be judged on its title alone,
 		// and a ticket retired on a title is a ticket lost to a failed read.
-		body := bodies[ticket.ID]
-		if strings.TrimSpace(body) == "" {
+		// A missing Score is not that: it costs an arrow in the note, no more.
+		was := bodies[ticket.ID]
+		if strings.TrimSpace(was.Description) == "" {
 			slog.Error("A ticket's description could not be read and it was left alone",
 				"ticket", ticket.ID, "title", ticket.Name)
 
 			continue
 		}
 
-		verdict, err := triage.Score(subjectOfTicket(ticket, body))
+		verdict, err := triage.Score(subjectOfTicket(ticket, was.Description))
 		if err != nil {
 			slog.Error("A ticket could not be scored and was left alone",
 				"ticket", ticket.ID, "title", ticket.Name, "error", err)
@@ -103,7 +104,7 @@ func sweep(stale []Task, bodies map[string]string) error {
 			continue
 		}
 
-		err = apply(ticket, verdict, now())
+		err = apply(ticket, was, verdict, now())
 		if err != nil {
 			slog.Error("A ticket was scored but not updated",
 				"ticket", ticket.ID, "error", err)
