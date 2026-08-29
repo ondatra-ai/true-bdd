@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 )
 
 // cancelledCtx returns an already-cancelled context.
@@ -28,7 +30,7 @@ func TestNaturalCompletionThenLateCancelIsNotInterrupted(t *testing.T) {
 		t.Fatal("a clean natural completion racing a late cancel must NOT be interrupted")
 	}
 
-	env := executor.classifyTerminal(cancelledCtx(), nil)
+	env := executor.classifyTerminal(cancelledCtx(), cli.Result{}, nil)
 	if env.outcome != outcomeConverged {
 		t.Fatalf("outcome = %q, want the real %q (not overwritten)", env.outcome, outcomeConverged)
 	}

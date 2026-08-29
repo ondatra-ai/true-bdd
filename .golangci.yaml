@@ -195,6 +195,29 @@ linters:
               desc: 'the domain defines; it does not reach outward'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
               desc: 'the domain defines; it does not reach outward'
+        # Spawning is the fourth channel (ADR 0005). _test.go is exempt: several
+        # tests exist to synthesise the raw behaviour shell abstracts — a real
+        # *exec.ExitError, a Start with no Wait.
+        spawn-exec:
+          files:
+            - "$all"
+            - "!**/pkg/shell/**"
+            - "!**/*_test.go"
+          deny:
+            - pkg: "os/exec$"
+              desc: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
+            - pkg: "golang.org/x/sys/execabs"
+              desc: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
+        # pkg/cli is exempt from THIS list only, so it still cannot import
+        # os/exec: the layering is proved rather than trusted.
+        spawn-shell:
+          files:
+            - "$all"
+            - "!**/pkg/cli/**"
+            - "!**/pkg/shell/**"
+          deny:
+            - pkg: "github.com/ondatra-ai/true-bdd/pkg/shell"
+              desc: 'spawn: reach a binary through its pkg/cli wrapper — add one if it is missing'
         logging:
           # depguard matches by PREFIX, so a bare `log` would deny log/slog
           # with it; the trailing $ makes it exact. Globs run against ABSOLUTE
@@ -256,6 +279,10 @@ linters:
         # with a foreign handler" — it never sees an argument.
         - pattern: '^slog\.(New|NewTextHandler|NewJSONHandler|NewLogLogger|SetDefault)$'
           msg: 'log construction: build and install handlers through pkg/logging'
+        # The spawn paths depguard cannot see, being identifiers and not
+        # imports. Zero first-party hits today; this keeps it that way.
+        - pattern: '^(os\.StartProcess|syscall\.(Exec|ForkExec))$'
+          msg: 'spawn: subprocesses go through pkg/shell — need one? add a pkg/cli wrapper and call that'
     wrapcheck:
       # Don't require wrapping for errors from internal packages
       # Our internal/pkg/errors package provides properly wrapped errors
@@ -314,6 +341,10 @@ linters:
         linters:
           - forbidigo
         text: 'three channels: read and write files'
+      - path: ^pkg/shell/
+        linters:
+          - forbidigo
+        text: 'spawn: subprocesses go through pkg/shell'
       # A test writes fixtures a lock would only slow down, and writes ones
       # deliberately malformed. The terminal patterns still apply here.
       - path: _test\.go

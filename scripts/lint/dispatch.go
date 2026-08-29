@@ -1,15 +1,15 @@
 package lint
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/golint"
 )
 
 // Dispatch runs the gates the named files select; with none, all of them.
@@ -144,7 +144,7 @@ func addGoPackage(dirs []string, file string) []string {
 func golangci(out io.Writer, files, dirs []string, wholeRepo bool) error {
 	switch {
 	case wholeRepo:
-		return hushed(out, "golangci-lint", "run")
+		return verdictOf(golint.Run(context.Background(), out, "run"))
 	case len(dirs) == 0:
 		return nil
 	default:
@@ -155,39 +155,18 @@ func golangci(out io.Writer, files, dirs []string, wholeRepo bool) error {
 			args = append(args, "--fix")
 		}
 
-		return hushed(out, "golangci-lint", append(args, dirs...)...)
+		return verdictOf(golint.Run(context.Background(), out, append(args, dirs...)...))
 	}
 }
 
-// hushed drops golangci's own chatter — nine lines of exclusion-rule
-// bookkeeping per run, which buries the finding in what the hook hands back.
-func hushed(out io.Writer, name string, args ...string) error {
-	//nolint:gosec // the tool name is a literal; the arguments are package paths.
-	cmd := exec.CommandContext(context.Background(), name, args...)
-
-	pipe, err := cmd.StdoutPipe()
+// verdictOf turns a linter's exit code into this package's sentinel: the tool
+// has already printed its findings, so nothing more is said about them.
+func verdictOf(result cli.Result, err error) error {
 	if err != nil {
-		return fmt.Errorf("piping %s: %w", name, err)
+		return err
 	}
 
-	cmd.Stderr = cmd.Stdout
-
-	err = cmd.Start()
-	if err != nil {
-		return fmt.Errorf("starting %s: %w", name, err)
-	}
-
-	scanner := bufio.NewScanner(pipe)
-	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), bufio.MaxScanTokenSize)
-
-	for scanner.Scan() {
-		if !strings.HasPrefix(scanner.Text(), "level=warning") {
-			_, _ = fmt.Fprintln(out, scanner.Text())
-		}
-	}
-
-	err = cmd.Wait()
-	if err != nil {
+	if result.Code != 0 {
 		return ErrFailed
 	}
 

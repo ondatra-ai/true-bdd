@@ -2,12 +2,14 @@ package testrunner
 
 import (
 	"bytes"
-	"errors"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 )
 
 // Phase names for the runner invocations a walk makes, carried on every
@@ -45,41 +47,47 @@ func workingDir() string {
 	return dir
 }
 
-// effectiveDir reports where cmd will really run. An empty exec.Cmd.Dir
-// means "inherit the engine's cwd" (what the go runner relies on; jest
-// and playwright set Dir explicitly) — resolved here so every log record points at a real path.
-func effectiveDir(cmd *exec.Cmd) string {
-	if cmd.Dir != "" {
-		return cmd.Dir
+// effectiveDir reports where the command will really run. An empty Dir means
+// "inherit the engine's cwd" (what the go runner relies on; jest and
+// playwright set it) — resolved here so every record points at a real path.
+func effectiveDir(dir string) string {
+	if dir != "" {
+		return dir
 	}
 
 	return workingDir()
 }
 
-// runLogged executes cmd with both streams captured, bracketed by records
-// that make it auditable: the argv before the fork, how it ended after.
-// Every framework exits non-zero on test failure, so a non-nil error here is routine.
-func runLogged(cmd *exec.Cmd, meta spawnMeta) (bytes.Buffer, bytes.Buffer, error) {
-	var stdout, stderr bytes.Buffer
+// runLogged runs the suite's argv with both streams captured, bracketed by
+// records that make it auditable: the argv before the fork, how it ended after.
+// Every framework exits non-zero on test failure, so a non-nil error is routine.
+func runLogged(
+	ctx context.Context, argv []string, dir string, meta spawnMeta,
+) (bytes.Buffer, bytes.Buffer, error) {
+	where := effectiveDir(dir)
 
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	dir := effectiveDir(cmd)
-
-	logSpawn(meta, dir)
+	logSpawn(meta, where)
 
 	started := time.Now()
-	runErr := cmd.Run()
+	result, runErr := spec.Run(ctx, argv, cli.Options{Dir: dir})
 	elapsed := time.Since(started)
+
+	var stdout, stderr bytes.Buffer
+
+	stdout.WriteString(result.Stdout)
+	stderr.WriteString(result.Stderr)
 
 	stdoutPath, stderrPath := meta.artifacts.Capture(
 		meta.framework, meta.phase, &stdout, &stderr)
 
-	logExit(meta, dir, elapsed, runErr, &stdout, &stderr, stdoutPath, stderrPath)
+	logExit(meta, where, elapsed, result, runErr, &stdout, &stderr, stdoutPath, stderrPath)
 
 	if runErr != nil {
 		return stdout, stderr, fmt.Errorf("%s exec: %w", meta.framework, runErr)
+	}
+
+	if result.Code != 0 {
+		return stdout, stderr, fmt.Errorf("%s exec: %w", meta.framework, result.Err())
 	}
 
 	return stdout, stderr, nil
@@ -105,11 +113,15 @@ func logExit(
 	meta spawnMeta,
 	dir string,
 	elapsed time.Duration,
+	result cli.Result,
 	runErr error,
 	stdout, stderr *bytes.Buffer,
 	stdoutPath, stderrPath string,
 ) {
-	code, startupErr := exitStatus(runErr)
+	code, startupErr := result.Code, ""
+	if runErr != nil {
+		startupErr = runErr.Error()
+	}
 
 	fields := []any{
 		"binary", meta.binary,
@@ -136,20 +148,4 @@ func logExit(
 	}
 
 	slog.Debug("Test runner returned", fields...)
-}
-
-// exitStatus classifies a cmd.Run error: nil is a clean exit 0, an
-// *exec.ExitError carries the process's real code (non-zero is routine
-// here), and anything else means it never started — reported as -1, distinct from any real exit code.
-func exitStatus(runErr error) (int, string) {
-	if runErr == nil {
-		return 0, ""
-	}
-
-	var exitErr *exec.ExitError
-	if errors.As(runErr, &exitErr) {
-		return exitErr.ExitCode(), ""
-	}
-
-	return -1, runErr.Error()
 }

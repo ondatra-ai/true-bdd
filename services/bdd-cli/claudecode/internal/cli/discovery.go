@@ -4,12 +4,12 @@ package cli
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode/internal/shared"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
@@ -19,7 +19,7 @@ const windowsOS = "windows"
 // FindCLI searches for the Claude CLI binary in standard locations.
 func FindCLI() (string, error) {
 	// 1. Check PATH first - most common case
-	path, err := exec.LookPath("claude")
+	path, err := cli.Find("claude")
 	if err == nil {
 		return path, nil
 	}
@@ -42,7 +42,7 @@ func FindCLI() (string, error) {
 	}
 
 	// 3. Check Node.js dependency
-	_, nodeErr := exec.LookPath("node")
+	nodeErr := cli.Require("node")
 	if nodeErr != nil {
 		return "", shared.NewCLINotFoundError("",
 			"Claude Code requires Node.js, which is not installed.\n\n"+

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
@@ -33,14 +34,14 @@ func Changed(base string) ([]string, error) {
 }
 
 func gitLines(args ...string) ([]string, error) {
-	out, err := exec.CommandContext(context.Background(), "git", args...).Output()
+	out, err := git.Output(context.Background(), args...)
 	if err != nil {
-		return nil, err //nolint:wrapcheck // the caller names which query failed.
+		return nil, err
 	}
 
 	var paths []string
 
-	for line := range strings.SplitSeq(string(out), "\n") {
+	for line := range strings.SplitSeq(out, "\n") {
 		if trimmed := strings.TrimSpace(line); trimmed != "" {
 			paths = append(paths, trimmed)
 		}
@@ -70,12 +71,14 @@ func Run(selected []Gate) error {
 		command := strings.Join(gate.Command, " ")
 		slog.Info("Gate", "name", gate.Name, "command", command)
 
-		cmd := exec.CommandContext(context.Background(), gate.Command[0], gate.Command[1:]...)
-		cmd.Stdout, cmd.Stderr = console.Out(), console.Err()
-
 		started := time.Now()
 
-		err := cmd.Run()
+		result, err := spec.Run(context.Background(), gate.Command,
+			cli.Options{Output: cli.Console()})
+		if err == nil {
+			err = result.Err()
+		}
+
 		if err != nil {
 			// Reported before the return: a red gate is the one whose duration
 			// a reader most wants, and the stop above would swallow it.

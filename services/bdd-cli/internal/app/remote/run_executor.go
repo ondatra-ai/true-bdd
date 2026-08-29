@@ -9,7 +9,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
@@ -167,7 +167,7 @@ func (e *RunExecutor) Execute(ctx context.Context) {
 	defer func() { _ = disk.Remove(eventsPath) }()
 
 	waitErr := e.stream(ctx, child, eventsPath)
-	e.appendTerminal(e.classifyTerminal(ctx, waitErr))
+	e.appendTerminal(e.classifyTerminal(ctx, child.Result(), waitErr))
 }
 
 // DeliverAnswer writes a store-accepted answer to the child's stdin (plan
@@ -215,8 +215,10 @@ func (e *RunExecutor) Interrupt() {
 // classifyTerminal picks the terminal envelope. A remote-level cancellation
 // (Ctrl+C / SIGTERM) is the authoritative interrupt signal; version and
 // prompt-probe emit no engine result, so their clean exit is `ok` (plan §3.1).
-func (e *RunExecutor) classifyTerminal(ctx context.Context, waitErr error) terminalEnvelope {
-	env := synthesizeEnvelope(waitErr, e.result)
+func (e *RunExecutor) classifyTerminal(
+	ctx context.Context, exit cli.Result, waitErr error,
+) terminalEnvelope {
+	env := synthesizeEnvelope(exit, e.result)
 
 	if e.wasInterrupted(ctx, waitErr) {
 		env.outcome = outcomeInterrupted
@@ -227,7 +229,7 @@ func (e *RunExecutor) classifyTerminal(ctx context.Context, waitErr error) termi
 
 	// version / prompt-probe emit no engine result; a clean exit ⇒ ok.
 	if !e.result.present && !resultExpected(e.run.Command) {
-		code, signaled, _ := exitInfo(waitErr)
+		code, signaled, _ := exitInfo(exit)
 		if !signaled && code == 0 {
 			env.outcome = outcomeOK
 			env.detail = ""
@@ -581,26 +583,6 @@ func (e *RunExecutor) appendTerminal(env terminalEnvelope) {
 
 func (e *RunExecutor) eventsPath() string {
 	return filepath.Join(e.folder, "tmp", e.run.RunID+"-events.jsonl")
-}
-
-// commandPipes wires the child's stdin/stdout/stderr pipes.
-func commandPipes(cmd *exec.Cmd) (io.WriteCloser, io.ReadCloser, io.ReadCloser, error) {
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("stdin pipe: %w", err)
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("stdout pipe: %w", err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("stderr pipe: %w", err)
-	}
-
-	return stdin, stdout, stderr, nil
 }
 
 // childEnv strips CLAUDECODE (production stripping — plan §3.2/§4.4) and points

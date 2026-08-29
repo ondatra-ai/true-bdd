@@ -72,7 +72,7 @@ func (r *Run) repair(step Step, brief string) error {
 // nothing else does: commit writes the body from the branch and knows nothing
 // about a Ticket.
 func (r *Run) afterCommit() error {
-	url, err := line(ghBin, "pr", "view", "--json", "url", "--jq", ".url")
+	url, err := ghOut("pr", "view", "--json", "url", "--jq", ".url")
 	if err != nil {
 		r.list.mark(StepCommit, markFail, "could not read the pull request")
 
@@ -95,7 +95,7 @@ func (r *Run) afterCommit() error {
 // linkTicket appends the ClickUp URL to the PR body, once. Step 5 can run
 // several times, so it checks before it writes.
 func (r *Run) linkTicket() {
-	body, err := sh(ghBin, "pr", "view", "--json", "body", "--jq", ".body")
+	body, err := ghOut("pr", "view", "--json", "body", "--jq", ".body")
 	if err != nil {
 		r.logf("could not read the pull request body: %v", err)
 
@@ -106,7 +106,7 @@ func (r *Run) linkTicket() {
 		return
 	}
 
-	_, err = sh(ghBin, "pr", "edit", "--body",
+	_, err = ghOut("pr", "edit", "--body",
 		strings.TrimRight(body, "\n")+"\n\nTicket: "+r.detail.URL)
 	if err != nil {
 		r.logf("could not link the Ticket into the pull request: %v", err)

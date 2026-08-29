@@ -24,7 +24,7 @@ func (r *Run) mergeStep() error {
 	}
 
 	// merge ends on a freshly pulled trunk, so HEAD is the squash commit.
-	sha, err := line(gitBin, "rev-parse", "--short", "HEAD")
+	sha, err := gitOut("rev-parse", "--short", "HEAD")
 	if err != nil {
 		r.list.mark(StepMerge, markWarn, "merged; the squash sha could not be read")
 

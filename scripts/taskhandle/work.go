@@ -98,7 +98,7 @@ func (r *Run) ticketBrief() string {
 // gitContext is the runner diffctx borrows; it swallows failures because a
 // missing diff is context, never a verdict.
 func (r *Run) gitContext(args ...string) string {
-	out, err := sh(append([]string{gitBin}, args...)...)
+	out, err := gitOut(args...)
 	if err != nil {
 		return ""
 	}

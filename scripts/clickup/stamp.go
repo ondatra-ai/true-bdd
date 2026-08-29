@@ -3,9 +3,9 @@ package clickup
 import (
 	"context"
 	"log/slog"
-	"os/exec"
-	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
 // stamp is when a triage decision was taken and the tree it was taken
@@ -22,16 +22,14 @@ type stamp struct {
 func now() stamp {
 	taken := stamp{Millis: time.Now().UnixMilli()}
 
-	head := exec.CommandContext(context.Background(), "git", "rev-parse", "HEAD")
-
-	sha, err := head.Output()
+	sha, err := git.HeadSHA(context.Background())
 	if err != nil {
 		slog.Warn("Could not read HEAD; the triage commit will be left unset", "error", err)
 
 		return taken
 	}
 
-	taken.Commit = strings.TrimSpace(string(sha))
+	taken.Commit = sha
 
 	return taken
 }

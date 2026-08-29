@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
@@ -232,10 +231,7 @@ func (r *PlaywrightRunner) exec(
 	cwd, phase string,
 	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-	cmd.Dir = cwd
-
-	return runLogged(cmd, spawnMeta{
+	return runLogged(ctx, argv, cwd, spawnMeta{
 		binary:    argv[0],
 		args:      argv[1:],
 		framework: FrameworkPlaywright,

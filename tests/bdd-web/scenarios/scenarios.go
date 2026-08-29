@@ -14,11 +14,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os/exec"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-web/steps"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
@@ -178,7 +178,7 @@ func missingTools() []string {
 	var missing []string
 
 	for _, tool := range []string{"node", "npm"} {
-		_, err := exec.LookPath(tool)
+		err := cli.Require(tool)
 		if err != nil {
 			missing = append(missing, tool)
 		}

@@ -1,17 +1,15 @@
 package merge
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
@@ -44,45 +42,37 @@ type result struct {
 	code   int
 }
 
-// sh runs an argv list. No shell, ever.
+// sh runs an argv list. No shell, ever. The stops are here rather than in
+// pkg/shell: whether a failure ends the run is this package's policy, and its
+// two siblings answer it differently.
 func (r *Run) sh(cmd []string, opt options) result {
-	ctx := context.Background()
-
-	if opt.timeout > 0 {
-		var cancel context.CancelFunc
-
-		ctx, cancel = context.WithTimeout(ctx, opt.timeout)
-		defer cancel()
+	sink := cli.Capture()
+	if opt.stream {
+		sink = cli.Console()
 	}
 
-	//nolint:gosec // every argv in this package is a literal or a parsed API value.
-	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
 	// Blanked, not removed: a child should know it is not interactive. Only a
 	// nested `claude -p` needs the variable gone entirely — see claudecli.
-	command.Env = append(os.Environ(), "CLAUDECODE=")
+	finished, err := spec.Run(context.Background(), cmd, cli.Options{
+		Env:     cli.Inherit().Blank("CLAUDECODE"),
+		Timeout: opt.timeout,
+		Output:  sink,
+	})
 
-	var stdout, stderr bytes.Buffer
-
-	if opt.stream {
-		command.Stdout, command.Stderr = console.Out(), console.Err()
-	} else {
-		command.Stdout, command.Stderr = &stdout, &stderr
-	}
-
-	err := command.Run()
-
-	if ctx.Err() != nil {
+	if errors.Is(err, cli.ErrTimeout) {
 		r.dief("%s timed out after %s", label(cmd), opt.timeout)
 	}
 
-	finished := result{stdout: stdout.String(), stderr: stderr.String(), code: exitCode(err)}
-
-	if opt.check && finished.code != 0 {
-		r.dief("%s failed (%d):\n%s", label(cmd), finished.code,
-			textutil.Truncate(firstNonEmpty(finished.stderr, finished.stdout), diagnosticLimit))
+	if err != nil {
+		r.dief("%s could not run: %v", label(cmd), err)
 	}
 
-	return finished
+	if opt.check && finished.Code != 0 {
+		r.dief("%s failed (%d):\n%s", label(cmd), finished.Code,
+			textutil.Truncate(firstNonEmpty(finished.Stderr, finished.Stdout), diagnosticLimit))
+	}
+
+	return result{stdout: finished.Stdout, stderr: finished.Stderr, code: finished.Code}
 }
 
 // git runs a git command against the checkout.
@@ -150,18 +140,6 @@ func label(cmd []string) string {
 	return strings.Join(cmd[:min(labelWords, len(cmd))], " ")
 }
 
-func exitCode(err error) int {
-	if err == nil {
-		return 0
-	}
-
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		return exitErr.ExitCode()
-	}
-
-	return -1
-}
 
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {

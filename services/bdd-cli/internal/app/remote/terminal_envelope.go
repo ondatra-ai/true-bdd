@@ -1,9 +1,7 @@
 package remote
 
 import (
-	"errors"
-	"os/exec"
-	"syscall"
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 )
 
 const (
@@ -53,8 +51,8 @@ type terminalEnvelope struct {
 // synthesizeEnvelope applies the plan §3.2 precedence (see
 // TestSynthesizeEnvelopePrecedence): signal ⇒ interrupted; no result ⇒
 // error(no_result); else the engine outcome, or error(contradiction) on a non-zero exit from a success-class result.
-func synthesizeEnvelope(waitErr error, result childResult) terminalEnvelope {
-	code, signaled, signalName := exitInfo(waitErr)
+func synthesizeEnvelope(exit cli.Result, result childResult) terminalEnvelope {
+	code, signaled, signalName := exitInfo(exit)
 
 	env := attachFacts(terminalEnvelope{}, facts{
 		code:       code,
@@ -109,28 +107,15 @@ func attachFacts(env terminalEnvelope, f facts) terminalEnvelope {
 	return env
 }
 
-// exitInfo extracts the exit code, whether the child was killed by a
-// signal, and (if so) the signal name from a cmd.Wait() error.
-func exitInfo(waitErr error) (int, bool, string) {
-	if waitErr == nil {
-		return 0, false, ""
+// exitInfo extracts the exit code, whether the child was killed by a signal,
+// and (if so) the signal name. pkg/shell already classified all three; a
+// child that never started keeps its NotStarted code.
+func exitInfo(exit cli.Result) (int, bool, string) {
+	if exit.Signaled() {
+		return exit.Code, true, exit.Signal.String()
 	}
 
-	var exitErr *exec.ExitError
-	if errors.As(waitErr, &exitErr) {
-		status, ok := exitErr.Sys().(syscall.WaitStatus)
-		if ok {
-			if status.Signaled() {
-				return status.ExitStatus(), true, status.Signal().String()
-			}
-
-			return status.ExitStatus(), false, ""
-		}
-
-		return exitErr.ExitCode(), false, ""
-	}
-
-	return -1, false, ""
+	return exit.Code, false, ""
 }
 
 // isSuccessClass reports whether the outcome demands a clean (zero)
