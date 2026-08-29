@@ -14,11 +14,16 @@
 //
 //	task            the Task's stem — docs/history/<task>.md derives from it,
 //	                so no path is stored
+//	log             the Task's log file, under docs/history/task_logs/. RECORDED
+//	                rather than derived: the history hook installs its logger
+//	                before `task` exists, so the two are not always the same
+//	                answer
 //	ticket          the ClickUp Ticket this Task is working on
 //	mandate         set while task-handle drives the run unattended
 //	cursor:<8>      one session's progress through the current turn
 //
 // Delete is Set(key, "") — an empty value reads as absent. Init removes the
 // file, which is how /task-start rolls a Task: everything stale goes at once,
-// including the cursors nothing else prunes.
+// including the cursors nothing else prunes. It removes no log — dropping the
+// `log` key rolls the log, and the old Task's records stay readable.
 package state

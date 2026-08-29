@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "pr-update")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "pr-update")
 
 	slog.Info("Pull request updated", "result", commit.Start(os.Args[1:]).UpdatePR())
 }

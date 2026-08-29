@@ -7,10 +7,16 @@
 // a program whose stdout another program parses binds Stderr, so a log line
 // can never corrupt the parsed channel.
 //
-// Every scripts/ program also appends to one shared docs/history/tools.log.json,
-// each record naming its writer in `tool`. Concurrent writers are safe because
-// this package emits one disk.Append per record and pkg/disk holds the parent
-// directory for it; state.Init truncates the file, so it lives one Task.
+// Every scripts/ program also appends to one shared log per Task, under
+// docs/history/task_logs/, each record naming its writer in `tool` and its
+// process in `run`. Concurrent writers are safe because this package emits one
+// disk.Append per record and pkg/disk holds the parent directory for it.
+//
+// `run` is what makes that shared file parseable: scripts/report folds one
+// run's tree out of it, and merge's fix agents spawn `go run
+// ./scripts/cmd/gates run` as a separate process appending to the same file.
+// Without filtering to one `run` first, the interleaving corrupts the tree
+// rather than merely cluttering it.
 //
 // THE MESSAGE STRINGS AND ATTRIBUTE KEYS ARE A WIRE CONTRACT.
 // tests/libraries/reporter/engine_log.go folds a run into turns on seven exact
@@ -20,6 +26,8 @@
 package logging
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"io"
 	"log/slog"
 
@@ -47,19 +55,45 @@ func (s Stream) writer() io.Writer {
 }
 
 // Install points this process's default slog at Handler's result. The file is
-// created up front: an absent one must not read as "the run never started".
-// An empty tool adds no attribute, keeping the engine's log shape unchanged.
+// created up front: E2E-019 reads an engine log with zero records, so a
+// missing one is not an empty one.
 func Install(text Stream, jsonPath, tool string) {
 	if jsonPath != "" {
 		_ = disk.Ensure(jsonPath, disk.Shared)
 	}
 
 	handler := Handler(text.writer(), jsonPath)
+
+	// The engine passes no tool, and 22 scenario steps regex its Stdout lines
+	// against goldens a per-process token would break.
 	if tool != "" {
-		handler = handler.WithAttrs([]slog.Attr{slog.String("tool", tool)})
+		handler = handler.WithAttrs([]slog.Attr{
+			slog.String("tool", tool),
+			slog.String("run", runID),
+		})
 	}
 
 	slog.SetDefault(slog.New(handler))
+}
+
+// runIDBytes is the width of the per-process run id.
+const runIDBytes = 4
+
+// runID names this process among the shared Task log's writers.
+//
+//nolint:gochecknoglobals // one process is one run: process-wide is the scope.
+var runID = mintRunID()
+
+// Run is this process's run id, for a program asking for its own report.
+func Run() string { return runID }
+
+// mintRunID returns 8 hex characters, once per process, so that two Install
+// calls cannot disagree. crypto/rand.Read fills the buffer or panics.
+func mintRunID() string {
+	buffer := make([]byte, runIDBytes)
+	_, _ = rand.Read(buffer)
+
+	return hex.EncodeToString(buffer)
 }
 
 // Handler builds the sink without installing it, for the one caller that must

@@ -74,7 +74,7 @@ func set(repo, key, value string) error {
 func main() {
 	// Stdout, alone among the scripts: /task-start injects `history roll` with
 	// a ! fence, which captures stdout.
-	logging.Install(logging.Stdout, state.ToolLog(history.RepoRoot()), "history")
+	logging.Install(logging.Stdout, state.TaskLog(history.RepoRoot()), "history")
 
 	err := run(os.Args[1:])
 	if err != nil {

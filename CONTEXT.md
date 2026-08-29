@@ -49,8 +49,24 @@ A program's ANSWER — bytes a caller reads verbatim in a shape it fixed, plus t
 _Avoid_: output, print, terminal, UI
 
 **Log**:
-One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program also appends to the shared `docs/history/tools.log.json`, each record naming its writer in `tool`. `pkg/logging` is the only implementation; the engine's message strings and attribute keys are a wire contract `tests/libraries/reporter` reads.
+One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program also appends to the Task's shared log under `docs/history/task_logs/`, each record naming its writer in `tool` and its process in `run`; `scripts/report` folds one `run`'s tree back out of it. `pkg/logging` is the only implementation; the engine's message strings and attribute keys are a wire contract `tests/libraries/reporter` reads.
 _Avoid_: trace, diagnostic, stderr
+
+**Report**:
+The tree a Run walked, folded back out of the Task's log and rendered as a table: every Node and Leaf, what it resulted in, and how long it took. Structure is WRITTEN and naming DERIVED — a writer stamps only `tree` and `duration_ms`; the nesting, the numbering and the status column are `scripts/report`'s, computed from the order the records arrived in. Nothing is read from prose.
+_Avoid_: summary, timeline, trace
+
+**Run**:
+One process of a `scripts/` program, from its first record to its last, named by the 8-hex `run` attribute `pkg/logging` stamps. Not a Task, which outlives many of them: a Task's log holds every Run in it, and merge's fix agents spawn `gates` as a separate Run into the same file, so a Report folds one `run` at a time or the tree it recovers is corrupt.
+_Avoid_: invocation, execution, session
+
+**Node**:
+One operation or sub-operation of a Run, opened and closed by a pair of `tree=start` / `tree=end` records and nesting by call order. `report.Open` writes both; a Node left open never finished, because `dief`'s `os.Exit` skips every `defer`.
+_Avoid_: step, stage, span, phase
+
+**Leaf**:
+One measured thing inside a Node — a single record carrying its own `duration_ms`, and no markers. What the three concurrent dispositions, every gate and every AI turn emit, because interleaved start/end pairs cannot be parsed from order.
+_Avoid_: event, point, sample
 
 **Disk access**:
 One filesystem read or write, taken through `pkg/disk` under a Hold and returning before any handle escapes.

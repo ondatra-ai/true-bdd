@@ -12,8 +12,11 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
+	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
+	"log/slog"
 )
 
 // historyRoles are the headings this run's own headless turns wrote under.
@@ -48,7 +51,13 @@ func (r *Run) abovePostmortemFloor(proposals []clickup.Finding) []clickup.Findin
 
 // postmortem reads the run back and files what it suggests. Changes nothing.
 func (r *Run) postmortem() {
-	r.banner("postmortem")
+	defer report.Open("postmortem", report.KeySkipped, !r.postmortemEnabled)()
+
+	if !r.postmortemEnabled {
+		r.logf("switched off in %s — skipping", config.Path)
+
+		return
+	}
 
 	transcript := r.historyExtract()
 	if transcript == "" {
@@ -65,7 +74,7 @@ func (r *Run) postmortem() {
 			Timeout:      postmortemTimeout,
 		})
 	if err != nil {
-		r.logf("! postmortem failed: %v", err)
+		slog.Warn("the postmortem turn failed", "error", err)
 
 		return
 	}
@@ -82,7 +91,7 @@ func (r *Run) postmortem() {
 
 	err = clickup.FileDeduped(queue, "merge-improvements", strconv.Itoa(r.pr))
 	if err != nil {
-		r.logf("! filing the postmortem's proposals failed: %v", err)
+		slog.Warn("filing the postmortem's proposals failed", "error", err)
 	}
 
 	// The postmortem reads; it never edits. If the worktree moved, something

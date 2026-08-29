@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // recordingsGlob is the RECORDED fixture data — cassettes and goldens.
@@ -55,7 +56,7 @@ var sweeps = []sweep{
 // machine that made it. The LLM reviewer cannot: a re-record changes ~475
 // files, four times CodeRabbit's per-review limit — see docs/adr/0002.
 func (r *Run) scanRecordings() {
-	r.banner("recordings")
+	defer report.Open("recordings")()
 
 	files := r.recordingFiles()
 	found := false

@@ -13,6 +13,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 const (
@@ -41,6 +42,8 @@ type scored struct {
 
 // triage scores every finding in one model call. Anything unscored is a stop.
 func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
+	defer report.Open("triage", "findings", len(findings))()
+
 	if len(findings) == 0 {
 		return nil
 	}

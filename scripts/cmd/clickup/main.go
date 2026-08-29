@@ -32,7 +32,7 @@ const usage = `usage:
 `
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "clickup")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "clickup")
 
 	err := run(os.Args[1:])
 	if err != nil {

@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
+	"log/slog"
 )
 
 // merge approves, then lands it. HEAD is trustworthy because the loop only
 // exits after a round that committed nothing — see assertHeadWasReviewed
 // for what enforces it (PR #76's stamp-wrong-commit failure).
 func (r *Run) merge() {
-	r.banner("merge")
+	defer report.Open("merge")()
 
 	current := r.branchStillOurs()
 	r.refuseDirtyMerge()
@@ -79,25 +81,26 @@ func (r *Run) assertHeadWasReviewed() {
 }
 
 func (r *Run) approve() {
+	started := time.Now()
+
 	r.logf("requesting approval")
 	r.sh([]string{"gh", "pr", "comment", strconv.Itoa(r.pr), "--body", "@coderabbitai approve"},
 		options{check: true})
 
-	for waited := time.Duration(0); waited < approveBudget; {
+	for waited := time.Duration(0); waited < approveBudget; waited += poll {
 		time.Sleep(poll)
-
-		waited += poll
 
 		decision := strings.TrimSpace(r.gh("pr", "view", strconv.Itoa(r.pr),
 			"--json", "reviewDecision", "--jq", `.reviewDecision // ""`))
 		if decision == "APPROVED" {
-			r.logf("approved after %s", waited)
+			report.Leaf("approve", started)
 
 			return
 		}
 	}
 
-	r.logf("! no approval within %s — trying the merge anyway", approveBudget)
+	slog.Warn("no approval within the budget — trying the merge anyway", "budget", approveBudget)
+	report.Leaf("approve", started, report.KeyStatus, report.StatusWarned)
 }
 
 // requiredCheck is one row of `gh pr checks --required`. bucket is gh's own
@@ -114,12 +117,14 @@ type requiredCheck struct {
 // one absent from the rollup is invisible here, and left to land()'s refusal.
 // Nothing bypasses that any more, so #93's silent merge over IN_PROGRESS is a stop.
 func (r *Run) waitForChecks() {
+	started := time.Now()
+
 	r.logf("waiting for the required checks")
 
 	for waited := time.Duration(0); ; waited += poll {
 		pending := r.pendingChecks(r.requiredChecks())
 		if len(pending) == 0 {
-			r.logf("every required check gh reports has finished, after %s", waited)
+			report.Leaf("wait for checks", started)
 
 			return
 		}
@@ -203,6 +208,8 @@ func (r *Run) squashArgs() []string {
 // AFTER approve() on purpose: BLOCKED is ambiguous while the approval is
 // missing, and means only the checks once it is in hand.
 func (r *Run) waitForMergeable() {
+	started := time.Now()
+
 	r.logf("waiting for GitHub to call #%d mergeable", r.pr)
 
 	for waited := time.Duration(0); ; waited += poll {
@@ -210,7 +217,7 @@ func (r *Run) waitForMergeable() {
 			"--json", "mergeStateStatus", "--jq", ".mergeStateStatus"))
 
 		if r.mergeableNow(state) {
-			r.logf("%s after %s", state, waited)
+			report.Leaf("wait for mergeable", started, "state", state)
 
 			return
 		}

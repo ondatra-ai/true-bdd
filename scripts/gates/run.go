@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 var errGateFailed = errors.New("gate failed")
@@ -65,15 +67,24 @@ func dedupe(paths []string) []string {
 // `set -e` did when this was a list of lines in a shell script.
 func Run(selected []Gate) error {
 	for _, gate := range selected {
-		slog.Info("Gate", "name", gate.Name, "command", strings.Join(gate.Command, " "))
+		command := strings.Join(gate.Command, " ")
+		slog.Info("Gate", "name", gate.Name, "command", command)
 
 		cmd := exec.CommandContext(context.Background(), gate.Command[0], gate.Command[1:]...)
 		cmd.Stdout, cmd.Stderr = console.Out(), console.Err()
 
+		started := time.Now()
+
 		err := cmd.Run()
 		if err != nil {
+			// Reported before the return: a red gate is the one whose duration
+			// a reader most wants, and the stop above would swallow it.
+			report.Leaf(gate.Name, started, "command", command, report.KeyStatus, report.StatusFailed)
+
 			return fmt.Errorf("%w: %s: %w", errGateFailed, gate.Name, err)
 		}
+
+		report.Leaf(gate.Name, started, "command", command)
 	}
 
 	return nil

@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "merge")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "merge")
 
 	merge.Start(os.Args[1:]).Main()
 }

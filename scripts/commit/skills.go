@@ -6,6 +6,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/scripts/config"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 // skillTools is what a skill turn may reach for. No Bash beyond the gates the
@@ -24,7 +25,7 @@ func skillTimeout() time.Duration {
 // Always `auto`: this program has nobody to ask, so the alternative to
 // resolving by the skill's documented rules is not resolving at all.
 func (r *Run) syncDocUniverse() {
-	r.banner("doc universe")
+	defer report.Open("doc universe", report.KeySkipped, !r.docUniverseEnabled)()
 
 	if !r.docUniverseEnabled {
 		r.logf("switched off in %s — skipping", config.Path)
@@ -38,7 +39,7 @@ func (r *Run) syncDocUniverse() {
 // updateMemory folds anything the pending diff made false in CLAUDE.md into
 // this commit, before the staging step picks it up.
 func (r *Run) updateMemory() {
-	r.banner("memory")
+	defer report.Open("memory", report.KeySkipped, !r.updateMemoryEnabled)()
 
 	if !r.updateMemoryEnabled {
 		r.logf("switched off in %s — skipping", config.Path)
@@ -64,13 +65,13 @@ func (r *Run) runSkill(name, prompt, role string) {
 			"  Nothing was committed. Run it yourself and read the failure.", name, err)
 	}
 
-	report := strings.TrimSpace(answer)
-	if report == "" {
+	decisions := strings.TrimSpace(answer)
+	if decisions == "" {
 		r.dief("the %s skill reported nothing, so there is no record of what it decided.\n"+
 			"  Nothing was committed.", name)
 	}
 
-	for _, line := range strings.Split(report, "\n") {
+	for _, line := range strings.Split(decisions, "\n") {
 		r.logf("%s", line)
 	}
 }

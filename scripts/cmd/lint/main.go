@@ -31,7 +31,7 @@ import (
 )
 
 func main() {
-	logging.Install(logging.Stderr, state.ToolLog(history.RepoRoot()), "lint")
+	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), "lint")
 
 	err := run(os.Args[1:])
 	if err == nil {

@@ -34,21 +34,10 @@ func File(repo string) string {
 	return filepath.Join(HistoryDir(repo), "state.jsonl")
 }
 
-// ToolLog is the one log every scripts/ program appends to, each record naming
-// its writer in `tool`. One file is safe because pkg/disk holds the parent
-// directory for each single-syscall append.
-func ToolLog(repo string) string {
-	return filepath.Join(HistoryDir(repo), "tools.log.json")
-}
-
-// Init removes the state file and the tool log. The log shares the Task's
-// lifetime, which is the only thing bounding its growth.
+// Init removes the state file, which is how /task-start rolls a Task.
+// Dropping the `log` key is what rolls the log, so no log file is removed —
+// the previous Task's records are what TaskLog exists to keep readable.
 func Init(repo string) error {
-	err := disk.Remove(ToolLog(repo))
-	if err != nil {
-		return err
-	}
-
 	return disk.Remove(File(repo))
 }
 

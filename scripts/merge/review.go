@@ -2,6 +2,7 @@ package merge
 
 import (
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,6 +40,22 @@ const (
 	verdictNothingToReview
 )
 
+// String names the verdict in the log, where an iota is unreadable.
+func (v verdict) String() string {
+	switch v {
+	case verdictSilent:
+		return "silent"
+	case verdictAccepted:
+		return "accepted"
+	case verdictRateLimited:
+		return "rate limited"
+	case verdictNothingToReview:
+		return "nothing in review scope"
+	default:
+		return "unknown"
+	}
+}
+
 type ghUser struct {
 	Login string `json:"login"`
 }
@@ -60,12 +77,8 @@ type ghReview struct {
 // incremental one: those add only fix commits, so a full re-review re-reports
 // what round 1 already triaged. HEAD must be pushed, or the review misses it.
 func (r *Run) requestReview(round int) {
-	headline := fmt.Sprintf("round %d of %d", round, lastRound)
-	if round > lastFixRound {
-		headline += " — triage only, nothing is fixed"
-	}
+	defer report.Open("request review", "fixes", round <= lastFixRound)()
 
-	r.banner(headline)
 	r.checkPushed()
 
 	command, kind := "@coderabbitai review", "an incremental review"
@@ -108,22 +121,28 @@ func (r *Run) requestReview(round int) {
 // ackNothingToReview before ackRateLimited: both share the "Action not
 // completed" heading; only the wording tells a spent quota from an empty diff.
 func (r *Run) awaitAcknowledgement(baselineComment int) (verdict, int) {
-	for waited := time.Duration(0); waited < ackBudget; {
-		time.Sleep(poll)
+	// Measured, not counted: both loops here sleep BEFORE their first read, so
+	// a tick count is a 30s floor that overstates every wait it reports.
+	started := time.Now()
 
-		waited += poll
+	answer, id := r.pollAcknowledgement(baselineComment)
+
+	report.Leaf("await acknowledgement", started, "answer", answer.String())
+
+	return answer, id
+}
+
+func (r *Run) pollAcknowledgement(baselineComment int) (verdict, int) {
+	for waited := time.Duration(0); waited < ackBudget; waited += poll {
+		time.Sleep(poll)
 
 		for _, comment := range r.botCommentsAfter(baselineComment) {
 			switch {
 			case strings.Contains(comment.Body, ackNothingToReview):
-				r.logf("nothing in review scope after %s", waited)
-
 				return verdictNothingToReview, comment.ID
 			case strings.Contains(comment.Body, ackRateLimited):
 				return verdictRateLimited, comment.ID
 			case containsAny(comment.Body, ackAccepted):
-				r.logf("review accepted after %s", waited)
-
 				return verdictAccepted, comment.ID
 			}
 		}
@@ -136,20 +155,27 @@ func (r *Run) awaitAcknowledgement(baselineComment int) (verdict, int) {
 // edited to a rate limit. Re-read every poll: PR #77 comment 5330633865 was
 // posted "triggered" then edited 32s later to "quota spent" — reading once misses that.
 func (r *Run) awaitReview(baselineReview, ackID int) bool {
-	for waited := time.Duration(0); waited < reviewBudget; {
+	started := time.Now()
+
+	posted := r.pollReview(baselineReview, ackID)
+
+	report.Leaf("await review", started, "posted", posted)
+
+	return posted
+}
+
+func (r *Run) pollReview(baselineReview, ackID int) bool {
+	for waited := time.Duration(0); waited < reviewBudget; waited += poll {
 		time.Sleep(poll)
 
-		waited += poll
-
 		if r.newestReviewID() > baselineReview {
-			r.logf("review posted after %s", waited)
 			r.recordReviewsAfter(baselineReview)
 
 			return true
 		}
 
 		if strings.Contains(r.commentBody(ackID), ackRateLimited) {
-			r.logf("the acknowledgement was edited to a rate limit after %s", waited)
+			r.logf("the acknowledgement was edited to a rate limit")
 
 			return false
 		}

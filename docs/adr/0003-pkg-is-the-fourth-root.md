@@ -40,8 +40,9 @@ verbatim in a shape it fixed, and `scripts/` almost never produces one. Five
 files are exempt, each holding a descriptor rather than a print: the lint
 hook's stdin and its JSON verdict (Claude Code parses that stdout, and the
 protocol is not ours to change), and three that wire a child process's
-streams. Everything else there is `log/slog`, appending to one shared
-`docs/history/tools.log.json` with a `tool` attribute naming its writer.
+streams. Everything else there is `log/slog`, appending to one shared log per
+Task under `docs/history/task_logs/`, with a `tool` attribute naming its writer
+and a `run` attribute naming its process.
 
 Two consumers were rewritten rather than exempted, which is what made the ban
 possible: `/task-loop` reads the bound Ticket from `docs/history/state.jsonl`
