@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -141,12 +142,28 @@ func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	var envelope struct {
 		StructuredOutput json.RawMessage `json:"structured_output"`
 		Result           json.RawMessage `json:"result"`
+		// A denial is not a failure: in -p anything that would have prompted
+		// is refused silently and the run still reports success, so a turn
+		// that could not read looks exactly like one that read everything.
+		PermissionDenials []struct {
+			ToolName string `json:"tool_name"`
+		} `json:"permission_denials"`
 	}
 
 	if json.Unmarshal([]byte(stdout), &envelope) != nil {
 		const envelopeLimit = 400
 
 		return nil, fmt.Errorf("%w: %s", ErrUnparseable, textutil.Truncate(stdout, envelopeLimit))
+	}
+
+	if len(envelope.PermissionDenials) > 0 {
+		denied := make([]string, 0, len(envelope.PermissionDenials))
+		for _, denial := range envelope.PermissionDenials {
+			denied = append(denied, denial.ToolName)
+		}
+
+		slog.Warn("Tool calls were denied; this turn did less than it was asked to",
+			"role", opts.Role, "denied", strings.Join(denied, " "))
 	}
 
 	if isEmptyJSON(envelope.StructuredOutput) {

@@ -17,10 +17,12 @@ Propose improvements to EXACTLY these files, and no others:
 Read them before proposing anything — a proposal that misreads the current
 code is worse than none. You have read-only tools; do not attempt to edit.
 
+Do not score what you propose. Every proposal is triaged afterwards, by a
+separate turn holding one rubric shared with the rest of this repository's
+tooling, and a self-assessed number would only be overwritten.
+
 Return ONLY a JSON array, no prose and no code fence:
 [{"title": "<imperative, <=100 chars>",
-  "score": <1-10 by how much time or noise it would save>,
-  "reason": "<one sentence>",
   "file": "<the file it changes>",
   "line": "<line or ?>",
   "severity": "postmortem",

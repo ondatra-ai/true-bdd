@@ -8,6 +8,7 @@
 //	clickup file   --queue tmp/merge/defer-queue.json --tag fix-now --pr 76
 //	clickup defer  --doc tmp/deferral.md --tag deferred
 //	clickup list   --tag fix-now
+//	clickup triage 10
 package main
 
 import (
@@ -16,6 +17,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
@@ -28,6 +30,8 @@ const usage = `usage:
   clickup file   --queue <path> --tag <tag> [--pr <number>]
   clickup defer  --doc <path> --tag <tag>
   clickup list   --tag <tag>
+  clickup triage <count>
+  clickup status <TICKET> <STATUS> <comment...>
   clickup close  <STATUS> <comment...>
 `
 
@@ -57,6 +61,8 @@ func run(args []string) error {
 		return runDefer(command, rest)
 	case "list":
 		return runList(command, rest)
+	case "triage":
+		return runTriage(rest)
 	case "status":
 		return runStatus(rest)
 	case "close":
@@ -77,6 +83,26 @@ func runStatus(args []string) error {
 	err := clickup.Status(args[0], args[1], strings.Join(args[2:], " "))
 	if err != nil {
 		return fmt.Errorf("closing the ticket: %w", err)
+	}
+
+	return nil
+}
+
+// runTriage re-judges the oldest-triaged tickets against HEAD. The count is
+// positional: a sweep has exactly one number to give it.
+func runTriage(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("%w\n%s", errMissingFlag, usage)
+	}
+
+	count, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("%w: the count %q is not a number\n%s", errMissingFlag, args[0], usage)
+	}
+
+	err = clickup.Triage(count)
+	if err != nil {
+		return fmt.Errorf("triaging the backlog: %w", err)
 	}
 
 	return nil

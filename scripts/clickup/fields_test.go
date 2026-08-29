@@ -14,6 +14,12 @@ const (
 	rootGlob  = "./*"
 )
 
+// The stamp the tests pass in place of the clock and HEAD.
+const (
+	stampMillis = 1787999823623
+	stampCommit = "eeb67aa1c0de5f0e2a1b3c4d5e6f708192a3b4c5"
+)
+
 // TestPlanFieldsDerivesTheGlobAndTheIndex pins the two derivations the filing
 // turn transcribes: an exact file becomes its directory's glob, and a score
 // becomes the dropdown POSITION one below it.
@@ -71,7 +77,7 @@ func TestPlanFieldsNumbersTicketsFromOne(t *testing.T) {
 
 	var rows []map[string]any
 
-	decode(t, clickup.PlanFieldsForTest(queue), &rows)
+	decode(t, clickup.PlanFieldsForTest(queue, stampMillis, stampCommit), &rows)
 
 	for index, row := range rows {
 		if got, want := row["ticket"], float64(index+1); got != want {
@@ -87,7 +93,7 @@ func planOf(t *testing.T, finding clickup.Finding) map[string]string {
 
 	var rows []map[string]any
 
-	decode(t, clickup.PlanFieldsForTest([]clickup.Finding{finding}), &rows)
+	decode(t, clickup.PlanFieldsForTest([]clickup.Finding{finding}, stampMillis, stampCommit), &rows)
 
 	if len(rows) != 1 {
 		t.Fatalf("planFields returned %d rows, want 1", len(rows))

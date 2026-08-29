@@ -24,6 +24,32 @@ fields:
     required: true
     range: 1-10
     purpose: orders the queue, highest first
+    notes:
+      - Written by scripts/triage's one rubric — consequence if left undone,
+        read against the tree named by Triage Commit. Never a second scale.
+      - ClickUp addresses a drop_down by POSITION, so score 7 is orderindex 6.
+
+  # A score with no stamp cannot be re-checked: it does not say what tree it
+  # was true of. The two are written together, by every path that scores.
+  Triage Date:
+    id: c5e6a521-c13f-4501-846c-6d46991e66a8
+    type: date
+    required: true
+    purpose: when Triage Score was last decided; `clickup triage` walks the oldest first
+    format: unix milliseconds to write; ClickUp stores the DAY
+    notes:
+      - Unset sorts oldest, so a Ticket filed before the field existed is
+        swept before any that carries one.
+      - Observed 2026-08-29 - 1788002290647 (11:18Z) came back 1787968800000,
+        the workspace day start. Two sweeps in one day tie, and break on
+        creation date.
+
+  Triage Commit:
+    id: 21913797-c413-4a92-bfef-dbae6e556e54
+    type: short_text
+    required: true
+    purpose: the commit Triage Score was decided against
+    format: a full 40-character sha
 
   Expected Changes:
     id: f0c13f08-1762-4c45-8893-6ac4413d3385

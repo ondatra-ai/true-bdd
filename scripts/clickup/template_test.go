@@ -46,3 +46,24 @@ func TestStatusRuleNamesTheStatusItDeclares(t *testing.T) {
 		t.Fatalf("status_rule %q does not name the status %q it is meant to state", rule, status)
 	}
 }
+
+// TestRaiserNamesWhoActuallyRaisedIt pins the mapping that replaced a hardcoded
+// "CodeRabbit raised this". Three paths file through one template, and for 35
+// tickets it credited CodeRabbit with all three.
+func TestRaiserNamesWhoActuallyRaisedIt(t *testing.T) {
+	t.Parallel()
+
+	// The two values scripts/merge/comments.go sets, and the postmortem's.
+	cases := map[string]string{
+		"thread":     "CodeRabbit",
+		"body-only":  "CodeRabbit",
+		"postmortem": "The merge postmortem",
+		"":           "An unrecorded source",
+	}
+
+	for source, want := range cases {
+		if got := clickup.RaiserForTest(source); got != want {
+			t.Errorf("raiserOf(%q) = %q, want %q", source, got, want)
+		}
+	}
+}

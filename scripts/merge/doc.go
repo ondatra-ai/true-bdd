@@ -5,7 +5,7 @@
 //	for round in 1, 2, 3:
 //	    requestReview()        # and wait out CodeRabbit's rate limit
 //	    findings = readComments()
-//	    scored   = triage(findings)
+//	    scored   = triage.Score, once per finding
 //	    fix / file a ticket / ignore, by score
 //	    resolve every thread
 //	    break if this round changed nothing, else commit
@@ -14,6 +14,11 @@
 //
 // Rounds 1 and 2 fix what scores 9-10 and file 6-8 as ClickUp tickets. Round 3
 // fixes nothing — everything >= 6 becomes a ticket.
+//
+// The scale is not this package's. scripts/triage holds the one rubric this
+// repository scores anything by, and its turn reads the tree before it answers;
+// what stays here is the disposition — the Floors table, and which band fixes,
+// tickets or drops.
 //
 // A round that changes no file ends the loop, because the next round would buy
 // a review of a byte-identical tree at a quarter of the hourly quota. That is

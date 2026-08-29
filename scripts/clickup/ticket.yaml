@@ -23,10 +23,12 @@ status_rule: |
 # title. `body` is a Go text/template over one review finding; a hand-written
 # deferral supplies its own prose and is transcribed instead (clickup defer).
 headings:
+
+  # `Raiser`, not a hardcoded name: "CodeRabbit raised this" credited it with
+  # 35 postmortem tickets it never saw.
   - name: Why
     body: |
-      CodeRabbit raised this on {{.Origin}}; triage scored it **{{.Score}}/10** — real, but not
-      worth blocking that merge on.
+      {{.Raiser}} raised this on {{.Origin}}; triage scored it **{{.Score}}/10**.
 
       > {{.Reason}}
 
@@ -44,7 +46,9 @@ headings:
 
   - name: Context
     body: |
-      Deferred rather than fixed inline: the merge loop caps fixing at two
-      review rounds, because CodeRabbit's free tier allows ~4 PR reviews an
-      hour and PR #76 exhausted that by fixing everything inline over four
-      rounds. Reviewer severity `{{.Severity}}`, source `{{.Source}}`.
+      Reviewer severity `{{.Severity}}`, source `{{.Source}}`.
+
+      `Triage Score`, `Triage Date` and `Triage Commit` say what this was
+      judged to be worth, when, and against which commit. `clickup triage`
+      re-reads the oldest of those against HEAD and either refreshes this body
+      or retires the ticket, so a score here is never older than its stamp.

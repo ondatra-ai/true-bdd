@@ -6,41 +6,20 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"log/slog"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
-	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
+	"github.com/ondatra-ai/true-bdd/scripts/triage"
 )
 
-const (
-	// findingLimit caps how much of a finding the scorer is shown.
-	findingLimit        = 2500
-	defaultScoreTimeout = 900 * time.Second
-	// missingSample is how many unscored ids a stop names before it is a wall
-	// of text rather than a diagnosis.
-	missingSample = 5
-	// The rubric's band, checked rather than trusted.
-	minScore = 1
-	maxScore = 10
-)
+// findingLimit caps how much of a finding the scorer is shown.
+const findingLimit = 2500
 
-// scoreTimeout bounds the one call that scores every finding.
-func scoreTimeout() time.Duration { return envDuration("MERGE_SCORE_TIMEOUT", defaultScoreTimeout) }
-
-// scored is one row of the scoring answer. Score is `any` because a model
-// that answers "9", 9.0 or 9 must all be read the same way, and one that
-// answers "high" must be a stop rather than a zero.
-type scored struct {
-	ID     string `json:"id"`
-	Score  any    `json:"score"`
-	Reason string `json:"reason"`
-}
-
-// triage scores every finding in one model call. Anything unscored is a stop.
+// triage scores every finding against the tree as it stands. One turn each:
+// the shared scorer reads the code before it answers, which is what lets it
+// score a finding that misreads this codebase a 1 rather than guessing.
 func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
 	defer report.Open("triage", "findings", len(findings))()
 
@@ -48,36 +27,17 @@ func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
 		return nil
 	}
 
-	verdicts := r.scoreAll(findings)
-
-	var missing []string
-
-	for _, finding := range findings {
-		if _, ok := verdicts[finding.ID]; !ok {
-			missing = append(missing, finding.ID)
-		}
-	}
-
-	if len(missing) > 0 {
-		r.dief("scoring returned no verdict for %d finding(s): %v",
-			len(missing), missing[:min(missingSample, len(missing))])
-	}
-
-	for index := range findings {
-		row := verdicts[findings[index].ID]
-
-		score, ok := asScore(row.Score)
-		if !ok {
-			r.dief("scoring returned a non-numeric score %v for %s", row.Score, findings[index].ID)
+	for index, finding := range findings {
+		verdict, err := triage.Score(r.subjectOf(finding))
+		if err != nil {
+			r.dief("scoring %s: %v", finding.ID, err)
 		}
 
-		if score < minScore || score > maxScore {
-			r.dief("scoring returned %d for %s — outside %d-%d",
-				score, findings[index].ID, minScore, maxScore)
-		}
-
-		findings[index].Score = score
-		findings[index].Reason = row.Reason
+		// Only the verdict's two judgements are carried back. The body stays
+		// the reviewer's own words, which the fix agent and the thread reply
+		// are both anchored to.
+		findings[index].Score = verdict.Score
+		findings[index].Reason = verdict.Reason
 	}
 
 	r.save(r.roundDir(round)+"/scored.json", findings)
@@ -85,60 +45,25 @@ func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
 	return findings
 }
 
-// scoreAll is the one model call, keyed by finding id.
-func (r *Run) scoreAll(findings []clickup.Finding) map[string]scored {
-	type row struct {
-		ID               string `json:"id"`
-		File             string `json:"file"`
-		Line             string `json:"line"`
-		ReviewerSeverity string `json:"reviewer_severity"`
-		Finding          string `json:"finding"`
+// subjectOf is the whole difference between merge's caller and the others:
+// where the subject comes from. Refresh stays unset — a review comment carries
+// no ticket headings to rewrite, and this caller keeps the body verbatim.
+func (r *Run) subjectOf(finding clickup.Finding) triage.Subject {
+	// A postmortem proposal arrives with no id — the prompt returns none — and
+	// the id is only ever a label in a diagnostic, so the title stands in.
+	label := finding.ID
+	if label == "" {
+		label = finding.Title
 	}
 
-	payload := make([]row, 0, len(findings))
-	for _, finding := range findings {
-		payload = append(payload, row{
-			ID: finding.ID, File: finding.File, Line: finding.Line,
-			ReviewerSeverity: finding.Severity,
-			Finding:          truncate(finding.Body, findingLimit),
-		})
-	}
-
-	encoded, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		r.dief("encoding the findings for scoring: %v", err)
-	}
-
-	answer, err := claudecli.Run(rubricPrompt+"\n\nFindings:\n"+string(encoded), claudecli.Options{
-		Role:    "merge-triage",
-		Timeout: scoreTimeout(),
-	})
-	if err != nil {
-		r.dief("scoring failed: %v", err)
-	}
-
-	verdicts := map[string]scored{}
-
-	for _, item := range parseJSONArrayInto[scored](r, answer, "scoring") {
-		if item.ID != "" {
-			verdicts[item.ID] = item
-		}
-	}
-
-	return verdicts
-}
-
-// asScore reads what a model called a score.
-func asScore(value any) (int, bool) {
-	switch typed := value.(type) {
-	case float64:
-		return int(typed), true
-	case string:
-		parsed, err := strconv.Atoi(strings.TrimSpace(typed))
-
-		return parsed, err == nil
-	default:
-		return 0, false
+	return triage.Subject{
+		ID:       label,
+		Title:    finding.Title,
+		Body:     truncate(finding.Body, findingLimit),
+		File:     finding.File,
+		Line:     finding.Line,
+		Origin:   fmt.Sprintf("%s, on PR #%d", finding.Source, r.pr),
+		Severity: finding.Severity,
 	}
 }
 

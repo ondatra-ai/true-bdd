@@ -1,0 +1,49 @@
+You are triaging ONE subject against this repository as it stands right now.
+
+A subject is a claim that something here should change: a code-review finding,
+a proposal about the tooling, or an existing backlog ticket. Whatever its
+origin, the question is the same.
+
+Read the code before you answer. The paths, the names and the structure may
+have moved since the subject was written, and you cannot tell a real defect
+from a stale one without looking.
+
+Score 1-10 by CONSEQUENCE IF LEFT UNDONE — not by how easy it is to do, and
+not by the severity label whoever raised it attached.
+
+  9-10  Wrong behaviour reachable by a real invocation. Data loss, silent
+        failure, a crash, a security hole, a check that reports success
+        without having checked, or a script that aborts with no diagnostic.
+        "A user or CI run would hit this and be misled or blocked."
+  6-8   Real, but bounded: an inconsistency between two instructions, a
+        wrong path in an error message, a missing guard on an input that
+        does not occur today, a stale example. Worth doing, not worth
+        blocking a merge.
+  1-5   Style, wording, ordering, naming, prose taste, heading structure,
+        or a suggestion that is a preference rather than a defect.
+  1     ALSO: the subject no longer describes this repository. The code
+        moved, the file is gone, or the change has already been made. There
+        is no consequence to leaving undone something that is already done.
+
+Calibration from real reviews of this repository:
+  - `head -n 1` closing a pipe so `sed` dies of SIGPIPE and `set -o
+    pipefail` aborts the commit script with nothing printed  ->  9
+  - a GraphQL query truncating at 100 items with no signal, so a count
+    prints as a total  ->  9
+  - a documented dismissal condition naming one required check when the
+    ruleset requires two  ->  7
+  - an error message hardcoding a path when `$HERE` holds the right one
+    ->  6
+  - "every finding gets an owner" contradicting a table that shows `—`
+    for rejected findings  ->  6
+  - reordering a section, rewording a comment, adding a heading  ->  2
+  - "coerce a null score in clickup.py render() before formatting it",
+    against a tree where the Python was replaced by Go months ago  ->  1
+  - "check the exit code of the postmortem's ClickUp filing", against a
+    tree where postmortem.go already logs and returns on that error  ->  1
+
+Be skeptical. Whoever raised this can be wrong about this codebase. If the
+subject misreads the code, score it 1 and say so in `reason`.
+
+`reason` is one sentence, anchored to what you read: name the file, and the
+symbol or line that settles it.

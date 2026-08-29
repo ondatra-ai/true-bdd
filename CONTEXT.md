@@ -37,8 +37,20 @@ _Avoid_: pass, sweep, iteration
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.
 
 **Ticket**:
-One unit of planned work, held in ClickUp. Carries the four headings `scripts/clickup` renders and, when it may be taken unattended, the fields `true-bdd/ticket-schema.yaml` requires.
+One unit of planned work, held in ClickUp. Carries the four headings `scripts/clickup` renders and, when it may be taken unattended, the fields `.claude/skills/task-handle/ticket-schema.yaml` requires.
 _Avoid_: task (for this sense), issue, card, story
+
+**Subject**:
+One claim that something in this repository should change, on its way to being judged: a review finding, a postmortem proposal, or an existing Ticket. What a caller hands `scripts/triage`, and the only thing that differs between its three callers besides what they do with the answer.
+_Avoid_: item, candidate, claim, finding (for this sense)
+
+**Verdict**:
+What one Triage answered about one Subject: a score, a code-anchored reason, and — only when the Subject asked to be refreshed — the body rewritten against the tree it was read against.
+_Avoid_: result, judgement, assessment
+
+**Triage**:
+Scoring one Subject 1-10 by the consequence of leaving it undone, read against the tree as it stands. One rubric for the whole repository (`scripts/triage`), because relevance is not a second axis: a claim about code that no longer exists has no consequence, and scores 1. The disposition is the caller's — merge fixes, tickets or drops by its own Floors; `scripts/clickup` retires below 6 or refuses to file.
+_Avoid_: scoring, grooming, prioritisation, ranking
 
 **Task**:
 One session's unit of work — the history file under `docs/history/` that `/task-start` opens. At most one Ticket is bound to it, from `/task-start` until `/task-done` or `/task-fail`.

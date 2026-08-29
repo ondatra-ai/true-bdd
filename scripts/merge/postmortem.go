@@ -16,6 +16,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
+	"github.com/ondatra-ai/true-bdd/scripts/triage"
 	"log/slog"
 )
 
@@ -33,6 +34,26 @@ const (
 	scannerStart = 64 * 1024
 	scannerMax   = 16 * 1024 * 1024
 )
+
+// scoreProposals triages what the postmortem proposed. The turn is told not
+// to score itself: a proposal is a claim about this repository like any other,
+// and it is judged by the same rubric a review finding is.
+func (r *Run) scoreProposals(proposals []clickup.Finding) []clickup.Finding {
+	for index, proposal := range proposals {
+		verdict, err := triage.Score(r.subjectOf(proposal))
+		if err != nil {
+			slog.Warn("a postmortem proposal could not be scored; dropping it",
+				"title", proposal.Title, "error", err)
+
+			continue
+		}
+
+		proposals[index].Score = verdict.Score
+		proposals[index].Reason = verdict.Reason
+	}
+
+	return proposals
+}
 
 // abovePostmortemFloor drops proposals the run's triage row would not have
 // ticketed. Under a mandate the floor is 9, so it will usually stay silent —
@@ -79,7 +100,8 @@ func (r *Run) postmortem() {
 		return
 	}
 
-	proposals := r.abovePostmortemFloor(parseJSONArrayInto[clickup.Finding](r, answer, "postmortem"))
+	proposals := r.abovePostmortemFloor(
+		r.scoreProposals(parseJSONArrayInto[clickup.Finding](r, answer, "postmortem")))
 	if len(proposals) == 0 {
 		r.logf("the postmortem proposed nothing above the floor")
 

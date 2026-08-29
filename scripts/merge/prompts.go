@@ -6,11 +6,6 @@ import _ "embed"
 // unescaped, and an accidental rewrite here would change what's asked
 // without showing up as a change to a prompt.
 
-// rubricPrompt scores each finding by consequence if left unfixed.
-//
-//go:embed prompts/rubric.txt
-var rubricPrompt string
-
 // fixPrompt asks for exactly one finding to be fixed, gates left green.
 //
 //go:embed prompts/fix.txt
