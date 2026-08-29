@@ -157,6 +157,7 @@ func Start(args []string) *Run {
 	run.startedAt = time.Now().UTC().Format("2006-01-02T15:04:05Z")
 
 	slog.Info("Merging", "repo", run.repo, "pr", run.pr)
+	run.reportGateTime(branch)
 
 	return run
 }
