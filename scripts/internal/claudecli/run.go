@@ -1,7 +1,6 @@
 package claudecli
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -32,7 +31,7 @@ const turnName = "ai turn"
 func Run(prompt string, opts Options) (string, error) {
 	started := time.Now()
 
-	stdout, err := claude.Run(context.Background(), prompt, opts)
+	stdout, err := claude.Run(prompt, opts)
 	report.Leaf(turnName, started, attrs(opts.Role, err)...)
 
 	return stdout, err
@@ -43,7 +42,7 @@ func Run(prompt string, opts Options) (string, error) {
 func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	started := time.Now()
 
-	answer, err := claude.RunJSON(context.Background(), prompt, opts)
+	answer, err := claude.RunJSON(prompt, opts)
 	report.Leaf(turnName, started, attrs(opts.Role, err)...)
 
 	return answer, err

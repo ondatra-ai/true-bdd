@@ -3,6 +3,7 @@ package disk
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -209,6 +210,42 @@ func Copy(dst, src string, mode Mode) error {
 	}
 
 	return Write(dst, data, mode)
+}
+
+// ErrSymlink reports a link CopyTree will not silently flatten into a file.
+var ErrSymlink = errors.New("symlink in a copied tree")
+
+// CopyTree copies the tree rooted at src INTO dst — src's contents land at
+// dst's top level, which is what the `cp -R src/. dst` this replaced meant.
+// A symlink REFUSES rather than being flattened to a copy of its target.
+func CopyTree(dst, src string, mode Mode) error {
+	err := filepath.WalkDir(src, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+
+		if entry.Type()&fs.ModeSymlink != 0 {
+			return fmt.Errorf("%w: %s", ErrSymlink, path)
+		}
+
+		relative, relErr := filepath.Rel(src, path)
+		if relErr != nil {
+			return fmt.Errorf("locating %s under %s: %w", path, src, relErr)
+		}
+
+		target := filepath.Join(dst, relative)
+
+		if entry.IsDir() {
+			return Dir(target, mode)
+		}
+
+		return Copy(target, path, mode)
+	})
+	if err != nil {
+		return fmt.Errorf("copying %s to %s: %w", src, dst, err)
+	}
+
+	return nil
 }
 
 // skipMissing turns "the directory is not there" into success for the two

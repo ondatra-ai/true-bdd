@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
@@ -26,12 +27,7 @@ const (
 )
 
 // The gh argv fragments this file repeats.
-const (
-	runVerb  = "run"
-	apiVerb  = "api"
-	jsonFlag = "--json"
-	jqFlag   = "--jq"
-)
+const ()
 
 // gateRun is one finished CI gates job, as much of it as the log wants.
 type gateRun struct {
@@ -142,23 +138,21 @@ func gateTimings(payload []byte) (gateRun, bool) {
 // Task log. A note in the margin, not a step: every failure is one Info line,
 // because a WARN would mark whichever node the record lands in.
 func (r *Run) reportGateTime(branch string) {
-	listed := r.sh([]string{
-		ghBin, runVerb, "list", "--workflow", ciWorkflow, "--branch", branch,
-		"--status", "completed", "--limit", "1",
-		jsonFlag, "databaseId", jqFlag, ".[].databaseId",
-	}, options{})
-
-	runID := strings.TrimSpace(listed.stdout)
-	if listed.code != 0 || runID == "" {
+	runID, err := github.LastCompletedRun(ciWorkflow, branch)
+	if err != nil || runID == "" {
 		slog.Info("No completed CI gates run to report", "branch", branch)
 
 		return
 	}
 
-	jobs := r.sh([]string{ghBin, apiVerb,
-		"repos/" + r.repo + "/actions/runs/" + runID + "/jobs"}, options{})
+	jobs, err := github.RunJobs(r.repo, runID)
+	if err != nil {
+		slog.Info("Could not read the CI gates run", "ci_run", runID)
 
-	timings, folded := gateTimings([]byte(jobs.stdout))
+		return
+	}
+
+	timings, folded := gateTimings(jobs)
 	if !folded {
 		slog.Info("Could not read the CI gates run", "ci_run", runID)
 

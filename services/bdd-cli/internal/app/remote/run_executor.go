@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
@@ -64,7 +65,6 @@ type RunExecutor struct {
 	store    *store.DB
 	locks    *store.Locks
 	children *ChildrenRegistry
-	binPath  string
 	folder   string
 	ownerID  string
 	run      RunSpec
@@ -92,14 +92,13 @@ func NewRunExecutor(
 	database *store.DB,
 	locks *store.Locks,
 	children *ChildrenRegistry,
-	binPath, folder, ownerID string,
+	folder, ownerID string,
 	run RunSpec,
 ) *RunExecutor {
 	return &RunExecutor{
 		store:    database,
 		locks:    locks,
 		children: children,
-		binPath:  binPath,
 		folder:   folder,
 		ownerID:  ownerID,
 		run:      run,
@@ -269,10 +268,10 @@ func (e *RunExecutor) spawnChild() (*managedChild, string, error) {
 	_ = disk.Remove(eventsPath)
 
 	child, err := spawnGatedGroup(spawnConfig{
-		binPath: e.binPath,
-		args:    args,
-		env:     childEnv(eventsPath),
-		dir:     e.folder,
+		binary: truebdd.Self(),
+		args:   args,
+		env:    childEnv(eventsPath),
+		dir:    e.folder,
 	})
 	if err != nil {
 		return nil, "", err

@@ -58,7 +58,10 @@ func TestEveryCIGateIsInTheTable(t *testing.T) {
 
 	// The install steps every gate depends on, which are setup rather than
 	// checks and so have no row in the table.
-	for _, setup := range []string{"Install yamale", "Install markdownlint-cli2", "Install alint"} {
+	for _, setup := range []string{
+		"Install yamale", "Install markdownlint-cli2", "Install alint",
+		"Install golangci-lint", "Install the frontend",
+	} {
 		known[setup] = true
 	}
 

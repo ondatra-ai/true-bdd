@@ -2,7 +2,6 @@ package testrunner
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -62,14 +61,14 @@ func effectiveDir(dir string) string {
 // records that make it auditable: the argv before the fork, how it ended after.
 // Every framework exits non-zero on test failure, so a non-nil error is routine.
 func runLogged(
-	ctx context.Context, argv []string, dir string, meta spawnMeta,
+	argv []string, dir string, meta spawnMeta,
 ) (bytes.Buffer, bytes.Buffer, error) {
 	where := effectiveDir(dir)
 
 	logSpawn(meta, where)
 
 	started := time.Now()
-	result, runErr := spec.Run(ctx, argv, cli.Options{Dir: dir})
+	result, runErr := spec.Run(argv, cli.Options{Dir: dir})
 	elapsed := time.Since(started)
 
 	var stdout, stderr bytes.Buffer

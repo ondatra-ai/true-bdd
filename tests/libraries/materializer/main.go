@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -56,7 +55,7 @@ func run(fixtureDir, targetDir, repoRoot string, listBaseline bool, out *os.File
 		repoRoot, _ = runner.FindRepoRoot()
 	}
 
-	result, err := Materialize(context.Background(), Options{
+	result, err := Materialize(Options{
 		FixtureDir: fixtureDir,
 		TargetDir:  targetDir,
 		RepoRoot:   repoRoot,

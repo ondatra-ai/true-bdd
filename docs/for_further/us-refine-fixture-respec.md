@@ -43,7 +43,7 @@ bolted onto whatever change happens to notice the drift.
 ```bash
 go test -tags bdd -run '^TestE2E0..$' ./tests/bdd-cli/ -mode=record   # re-record the affected ids
 go test -tags bdd ./tests/bdd-cli/ -mode=replay                        # then replay must be green
-go run ./scripts/cmd/lint schemas
+go run ./scripts/cmd/linters schemas
 ```
 
 The one thing this could silently break: a re-recording that passes for the wrong

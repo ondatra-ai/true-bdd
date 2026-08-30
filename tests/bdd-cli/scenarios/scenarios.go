@@ -15,7 +15,6 @@
 package scenarios
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -375,7 +374,7 @@ func buildTrueBDD() (string, error) {
 // rather than streamed: a failed build's error then carries the compiler's own
 // message instead of the bare exit status the streamed form returned.
 func goBuild(binPath, pkg string) error {
-	return gotool.Build(context.Background(), cli.Options{Timeout: buildTimeout},
+	return gotool.Build(cli.Options{Timeout: buildTimeout},
 		repoRoot, binPath, pkg)
 }
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
@@ -16,27 +18,37 @@ func (r *Run) UpdatePR() string {
 	defer report.Open("pull request")()
 
 	title, body := r.splitAnswer(r.askAboutBranch())
+	bodyFile := StateDir + "/pr-body.md"
 
-	r.write(StateDir+"/pr-body.md", body)
+	r.write(bodyFile, body)
 
-	if r.sh([]string{ghBin, "pr", "view", "--json", "number"}, false).code == 0 {
-		r.gh("pr", "edit", "--title", title, "--body-file", StateDir+"/pr-body.md")
+	open, err := github.PRExists()
+	r.check("looking for an open pull request", err)
+
+	if open {
+		r.check("editing the pull request", github.EditPR(title, bodyFile))
 	} else {
-		r.gh("pr", "create", "--title", title, "--body-file", StateDir+"/pr-body.md")
+		r.check("creating the pull request", github.CreatePR(title, bodyFile))
 	}
 
-	return strings.TrimSpace(r.gh("pr", "view", "--json", "url", "-q", ".url"))
+	url, err := github.PRURL()
+	r.check("reading the pull request URL", err)
+
+	return url
 }
 
 // askAboutBranch runs one headless turn over the branch's commits and its
 // diff against the trunk.
 func (r *Run) askAboutBranch() string {
-	base := "origin/" + r.trunkRef()
-	commits := r.gitChecked("log", base+"..HEAD", "--pretty=format:%s%n%n%b%n---")
+	base := remote + "/" + r.trunkRef()
+	commits, err := git.BranchCommits(base)
+	r.check("reading the branch's commits", err)
+
+	changed, err := diffctx.Bounded("Files changed", []string{base + "...HEAD"}, diffBudget())
+	r.check("reading the branch diff", err)
 
 	context := fmt.Sprintf("=== Commits on this branch (vs %s) ===\n%s\n\n%s",
-		base, commits,
-		diffctx.Bounded(r.gitChecked, "Files changed", []string{base + "...HEAD"}, diffBudget()))
+		base, commits, changed)
 
 	answer, err := claudecli.Run(pullRequestPrompt+"\n\n"+context, claudecli.Options{
 		Role:    "pr-content",

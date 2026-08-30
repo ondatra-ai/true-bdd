@@ -1,10 +1,9 @@
 package remote
 
 import (
-	"context"
 	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"io"
 	"os"
 	"sync"
@@ -34,7 +33,10 @@ func defaultEscalateConfig() escalateConfig {
 // lockFile is non-nil its fd is passed to the child so the host folder
 // flock is inherited (parent-death safety — plan §3.2/§3.7).
 type spawnConfig struct {
-	binPath  string
+	// binary is the true-bdd to spawn. The zero value is this executable,
+	// which is every production caller; the gated-supervisor regressions set
+	// it to a built one.
+	binary   truebdd.Binary
 	args     []string
 	env      []string
 	dir      string
@@ -66,20 +68,9 @@ type managedChild struct {
 // spawnProcessGroup starts cfg's binary in a fresh process group (setpgid)
 // with its stdio wired to pipes and cfg.lockFile inherited when present.
 func spawnProcessGroup(cfg spawnConfig) (*managedChild, error) {
-	options := cli.Options{
-		Dir:    cfg.dir,
-		Env:    cli.Exact(cfg.env),
-		Output: cli.Pipe(),
-		Group:  true,
-	}
-	if cfg.lockFile != nil {
-		options.ExtraFiles = []*os.File{cfg.lockFile}
-	}
-
-	// context.Background: lifecycle is governed by the explicit Escalate
-	// path, not ctx cancellation, so no auto-kill on cancel is wanted.
-	proc, err := spec.Start(context.Background(),
-		append([]string{cfg.binPath}, cfg.args...), options)
+	proc, err := cfg.binary.StartGroup(truebdd.Child{
+		Args: cfg.args, Dir: cfg.dir, Env: cfg.env, Lock: cfg.lockFile,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("start child: %w", err)
 	}
@@ -103,16 +94,9 @@ func spawnGatedGroup(cfg spawnConfig) (*managedChild, error) {
 		return nil, fmt.Errorf("release pipe: %w", err)
 	}
 
-	supArgs := append([]string{SupervisorSubcommand}, cfg.args...)
-
-	proc, err := spec.Start(context.Background(),
-		append([]string{cfg.binPath}, supArgs...), cli.Options{
-			Dir:        cfg.dir,
-			Env:        cli.Exact(cfg.env),
-			Output:     cli.Pipe(),
-			Group:      true,
-			ExtraFiles: []*os.File{readPipe}, // → fd 3 in the supervisor
-		})
+	proc, err := cfg.binary.StartGated(truebdd.Child{
+		Args: cfg.args, Dir: cfg.dir, Env: cfg.env,
+	}, readPipe)
 	if err != nil {
 		_ = readPipe.Close()
 		_ = writePipe.Close()

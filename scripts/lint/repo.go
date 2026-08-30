@@ -1,25 +1,17 @@
 package lint
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/linters"
 )
 
-// The gates report their own findings and the caller only needs the verdict,
-// so a failed gate is this one sentinel rather than a wrapped tool error.
-var (
-	// ErrFailed is a gate's verdict, not a diagnosis — the gate has already
-	// printed its findings, so a caller must not print this on top of them.
-	ErrFailed  = errors.New("lint failed")
-	errMissing = errors.New("required tool not on PATH")
-)
+// ErrFailed is a gate's verdict, not a diagnosis — the gate printed its own
+// findings already, so a caller must not print this on top of them.
+var ErrFailed = errors.New("lint failed")
 
 // tests/legacy/ is there to be deleted; the fixtures are host content.
 //
@@ -39,20 +31,14 @@ func excludedTree(path string) bool {
 // trackedFiles is `git ls-files -co --exclude-standard`: tracked plus
 // untracked-and-not-ignored, so a stray fails before it is ever committed.
 func trackedFiles(pathspecs ...string) ([]string, error) {
-	args := append([]string{"ls-files", "-co", "--exclude-standard"}, pathspecs...)
-
-	out, err := git.Output(context.Background(), args...)
+	listed, err := git.ListedFiles(pathspecs...)
 	if err != nil {
 		return nil, fmt.Errorf("git ls-files: %w", err)
 	}
 
 	var paths []string
 
-	for _, line := range splitLines(out) {
-		if line == "" {
-			continue
-		}
-
+	for _, line := range listed {
 		info, err := os.Stat(line)
 		if err == nil && info.Mode().IsRegular() {
 			paths = append(paths, line)
@@ -80,25 +66,4 @@ func head(src []byte, n int) []byte {
 	}
 
 	return []byte(strings.Join(lines, "\n"))
-}
-
-// needTool turns a missing PATH tool into the install line for it, which is
-// the only useful thing to say about that failure.
-func needTool(name, install string) error {
-	err := linters.Available(name)
-	if err != nil {
-		return fmt.Errorf("%w: %s not found. Install it with: %s", errMissing, name, install)
-	}
-
-	return nil
-}
-
-// runTool streams a gate's own output through; its exit code is the verdict.
-func runTool(out io.Writer, name string, args ...string) error {
-	result, err := linters.Run(context.Background(), out, name, args...)
-	if err != nil || result.Code != 0 {
-		return ErrFailed
-	}
-
-	return nil
 }

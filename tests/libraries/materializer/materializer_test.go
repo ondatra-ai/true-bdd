@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -69,7 +68,7 @@ func materializeInto(t *testing.T, fixtureDir, repoRoot string) (*Result, string
 
 	target := filepath.Join(t.TempDir(), "target")
 
-	res, err := Materialize(context.Background(), Options{
+	res, err := Materialize(Options{
 		FixtureDir: fixtureDir,
 		TargetDir:  target,
 		RepoRoot:   repoRoot,
@@ -294,7 +293,7 @@ func TestMaterializeTargetMustBeEmpty(t *testing.T) {
 		t.Fatalf("seed stale file: %v", err)
 	}
 
-	_, err = Materialize(context.Background(), Options{
+	_, err = Materialize(Options{
 		FixtureDir: dir, TargetDir: target, RepoRoot: makeRepoRoot(t),
 	})
 	if !errors.Is(err, ErrTargetNotEmpty) {

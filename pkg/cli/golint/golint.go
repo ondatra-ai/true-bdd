@@ -23,10 +23,19 @@ const Bin = "golangci-lint"
 // chatterPrefix marks the lines golangci writes about its own configuration.
 const chatterPrefix = "level=warning"
 
-// Run lints and writes the findings to out, dropping golangci's chatter.
-// Captured rather than streamed: golangci prints at the end either way.
-func Run(ctx context.Context, out io.Writer, args ...string) (shell.Result, error) {
-	result, err := shell.Run(ctx, append([]string{Bin}, args...),
+// FixFlag asks golangci to rewrite what it can.
+const FixFlag = "--fix"
+
+// Lint lints the named directories — the whole module when none are named —
+// rewriting what it can when fix is set, and writes the findings to out with
+// golangci's chatter dropped. A non-zero Result.Code is a finding.
+func Lint(out io.Writer, fix bool, dirs ...string) (shell.Result, error) {
+	argv := []string{Bin, "run"}
+	if fix {
+		argv = append(argv, FixFlag)
+	}
+
+	result, err := shell.Run(context.Background(), append(argv, dirs...),
 		shell.Options{Output: shell.Combined()})
 	if err != nil {
 		return result, fmt.Errorf("running %s: %w", Bin, err)

@@ -9,7 +9,7 @@ CLAUDE.md is a **cache of the repository**, and a cache earns its load only wher
 expensive. You are its write path, `audit-memory` the compaction pass: delete freely, add reluctantly.
 
 **Never edit between the `KARPATHY:BEGIN`/`END` markers**; keep the file under 215 lines and 80
-columns. `go run ./scripts/cmd/lint claude-md` fails the commit on any of the three.
+columns. `go run ./scripts/cmd/linters claude-md` fails the commit on any of the three.
 
 ## Steps
 

@@ -15,8 +15,8 @@ import (
 )
 
 // Run spawns an argv a caller assembled.
-func Run(ctx context.Context, argv []string, opt shell.Options) (shell.Result, error) {
-	return shell.Run(ctx, argv, opt)
+func Run(argv []string, opt shell.Options) (shell.Result, error) {
+	return shell.Run(context.Background(), argv, opt)
 }
 
 // Start spawns an assembled argv and returns without waiting, for

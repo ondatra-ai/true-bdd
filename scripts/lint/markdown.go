@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/markdownlint"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -32,7 +33,7 @@ var vendoredHeadingRE = regexp.MustCompile(`^(Engineering|Productivity):`)
 // The config is NOT passed with --config: cli2's walk up from each linted file
 // is what makes its `overrides:` and per-directory config work at all.
 func Markdown(out io.Writer, files []string) error {
-	err := needTool("markdownlint-cli2", "brew install markdownlint-cli2")
+	err := markdownlint.Available()
 	if err != nil {
 		return err
 	}
@@ -60,12 +61,11 @@ func Markdown(out io.Writer, files []string) error {
 
 	// --fix only when files are named; a bare run mirrors CI and must not
 	// rewrite. The hook's message promises the fixing happened.
-	args := scoped
-	if len(files) > 0 {
-		args = append([]string{"--fix"}, scoped...)
+	result, err := markdownlint.Lint(out, len(files) > 0, scoped...)
+	if err == nil && result.Code != 0 {
+		err = ErrFailed
 	}
 
-	err = runTool(out, "markdownlint-cli2", args...)
 	if err != nil {
 		_, _ = fmt.Fprint(out, `
 lint-markdown: fix each finding above. What --fix could rewrite is

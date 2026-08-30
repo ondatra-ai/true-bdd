@@ -98,11 +98,38 @@ replaced: a second caller, or a comment naming the first.
 
 It does not forbid a shell interpreter. `.alint.yml`'s `no-shell` bans shell
 *files*, never `bash -c` argv, and three production sites run fixture-authored
-command strings where the string is the contract
-(`tests/libraries/materializer/materializer.go:225`,
-`tests/libraries/runner/runner.go:436,:485`). `pkg/cli/bash` makes them
-greppable and gives the ban somewhere to send them. Enforcing "argv only, no
+command strings where the string is the contract. Enforcing "argv only, no
 interpreter" would be a further rule and is deliberately not taken here.
+
+**Amended 2026-08-30.** An earlier amendment on this date moved `bash`, `cp` and
+`ps` into `pkg/shell` as `BashRun`, `CpRecursive` and `PsOutput`, on the ground
+that their wrappers "held one argv literal and nothing else". That measured the
+wrong thing. The knowledge had not gone anywhere — it had moved to the callers:
+`supervisor.go` grew twenty lines of process-table parsing and a field-count
+constant, `harness.go` encoded `cp`'s copy-the-contents idiom as the string
+`+ "/."`, and the three `bash -c` loops diverged, the materializer's losing the
+deadline the runner's had. Judge a wrapper by what its callers hold.
+
+So the three are gone from `pkg/shell` and `pkg/cli` both, and what replaced them
+is deeper than what was deleted: `pkg/cli/ps` answers `GroupMembers` and
+`StartedAt` with the column parsing inside; `pkg/cli/spec.Phase` runs a fixture's
+whole `prep:`/`teardown:` list under one shared budget, which is where the three
+loops' divergence went; and `cp -R` is not spawned at all, because `pkg/disk`
+owns tree copy (it refuses a symlink rather than flattening one silently). ADR
+0003's claim holds again as written: `pkg/shell` is the only importer of
+`os/exec`, and `pkg/cli/<tool>` the only caller of `pkg/shell`, with no named-file
+exemption list in `.golangci.yaml` or `.alint.yml`.
+
+The same measurement condemns a wrapper that only *proxies*. `git.Run(args...)`,
+`github.Output(args...)` and `gotool.Output(args...)` left every verb, `--json`
+field list and `--jq` selector at the call site, so `scripts/commit` and
+`scripts/merge` each grew a private `sh`/`git`/`gh` layer over `pkg/cli/spec` —
+the three `sh()` copies this ADR claimed to have removed, back within one
+release. The generic entry points are therefore unexported. What a caller names
+is an operation: `github.SquashMerge`, `git.HasStagedChanges`,
+`markdownlint.Lint`, `yamale.Validate`. What stays at the call site is what was
+always the caller's — the report spans, the stop policy, the poll budgets and
+the prompts.
 
 It also does not touch `pkg/logging` or `pkg/console`. Removing the child
 descriptors drops roughly eight importers from `console` as a side effect, and

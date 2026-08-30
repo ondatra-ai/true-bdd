@@ -63,7 +63,7 @@ func (r *PlaywrightRunner) Discover(
 		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, suite, err)
 	}
 
-	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
+	stdout, stderr, runErr := r.exec(CommandDir(cfg), PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("playwright discovery under %s failed: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -118,7 +118,7 @@ func (r *PlaywrightRunner) RunOne(
 	failingTest *FailingTest,
 ) (bool, string, error) {
 	if failingTest.TestName == playwrightStartupMarker {
-		return r.runOneStartup(ctx, failingTest)
+		return r.runOneStartup(failingTest)
 	}
 
 	_, title, err := splitPlaywrightName(failingTest.TestName)
@@ -134,7 +134,7 @@ func (r *PlaywrightRunner) RunOne(
 	grep := playwrightGrep(title)
 	argv = append(argv, "--grep", grep)
 
-	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseRerun, argv)
+	stdout, stderr, runErr := r.exec(CommandDir(failingTest.RunnerConfig), PhaseRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -187,7 +187,6 @@ func playwrightRanNothing(report *dto.PlaywrightReport) bool {
 // whole Playwright suite (no --grep, no file filter) and reports passed
 // iff the new run had no per-test failures AND the exec exited zero.
 func (r *PlaywrightRunner) runOneStartup(
-	ctx context.Context,
 	failingTest *FailingTest,
 ) (bool, string, error) {
 	argv, err := commandArgv(failingTest)
@@ -195,7 +194,7 @@ func (r *PlaywrightRunner) runOneStartup(
 		return false, "", err
 	}
 
-	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseStartupRerun, argv)
+	stdout, stderr, runErr := r.exec(CommandDir(failingTest.RunnerConfig), PhaseStartupRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("playwright startup rerun failed: %w", runErr)
 	}
@@ -227,11 +226,10 @@ func (r *PlaywrightRunner) runOneStartup(
 // directory so `npx` resolves the local Playwright install (see CommandDir).
 // phase labels the invocation in log/filename; non-zero exit is expected on test failure.
 func (r *PlaywrightRunner) exec(
-	ctx context.Context,
 	cwd, phase string,
 	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	return runLogged(ctx, argv, cwd, spawnMeta{
+	return runLogged(argv, cwd, spawnMeta{
 		binary:    argv[0],
 		args:      argv[1:],
 		framework: FrameworkPlaywright,

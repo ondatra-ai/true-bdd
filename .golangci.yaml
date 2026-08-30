@@ -241,12 +241,12 @@ linters:
             - pkg: "github.com/hashicorp/go-hclog"
               desc: 'log/slog only, and only through pkg/logging'
         # scripts/ answers a caller or narrates; narration is a log. Each of
-        # the five exemptions holds a DESCRIPTOR, never a print.
+        # the four exemptions holds a DESCRIPTOR, never a print — the hook's
+        # stdin and verdict moved to pkg/claude/hooks, which owns both.
         scripts-console:
           files:
             - "**/scripts/**"
             - "!**/scripts/cmd/history/main.go"
-            - "!**/scripts/cmd/lint/main.go"
             - "!**/scripts/gates/run.go"
             - "!**/scripts/commit/run.go"
             - "!**/scripts/merge/exec.go"

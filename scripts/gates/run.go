@@ -1,7 +1,6 @@
 package gates
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,40 +13,25 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
-var errGateFailed = errors.New("gate failed")
+var (
+	errGateFailed = errors.New("gate failed")
+	errLintFailed = errors.New("lint failed")
+)
 
 // Changed lists what this work touches against base — committed, uncommitted
-// and untracked. Two-dot, NOT base...HEAD: the gates run before commit
-// cuts the branch, and on main three-dot resolves to an empty diff.
+// and untracked.
 func Changed(base string) ([]string, error) {
-	tracked, err := gitLines("diff", "--name-only", base)
+	tracked, err := git.ChangedAgainst(base)
 	if err != nil {
 		return nil, fmt.Errorf("listing changed paths against %s: %w", base, err)
 	}
 
-	untracked, err := gitLines("ls-files", "--others", "--exclude-standard")
+	untracked, err := git.UntrackedPaths()
 	if err != nil {
 		return nil, fmt.Errorf("listing untracked paths: %w", err)
 	}
 
 	return dedupe(append(tracked, untracked...)), nil
-}
-
-func gitLines(args ...string) ([]string, error) {
-	out, err := git.Output(context.Background(), args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var paths []string
-
-	for line := range strings.SplitSeq(out, "\n") {
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			paths = append(paths, trimmed)
-		}
-	}
-
-	return paths, nil
 }
 
 func dedupe(paths []string) []string {
@@ -73,12 +57,7 @@ func Run(selected []Gate) error {
 
 		started := time.Now()
 
-		result, err := spec.Run(context.Background(), gate.Command,
-			cli.Options{Output: cli.Console()})
-		if err == nil {
-			err = result.Err()
-		}
-
+		err := execute(gate)
 		if err != nil {
 			// Reported before the return: a red gate is the one whose duration
 			// a reader most wants, and the stop above would swallow it.
@@ -91,4 +70,20 @@ func Run(selected []Gate) error {
 	}
 
 	return nil
+}
+
+// execute runs one gate: its own function where it has one, and its argv
+// otherwise. A gate whose work is a package this repository owns calls it
+// rather than forking a `go run` of itself.
+func execute(gate Gate) error {
+	if gate.Run != nil {
+		return gate.Run()
+	}
+
+	result, err := spec.Run(gate.Command, cli.Options{Output: cli.Console()})
+	if err != nil {
+		return err
+	}
+
+	return result.Err()
 }

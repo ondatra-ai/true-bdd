@@ -20,7 +20,7 @@ const (
 		"Bash(git --no-pager diff *),Bash(git --no-pager log *),Bash(git status *)," +
 		"Bash(git checkout -- *),Bash(git restore *)," +
 		"Bash(go build *),Bash(go test *),Bash(go vet *),Bash(gofmt *)," +
-		"Bash(golangci-lint *),Bash(go run ./scripts/cmd/lint *)," +
+		"Bash(golangci-lint *),Bash(go run ./scripts/cmd/linters *)," +
 		"Bash(" + merge.Gates + ")"
 
 	// The only allowlist here carrying Skill, and read-only besides: step 6

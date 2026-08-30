@@ -1,13 +1,17 @@
 package history
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
+
+// queryBudget bounds one git question. The two-second bound is the Python's:
+// long enough for a cold index, short enough that a wedged git never eats the
+// hook's timeout.
+const queryBudget = 2 * time.Second
 
 // DefaultRole is the writer when CLAUDE_HISTORY_ROLE says nothing: the main
 // interactive session.
@@ -52,7 +56,7 @@ func RepoRoot() string {
 		}
 	}
 
-	top, err := gitOutput("", "rev-parse", "--show-toplevel")
+	top, err := git.TopLevelIn("", queryBudget)
 	if err == nil && top != "" {
 		return top
 	}
@@ -69,32 +73,10 @@ func RepoRoot() string {
 // when git cannot say. Never an error: a missing stamp is not a reason to
 // drop a turn.
 func (h *Hook) gitSHA() string {
-	sha, err := gitOutput(h.repo, "rev-parse", "--short", "HEAD")
+	sha, err := git.ShortHeadSHAIn(h.repo, queryBudget)
 	if err != nil || sha == "" {
 		return "-"
 	}
 
 	return sha
-}
-
-// gitOutput runs one short git query. The two-second bound is the Python's:
-// long enough for a cold index, short enough that a wedged git never eats the
-// hook's timeout.
-func gitOutput(dir string, args ...string) (string, error) {
-	const budget = 2 * time.Second
-
-	ctx, cancel := context.WithTimeout(context.Background(), budget)
-	defer cancel()
-
-	full := args
-	if dir != "" {
-		full = append([]string{"-C", dir}, args...)
-	}
-
-	out, err := git.Output(ctx, full...)
-	if err != nil {
-		return "", err
-	}
-
-	return out, nil
 }

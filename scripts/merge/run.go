@@ -1,7 +1,6 @@
 package merge
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,7 +10,9 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
@@ -20,12 +21,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
-// Gates is the quality pipeline a fix must leave green, as a command line for
-// the prompt and the tool allowlist. GatesArgv is the same thing to exec.
+// Gates is the quality pipeline a fix must leave green, as a command line: a
+// fix agent types it into Bash, so this is prompt text and an allowlist entry.
+// merge's own re-check calls scripts/gates in process — see gatesGreen.
 const Gates = "go run ./scripts/cmd/gates run"
-
-//nolint:gochecknoglobals // Gates split into argv; a constant in all but syntax.
-var GatesArgv = []string{"go", "run", "./scripts/cmd/gates", "run"}
 
 // StateDir holds every artifact a round produces, so a score can be argued
 // with after the fact.
@@ -76,8 +75,8 @@ const historyBudgetBytes = 300_000
 
 // The binaries this package drives, and the modes it writes with.
 const (
-	gitBin = "git"
-	ghBin  = "gh"
+	// remote is the only one this repository pushes to or reads refs from.
+	remote = "origin"
 )
 
 // roleMerge labels this run's own turns in the conversation history.
@@ -117,7 +116,7 @@ func Start(args []string) *Run {
 		usage("usage: merge — no arguments. The PR comes from the current branch.")
 	}
 
-	top, err := git.TopLevel(context.Background())
+	top, err := git.TopLevel()
 	if err != nil {
 		usage("not inside a git repository")
 	}
@@ -155,7 +154,10 @@ func Start(args []string) *Run {
 		usage("on " + branch + " — there is no PR to merge here")
 	}
 
-	run.repo = strings.TrimSpace(run.gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"))
+	slug, err := github.RepoSlug()
+	run.check("reading the repository", err)
+
+	run.repo = slug
 	run.pr = run.openPullRequest(branch)
 	run.startedAt = time.Now().UTC().Format("2006-01-02T15:04:05Z")
 
@@ -212,37 +214,30 @@ func (r *Run) round(round int) bool {
 }
 
 func (r *Run) currentBranch() string {
-	return strings.TrimSpace(r.gitChecked("branch", "--show-current"))
+	branch, err := git.CurrentBranch()
+	r.check("reading the current branch", err)
+
+	return branch
 }
 
 // openPullRequest is the PR number for branch, or a stop.
 func (r *Run) openPullRequest(branch string) int {
-	view := r.sh([]string{ghBin, "pr", "view", "--json", "number,state"}, options{})
-	if view.code != 0 {
+	pull, err := github.CurrentPR()
+	if err != nil {
 		usage("no pull request open for '" + branch + "' — push it and open one first")
 	}
 
-	var payload struct {
-		Number int    `json:"number"`
-		State  string `json:"state"`
+	if pull.State != "OPEN" {
+		usage(fmt.Sprintf("PR #%d for '%s' is %s, not OPEN", pull.Number, branch, pull.State))
 	}
 
-	err := json.Unmarshal([]byte(view.stdout), &payload)
-	if err != nil {
-		usage("could not read `gh pr view`: " + err.Error())
-	}
-
-	if payload.State != "OPEN" {
-		usage(fmt.Sprintf("PR #%d for '%s' is %s, not OPEN", payload.Number, branch, payload.State))
-	}
-
-	return payload.Number
+	return pull.Number
 }
 
 func requireTools() {
 	var missing []string
 
-	for _, tool := range []string{ghBin, gitBin, "claude"} {
+	for _, tool := range []string{github.Bin, git.Bin, claude.Bin} {
 		err := cli.Require(tool)
 		if err != nil {
 			missing = append(missing, tool)

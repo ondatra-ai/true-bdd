@@ -5,27 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"log/slog"
 )
-
-const threadQuery = `
-query($owner:String!,$repo:String!,$pr:Int!){
-  repository(owner:$owner,name:$repo){
-    pullRequest(number:$pr){
-      reviewThreads(first:100){
-        pageInfo{ hasNextPage }
-        nodes{
-          id isResolved isOutdated path line
-          comments(first:20){ pageInfo{ hasNextPage } nodes{ databaseId author{login} body } }
-        }
-      }
-    }
-  }
-}
-`
 
 // GitHub's GraphQL field names are its contract, not ours.
 //
@@ -83,15 +68,9 @@ func authorOf(comment threadComment) string {
 }
 
 func (r *Run) fetchThreads() []reviewThread {
-	owner, name, _ := strings.Cut(r.repo, "/")
-
 	var response threadsResponse
 
-	r.ghJSON(&response, "api", "graphql",
-		"-f", "query="+threadQuery,
-		"-F", "owner="+owner,
-		"-F", "repo="+name,
-		"-F", "pr="+strconv.Itoa(r.pr))
+	r.check("reading the review threads", github.ReviewThreads(&response, r.repo, r.pr))
 
 	threads := response.Data.Repository.PullRequest.ReviewThreads
 

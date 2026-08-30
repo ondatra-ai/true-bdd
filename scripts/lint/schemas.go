@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/yamale"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
@@ -21,7 +22,7 @@ const (
 // The pairing is convention driven by config, so a new schema needs no edit
 // here: `true-bdd/<key>-schema.yaml` validates `documents.<key>`.
 func Schemas(out io.Writer, files []string) error {
-	err := needTool("yamale", "pip install yamale")
+	err := yamale.Available()
 	if err != nil {
 		return err
 	}
@@ -90,7 +91,9 @@ func validateSchema(out io.Writer, schema string, documents map[string]string, f
 
 	_, _ = fmt.Fprintf(out, "Validating %s against %s\n", doc, schema)
 
-	return runTool(out, "yamale", "-s", schema, doc) == nil
+	result, err := yamale.Validate(out, schema, doc)
+
+	return err == nil && result.Code == 0
 }
 
 func named(files []string, doc string) bool {

@@ -30,7 +30,6 @@ import (
 	"github.com/playwright-community/playwright-go"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/cp"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -58,8 +57,6 @@ const (
 	// minutes; this is the point past which something is wrong rather
 	// than slow.
 	buildTimeout = 10 * time.Minute
-	// copyTimeout caps assembling the bundle from the build output.
-	copyTimeout = 2 * time.Minute
 	// dirPerm is the mode for every directory this suite creates.
 )
 
@@ -87,7 +84,7 @@ type Harness struct {
 // installs the Playwright driver, and launches a browser — once, cached
 // under the user's home, which is why this suite skips the one-minute commit gate.
 func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), error) {
-	bundle, err := buildBundle(ctx, repoRoot)
+	bundle, err := buildBundle(repoRoot)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -110,7 +107,7 @@ func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), e
 		return nil, nil, err
 	}
 
-	err = harness.openBrowser(ctx)
+	err = harness.openBrowser()
 	if err != nil {
 		harness.stop()
 
@@ -123,15 +120,13 @@ func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), e
 // buildBundle compiles the app and assembles the standalone bundle
 // exactly as the Dockerfile's runtime stage does. Built from source every
 // time, not cached: a stale build would make this suite's green mean nothing.
-func buildBundle(ctx context.Context, repoRoot string) (string, error) {
+func buildBundle(repoRoot string) (string, error) {
 	appDir := filepath.Join(repoRoot, "services", "bdd-web")
 
-	buildCtx, cancel := context.WithTimeout(ctx, buildTimeout)
-	defer cancel()
-
-	built, err := npm.RunScript(buildCtx, "build", cli.Options{
-		Dir:    appDir,
-		Output: cli.Streams(console.Err(), console.Err()),
+	built, err := npm.RunScript("build", cli.Options{
+		Timeout: buildTimeout,
+		Dir:     appDir,
+		Output:  cli.Streams(console.Err(), console.Err()),
 	})
 	if err == nil {
 		err = built.Err()
@@ -153,22 +148,17 @@ func buildBundle(ctx context.Context, repoRoot string) (string, error) {
 		return "", fmt.Errorf("create the bundle dir: %w", err)
 	}
 
-	copyCtx, cancelCopy := context.WithTimeout(ctx, copyTimeout)
-	defer cancelCopy()
-
+	// dst, src: CopyTree lands src's CONTENTS at dst, which is what the
+	// `cp -R standalone/. <bundle>` this replaced meant.
 	copies := [][2]string{
-		{filepath.Join(appDir, ".next", "standalone") + "/.", bundle},
-		{filepath.Join(appDir, ".next", "static"), filepath.Join(bundle, ".next", "static")},
+		{bundle, filepath.Join(appDir, ".next", "standalone")},
+		{filepath.Join(bundle, ".next", "static"), filepath.Join(appDir, ".next", "static")},
 	}
 
 	for _, pair := range copies {
-		copied, copyErr := cp.Recursive(copyCtx, pair[0], pair[1], cli.Options{})
-		if copyErr == nil {
-			copyErr = copied.Err()
-		}
-
+		copyErr := disk.CopyTree(pair[0], pair[1], disk.Shared)
 		if copyErr != nil {
-			return "", fmt.Errorf("assemble the bundle (%s): %w", pair[0], copyErr)
+			return "", fmt.Errorf("assemble the bundle (%s): %w", pair[1], copyErr)
 		}
 	}
 
@@ -242,8 +232,8 @@ func (h *Harness) waitForApp(ctx context.Context) error {
 
 // openBrowser assembles the driver, makes sure chromium is present, and
 // launches it.
-func (h *Harness) openBrowser(ctx context.Context) error {
-	driverDir, err := ensureDriver(ctx, h.RepoRoot)
+func (h *Harness) openBrowser() error {
+	driverDir, err := ensureDriver(h.RepoRoot)
 	if err != nil {
 		return err
 	}

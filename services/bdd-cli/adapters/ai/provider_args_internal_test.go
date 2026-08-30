@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/codex"
 )
 
 const (
@@ -35,20 +37,6 @@ func readOnlyMode() ExecutionMode {
 	}
 }
 
-// The model MUST arrive as `-m`: crush silently ignores an unknown
-// model pinned in config and falls back to global state, so a config
-// pin would fail invisibly.
-func TestBuildCrushArgs(t *testing.T) {
-	t.Parallel()
-
-	args := buildCrushArgs(Request{Model: "zhipu-coding/glm-5.2", WorkDir: testWorkDir})
-
-	want := []string{"run", "--quiet", "-m", "zhipu-coding/glm-5.2", "--cwd", testWorkDir}
-	if !slices.Equal(args, want) {
-		t.Fatalf("buildCrushArgs = %v, want %v", args, want)
-	}
-}
-
 func TestCrushAllowedToolsTracksTheMode(t *testing.T) {
 	t.Parallel()
 
@@ -63,54 +51,23 @@ func TestCrushAllowedToolsTracksTheMode(t *testing.T) {
 	}
 }
 
-func TestBuildCodexArgs(t *testing.T) {
-	t.Parallel()
-
-	args := buildCodexArgs(Request{
-		Model:   "gpt-5.6-sol",
-		WorkDir: testWorkDir,
-		Mode:    sourceEditMode(),
-	}, "/tmp/run/answer.md")
-
-	// `-s` is mandatory: without it `codex exec` blocks on an approval
-	// prompt and hangs headlessly forever.
-	if !slices.Contains(args, "-s") || !slices.Contains(args, codexSandboxWorkspaceWrite) {
-		t.Errorf("args = %v, want a workspace-write sandbox flag", args)
-	}
-
-	// Fixture tmpdirs are not git repos.
-	if !slices.Contains(args, "--skip-git-repo-check") {
-		t.Errorf("args = %v, want --skip-git-repo-check", args)
-	}
-
-	if !slices.Contains(args, "--ephemeral") {
-		t.Errorf("args = %v, want --ephemeral", args)
-	}
-
-	// The answer is read from the -o file; stdout is only a trace. And
-	// the trailing `-` is what makes codex read the prompt from stdin.
-	if args[len(args)-3] != "-o" || args[len(args)-2] != "/tmp/run/answer.md" || args[len(args)-1] != "-" {
-		t.Errorf("args tail = %v, want [-o <path> -]", args[len(args)-3:])
-	}
-}
-
 // TestCodexSandboxOnlyEscalatesForSourceWrites checks a tmp-only write grant
 // stays read-only: codex has no sandbox level between "nothing" and "all of
 // the working root," so escalating would open write access to unread source.
 func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
 	t.Parallel()
 
-	if got := codexSandbox(readOnlyMode()); got != codexSandboxReadOnly {
-		t.Errorf("codexSandbox(read-only mode) = %q, want %q", got, codexSandboxReadOnly)
+	if got := codexSandbox(readOnlyMode()); got != codex.SandboxReadOnly {
+		t.Errorf("codexSandbox(read-only mode) = %q, want %q", got, codex.SandboxReadOnly)
 	}
 
-	if got := codexSandbox(editMode()); got != codexSandboxReadOnly {
+	if got := codexSandbox(editMode()); got != codex.SandboxReadOnly {
 		t.Errorf("codexSandbox(tmp-only writes) = %q, want %q — a scratch write "+
-			"grant must not become workspace write access", got, codexSandboxReadOnly)
+			"grant must not become workspace write access", got, codex.SandboxReadOnly)
 	}
 
-	if got := codexSandbox(sourceEditMode()); got != codexSandboxWorkspaceWrite {
-		t.Errorf("codexSandbox(source edit mode) = %q, want %q", got, codexSandboxWorkspaceWrite)
+	if got := codexSandbox(sourceEditMode()); got != codex.SandboxWorkspaceWrite {
+		t.Errorf("codexSandbox(source edit mode) = %q, want %q", got, codex.SandboxWorkspaceWrite)
 	}
 }
 

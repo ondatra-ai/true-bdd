@@ -5,7 +5,7 @@ paths:
 
 # Markdown
 
-`go run ./scripts/cmd/lint markdown [FILE...]` gates every `.md` this repository
+`go run ./scripts/cmd/linters markdown [FILE...]` gates every `.md` this repository
 authors, with markdownlint-cli2 and `.markdownlint-cli2.yaml`. Named files are
 auto-fixed; bare, it only reports. It runs per-edit from the PostToolUse hook
 and again in the gates and CI, so a breach surfaces at the edit that made it.

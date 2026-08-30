@@ -93,13 +93,13 @@ func TestChangedSeesUntrackedFiles(t *testing.T) {
 
 // End to end: a documentation-only change must select the two cheap gates and
 // nothing else. That gap — ~2s against ~140s — is the whole point of §6.
-func TestDocumentationChangeSelectsTwoGates(t *testing.T) {
+func TestDocumentationChangeSelectsOnlyLint(t *testing.T) {
 	dir := repoOnMain(t)
 	write(t, dir, "docs/for_further/new.md", "new\n")
 	write(t, dir, "README.md", "seed\nedited\n")
 
 	got := names(gates.Select(changedIn(t, dir)))
-	want := []string{"Lint repository shape", "Lint markdown"}
+	want := []string{lintGate}
 
 	if !slices.Equal(got, want) {
 		t.Fatalf("selected %v, want %v", got, want)

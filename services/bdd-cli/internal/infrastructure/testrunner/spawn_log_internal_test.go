@@ -19,7 +19,7 @@ func TestRunLoggedCapturesBothStreams(t *testing.T) {
 	dir := t.TempDir()
 	argv := []string{"sh", "-c", "echo out; echo err >&2; exit 1"}
 
-	stdout, stderr, err := runLogged(t.Context(), argv, "", spawnMeta{
+	stdout, stderr, err := runLogged(argv, "", spawnMeta{
 		binary:    "sh",
 		args:      []string{"-c", "..."},
 		framework: FrameworkPlaywright,

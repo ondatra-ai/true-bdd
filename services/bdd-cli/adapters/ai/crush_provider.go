@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/crush"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
@@ -16,7 +17,7 @@ const (
 	// crushGlobalConfigEnvVar points crush at a generated config DIRECTORY.
 	// Verified against crush v0.88.1: its crush.json joins the config load
 	// chain, so the engine supplies permissions/hooks without touching the host's .crush.json.
-	crushGlobalConfigEnvVar = "CRUSH_GLOBAL_CONFIG"
+	crushGlobalConfigEnvVar = crush.GlobalConfigVar
 	// crushGuardSubcommand is the hidden true-bdd subcommand crush
 	// invokes as its PreToolUse hook.
 	crushGuardSubcommand = "crush-guard"
@@ -50,7 +51,7 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 	// crush fails OPEN on a hook it cannot run, and the hook is the
 	// only write gate a crush turn has. Prove it denies before letting
 	// the turn start.
-	err = verifyCrushGuardEnforces(ctx, executable)
+	err = verifyCrushGuardEnforces(executable)
 	if err != nil {
 		return "", err
 	}
@@ -67,16 +68,17 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 
 	warnOnHostCrushConfig(req.WorkDir)
 
-	invocation := cliInvocation{
-		Binary:         "crush",
-		Args:           buildCrushArgs(req),
-		Dir:            req.WorkDir,
-		Env:            env,
-		Stdin:          composePrompt(req),
-		TranscriptPath: artifactPath(req, "crush.log"),
+	turn := crush.Turn{
+		Model:   req.Model,
+		WorkDir: req.WorkDir,
+		Prompt:  composePrompt(req),
+		Env:     env,
 	}
 
-	transcript, runErr := invocation.run(ctx)
+	transcript, runErr := turn.Run()
+
+	saveTranscript(artifactPath(req, "crush.log"), transcript)
+
 	if runErr != nil {
 		return transcript, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
 	}
@@ -86,22 +88,6 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 	}
 
 	return transcript, nil
-}
-
-// buildCrushArgs builds the argv for one non-interactive turn. Kept
-// pure so it is unit-testable without spawning crush.
-func buildCrushArgs(req Request) []string {
-	args := []string{"run", "--quiet"}
-
-	if req.Model != "" {
-		args = append(args, "-m", req.Model)
-	}
-
-	if req.WorkDir != "" {
-		args = append(args, "--cwd", req.WorkDir)
-	}
-
-	return args
 }
 
 // crushConfig is the subset of crush's config schema the engine
@@ -212,14 +198,7 @@ func crushAllowedTools(mode ExecutionMode) []string {
 // The path is always quoted, never conditionally: crush parses it as a
 // shell command, and it FAILS OPEN, so an unquoted quote/`$`/`;` would silently kill the only write gate.
 func crushGuardCommand(executable string) string {
-	return shellQuote(executable) + " " + crushGuardSubcommand
-}
-
-// shellQuote wraps a value in single quotes, which suppress every shell
-// metacharacter, escaping any embedded single quote by closing the
-// quoted run, emitting an escaped quote, and reopening it.
-func shellQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+	return crush.Quote(executable) + " " + crushGuardSubcommand
 }
 
 // buildCrushEnv layers the generated config dir and the guard policy

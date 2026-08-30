@@ -3,11 +3,13 @@ package merge
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/scripts/gates"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
@@ -18,12 +20,13 @@ import (
 var fenceLineRE = regexp.MustCompile("(?m)^\\s*```[a-zA-Z]*\\s*$")
 
 const (
-	defaultGatesTimeout = 3600 * time.Second
-	messageTimeout      = 600 * time.Second
+	messageTimeout = 600 * time.Second
+
+	// styleCommits is how much history a written message is shown for style.
+	styleCommits = 5
 )
 
-func gatesTimeout() time.Duration { return envDuration("MERGE_GATES_TIMEOUT", defaultGatesTimeout) }
-func diffBudget() int             { return envInt("DIFF_BUDGET_BYTES", diffctx.DefaultBudget) }
+func diffBudget() int { return envInt("DIFF_BUDGET_BYTES", diffctx.DefaultBudget) }
 
 // firstLine is the commit message's title.
 func firstLine(text string) string {
@@ -34,10 +37,13 @@ func firstLine(text string) string {
 
 // staged is the commit-message context, bounded — see diffctx.
 func (r *Run) staged() string {
-	recent := r.gitChecked("log", "-5", "--pretty=format:%s%n%n%b%n---")
+	recent, err := git.RecentCommits(styleCommits)
+	r.check("reading recent commits", err)
 
-	return fmt.Sprintf("=== Recent commits (style reference) ===\n%s\n\n%s",
-		recent, diffctx.Bounded(r.gitChecked, "Staged files", []string{"--cached"}, diffBudget()))
+	staged, err := diffctx.Bounded("Staged files", []string{"--cached"}, diffBudget())
+	r.check("reading the staged diff", err)
+
+	return fmt.Sprintf("=== Recent commits (style reference) ===\n%s\n\n%s", recent, staged)
 }
 
 // commit commits and pushes what this round's fixes changed. Not scripts/commit:
@@ -46,12 +52,13 @@ func (r *Run) staged() string {
 func (r *Run) commit() {
 	defer report.Open("commit")()
 
-	r.gitChecked("add", "-A")
+	r.check("staging the worktree", git.StageAll())
 	r.logf("running the gates before committing")
 
-	if r.sh(GatesArgv, options{timeout: gatesTimeout(), stream: true}).code != 0 {
-		r.dief("the gates are red after the fixes, though every fix reported them green.\n" +
-			"  Nothing was committed. Run the gates yourself and read the failure.")
+	err := r.runGates()
+	if err != nil {
+		r.dief("the gates are red after the fixes, though every fix reported them green.\n"+
+			"  Nothing was committed: %v", err)
 	}
 
 	answer, err := claudecli.Run(commitPrompt+"\n\n"+r.staged(), claudecli.Options{
@@ -74,14 +81,30 @@ func (r *Run) commit() {
 		r.dief("%v", err)
 	}
 
-	r.gitChecked("commit", "-F", path)
-	r.gitChecked("push", "origin", "HEAD")
+	r.check("committing", git.CommitFile(path))
+	r.check("pushing", git.PushHead(remote))
 	r.logf("committed and pushed: %s", firstLine(message))
 }
 
+// runGates runs the pipeline in THIS process: the table is a package merge
+// already imports, so `go run ./scripts/cmd/gates` forked code already linked
+// in, and its records landed under a run id scripts/report filters out.
+func (r *Run) runGates() error {
+	defer report.Open("gates")()
+
+	err := gates.Run(gates.All)
+	if err != nil {
+		return fmt.Errorf("the pipeline: %w", err)
+	}
+
+	return nil
+}
+
 func (r *Run) headSHA() string {
-	return strings.TrimSpace(
-		r.gh("pr", "view", strconv.Itoa(r.pr), "--json", "headRefOid", "--jq", ".headRefOid"))
+	sha, err := github.PRHeadSHA(r.pr)
+	r.check("reading the pull request's head", err)
+
+	return sha
 }
 
 // reviewedSHA is the last commit with a REAL review — body_len is the test:
@@ -111,10 +134,13 @@ func (r *Run) checkPushed() {
 			indent(dirty, "  "))
 	}
 
-	local, remote := strings.TrimSpace(r.gitChecked("rev-parse", "HEAD")), r.headSHA()
-	if local != remote {
+	local, err := git.HeadSHA()
+	r.check("reading HEAD", err)
+
+	pushed := r.headSHA()
+	if local != pushed {
 		r.dief("local HEAD is %s but PR #%d is at %s — origin does not have\n"+
 			"  what you are on. Push it yourself before merging:\n"+
-			"    git push origin HEAD", short(local), r.pr, short(remote))
+			"    git push origin HEAD", short(local), r.pr, short(pushed))
 	}
 }

@@ -13,7 +13,7 @@ import (
 // skills themselves name: neither of them commits, stages or pushes — this
 // program does that, after they have run.
 const skillTools = "Read,Edit,Write,Glob,Grep," +
-	"Bash(git --no-pager diff *),Bash(git status *),Bash(go run ./scripts/cmd/lint *)"
+	"Bash(git --no-pager diff *),Bash(git status *),Bash(go run ./scripts/cmd/linters *)"
 
 const defaultSkillTimeout = 1800 * time.Second
 

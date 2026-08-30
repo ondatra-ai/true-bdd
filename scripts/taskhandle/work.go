@@ -48,7 +48,7 @@ func (r *Run) planTurn() (plan, error) {
 		"{ticket}", r.ticketBrief(),
 		"{globs}", r.detail.ExpectedChanges,
 		"{gates}", merge.Gates,
-		"{context}", diffctx.Bounded(r.gitContext, "the tree", nil, diffctx.DefaultBudget),
+		"{context}", r.gitContext(),
 	)
 
 	return turn[plan](prompt, planTools, planSchema, "plan", "task-plan",
@@ -95,15 +95,15 @@ func (r *Run) ticketBrief() string {
 	return "**" + r.detail.Name + "** (" + r.detail.URL + ")\n\n" + r.detail.Description
 }
 
-// gitContext is the runner diffctx borrows; it swallows failures because a
-// missing diff is context, never a verdict.
-func (r *Run) gitContext(args ...string) string {
-	out, err := gitOut(args...)
+// gitContext is the tree as a turn reads it. Failures are swallowed: a missing
+// diff is context, never a verdict.
+func (r *Run) gitContext() string {
+	context, err := diffctx.Bounded("the tree", nil, diffctx.DefaultBudget)
 	if err != nil {
 		return ""
 	}
 
-	return out
+	return context
 }
 
 // save leaves a run's artifact where it can be read after the fact.

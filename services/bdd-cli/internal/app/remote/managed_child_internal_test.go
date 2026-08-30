@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -24,7 +25,7 @@ func spawnHelper(t *testing.T, mode string, lockFile *os.File, extraEnv ...strin
 	env = append(env, extraEnv...)
 
 	child, err := spawnProcessGroup(spawnConfig{
-		binPath:  os.Args[0],
+		binary:   truebdd.Built(os.Args[0]),
 		env:      env,
 		dir:      t.TempDir(),
 		lockFile: lockFile,

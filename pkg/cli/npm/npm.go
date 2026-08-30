@@ -20,15 +20,15 @@ const (
 
 // Install fetches a package into prefix without touching a lockfile, which is
 // how the suite stages a driver it does not want recorded as a dependency.
-func Install(ctx context.Context, prefix, pkg string, opt shell.Options) (shell.Result, error) {
-	return shell.Run(ctx,
+func Install(prefix, pkg string, opt shell.Options) (shell.Result, error) {
+	return shell.Run(context.Background(),
 		[]string{Bin, "install", "--no-save", "--no-package-lock", "--prefix", prefix, pkg},
 		opt)
 }
 
 // RunScript runs one of a package.json's scripts.
-func RunScript(ctx context.Context, name string, opt shell.Options) (shell.Result, error) {
-	return shell.Run(ctx, []string{Bin, "run", name}, opt)
+func RunScript(name string, opt shell.Options) (shell.Result, error) {
+	return shell.Run(context.Background(), []string{Bin, "run", name}, opt)
 }
 
 // NodePath is where node resolves on PATH, for the caller that symlinks it

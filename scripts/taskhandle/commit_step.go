@@ -3,6 +3,7 @@ package taskhandle
 import (
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/commit"
 	"github.com/ondatra-ai/true-bdd/scripts/merge"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
@@ -72,7 +73,7 @@ func (r *Run) repair(step Step, brief string) error {
 // nothing else does: commit writes the body from the branch and knows nothing
 // about a Ticket.
 func (r *Run) afterCommit() error {
-	url, err := ghOut("pr", "view", "--json", "url", "--jq", ".url")
+	url, err := github.PRURL()
 	if err != nil {
 		r.list.mark(StepCommit, markFail, "could not read the pull request")
 
@@ -95,7 +96,7 @@ func (r *Run) afterCommit() error {
 // linkTicket appends the ClickUp URL to the PR body, once. Step 5 can run
 // several times, so it checks before it writes.
 func (r *Run) linkTicket() {
-	body, err := ghOut("pr", "view", "--json", "body", "--jq", ".body")
+	body, err := github.PRBody()
 	if err != nil {
 		r.logf("could not read the pull request body: %v", err)
 
@@ -106,8 +107,7 @@ func (r *Run) linkTicket() {
 		return
 	}
 
-	_, err = ghOut("pr", "edit", "--body",
-		strings.TrimRight(body, "\n")+"\n\nTicket: "+r.detail.URL)
+	err = github.SetPRBody(strings.TrimRight(body, "\n") + "\n\nTicket: " + r.detail.URL)
 	if err != nil {
 		r.logf("could not link the Ticket into the pull request: %v", err)
 	}

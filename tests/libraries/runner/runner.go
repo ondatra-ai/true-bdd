@@ -14,7 +14,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,7 +24,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
@@ -310,17 +308,18 @@ func Execute(
 
 	args := strings.Fields(fixture.Cmd)
 
-	runCtx, cancelRun := context.WithTimeout(ctx, runTimeout)
-	defer cancelRun()
-
 	// Stripped, not blanked: the engine under test must look entirely
 	// unlaunched-from-a-session, as claudecli's own child does.
-	options := cli.Options{Dir: tmpDir, Env: cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...)}
+	options := cli.Options{
+		Dir:     tmpDir,
+		Env:     cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...),
+		Timeout: runTimeout,
+	}
 	if fixture.Stdin != nil {
 		options.Stdin = bytes.NewReader(fixture.Stdin)
 	}
 
-	finished, runErr := spec.Run(runCtx, append([]string{binPath}, args...), options)
+	finished, runErr := spec.Run(append([]string{binPath}, args...), options)
 
 	stdout, stderr := finished.Stdout, finished.Stderr
 	exitCode := finished.Code
@@ -389,13 +388,13 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	}
 
 	for _, sub := range RepoLayer() {
-		err = CopyTree(filepath.Join(repoRoot, sub), filepath.Join(tmpDir, sub))
+		err = disk.CopyTree(filepath.Join(tmpDir, sub), filepath.Join(repoRoot, sub), disk.Shared)
 		if err != nil {
 			return tmpDir, fmt.Errorf("pre-populate %s: %w", sub, err)
 		}
 	}
 
-	err = CopyTree(filepath.Join(fixture.Dir, fixture.InputPath), tmpDir)
+	err = disk.CopyTree(tmpDir, filepath.Join(fixture.Dir, fixture.InputPath), disk.Shared)
 	if err != nil {
 		return tmpDir, fmt.Errorf("overlay input tree: %w", err)
 	}
@@ -408,50 +407,20 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	return tmpDir, nil
 }
 
-// runPrepCommands executes each fixture-provided prep command via
-// `bash -c`, teed to console and bdd-cli-logs/. Its own budget, decoupled
-// from the run timeout: npm/playwright installs are external, cold-cache work.
+// runPrepCommands executes each fixture-provided prep command, teed to
+// console and bdd-cli-logs/. Its own budget, decoupled from the run timeout:
+// npm/playwright installs are external, cold-cache work.
 func runPrepCommands(tmpDir string, prepCmds []string) error {
 	if len(prepCmds) == 0 {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), prepTimeout)
-	defer cancel()
-
-	spawn := newSpawnLog(tmpDir)
-
-	for idx, raw := range prepCmds {
-		trimmed := strings.TrimSpace(raw)
-		if trimmed == "" {
-			continue
-		}
-
-		stdout, stderr, flush := spawn.Tee(spawnLogName("prep", idx))
-
-		result, err := bash.Run(ctx, trimmed, cli.Options{
-			Dir:    tmpDir,
-			Env:    cli.Inherit().Strip("CLAUDECODE"),
-			Output: cli.Streams(stdout, stderr),
-		})
-
-		flush()
-
-		if err == nil {
-			err = result.Err()
-		}
-
-		if err != nil {
-			return fmt.Errorf("prep[%d] failed (%q): %w", idx, trimmed, err)
-		}
-	}
-
-	return nil
+	return phase("prep", tmpDir, prepTimeout).Run(prepCmds)
 }
 
-// prepTimeout caps the *entire* prep phase for one fixture (all prep
-// commands share the budget). Generous: a cold `npm install` plus a
-// browser download is minutes of pure I/O.
+// prepTimeout caps the *entire* prep phase for one fixture: each command is
+// given what is LEFT of it, not a fresh copy. Generous, because a cold `npm
+// install` plus a browser download is minutes of pure I/O.
 const prepTimeout = 15 * time.Minute
 
 // teardownTimeout caps the *entire* teardown phase (all commands share
@@ -459,82 +428,36 @@ const prepTimeout = 15 * time.Minute
 // hit ITS timeout — exactly when leftover resources most need cleanup.
 const teardownTimeout = 2 * time.Minute
 
-// runTeardownCommands executes each fixture-provided teardown command
-// via `bash -c` on a context independent of the run timeout, teed to
-// bdd-cli-logs/ — failures are logged, never returned, and can't mask the verdict.
+// runTeardownCommands executes each fixture-provided teardown command on a
+// budget independent of the run timeout, teed to bdd-cli-logs/ — failures are
+// logged, never returned, and can't mask the verdict.
 func runTeardownCommands(tmpDir string, teardownCmds []string) {
 	if len(teardownCmds) == 0 {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), teardownTimeout)
-	defer cancel()
+	for _, failure := range phase("teardown", tmpDir, teardownTimeout).RunAll(teardownCmds) {
+		slog.Warn("BDD runner: teardown failed", "error", failure)
+	}
+}
 
+// phase is one fixture-declared command list, each command teed to its own
+// pair of files under bdd-cli-logs/. CLAUDECODE is STRIPPED, not blanked: a
+// prep step may launch an agent CLI, which must look unlaunched-from-a-session.
+func phase(name, tmpDir string, budget time.Duration) spec.Phase {
 	spawn := newSpawnLog(tmpDir)
 
-	for idx, raw := range teardownCmds {
-		trimmed := strings.TrimSpace(raw)
-		if trimmed == "" {
-			continue
-		}
+	return spec.Phase{
+		Name:   name,
+		Dir:    tmpDir,
+		Env:    cli.Inherit().Strip("CLAUDECODE"),
+		Budget: budget,
+		Output: func(index int) (cli.Sink, func()) {
+			stdout, stderr, flush := spawn.Tee(spawnLogName(name, index))
 
-		stdout, stderr, flush := spawn.Tee(spawnLogName("teardown", idx))
-
-		result, err := bash.Run(ctx, trimmed, cli.Options{
-			Dir:    tmpDir,
-			Env:    cli.Inherit().Strip("CLAUDECODE"),
-			Output: cli.Streams(stdout, stderr),
-		})
-
-		flush()
-
-		if err == nil {
-			err = result.Err()
-		}
-
-		if err != nil {
-			slog.Warn("BDD runner: teardown failed",
-				"index", idx, "command", trimmed, "error", err)
-		}
+			return cli.Streams(stdout, stderr), func() { _, _ = flush() }
+		},
 	}
-}
-
-// CopyTree recursively copies the directory tree rooted at src into
-// dst, creating directories as needed and overwriting existing files.
-// Exported for reuse by the harness fixture materializer.
-func CopyTree(src, dst string) error {
-	walkErr := filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		rel, relErr := filepath.Rel(src, path)
-		if relErr != nil {
-			return fmt.Errorf("filepath rel: %w", relErr)
-		}
-
-		target := filepath.Join(dst, rel)
-
-		if entry.IsDir() {
-			mkErr := disk.Dir(target, disk.Shared)
-			if mkErr != nil {
-				return fmt.Errorf("mkdir %s: %w", target, mkErr)
-			}
-
-			return nil
-		}
-
-		return copyFile(path, target)
-	})
-	if walkErr != nil {
-		return fmt.Errorf("walk %s: %w", src, walkErr)
-	}
-
-	return nil
-}
-
-func copyFile(src, dst string) error {
-	return disk.Copy(dst, src, disk.Shared)
 }
 
 // Snapshotting and diffing live in tests/libraries/fstree, shared with

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
@@ -60,7 +59,7 @@ type Result struct {
 // Materialize prepares the fixture tree in the target directory: base
 // overlay → remove → input overlay → checklist filtering → prep →
 // baseline tree hash. Teardown commands are validated and echoed, never run.
-func Materialize(ctx context.Context, opts Options) (*Result, error) {
+func Materialize(opts Options) (*Result, error) {
 	manifest, err := LoadManifest(opts.FixtureDir)
 	if err != nil {
 		return nil, err
@@ -91,7 +90,7 @@ func Materialize(ctx context.Context, opts Options) (*Result, error) {
 		return nil, err
 	}
 
-	err = runPrepCommands(ctx, manifest, target)
+	err = runPrepCommands(manifest, target)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func applyBaseLayer(manifest *Manifest, repoRoot, target string) error {
 			return fmt.Errorf("%w: missing engine layer %s", ErrRepoRootRequired, src)
 		}
 
-		err = runner.CopyTree(src, filepath.Join(target, sub))
+		err = disk.CopyTree(filepath.Join(target, sub), src, disk.Shared)
 		if err != nil {
 			return fmt.Errorf("base overlay %s: %w", sub, err)
 		}
@@ -189,7 +188,7 @@ func applyInputOverlay(manifest *Manifest, fixtureDir, target string) error {
 		return nil
 	}
 
-	err := runner.CopyTree(filepath.Join(fixtureDir, manifest.Input), target)
+	err := disk.CopyTree(target, filepath.Join(fixtureDir, manifest.Input), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("input overlay: %w", err)
 	}
@@ -218,25 +217,17 @@ func applyChecklistFilters(manifest *Manifest, target string) error {
 	return nil
 }
 
-// runPrepCommands executes each prep command in the target via
-// `bash -c`. Output goes to STDERR — stdout is reserved for the
-// result JSON. A non-zero exit aborts the materialization.
-func runPrepCommands(ctx context.Context, manifest *Manifest, target string) error {
-	for idx, command := range manifest.Prep {
-		result, err := bash.Run(ctx, command, cli.Options{
-			Dir:    target,
-			Output: cli.Streams(console.Err(), console.Err()),
-		})
-		if err == nil {
-			err = result.Err()
-		}
-
-		if err != nil {
-			return fmt.Errorf("prep[%d] failed (%q): %w", idx, command, err)
-		}
-	}
-
-	return nil
+// runPrepCommands executes each prep command in the target. Output goes to
+// STDERR — stdout is reserved for the result JSON. A non-zero exit aborts the
+// materialization.
+func runPrepCommands(manifest *Manifest, target string) error {
+	return spec.Phase{
+		Name: "prep",
+		Dir:  target,
+		Output: func(int) (cli.Sink, func()) {
+			return cli.Streams(console.Err(), console.Err()), func() {}
+		},
+	}.Run(manifest.Prep)
 }
 
 func mustAbs(path string) string {

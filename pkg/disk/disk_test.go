@@ -1,6 +1,7 @@
 package disk_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,4 +228,73 @@ func TestEnsureCreatesButNeverTruncates(t *testing.T) {
 	if string(got) != "{\"a\":1}\n" {
 		t.Fatalf("ensure truncated an existing file: %q", got)
 	}
+}
+
+// CopyTree replaced a `cp -R src/. dst` spawn, so what is pinned here is that
+// idiom: src's CONTENTS land at dst's top level, over whatever is there.
+func TestCopyTreeLandsTheContentsAndOverwrites(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	src := filepath.Join(root, "src")
+	dst := filepath.Join(root, "dst")
+
+	write(t, filepath.Join(src, "server.js"), "fresh")
+	write(t, filepath.Join(src, "nested", "chunk.js"), "deep")
+	write(t, filepath.Join(dst, "server.js"), "stale")
+
+	err := disk.CopyTree(dst, src, disk.Shared)
+	if err != nil {
+		t.Fatalf("copy tree: %v", err)
+	}
+
+	if got := read(t, filepath.Join(dst, "server.js")); got != "fresh" {
+		t.Errorf("top-level file = %q, want the source's contents", got)
+	}
+
+	if got := read(t, filepath.Join(dst, "nested", "chunk.js")); got != "deep" {
+		t.Errorf("nested file = %q, want the source's contents", got)
+	}
+}
+
+// A symlink refuses rather than being flattened into a copy of its target: the
+// Next.js bundle this copies holds none today, and a silent flattening is the
+// wrong way to find out that changed.
+func TestCopyTreeRefusesASymlink(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	src := filepath.Join(root, "src")
+
+	write(t, filepath.Join(src, "real.js"), "x")
+
+	err := os.Symlink(filepath.Join(src, "real.js"), filepath.Join(src, "link.js"))
+	if err != nil {
+		t.Fatalf("plant a symlink: %v", err)
+	}
+
+	err = disk.CopyTree(filepath.Join(root, "dst"), src, disk.Shared)
+	if !errors.Is(err, disk.ErrSymlink) {
+		t.Fatalf("copy tree = %v, want ErrSymlink", err)
+	}
+}
+
+func write(t *testing.T, path, content string) {
+	t.Helper()
+
+	err := disk.Write(path, []byte(content), disk.Shared)
+	if err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func read(t *testing.T, path string) string {
+	t.Helper()
+
+	data, err := disk.Read(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	return string(data)
 }

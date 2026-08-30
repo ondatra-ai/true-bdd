@@ -3,6 +3,8 @@ package diffctx
 import (
 	"fmt"
 	"unicode/utf8"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
 // DefaultBudget is roughly 50k tokens of diff, which leaves generous headroom.
@@ -16,23 +18,27 @@ var Excludes = []string{
 	":(exclude)docs/doc-universe.html",
 }
 
-// diffVerb is the subcommand every scope here is an argument to.
-const diffVerb = "diff"
-
-// Git runs a git subcommand and returns its stdout. Every caller here already
-// owns the policy for a failed git, so this signature has no error.
-type Git func(args ...string) string
-
 // Bounded is the complete --stat under label, plus as much of the diff body
 // as the budget allows, with the body's shape named in the text.
-func Bounded(git Git, label string, scope []string, budget int) string {
-	stat := git(append([]string{diffVerb}, append(scope, "--stat")...)...)
-	body := git(append([]string{diffVerb}, scope...)...)
+func Bounded(label string, scope []string, budget int) (string, error) {
+	stat, err := git.DiffStat(scope...)
+	if err != nil {
+		return "", err
+	}
+
+	body, err := git.Diff(scope...)
+	if err != nil {
+		return "", err
+	}
+
 	shape := "the complete diff"
 
 	if utf8.RuneCountInString(body) > budget {
-		filtered := append(append([]string{diffVerb}, scope...), "--", ".")
-		body = git(append(filtered, Excludes...)...)
+		body, err = git.DiffExcluding(scope, Excludes...)
+		if err != nil {
+			return "", err
+		}
+
 		shape = "the diff with recorded cassettes and doc-universe.html filtered out"
 	}
 
@@ -43,7 +49,7 @@ func Bounded(git Git, label string, scope []string, budget int) string {
 	}
 
 	return fmt.Sprintf("=== %s (complete) ===\n%s\n\n=== Diff — this is %s ===\n%s\n",
-		label, stat, shape, body)
+		label, stat, shape, body), nil
 }
 
 // truncate cuts at a rune boundary, so the prefix is still valid UTF-8.

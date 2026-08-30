@@ -145,7 +145,7 @@ func Ask(ctx context.Context, suite architecture.Suite, repoRoot string) (*Answe
 
 	defer cleanup()
 
-	output, runErr := runCoverage(ctx, argv, commandDir(suite, repoRoot), reportPath)
+	output, runErr := runCoverage(argv, commandDir(suite, repoRoot), reportPath)
 
 	report, err := readReport(reportPath)
 	if err != nil {
@@ -259,11 +259,9 @@ func commandDir(suite architecture.Suite, repoRoot string) string {
 // runCoverage executes the command and returns its combined output for a
 // diagnostic. Spawned in its own process group, and killed as a group —
 // same reason as waitDelay above: a leaked grandchild would hold the pipes past a direct-child kill.
-func runCoverage(ctx context.Context, argv []string, dir, reportPath string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-
-	result, err := spec.Run(ctx, argv, cli.Options{
+func runCoverage(argv []string, dir, reportPath string) (string, error) {
+	result, err := spec.Run(argv, cli.Options{
+		Timeout:   commandTimeout,
 		Dir:       dir,
 		Env:       cli.Inherit().Set(ReportEnv + "=" + reportPath),
 		Output:    cli.Combined(),

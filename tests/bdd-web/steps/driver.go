@@ -1,7 +1,6 @@
 package steps
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,7 +19,7 @@ const npmInstallTimeout = 5 * time.Minute
 // ensureDriver assembles a Playwright driver directory from npm instead
 // of playwright-go's own downloader — its CDN zip URLs 404 (mirrors) or
 // 400 (redirect target) for every version. Cached under tmp/, keyed by version.
-func ensureDriver(ctx context.Context, repoRoot string) (string, error) {
+func ensureDriver(repoRoot string) (string, error) {
 	probe, err := playwright.NewDriver(&playwright.RunOptions{})
 	if err != nil {
 		return "", fmt.Errorf("resolve the driver version: %w", err)
@@ -34,7 +33,7 @@ func ensureDriver(ctx context.Context, repoRoot string) (string, error) {
 		return dir, nil
 	}
 
-	err = installDriverPackage(ctx, dir, version)
+	err = installDriverPackage(dir, version)
 	if err != nil {
 		return "", err
 	}
@@ -49,7 +48,7 @@ func ensureDriver(ctx context.Context, repoRoot string) (string, error) {
 
 // installDriverPackage fetches playwright-core at the exact version the
 // library expects and moves it into place as `<dir>/package`.
-func installDriverPackage(ctx context.Context, dir, version string) error {
+func installDriverPackage(dir, version string) error {
 	staging := dir + ".staging"
 
 	err := disk.RemoveTree(staging)
@@ -62,7 +61,7 @@ func installDriverPackage(ctx context.Context, dir, version string) error {
 		return fmt.Errorf("create the driver staging dir: %w", err)
 	}
 
-	installed, err := npm.Install(ctx, staging, "playwright-core@"+version,
+	installed, err := npm.Install(staging, "playwright-core@"+version,
 		cli.Options{
 			Timeout: npmInstallTimeout,
 			Output:  cli.Streams(console.Err(), console.Err()),
