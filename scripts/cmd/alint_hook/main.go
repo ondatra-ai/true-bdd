@@ -20,9 +20,14 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
-const advice = `LINT FAILED on %s. Fix it in that file now, before any other work:
-these same gates run at commit time and reject the branch otherwise. What was
-auto-fixable is already applied; what follows needs a real edit.
+// advice names the edit as the TRIGGER, never as the location: a Go gate lints
+// the edited file's whole package, so a finding may sit in a sibling this edit
+// broke or exposed — an `unused` cascade that no build and no test reports.
+const advice = `LINT FAILED after your edit to %s. Each finding below names its
+own file:line, which may be a sibling in the same package that this edit broke
+or exposed. Fix them now, before any other work: these same gates run at commit
+time and reject the branch otherwise. What was auto-fixable is already applied;
+what follows needs a real edit.
 
 %s`
 
