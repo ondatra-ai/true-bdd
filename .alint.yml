@@ -111,11 +111,14 @@ rules:
         - "pkg/shell/**"
         - "pkg/cli/**"
         - "pkg/enginelog/**"
+        - "pkg/claude/**"
+        - "pkg/alint/**"
     message: >-
       A new package under pkg/. pkg/ is the floor every root may import, not
       somewhere to park code: it holds the four IO channels, pkg/cli's typed
-      wrappers over the fourth, and enginelog. Write the ADR and add it here,
-      or put it in the root that owns it.
+      wrappers over the fourth, enginelog, and the inbound protocols — what
+      spawns US, against pkg/cli's what we spawn (docs/adr/0006). Write the
+      ADR and add it here, or put it in the root that owns it.
 
   # golangci-lint reaches the bdd tree (run.build-tags) but `generated: lax`
   # skips the generated tests; alint is tag-blind and text-level, so this is
