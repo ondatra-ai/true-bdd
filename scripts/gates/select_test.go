@@ -34,11 +34,14 @@ func TestEveryGlobIsSupported(t *testing.T) {
 
 // The documentation ticket is what the whole selector is for: ~2s of gates
 // instead of ~140s.
+// lintGate is the one row every lint leaf now lives behind.
+const lintGate = "Lint"
+
 func TestDocumentationDiffSkipsTheExpensiveGates(t *testing.T) {
 	t.Parallel()
 
 	got := names(gates.Select([]string{"docs/for_further/observability.md", "README.md"}))
-	want := []string{"Lint repository shape", "Lint markdown"}
+	want := []string{lintGate}
 
 	if !slices.Equal(got, want) {
 		t.Errorf("Select(docs only) = %v, want %v", got, want)
@@ -50,7 +53,7 @@ func TestScenarioRegistryPullsReplay(t *testing.T) {
 
 	got := names(gates.Select([]string{registry}))
 
-	for _, want := range []string{"BDD fixtures (replay)", "BDD web coverage guards", "Lint document schemas"} {
+	for _, want := range []string{"BDD fixtures (replay)", "BDD web coverage guards", lintGate} {
 		if !slices.Contains(got, want) {
 			t.Errorf("a diff to the registry did not select %q; got %v", want, got)
 		}

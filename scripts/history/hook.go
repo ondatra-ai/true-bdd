@@ -80,4 +80,3 @@ func (h *Hook) gitSHA() string {
 
 	return sha
 }
-

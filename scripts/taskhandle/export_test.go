@@ -23,8 +23,8 @@ func (b *budget) Spent() int                       { return b.spent() }
 func Verify(detail Detail, headings []string) []string { return verify(detail, headings) }
 
 // ParseGlobs and OutOfScope are the scope check.
-func ParseGlobs(field string) []string              { return parseGlobs(field) }
-func OutOfScope(changed, globs []string) []string   { return outOfScope(changed, globs) }
+func ParseGlobs(field string) []string            { return parseGlobs(field) }
+func OutOfScope(changed, globs []string) []string { return outOfScope(changed, globs) }
 
 // Classify splits review findings the way step 6 does.
 func Classify(findings []Finding) ([]Finding, []Finding) { return classify(findings) }

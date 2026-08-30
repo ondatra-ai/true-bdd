@@ -7,7 +7,7 @@
 // mirror check in ClaudeMD reports a torn read instead of a silent pass.
 //
 // It no longer dispatches. Which file selects which gate is .alint.yml's
-// answer now, and scripts/cmd/lint is the closure alint calls with it
+// answer now, and scripts/cmd/linters is the closure alint calls with it
 // (docs/adr/0006). Two behaviours survived that move and are load-bearing:
 //
 //	accumulate     a gate reports everything it found, not the first thing —

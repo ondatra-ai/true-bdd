@@ -62,8 +62,8 @@ func TestIsGatesRedMatchesOnlyTheOneRecoverableStop(t *testing.T) {
 		err  error
 		want bool
 	}{
-		"the gates": {&commit.StopError{Message: commit.GatesRedPrefix + "\n  lint"}, true},
-		"a push":    {&commit.StopError{Message: "gh push failed (1)"}, false},
+		"the gates":  {&commit.StopError{Message: commit.GatesRedPrefix + "\n  lint"}, true},
+		"a push":     {&commit.StopError{Message: "gh push failed (1)"}, false},
 		"not a stop": {errors.New("some other failure"), false},
 		"nil":        {nil, false},
 	} {

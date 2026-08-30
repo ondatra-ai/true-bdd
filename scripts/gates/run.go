@@ -13,7 +13,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
-var errGateFailed = errors.New("gate failed")
+var (
+	errGateFailed = errors.New("gate failed")
+	errLintFailed = errors.New("lint failed")
+)
 
 // Changed lists what this work touches against base — committed, uncommitted
 // and untracked.
@@ -54,12 +57,7 @@ func Run(selected []Gate) error {
 
 		started := time.Now()
 
-		result, err := spec.Run(gate.Command,
-			cli.Options{Output: cli.Console()})
-		if err == nil {
-			err = result.Err()
-		}
-
+		err := execute(gate)
 		if err != nil {
 			// Reported before the return: a red gate is the one whose duration
 			// a reader most wants, and the stop above would swallow it.
@@ -72,4 +70,20 @@ func Run(selected []Gate) error {
 	}
 
 	return nil
+}
+
+// execute runs one gate: its own function where it has one, and its argv
+// otherwise. A gate whose work is a package this repository owns calls it
+// rather than forking a `go run` of itself.
+func execute(gate Gate) error {
+	if gate.Run != nil {
+		return gate.Run()
+	}
+
+	result, err := spec.Run(gate.Command, cli.Options{Output: cli.Console()})
+	if err != nil {
+		return err
+	}
+
+	return result.Err()
 }

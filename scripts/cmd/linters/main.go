@@ -1,15 +1,14 @@
-// Command lint is this repository's source-quality gates, as the child alint
-// runs and as the command CI runs directly.
+// Command linters is this repository's source-quality leaves, and is run by
+// alint alone — every rule in .alint.yml that names a linter names this.
 //
-// One closure answers both. alint sets ALINT_PATH and puts --fix in the rule's
-// argv, so a gate named with neither is the whole-repository check the gate
-// table asks for. It never spawns alint — that is ./scripts/cmd/alint_hook,
-// and a leaf that ran its own runner would loop.
+// Nothing else may call it: `alint` is the one entry point, so which file
+// selects which leaf stays a fact of .alint.yml rather than a second table.
+// It never spawns alint back — a leaf that ran its own runner would loop.
 //
-//	lint <gate>                      every tracked file, report only
-//	lint <gate> <file>...            those files
-//	lint golint --fix                golangci-lint over ALINT_PATH's package
-//	lint comments                    the comment budget, whole tree
+//	linters <gate>                   every tracked file, report only
+//	linters <gate> <file>...         those files
+//	linters golint --fix             golangci-lint over ALINT_PATH's package
+//	linters comments                 the comment budget, whole tree
 package main
 
 import (
@@ -22,10 +21,15 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/alint"
+	clialint "github.com/ondatra-ai/true-bdd/pkg/cli/alint"
 	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/lint"
 	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
+
+// allGate is the whole-tree run: every leaf once, which is what a gate wants
+// and what a per-file command rule cannot express.
+const allGate = "all"
 
 // errUnknownGate names a gate no branch below answers for.
 var errUnknownGate = errors.New("unknown gate")
@@ -37,7 +41,7 @@ type finding string
 func (f finding) Error() string { return string(f) }
 
 // tool names this program in the Task's shared log.
-const tool = "lint"
+const tool = "linters"
 
 func main() {
 	alint.AlintLint(tool, state.TaskLog(history.RepoRoot()), os.Args[1:], gate)
@@ -51,6 +55,11 @@ func gate(req alint.AlintLintParams, log *slog.Logger) error {
 	}
 
 	name, rest := req.Args[0], req.Args[1:]
+
+	if name == allGate {
+		return everything(log)
+	}
+
 	files := scope(req, rest)
 
 	return capture(log, name, func(out *bytes.Buffer) error {
@@ -71,6 +80,41 @@ func gate(req alint.AlintLintParams, log *slog.Logger) error {
 			return fmt.Errorf("%w: %s", errUnknownGate, name)
 		}
 	})
+}
+
+// everything runs every leaf ONCE over the whole tree — the gate's shape, as
+// against the scoped rules' one-file-per-invocation. Inert under a scope: the
+// hook's own rules already cover the edited file, and this would re-walk all.
+func everything(log *slog.Logger) error {
+	// The name is pkg/cli/alint's, imported for the constant alone: one spelling
+	// of the variable that decides scoped-versus-whole-tree.
+	if os.Getenv(clialint.ScopeVar) != "" {
+		return nil
+	}
+
+	var failures []string
+
+	for _, leaf := range []struct {
+		name string
+		run  func(out *bytes.Buffer) error
+	}{
+		{"golint", func(out *bytes.Buffer) error { return lint.GoPackage(out, nil, false) }},
+		{"comments", func(out *bytes.Buffer) error { return lint.Comments(out, nil) }},
+		{"markdown", func(out *bytes.Buffer) error { return lint.Markdown(out, nil) }},
+		{"schemas", func(out *bytes.Buffer) error { return lint.Schemas(out, nil) }},
+		{"eslint", func(out *bytes.Buffer) error { return lint.ESLint(out, nil, false) }},
+	} {
+		err := capture(log, leaf.name, leaf.run)
+		if err != nil {
+			failures = append(failures, leaf.name+":\n"+err.Error())
+		}
+	}
+
+	if len(failures) > 0 {
+		return finding(strings.Join(failures, "\n\n"))
+	}
+
+	return nil
 }
 
 // scope is the files this run answers for: the one alint matched, else the

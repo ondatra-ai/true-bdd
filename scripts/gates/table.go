@@ -1,5 +1,12 @@
 package gates
 
+import (
+	"fmt"
+	"log/slog"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/alint"
+)
+
 // Gate is one check: what to run, and which changed paths make it necessary.
 type Gate struct {
 	// Name is the gate's identity, and the CI step name that must carry it.
@@ -10,8 +17,12 @@ type Gate struct {
 	// the gate always runs.
 	Globs []string
 	// CIAction names the GitHub action CI uses instead of Command, when it
-	// does. Only golangci-lint, which the action installs and caches.
+	// does. Empty everywhere since the lint rows collapsed into alint.
 	CIAction string
+	// Run, when set, is the gate — called in THIS process instead of spawning
+	// Command. Command stays as the line CI runs and conformance greps, and
+	// both reach the same code: nothing here shells out to its own package.
+	Run func() error
 }
 
 // Always reports whether this gate runs regardless of the diff.
@@ -24,7 +35,10 @@ const (
 	tagsFlag = "-tags"
 	bddTag   = "bdd"
 	registry = "docs/scenarios.yaml"
-	lintCmd  = "./scripts/cmd/lint"
+	goGlob   = "**/*.go"
+	goMod    = "go.mod"
+	goSum    = "go.sum"
+	lintCmd  = "./scripts/cmd/linters"
 	runVerb  = "run"
 )
 
@@ -33,7 +47,16 @@ const (
 //nolint:gochecknoglobals // this package IS a table; see the package doc.
 var (
 	// goSources is every path that can change what the Go compiler sees.
-	goSources = []string{"**/*.go", "go.mod", "go.sum"}
+	goSources = []string{goGlob, goMod, goSum}
+
+	// lintInputs is every path .alint.yml has a rule about, which is what the
+	// one Lint gate now covers.
+	lintInputs = []string{
+		goGlob, goMod, goSum, "**/*.md", "**/*.sh",
+		"**/*.yaml", "**/*.yml", "**/*.py",
+		"services/bdd-web/**", "true-bdd/**",
+		"docs/architecture/**", "docs/product/**", "scripts/lint/**",
+	}
 
 	// replayInputs is what tests/libraries/runner copies into each fixture
 	// tmpdir, plus the trees the binary is rebuilt from.
@@ -46,34 +69,16 @@ var (
 	// All is the pipeline. Every entry must also be a step of CI's gates job.
 	All = []Gate{
 		{
-			// Reads the whole file tree, and shells out to `lint claude-md`,
-			// which is why that has no row of its own.
-			Name:    "Lint repository shape",
-			Command: []string{"alint", "check"},
-		},
-		{
-			Name:    "Lint comments",
-			Command: []string{goBin, runVerb, lintCmd, "comments"},
-			Globs:   []string{"**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml"},
-		},
-		{
-			Name:    "Lint document schemas",
-			Command: []string{goBin, runVerb, lintCmd, "schemas"},
-			Globs: []string{
-				"true-bdd/**", "docs/architecture/**", "docs/product/**",
-				registry, "scripts/lint/**",
-			},
-		},
-		{
-			Name:    "Lint markdown",
-			Command: []string{goBin, runVerb, lintCmd, "markdown"},
-			Globs:   []string{"**/*.md"},
-		},
-		{
-			Name:     "Lint",
-			Command:  []string{"golangci-lint", "run"},
-			Globs:    goSources,
-			CIAction: "golangci/golangci-lint-action",
+			// The WHOLE lint pipeline. .alint.yml is the one map from a file to
+			// the checks it selects, and every leaf it names is
+			// ./scripts/cmd/linters — so this table holds no second list.
+			Name:    "Lint",
+			Command: []string{goBin, runVerb, "./scripts/cmd/alint"},
+			Run:     runAlint,
+			// The union of what the five lint rows this replaced claimed. Not
+			// empty: an Always gate claims no path, and a path claimed by
+			// nothing trips Select's fail-safe into running the whole table.
+			Globs: lintInputs,
 		},
 		{
 			Name:    "Build",
@@ -111,3 +116,23 @@ var (
 		},
 	}
 )
+
+// runAlint is the Lint gate. It calls pkg/cli/alint rather than spawning
+// ./scripts/cmd/alint, which would fork code this package already links.
+func runAlint() error {
+	report, err := alint.Check()
+	if err != nil {
+		return fmt.Errorf("running alint: %w", err)
+	}
+
+	left := report.Outstanding()
+	for _, finding := range left {
+		slog.Error("lint", "rule", finding.RuleID, "path", finding.Path, "message", finding.Message)
+	}
+
+	if len(left) > 0 {
+		return fmt.Errorf("%w: %d finding(s)", errLintFailed, len(left))
+	}
+
+	return nil
+}
