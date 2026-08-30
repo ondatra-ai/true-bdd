@@ -231,7 +231,6 @@ func TestEmitFailClosed(t *testing.T) {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	//nolint:gosec // re-exec of the test binary with a fixed run filter
 	cmd := exec.CommandContext(context.Background(), os.Args[0], "-test.run=TestEmitFailClosed")
 
 	cmd.Env = append(os.Environ(),

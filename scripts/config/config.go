@@ -35,7 +35,6 @@ func On(flag *bool) bool { return flag == nil || *flag }
 func Load(path string) (Switches, error) {
 	var switches Switches
 
-	//nolint:gosec // the path is a constant at every call site; the parameter is the test seam.
 	raw, err := disk.Read(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return switches, nil

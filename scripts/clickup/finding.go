@@ -45,7 +45,7 @@ func orUnknown(value string) string {
 
 // LoadQueue reads a queue file.
 func LoadQueue(path string) ([]Finding, error) {
-	raw, err := disk.Read(path) //nolint:gosec // the path is an operator's argument.
+	raw, err := disk.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading the queue: %w", err)
 	}

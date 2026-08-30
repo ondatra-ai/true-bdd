@@ -255,7 +255,7 @@ func warnOnHostCrushConfig(workDir string) {
 // host config declares — only `permissions` and `hooks` can narrow what
 // the apply turn may do, so those are the only ones worth a warning.
 func hostCrushConfigKeys(path string) ([]string, bool) {
-	raw, err := disk.Read(path) //nolint:gosec // operator-controlled host config path
+	raw, err := disk.Read(path)
 	if err != nil {
 		return nil, false
 	}

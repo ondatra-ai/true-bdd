@@ -120,7 +120,7 @@ func resolveStory(storiesDir, declaredID string) storyResolution {
 
 	resolution := storyResolution{matchCount: 1, sourceFile: filepath.Base(matches[0])}
 
-	data, err := disk.Read(matches[0]) //nolint:gosec // path is a globbed host story file
+	data, err := disk.Read(matches[0])
 	if err != nil {
 		resolution.created = CreatedInvalid
 		resolution.parseErr = err.Error()

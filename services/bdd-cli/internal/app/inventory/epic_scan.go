@@ -141,7 +141,7 @@ func parseEpicHeader(path string) (parsedEpic, bool) {
 
 	header := Epic{File: filepath.Base(path), Number: number, NoncanonicalFilename: !canonical}
 
-	data, err := disk.Read(path) //nolint:gosec // path is a globbed host epic file
+	data, err := disk.Read(path)
 	if err != nil {
 		header.Status = EpicInvalid
 		header.Error = err.Error()

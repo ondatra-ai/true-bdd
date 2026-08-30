@@ -28,7 +28,6 @@ func buildTrueBDD(t *testing.T) string {
 
 	const mainPkg = "github.com/ondatra-ai/true-bdd/services/bdd-cli"
 
-	//nolint:gosec // argv is literals and a TempDir path.
 	build := exec.CommandContext(ctx, "go", "build", "-o", bin, mainPkg)
 	build.Env = os.Environ()
 

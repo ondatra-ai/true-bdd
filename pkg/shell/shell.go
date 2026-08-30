@@ -99,7 +99,6 @@ func newCommand(ctx context.Context, argv []string, opt Options) (*exec.Cmd, err
 		return nil, fmt.Errorf("%w: empty argv", ErrNotStarted)
 	}
 
-	//nolint:gosec // argv reaches here from a pkg/cli wrapper, never from a user.
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = opt.Dir
 	cmd.Env = opt.Env.build()
