@@ -29,20 +29,26 @@ func defaults() shell.Options {
 }
 
 // Run runs git and hands back the result. A non-zero exit is Result.Code.
-func Run(ctx context.Context, args ...string) (shell.Result, error) {
-	return RunWith(ctx, defaults(), args...)
+func Run(args ...string) (shell.Result, error) {
+	return RunWith(defaults(), args...)
 }
 
 // RunWith runs git under a caller's options, for the few sites that need a
 // working directory or a deadline of their own.
-func RunWith(ctx context.Context, opt shell.Options, args ...string) (shell.Result, error) {
-	return shell.Run(ctx, append([]string{Bin}, args...), opt)
+func RunWith(opt shell.Options, args ...string) (shell.Result, error) {
+	return shell.Run(context.Background(), append([]string{Bin}, args...), opt)
 }
 
 // Output runs git and returns its trimmed stdout, reporting a non-zero exit
 // as an error for the callers that treat one that way.
-func Output(ctx context.Context, args ...string) (string, error) {
-	result, err := Run(ctx, args...)
+func Output(args ...string) (string, error) {
+	return OutputWith(defaults(), args...)
+}
+
+// OutputWith is Output under a caller's options, for the sites that need a
+// working directory or a deadline of their own.
+func OutputWith(opt shell.Options, args ...string) (string, error) {
+	result, err := RunWith(opt, args...)
 	if err != nil {
 		return "", err
 	}
@@ -56,8 +62,8 @@ func Output(ctx context.Context, args ...string) (string, error) {
 
 // Succeeds reports whether git exited zero, for the probes whose exit code is
 // the whole answer. A command that never started is an error, not a false.
-func Succeeds(ctx context.Context, args ...string) (bool, error) {
-	result, err := Run(ctx, args...)
+func Succeeds(args ...string) (bool, error) {
+	result, err := Run(args...)
 	if err != nil {
 		return false, err
 	}
@@ -66,37 +72,37 @@ func Succeeds(ctx context.Context, args ...string) (bool, error) {
 }
 
 // TopLevel is the absolute path of the checkout root.
-func TopLevel(ctx context.Context) (string, error) {
-	return Output(ctx, "rev-parse", "--show-toplevel")
+func TopLevel() (string, error) {
+	return Output("rev-parse", "--show-toplevel")
 }
 
 // HeadSHA is HEAD's full object name.
-func HeadSHA(ctx context.Context) (string, error) {
-	return Output(ctx, "rev-parse", "HEAD")
+func HeadSHA() (string, error) {
+	return Output("rev-parse", "HEAD")
 }
 
 // ShortHeadSHA is HEAD's abbreviated object name.
-func ShortHeadSHA(ctx context.Context) (string, error) {
-	return Output(ctx, "rev-parse", "--short", "HEAD")
+func ShortHeadSHA() (string, error) {
+	return Output("rev-parse", "--short", "HEAD")
 }
 
 // CurrentBranch is the checked-out branch, empty on a detached HEAD.
-func CurrentBranch(ctx context.Context) (string, error) {
-	return Output(ctx, "branch", "--show-current")
+func CurrentBranch() (string, error) {
+	return Output("branch", "--show-current")
 }
 
 // StatusPorcelain is the uncommitted-changes listing, empty when clean. Extra
 // arguments are appended, which is how a caller asks for -z.
-func StatusPorcelain(ctx context.Context, args ...string) (string, error) {
-	return Output(ctx, append([]string{"status", "--porcelain"}, args...)...)
+func StatusPorcelain(args ...string) (string, error) {
+	return Output(append([]string{"status", "--porcelain"}, args...)...)
 }
 
 // IsIgnored reports whether git ignores the path.
-func IsIgnored(ctx context.Context, path string) (bool, error) {
-	return Succeeds(ctx, "check-ignore", "-q", path)
+func IsIgnored(path string) (bool, error) {
+	return Succeeds("check-ignore", "-q", path)
 }
 
 // RefExists reports whether a fully-qualified ref resolves.
-func RefExists(ctx context.Context, ref string) (bool, error) {
-	return Succeeds(ctx, "show-ref", "--verify", "--quiet", ref)
+func RefExists(ref string) (bool, error) {
+	return Succeeds("show-ref", "--verify", "--quiet", ref)
 }

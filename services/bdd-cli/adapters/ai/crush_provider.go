@@ -50,7 +50,7 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 	// crush fails OPEN on a hook it cannot run, and the hook is the
 	// only write gate a crush turn has. Prove it denies before letting
 	// the turn start.
-	err = verifyCrushGuardEnforces(ctx, executable)
+	err = verifyCrushGuardEnforces(executable)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 		TranscriptPath: artifactPath(req, "crush.log"),
 	}
 
-	transcript, runErr := invocation.run(ctx)
+	transcript, runErr := invocation.run()
 	if runErr != nil {
 		return transcript, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
 	}

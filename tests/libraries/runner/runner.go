@@ -25,7 +25,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/fstree"
@@ -310,17 +309,18 @@ func Execute(
 
 	args := strings.Fields(fixture.Cmd)
 
-	runCtx, cancelRun := context.WithTimeout(ctx, runTimeout)
-	defer cancelRun()
-
 	// Stripped, not blanked: the engine under test must look entirely
 	// unlaunched-from-a-session, as claudecli's own child does.
-	options := cli.Options{Dir: tmpDir, Env: cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...)}
+	options := cli.Options{
+		Dir:     tmpDir,
+		Env:     cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...),
+		Timeout: runTimeout,
+	}
 	if fixture.Stdin != nil {
 		options.Stdin = bytes.NewReader(fixture.Stdin)
 	}
 
-	finished, runErr := spec.Run(runCtx, append([]string{binPath}, args...), options)
+	finished, runErr := spec.Run(append([]string{binPath}, args...), options)
 
 	stdout, stderr := finished.Stdout, finished.Stderr
 	exitCode := finished.Code
@@ -416,10 +416,8 @@ func runPrepCommands(tmpDir string, prepCmds []string) error {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), prepTimeout)
-	defer cancel()
-
 	spawn := newSpawnLog(tmpDir)
+	deadline := time.Now().Add(prepTimeout)
 
 	for idx, raw := range prepCmds {
 		trimmed := strings.TrimSpace(raw)
@@ -429,10 +427,11 @@ func runPrepCommands(tmpDir string, prepCmds []string) error {
 
 		stdout, stderr, flush := spawn.Tee(spawnLogName("prep", idx))
 
-		result, err := bash.Run(ctx, trimmed, cli.Options{
-			Dir:    tmpDir,
-			Env:    cli.Inherit().Strip("CLAUDECODE"),
-			Output: cli.Streams(stdout, stderr),
+		result, err := cli.BashRun(trimmed, cli.Options{
+			Dir:     tmpDir,
+			Env:     cli.Inherit().Strip("CLAUDECODE"),
+			Output:  cli.Streams(stdout, stderr),
+			Timeout: time.Until(deadline),
 		})
 
 		flush()
@@ -449,9 +448,9 @@ func runPrepCommands(tmpDir string, prepCmds []string) error {
 	return nil
 }
 
-// prepTimeout caps the *entire* prep phase for one fixture (all prep
-// commands share the budget). Generous: a cold `npm install` plus a
-// browser download is minutes of pure I/O.
+// prepTimeout caps the *entire* prep phase for one fixture: each command is
+// given what is LEFT of it, not a fresh copy. Generous, because a cold `npm
+// install` plus a browser download is minutes of pure I/O.
 const prepTimeout = 15 * time.Minute
 
 // teardownTimeout caps the *entire* teardown phase (all commands share
@@ -467,10 +466,8 @@ func runTeardownCommands(tmpDir string, teardownCmds []string) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), teardownTimeout)
-	defer cancel()
-
 	spawn := newSpawnLog(tmpDir)
+	deadline := time.Now().Add(teardownTimeout)
 
 	for idx, raw := range teardownCmds {
 		trimmed := strings.TrimSpace(raw)
@@ -480,10 +477,11 @@ func runTeardownCommands(tmpDir string, teardownCmds []string) {
 
 		stdout, stderr, flush := spawn.Tee(spawnLogName("teardown", idx))
 
-		result, err := bash.Run(ctx, trimmed, cli.Options{
-			Dir:    tmpDir,
-			Env:    cli.Inherit().Strip("CLAUDECODE"),
-			Output: cli.Streams(stdout, stderr),
+		result, err := cli.BashRun(trimmed, cli.Options{
+			Dir:     tmpDir,
+			Env:     cli.Inherit().Strip("CLAUDECODE"),
+			Output:  cli.Streams(stdout, stderr),
+			Timeout: time.Until(deadline),
 		})
 
 		flush()

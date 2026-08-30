@@ -49,7 +49,7 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 		TranscriptPath: artifactPath(req, "codex.log"),
 	}
 
-	trace, runErr := invocation.run(ctx)
+	trace, runErr := invocation.run()
 	if runErr != nil {
 		return trace, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
 	}

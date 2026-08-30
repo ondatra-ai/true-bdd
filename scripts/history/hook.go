@@ -1,11 +1,11 @@
 package history
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
@@ -83,15 +83,12 @@ func (h *Hook) gitSHA() string {
 func gitOutput(dir string, args ...string) (string, error) {
 	const budget = 2 * time.Second
 
-	ctx, cancel := context.WithTimeout(context.Background(), budget)
-	defer cancel()
-
 	full := args
 	if dir != "" {
 		full = append([]string{"-C", dir}, args...)
 	}
 
-	out, err := git.Output(ctx, full...)
+	out, err := git.OutputWith(cli.Options{Timeout: budget}, full...)
 	if err != nil {
 		return "", err
 	}

@@ -27,19 +27,19 @@ func defaults() shell.Options {
 }
 
 // Run runs gh and hands back the result. A non-zero exit is Result.Code.
-func Run(ctx context.Context, args ...string) (shell.Result, error) {
-	return RunWith(ctx, defaults(), args...)
+func Run(args ...string) (shell.Result, error) {
+	return RunWith(defaults(), args...)
 }
 
 // RunWith runs gh under a caller's options.
-func RunWith(ctx context.Context, opt shell.Options, args ...string) (shell.Result, error) {
-	return shell.Run(ctx, append([]string{Bin}, args...), opt)
+func RunWith(opt shell.Options, args ...string) (shell.Result, error) {
+	return shell.Run(context.Background(), append([]string{Bin}, args...), opt)
 }
 
 // Output runs gh and returns its trimmed stdout, reporting a non-zero exit as
 // an error.
-func Output(ctx context.Context, args ...string) (string, error) {
-	result, err := Run(ctx, args...)
+func Output(args ...string) (string, error) {
+	result, err := Run(args...)
 	if err != nil {
 		return "", err
 	}
@@ -53,8 +53,8 @@ func Output(ctx context.Context, args ...string) (string, error) {
 
 // JSON runs gh and decodes its answer into target. An empty answer decodes to
 // nothing and is not an error: several gh queries legitimately return none.
-func JSON(ctx context.Context, target any, args ...string) error {
-	out, err := Output(ctx, args...)
+func JSON(target any, args ...string) error {
+	out, err := Output(args...)
 	if err != nil {
 		return err
 	}

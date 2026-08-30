@@ -293,6 +293,96 @@ rules:
     command: ["go", "run", "./scripts/cmd/lint", "claude-md"]
     timeout: 60
 
+  # The four below fire only under a scope: alint_hook names one file and these
+  # paths pick the checks, which is the dispatch scripts/lint/dispatch.go was.
+  # Unscoped they match nothing — scripts/gates/table.go runs the same commands.
+  - id: go-lint-scoped
+    kind: command
+    level: error
+    when: "env.TRUEBDD_SCOPE"
+    timeout: 300
+    paths:
+      include: ["**/*.go"]
+      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+    scope_filter:
+      include_manifest_paths:
+        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
+        extract: { lines: {} }
+        # The manifest resolves before `when:` is read, so an unscoped run hits
+        # the default and would warn on every bare `alint check`.
+        expect_nonempty: false
+    command: ["go", "run", "./scripts/cmd/lint", "golint", "--fix"]
+
+  - id: markdown-scoped
+    kind: command
+    level: error
+    when: "env.TRUEBDD_SCOPE"
+    timeout: 120
+    paths:
+      include: ["**/*.md"]
+      exclude: ["CLAUDE.md", "tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+    scope_filter:
+      include_manifest_paths:
+        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
+        extract: { lines: {} }
+        # The manifest resolves before `when:` is read, so an unscoped run hits
+        # the default and would warn on every bare `alint check`.
+        expect_nonempty: false
+    command: ["go", "run", "./scripts/cmd/lint", "markdown", "--fix"]
+
+  - id: comments-scoped
+    kind: command
+    level: error
+    when: "env.TRUEBDD_SCOPE"
+    timeout: 120
+    paths:
+      include: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml"]
+      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+    scope_filter:
+      include_manifest_paths:
+        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
+        extract: { lines: {} }
+        # The manifest resolves before `when:` is read, so an unscoped run hits
+        # the default and would warn on every bare `alint check`.
+        expect_nonempty: false
+    command: ["go", "run", "./scripts/cmd/lint", "comments"]
+
+  - id: eslint-scoped
+    kind: command
+    level: error
+    when: "env.TRUEBDD_SCOPE"
+    timeout: 300
+    paths:
+      include: ["services/bdd-web/**/*.js", "services/bdd-web/**/*.jsx",
+                "services/bdd-web/**/*.ts", "services/bdd-web/**/*.tsx",
+                "services/bdd-web/**/*.mjs", "services/bdd-web/**/*.cjs"]
+      # design/ is a Next.js prototype carried for reference, not authored
+      # product code: eslint reports 7963 problems in it.
+      exclude: ["**/node_modules/**", "services/bdd-web/design/**"]
+    scope_filter:
+      include_manifest_paths:
+        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
+        extract: { lines: {} }
+        expect_nonempty: false
+    command: ["go", "run", "./scripts/cmd/lint", "eslint", "--fix"]
+
+  - id: schemas-scoped
+    kind: command
+    level: error
+    when: "env.TRUEBDD_SCOPE"
+    timeout: 120
+    paths:
+      include: ["**/*.yaml", "**/*.yml"]
+      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+    scope_filter:
+      include_manifest_paths:
+        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
+        extract: { lines: {} }
+        # The manifest resolves before `when:` is read, so an unscoped run hits
+        # the default and would warn on every bare `alint check`.
+        expect_nonempty: false
+    command: ["go", "run", "./scripts/cmd/lint", "schemas"]
+
   # crush merges every config it finds walking up from its cwd, so one here
   # silently blocks every fixture's apply turn. Documented in CLAUDE.md and,
   # until now, enforced by nothing.

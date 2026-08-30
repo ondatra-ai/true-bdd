@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
@@ -100,7 +99,7 @@ func waitGroupDrain() {
 // groupHasOtherMembers reports whether any process OTHER than the supervisor is
 // still in its process group. An unreadable process table ⇒ do not linger.
 func groupHasOtherMembers(pgid int) bool {
-	out, err := ps.Output(context.Background(), "-A", "-o", "pgid=,pid=")
+	out, err := cli.PsOutput("-A", "-o", "pgid=,pid=")
 	if err != nil {
 		return false
 	}

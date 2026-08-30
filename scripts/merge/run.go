@@ -1,7 +1,6 @@
 package merge
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -117,7 +116,7 @@ func Start(args []string) *Run {
 		usage("usage: merge — no arguments. The PR comes from the current branch.")
 	}
 
-	top, err := git.TopLevel(context.Background())
+	top, err := git.TopLevel()
 	if err != nil {
 		usage("not inside a git repository")
 	}

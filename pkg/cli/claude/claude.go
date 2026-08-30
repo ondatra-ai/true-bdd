@@ -88,8 +88,8 @@ func (o Options) Env() shell.Env {
 const diagnosticLimit = 600
 
 // Run performs one headless turn and returns its stdout.
-func Run(ctx context.Context, prompt string, opts Options) (string, error) {
-	result, err := shell.Run(ctx, append([]string{Bin}, opts.Args(prompt)...), shell.Options{
+func Run(prompt string, opts Options) (string, error) {
+	result, err := shell.Run(context.Background(), append([]string{Bin}, opts.Args(prompt)...), shell.Options{
 		Env:     opts.Env(),
 		Timeout: opts.Timeout,
 	})
@@ -117,8 +117,8 @@ func Run(ctx context.Context, prompt string, opts Options) (string, error) {
 // RunJSON performs one headless turn under Options.Schema and returns the
 // structured answer. `--output-format json` wraps it in an envelope: read
 // structured_output when the schema was honoured, else result.
-func RunJSON(ctx context.Context, prompt string, opts Options) (json.RawMessage, error) {
-	stdout, err := Run(ctx, prompt, opts)
+func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
+	stdout, err := Run(prompt, opts)
 	if err != nil {
 		return nil, err
 	}

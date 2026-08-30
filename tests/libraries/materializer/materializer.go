@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/bash"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
@@ -60,7 +58,7 @@ type Result struct {
 // Materialize prepares the fixture tree in the target directory: base
 // overlay → remove → input overlay → checklist filtering → prep →
 // baseline tree hash. Teardown commands are validated and echoed, never run.
-func Materialize(ctx context.Context, opts Options) (*Result, error) {
+func Materialize(opts Options) (*Result, error) {
 	manifest, err := LoadManifest(opts.FixtureDir)
 	if err != nil {
 		return nil, err
@@ -91,7 +89,7 @@ func Materialize(ctx context.Context, opts Options) (*Result, error) {
 		return nil, err
 	}
 
-	err = runPrepCommands(ctx, manifest, target)
+	err = runPrepCommands(manifest, target)
 	if err != nil {
 		return nil, err
 	}
@@ -221,9 +219,9 @@ func applyChecklistFilters(manifest *Manifest, target string) error {
 // runPrepCommands executes each prep command in the target via
 // `bash -c`. Output goes to STDERR — stdout is reserved for the
 // result JSON. A non-zero exit aborts the materialization.
-func runPrepCommands(ctx context.Context, manifest *Manifest, target string) error {
+func runPrepCommands(manifest *Manifest, target string) error {
 	for idx, command := range manifest.Prep {
-		result, err := bash.Run(ctx, command, cli.Options{
+		result, err := cli.BashRun(command, cli.Options{
 			Dir:    target,
 			Output: cli.Streams(console.Err(), console.Err()),
 		})

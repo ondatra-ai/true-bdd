@@ -22,19 +22,19 @@ func defaults() shell.Options {
 
 // Run runs the go tool and hands back the result. A non-zero exit is
 // Result.Code: every gate treats one as its verdict rather than an error.
-func Run(ctx context.Context, args ...string) (shell.Result, error) {
-	return RunWith(ctx, defaults(), args...)
+func Run(args ...string) (shell.Result, error) {
+	return RunWith(defaults(), args...)
 }
 
 // RunWith runs the go tool under a caller's options.
-func RunWith(ctx context.Context, opt shell.Options, args ...string) (shell.Result, error) {
-	return shell.Run(ctx, append([]string{Bin}, args...), opt)
+func RunWith(opt shell.Options, args ...string) (shell.Result, error) {
+	return shell.Run(context.Background(), append([]string{Bin}, args...), opt)
 }
 
 // Output runs the go tool and returns its trimmed stdout, reporting a
 // non-zero exit as an error.
-func Output(ctx context.Context, args ...string) (string, error) {
-	result, err := Run(ctx, args...)
+func Output(args ...string) (string, error) {
+	result, err := Run(args...)
 	if err != nil {
 		return "", err
 	}
@@ -48,8 +48,8 @@ func Output(ctx context.Context, args ...string) (string, error) {
 
 // Build compiles pkg into binPath. dir is the module to build from, passed as
 // -C rather than a working directory so the caller's own cwd is untouched.
-func Build(ctx context.Context, opt shell.Options, dir, binPath, pkg string) error {
-	result, err := RunWith(ctx, opt, "build", "-C", dir, "-o", binPath, pkg)
+func Build(opt shell.Options, dir, binPath, pkg string) error {
+	result, err := RunWith(opt, "build", "-C", dir, "-o", binPath, pkg)
 	if err != nil {
 		return err
 	}

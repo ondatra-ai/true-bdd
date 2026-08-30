@@ -98,11 +98,23 @@ replaced: a second caller, or a comment naming the first.
 
 It does not forbid a shell interpreter. `.alint.yml`'s `no-shell` bans shell
 *files*, never `bash -c` argv, and three production sites run fixture-authored
-command strings where the string is the contract
-(`tests/libraries/materializer/materializer.go:225`,
-`tests/libraries/runner/runner.go:436,:485`). `pkg/cli/bash` makes them
-greppable and gives the ban somewhere to send them. Enforcing "argv only, no
+command strings where the string is the contract. Enforcing "argv only, no
 interpreter" would be a further rule and is deliberately not taken here.
+
+**Amended 2026-08-30.** Three wrappers — `bash`, `cp`, `ps` — turned out to hold
+one argv literal and nothing else: no defaults, no output filter, no argv order to
+pin. They were the wrapper layer as pure toll, so their functions moved into
+`pkg/shell` itself as `BashRun`, `CpRecursive` and `PsOutput`, and the packages are
+gone. `BashRun` is not a synonym for `Run`: one hands the kernel an argv, the other
+hands bash a string to parse, and `npm ci && npx playwright install` has no argv
+form while a path with a space has no string form that survives word splitting.
+
+So the claim above narrows. `pkg/shell` is still the only importer of `os/exec` —
+`spawn-exec` is untouched, and that is the guarantee that mattered. But
+`pkg/cli/<tool>` is no longer the *only* caller of `pkg/shell`: five named files
+reach the three system-tool entry points directly, listed in both `.golangci.yaml`
+and `.alint.yml`. The rule a developer meets is unchanged for anything with argv of
+its own — spawn through the wrapper, and write one if it is missing.
 
 It also does not touch `pkg/logging` or `pkg/console`. Removing the child
 descriptors drops roughly eight importers from `console` as a side effect, and

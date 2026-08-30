@@ -1,7 +1,6 @@
 package gates
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -34,7 +33,7 @@ func Changed(base string) ([]string, error) {
 }
 
 func gitLines(args ...string) ([]string, error) {
-	out, err := git.Output(context.Background(), args...)
+	out, err := git.Output(args...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +72,7 @@ func Run(selected []Gate) error {
 
 		started := time.Now()
 
-		result, err := spec.Run(context.Background(), gate.Command,
+		result, err := spec.Run(gate.Command,
 			cli.Options{Output: cli.Console()})
 		if err == nil {
 			err = result.Err()

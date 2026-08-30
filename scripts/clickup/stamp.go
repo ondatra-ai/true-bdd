@@ -1,7 +1,6 @@
 package clickup
 
 import (
-	"context"
 	"log/slog"
 	"time"
 
@@ -22,7 +21,7 @@ type stamp struct {
 func now() stamp {
 	taken := stamp{Millis: time.Now().UnixMilli()}
 
-	sha, err := git.HeadSHA(context.Background())
+	sha, err := git.HeadSHA()
 	if err != nil {
 		slog.Warn("Could not read HEAD; the triage commit will be left unset", "error", err)
 

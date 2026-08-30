@@ -1,7 +1,6 @@
 package merge
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -53,7 +52,7 @@ func (r *Run) sh(cmd []string, opt options) result {
 
 	// Blanked, not removed: a child should know it is not interactive. Only a
 	// nested `claude -p` needs the variable gone entirely — see claudecli.
-	finished, err := spec.Run(context.Background(), cmd, cli.Options{
+	finished, err := spec.Run(cmd, cli.Options{
 		Env:     cli.Inherit().Blank("CLAUDECODE"),
 		Timeout: opt.timeout,
 		Output:  sink,
@@ -139,7 +138,6 @@ func (r *Run) changedPaths() map[string]bool {
 func label(cmd []string) string {
 	return strings.Join(cmd[:min(labelWords, len(cmd))], " ")
 }
-
 
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {

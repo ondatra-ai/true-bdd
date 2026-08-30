@@ -55,7 +55,7 @@ func (r *JestRunner) Discover(
 
 	cwd := CommandDir(cfg)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseDiscover, argv)
+	stdout, stderr, runErr := r.exec(cwd, PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("jest discovery under %s failed: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -98,7 +98,7 @@ func (r *JestRunner) RunOne(
 	pattern := "^" + jestRegexMeta.ReplaceAllString(fullName, `\$0`) + "$"
 	argv = append(argv, "--testNamePattern", pattern)
 
-	stdout, stderr, runErr := r.exec(ctx, cwd, PhaseRerun, argv)
+	stdout, stderr, runErr := r.exec(cwd, PhaseRerun, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("jest rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -142,11 +142,10 @@ func jestRanNothing(report *dto.JestReport) bool {
 // directory so `npx` resolves the local Jest install (see CommandDir).
 // phase labels the invocation in log/filename; non-zero exit is expected on test failure.
 func (r *JestRunner) exec(
-	ctx context.Context,
 	cwd, phase string,
 	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
-	return runLogged(ctx, argv, cwd, spawnMeta{
+	return runLogged(argv, cwd, spawnMeta{
 		binary:    argv[0],
 		args:      argv[1:],
 		framework: FrameworkJest,

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/pkg/claude/hooks"
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 func TestPostToolUsePassesTheEventThrough(t *testing.T) {
@@ -16,7 +16,8 @@ func TestPostToolUsePassesTheEventThrough(t *testing.T) {
 
 	var got hooks.PostToolUseParams
 
-	out := run(t, `{"tool_name":"Edit","tool_input":{"file_path":"/repo/a.go"}}`,
+	reason, blocked := hooks.Judge(
+		[]byte(`{"tool_name":"Edit","tool_input":{"file_path":"/repo/a.go"}}`),
 		func(params hooks.PostToolUseParams, _ *slog.Logger) error {
 			got = params
 
@@ -28,32 +29,22 @@ func TestPostToolUsePassesTheEventThrough(t *testing.T) {
 	}
 
 	// Nothing found is nothing written: a verdict Claude Code did not need.
-	if out != "" {
-		t.Errorf("a nil error must write nothing, got %q", out)
+	if blocked || reason != "" {
+		t.Errorf("a nil error must block nothing, got %q", reason)
 	}
 }
 
 func TestPostToolUseBlocksWithTheError(t *testing.T) {
 	t.Parallel()
 
-	out := run(t, `{"tool_name":"Write","tool_input":{"file_path":"a.go"}}`,
-		func(_ hooks.PostToolUseParams, _ *slog.Logger) error {
+	reason, blocked := hooks.Judge(
+		[]byte(`{"tool_name":"Write","tool_input":{"file_path":"a.go"}}`),
+		func(hooks.PostToolUseParams, *slog.Logger) error {
 			return errors.New("LINT FAILED on a.go")
 		})
 
-	var decoded struct {
-		Decision string `json:"decision"`
-		Reason   string `json:"reason"`
-	}
-
-	err := json.Unmarshal([]byte(out), &decoded)
-	if err != nil {
-		t.Fatalf("the verdict must be JSON: %v (%q)", err, out)
-	}
-
-	// `reason` is discarded unless `decision` is "block", so both are pinned.
-	if decoded.Decision != "block" || decoded.Reason != "LINT FAILED on a.go" {
-		t.Errorf("verdict: got %+v, want a block carrying the error", decoded)
+	if !blocked || reason != "LINT FAILED on a.go" {
+		t.Errorf("verdict: got blocked=%v reason=%q, want the error's message", blocked, reason)
 	}
 }
 
@@ -63,18 +54,19 @@ func TestPostToolUseIsSilentOnGarbage(t *testing.T) {
 
 	called := false
 
-	out := run(t, "not json at all", func(hooks.PostToolUseParams, *slog.Logger) error {
-		called = true
+	_, blocked := hooks.Judge([]byte("not json at all"),
+		func(hooks.PostToolUseParams, *slog.Logger) error {
+			called = true
 
-		return errors.New("must not run")
-	})
+			return errors.New("must not run")
+		})
 
 	if called {
 		t.Error("an unreadable payload must not reach the gate")
 	}
 
-	if out != "" {
-		t.Errorf("an unreadable payload must write nothing, got %q", out)
+	if blocked {
+		t.Error("an unreadable payload must block nothing")
 	}
 }
 
@@ -85,7 +77,7 @@ func TestPostToolUseForwardsAnEmptyPath(t *testing.T) {
 
 	seen := false
 
-	run(t, `{"tool_name":"Bash","tool_input":{"command":"ls"}}`,
+	hooks.Judge([]byte(`{"tool_name":"Bash","tool_input":{"command":"ls"}}`),
 		func(params hooks.PostToolUseParams, _ *slog.Logger) error {
 			seen = params.FilePath == "" && params.ToolName == "Bash"
 
@@ -97,15 +89,27 @@ func TestPostToolUseForwardsAnEmptyPath(t *testing.T) {
 	}
 }
 
-func run(t *testing.T, payload string, answer hooks.PostToolUseFunc) string {
-	t.Helper()
-
+// `reason` is discarded unless `decision` is "block", so both are pinned.
+func TestBlockWritesTheVerdict(t *testing.T) {
 	out := &bytes.Buffer{}
+	console.SetDefault(console.New(out))
 
-	err := hooks.PostToolUse(strings.NewReader(payload), out, answer)
+	err := hooks.Block("LINT FAILED on a.go")
 	if err != nil {
-		t.Fatalf("PostToolUse: %v", err)
+		t.Fatalf("Block: %v", err)
 	}
 
-	return out.String()
+	var decoded struct {
+		Decision string `json:"decision"`
+		Reason   string `json:"reason"`
+	}
+
+	err = json.Unmarshal(out.Bytes(), &decoded)
+	if err != nil {
+		t.Fatalf("the verdict must be JSON: %v (%q)", err, out)
+	}
+
+	if decoded.Decision != "block" || decoded.Reason != "LINT FAILED on a.go" {
+		t.Errorf("verdict: got %+v, want a block carrying the reason", decoded)
+	}
 }

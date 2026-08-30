@@ -111,7 +111,8 @@ pins the refusal); the `us-refine-fix-*` fixtures pass only because
 ## Development Commands
 
 ```bash
-go run ./scripts/cmd/lint [FILE...]   # every gate; a hook runs it per edit
+alint check          # every gate; the PostToolUse hook scopes it per edit
+go run ./scripts/cmd/lint <gate> [FILE...]   # one gate, by hand
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
 go run ./tests/libraries/cmd/report-server    # report UI on :7331

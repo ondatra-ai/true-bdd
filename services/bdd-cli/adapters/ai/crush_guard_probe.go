@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"context"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
@@ -16,8 +15,8 @@ const crushGuardProbePath = "/true-bdd-guard-probe/must-be-denied"
 // verifyCrushGuardEnforces proves the guard hook actually denies before any
 // crush turn starts: crush FAILS OPEN if the hook can't execute — observed
 // directly, a binary with no `crush-guard` subcommand let a write through silently.
-func verifyCrushGuardEnforces(ctx context.Context, executable string) error {
-	result, err := spec.Run(ctx, []string{executable, crushGuardSubcommand}, cli.Options{
+func verifyCrushGuardEnforces(executable string) error {
+	result, err := spec.Run([]string{executable, crushGuardSubcommand}, cli.Options{
 		Stdin: strings.NewReader(""),
 		Env: cli.Inherit().Set(
 			// A policy that grants nothing: every write must be denied.

@@ -149,13 +149,13 @@ shape and the linter wiring beside it.
 
 ## The hook shim
 
-`scripts/lint/hook.go` keeps its shape and loses its body:
+`scripts/lint/hook.go` is gone; `scripts/cmd/alint_hook` is what replaced it, and it is a
+closure plus a chdir:
 
-1. Read the PostToolUse payload, take `tool_input.file_path` — unchanged.
-2. Make it repo-relative, drop anything ignored or outside the tree — unchanged.
-3. Write `tmp/alint-scope.txt` with that one path, `../`-prefixed for the manifest quirk.
-4. `alint.Fix(ctx, paths)` — `pkg/cli/alint` writes the manifest, spawns `alint fix --format json` with `TRUEBDD_SCOPE` set, and decodes stdout.
-5. `Report.Outstanding()` — everything a fix could not apply — is empty → silence. Otherwise those findings string into the `{"decision":"block","reason":…}` verdict `pkg/claude/hooks` emits.
+1. `hooks.PostToolUse(judge)` — `pkg/claude/hooks` reads the payload off its own stdin, takes `tool_input.file_path`, and writes the verdict on its own stdout. The command names neither descriptor.
+2. `judge` makes the path repo-relative and drops anything ignored or outside the tree — the only part that came across from the old gate.
+3. `alint.Fix(ctx, paths)` — `pkg/cli/alint` writes the manifest, spawns `alint fix --format json` with `TRUEBDD_SCOPE` set, and decodes stdout.
+4. `Report.Outstanding()` empty → return nil, and nothing is written at all. Otherwise those findings are the returned error, whose message becomes the `reason`.
 
 The manifest name carries the pid — `tmp/alint-scope-<pid>.txt` — because the env var
 *is* the path, and two concurrent sessions (or a subagent sharing the worktree) would
@@ -179,20 +179,28 @@ reason `golint` split out: the agent-JSON shape is knowledge about alint.
 
 ## What gets worse
 
-1. **The `go.mod` sentinel walk becomes a static exclude list.** `addGoPackage` discovers fenced subtrees at runtime; `paths.exclude` has to name them. A future sentinel `go.mod` needs a config edit, and forgetting it means golangci-lint exits 5 on that tree. Today it is automatic. This is the sharpest regression in the proposal.
+1. ~~**The `go.mod` sentinel walk becomes a static exclude list.**~~ Avoided in the build: the walk moved to `lint.GoPackage` as `fenced()`, so a sentinel subtree is still discovered at runtime and `.alint.yml` does not have to enumerate them.
 2. **Per-file spawning does not dedupe by package.** Five edited files in one package means five golangci runs on that package. Irrelevant for the hook, which names exactly one file; the commit gate takes the whole-module path instead. Only a scoped multi-file run pays it.
 3. **Two rules per linter.** Roughly twelve lines of YAML each, and the `when:` pair has to stay mutually exclusive by hand.
 4. **One more required PATH tool in the critical path.** alint already gates CI, but after this it also gates every edit. Pin the version — CI pins `@asamarts/alint@0.15.2`; `scope_filter` needs ≥ 0.9.6. The pin is current, not behind: 0.15.2 is the latest release, and the docs' "89 rule kinds" is 78 canonical kinds plus 11 aliases.
 5. **The 16 KB message cap.** With `pkg/cli/golint`'s filter the findings fit; without it, the prototype's chatter alone spent ~2 KB per violation.
 6. **Two claims above are designed, not run.** The `files_pattern` extraction never fired — the full-run prototype passed with 0 issues, so nothing was there to parse — and the composed `go-lint-all` → Go leaf → filtered stdout → `files_from` chain was never exercised end to end. Both degrade to one whole-run violation instead of per-file ones, so neither blocks the design; verify them at implementation time.
 
-## CI
+## CI — and why the full run was left alone
 
-Keep `golangci/golangci-lint-action@v8` — it carries the analysis cache and the inline PR
-annotations that a `command_idempotent` rule cannot. The `not env.CI` guard above is what
-stops the same 7 s run happening twice; GitHub Actions always sets `CI=true`. The other
-four lint steps (`schemas`, `alint check`, `markdown`, `comments`) collapse into the
-single `alint check`.
+The design above proposed collapsing CI's four lint steps into one `alint check`, with
+`command_idempotent` rules for the full pass. **That was dropped when it was built, and
+the reason is `scripts/gates`.** The gate table carries a per-gate glob list that
+`task-handle` narrows on — 2 s for a documentation ticket instead of 140 s — and a
+conformance test pins that list to CI in both directions. Collapsing four steps into one
+deletes the narrowing and forces a CI restructuring nobody asked for.
+
+Nothing was needed anyway. `pkg/alint` reads `ALINT_PATH` from the environment and
+`--fix` from the argv, so a gate invoked with **neither** is the whole-repository check
+the table already runs. `go run ./scripts/cmd/lint comments` from `scripts/gates/table.go`
+and `lint comments` from a scoped alint rule reach the *same closure*. So: no CI edit, no
+`not env.CI` guard, no double-run to design around — and the untested `files_pattern`
+extraction stopped being load-bearing, because no `command_idempotent` rule was written.
 
 ## eslint
 
@@ -206,6 +214,8 @@ does not add a gate for a linter this repository does not run.
 ## Decision log
 
 - **2026-08-30** — Two claims corrected under challenge. The chatter does not bury the finding (golangci prints findings first); the honest figure is 89% of a 2559-character payload as a tail, which makes it a cost argument, not a legibility one. And `TRUEBDD_FIX_SCOPE` became `TRUEBDD_SCOPE` once it was established that alint has no command-shaped fix op and exports no mode variable — the invariant moved into `pkg/cli/alint`'s two-method surface. Also corrected: 0.15.2 is current, and the docs' 89 kinds are 78 plus 11 aliases.
+
+- **2026-08-30** — Callers wired, and the scoped path is live. `scripts/cmd/alint_hook` drives `alint.Fix` from the PostToolUse payload; `.claude/settings.json` points at it; four `when: env.TRUEBDD_SCOPE` rules in `.alint.yml` route a file to its gates; `scripts/cmd/lint` is the closure they call. `scripts/lint/dispatch.go` and `hook.go` are deleted. Proven end to end by a live hook firing on a planted violation: the auto-fix applied, the finding blocked, and no `level=warning` chatter survived the chain. Latency 1.35 s, unchanged. **Only the scoped path moved** — see the CI section for why the full run stayed on the gate table.
 
 - **2026-08-30** — `pkg/` built: `pkg/cli/alint` (Check, Fix, Report), `pkg/alint` (AlintLint and its closure), `pkg/claude/hooks` (PostToolUse). Both harnesses encapsulate the writer — a closure narrates through its logger and returns a finding, never a writer it was handed. ADR 0006 records the root split. The callers (`scripts/cmd/alint_hook`, the `lint` main, the `.alint.yml` rule pairs) are still to come.
 

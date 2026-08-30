@@ -1,7 +1,6 @@
 package alint_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,7 +28,7 @@ rules:
 func TestFixScopesToTheNamedPaths(t *testing.T) {
 	root := fakeRepo(t)
 
-	report, err := alint.Fix(context.Background(), []string{"a.go"})
+	report, err := alint.Fix([]string{"a.go"})
 	if err != nil {
 		t.Fatalf("Fix: %v", err)
 	}
@@ -54,7 +53,7 @@ func TestFixScopesToTheNamedPaths(t *testing.T) {
 func TestCheckCarriesNoScope(t *testing.T) {
 	fakeRepo(t)
 
-	report, err := alint.Check(context.Background())
+	report, err := alint.Check()
 	if err != nil {
 		t.Fatalf("Check: %v", err)
 	}

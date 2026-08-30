@@ -5,7 +5,17 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
+	"path/filepath"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
 )
+
+// ProjectDirVar is where Claude Code says it launched, and the working
+// directory every hook wants: a gate's paths are written relative to it.
+const ProjectDirVar = "CLAUDE_PROJECT_DIR"
 
 // PostToolUseParams is the event, reduced to what a gate acts on. The payload
 // carries more — session id, transcript path, the tool's response — and this
@@ -23,15 +33,77 @@ type PostToolUseParams struct {
 // Claude Code shows and acts on.
 type PostToolUseFunc func(params PostToolUseParams, log *slog.Logger) error
 
-// PostToolUse reads the event from in, hands it to answer, and writes the
-// verdict to out. An unreadable payload is silence: a hook that cannot parse
-// its input has found nothing, which is not the same as finding nothing wrong.
-func PostToolUse(in io.Reader, out io.Writer, answer PostToolUseFunc) error {
-	payload, err := io.ReadAll(in)
+// PostToolUse is the whole of being one: bind the log, enter the project
+// directory, read the event off stdin, ask answer, write the verdict.
+//
+//	tool     names the writer in the Task's shared log
+//	taskLog  where that log lives — pkg/ may not import the scripts/ package
+//	         that names it, so only the caller can say
+func PostToolUse(tool, taskLog string, answer PostToolUseFunc) {
+	// Stderr always: stdout carries the verdict, which Claude Code parses.
+	logging.Install(logging.Stderr, taskLog, tool)
+
+	err := run(answer)
+	if err == nil {
+		return
+	}
+
+	slog.Error("the hook failed", "error", err)
+	// The exit code is the protocol's, so it is owned here rather than by main.
+	os.Exit(1)
+}
+
+func run(answer PostToolUseFunc) error {
+	err := enter()
+	if err != nil {
+		return err
+	}
+
+	payload, err := io.ReadAll(console.In())
 	if err != nil {
 		return fmt.Errorf("reading the tool payload: %w", err)
 	}
 
+	reason, blocked := judge(payload, answer)
+	if !blocked {
+		return nil
+	}
+
+	return block(reason)
+}
+
+// enter makes Claude Code's project directory the working directory. git
+// answers when the variable is absent, which is how a payload piped in by
+// hand still lands somewhere sensible.
+func enter() error {
+	root := os.Getenv(ProjectDirVar)
+
+	if root == "" {
+		top, err := git.TopLevel()
+		if err != nil {
+			return fmt.Errorf("finding the repository root: %w", err)
+		}
+
+		root = top
+	}
+
+	resolved, err := filepath.Abs(root)
+	if err != nil {
+		return fmt.Errorf("resolving %s: %w", root, err)
+	}
+
+	err = os.Chdir(resolved)
+	if err != nil {
+		return fmt.Errorf("moving to %s: %w", resolved, err)
+	}
+
+	return nil
+}
+
+// judge decodes the event and asks answer about it, reporting whether the tool
+// call is blocked and why. An unreadable payload is silence: a hook that
+// cannot parse its input has found nothing, which is not finding nothing.
+func judge(payload []byte, answer PostToolUseFunc) (string, bool) {
 	var event struct {
 		ToolName  string `json:"tool_name"`
 		ToolInput struct {
@@ -39,17 +111,17 @@ func PostToolUse(in io.Reader, out io.Writer, answer PostToolUseFunc) error {
 		} `json:"tool_input"`
 	}
 
-	err = json.Unmarshal(payload, &event)
+	err := json.Unmarshal(payload, &event)
 	if err != nil {
-		return nil //nolint:nilerr // unreadable input is silence, not a verdict.
+		return "", false
 	}
 
 	params := PostToolUseParams{ToolName: event.ToolName, FilePath: event.ToolInput.FilePath}
 
 	found := answer(params, slog.Default().With("hook", "PostToolUse", "tool", params.ToolName))
 	if found == nil {
-		return nil
+		return "", false
 	}
 
-	return block(out, found.Error())
+	return found.Error(), true
 }

@@ -60,7 +60,7 @@ func (r *GoTestRunner) Discover(
 		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, suite, err)
 	}
 
-	stdout, stderr, runErr := r.exec(ctx, CommandDir(cfg), PhaseDiscover, argv)
+	stdout, stderr, runErr := r.exec(CommandDir(cfg), PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("go test discovery failed under %s: %w (stderr: %s)",
 			cfg.Path, runErr, stderr.String())
@@ -101,7 +101,7 @@ func (r *GoTestRunner) RunOne(
 
 	args := appendGoRunFilter(argv, test)
 
-	stdout, stderr, runErr := r.exec(ctx, CommandDir(failingTest.RunnerConfig), PhaseRerun, args)
+	stdout, stderr, runErr := r.exec(CommandDir(failingTest.RunnerConfig), PhaseRerun, args)
 	if runErr != nil && stdout.Len() == 0 {
 		return false, stderr.String(), fmt.Errorf("go test rerun of %s failed: %w",
 			failingTest.TestName, runErr)
@@ -122,13 +122,12 @@ func (r *GoTestRunner) RunOne(
 // stdout/stderr. phase labels the invocation in log/filename. `go test`
 // exits non-zero on test failure — that is not an infrastructure error.
 func (r *GoTestRunner) exec(
-	ctx context.Context,
 	cwd, phase string,
 	argv []string,
 ) (bytes.Buffer, bytes.Buffer, error) {
 	// Empty cwd means "inherit the engine's own working directory",
 	// which is what a suite declaring no `config:` file asks for.
-	return runLogged(ctx, argv, cwd, spawnMeta{
+	return runLogged(argv, cwd, spawnMeta{
 		binary:    argv[0],
 		args:      argv[1:],
 		framework: FrameworkGoTest,

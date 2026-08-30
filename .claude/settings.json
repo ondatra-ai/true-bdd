@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/lint hook",
+            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/alint_hook",
             "timeout": 120,
             "statusMessage": "Linting the file just written"
           }

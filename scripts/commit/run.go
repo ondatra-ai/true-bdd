@@ -1,7 +1,6 @@
 package commit
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -57,7 +56,7 @@ func Start(args []string) *Run {
 		usage("usage: commit — no arguments. Everything comes from the checkout.")
 	}
 
-	top, err := git.TopLevel(context.Background())
+	top, err := git.TopLevel()
 	if err != nil {
 		usage("not inside a git repository")
 	}
@@ -193,7 +192,7 @@ func (r *Run) sh(argv []string, stream bool) result {
 
 	// Blanked, not removed: a child should know it is not interactive. Only a
 	// nested `claude -p` needs the variable gone — see claudecli.
-	finished, err := spec.Run(context.Background(), argv, cli.Options{
+	finished, err := spec.Run(argv, cli.Options{
 		Env:    cli.Inherit().Blank("CLAUDECODE"),
 		Output: sink,
 	})

@@ -39,13 +39,13 @@ func Available() error {
 
 // Check runs every rule over the whole tree, reporting only. It names no
 // manifest, which is what keeps a checking run from rewriting anything.
-func Check(ctx context.Context) (Report, error) {
-	return run(ctx, "check", "")
+func Check() (Report, error) {
+	return run("check", "")
 }
 
 // Fix runs the rules the named paths scope, applying what a rule declares a
 // fixer for. The manifest is this process's alone and is removed after.
-func Fix(ctx context.Context, paths []string) (Report, error) {
+func Fix(paths []string) (Report, error) {
 	manifest, err := writeScope(paths)
 	if err != nil {
 		return Report{}, err
@@ -53,7 +53,7 @@ func Fix(ctx context.Context, paths []string) (Report, error) {
 
 	defer func() { _ = disk.Remove(manifest) }()
 
-	return run(ctx, "fix", manifest)
+	return run("fix", manifest)
 }
 
 // scopeEntries is the environment a run adds. A checking run adds nothing:
@@ -68,8 +68,8 @@ func scopeEntries(manifest string) []string {
 
 // run spawns one subcommand and decodes its verdict. A non-zero exit is a
 // violation count, which the report already carries, so it is not an error.
-func run(ctx context.Context, verb, manifest string) (Report, error) {
-	result, err := shell.Run(ctx, []string{Bin, verb, "--format", "json"},
+func run(verb, manifest string) (Report, error) {
+	result, err := shell.Run(context.Background(), []string{Bin, verb, "--format", "json"},
 		shell.Options{
 			Env:    shell.Inherit().Set(scopeEntries(manifest)...),
 			Output: shell.Capture(),

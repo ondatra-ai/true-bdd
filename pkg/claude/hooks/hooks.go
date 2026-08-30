@@ -4,14 +4,15 @@
 // It is the mirror of pkg/cli/claude. That package spawns the binary; this is
 // what the binary spawns, so the two together are the whole of this
 // repository's dealings with Claude Code as a process. A hook command's
-// main() supplies a closure and wires the two descriptors — the protocol,
-// including which fields exist and when a verdict is even read, lives here.
+// main() supplies a closure — the protocol, including which fields exist,
+// when a verdict is even read, and which descriptors carry it, lives here.
 package hooks
 
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+
+	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 // blockDecision is the only decision that carries a payload: `reason` is
@@ -26,13 +27,13 @@ type verdict struct {
 }
 
 // block writes the one verdict that stops a tool call.
-func block(out io.Writer, reason string) error {
+func block(reason string) error {
 	encoded, err := json.Marshal(verdict{Decision: blockDecision, Reason: reason})
 	if err != nil {
 		return fmt.Errorf("encoding the verdict: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(out, "%s\n", encoded)
+	console.Println(string(encoded))
 
 	return nil
 }

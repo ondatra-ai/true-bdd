@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"context"
 	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"log/slog"
@@ -36,10 +35,10 @@ type cliInvocation struct {
 // run spawns the CLI in its own process group and returns its combined
 // stdout+stderr. A cancelled context takes down the whole group, not
 // just the direct child.
-func (inv cliInvocation) run(ctx context.Context) (string, error) {
+func (inv cliInvocation) run() (string, error) {
 	slog.Debug("Spawning agent CLI", "binary", inv.Binary, "args", inv.Args, "dir", inv.Dir)
 
-	result, runErr := spec.Run(ctx, append([]string{inv.Binary}, inv.Args...), cli.Options{
+	result, runErr := spec.Run(append([]string{inv.Binary}, inv.Args...), cli.Options{
 		Dir:       inv.Dir,
 		Env:       cli.Exact(inv.Env),
 		Stdin:     strings.NewReader(inv.Stdin),
