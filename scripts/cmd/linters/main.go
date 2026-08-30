@@ -73,7 +73,7 @@ func gate(req alint.AlintLintParams, log *slog.Logger) error {
 		case "claude-md":
 			return lint.ClaudeMD(out)
 		case "golint":
-			return lint.GoPackage(out, packages(files, rest), req.Fix)
+			return lint.GoPackage(out, packages(req, rest), req.Fix)
 		case "eslint":
 			return lint.ESLint(out, files, req.Fix)
 		default:
@@ -127,19 +127,15 @@ func scope(req alint.AlintLintParams, named []string) []string {
 	return named
 }
 
-// packages names the Go packages a run covers: the directories holding the
-// files alint matched, or the ones the argv named outright.
-func packages(files, named []string) []string {
-	if len(named) > 0 {
+// packages names the Go package a run covers: the one holding alint's matched
+// file, which wins over argv as in scope — else argv verbatim, since a hand-run
+// names DIRECTORIES and filepath.Dir would strip a segment off each.
+func packages(req alint.AlintLintParams, named []string) []string {
+	if req.Path == "" {
 		return named
 	}
 
-	dirs := make([]string, 0, len(files))
-	for _, file := range files {
-		dirs = append(dirs, filepath.Dir(file))
-	}
-
-	return dirs
+	return []string{filepath.Dir(req.Path)}
 }
 
 // capture turns a gate's report into the closure's verdict: a pass narrates,
