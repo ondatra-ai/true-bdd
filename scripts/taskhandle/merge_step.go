@@ -1,6 +1,7 @@
 package taskhandle
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/scripts/merge"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
@@ -24,7 +25,7 @@ func (r *Run) mergeStep() error {
 	}
 
 	// merge ends on a freshly pulled trunk, so HEAD is the squash commit.
-	sha, err := gitOut("rev-parse", "--short", "HEAD")
+	sha, err := git.ShortHeadSHA()
 	if err != nil {
 		r.list.mark(StepMerge, markWarn, "merged; the squash sha could not be read")
 

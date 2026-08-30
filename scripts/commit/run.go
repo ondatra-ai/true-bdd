@@ -5,12 +5,12 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/config"
@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	gitBin = "git"
-	ghBin  = "gh"
+	// remote is the only one this repository pushes to or reads refs from.
+	remote = "origin"
 
 	// The trunk, and the base a narrowed gate selection diffs against.
 	trunk    = "main"
@@ -66,7 +66,7 @@ func Start(args []string) *Run {
 		usage("cannot enter the repository root: " + err.Error())
 	}
 
-	err = cli.Require(gitBin, ghBin, "claude")
+	err = cli.Require(git.Bin, github.Bin, claude.Bin)
 	if err != nil {
 		usage(err.Error())
 	}
@@ -139,12 +139,11 @@ func (r *Run) gates() {
 
 // trunkRef is main, or master where that is what the repository calls it.
 func (r *Run) trunkRef() string {
-	if r.git("show-ref", "--verify", "--quiet", "refs/remotes/origin/"+trunk).code == 0 {
-		return trunk
-	}
-
-	if r.git("show-ref", "--verify", "--quiet", "refs/remotes/origin/"+altTrunk).code == 0 {
-		return altTrunk
+	for _, name := range []string{trunk, altTrunk} {
+		exists, err := git.RemoteBranchExists(remote, name)
+		if err == nil && exists {
+			return name
+		}
 	}
 
 	return trunk
@@ -173,60 +172,15 @@ func usage(message string) {
 	panic(stopSentinel{message: message})
 }
 
-// ------------------------------------------------------------------- shell
+// -------------------------------------------------------------- stop policy
 
-type result struct {
-	stdout string
-	stderr string
-	code   int
-}
-
-// sh runs an argv list. No shell, ever. A command that cannot run at all
-// stops the run; a non-zero exit never does — gitChecked and gh below carry
-// that policy, and merge's helper carries more.
-func (r *Run) sh(argv []string, stream bool) result {
-	sink := cli.Capture()
-	if stream {
-		sink = cli.Console()
-	}
-
-	// Blanked, not removed: a child should know it is not interactive. Only a
-	// nested `claude -p` needs the variable gone — see claudecli.
-	finished, err := spec.Run(argv, cli.Options{
-		Env:    cli.Inherit().Blank("CLAUDECODE"),
-		Output: sink,
-	})
+// check stops the run when an operation failed. This is where commit's policy
+// lives: a git or gh command that failed ends the run, which is what the
+// gitChecked/gh pair this replaces each said for itself.
+func (r *Run) check(what string, err error) {
 	if err != nil {
-		r.dief("%s could not run: %v", strings.Join(argv, " "), err)
+		r.dief("%s: %v", what, textutil.Truncate(err.Error(), diagnosticLimit))
 	}
-
-	return result{stdout: finished.Stdout, stderr: finished.Stderr, code: finished.Code}
-}
-
-func (r *Run) git(args ...string) result {
-	return r.sh(append([]string{gitBin}, args...), false)
-}
-
-// gitChecked runs a git command and stops the run if it fails.
-func (r *Run) gitChecked(args ...string) string {
-	out := r.git(args...)
-	if out.code != 0 {
-		r.dief("git %s failed (%d):\n%s", strings.Join(args, " "), out.code,
-			textutil.Truncate(firstNonEmpty(out.stderr, out.stdout), diagnosticLimit))
-	}
-
-	return out.stdout
-}
-
-// gh runs a gh command and stops the run if it fails.
-func (r *Run) gh(args ...string) string {
-	out := r.sh(append([]string{ghBin}, args...), false)
-	if out.code != 0 {
-		r.dief("gh %s failed (%d):\n%s", strings.Join(args, " "), out.code,
-			textutil.Truncate(firstNonEmpty(out.stderr, out.stdout), diagnosticLimit))
-	}
-
-	return out.stdout
 }
 
 // write puts a run's artifact where it can be read after the fact.
@@ -235,16 +189,6 @@ func (r *Run) write(path, content string) {
 	if err != nil {
 		r.dief("%v", err)
 	}
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value != "" {
-			return value
-		}
-	}
-
-	return ""
 }
 
 // envDuration reads a step's timeout override, in seconds.

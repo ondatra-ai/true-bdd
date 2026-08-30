@@ -59,25 +59,6 @@ func Find(name string) (string, error) {
 	return shell.Find(name)
 }
 
-// The three system tools pkg/shell names itself, reached here so a caller
-// never imports the package the ban points away from.
-
-// BashRun runs a command STRING through bash, where a wrapper's Run hands the
-// kernel an argv. Not interchangeable — see shell.BashRun.
-func BashRun(command string, opt Options) (Result, error) {
-	return shell.BashRun(command, opt)
-}
-
-// CpRecursive copies a tree with `cp -R`.
-func CpRecursive(src, dst string, opt Options) (Result, error) {
-	return shell.CpRecursive(src, dst, opt)
-}
-
-// PsOutput runs ps and returns its stdout untrimmed.
-func PsOutput(args ...string) (string, error) {
-	return shell.PsOutput(args...)
-}
-
 // Capture keeps the two streams apart in Result, and is the zero value.
 func Capture() Sink { return shell.Capture() }
 

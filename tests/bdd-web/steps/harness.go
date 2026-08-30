@@ -57,8 +57,6 @@ const (
 	// minutes; this is the point past which something is wrong rather
 	// than slow.
 	buildTimeout = 10 * time.Minute
-	// copyTimeout caps assembling the bundle from the build output.
-	copyTimeout = 2 * time.Minute
 	// dirPerm is the mode for every directory this suite creates.
 )
 
@@ -150,19 +148,17 @@ func buildBundle(repoRoot string) (string, error) {
 		return "", fmt.Errorf("create the bundle dir: %w", err)
 	}
 
+	// dst, src: CopyTree lands src's CONTENTS at dst, which is what the
+	// `cp -R standalone/. <bundle>` this replaced meant.
 	copies := [][2]string{
-		{filepath.Join(appDir, ".next", "standalone") + "/.", bundle},
-		{filepath.Join(appDir, ".next", "static"), filepath.Join(bundle, ".next", "static")},
+		{bundle, filepath.Join(appDir, ".next", "standalone")},
+		{filepath.Join(bundle, ".next", "static"), filepath.Join(appDir, ".next", "static")},
 	}
 
 	for _, pair := range copies {
-		copied, copyErr := cli.CpRecursive(pair[0], pair[1], cli.Options{Timeout: copyTimeout})
-		if copyErr == nil {
-			copyErr = copied.Err()
-		}
-
+		copyErr := disk.CopyTree(pair[0], pair[1], disk.Shared)
 		if copyErr != nil {
-			return "", fmt.Errorf("assemble the bundle (%s): %w", pair[0], copyErr)
+			return "", fmt.Errorf("assemble the bundle (%s): %w", pair[1], copyErr)
 		}
 	}
 

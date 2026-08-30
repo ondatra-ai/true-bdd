@@ -101,20 +101,35 @@ It does not forbid a shell interpreter. `.alint.yml`'s `no-shell` bans shell
 command strings where the string is the contract. Enforcing "argv only, no
 interpreter" would be a further rule and is deliberately not taken here.
 
-**Amended 2026-08-30.** Three wrappers — `bash`, `cp`, `ps` — turned out to hold
-one argv literal and nothing else: no defaults, no output filter, no argv order to
-pin. They were the wrapper layer as pure toll, so their functions moved into
-`pkg/shell` itself as `BashRun`, `CpRecursive` and `PsOutput`, and the packages are
-gone. `BashRun` is not a synonym for `Run`: one hands the kernel an argv, the other
-hands bash a string to parse, and `npm ci && npx playwright install` has no argv
-form while a path with a space has no string form that survives word splitting.
+**Amended 2026-08-30.** An earlier amendment on this date moved `bash`, `cp` and
+`ps` into `pkg/shell` as `BashRun`, `CpRecursive` and `PsOutput`, on the ground
+that their wrappers "held one argv literal and nothing else". That measured the
+wrong thing. The knowledge had not gone anywhere — it had moved to the callers:
+`supervisor.go` grew twenty lines of process-table parsing and a field-count
+constant, `harness.go` encoded `cp`'s copy-the-contents idiom as the string
+`+ "/."`, and the three `bash -c` loops diverged, the materializer's losing the
+deadline the runner's had. Judge a wrapper by what its callers hold.
 
-So the claim above narrows. `pkg/shell` is still the only importer of `os/exec` —
-`spawn-exec` is untouched, and that is the guarantee that mattered. But
-`pkg/cli/<tool>` is no longer the *only* caller of `pkg/shell`: five named files
-reach the three system-tool entry points directly, listed in both `.golangci.yaml`
-and `.alint.yml`. The rule a developer meets is unchanged for anything with argv of
-its own — spawn through the wrapper, and write one if it is missing.
+So the three are gone from `pkg/shell` and `pkg/cli` both, and what replaced them
+is deeper than what was deleted: `pkg/cli/ps` answers `GroupMembers` and
+`StartedAt` with the column parsing inside; `pkg/cli/spec.Phase` runs a fixture's
+whole `prep:`/`teardown:` list under one shared budget, which is where the three
+loops' divergence went; and `cp -R` is not spawned at all, because `pkg/disk`
+owns tree copy (it refuses a symlink rather than flattening one silently). ADR
+0003's claim holds again as written: `pkg/shell` is the only importer of
+`os/exec`, and `pkg/cli/<tool>` the only caller of `pkg/shell`, with no named-file
+exemption list in `.golangci.yaml` or `.alint.yml`.
+
+The same measurement condemns a wrapper that only *proxies*. `git.Run(args...)`,
+`github.Output(args...)` and `gotool.Output(args...)` left every verb, `--json`
+field list and `--jq` selector at the call site, so `scripts/commit` and
+`scripts/merge` each grew a private `sh`/`git`/`gh` layer over `pkg/cli/spec` —
+the three `sh()` copies this ADR claimed to have removed, back within one
+release. The generic entry points are therefore unexported. What a caller names
+is an operation: `github.SquashMerge`, `git.HasStagedChanges`,
+`markdownlint.Lint`, `yamale.Validate`. What stays at the call site is what was
+always the caller's — the report spans, the stop policy, the poll budgets and
+the prompts.
 
 It also does not touch `pkg/logging` or `pkg/console`. Removing the child
 descriptors drops roughly eight importers from `console` as a side effect, and

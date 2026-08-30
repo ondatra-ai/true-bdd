@@ -16,37 +16,19 @@ import (
 var errGateFailed = errors.New("gate failed")
 
 // Changed lists what this work touches against base — committed, uncommitted
-// and untracked. Two-dot, NOT base...HEAD: the gates run before commit
-// cuts the branch, and on main three-dot resolves to an empty diff.
+// and untracked.
 func Changed(base string) ([]string, error) {
-	tracked, err := gitLines("diff", "--name-only", base)
+	tracked, err := git.ChangedAgainst(base)
 	if err != nil {
 		return nil, fmt.Errorf("listing changed paths against %s: %w", base, err)
 	}
 
-	untracked, err := gitLines("ls-files", "--others", "--exclude-standard")
+	untracked, err := git.UntrackedPaths()
 	if err != nil {
 		return nil, fmt.Errorf("listing untracked paths: %w", err)
 	}
 
 	return dedupe(append(tracked, untracked...)), nil
-}
-
-func gitLines(args ...string) ([]string, error) {
-	out, err := git.Output(args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var paths []string
-
-	for line := range strings.SplitSeq(out, "\n") {
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			paths = append(paths, trimmed)
-		}
-	}
-
-	return paths, nil
 }
 
 func dedupe(paths []string) []string {

@@ -3,11 +3,9 @@ package remote
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"strconv"
-	"strings"
 	"sync"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
@@ -83,10 +81,10 @@ func (r *ChildrenRegistry) flush() {
 // for the process's life, mirroring the test-side identity check so a
 // recycled pid is never signalled. Empty when ps fails.
 func processStartIdentity(pid int) string {
-	out, err := cli.PsOutput("-o", "lstart=", "-p", strconv.Itoa(pid))
+	started, err := ps.StartedAt(pid)
 	if err != nil {
 		return ""
 	}
 
-	return strings.TrimSpace(out)
+	return started
 }

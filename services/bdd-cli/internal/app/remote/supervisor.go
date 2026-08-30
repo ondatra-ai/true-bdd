@@ -4,12 +4,11 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
@@ -30,8 +29,6 @@ const (
 	supervisorDrainPoll = 50 * time.Millisecond
 	// supervisorSignalGrace gives a re-raised signal time to land.
 	supervisorSignalGrace = 1 * time.Second
-	// psGroupFields is the field count of a `ps -o pgid=,pid=` line.
-	psGroupFields = 2
 )
 
 // RunSupervisor is the RESIDENT GATED group-leader launcher (plan §1.6,
@@ -99,27 +96,15 @@ func waitGroupDrain() {
 // groupHasOtherMembers reports whether any process OTHER than the supervisor is
 // still in its process group. An unreadable process table ⇒ do not linger.
 func groupHasOtherMembers(pgid int) bool {
-	out, err := cli.PsOutput("-A", "-o", "pgid=,pid=")
+	members, err := ps.GroupMembers(pgid)
 	if err != nil {
 		return false
 	}
 
 	self := os.Getpid()
 
-	for _, line := range strings.Split(out, "\n") {
-		fields := strings.Fields(line)
-		if len(fields) != psGroupFields {
-			continue
-		}
-
-		group, gErr := strconv.Atoi(fields[0])
-		pid, pErr := strconv.Atoi(fields[1])
-
-		if gErr != nil || pErr != nil {
-			continue
-		}
-
-		if group == pgid && pid != self {
+	for _, pid := range members {
+		if pid != self {
 			return true
 		}
 	}

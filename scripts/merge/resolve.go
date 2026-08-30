@@ -2,16 +2,13 @@ package merge
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
-
-const resolveMutation = "query=mutation($id:ID!)" +
-	"{resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}"
 
 // ticketURL is the ClickUp task a finding became, from the filing record.
 func ticketURL(finding clickup.Finding) string {
@@ -43,13 +40,9 @@ func ticketURL(finding clickup.Finding) string {
 }
 
 func (r *Run) replyAndResolve(commentID int, threadID, text string) {
-	r.sh([]string{"gh", "api", "-X", "POST",
-		fmt.Sprintf("repos/%s/pulls/%d/comments/%d/replies", r.repo, r.pr, commentID),
-		"-f", "body=" + text, "--jq", ".id"}, options{check: true})
-
-	r.sh([]string{"gh", "api", "graphql", "-f", resolveMutation,
-		"-F", "id=" + threadID,
-		"--jq", ".data.resolveReviewThread.thread.isResolved"}, options{check: true})
+	r.check("replying to the review comment",
+		github.ReplyToReviewComment(r.repo, r.pr, commentID, text))
+	r.check("resolving the thread", github.ResolveReviewThread(threadID))
 }
 
 // answer pairs a finding with what its thread is told.

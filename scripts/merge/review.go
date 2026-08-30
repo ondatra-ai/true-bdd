@@ -1,7 +1,7 @@
 package merge
 
 import (
-	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"regexp"
 	"strconv"
@@ -90,8 +90,7 @@ func (r *Run) requestReview(round int) {
 		baselineReview, baselineComment := r.newestReviewID(), r.newestCommentID()
 
 		r.logf("requesting %s of %s (attempt %d)", kind, short(r.headSHA()), attempt)
-		r.sh([]string{"gh", "pr", "comment", strconv.Itoa(r.pr), "--body", command},
-			options{check: true})
+		r.check("requesting the review", github.Comment(r.pr, command))
 
 		answer, ackID := r.awaitAcknowledgement(baselineComment)
 
@@ -233,8 +232,7 @@ func (r *Run) recordReviewsAfter(sinceID int) {
 func (r *Run) comments() []ghComment {
 	var payload []ghComment
 
-	r.ghJSON(&payload, "api", "--paginate",
-		fmt.Sprintf("repos/%s/issues/%d/comments?per_page=100", r.repo, r.pr))
+	r.check("reading the conversation", github.IssueComments(&payload, r.repo, r.pr))
 
 	return payload
 }
@@ -242,8 +240,7 @@ func (r *Run) comments() []ghComment {
 func (r *Run) reviews() []ghReview {
 	var payload []ghReview
 
-	r.ghJSON(&payload, "api", "--paginate",
-		fmt.Sprintf("repos/%s/pulls/%d/reviews?per_page=100", r.repo, r.pr))
+	r.check("reading the reviews", github.Reviews(&payload, r.repo, r.pr))
 
 	return payload
 }
@@ -289,7 +286,7 @@ func (r *Run) commentBody(commentID int) string {
 
 	var payload ghComment
 
-	r.ghJSON(&payload, "api", fmt.Sprintf("repos/%s/issues/comments/%d", r.repo, commentID))
+	r.check("reading a comment", github.IssueComment(&payload, r.repo, commentID))
 
 	return payload.Body
 }

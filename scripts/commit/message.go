@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/diffctx"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
@@ -41,6 +43,9 @@ func sanitizeBranchName(answer string) string {
 const (
 	defaultMessageTimeout = 600 * time.Second
 	branchNameLimit       = 60
+
+	// styleCommits is how much history a written message is shown for style.
+	styleCommits = 5
 )
 
 func messageTimeout() time.Duration {
@@ -53,28 +58,39 @@ func diffBudget() int { return envInt("DIFF_BUDGET_BYTES", diffctx.DefaultBudget
 func (r *Run) stage() {
 	defer report.Open("staging")()
 
-	r.gitChecked("add", "-A")
+	r.check("staging the worktree", git.StageAll())
 
-	if r.git("diff", "--cached", "--quiet").code == 0 {
+	staged, err := git.HasStagedChanges()
+	r.check("reading the index", err)
+
+	if !staged {
 		r.dief("nothing staged to commit.")
 	}
 
-	r.logf("%s", strings.TrimSpace(r.gitChecked("diff", "--cached", "--stat")))
+	stat, err := git.StagedStat()
+	r.check("reading the staged stat", err)
+
+	r.logf("%s", strings.TrimSpace(stat))
 }
 
 // staged is the context a message is written from: the recent commits for
 // style, then the complete stat and as much diff body as the budget allows.
 func (r *Run) staged() string {
-	recent := r.gitChecked("log", "-5", "--pretty=format:%s%n%n%b%n---")
+	recent, err := git.RecentCommits(styleCommits)
+	r.check("reading recent commits", err)
 
-	return fmt.Sprintf("=== Recent commits (style reference) ===\n%s\n\n%s",
-		recent, diffctx.Bounded(r.gitChecked, "Staged files", []string{"--cached"}, diffBudget()))
+	staged, err := diffctx.Bounded("Staged files", []string{"--cached"}, diffBudget())
+	r.check("reading the staged diff", err)
+
+	return fmt.Sprintf("=== Recent commits (style reference) ===\n%s\n\n%s", recent, staged)
 }
 
 // ensureBranch refuses to commit directly to the trunk, cutting a branch named
 // after what is already staged instead.
 func (r *Run) ensureBranch() {
-	current := strings.TrimSpace(r.gitChecked("branch", "--show-current"))
+	current, err := git.CurrentBranch()
+	r.check("reading the current branch", err)
+
 	if current != trunk && current != altTrunk {
 		return
 	}
@@ -89,12 +105,15 @@ func (r *Run) ensureBranch() {
 	}
 
 	// git owns the ref rules, so git is asked rather than reimplemented.
-	if r.git("check-ref-format", "--branch", name).code != 0 {
+	valid, err := git.ValidBranchName(name)
+	r.check("checking the branch name", err)
+
+	if !valid {
 		r.dief("refusing branch name %q (from %q): git will not take it as a ref", name, answer)
 	}
 
 	r.logf("on %s — cutting branch %q for this commit", current, name)
-	r.gitChecked("checkout", "-b", name)
+	r.check("cutting the branch", git.CreateBranch(name))
 }
 
 // commit writes the message, commits and pushes.
@@ -109,10 +128,8 @@ func (r *Run) commit() {
 	path := StateDir + "/commit-msg.txt"
 	r.write(path, message+"\n")
 
-	r.gitChecked("commit", "-F", path)
-	// No -u: scripts/merge's checkPushed depends on branches having no
-	// upstream, and reads origin's HEAD directly instead.
-	r.gitChecked("push", "origin", "HEAD")
+	r.check("committing", git.CommitFile(path))
+	r.check("pushing", git.PushHead(remote))
 	r.logf("committed and pushed: %s", firstMeaningfulLine(message))
 }
 

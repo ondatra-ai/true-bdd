@@ -92,30 +92,6 @@ func Run(ctx context.Context, argv []string, opt Options) (Result, error) {
 	return result, nil
 }
 
-// BashRun runs a command STRING through bash, where Run hands the kernel an
-// argv. Not interchangeable: `npm ci && npx playwright install` has no argv
-// form, and a path with a space has no string form that survives splitting.
-func BashRun(command string, opt Options) (Result, error) {
-	return Run(context.Background(), []string{"bash", "-c", command}, opt)
-}
-
-// CpRecursive copies a tree with `cp -R`, for the one caller that wants the
-// system tool's semantics rather than a walk of its own.
-func CpRecursive(src, dst string, opt Options) (Result, error) {
-	return Run(context.Background(), []string{"cp", "-R", src, dst}, opt)
-}
-
-// PsOutput runs ps and returns its stdout UNTRIMMED, because both callers
-// parse it line by line and a trailing newline is part of that shape.
-func PsOutput(args ...string) (string, error) {
-	result, err := Run(context.Background(), append([]string{"ps"}, args...), Options{})
-	if err != nil {
-		return "", err
-	}
-
-	return result.Stdout, result.Err()
-}
-
 // newCommand builds the child from argv and opt, short of its streams, which
 // Run and Start attach differently.
 func newCommand(ctx context.Context, argv []string, opt Options) (*exec.Cmd, error) {

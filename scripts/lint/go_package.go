@@ -12,20 +12,14 @@ import (
 )
 
 // GoPackage runs golangci-lint over the named directories, or the whole module
-// when none are named. The package is the floor: `golangci-lint run <file>.go`
-// typechecks that file ALONE — all 17 package-mates came back "undefined".
+// when none are named, dropping the ones a sentinel go.mod fences out.
 func GoPackage(out io.Writer, dirs []string, fix bool) error {
-	args := []string{"run"}
-	if fix {
-		args = append(args, "--fix")
-	}
-
 	scoped := analysable(dirs)
 	if len(dirs) > 0 && len(scoped) == 0 {
 		return nil
 	}
 
-	return verdictOf(golint.Run(out, append(args, scoped...)...))
+	return verdictOf(golint.Lint(out, fix, scoped...))
 }
 
 // analysable drops the directories a sentinel go.mod fences out of the root

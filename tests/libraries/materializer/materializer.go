@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
@@ -152,7 +153,7 @@ func applyBaseLayer(manifest *Manifest, repoRoot, target string) error {
 			return fmt.Errorf("%w: missing engine layer %s", ErrRepoRootRequired, src)
 		}
 
-		err = runner.CopyTree(src, filepath.Join(target, sub))
+		err = disk.CopyTree(filepath.Join(target, sub), src, disk.Shared)
 		if err != nil {
 			return fmt.Errorf("base overlay %s: %w", sub, err)
 		}
@@ -187,7 +188,7 @@ func applyInputOverlay(manifest *Manifest, fixtureDir, target string) error {
 		return nil
 	}
 
-	err := runner.CopyTree(filepath.Join(fixtureDir, manifest.Input), target)
+	err := disk.CopyTree(target, filepath.Join(fixtureDir, manifest.Input), disk.Shared)
 	if err != nil {
 		return fmt.Errorf("input overlay: %w", err)
 	}
@@ -216,25 +217,17 @@ func applyChecklistFilters(manifest *Manifest, target string) error {
 	return nil
 }
 
-// runPrepCommands executes each prep command in the target via
-// `bash -c`. Output goes to STDERR — stdout is reserved for the
-// result JSON. A non-zero exit aborts the materialization.
+// runPrepCommands executes each prep command in the target. Output goes to
+// STDERR — stdout is reserved for the result JSON. A non-zero exit aborts the
+// materialization.
 func runPrepCommands(manifest *Manifest, target string) error {
-	for idx, command := range manifest.Prep {
-		result, err := cli.BashRun(command, cli.Options{
-			Dir:    target,
-			Output: cli.Streams(console.Err(), console.Err()),
-		})
-		if err == nil {
-			err = result.Err()
-		}
-
-		if err != nil {
-			return fmt.Errorf("prep[%d] failed (%q): %w", idx, command, err)
-		}
-	}
-
-	return nil
+	return spec.Phase{
+		Name: "prep",
+		Dir:  target,
+		Output: func(int) (cli.Sink, func()) {
+			return cli.Streams(console.Err(), console.Err()), func() {}
+		},
+	}.Run(manifest.Prep)
 }
 
 func mustAbs(path string) string {

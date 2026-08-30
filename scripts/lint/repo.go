@@ -31,20 +31,14 @@ func excludedTree(path string) bool {
 // trackedFiles is `git ls-files -co --exclude-standard`: tracked plus
 // untracked-and-not-ignored, so a stray fails before it is ever committed.
 func trackedFiles(pathspecs ...string) ([]string, error) {
-	args := append([]string{"ls-files", "-co", "--exclude-standard"}, pathspecs...)
-
-	out, err := git.Output(args...)
+	listed, err := git.ListedFiles(pathspecs...)
 	if err != nil {
 		return nil, fmt.Errorf("git ls-files: %w", err)
 	}
 
 	var paths []string
 
-	for _, line := range splitLines(out) {
-		if line == "" {
-			continue
-		}
-
+	for _, line := range listed {
 		info, err := os.Stat(line)
 		if err == nil && info.Mode().IsRegular() {
 			paths = append(paths, line)

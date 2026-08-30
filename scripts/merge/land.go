@@ -1,13 +1,12 @@
 package merge
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
 	"github.com/ondatra-ai/true-bdd/scripts/report"
 	"log/slog"
 )
@@ -33,8 +32,8 @@ func (r *Run) merge() {
 // and squashing the wrong branch then deleting it is not reversible.
 func (r *Run) branchStillOurs() string {
 	current := r.currentBranch()
-	prBranch := strings.TrimSpace(
-		r.gh("pr", "view", strconv.Itoa(r.pr), "--json", "headRefName", "--jq", ".headRefName"))
+	prBranch, err := github.PRHeadBranch(r.pr)
+	r.check("reading the pull request's branch", err)
 
 	if prBranch != current {
 		r.dief("PR #%d is on branch '%s', but '%s' is now checked out. "+
@@ -84,14 +83,14 @@ func (r *Run) approve() {
 	started := time.Now()
 
 	r.logf("requesting approval")
-	r.sh([]string{"gh", "pr", "comment", strconv.Itoa(r.pr), "--body", "@coderabbitai approve"},
-		options{check: true})
+	r.check("requesting approval", github.Comment(r.pr, "@coderabbitai approve"))
 
 	for waited := time.Duration(0); waited < approveBudget; waited += poll {
 		time.Sleep(poll)
 
-		decision := strings.TrimSpace(r.gh("pr", "view", strconv.Itoa(r.pr),
-			"--json", "reviewDecision", "--jq", `.reviewDecision // ""`))
+		decision, err := github.ReviewDecision(r.pr)
+		r.check("reading the review decision", err)
+
 		if decision == "APPROVED" {
 			report.Leaf("approve", started)
 
@@ -101,16 +100,6 @@ func (r *Run) approve() {
 
 	slog.Warn("no approval within the budget — trying the merge anyway", "budget", approveBudget)
 	report.Leaf("approve", started, report.KeyStatus, report.StatusWarned)
-}
-
-// requiredCheck is one row of `gh pr checks --required`. bucket is gh's own
-// normalisation of the CheckRun and StatusContext states into pass, fail,
-// pending, skipping or cancel.
-type requiredCheck struct {
-	Name   string `json:"name"`
-	State  string `json:"state"`
-	Bucket string `json:"bucket"`
-	Link   string `json:"link"`
 }
 
 // waitForChecks blocks until no required check gh can SEE is still running —
@@ -140,45 +129,17 @@ func (r *Run) waitForChecks() {
 	}
 }
 
-// notReportedYet is the substring shared by gh's "no checks reported" and
-// "no required checks reported" — the CodeRabbit context before the first
-// review is requested. Absent is "not yet", never red.
-const notReportedYet = "checks reported on the"
-
-// requiredChecks is what gh reports as required. `gh pr view --json
-// statusCheckRollup` carries no isRequired field, so the filtering has to be
-// gh's; with --json, gh prints the rollup and exits 0 whatever it holds.
-func (r *Run) requiredChecks() []requiredCheck {
-	answer := r.sh([]string{
-		ghBin, "pr", "checks", strconv.Itoa(r.pr),
-		"--required", "--json", "name,state,bucket,link",
-	}, options{})
-
-	body := strings.TrimSpace(answer.stdout)
-
-	switch {
-	case answer.code != 0 && strings.Contains(answer.stderr, notReportedYet):
-		return nil
-	case answer.code != 0:
-		r.dief("`gh pr checks` failed (%d) — this is not a verdict on the checks:\n%s",
-			answer.code, textutil.Truncate(firstNonEmpty(answer.stderr, body), diagnosticLimit))
-	case body == "":
-		return nil
-	}
-
-	var checks []requiredCheck
-
-	err := json.Unmarshal([]byte(body), &checks)
-	if err != nil {
-		r.dief("could not read `gh pr checks`:\n%s", textutil.Truncate(body, diagnosticLimit))
-	}
+// requiredChecks is what gh reports as required, empty until one has reported.
+func (r *Run) requiredChecks() []github.Check {
+	checks, err := github.RequiredChecks(r.pr)
+	r.check("reading the required checks — this is not a verdict on them", err)
 
 	return checks
 }
 
 // pendingChecks names the checks still running, and stops on any verdict the
 // merge cannot survive — including a bucket gh grew after this was written.
-func (r *Run) pendingChecks(checks []requiredCheck) []string {
+func (r *Run) pendingChecks(checks []github.Check) []string {
 	if len(checks) == 0 {
 		return []string{"any required check to report"}
 	}
@@ -199,11 +160,6 @@ func (r *Run) pendingChecks(checks []requiredCheck) []string {
 	return pending
 }
 
-// squashArgs is the merge command.
-func (r *Run) squashArgs() []string {
-	return []string{ghBin, "pr", "merge", strconv.Itoa(r.pr), "--squash", "--delete-branch"}
-}
-
 // waitForMergeable holds until GitHub itself calls the PR mergeable. It runs
 // AFTER approve() on purpose: BLOCKED is ambiguous while the approval is
 // missing, and means only the checks once it is in hand.
@@ -213,8 +169,8 @@ func (r *Run) waitForMergeable() {
 	r.logf("waiting for GitHub to call #%d mergeable", r.pr)
 
 	for waited := time.Duration(0); ; waited += poll {
-		state := strings.TrimSpace(r.gh("pr", "view", strconv.Itoa(r.pr),
-			"--json", "mergeStateStatus", "--jq", ".mergeStateStatus"))
+		state, err := github.MergeState(r.pr)
+		r.check("reading the merge state", err)
 
 		if r.mergeableNow(state) {
 			report.Leaf("wait for mergeable", started, "state", state)
@@ -272,25 +228,34 @@ func (r *Run) checkSummary() string {
 // check, a failing one, a conflict and a missing approval identically, and
 // merged #93 over a required check still IN_PROGRESS.
 func (r *Run) land() {
-	attempt := r.sh(r.squashArgs(), options{})
-	if attempt.code == 0 {
+	refusal, err := github.SquashMerge(r.pr)
+	r.check("merging", err)
+
+	if refusal == "" {
 		return
 	}
 
-	r.saveText(StateDir+"/merge-err.txt", attempt.stderr)
+	r.saveText(StateDir+"/merge-err.txt", refusal)
 	r.dief("the merge was refused and nothing was bypassed:\n%s\n"+
 		"  The branch is intact. Read the refusal, fix it, and re-run.",
-		indent(attempt.stderr, "    "))
+		indent(refusal, "    "))
 }
 
 func (r *Run) returnToTrunk(merged string) {
 	trunk := "main"
-	if r.git("show-ref", "--verify", "--quiet", "refs/heads/master").code == 0 {
+
+	master, err := git.LocalBranchExists("master")
+	r.check("looking for a master branch", err)
+
+	if master {
 		trunk = "master"
 	}
 
-	r.gitChecked("checkout", trunk)
-	r.gitChecked("pull", "origin", trunk)
-	r.git("branch", "-D", merged)
+	r.check("returning to "+trunk, git.Checkout(trunk))
+	r.check("updating "+trunk, git.Pull(remote, trunk))
+
+	// Not checked: a branch gh already deleted with the merge is not an error.
+	_ = git.DeleteBranch(merged)
+
 	r.logf("merged and back on %s", trunk)
 }
