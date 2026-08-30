@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/queryserver"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
@@ -48,7 +49,6 @@ type Agent struct {
 	docs     *docStore
 	chat     *chatHandler
 
-	binPath   string
 	folder    string // canonical (realpath) folder
 	rawFolder string
 	version   string
@@ -93,7 +93,9 @@ func Run(ctx context.Context, opts Options) error {
 		canonical = raw
 	}
 
-	binPath, err := os.Executable()
+	// Fail fast. A remote that cannot locate its own binary can dispatch
+	// nothing, and the first spawn is far too late to find that out.
+	_, err = truebdd.Self().Path()
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMissingExecutable, err)
 	}
@@ -105,7 +107,7 @@ func Run(ctx context.Context, opts Options) error {
 		return fmt.Errorf("create tmp dir: %w", err)
 	}
 
-	agent, err := newAgent(opts, raw, canonical, binPath, tmpDir)
+	agent, err := newAgent(opts, raw, canonical, tmpDir)
 	if err != nil {
 		return err
 	}
@@ -119,7 +121,7 @@ func Run(ctx context.Context, opts Options) error {
 
 // newAgent opens the store, locks, and read handle, and mints the stable
 // session id + process start identity.
-func newAgent(opts Options, raw, canonical, binPath, tmpDir string) (*Agent, error) {
+func newAgent(opts Options, raw, canonical, tmpDir string) (*Agent, error) {
 	dbPath := filepath.Join(tmpDir, dbFileName)
 
 	database, err := store.Open(dbPath)
@@ -159,7 +161,6 @@ func newAgent(opts Options, raw, canonical, binPath, tmpDir string) (*Agent, err
 		children:      NewChildrenRegistry(childrenPidfilePath(tmpDir, sessionID)),
 		docs:          newDocStore(canonical),
 		chat:          newChatHandler(canonical),
-		binPath:       binPath,
 		folder:        canonical,
 		rawFolder:     raw,
 		version:       opts.Version,

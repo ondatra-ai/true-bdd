@@ -3,6 +3,7 @@ package remote
 import (
 	"bytes"
 	"context"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"io"
 	"os"
 	"os/exec"
@@ -46,7 +47,8 @@ func TestGatedSupervisorFailsClosedWithoutRelease(t *testing.T) {
 	bin := buildTrueBDD(t)
 
 	child, err := spawnGatedGroup(spawnConfig{
-		binPath: bin, args: []string{commandVersion}, env: os.Environ(), dir: t.TempDir(),
+		binary: truebdd.Built(bin), args: []string{commandVersion},
+		env: os.Environ(), dir: t.TempDir(),
 	})
 	if err != nil {
 		t.Fatalf("spawn gated supervisor: %v", err)
@@ -81,7 +83,8 @@ func TestGatedSupervisorRunsAfterRelease(t *testing.T) {
 	bin := buildTrueBDD(t)
 
 	child, err := spawnGatedGroup(spawnConfig{
-		binPath: bin, args: []string{commandVersion}, env: os.Environ(), dir: t.TempDir(),
+		binary: truebdd.Built(bin), args: []string{commandVersion},
+		env: os.Environ(), dir: t.TempDir(),
 	})
 	if err != nil {
 		t.Fatalf("spawn gated supervisor: %v", err)

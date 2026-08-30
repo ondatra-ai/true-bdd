@@ -86,10 +86,9 @@ func (r *Run) commit() {
 	r.logf("committed and pushed: %s", firstLine(message))
 }
 
-// runGates runs the pipeline in THIS process. The table is a package merge
-// already imports, so spawning `go run ./scripts/cmd/gates` rebuilt and forked
-// code that was linked in — and its records landed under the CHILD's run id,
-// which scripts/report filters out of merge's own tree.
+// runGates runs the pipeline in THIS process: the table is a package merge
+// already imports, so `go run ./scripts/cmd/gates` forked code already linked
+// in, and its records landed under a run id scripts/report filters out.
 func (r *Run) runGates() error {
 	defer report.Open("gates")()
 

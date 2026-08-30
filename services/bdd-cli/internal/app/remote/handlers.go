@@ -261,7 +261,7 @@ func (a *Agent) spawnRun(ctx context.Context, runID string) {
 		return
 	}
 
-	executor := NewRunExecutor(a.store, a.locks, a.children, a.binPath, a.folder, a.sessionID, spec)
+	executor := NewRunExecutor(a.store, a.locks, a.children, a.folder, a.sessionID, spec)
 
 	a.setActive(executor)
 	executor.Execute(ctx)

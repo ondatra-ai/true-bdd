@@ -1,7 +1,6 @@
 package remote
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,20 +8,20 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 )
 
 // SupervisorSubcommand is the hidden CLI verb that runs the resident gated
-// group-leader launcher (finding 4). The remote spawns `true-bdd
-// <SupervisorSubcommand> <real args...>`.
-const SupervisorSubcommand = "remote-supervisor"
+// group-leader launcher (finding 4). Declared by pkg/cli/truebdd, which writes
+// it into the argv; re-exported here for the dispatch that answers it.
+const SupervisorSubcommand = truebdd.SupervisorSubcommand
 
 const (
 	// supervisorReleaseFD is the pipe fd the parent passes as ExtraFiles[0]:
 	// the supervisor blocks reading it until the parent has durably recorded the
 	// group identity (release), or the pipe reaches EOF (the parent died first).
-	supervisorReleaseFD = 3
+	supervisorReleaseFD = truebdd.ReleaseFD
 	// supervisorDrainCap bounds how long the supervisor lingers after the
 	// command exits, waiting for the group to drain of other members.
 	supervisorDrainCap  = 2 * time.Second
@@ -42,15 +41,7 @@ func RunSupervisor(args []string) int {
 		return 0
 	}
 
-	self, err := os.Executable()
-	if err != nil {
-		return 1
-	}
-
-	// No Group: the command inherits the supervisor's process group, so the
-	// supervisor stays the verifiable group leader.
-	proc, startErr := spec.Start(context.Background(), append([]string{self}, args...),
-		cli.Options{Stdin: console.In(), Output: cli.Console()})
+	proc, startErr := truebdd.Self().Exec(args, console.In())
 	if startErr != nil {
 		return 1
 	}
