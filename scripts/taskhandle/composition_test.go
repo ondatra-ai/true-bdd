@@ -59,7 +59,7 @@ func TestNoPromptNamesASkillThisPackageReplaces(t *testing.T) {
 	}
 
 	for _, path := range prompts {
-		raw, err := os.ReadFile(path) //nolint:gosec // a test reading its own fixtures.
+		raw, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("reading %s: %v", path, err)
 		}

@@ -60,7 +60,7 @@ Return ONLY a JSON array, no prose and no code fence:
 // `## ` heading, triaged and then transcribed. It is the deferral path for
 // anything that is not a review finding, which is what File's queue carries.
 func FileDocument(path, tag string) error {
-	raw, err := disk.Read(path) //nolint:gosec // the path is an operator's argument.
+	raw, err := disk.Read(path)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}

@@ -207,7 +207,7 @@ func (a *Agent) loop(ctx context.Context) error {
 		a.scheduler = newWorkScheduler(a.handleWork)
 	}
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // jitter, not crypto
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	err := a.register(ctx)
 	if err != nil {
@@ -284,7 +284,7 @@ func (a *Agent) handlePollResult(ctx context.Context, item *workItem, status int
 // the negotiated epoch, capability token, and reply budget. It retries forever
 // with capped full-jitter backoff until success or ctx cancel (plan §2).
 func (a *Agent) register(ctx context.Context) error {
-	rng := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // jitter, not crypto
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for attempt := 0; ; attempt++ {
 		if ctx.Err() != nil {

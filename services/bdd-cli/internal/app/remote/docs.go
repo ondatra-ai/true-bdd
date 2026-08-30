@@ -293,7 +293,7 @@ func (d *docStore) tree() docTreeResult {
 	for _, p := range paths {
 		abs := filepath.Join(d.folder, filepath.FromSlash(p))
 
-		data, err := disk.Read(abs) //nolint:gosec // p is drawn from the fixed allowlist + a directory scan under docs/
+		data, err := disk.Read(abs)
 		exists := err == nil
 		nodes = append(nodes, docNode{Path: p, Exists: exists, Revision: revisionOf(exists, data)})
 	}
@@ -332,7 +332,7 @@ func (d *docStore) read(relPath string) (docReadResult, error) {
 		return docReadResult{}, err
 	}
 
-	data, readErr := disk.Read(resolved) //nolint:gosec // resolved is containment-checked by validatePath
+	data, readErr := disk.Read(resolved)
 	exists := readErr == nil
 
 	status := parseStatusMissing
@@ -427,7 +427,7 @@ func (d *docStore) write(payload docWritePayload) docWriteOutcome {
 // error (EACCES, EISDIR, transient I/O) returns ioErr=true so the write is
 // refused instead of collapsing to "absent", which would let a client CLOBBER an unreadable-but-existing file.
 func (d *docStore) currentState(resolved string) (bool, string, bool) {
-	existing, readErr := disk.Read(resolved) //nolint:gosec // resolved is containment-checked by validatePath
+	existing, readErr := disk.Read(resolved)
 	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
 		return false, "", true
 	}
