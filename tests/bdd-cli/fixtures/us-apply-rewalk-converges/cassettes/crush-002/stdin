@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-2
 **Lineage Scenario ID:** 99.3-002
 **Description:** The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
-**Scratch Registry Path:** tmp/2026-08-17-19-46-26-38113/scenarios.yaml
+**Scratch Registry Path:** tmp/2026-08-31-12-35-24-94968/scenarios.yaml
 
 ### Steps
 Given:
@@ -70,19 +70,35 @@ Then:
 # Fix Prompt for AC 99.3-002: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`
+Apply the change to: `tmp/2026-08-31-12-35-24-94968/scenarios.yaml`
 
 ## Context
-The `us-apply/merge` check failed for AC-2 (lineage `99.3-002`): no `scenarios:` entry lists BOTH the story path `docs/product/stories/99.3-rewalk-fixture.yaml` AND the lineage id `99.3-002`. The registry currently holds a single scenario, `E2E-001` (lineage `99.3-001`). AC-2 must be added as a NEW scenario.
+The `us-apply/merge` check failed:
+`AC AC-2 (lineage 99.3-002): not present`
 
-- **New id:** `E2E-002` — the next free id in the existing `E2E-NNN` sequence; this is an e2e-layer MCP server behavior, matching `E2E-001`.
-- **`path:` reuse:** `tests/mcp/mcp_server_test.go` — the same file `E2E-001` uses. AC-2 is the same feature family (MCP `/mcp` endpoint HTTP behavior), so the two scenarios share one test file on purpose.
-- Steps are copied verbatim from the AC's Given/When/Then.
+The registry currently has exactly one scenario, `E2E-001` (lineage
+99.3-001). No `scenarios:` entry lists this subject's story path
+together with lineage id `99.3-002`, so the AC must be merged as a new
+scenario.
+
+Decisions baked into this fix:
+- **New id `E2E-002`** — next free id after the existing `E2E-001`;
+  this is an e2e-layer AC (HTTP behavior of the running MCP server),
+  matching E2E-001's layer.
+- **Reuse `path: "tests/e2e/mcp_test.go"`** — E2E-001 is the same
+  command/feature family (MCP server HTTP responses at `/mcp`), so both
+  behaviours share one generated test file. No new file is invented.
+- `merged_steps` are copied **verbatim** from the AC's given/when/then.
 
 ## Required Changes
-### Change #1: Append the new `E2E-002` scenario after `E2E-001`
-**Issue:** AC-2 (lineage `99.3-002`) is not present in the registry.
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends the new entry immediately after the last line of `E2E-001`, leaving that entry and all indentation untouched.
+
+### Change #1: Append a new scenario `E2E-002` for lineage 99.3-002
+**Issue:** AC-2 (lineage 99.3-002) has no scenario in the registry whose
+`user_stories[]` lists this story path and lineage id.
+**Action:** Use the Edit tool on the target file with the exact
+old_string and new_string below. This appends the new entry after the
+final line of the existing `E2E-001` entry, preserving all existing
+ordering and indentation and touching no other entry.
 **old_string:**
 ```
       then:
@@ -95,14 +111,14 @@ The `us-apply/merge` check failed for AC-2 (lineage `99.3-002`): no `scenarios:`
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
   E2E-002:
-    description: MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp
+    description: "MCP server responds 405 Method Not Allowed to a GET request to /mcp"
     service: ""
-    path: tests/mcp/mcp_server_test.go
-    last_updated: "2026-08-17"
+    path: "tests/e2e/mcp_test.go"
+    last_updated: "2026-08-31"
     user_stories:
-      - story: docs/product/stories/99.3-rewalk-fixture.yaml
-        scenario_id: 99.3-002
-        merge_date: "2026-08-17"
+      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
+        scenario_id: "99.3-002"
+        merge_date: "2026-08-31"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -113,19 +129,23 @@ The `us-apply/merge` check failed for AC-2 (lineage `99.3-002`): no `scenarios:`
         - and the response indicates the method is not allowed for this endpoint
 ```
 
+## Verification
+After applying, the `us-apply/merge` check should emit:
+`AC AC-2 (lineage 99.3-002): present in E2E-002`
+
 ---
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-17-19-46-26-38113/scenarios.yaml` and
+1. Use the Read tool to load `tmp/2026-08-31-12-35-24-94968/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-17-19-46-26-38113/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/2026-08-31-12-35-24-94968/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
 applied: true
-target: "tmp/2026-08-17-19-46-26-38113/scenarios.yaml"
+target: "tmp/2026-08-31-12-35-24-94968/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-17-19-46-26-38113/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===

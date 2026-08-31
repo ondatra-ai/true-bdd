@@ -11,7 +11,7 @@ import (
 
 const metaSchemaVersion = 1
 
-// Cassette file names. stdout/stderr paths are NORMALIZED ({{CWD}}, {{RUN_DIR}});
+// Cassette file names. stdin/stdout/stderr paths are NORMALIZED ({{CWD}}, {{RUN_DIR}});
 // replay denormalizes before emitting, since the engine parses result files by
 // their per-run tmp path. Write order (meta.json last): see writeCassette.
 const (

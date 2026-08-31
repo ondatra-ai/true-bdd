@@ -1,7 +1,5 @@
-```
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Inserted scenario E2E-001 mapping story 99.3-rewalk-fixture.yaml lineage 99.3-001 with MCP initialize steps"
+summary: "Replaced empty scenarios mapping with new E2E-001 entry linked to story 99.3 lineage id 99.3-001 with verbatim AC steps"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
-```

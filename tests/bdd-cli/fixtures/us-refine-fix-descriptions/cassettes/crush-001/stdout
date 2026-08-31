@@ -7,50 +7,35 @@ so_that: "I can decide whether the document needs my attention without reading i
 status: "PLANNED"
 acceptance_criteria:
   - id: "AC-1"
-    description: "Claude must display a summary of 150 words or fewer when a Claude User asks for a summary of a Google Doc shared with their account."
+    description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
     steps:
-      - given:
-          - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-      - when:
-          - "the Claude User asks Claude to summarize the document"
-      - then:
-          - "Claude displays a summary of 150 words or fewer in the conversation"
+      - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+      - when: "the Claude User asks Claude to summarize the document"
+      - then: "Claude displays a summary of 150 words or fewer in the conversation"
   - id: "AC-2"
     description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
     steps:
-      - given:
-          - "a Google Doc exists that is not shared with the Claude User's account"
-      - when:
-          - "the Claude User asks Claude to summarize that document"
-      - then:
-          - "Claude displays the message 'This document is not shared with your account'"
+      - given: "a Google Doc exists that is not shared with the Claude User's account"
+      - when: "the Claude User asks Claude to summarize that document"
+      - then: "Claude displays the message 'This document is not shared with your account'"
   - id: "AC-3"
     description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
     steps:
-      - given:
-          - "a Google Doc is shared with the Claude User's account"
-          - "the summary backend does not respond within 30 seconds"
-      - when:
-          - "the Claude User asks Claude to summarize the document"
-      - then:
-          - "Claude displays the message 'The summary timed out - please try again'"
+      - given: "a Google Doc is shared with the Claude User's account"
+      - given: "the summary backend does not respond within 30 seconds"
+      - when: "the Claude User asks Claude to summarize the document"
+      - then: "Claude displays the message 'The summary timed out - please try again'"
   - id: "AC-4"
     description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
     steps:
-      - given:
-          - "a Google Doc with more than 10000 words is shared with the Claude User's account"
-      - when:
-          - "the Claude User asks Claude to summarize the document"
-      - then:
-          - "Claude displays a summary of the first 10000 words"
-          - "Claude states that only the first 10000 words were summarized"
+      - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+      - when: "the Claude User asks Claude to summarize the document"
+      - then: "Claude displays a summary of the first 10000 words"
+      - then: "Claude states that only the first 10000 words were summarized"
   - id: "AC-5"
     description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
     steps:
-      - given:
-          - "a Google Doc with at least three section headings is shared with the Claude User's account"
-      - when:
-          - "the Claude User asks Claude for the document outline"
-      - then:
-          - "Claude displays each section heading in its original order"
+      - given: "a Google Doc with at least three section headings is shared with the Claude User's account"
+      - when: "the Claude User asks Claude for the document outline"
+      - then: "Claude displays each section heading in its original order"
 === FILE_END: tmp/{{RUN_DIR}}/apply-96.2-iter1-result.yaml ===

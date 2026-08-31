@@ -77,7 +77,12 @@ func record(cfg config, name string, argv []string) (int, error) {
 	stdout := []byte(normalizeText(string(sanitizeStream(result.Stdout)), cwd))
 	stderr := []byte(normalizeText(string(result.Stderr), cwd))
 
-	err = writeCassette(dir, manifest, result.Stdin, stdout, stderr, changes)
+	// stdin is normalized too: the fix-generator writes the NEXT turn's prompt,
+	// and a model may resolve a path itself, so an absolute path reaches stdin
+	// that no template contains (scripts/commit's recording sweep catches it).
+	stdin := []byte(normalizeText(string(result.Stdin), cwd))
+
+	err = writeCassette(dir, manifest, stdin, stdout, stderr, changes)
 	if err != nil {
 		return 0, err
 	}

@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-17-19-43-05-35899/apply-95.2-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-17-19-43-05-35899/apply-95.2-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-1
 **Lineage Scenario ID:** 95.2-001
 **Description:** The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
-**Scratch Registry Path:** tmp/2026-08-17-19-43-05-35899/scenarios.yaml
+**Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
 
 ### Steps
 Given:
@@ -71,42 +71,43 @@ Then:
 # Fix Prompt for AC 95.2-001: The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-17-19-43-05-35899/scenarios.yaml`
-
-## Context
-- The `us-apply/merge` check failed: no entry under `scenarios:` has a `user_stories[]` member carrying both the story path `docs/product/stories/95.2-relocated-registry.yaml` and the lineage scenario id `95.2-001`.
-- The only existing entry is `E2E-960`. It uses `service`, `last_updated`, `user_stories`, `merged_steps` — and **no `path:` field**. All step strings are double-quoted.
-- No architecture doc / suite-path reference is provided, and there is no existing `path:` to reuse, so the new entry mirrors `E2E-960`'s exact shape (no `path:` field) rather than inventing one.
-- Id chosen: `E2E-961` — the next free id following the existing `E2E-960` numbering. This is an e2e/integration behaviour (Claude User → MCP server health endpoint), and the template prefers `E2E-NNN` when unsure.
-- `service` is set to `""` per the template default, because the subject names no service.
-- `given` / `when` / `then` are copied verbatim from the AC's steps. Dates use today (`2026-08-17`).
+Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Required Changes
-### Change #1: Append a new scenario entry for AC 95.2-001
-**Issue:** The registry has no scenario whose `user_stories[]` links story `docs/product/stories/95.2-relocated-registry.yaml` with lineage id `95.2-001`, so the "present?" merge check fails.
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends `E2E-961` after `E2E-960` and leaves `E2E-960` untouched.
+
+### Change #1: Add a new scenario entry for AC 95.2-001
+**Issue:** The `us-apply/merge` "present?" check fails — no entry under `scenarios:` has a `user_stories[]` item referencing story `docs/product/stories/95.2-relocated-registry.yaml` with lineage id `95.2-001`. The AC must be added as exactly one new scenario, without touching the existing `E2E-960` entry.
+
+**Decisions (do not improvise these):**
+- **id:** `E2E-961` — the next free id after the only existing id `E2E-960`; e2e-layer (an HTTP GET against a running server), and the F: template says prefer `E2E-` when unsure.
+- **service:** `""` — verbatim per the F: template. Do NOT copy `"web-service"` from E2E-960; that would falsely bind this AC to the web suite.
+- **path:** `"tests/mcp/health_test.go"` — the registry has no other scenario of this family to reuse a `path:` from and no `architecture.testing.suites[]` to anchor to, so this is the invented `<suite path>/<family>_test.go` value. Use it as a literal; do not substitute another path.
+- **dates:** `"2026-08-31"` for both `last_updated` and `merge_date`.
+- **steps:** copied verbatim from the story's `steps.given` / `steps.when` / `steps.then`. Preserve the `then:` modifier-form step exactly as `- and: "..."` (the schema allows the one-key `{and: …}` mapping).
+- This is an **append-only** edit — `E2E-960` and `metadata:` stay byte-identical.
+
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. The anchor is E2E-960's final two lines (unique in the file); the new block is appended after a single blank line.
+
 **old_string:**
 ```
-      when:
-        - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
 ```
+
 **new_string:**
 ```
-      when:
-        - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
 
   E2E-961:
-    description: "The MCP server returns HTTP 200 with a JSON body reporting the service as healthy for a GET request to /health"
+    description: "MCP server returns HTTP 200 and healthy JSON on GET /health"
     service: ""
-    last_updated: "2026-08-17"
+    path: "tests/mcp/health_test.go"
+    last_updated: "2026-08-31"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-08-17"
+        merge_date: "2026-08-31"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -115,22 +116,27 @@ Apply the change to: `tmp/2026-08-17-19-43-05-35899/scenarios.yaml`
         - "the Claude User sends a GET request to /health"
       then:
         - "the server returns HTTP 200"
-        - "and the response body reports the service status as healthy"
+        - and: "the response body reports the service status as healthy"
 ```
+
+## Verification after applying
+- `scenarios:` now contains an entry (`E2E-961`) whose `user_stories[]` lists `story: docs/product/stories/95.2-relocated-registry.yaml` with `scenario_id: 95.2-001` → `us-apply/merge` "present?" passes.
+- Exactly one entry references lineage `95.2-001` → "duplicate?" stays passing.
+- `E2E-960` and `metadata:` are unchanged (append-only edit).
 
 ---
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-17-19-43-05-35899/scenarios.yaml` and
+1. Use the Read tool to load `tmp/{{RUN_DIR}}/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-17-19-43-05-35899/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-17-19-43-05-35899/apply-95.2-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 applied: true
-target: "tmp/2026-08-17-19-43-05-35899/scenarios.yaml"
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-17-19-43-05-35899/apply-95.2-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===

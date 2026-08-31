@@ -127,7 +127,7 @@ go test -tags bdd ./tests/bdd-cli/ \
 
 Run the CLI from inside a session as
 `env -u CLAUDECODE ./bin/true-bdd us create 4.1` — the child needs a clean
-env. `us refine` drives many sequential Claude calls, ~5 min end-to-end:
+env. `us refine` drives many sequential Claude calls, ~10 min end-to-end:
 wait or poll, never kill it early.
 
 ## BDD Harness

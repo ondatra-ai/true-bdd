@@ -165,3 +165,31 @@ func TestBuildJudgeUserPromptDisclaimsWhatWasCheckedMechanically(t *testing.T) {
 		}
 	}
 }
+
+func TestJudgeGradedDropsScratch(t *testing.T) {
+	t.Parallel()
+
+	diff := []FileChange{
+		{Path: "tmp/2026-01-01/checklist-01.txt"},
+		{Path: "docs/product/stories/96.1-story.yaml"},
+		{Path: "tmp/aiproxy-state/cursor-crush"},
+		{Path: "docs/scenarios.yaml"},
+	}
+
+	got := judgeGraded(diff)
+
+	want := []string{
+		"docs/product/stories/96.1-story.yaml",
+		"docs/scenarios.yaml",
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("len = %d, want %d", len(got), len(want))
+	}
+
+	for index, path := range want {
+		if got[index].Path != path {
+			t.Errorf("position %d = %q, want %q", index, got[index].Path, path)
+		}
+	}
+}

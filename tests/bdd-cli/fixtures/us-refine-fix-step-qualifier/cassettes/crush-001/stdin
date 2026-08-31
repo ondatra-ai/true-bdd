@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-15-17-56-20-69007/apply-96.7-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-31-13-14-14-1808/apply-96.7-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-15-17-56-20-69007/apply-96.7-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-31-13-14-14-1808/apply-96.7-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -109,12 +109,16 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-4 is changed. AC-1, AC-2, and AC-3 pass the forbidden-qualifier check and are reproduced exactly as they stand — same description, same steps, word for word.
+Only AC-4 is faulted by the failed check (`us-refine/acceptance_criteria`).
+Its `then` step contains two forbidden qualifiers from the architecture
+reference's `forbidden_qualifiers` list — `quickly` and `user-friendly`.
+AC-1, AC-2, and AC-3 contain no forbidden qualifiers and are reproduced
+below exactly as they stand, word for word.
 
 ### Change #1: AC-4
 **Before:** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-**Issue:** The Then step "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized" contains two forbidden qualifiers from `forbidden_qualifiers` in the architecture reference: `quickly` and `user-friendly`. Neither is observable/testable — "quickly" has no measurable bound, and "user-friendly notice" does not state the exact text Claude displays.
-**After (description):** Claude must display the message 'Only the first 10000 words were summarized' within 30 seconds when the Claude User asks to summarize a document containing more than 10000 words. *(description unchanged in intent; the observable message text is now named)*
+**Issue:** The `then` step reads "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized". `quickly` and `user-friendly` are both on the `forbidden_qualifiers` list in `docs/architecture/architecture.yaml`. Neither is observable or assertable: `quickly` names no latency bound, and `user-friendly` names no exact text.
+**After (description):** Claude must display the message 'Only the first 10000 words were summarized' within 2 seconds when the Claude User asks for a summary of a shared Google Doc containing more than 10000 words.
 **After (steps):**
 ```yaml
 - given:
@@ -122,12 +126,15 @@ Only AC-4 is changed. AC-1, AC-2, and AC-3 pass the forbidden-qualifier check an
 - when:
     - "the Claude User asks Claude to summarize the document"
 - then:
-    - "Claude displays the message 'Only the first 10000 words were summarized' within 30 seconds"
+    - "within 2 seconds, Claude displays the message 'Only the first 10000 words were summarized'"
 ```
 
-Rationale: `quickly` is replaced by the concrete bound "within 30 seconds" (consistent with AC-3's 30-second timeout); `user-friendly notice` is replaced by the exact message string Claude displays, matching the message-quoting pattern already used in AC-2 and AC-3.
+- `quickly` → replaced with the concrete latency bound "within 2 seconds".
+- `user-friendly` → replaced with the exact, verbatim-assertable notice text
+  'Only the first 10000 words were summarized' (mirrors how AC-2 and AC-3
+  already quote their exact messages).
 
-No new ACs are needed — the failed check is purely about forbidden qualifiers in AC-4's steps.
+No new ACs are added, and no ACs are merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -166,14 +173,14 @@ No new ACs are needed — the failed check is purely about forbidden qualifiers 
         - "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
-  description: "Claude must display the message 'Only the first 10000 words were summarized' within 30 seconds when the Claude User asks to summarize a document containing more than 10000 words."
+  description: "Claude must display the message 'Only the first 10000 words were summarized' within 2 seconds when the Claude User asks for a summary of a shared Google Doc containing more than 10000 words."
   steps:
     - given:
         - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
         - "the Claude User asks Claude to summarize the document"
     - then:
-        - "Claude displays the message 'Only the first 10000 words were summarized' within 30 seconds"
+        - "within 2 seconds, Claude displays the message 'Only the first 10000 words were summarized'"
 ```
 
 ---
@@ -189,7 +196,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-15-17-56-20-69007/apply-96.7-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-31-13-14-14-1808/apply-96.7-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-15-17-56-20-69007/apply-96.7-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-31-13-14-14-1808/apply-96.7-iter1-result.yaml ===

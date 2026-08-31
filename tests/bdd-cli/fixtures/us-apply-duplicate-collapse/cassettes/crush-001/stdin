@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-17-19-39-44-33520/apply-95.1-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-17-19-39-44-33520/apply-95.1-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-1
 **Lineage Scenario ID:** 95.1-001
 **Description:** The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
-**Scratch Registry Path:** tmp/2026-08-17-19-39-44-33520/scenarios.yaml
+**Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
 
 ### Steps
 Given:
@@ -71,42 +71,44 @@ Then:
 # Fix Prompt for AC 95.1-001: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-17-19-39-44-33520/scenarios.yaml`
+Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Diagnosis
-The `us-apply/merge` check failed because two entries reference the subject's lineage scenario id `95.1-001`, for the same story and the same service (`mcp-service`), describing the same observable behavior:
+Two entries reference lineage scenario `95.1-001` (story
+`docs/product/stories/95.1-duplicate-collapse.yaml`), so the
+`us-apply/merge` "duplicate?" check fails:
 
-- match: E2E-900 — "MCP /mcp endpoint responds 200 to a valid initialize POST"
-- match: E2E-901 — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
-- Verdict: duplicate (2 entries)
+- `E2E-900` — "MCP /mcp endpoint responds 200 to a valid initialize POST"
+- `E2E-901` — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
 
-## Resolution plan
-- **Winner:** `E2E-900` (prefer the lower-numbered id; both are `E2E-`).
-- **Loser:** `E2E-901` (delete).
-- **user_stories:** Both entries carry the identical item `(story: docs/product/stories/95.1-duplicate-collapse.yaml, scenario_id: 95.1-001)`. After dedup by `(story, scenario_id)` there is exactly one — no change needed.
-- **merged_steps:** Union both entries' steps into the winner, deduplicated and order-preserving:
-  - `given`: add `"the server accepts JSON-RPC over HTTP POST at /mcp"` (only in E2E-901) after the shared first step.
-  - `when`: identical in both — one step retained.
-  - `then`: add `"the response body is a well-formed JSON-RPC envelope referencing the request id"` (only in E2E-901) after the shared first step.
-- Do **not** renumber any ids. Leave `E2E-950` untouched.
+`E2E-950` references an unrelated story (`90.1-001`) and MUST stay
+untouched.
+
+Collapse the duplicates into a single entry, following the merge rule:
+1. Winner = lower-numbered id. Both are `E2E-`, so `E2E-900` wins.
+2. `user_stories[]`: both entries carry the identical
+   `(story=docs/product/stories/95.1-duplicate-collapse.yaml,
+   scenario_id=95.1-001)` pair, so after dedup `E2E-900` keeps its one
+   existing item — nothing to move.
+3. `merged_steps`: union E2E-901's steps into E2E-900, deduplicated,
+   preserving order. This adds one `given`
+   ("the server accepts JSON-RPC over HTTP POST at /mcp") and one
+   `then` ("the response body is a well-formed JSON-RPC envelope
+   referencing the request id").
+4. Delete `E2E-901`. Do not renumber other ids. Leave `E2E-900`'s
+   `description`/`last_updated` and every other entry unchanged.
 
 ## Required Changes
-
-### Change #1: Collapse E2E-900 and E2E-901 into a single entry (E2E-900)
-**Issue:** E2E-900 and E2E-901 both reference lineage `95.1-001` for the same service — a duplicate merge. The complete behavior (JSON-RPC envelope clause) lives only in E2E-901's steps.
-
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This replaces both entries with the single unioned E2E-900 winner, deleting E2E-901.
-
+### Change #1: Union E2E-901's merged_steps into E2E-900 and delete E2E-901
+**Issue:** `E2E-900` and `E2E-901` both reference lineage `95.1-001` —
+a duplicate entry for the same AC.
+**Action:** Use the Edit tool on the target file with the exact
+old_string and new_string below. This single edit rewrites E2E-900's
+`merged_steps` to the union of both entries' steps and removes the
+entire `E2E-901` block. The trailing `  E2E-950:` anchor keeps the
+match unique and leaves E2E-950 in place.
 **old_string:**
 ```
-  E2E-900:
-    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
-    service: "mcp-service"
-    last_updated: "2026-07-25"
-    user_stories:
-      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
-        scenario_id: "95.1-001"
-        merge_date: "2026-07-25"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -131,17 +133,10 @@ The `us-apply/merge` check failed because two entries reference the subject's li
       then:
         - "the server returns HTTP 200"
         - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+  E2E-950:
 ```
 **new_string:**
 ```
-  E2E-900:
-    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
-    service: "mcp-service"
-    last_updated: "2026-07-25"
-    user_stories:
-      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
-        scenario_id: "95.1-001"
-        merge_date: "2026-07-25"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -151,24 +146,30 @@ The `us-apply/merge` check failed because two entries reference the subject's li
       then:
         - "the server returns HTTP 200"
         - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+  E2E-950:
 ```
 
-## Post-fix expectation
-After this edit, exactly one entry (`E2E-900`) references lineage `95.1-001`, its `merged_steps` cover the full Given/When/Then of the AC, `E2E-901` is gone, and `E2E-950` is unchanged. Re-running `us-apply/merge` should report: `Verdict: unique`.
+## Verification
+After the edit:
+- Only `E2E-900` references lineage `95.1-001` → "duplicate?" passes
+  (unique, 1 entry).
+- `E2E-900.merged_steps` covers all Given/When/Then of AC-1 (200 status
+  + JSON-RPC envelope referencing the request id).
+- `E2E-950` is unchanged.
 
 ---
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-17-19-39-44-33520/scenarios.yaml` and
+1. Use the Read tool to load `tmp/{{RUN_DIR}}/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-17-19-39-44-33520/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-17-19-39-44-33520/apply-95.1-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
 applied: true
-target: "tmp/2026-08-17-19-39-44-33520/scenarios.yaml"
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-17-19-39-44-33520/apply-95.1-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===

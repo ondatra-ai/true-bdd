@@ -99,6 +99,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories: []
+    timeout: 15m
     merged_steps:
       given:
         - the "build-code-fix-named-test" project tree
@@ -407,6 +408,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
     user_stories: []
+    timeout: 20m
     merged_steps:
       given:
         - the "us-apply-duplicate-collapse" project tree
@@ -474,7 +476,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 20m
     merged_steps:
       given:
         - the "us-apply-relocated-registry" project tree
@@ -501,7 +503,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 20m
     merged_steps:
       given:
         - the "us-apply-rewalk-converges" project tree
@@ -604,6 +606,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_create_test.go
     user_stories: []
+    timeout: 20m
     merged_steps:
       given:
         - the "us-create-happy-path" project tree
@@ -625,6 +628,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_create_test.go
     user_stories: []
+    timeout: 20m
     merged_steps:
       given:
         - the "us-create-missing-clause" project tree
@@ -698,6 +702,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_create_test.go
     user_stories: []
+    timeout: 20m
     merged_steps:
       given:
         - the "us-create-validation-fails" project tree
@@ -738,7 +743,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 15m
     merged_steps:
       given:
         - the "us-refine-fix-desc-qualifier" project tree
@@ -763,6 +768,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
+    timeout: 15m
     merged_steps:
       given:
         - the "us-refine-fix-descriptions" project tree
@@ -788,6 +794,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
+    timeout: 15m
     merged_steps:
       given:
         - the "us-refine-fix-forbidden-verb" project tree
@@ -812,6 +819,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
+    timeout: 15m
     merged_steps:
       given:
         - the "us-refine-fix-step-qualifier" project tree
@@ -836,6 +844,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
+    timeout: 15m
     merged_steps:
       given:
         - the "us-refine-fix-steps" project tree
@@ -859,7 +868,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 25m
     merged_steps:
       given:
         - the "us-refine-happy-path" project tree
@@ -922,7 +931,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 25m
     merged_steps:
       given:
         - the "us-refine-no-happy-path" project tree
@@ -941,7 +950,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
-    timeout: 10m
+    timeout: 25m
     merged_steps:
       given:
         - the "us-refine-validation-fails" project tree

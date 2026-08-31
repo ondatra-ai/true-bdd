@@ -29,7 +29,6 @@ acceptance_criteria:
     steps:
       - given:
           - "a Google Doc is shared with the Claude User's account"
-      - given:
           - "the summary backend does not respond within 30 seconds"
       - when:
           - "the Claude User asks Claude to summarize the document"
@@ -44,7 +43,6 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of the first 10000 words"
-      - then:
           - "Claude states that only the first 10000 words were summarized"
   - id: "AC-5"
     description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."

@@ -97,3 +97,32 @@ then:
 		t.Errorf("Then length = %d, want 2", len(step.Then))
 	}
 }
+
+func TestScenarioStepUnmarshalScalarShorthand(t *testing.T) {
+	yamlData := `
+given: "Server is ready"
+when: "Client connects"
+then:
+  - "Connection succeeds"
+  - and: "A session id is returned"
+`
+
+	var step story.ScenarioStep
+
+	err := yaml.Unmarshal([]byte(yamlData), &step)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if len(step.Given) != 1 || step.Given[0].Statement != "Server is ready" {
+		t.Errorf("Given = %v, want one statement %q", step.Given, "Server is ready")
+	}
+
+	if len(step.When) != 1 || step.When[0].Statement != "Client connects" {
+		t.Errorf("When = %v, want one statement %q", step.When, "Client connects")
+	}
+
+	if len(step.Then) != 2 || step.Then[1].Type != story.ModifierTypeAnd {
+		t.Errorf("Then = %v, want two statements ending in an and modifier", step.Then)
+	}
+}

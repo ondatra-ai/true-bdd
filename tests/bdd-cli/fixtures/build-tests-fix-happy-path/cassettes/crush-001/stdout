@@ -1,5 +1,7 @@
-`tests/mcp/steps/` doesn't exist and no sibling definitions or `Register` exist — creating the file as specified.Verifying the new package compiles under the `bdd` tag:Shell is blocked by the fixture guard; re-reading the written file to confirm integrity instead:=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+`tests/mcp/steps/` doesn't exist; creating the package verbatim per the fix prompt.Verifying it compiles with the `bdd` tag:Shell is blocked by the mode's guard; the Write succeeded verbatim, which completes the task.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's steps package with Register binding all three INT-900 step definitions (server-running Given, JSON-RPC POST When, HTTP-status Then)"
+summary: "Created the mcp suite's steps package with Register binding anchored Given/When/Then definitions for INT-900"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

@@ -44,9 +44,14 @@ func replay(cfg config, name string, argv []string) (int, error) {
 		return 0, fmt.Errorf("read recorded stdin: %w", err)
 	}
 
+	liveStdin, err := denormalize(string(recordedStdin), cwd, findCurrentRunDir(cwd))
+	if err != nil {
+		return 0, err
+	}
+
 	stdin := startStdinCollector()
 
-	incoming := stdin.collect(len(recordedStdin))
+	incoming := stdin.collect(len(liveStdin))
 
 	if requestHash(argv, incoming, cwd) != manifest.RequestHash {
 		return 0, fmt.Errorf("%w (%s)", errCassetteStale, dir)

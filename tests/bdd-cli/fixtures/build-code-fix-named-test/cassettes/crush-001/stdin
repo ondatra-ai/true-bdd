@@ -35,11 +35,11 @@ one failing test passes — without modifying the test itself.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-16-21-20-11-20218/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-16-21-20-11-20218/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -79,41 +79,44 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test calc/e2e/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/add_test.go`
-(`TestAddSumsItsArguments`) is the contract; do NOT modify it. It asserts
-`calc.Add(2, 3) == 5`.
+Apply the change under `services/*` only. The test at
+`tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT
+touch anything under `tests/`, any `*_test.go`, `services/*/__tests__/`,
+or anything under `docs/`.
 
 ## Root Cause
-`services/calc/calc.go` implements `Add` with the wrong operator — it returns
-`a - b` (subtraction). For `Add(2, 3)` this yields `2 - 3 = -1`, which is why the
-runner reported `Add(2, 3) = -1, want 5`. The function must return the sum.
+`calc.Add` uses the wrong operator. `Add(2, 3)` evaluates `2 - 3 = -1`,
+but `TestAddSumsItsArguments` asserts the sum is `5`. The planted defect
+is the subtraction on the single return line of `services/calc/calc.go`.
+Correcting the operator to addition makes the test pass without weakening
+or removing any assertion.
 
 ## Required Changes
-### Change #1: Correct the `Add` operator from subtraction to addition
+
+### Change #1: Correct the operator in `calc.Add` from subtraction to addition
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the single return
-line inside `func Add`.
-**old_string:**
+**Action:** Use the Edit tool on the existing file. Replace the exact
+`old_string` below with the `new_string`. Change only the operator on the
+return line; leave the package declaration, doc comment, and function
+signature untouched.
+
+**old_string** (verbatim slice to replace):
 ```
+func Add(a, b int) int {
 	return a - b
-```
-**new_string:**
-```
-	return a + b
+}
 ```
 
-## Notes for the Applier
-- This is the only edit needed. `func Add(a, b int) int` keeps its signature; only
-  the operator inside the body changes.
-- Do not touch `tests/suite/add_test.go`, any `*_test.go`, anything under
-  `tests/`, or anything under `docs/`.
-- After the edit, `func Add` reads:
-  ```
-  func Add(a, b int) int {
-  	return a + b
-  }
-  ```
-  so `Add(2, 3)` returns `5` and `TestAddSumsItsArguments` passes.
+**Content / new_string:**
+```
+func Add(a, b int) int {
+	return a + b
+}
+```
+
+## Verification (for reference — do not run the test yourself; the runner is authoritative)
+After the edit, `calc.Add(2, 3)` returns `2 + 3 = 5`, satisfying the
+assertion `if got != 5` in `tests/suite/add_test.go:18`.
 
 ---
 
@@ -137,8 +140,8 @@ line inside `func Add`.
    The test is the contract; the production code must conform to it.
 6. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-16-21-20-11-20218/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-16-21-20-11-20218/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

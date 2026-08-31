@@ -9,11 +9,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 )
 
-const (
-	judgeMaxBytesPerFile = 16 * 1024
-	judgeMaxBytesTotal   = 64 * 1024
-)
-
 // ErrJudgeEmptyFailReason is returned when Claude produces "FAIL:" with
 // no follow-up explanation. The contract requires a one-sentence reason.
 var ErrJudgeEmptyFailReason = errors.New("judge returned FAIL with empty reason")
@@ -160,15 +155,13 @@ func writeSpecification(buf *strings.Builder, req JudgeRequest) {
 }
 
 func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
-	if len(diff) == 0 {
-		buf.WriteString("(no files changed)\n")
+	if len(judgeGraded(diff)) == 0 {
+		buf.WriteString("(no files changed outside tmp/)\n")
 
 		return
 	}
 
-	totalBytes := 0
-
-	for _, change := range diff {
+	for _, change := range judgeGraded(diff) {
 		fmt.Fprintf(buf, "### %s: `%s`\n\n", change.Kind, change.Path)
 
 		if change.Kind == "deleted" {
@@ -177,19 +170,12 @@ func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
 			continue
 		}
 
-		clipped, used := clipBody(change.After, totalBytes)
-		totalBytes = used
-
-		if clipped == "" {
-			buf.WriteString("(content omitted: total budget reached)\n\n")
-
-			continue
-		}
+		body := string(change.After)
 
 		buf.WriteString("```\n")
-		buf.WriteString(clipped)
+		buf.WriteString(body)
 
-		if !strings.HasSuffix(clipped, "\n") {
+		if !strings.HasSuffix(body, "\n") {
 			buf.WriteString("\n")
 		}
 
@@ -197,22 +183,19 @@ func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
 	}
 }
 
-func clipBody(body []byte, totalSoFar int) (string, int) {
-	remaining := judgeMaxBytesTotal - totalSoFar
-	if remaining <= 0 {
-		return "", totalSoFar
+// judgeGraded drops `tmp/`: the goldens already ignore it, no clause names
+// it, and it carries the agent CLIs' own scratch — a 128KB SQLite db among it,
+// which is machine state to judge nothing by.
+func judgeGraded(diff []FileChange) []FileChange {
+	graded := make([]FileChange, 0, len(diff))
+
+	for _, change := range diff {
+		if !strings.HasPrefix(change.Path, "tmp/") {
+			graded = append(graded, change)
+		}
 	}
 
-	limit := judgeMaxBytesPerFile
-	if remaining < limit {
-		limit = remaining
-	}
-
-	if len(body) <= limit {
-		return string(body), totalSoFar + len(body)
-	}
-
-	return string(body[:limit]) + "\n…(truncated)…", totalSoFar + limit
+	return graded
 }
 
 // parseJudgeVerdict extracts the judge's verdict from its reply: the
