@@ -62,8 +62,8 @@ func TestCanonicalStatus(t *testing.T) {
 		answer  string
 		wantErr bool
 	}{
-		{"pass", "pass", false},
-		{"fail", "fail", false},
+		{"pass", AnswerPass, false},
+		{"fail", AnswerFail, false},
 		{"case and space are free", "  PASS  ", false},
 		{"a number", "5", true},
 		{"a hedge", "maybe", true},

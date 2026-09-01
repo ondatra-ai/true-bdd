@@ -384,11 +384,11 @@ func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
 		// Both states, because a clause asking whether an untouched part
 		// SURVIVED is unanswerable from the result alone — E2E-024 failed
 		// on exactly that, the judge saying so in its own reason.
-		if change.Kind != "created" {
+		if change.Kind != KindCreated {
 			writeFileState(buf, "before", change.Before)
 		}
 
-		if change.Kind != "deleted" {
+		if change.Kind != KindDeleted {
 			writeFileState(buf, "after", change.After)
 		}
 	}

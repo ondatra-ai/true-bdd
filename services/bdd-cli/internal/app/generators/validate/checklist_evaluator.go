@@ -38,6 +38,12 @@ type ChecklistPromptData struct {
 	Structured bool
 }
 
+// The universal answer contract: an answer is one of these two words.
+const (
+	AnswerPass = "pass"
+	AnswerFail = "fail"
+)
+
 // checklistResultSchema is the answer shape a schema-bearing CLI is held
 // to. It mirrors resultYAML: pass/fail is the universal contract.
 const checklistResultSchema = `{
@@ -339,9 +345,9 @@ func (e *ChecklistEvaluator) parseResultFile(response, path string) (ParsedResul
 // answer outside it used to grade StatusFail silently.
 func canonicalStatus(answer, path string) (checklist.Status, error) {
 	switch strings.ToLower(strings.TrimSpace(answer)) {
-	case "pass":
+	case AnswerPass:
 		return checklist.StatusPass, nil
-	case "fail":
+	case AnswerFail:
 		return checklist.StatusFail, nil
 	default:
 		return checklist.StatusFail, pkgerrors.ErrChecklistAnswerNotCanonical(path, answer)

@@ -96,6 +96,13 @@ func FindRepoRoot() (string, error) {
 // aiproxy shim's per-call diffs and the runner's per-run diffs match.
 type FileChange = fstree.Change
 
+// The three kinds a FileChange carries, matching the run diff.
+const (
+	KindCreated  = "created"
+	KindModified = "modified"
+	KindDeleted  = "deleted"
+)
+
 // Fixture is one scenario's on-disk data plus the behaviour the
 // registry asked of it: directory-derived fields (Name, PrepCmds, ...)
 // vs scenario-derived ones (Cmd, ExpectedExitCode, ...), zero until set.

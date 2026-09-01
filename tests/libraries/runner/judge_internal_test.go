@@ -86,7 +86,7 @@ func TestWriteDiffSummaryShowsBothStates(t *testing.T) {
 
 	writeDiffSummary(&buf, []FileChange{
 		{Path: testRegistryPath, Kind: "modified", Before: []byte("seed text"), After: []byte("new text")},
-		{Path: "docs/gone.yaml", Kind: "deleted", Before: []byte("removed text")},
+		{Path: "docs/gone.yaml", Kind: KindDeleted, Before: []byte("removed text")},
 		{Path: "docs/new.yaml", Kind: "created", After: []byte("fresh text")},
 	})
 
