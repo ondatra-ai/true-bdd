@@ -1,5 +1,7 @@
+Edit applied; shell verification is blocked by the guard, but the change matches the fix prompt exactly.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed calc.Add's return from subtraction (a - b) to addition (a + b) so it returns the sum."
+summary: "Fixed calc.Add to add its arguments (a + b) instead of subtracting them"
 === FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

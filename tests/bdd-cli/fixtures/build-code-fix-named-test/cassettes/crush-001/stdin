@@ -35,11 +35,11 @@ one failing test passes — without modifying the test itself.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -85,38 +85,44 @@ touch anything under `tests/`, any `*_test.go`, `services/*/__tests__/`,
 or anything under `docs/`.
 
 ## Root Cause
-`calc.Add` uses the wrong operator. `Add(2, 3)` evaluates `2 - 3 = -1`,
-but `TestAddSumsItsArguments` asserts the sum is `5`. The planted defect
-is the subtraction on the single return line of `services/calc/calc.go`.
-Correcting the operator to addition makes the test pass without weakening
-or removing any assertion.
+`TestAddSumsItsArguments` asserts `calc.Add(2, 3) == 5`. The failure
+output is:
+
+```
+add_test.go:19: Add(2, 3) = -1, want 5
+```
+
+`-1 == 2 - 3`, so the production function is subtracting instead of
+adding. In `services/calc/calc.go` the body is `return a - b`; the
+doc comment already states the intended contract ("Add returns the sum
+of a and b"). The smallest correct change is to flip the `-` operator
+to `+`. No other file is involved.
 
 ## Required Changes
-
-### Change #1: Correct the operator in `calc.Add` from subtraction to addition
+### Change #1: Correct the operator in `calc.Add`
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on the existing file. Replace the exact
-`old_string` below with the `new_string`. Change only the operator on the
-return line; leave the package declaration, doc comment, and function
-signature untouched.
+**Action:** Use the Edit tool on this existing file. Replace the
+subtraction with addition. Change exactly the one operator; leave the
+package clause, comment, and signature untouched.
 
-**old_string** (verbatim slice to replace):
+**old_string:**
 ```
 func Add(a, b int) int {
 	return a - b
 }
 ```
 
-**Content / new_string:**
+**new_string** (Content):
 ```
 func Add(a, b int) int {
 	return a + b
 }
 ```
 
-## Verification (for reference — do not run the test yourself; the runner is authoritative)
-After the edit, `calc.Add(2, 3)` returns `2 + 3 = 5`, satisfying the
-assertion `if got != 5` in `tests/suite/add_test.go:18`.
+## Verification
+After the edit, `calc.Add(2, 3)` returns `5`, satisfying the assertion
+at `add_test.go:19` without weakening, skipping, or removing it. No
+other production or test file needs to change.
 
 ---
 
@@ -140,8 +146,8 @@ assertion `if got != 5` in `tests/suite/add_test.go:18`.
    The test is the contract; the production code must conform to it.
 6. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-31-11-46-12-88559/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

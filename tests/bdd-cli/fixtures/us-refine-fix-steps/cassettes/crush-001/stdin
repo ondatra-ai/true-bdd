@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-13-20-17-2504/apply-96.5-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.5-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-31-13-20-17-2504/apply-96.5-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.5-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -113,21 +113,23 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
+Change ONLY what the failed check requires. AC-1, AC-3, AC-4, and AC-5
+already carry valid Given/When/Then and are reproduced exactly as they
+stand. Only AC-2 is missing its steps field.
+
 ### Change #1: AC-2
 **Before:** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
-**Issue:** The `steps` field is missing entirely — the acceptance_criteria check requires every AC to carry at least one Given, one When, and one Then step. AC-2 has no Given/When/Then, so the check fails.
-**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. *(description unchanged — only the steps are added)*
+**Issue:** The steps field is missing entirely — no Given, When, or Then. The description is already a rule-based statement ("Claude must display … when …"), so only the steps need to be added.
+**After (description):** Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
 **After (steps):**
 ```yaml
-- given:
-    - "a Google Doc is not shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude displays the message 'This document is not shared with your account'"
+- given: "a Google Doc is not shared with the Claude User's account"
+- when: "the Claude User asks Claude to summarize the document"
+- then: "Claude displays the message 'This document is not shared with your account'"
 ```
 
-*(No new ACs are needed. AC-1, AC-3, AC-4, and AC-5 already have valid Given/When/Then steps and are not faulted by the check, so they are reproduced unchanged below.)*
+No new acceptance criteria are needed — the failed check requires only
+that AC-2 gain a valid steps field.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -135,54 +137,39 @@ Apply the following changes to the acceptance criteria for this story.
 - ac_id: AC-1
   description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
-    - given:
-        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of 150 words or fewer in the conversation"
+    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of 150 words or fewer in the conversation"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given:
-        - "a Google Doc is not shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays the message 'This document is not shared with your account'"
+    - given: "a Google Doc is not shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'This document is not shared with your account'"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
-    - given:
-        - "a Google Doc is shared with the Claude User's account"
-        - "the summary backend does not respond within 30 seconds"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays the message 'The summary timed out - please try again'"
+    - given: "a Google Doc is shared with the Claude User's account"
+    - given: "the summary backend does not respond within 30 seconds"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
-    - given:
-        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of the first 10000 words"
-        - "Claude states that only the first 10000 words were summarized"
+    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of the first 10000 words"
+    - then: "Claude states that only the first 10000 words were summarized"
 
 - ac_id: AC-5
   description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
   steps:
-    - given:
-        - "a Google Doc with at least three section headings is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude for the document outline"
-    - then:
-        - "Claude displays each section heading in its original order"
+    - given: "a Google Doc with at least three section headings is shared with the Claude User's account"
+    - when: "the Claude User asks Claude for the document outline"
+    - then: "Claude displays each section heading in its original order"
 ```
 
 ---
@@ -198,7 +185,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-31-13-20-17-2504/apply-96.5-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.5-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-31-13-20-17-2504/apply-96.5-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.5-iter1-result.yaml ===

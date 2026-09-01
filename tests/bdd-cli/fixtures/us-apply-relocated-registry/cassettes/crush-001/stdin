@@ -76,38 +76,47 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 ## Required Changes
 
 ### Change #1: Add a new scenario entry for AC 95.2-001
-**Issue:** The `us-apply/merge` "present?" check fails — no entry under `scenarios:` has a `user_stories[]` item referencing story `docs/product/stories/95.2-relocated-registry.yaml` with lineage id `95.2-001`. The AC must be added as exactly one new scenario, without touching the existing `E2E-960` entry.
 
-**Decisions (do not improvise these):**
-- **id:** `E2E-961` — the next free id after the only existing id `E2E-960`; e2e-layer (an HTTP GET against a running server), and the F: template says prefer `E2E-` when unsure.
-- **service:** `""` — verbatim per the F: template. Do NOT copy `"web-service"` from E2E-960; that would falsely bind this AC to the web suite.
-- **path:** `"tests/mcp/health_test.go"` — the registry has no other scenario of this family to reuse a `path:` from and no `architecture.testing.suites[]` to anchor to, so this is the invented `<suite path>/<family>_test.go` value. Use it as a literal; do not substitute another path.
-- **dates:** `"2026-08-31"` for both `last_updated` and `merge_date`.
-- **steps:** copied verbatim from the story's `steps.given` / `steps.when` / `steps.then`. Preserve the `then:` modifier-form step exactly as `- and: "..."` (the schema allows the one-key `{and: …}` mapping).
-- This is an **append-only** edit — `E2E-960` and `metadata:` stay byte-identical.
+**Issue:** The `us-apply/merge` check ("present?") fails: no entry under
+`scenarios:` has a `user_stories[]` item referencing story
+`docs/product/stories/95.2-relocated-registry.yaml` with lineage
+`scenario_id: 95.2-001`. The AC is not yet in the registry.
 
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. The anchor is E2E-960's final two lines (unique in the file); the new block is appended after a single blank line.
+**Action:** Use the Edit tool on the target file with the exact
+`old_string` and `new_string` below. This appends one new scenario
+(`E2E-961`) immediately after the existing `E2E-960` entry.
+
+Notes for the applier:
+- Only ONE entry is added. Do NOT touch `E2E-960`, `metadata:`, or any
+  other line — the fixture asserts every other entry is left alone.
+- Id `E2E-961` follows the existing `E2E-960` numbering; E2E (not INT)
+  per the tie-break for an end-to-end HTTP request/response scenario.
+- No `path:` field is set, matching the shape of the existing `E2E-960`
+  entry (which has none) — the registry carries no `path:` to reuse and
+  no suite reference to construct one from.
+- `service: ""` per the merge template (the `"web-service"` value belongs
+  to the unrelated `E2E-960` entry only).
+- Steps are copied verbatim, including the leading `and ` on the second
+  `then` step.
+- `last_updated` and `merge_date` are both today, `2026-09-01`.
 
 **old_string:**
 ```
       then:
         - "the settings page renders the account section"
 ```
-
 **new_string:**
 ```
       then:
         - "the settings page renders the account section"
-
   E2E-961:
-    description: "MCP server returns HTTP 200 and healthy JSON on GET /health"
+    description: "MCP server /health returns HTTP 200 with a healthy JSON status body"
     service: ""
-    path: "tests/mcp/health_test.go"
-    last_updated: "2026-08-31"
+    last_updated: "2026-09-01"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-08-31"
+        merge_date: "2026-09-01"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -116,13 +125,12 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
         - "the Claude User sends a GET request to /health"
       then:
         - "the server returns HTTP 200"
-        - and: "the response body reports the service status as healthy"
+        - "and the response body reports the service status as healthy"
 ```
 
-## Verification after applying
-- `scenarios:` now contains an entry (`E2E-961`) whose `user_stories[]` lists `story: docs/product/stories/95.2-relocated-registry.yaml` with `scenario_id: 95.2-001` → `us-apply/merge` "present?" passes.
-- Exactly one entry references lineage `95.2-001` → "duplicate?" stays passing.
-- `E2E-960` and `metadata:` are unchanged (append-only edit).
+## Verification
+After applying, re-running the `us-apply/merge` check should emit:
+`AC AC-1 (lineage 95.2-001): present in E2E-961`
 
 ---
 

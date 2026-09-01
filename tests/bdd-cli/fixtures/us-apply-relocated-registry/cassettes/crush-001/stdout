@@ -1,7 +1,9 @@
+Entry E2E-961 added after E2E-960, exactly as specified; all other content untouched.
+
 ```
 === FILE_START: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Appended scenario E2E-961 referencing story 95.2 lineage 95.2-001 with merged health-endpoint steps; E2E-960 and metadata untouched"
+summary: "Appended scenario E2E-961 linking story 95.2 lineage 95.2-001 with merged /health steps; no other entries changed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 ```

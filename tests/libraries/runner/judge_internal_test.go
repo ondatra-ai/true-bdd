@@ -166,6 +166,8 @@ func TestBuildJudgeUserPromptDisclaimsWhatWasCheckedMechanically(t *testing.T) {
 	}
 }
 
+const testRegistryPath = "docs/scenarios.yaml"
+
 func TestJudgeGradedDropsScratch(t *testing.T) {
 	t.Parallel()
 
@@ -173,14 +175,14 @@ func TestJudgeGradedDropsScratch(t *testing.T) {
 		{Path: "tmp/2026-01-01/checklist-01.txt"},
 		{Path: "docs/product/stories/96.1-story.yaml"},
 		{Path: "tmp/aiproxy-state/cursor-crush"},
-		{Path: "docs/scenarios.yaml"},
+		{Path: testRegistryPath},
 	}
 
 	got := judgeGraded(diff)
 
 	want := []string{
 		"docs/product/stories/96.1-story.yaml",
-		"docs/scenarios.yaml",
+		testRegistryPath,
 	}
 
 	if len(got) != len(want) {
@@ -191,5 +193,29 @@ func TestJudgeGradedDropsScratch(t *testing.T) {
 		if got[index].Path != path {
 			t.Errorf("position %d = %q, want %q", index, got[index].Path, path)
 		}
+	}
+}
+
+func TestWriteDiffSummaryShowsBothStates(t *testing.T) {
+	t.Parallel()
+
+	var buf strings.Builder
+
+	writeDiffSummary(&buf, []FileChange{
+		{Path: testRegistryPath, Kind: "modified", Before: []byte("seed text"), After: []byte("new text")},
+		{Path: "docs/gone.yaml", Kind: "deleted", Before: []byte("removed text")},
+		{Path: "docs/new.yaml", Kind: "created", After: []byte("fresh text")},
+	})
+
+	out := buf.String()
+
+	for _, want := range []string{"seed text", "new text", "removed text", "fresh text"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("diff summary is missing %q:\n%s", want, out)
+		}
+	}
+
+	if strings.Contains(out, "omitting before-content") {
+		t.Error("deleted files must show what was removed, not a placeholder")
 	}
 }

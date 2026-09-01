@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-13-07-18-1087/apply-96.8-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.8-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-31-13-07-18-1087/apply-96.8-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.8-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -109,69 +109,71 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1 is faulted by the failed check. AC-2, AC-3, and AC-4 use no
-forbidden action verbs in any step, so they are reproduced exactly as
-they stand — same descriptions, same steps, word for word.
+Only AC-1 uses a forbidden action verb. AC-2, AC-3, and AC-4 pass the
+check and are reproduced exactly as they stand — same description, same
+steps, word for word.
 
 ### Change #1: AC-1
 **Before:** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**Issue:** The `then` step reads "Claude **handles** the summary request and displays a summary of 150 words or fewer in the conversation." The verb `handle` is on the architecture reference's `forbidden_actions` list — it hides what the system observably does with the input. The reference's replacement guidance: "Name the observable action: displays, returns, lists, rejects." The `given`, `when`, and the description contain no forbidden verbs, so only the `then` step changes; the description is unchanged.
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+**Issue:** The `then` step reads "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation". It uses the forbidden action verb 'handle' (architecture.yaml forbidden_actions: "Hides what the system observably does with the input."). The step already carries the observable verb 'displays', so the "handles the summary request and" clause is redundant and must be dropped.
+**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. *(unchanged — the description already uses the allowed verb 'display')*
 **After (steps):**
 ```yaml
-steps:
-  - given:
-      - a Google Doc with at least 500 words of body text is shared with the Claude User's account
-  - when:
-      - the Claude User asks Claude to summarize the document
-  - then:
-      - Claude displays a summary of 150 words or fewer in the conversation to the Claude User
+- given:
+    - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+- when:
+    - "the Claude User asks Claude to summarize the document"
+- then:
+    - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No new acceptance criteria are added, and none are merged or removed.
+No new ACs are needed — the failed check only requires removing the forbidden verb from AC-1.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- id: AC-1
-  description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+- ac_id: AC-1
+  description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
     - given:
-        - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays a summary of 150 words or fewer in the conversation to the Claude User
-- id: AC-2
-  description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+        - "Claude displays a summary of 150 words or fewer in the conversation"
+
+- ac_id: AC-2
+  description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
     - given:
-        - a Google Doc exists that is not shared with the Claude User's account
+        - "a Google Doc exists that is not shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize that document
+        - "the Claude User asks Claude to summarize that document"
     - then:
-        - Claude displays the message 'This document is not shared with your account'
-        - and: Claude does not display any content from the document
-- id: AC-3
-  description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+        - "Claude displays the message 'This document is not shared with your account'"
+        - "Claude does not display any content from the document"
+
+- ac_id: AC-3
+  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
     - given:
-        - a Google Doc is shared with the Claude User's account
-        - the summary backend does not respond within 30 seconds
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays the message 'The summary timed out - please try again'
-- id: AC-4
-  description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+        - "Claude displays the message 'The summary timed out - please try again'"
+
+- ac_id: AC-4
+  description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
     - given:
-        - a Google Doc with more than 10000 words is shared with the Claude User's account
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays a summary of the first 10000 words
-        - and: Claude states that only the first 10000 words were summarized
+        - "Claude displays a summary of the first 10000 words"
+        - "Claude states that only the first 10000 words were summarized"
 ```
 
 ---
@@ -187,7 +189,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-31-13-07-18-1087/apply-96.8-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.8-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-31-13-07-18-1087/apply-96.8-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.8-iter1-result.yaml ===

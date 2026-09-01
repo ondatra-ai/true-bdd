@@ -1,5 +1,2 @@
 node_modules
 .next
-npm-debug.log
-Dockerfile
-.dockerignore

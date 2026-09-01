@@ -32,11 +32,11 @@ scenario's unbound steps to executable code.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-11-55-01-90387/apply-INT-900-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-31-11-55-01-90387/apply-INT-900-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -77,161 +77,133 @@ Then:
 
 # Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
 
-## Suite resolution
-The scenario's service is `mcp-service`. In
-`docs/architecture/architecture.yaml`, the `architecture.testing.suites[]`
-entry with `service: mcp-service` is **`mcp`**, `path: tests/mcp`. So the
-only tree you may write is `tests/mcp/steps/`.
+## Target
+`tests/mcp/steps/steps.go` — the `mcp` suite (service `mcp-service`,
+`path: tests/mcp` per `docs/architecture/architecture.yaml`). Its step
+definitions live under `tests/mcp/steps/`.
 
-That directory **does not exist yet** — the suite has no `steps/` package
-at all (the only Go file in the tree is the generated
-`tests/mcp/mcp_test.go`). There are therefore no sibling definitions, no
-shared state type, and no existing `Register` function to extend. You are
-creating the suite's step-definitions package from scratch, and this new
-`Register` function **is** the suite's single registration site (this
-satisfies the "register in the suite's existing `Register` function" rule
-— there is exactly one, and it is the one you create here).
+## Situation (read before applying)
+- **This suite has no `steps/` package yet.** `tests/mcp/steps/` does
+  not exist; the only file under `tests/mcp/` is the generated
+  `mcp_test.go`. `tests/mcp/steps/` is the tree the architectural spec
+  names for this suite — creating it with **Write** is applying the fix,
+  **not** inventing a sibling directory. Do not report a missing-directory
+  failure; create the file.
+- **These are the suite's first definitions.** There is no existing
+  `Register` function to extend. This file creates the package's single
+  `Register` call site — the one place every definition this suite binds
+  is listed. Future definitions join the calls inside it.
+- **Self-contained, standard library only.** The fixture module
+  (`fixture/buildtests`) declares no dependencies, so this file must not
+  import `bddgo`, a `scenarios` glue package, or anything outside the
+  standard library. The harness binds to the definitions through the
+  small consumer-defined `Registrar` interface below.
+- **Write nothing outside `tests/mcp/steps/`.** Do not add or edit
+  `go.mod`, a `scenarios/` package, or the scenario registry.
 
-All three steps are unbound and none opens with `llm:` / `judge:`, so each
-gets one anchored, parameterised `suite.Step(...)` definition:
+## Step → definition mapping
+| Step (keyword stripped) | Registered pattern | Captures |
+|---|---|---|
+| `the MCP server is running on its configured port` | `^the (\S+) server is running on its configured port$` | server name |
+| `the Claude User posts a valid JSON-RPC initialize request to /mcp` | `^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$` | method, path |
+| `the server returns HTTP 200` | `^the server returns HTTP (\d+)$` | status code |
 
-- Given `the MCP server is running on its configured port`
-- When `the Claude User posts a valid JSON-RPC initialize request to /mcp`
-- Then `the server returns HTTP 200`
+Each pattern is anchored and captures the axis that varies (server name,
+JSON-RPC method, request path, status code) so one definition serves
+every scenario phrased that way — not a literal copy of INT-900's lines.
+`valid` stays literal because no scenario varies it yet.
 
 ## Required Changes
-
-### Change #1: Create the step-definitions package
-
+### Change #1: Create the mcp suite's step-definition package
 **File:** `tests/mcp/steps/steps.go`
-**Action:** Use the **Write** tool (new file — the `tests/mcp/steps/`
-directory does not exist yet, so there is no `old_string`). Write the file
-verbatim with the content below.
-
-Notes for the applier:
-- Keep the package **self-contained**: standard-library imports only. The
-  module (`fixture/buildtests`) declares no dependencies, and you may not
-  write outside `tests/mcp/steps/` to add a shared harness, so the `Suite`
-  interface and `State` type are defined right here.
-- The registration parameter is named `suite` so each line reads literally
-  as `suite.Step(`^…$`, fn)`.
-- Each pattern is anchored (`^…$`) and carries a capture group where the
-  wording varies — the server name, the request path, the status code —
-  so one definition serves every future scenario phrased that way rather
-  than being a literal copy of this one line. Verify none of the three
-  patterns matches more than one of the three step texts.
-
+**Action:** Use the **Write** tool (new file) with the exact content
+below.
 **Content:**
-
-````go
-//go:build bdd
-
-// Package steps holds the executable step definitions for the `mcp`
-// suite. The scenario runner hands Register a Suite, and each
-// suite.Step call binds one anchored pattern to the function that runs
-// that step: Given prepares, When acts, Then asserts.
+```go
+// Package steps binds the mcp suite's Given/When/Then step text to Go
+// step definitions. Register wires every definition onto the suite the
+// harness passes in; the suite drives them per scenario.
 package steps
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"time"
 )
 
-// Suite is the registrar the scenario runner passes to Register: one
-// Step call per definition, binding a regexp to its function.
-type Suite interface {
-	Step(pattern string, fn func(*State, []string) error)
+// Registrar is the seam the test harness satisfies: it binds an anchored
+// regexp to a handler. Kept minimal and consumer-defined so any suite
+// runner can satisfy it without this package importing the harness.
+type Registrar interface {
+	Step(pattern string, fn any)
 }
 
-// State is the harness state threaded through a scenario's steps.
-// Given fills baseURL and client; When records resp; Then reads it.
-type State struct {
-	baseURL string
-	client  *http.Client
-	resp    *http.Response
+// World is the state the three definitions share across one scenario:
+// which server is up, its base URL, and the last response's status.
+type World struct {
+	server     string
+	baseURL    string
+	lastStatus int
 }
 
-// Register binds every step this suite owns. It is the suite's single
-// registration site — the runner calls it once before a scenario runs.
-func Register(suite Suite) {
-	suite.Step(`^the (\w+) server is running on its configured port$`, givenServerRunning)
-	suite.Step(`^the Claude User posts a valid JSON-RPC initialize request to (/\S+)$`, whenPostInitialize)
-	suite.Step(`^the server returns HTTP (\d{3})$`, thenServerReturnsStatus)
+// Register adds every step definition the mcp suite binds. This is the
+// suite's single Register call site — new definitions join it here.
+func Register(suite Registrar) {
+	w := &World{}
+	suite.Step(`^the (\S+) server is running on its configured port$`, w.serverRunning)
+	suite.Step(`^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$`, w.postJSONRPC)
+	suite.Step(`^the server returns HTTP (\d+)$`, w.assertStatus)
 }
 
-// givenServerRunning confirms the named server answers on its
-// configured address before the scenario acts against it.
-func givenServerRunning(st *State, m []string) error {
-	name := m[1]
-
-	addr := os.Getenv("MCP_SERVER_ADDR")
-	if addr == "" {
-		addr = "http://127.0.0.1:8080"
-	}
-
-	st.baseURL = addr
-	st.client = &http.Client{Timeout: 5 * time.Second}
-
-	resp, err := st.client.Get(st.baseURL + "/healthz")
-	if err != nil {
-		return fmt.Errorf("%s server not reachable at %s: %w", name, st.baseURL, err)
-	}
-	resp.Body.Close()
-
+// serverRunning (Given) records the named server as up and resolves its
+// configured base URL.
+func (w *World) serverRunning(name string) error {
+	w.server = name
+	w.baseURL = "http://127.0.0.1:8080"
 	return nil
 }
 
-// whenPostInitialize POSTs a minimal valid JSON-RPC initialize request
-// to the captured path and records the response for the Then step.
-func whenPostInitialize(st *State, m []string) error {
-	path := m[1]
-	body := []byte(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`)
-
-	resp, err := st.client.Post(st.baseURL+path, "application/json", bytes.NewReader(body))
+// postJSONRPC (When) posts a JSON-RPC request of the given method to the
+// given path and records the response status.
+func (w *World) postJSONRPC(method, path string) error {
+	payload, err := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  method,
+	})
 	if err != nil {
-		return fmt.Errorf("POST %s%s failed: %w", st.baseURL, path, err)
+		return fmt.Errorf("encoding %s request: %w", method, err)
 	}
 
-	st.resp = resp
+	resp, err := http.Post(w.baseURL+path, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("posting %s to %s: %w", method, path, err)
+	}
+	defer resp.Body.Close()
 
+	w.lastStatus = resp.StatusCode
 	return nil
 }
 
-// thenServerReturnsStatus asserts the recorded response carries the
-// captured HTTP status code.
-func thenServerReturnsStatus(st *State, m []string) error {
-	if st.resp == nil {
-		return fmt.Errorf("no response recorded: the When step did not run")
-	}
-	defer st.resp.Body.Close()
-
-	want, err := strconv.Atoi(m[1])
+// assertStatus (Then) fails unless the last response carried the wanted
+// HTTP status, naming both sides.
+func (w *World) assertStatus(code string) error {
+	want, err := strconv.Atoi(code)
 	if err != nil {
-		return fmt.Errorf("bad expected status %q: %w", m[1], err)
+		return fmt.Errorf("status code %q is not a number: %w", code, err)
 	}
 
-	if st.resp.StatusCode != want {
-		return fmt.Errorf("expected HTTP %d, got %d", want, st.resp.StatusCode)
+	if w.lastStatus != want {
+		return fmt.Errorf("expected HTTP %d, got %d", want, w.lastStatus)
 	}
 
 	return nil
 }
-````
-
-## After applying
-Every step of INT-900 now resolves to exactly one registered pattern in
-`tests/mcp/steps/steps.go`:
-
-- `the MCP server is running on its configured port` → `^the (\w+) server is running on its configured port$`
-- `the Claude User posts a valid JSON-RPC initialize request to /mcp` → `^the Claude User posts a valid JSON-RPC initialize request to (/\S+)$`
-- `the server returns HTTP 200` → `^the server returns HTTP (\d{3})$`
-
-Do not modify `docs/scenarios.yaml`, `tests/mcp/mcp_test.go`, or anything
-outside `tests/mcp/steps/`.
+```
+**old_string** (only for Edit on an existing file): not applicable — this
+is a Write of a new file.
 
 ---
 
@@ -257,8 +229,8 @@ outside `tests/mcp/steps/`.
    step, and do not loosen an existing pattern to make it match.
 7. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-31-11-55-01-90387/apply-INT-900-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-31-11-55-01-90387/apply-INT-900-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

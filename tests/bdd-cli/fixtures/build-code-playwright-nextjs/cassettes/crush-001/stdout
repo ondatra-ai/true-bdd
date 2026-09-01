@@ -1,7 +1,7 @@
-`services/frontend/` doesn't exist yet. Creating all eight files exactly as specified:All eight files created under `services/frontend/` (package.json, next.config.js, tsconfig.json, next-env.d.ts, app/layout.tsx, app/page.tsx, Dockerfile, .dockerignore). No files under `tests/`, `docs/`, or `true-bdd/` were touched.
+`services/` doesn't exist; creating the seven frontend files exactly as specified.All seven files created under `services/frontend/`: package.json, tsconfig.json, next.config.js, app/layout.tsx, app/page.tsx, Dockerfile, .dockerignore.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
 applied: true
-target: "services/frontend/"
-summary: "Created minimal Next.js App Router service (8 new files) that builds in Docker and serves <h1>Hello world</h1> at / on port 3000"
+target: "services/frontend"
+summary: "Created minimal Next.js App Router service rendering <h1>Hello world</h1> on / with Dockerfile for compose build on port 3000"
 === FILE_END: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===

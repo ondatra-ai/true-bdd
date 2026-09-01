@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -51,7 +51,7 @@ summary: "<one-line summary>"
 **AC ID:** AC-2
 **Lineage Scenario ID:** 99.3-002
 **Description:** The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
-**Scratch Registry Path:** tmp/2026-08-31-12-35-24-94968/scenarios.yaml
+**Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
 
 ### Steps
 Given:
@@ -70,53 +70,54 @@ Then:
 # Fix Prompt for AC 99.3-002: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
-Apply the change to: `tmp/2026-08-31-12-35-24-94968/scenarios.yaml`
-
-## Context
-The `us-apply/merge` check failed:
-`AC AC-2 (lineage 99.3-002): not present`
-
-The registry currently has exactly one scenario, `E2E-001` (lineage
-99.3-001). No `scenarios:` entry lists this subject's story path
-together with lineage id `99.3-002`, so the AC must be merged as a new
-scenario.
-
-Decisions baked into this fix:
-- **New id `E2E-002`** — next free id after the existing `E2E-001`;
-  this is an e2e-layer AC (HTTP behavior of the running MCP server),
-  matching E2E-001's layer.
-- **Reuse `path: "tests/e2e/mcp_test.go"`** — E2E-001 is the same
-  command/feature family (MCP server HTTP responses at `/mcp`), so both
-  behaviours share one generated test file. No new file is invented.
-- `merged_steps` are copied **verbatim** from the AC's given/when/then.
+Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Required Changes
 
-### Change #1: Append a new scenario `E2E-002` for lineage 99.3-002
-**Issue:** AC-2 (lineage 99.3-002) has no scenario in the registry whose
-`user_stories[]` lists this story path and lineage id.
-**Action:** Use the Edit tool on the target file with the exact
-old_string and new_string below. This appends the new entry after the
-final line of the existing `E2E-001` entry, preserving all existing
-ordering and indentation and touching no other entry.
+### Change #1: Add AC-2 (lineage 99.3-002) as a new scenario entry
+**Issue:** The `us-apply/merge` check fails: no entry under `scenarios:` has a
+`user_stories[]` element whose `story` is
+`docs/product/stories/99.3-rewalk-fixture.yaml` AND whose `scenario_id` is
+`99.3-002`. The AC "The MCP server must respond with HTTP 405 Method Not
+Allowed when a Claude User sends a GET request to the /mcp endpoint" is not
+present in the registry.
+
+**Resolution notes (why these values):**
+- **New id `E2E-002`** — next free id following the existing `E2E-001`. This
+  is an e2e-layer AC and continues the existing `E2E-NNN` numbering. Not a
+  reused id.
+- **`path: tests/mcp-server/mcp_server_test.go`** — reused verbatim from the
+  same-family scenario `E2E-001`, which covers the MCP server `/mcp` endpoint
+  behaviour for the same story. Both MCP-server behaviours belong in one test
+  file so they are read together.
+- **`service: ""`** — matches the sibling `E2E-001`.
+- **`last_updated` / `merge_date` = `2026-08-31`** — today.
+- **`merged_steps`** — copied verbatim from the subject AC's `given` / `when` /
+  `then`.
+
+**Action:** Use the Edit tool on the target file with the exact old_string and
+new_string below. This appends the new entry after `E2E-001` (the last entry),
+preserving the existing entry and its indentation.
+
 **old_string:**
 ```
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
+
 **new_string:**
 ```
       then:
         - the server returns HTTP 200
         - and the response body is a well-formed JSON-RPC envelope referencing the request id
   E2E-002:
-    description: "MCP server responds 405 Method Not Allowed to a GET request to /mcp"
+    description: MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp
     service: ""
-    path: "tests/e2e/mcp_test.go"
+    path: tests/mcp-server/mcp_server_test.go
     last_updated: "2026-08-31"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: "99.3-002"
         merge_date: "2026-08-31"
     merged_steps:
@@ -130,22 +131,24 @@ ordering and indentation and touching no other entry.
 ```
 
 ## Verification
-After applying, the `us-apply/merge` check should emit:
-`AC AC-2 (lineage 99.3-002): present in E2E-002`
+After the edit, the registry contains an entry (`E2E-002`) whose
+`user_stories[]` includes `story: docs/product/stories/99.3-rewalk-fixture.yaml`
+with `scenario_id: "99.3-002"`. The `us-apply/merge` check then emits:
+`AC AC-2 (lineage 99.3-002): present in E2E-002`.
 
 ---
 
 ## Instructions
 
-1. Use the Read tool to load `tmp/2026-08-31-12-35-24-94968/scenarios.yaml` and
+1. Use the Read tool to load `tmp/{{RUN_DIR}}/scenarios.yaml` and
    inspect its current state.
 2. Apply the changes described in the "Fix Prompt to Apply" section
    above by invoking the Edit tool on
-   `tmp/2026-08-31-12-35-24-94968/scenarios.yaml`. Do NOT touch any other path.
+   `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===
 applied: true
-target: "tmp/2026-08-31-12-35-24-94968/scenarios.yaml"
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/2026-08-31-12-35-24-94968/apply-99.3-002-iter2-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===

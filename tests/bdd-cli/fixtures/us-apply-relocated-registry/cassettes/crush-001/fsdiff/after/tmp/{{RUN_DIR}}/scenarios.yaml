@@ -44,16 +44,14 @@ scenarios:
         - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
-
   E2E-961:
-    description: "MCP server returns HTTP 200 and healthy JSON on GET /health"
+    description: "MCP server /health returns HTTP 200 with a healthy JSON status body"
     service: ""
-    path: "tests/mcp/health_test.go"
-    last_updated: "2026-08-31"
+    last_updated: "2026-09-01"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-08-31"
+        merge_date: "2026-09-01"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -62,4 +60,4 @@ scenarios:
         - "the Claude User sends a GET request to /health"
       then:
         - "the server returns HTTP 200"
-        - and: "the response body reports the service status as healthy"
+        - "and the response body reports the service status as healthy"

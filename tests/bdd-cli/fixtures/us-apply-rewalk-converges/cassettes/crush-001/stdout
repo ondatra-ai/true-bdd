@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Replaced empty scenarios mapping with new E2E-001 entry linked to story 99.3 lineage id 99.3-001 with verbatim AC steps"
+summary: "Replaced empty scenarios map with new E2E-001 entry binding lineage 99.3-001 to tests/mcp-server/mcp_server_test.go"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===

@@ -10,8 +10,8 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 36351,
-  "request_hash": "sha256:7ab768f9df2e49c5b07ec1e5d61830cd59a2dff223e87d1e3f5d87905ca030f3",
+  "duration_ms": 52479,
+  "request_hash": "sha256:ca13e72873a5e33bf3b0681493a836be93656701110ea821bef22652c133135e",
   "fsdiff": {
     "created": [
       "tests/mcp/steps/steps.go"
@@ -19,5 +19,5 @@
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-31T12:03:27Z"
+  "recorded_at": "2026-08-31T21:33:30Z"
 }

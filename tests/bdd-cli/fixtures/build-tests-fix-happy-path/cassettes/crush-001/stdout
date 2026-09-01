@@ -1,7 +1,9 @@
-`tests/mcp/steps/` doesn't exist; creating the package verbatim per the fix prompt.Verifying it compiles with the `bdd` tag:Shell is blocked by the mode's guard; the Write succeeded verbatim, which completes the task.
+The `steps/` package was created verbatim from the fix prompt (Write succeeded; shell/LSP verification is hook-blocked in this mode, and the file is std-lib-only Go as specified).
 
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's steps package with Register binding anchored Given/When/Then definitions for INT-900"
+summary: "Created the mcp suite's first step-definition package with Register binding the three INT-900 step patterns (server up, JSON-RPC POST, status assert) via a consumer-defined Registrar."
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+```

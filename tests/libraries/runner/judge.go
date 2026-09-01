@@ -164,23 +164,28 @@ func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
 	for _, change := range judgeGraded(diff) {
 		fmt.Fprintf(buf, "### %s: `%s`\n\n", change.Kind, change.Path)
 
-		if change.Kind == "deleted" {
-			buf.WriteString("(deleted; omitting before-content)\n\n")
-
-			continue
+		// Both states, because a clause asking whether an untouched part
+		// SURVIVED is unanswerable from the result alone — E2E-024 failed
+		// on exactly that, the judge saying so in its own reason.
+		if change.Kind != "created" {
+			writeFileState(buf, "before", change.Before)
 		}
 
-		body := string(change.After)
-
-		buf.WriteString("```\n")
-		buf.WriteString(body)
-
-		if !strings.HasSuffix(body, "\n") {
-			buf.WriteString("\n")
+		if change.Kind != "deleted" {
+			writeFileState(buf, "after", change.After)
 		}
-
-		buf.WriteString("```\n\n")
 	}
+}
+
+func writeFileState(buf *strings.Builder, label string, body []byte) {
+	fmt.Fprintf(buf, "%s:\n\n```\n", label)
+	buf.Write(body)
+
+	if len(body) > 0 && !strings.HasSuffix(string(body), "\n") {
+		buf.WriteString("\n")
+	}
+
+	buf.WriteString("```\n\n")
 }
 
 // judgeGraded drops `tmp/`: the goldens already ignore it, no clause names
