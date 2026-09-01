@@ -48,12 +48,12 @@ func TestDocumentationDiffSkipsTheExpensiveGates(t *testing.T) {
 	}
 }
 
-func TestScenarioRegistryPullsReplay(t *testing.T) {
+func TestScenarioRegistryPullsTheBDDGates(t *testing.T) {
 	t.Parallel()
 
 	got := names(gates.Select([]string{registry}))
 
-	for _, want := range []string{"BDD fixtures (replay)", "BDD web coverage guards", lintGate} {
+	for _, want := range []string{"BDD cli coverage guards", "BDD web coverage guards", lintGate} {
 		if !slices.Contains(got, want) {
 			t.Errorf("a diff to the registry did not select %q; got %v", want, got)
 		}

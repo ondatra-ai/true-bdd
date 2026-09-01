@@ -73,12 +73,17 @@ summary: "<one-line summary>"
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Failing Test frontend/integration/playwright:\<startup>
+# Fix Prompt for Failing Test frontend/integration/playwright:<startup>
 
-## Diagnosis
+## Root Cause
 
-The Playwright test `tests/integration/frontend-home.spec.ts` navigates to `/`
-and asserts a single `<h1>` reads exactly `Hello world`:
+The suite fails at **startup**, not at an assertion — which is why the failure output is empty and the subject is the synthetic `<startup>` test.
+
+- `tests/playwright.config.ts` declares a `webServer` that runs `docker compose up --build frontend` with `cwd: '..'` (the repo root) and waits for `http://127.0.0.1:3000`.
+- The repo-root `docker-compose.yaml` defines that service as `build: { context: ./services/frontend }` and maps `"3000:3000"`.
+- **The `services/` directory does not exist at all.** The compose build context is missing, the web server never comes up, Playwright times out waiting on the URL, and the whole suite aborts before `tests/integration/frontend-home.spec.ts` runs.
+
+The test itself is the contract and is correct:
 
 ```ts
 test('home page greets with Hello world', async ({ page }) => {
@@ -87,66 +92,79 @@ test('home page greets with Hello world', async ({ page }) => {
 });
 ```
 
-`tests/playwright.config.ts` boots the app with `docker compose up --build
-frontend` (cwd = fixture root) and waits on `http://127.0.0.1:3000`.
-`docker-compose.yaml` builds the `frontend` service from `./services/frontend`
-and maps port `3000`. But **`services/frontend/` does not exist**, so there is
-nothing to build or serve — the empty failure output reflects that the server
-never came up.
+`docs/architecture/architecture.yaml` declares the service that must satisfy it:
 
-`docs/architecture/architecture.yaml` declares `services/frontend` as a
-TypeScript **Next.js + React** service (App Router, server components by
-default) and names `services/frontend/tsconfig.json` as the code quality gate.
+```yaml
+- name: frontend
+  path: services/frontend
+  language: typescript
+  frameworks:
+    - next.js
+    - react
+  quality_gate:
+    code:
+      - name: typescript
+        config: services/frontend/tsconfig.json
+```
 
-**Fix:** create a minimal Next.js App Router service under `services/frontend/`
-whose `/` route renders `<h1>Hello world</h1>`, built and served on port 3000 by
-the existing Dockerfile-based compose service. All paths are under `services/*`
-— every write is legal. Do NOT touch `docker-compose.yaml` (it already points at
-`./services/frontend`, and it lives outside `services/*`), the test, or `docs/`.
+So the fix is to create the declared Next.js + React + TypeScript service at `services/frontend/`, together with the `Dockerfile` that compose builds.
 
 ## Target
-Apply the changes under `services/*` only. The test at `tests/integration` and
-the compose file are the contract; do NOT modify them.
+
+Create five new files, all under `services/frontend/`. Use the **Write** tool for each (they are all new files; there is nothing to Edit).
+
+### Hard constraints — read before writing
+
+- **`docker-compose.yaml` is at the repo root, which is OUTSIDE `services/*`. Do NOT modify it, and do not create another compose file.** No change to it is needed: its build context is already `./services/frontend`, so a Dockerfile at the default path `services/frontend/Dockerfile` is picked up automatically.
+- The Docker build context is `./services/frontend`, so the Dockerfile may only `COPY` paths **inside that directory**. Every file below lives there — do not reference anything outside it.
+- Do NOT modify anything under `tests/`, any `*_test.go`, anything under `services/*/__tests__/`, or anything under `docs/`. Do not weaken, skip, or remove any assertion.
+- `expect(page.locator('h1')).toHaveText('Hello world')` resolves a **single** `h1`. If two `h1` elements exist anywhere on the page, the locator is strict-mode ambiguous and the test fails. The root layout must contain **no** `h1`; `app/page.tsx` must contribute the only one.
+- The heading text must be exactly `Hello world` — capital `H`, lowercase `w`, no nested elements, no extra text nodes.
+- **You are only writing files.** Do NOT run `docker`, `docker compose`, `npm`, `npx`, or the Playwright suite. The Go-side runner re-executes the suite and owns the verdict.
+- Create exactly the five files below and nothing else.
 
 ## Required Changes
 
-All seven files are new — use the **Write** tool for each (no `old_string`).
+### Change #1: Service manifest and dependencies
 
-### Change #1: package.json
 **File:** `services/frontend/package.json`
-**Action:** Write (new file). Exact version pins (no carets) for build
-reliability. The `start` script binds `0.0.0.0:3000` so the container port is
-reachable through the compose `3000:3000` mapping.
+**Action:** Use the **Write** tool to create this new file with exactly this content.
+
+Note: `typescript` and `@types/*` are required, not optional. Once `tsconfig.json` exists (Change #2, mandated by the `quality_gate` entry), a non-interactive `next build` **fails** if the TypeScript toolchain is absent — it cannot prompt to install it. The tsconfig and these devDependencies must ship together. The `-H 0.0.0.0` in the `start` script is what makes the container reachable through the compose port map.
+
 **Content:**
+
 ```json
 {
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000"
   },
   "dependencies": {
-    "next": "14.2.15",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "5.4.5",
-    "@types/node": "20.14.10",
-    "@types/react": "18.3.3",
-    "@types/react-dom": "18.3.0"
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
   }
 }
 ```
 
-### Change #2: tsconfig.json
+### Change #2: TypeScript config named by the quality gate
+
 **File:** `services/frontend/tsconfig.json`
-**Action:** Write (new file). Standard create-next-app TypeScript config;
-`architecture.yaml` names this exact path as the quality gate, so it must exist.
+**Action:** Use the **Write** tool to create this new file with exactly this content.
+
 **Content:**
+
 ```json
 {
   "compilerOptions": {
@@ -163,11 +181,7 @@ reachable through the compose `3000:3000` mapping.
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"]
     }
@@ -177,27 +191,20 @@ reachable through the compose `3000:3000` mapping.
 }
 ```
 
-### Change #3: next.config.js
-**File:** `services/frontend/next.config.js`
-**Action:** Write (new file). Empty config object.
-**Content:**
-```js
-/** @type {import('next').NextConfig} */
-const nextConfig = {};
+### Change #3: App Router root layout — contains no `h1`
 
-module.exports = nextConfig;
-```
-
-### Change #4: Root layout
 **File:** `services/frontend/app/layout.tsx`
-**Action:** Write (new file). The App Router refuses to build without a root
-layout that renders `<html>`/`<body>`. It must contain **no `<h1>`** — the test
-locator `page.locator('h1')` must resolve to exactly one element.
+**Action:** Use the **Write** tool to create this new file with exactly this content.
+
+This is a server component (no `'use client'`), matching the `component-composition` pattern in `architecture.yaml`. It deliberately renders no heading so the page supplies the only `h1`.
+
 **Content:**
+
 ```tsx
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Frontend',
 };
 
@@ -210,55 +217,53 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 }
 ```
 
-### Change #5: Home page
+### Change #4: Home page rendering the asserted heading
+
 **File:** `services/frontend/app/page.tsx`
-**Action:** Write (new file). Renders the single `<h1>`. Exact casing —
-`Hello world` (capital `H`, lowercase `w`); `toHaveText` is an exact match.
+**Action:** Use the **Write** tool to create this new file with exactly this content.
+
 **Content:**
+
 ```tsx
 export default function Home() {
   return <h1>Hello world</h1>;
 }
 ```
 
-### Change #6: Dockerfile
+### Change #5: Dockerfile at the compose build context root
+
 **File:** `services/frontend/Dockerfile`
-**Action:** Write (new file). `libc6-compat` is the standard Next-on-Alpine SWC
-requirement. Copy `package.json` alone before `npm install` (do NOT use a
-`package-lock.json*` wildcard — a wildcard COPY matching nothing fails the
-build, and no lockfile is shipped). `npm install` (not `npm ci`) installs
-devDependencies too, which `next build` needs for the TypeScript check.
+**Action:** Use the **Write** tool to create this new file with exactly this content.
+
+Details that matter: `npm install` — **not** `npm ci`, because there is no `package-lock.json` in this tree and `npm ci` would fail outright. `npm run build` produces the production build so `next start` has something to serve. `CMD ["npm", "start"]` runs the `start` script from Change #1, which already carries `-H 0.0.0.0 -p 3000`.
+
 **Content:**
+
 ```dockerfile
 FROM node:20-alpine
-RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
+
 COPY package.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
+
 COPY . .
+
 RUN npm run build
+
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+CMD ["npm", "start"]
 ```
 
-### Change #7: .dockerignore
-**File:** `services/frontend/.dockerignore`
-**Action:** Write (new file). Keeps host build artifacts out of the image.
-**Content:**
-```
-node_modules
-.next
-```
+## Why this makes the test pass
 
-## Notes for the applier
-- All seven files are new; use **Write** for each. Do not Edit or create
-  anything outside `services/frontend/`.
-- Do NOT modify the test, `tests/playwright.config.ts`, `docker-compose.yaml`,
-  or anything under `docs/`.
-- Do NOT add an ESLint config — its absence makes `next build` skip linting,
-  which is intended.
-- Do not run docker or the test yourself; the Go runner re-executes and is
-  authoritative.
+1. `services/frontend/` now exists, so `docker compose up --build frontend` has a valid build context and the image builds.
+2. The container runs `next start -H 0.0.0.0 -p 3000`, so the compose mapping `"3000:3000"` exposes it and Playwright's `webServer` URL check on `http://127.0.0.1:3000` succeeds — the suite gets past startup, clearing the `<startup>` failure.
+3. `page.goto('/')` renders `app/page.tsx`, which emits exactly one `h1` whose text is exactly `Hello world`, satisfying `toHaveText('Hello world')`.
+4. The service matches `architecture.yaml`: TypeScript, Next.js App Router, React server components, and the `services/frontend/tsconfig.json` its `quality_gate` names.
+
+No test file, no `docs/` file, and no repo-root file is touched.
 
 ---
 

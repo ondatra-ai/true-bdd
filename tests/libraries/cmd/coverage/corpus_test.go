@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -172,6 +173,6 @@ func lineApplied() string {
 }
 
 func lineWarnBadYAML(idx int) string {
-	return fmt.Sprintf(`{"msg":"Failed to parse result YAML","path":"tmp/%s/%s"}`,
-		miniPart, resultName(idx))
+	return fmt.Sprintf(`{"msg":%q,"path":"tmp/%s/%s"}`,
+		enginelog.MsgAnswerUnusable, miniPart, resultName(idx))
 }

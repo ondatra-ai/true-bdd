@@ -10,20 +10,18 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 34177,
-  "request_hash": "sha256:64f06a35bfc1c4df87a8ea31f1a3b9960360c017f758d388e613db4a7922268e",
+  "duration_ms": 27025,
+  "request_hash": "sha256:5d8039ce4f41f0bb4e2e84e7a8516af6741ac7ed9888517dcb1ac878f52e9d9c",
   "fsdiff": {
     "created": [
-      "services/frontend/.dockerignore",
       "services/frontend/Dockerfile",
       "services/frontend/app/layout.tsx",
       "services/frontend/app/page.tsx",
-      "services/frontend/next.config.js",
       "services/frontend/package.json",
       "services/frontend/tsconfig.json"
     ],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-31T21:21:49Z"
+  "recorded_at": "2026-09-01T10:47:12Z"
 }

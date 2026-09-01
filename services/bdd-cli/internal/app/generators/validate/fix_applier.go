@@ -145,7 +145,9 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	}
 
 	response, err := a.aiClient.ExecutePromptWithSystem(
-		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode,
+		// No result schema: this repo routes every apply turn to crush,
+		// which cannot enforce one (adapters/ai.SupportsResultSchema).
+		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
 	)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)

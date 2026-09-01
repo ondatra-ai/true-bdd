@@ -57,9 +57,8 @@ func ClaimedCounts(body string) map[string]int {
 
 // GateRun is a folded CI gates job, for the gate-time test.
 type GateRun struct {
-	Total   time.Duration
-	PerGate []string
-	Attrs   []any
+	Total time.Duration
+	Attrs []any
 }
 
 // GateTimings folds a jobs payload exactly as reportGateTime does.
@@ -69,7 +68,7 @@ func GateTimings(payload []byte) (GateRun, bool) {
 		return GateRun{}, false
 	}
 
-	return GateRun{Total: folded.total, PerGate: folded.perGate, Attrs: folded.attrs()}, true
+	return GateRun{Total: folded.total, Attrs: folded.attrs()}, true
 }
 
 // PanicStop unwinds the way dief and usage do, so a test can prove guard

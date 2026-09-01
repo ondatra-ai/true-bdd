@@ -15,6 +15,9 @@ type Request struct {
 	// Mode carries the tool permissions for this turn. Providers
 	// without a native allowlist project it onto their own sandbox.
 	Mode ExecutionMode
+	// ResultSchema, when set, is the JSON Schema the answer must satisfy.
+	// Only providers SupportsResultSchema accepts may receive one.
+	ResultSchema string
 	// WorkDir is the directory the turn runs in (the host project root).
 	WorkDir string
 	// TmpDir is the run's artifact directory. Providers write their

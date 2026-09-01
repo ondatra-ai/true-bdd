@@ -109,75 +109,79 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria`).
-AC-1, AC-2, and AC-4 pass and are reproduced exactly as they stand —
-same description, same steps, word for word. AC-3's steps also pass and
-are reproduced unchanged; only its description loses the forbidden
-qualifier.
+Change ONLY what the failed check requires. The failed check is
+`us-refine/acceptance_criteria` (forbidden qualifiers in AC descriptions).
+Only AC-3's description contains a forbidden qualifier. AC-1, AC-2 and AC-4
+are reproduced byte for byte — same descriptions, same steps. Do not touch
+their wording, and do not touch any AC's steps: the check inspects
+description fields only.
 
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**Issue:** The description contains the forbidden qualifier `properly` (from `forbidden_qualifiers` in `docs/architecture/architecture.yaml`). The behavior is already fully specified by the exact message string and the 30-second threshold, so `properly display` should become just `display`. No new information is needed — dropping the word leaves an objectively testable rule.
+**Issue:** The description contains the forbidden qualifier `properly`, listed in `forbidden_qualifiers` in `docs/architecture/architecture.yaml` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). "Properly display" is not observable — it adds no testable condition beyond "display", and it hides the fact that the measurable criteria are already present: the exact message text and the 30-second threshold.
 **After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**After (steps):** *(unchanged — already clean and testable against the exact string and the 30-second timeout)*
+**After (steps):** unchanged — the existing Given/When/Then already carries the 30-second threshold and the exact message text.
 ```yaml
 - given:
-    - a Google Doc is shared with the Claude User's account
-    - the summary backend does not respond within 30 seconds
+    - "a Google Doc is shared with the Claude User's account"
+    - "the summary backend does not respond within 30 seconds"
 - when:
-    - the Claude User asks Claude to summarize the document
+    - "the Claude User asks Claude to summarize the document"
 - then:
-    - Claude displays the message 'The summary timed out - please try again'
+    - "Claude displays the message 'The summary timed out - please try again'"
 ```
 
-*No new ACs are needed: the four criteria already cover the happy path (AC-1), the no-access error (AC-2), the timeout error (AC-3), and the length cap (AC-4).*
+No new acceptance criteria are added, none are merged, and none are removed.
+AC-1 (happy-path summary), AC-2 (no access), AC-3 (timeout) and AC-4
+(over-length truncation) each describe a distinct user action → system
+response, so there is nothing to merge.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
-- id: AC-1
-  description: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+- ac_id: AC-1
+  description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
   steps:
     - given:
-        - a Google Doc with at least 500 words of body text is shared with the Claude User's account
+        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays a summary of 150 words or fewer in the conversation
-        - and: the summary names the document title
+        - "Claude displays a summary of 150 words or fewer in the conversation"
+        - and: "the summary names the document title"
 
-- id: AC-2
-  description: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
+- ac_id: AC-2
+  description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
     - given:
-        - a Google Doc exists that is not shared with the Claude User's account
+        - "a Google Doc exists that is not shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize that document
+        - "the Claude User asks Claude to summarize that document"
     - then:
-        - Claude displays the message 'This document is not shared with your account'
-        - and: Claude does not display any content from the document
+        - "Claude displays the message 'This document is not shared with your account'"
+        - and: "Claude does not display any content from the document"
 
-- id: AC-3
-  description: Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
+- ac_id: AC-3
+  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
     - given:
-        - a Google Doc is shared with the Claude User's account
-        - the summary backend does not respond within 30 seconds
+        - "a Google Doc is shared with the Claude User's account"
+        - "the summary backend does not respond within 30 seconds"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays the message 'The summary timed out - please try again'
+        - "Claude displays the message 'The summary timed out - please try again'"
 
-- id: AC-4
-  description: Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
+- ac_id: AC-4
+  description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
     - given:
-        - a Google Doc with more than 10000 words is shared with the Claude User's account
+        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
-        - the Claude User asks Claude to summarize the document
+        - "the Claude User asks Claude to summarize the document"
     - then:
-        - Claude displays a summary of the first 10000 words
-        - and: Claude states that only the first 10000 words were summarized
+        - "Claude displays a summary of the first 10000 words"
+        - and: "Claude states that only the first 10000 words were summarized"
 ```
 
 ---

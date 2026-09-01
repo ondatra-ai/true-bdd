@@ -109,14 +109,23 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1 uses a forbidden action verb. AC-2, AC-3, and AC-4 pass the
-check and are reproduced exactly as they stand — same description, same
-steps, word for word.
+Only AC-1 is faulted by the failed check. AC-2, AC-3 and AC-4 are reproduced
+below exactly as they stand — same descriptions, same steps, word for word.
+Do not rewrite them.
 
 ### Change #1: AC-1
-**Before:** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**Issue:** The `then` step reads "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation". It uses the forbidden action verb 'handle' (architecture.yaml forbidden_actions: "Hides what the system observably does with the input."). The step already carries the observable verb 'displays', so the "handles the summary request and" clause is redundant and must be dropped.
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. *(unchanged — the description already uses the allowed verb 'display')*
+**Before (then step):** Claude handles the summary request and displays a summary of 150 words or fewer in the conversation
+
+**Issue:** The then step uses the action verb `handle`, listed in
+`vocabulary.forbidden_actions` in `docs/architecture/architecture.yaml`:
+"Hides what the system observably does with the input." Its documented
+replacement is to name the observable action (displays, returns, lists,
+rejects). The step already names that observable action — `displays a summary
+of 150 words or fewer in the conversation` — so the fix is to drop the
+`handles the summary request and` clause, not to substitute another verb.
+
+**After (description):** unchanged — `Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.` (no forbidden verb in the description)
+
 **After (steps):**
 ```yaml
 - given:
@@ -127,7 +136,9 @@ steps, word for word.
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No new ACs are needed — the failed check only requires removing the forbidden verb from AC-1.
+No acceptance criteria are added, merged or removed. AC-1 (happy path),
+AC-2 (unshared document), AC-3 (timeout) and AC-4 (word-limit truncation)
+each cover a distinct behaviour.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -151,7 +162,7 @@ No new ACs are needed — the failed check only requires removing the forbidden 
         - "the Claude User asks Claude to summarize that document"
     - then:
         - "Claude displays the message 'This document is not shared with your account'"
-        - "Claude does not display any content from the document"
+        - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
@@ -173,7 +184,7 @@ No new ACs are needed — the failed check only requires removing the forbidden 
         - "the Claude User asks Claude to summarize the document"
     - then:
         - "Claude displays a summary of the first 10000 words"
-        - "Claude states that only the first 10000 words were summarized"
+        - and: "Claude states that only the first 10000 words were summarized"
 ```
 
 ---

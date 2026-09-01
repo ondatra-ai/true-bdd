@@ -108,8 +108,8 @@ func NewState(harness *Harness) func(*bddgo.World) (*State, error) {
 }
 
 // Judge implements bddgo.Judgeable: rules on `judge:` clauses once, after
-// every step passed. In replay it asks nothing — the recording already
-// satisfied these clauses when made; finish's golden diff re-checks it, stricter than a reading.
+// every step passed — in EVERY mode. Replay hands it a byte-identical diff
+// run after run, which is what makes a verdict disagreement measurable.
 func (s *State) Judge(clauses []bddgo.Step) error {
 	texts := clauseTexts(clauses)
 
@@ -118,10 +118,6 @@ func (s *State) Judge(clauses []bddgo.Step) error {
 	// recording only on the live path would leave it missing where read most.
 	if s.Fixture != nil {
 		s.Fixture.JudgeSpec = renderClauses(texts)
-	}
-
-	if s.Harness.Mode == runner.ProxyModeReplay {
-		return nil
 	}
 
 	if s.Result == nil {
@@ -156,6 +152,12 @@ func (s *State) finish() {
 
 	s.Recorder.ObserveFixture(s.Fixture)
 	s.Recorder.Finish(s.T.Failed(), s.T.Skipped())
+
+	// Last act of the scenario, not of the CLI run: a Then step that
+	// re-runs the host suite needs the stack the run left standing.
+	if s.Result != nil && s.Fixture != nil {
+		runner.Teardown(s.Result.TmpDir, s.Fixture.TeardownCmds)
+	}
 }
 
 // runTimeout is how long this scenario's CLI invocation may take: its own
@@ -240,18 +242,31 @@ func (s *State) grade() {
 // test's exit status states: a scenario can fail on a step and still owe
 // the report an accurate account of what its recording did.
 func (s *State) finalVerdict() runner.Verdict {
+	verdict := runner.Verdict{JudgeOK: true, GoldenOK: true}
+
+	// Golden and census are WHEN-stage fidelity: they prove the replay
+	// reproduced the recorded tree and consumed every recorded turn.
 	if s.Harness.Mode == runner.ProxyModeReplay {
-		return runner.EvaluateRecorded(
+		verdict = runner.EvaluateRecorded(
 			s.Result, s.Proxy.Golden, s.Proxy.Cassettes, s.Proxy.StateDir)
 	}
 
+	// The judge grades the outcome's semantics, in every mode. Neither
+	// check subsumes the other, so both must hold.
 	if s.judged {
-		return s.judgeVerdict
+		verdict.JudgeOK = s.judgeVerdict.JudgeOK
+		verdict.JudgeMsg = s.judgeVerdict.JudgeMsg
+		verdict.JudgeModel = s.judgeVerdict.JudgeModel
+		verdict.JudgeInputHash = s.judgeVerdict.JudgeInputHash
+		verdict.JudgeStartedAt = s.judgeVerdict.JudgeStartedAt
+		verdict.JudgeEndedAt = s.judgeVerdict.JudgeEndedAt
+		verdict.JudgeSystemPrompt = s.judgeVerdict.JudgeSystemPrompt
+		verdict.JudgeUserPrompt = s.judgeVerdict.JudgeUserPrompt
+		verdict.JudgeResponse = s.judgeVerdict.JudgeResponse
+		verdict.Failures = append(verdict.Failures, s.judgeVerdict.Failures...)
 	}
 
-	// A scenario with nothing for a model to rule on, outside replay:
-	// its steps were the whole of its grading, and they have already run.
-	return runner.Verdict{JudgeOK: true, GoldenOK: true}
+	return verdict
 }
 
 // recordOutcome writes the run's resulting tree beside its cassettes and

@@ -16,7 +16,7 @@ paths:
 
 ## Model tiers and providers
 
-The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per checklist role. `engine.models` binds tiers (`xhigh`, `high`, `coder`) to `"<cli>:<model>"` (split on the FIRST colon only); `engine.default_prompt_model` / `default_fix_model` / `default_apply_model` name each role's fallback tier. Per-cell resolution: prompt override (`model:`/`fix_model:`/`apply_model:`) → checklist `engine:` block → `engine.default_<role>_model`. Anything unresolvable is a startup error, never a silent substitution.
+The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per checklist role. `engine.models` binds tiers (`xhigh`, `high`, `coder`, `quick`) to `"<cli>:<model>"` (split on the FIRST colon only); `engine.default_prompt_model` / `default_fix_model` / `default_apply_model` name each role's fallback tier. Per-cell resolution: prompt override (`model:`/`fix_model:`/`apply_model:`) → checklist `engine:` block → `engine.default_<role>_model`. Anything unresolvable is a startup error, never a silent substitution.
 
 - `internal/domain/models/provider/` owns the vocabulary (`ModelRef`, `Tier`, `Registry`); the registry is validated once in `bootstrap.newAIRouter`. `adapters/ai/router.go` is the only `ports.AIPort` implementation.
 - `ExecutionMode` is the single permission source for all three CLIs — `WriteGlobs()`/`AllowsBash()` project it onto crush's guard and codex's `-s` sandbox.

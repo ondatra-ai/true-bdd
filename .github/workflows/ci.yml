@@ -47,28 +47,7 @@ jobs:
       - name: Install the frontend
         run: npm --prefix services/bdd-web ci
 
-      - name: Lint
-        run: go run ./scripts/cmd/alint
-
-      - name: Build
-        run: mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
-
-      - name: Test
-        run: go test ./...
-
-      # `go vet ./...` and golangci-lint both skip the bdd-tagged tree, so
-      # without this a generated `Testfoo` compiles, is never run by
-      # `go test`, and still satisfies every coverage check.
-      - name: Vet the BDD tree
-        run: go vet -tags bdd ./tests/...
-
-      - name: BDD fixtures (replay)
-        run: go test -tags bdd -timeout=20m ./tests/bdd-cli/ -mode=replay
-
-      # Web suite guard only (no node/browser/build; answers in ms) — the
-      # suite itself stays manual. TestStepCoverage stays OUT: only 4 of
-      # 244 scenarios' steps bind — adding it would make this job UNSATISFIABLE, not just fail it.
-      #	~1680 unbound steps across those 243 would block EVERY PR, not just
-      #	the port's. Land it here and in the gate table's row: ClickUp 86cb6fjwy.
-      - name: BDD web coverage guards
-        run: go test -tags bdd -count=1 -run '^TestScenarioCoverage$' ./tests/bdd-web/
+      # ONE call, so the gate list lives in exactly one place —
+      # scripts/gates/table.go. Adding a gate there reaches CI for free.
+      - name: Gates
+        run: go run ./scripts/cmd/gates run

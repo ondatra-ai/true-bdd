@@ -294,8 +294,6 @@ func Execute(
 		return &RunResult{TmpDir: tmpDir}, err
 	}
 
-	defer runTeardownCommands(tmpDir, fixture.TeardownCmds)
-
 	err = runPrepCommands(tmpDir, fixture.PrepCmds)
 	if err != nil {
 		return &RunResult{TmpDir: tmpDir}, err
@@ -428,10 +426,10 @@ const prepTimeout = 15 * time.Minute
 // hit ITS timeout — exactly when leftover resources most need cleanup.
 const teardownTimeout = 2 * time.Minute
 
-// runTeardownCommands executes each fixture-provided teardown command on a
-// budget independent of the run timeout, teed to bdd-cli-logs/ — failures are
-// logged, never returned, and can't mask the verdict.
-func runTeardownCommands(tmpDir string, teardownCmds []string) {
+// Teardown executes each fixture-provided teardown command on its own
+// budget, teed to bdd-cli-logs/ — failures are logged, never returned.
+// Called at SCENARIO end: a Then re-run needs the stack left standing.
+func Teardown(tmpDir string, teardownCmds []string) {
 	if len(teardownCmds) == 0 {
 		return
 	}

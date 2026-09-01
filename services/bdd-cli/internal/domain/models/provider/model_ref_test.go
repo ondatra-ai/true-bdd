@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	fableModel = "claude-fable-5"
-	opusModel  = "claude-opus-4-8"
-	glmModel   = "zhipu-coding/glm-5.2"
+	fableModel  = "claude-fable-5"
+	opusModel   = "claude-opus-4-8"
+	glmModel    = "zhipu-coding/glm-5.2"
+	sonnetModel = "claude-sonnet-5"
 )
 
 func TestParseModelRefValid(t *testing.T) {

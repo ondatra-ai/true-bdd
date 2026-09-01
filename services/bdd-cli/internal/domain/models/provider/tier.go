@@ -21,15 +21,18 @@ const (
 	// TierCoder is the cheap, high-context writing tier — applying a fix
 	// to a file.
 	TierCoder Tier = "coder"
+	// TierQuick is the cheap, fast verdict tier — a graded answer with a
+	// short reason, where latency and cost matter more than depth. The
+	// BDD harness's judge resolves its model from this tier.
+	TierQuick Tier = "quick"
 )
 
-// ErrUnknownTier marks a tier name that is not one of the three the
-// engine defines.
+// ErrUnknownTier marks a tier name the engine does not define.
 var ErrUnknownTier = errors.New("unknown model tier")
 
 // Tiers lists every tier the engine recognises.
 func Tiers() []Tier {
-	return []Tier{TierXHigh, TierHigh, TierCoder}
+	return []Tier{TierXHigh, TierHigh, TierCoder, TierQuick}
 }
 
 // ParseTier validates a tier name read from YAML.

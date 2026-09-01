@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Category represents the type of error.
@@ -607,16 +608,22 @@ func ErrInvalidModifierError(modifierType string) error {
 
 // Checklist Validation Errors.
 var (
-	ErrLoadChecklistSystemPrompt = errors.New("failed to load checklist system prompt")
-	ErrLoadChecklistUserPrompt   = errors.New("failed to load checklist user prompt")
-	ErrChecklistAIEvaluation     = errors.New("AI evaluation failed")
-	ErrFixApplierNoContent       = errors.New("no FILE_START/FILE_END content found")
-	ErrFixNotApplied             = errors.New("fix applier reported the fix was not applied")
-	ErrFixLoopStuck              = errors.New("fix loop is not converging")
-	ErrFixPromptGeneration       = errors.New("fix prompt generation failed")
-	ErrFixPromptRefinement       = errors.New("fix prompt refinement failed")
-	ErrSaveStoryVersion          = errors.New("failed to save story version")
-	ErrWriteStoryFile            = errors.New("failed to write story file")
+	ErrLoadChecklistSystemPrompt   = errors.New("failed to load checklist system prompt")
+	ErrLoadChecklistUserPrompt     = errors.New("failed to load checklist user prompt")
+	ErrChecklistAIEvaluation       = errors.New("AI evaluation failed")
+	ErrFixApplierNoContent         = errors.New("no FILE_START/FILE_END content found")
+	ErrChecklistAnswerMissing      = errors.New("checklist answer carried no FILE_START/FILE_END block")
+	ErrChecklistAnswerUnparseable  = errors.New("checklist answer did not decode")
+	ErrChecklistAnswerNonCanonical = errors.New("checklist answer was neither pass nor fail")
+	ErrFixGeneratorNoContent       = errors.New("fix generator answer carried neither questions nor a fix prompt")
+	ErrFixGeneratorBadQuestions    = errors.New("fix generator questions did not decode")
+	ErrResultSchemaUnsupported     = errors.New("this cli cannot enforce a result schema")
+	ErrFixNotApplied               = errors.New("fix applier reported the fix was not applied")
+	ErrFixLoopStuck                = errors.New("fix loop is not converging")
+	ErrFixPromptGeneration         = errors.New("fix prompt generation failed")
+	ErrFixPromptRefinement         = errors.New("fix prompt refinement failed")
+	ErrSaveStoryVersion            = errors.New("failed to save story version")
+	ErrWriteStoryFile              = errors.New("failed to write story file")
 )
 
 func ErrLoadChecklistSystemPromptFailed(cause error) error {
@@ -643,6 +650,59 @@ func ErrChecklistAIEvaluationFailed(cause error) error {
 		Code:     "CHECKLIST_AI_EVALUATION_FAILED",
 		Message:  "AI evaluation of checklist prompt failed",
 		Cause:    errors.Join(ErrChecklistAIEvaluation, cause),
+	}
+}
+
+// ErrChecklistAnswerMissingBlock marks a model answer with no result block.
+// A missing answer is an infrastructure failure, never a graded fail.
+func ErrChecklistAnswerMissingBlock(resultPath string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "CHECKLIST_ANSWER_MISSING",
+		Message:  "no FILE_START/FILE_END content found for path: " + resultPath,
+		Cause:    ErrChecklistAnswerMissing,
+	}
+}
+
+// ErrChecklistAnswerDidNotParse marks a result block that is not valid YAML.
+func ErrChecklistAnswerDidNotParse(resultPath string, cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "CHECKLIST_ANSWER_UNPARSEABLE",
+		Message:  "result content did not decode for path: " + resultPath,
+		Cause:    errors.Join(ErrChecklistAnswerUnparseable, cause),
+	}
+}
+
+// ErrChecklistAnswerNotCanonical marks an answer outside the universal
+// pass/fail contract. Grading it silently is how a fabricated verdict enters.
+func ErrChecklistAnswerNotCanonical(resultPath, answer string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "CHECKLIST_ANSWER_NON_CANONICAL",
+		Message:  "answer " + strconv.Quote(answer) + " is neither pass nor fail for path: " + resultPath,
+		Cause:    ErrChecklistAnswerNonCanonical,
+	}
+}
+
+// ErrFixGeneratorEmptyAnswer marks a fix-generator answer carrying neither
+// questions nor a fix prompt — distinct from a checklist with no `F:` cell.
+func ErrFixGeneratorEmptyAnswer(resultPath string) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_GENERATOR_NO_CONTENT",
+		Message:  "no questions and no fix prompt found for path: " + resultPath,
+		Cause:    ErrFixGeneratorNoContent,
+	}
+}
+
+// ErrFixGeneratorQuestionsDidNotParse marks a mangled QUESTIONS block.
+func ErrFixGeneratorQuestionsDidNotParse(cause error) error {
+	return &AppError{
+		Category: CategoryAI,
+		Code:     "FIX_GENERATOR_BAD_QUESTIONS",
+		Message:  "questions block did not decode",
+		Cause:    errors.Join(ErrFixGeneratorBadQuestions, cause),
 	}
 }
 

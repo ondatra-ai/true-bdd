@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
@@ -31,7 +33,23 @@ type ChecklistPromptData struct {
 	ResultPath   string
 	Docs         map[string]*docs.ArchitectureDoc
 	FixTemplate  string // Template for generating fix prompt when validation fails
+	// Structured is true when the resolved CLI enforces a result schema,
+	// so the template asks for a JSON object instead of a FILE block.
+	Structured bool
 }
+
+// checklistResultSchema is the answer shape a schema-bearing CLI is held
+// to. It mirrors resultYAML: pass/fail is the universal contract.
+const checklistResultSchema = `{
+  "type": "object",
+  "properties": {
+    "answer": {"type": "string", "enum": ["pass", "fail"]},
+    "context": {"type": "array", "items": {"type": "string"}},
+    "fix_prompt": {"type": "string"}
+  },
+  "required": ["answer", "context"],
+  "additionalProperties": false
+}`
 
 // ChecklistEvaluator evaluates subjects against validation prompts using AI.
 type ChecklistEvaluator struct {
@@ -112,13 +130,13 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	e.logResolvedDocs(promptIndex, sectionPath, requestedDocs)
 
-	// Load system prompt template (uses cached loader)
-	systemPrompt, err := e.systemLoader.LoadTemplate(ChecklistPromptData{})
+	// Tier resolution comes FIRST: whether the CLI can enforce a result
+	// schema decides which answer contract the templates render.
+	model, err := e.models.ResolveRole(provider.RolePrompt, promptCtx.EffectiveModelTier())
 	if err != nil {
-		return checklist.ValidationResult{}, pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
+		return checklist.ValidationResult{}, pkgerrors.ErrResolveModelTierFailed("validation", err)
 	}
 
-	// Load user prompt template with data (uses cached loader)
 	promptData := ChecklistPromptData{
 		Subject:     subject,
 		SubjectID:   subjectID,
@@ -127,11 +145,12 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 		ResultPath:  resultPath,
 		Docs:        requestedDocs,
 		FixTemplate: promptCtx.Prompt.FixTemplate,
+		Structured:  ai.SupportsResultSchema(model.CLI),
 	}
 
-	userPrompt, err := e.userLoader.LoadTemplate(promptData)
+	systemPrompt, userPrompt, err := e.renderPrompts(promptData)
 	if err != nil {
-		return checklist.ValidationResult{}, pkgerrors.ErrLoadChecklistUserPromptFailed(err)
+		return checklist.ValidationResult{}, err
 	}
 
 	// Save prompts to tmp for debugging
@@ -141,15 +160,13 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	// Use think mode - allows Read, Glob, Grep tools for accessing reference docs
 	mode := e.modeFactory.GetThinkMode()
 
-	// Tier resolution: this prompt's `model:`, else the checklist's
-	// `prompt_model:`, else engine.default_prompt_model.
-	model, err := e.models.ResolveRole(provider.RolePrompt, promptCtx.EffectiveModelTier())
-	if err != nil {
-		return checklist.ValidationResult{}, pkgerrors.ErrResolveModelTierFailed("validation", err)
+	schema := ""
+	if promptData.Structured {
+		schema = checklistResultSchema
 	}
 
 	response, err := e.aiClient.ExecutePromptWithSystem(
-		ctx, provider.RolePrompt, systemPrompt, userPrompt, model, mode,
+		ctx, provider.RolePrompt, systemPrompt, userPrompt, model, mode, schema,
 	)
 	if err != nil {
 		return checklist.ValidationResult{}, pkgerrors.ErrChecklistAIEvaluationFailed(err)
@@ -158,13 +175,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	// Save response to tmp
 	e.savePromptFile(sectionPath, promptIndex, "response", response)
 
-	// Parse the answer from result file (extracted from FILE_START/FILE_END in response)
-	parsedResult := e.parseResultFile(response, resultPath)
-
-	// Universal pass/fail: AI emits `answer: pass` or `answer: fail`.
-	status := checklist.StatusFail
-	if strings.EqualFold(strings.TrimSpace(parsedResult.Answer), "pass") {
-		status = checklist.StatusPass
+	parsedResult, status, err := e.gradeAnswer(response, resultPath, promptData.Structured)
+	if err != nil {
+		return checklist.ValidationResult{}, err
 	}
 
 	// Only include fix prompt if validation failed
@@ -191,6 +204,46 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	}, nil
 }
 
+// renderPrompts loads both templates from one data value. The system
+// template used to render from a zero value, which would now hide the
+// answer contract from half the prompt.
+func (e *ChecklistEvaluator) renderPrompts(data ChecklistPromptData) (string, string, error) {
+	systemPrompt, err := e.systemLoader.LoadTemplate(data)
+	if err != nil {
+		return "", "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
+	}
+
+	userPrompt, err := e.userLoader.LoadTemplate(data)
+	if err != nil {
+		return "", "", pkgerrors.ErrLoadChecklistUserPromptFailed(err)
+	}
+
+	return systemPrompt, userPrompt, nil
+}
+
+// gradeAnswer reads the model's answer and holds it to the universal
+// pass/fail contract. Both refusals are infrastructure errors: grading an
+// unreadable answer reports a verdict the model never gave.
+func (e *ChecklistEvaluator) gradeAnswer(
+	response, resultPath string, structured bool,
+) (ParsedResult, checklist.Status, error) {
+	parsed, err := e.readAnswer(response, resultPath, structured)
+	if err != nil {
+		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath, "error", err)
+
+		return ParsedResult{}, checklist.StatusFail, err
+	}
+
+	status, err := canonicalStatus(parsed.Answer, resultPath)
+	if err != nil {
+		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath, "error", err)
+
+		return ParsedResult{}, checklist.StatusFail, err
+	}
+
+	return parsed, status, nil
+}
+
 // resultYAML represents the structure of the result file. The Answer field
 // uses yaml.Node so it can hold either a scalar (integer, yes/no, percentage)
 // or a mapping (violation map keyed by AC id).
@@ -207,14 +260,52 @@ type ParsedResult struct {
 	FixPrompt string
 }
 
-// parseResultFile extracts FILE_START/FILE_END content from response, saves to file, and parses.
-func (e *ChecklistEvaluator) parseResultFile(response, path string) ParsedResult {
+// readAnswer decodes the answer under whichever contract the turn ran on.
+// A schema-bearing turn is parsed strictly: falling back to the delimited
+// scrape would mask the failure the schema exists to prevent.
+func (e *ChecklistEvaluator) readAnswer(response, path string, structured bool) (ParsedResult, error) {
+	if !structured {
+		return e.parseResultFile(response, path)
+	}
+
+	var decoded struct {
+		Answer    string   `json:"answer"`
+		Context   []string `json:"context"`
+		FixPrompt string   `json:"fix_prompt"`
+	}
+
+	err := json.Unmarshal([]byte(response), &decoded)
+	if err != nil {
+		return ParsedResult{}, pkgerrors.ErrChecklistAnswerDidNotParse(path, err)
+	}
+
+	e.saveResultArtifact(path, response)
+
+	return ParsedResult{
+		Answer:    decoded.Answer,
+		Context:   decoded.Context,
+		FixPrompt: strings.TrimSpace(decoded.FixPrompt),
+	}, nil
+}
+
+// saveResultArtifact keeps the per-turn result file the run dir carries.
+func (e *ChecklistEvaluator) saveResultArtifact(path, content string) {
+	err := disk.Write(path, []byte(content), disk.Shared)
+	if err != nil {
+		slog.Warn("Failed to save result file", "path", path, "error", err)
+	} else {
+		slog.Info("Result file saved", "file", path)
+	}
+}
+
+// parseResultFile extracts FILE_START/FILE_END content from response, saves to
+// file, and parses. A missing or undecodable answer is an infrastructure
+// error: grading it as a fail fabricates a verdict the model never gave.
+func (e *ChecklistEvaluator) parseResultFile(response, path string) (ParsedResult, error) {
 	// Extract content between FILE_START and FILE_END markers
 	content := ExtractFileContent(response, path)
 	if content == "" {
-		slog.Warn("No FILE_START/FILE_END content found in response", "path", path)
-
-		return ParsedResult{}
+		return ParsedResult{}, pkgerrors.ErrChecklistAnswerMissingBlock(path)
 	}
 
 	// Strip markdown code fences (```yaml ... ```) that some models add
@@ -234,15 +325,26 @@ func (e *ChecklistEvaluator) parseResultFile(response, path string) ParsedResult
 
 	err = yaml.Unmarshal([]byte(content), &result)
 	if err != nil {
-		slog.Warn("Failed to parse result YAML", "path", path, "error", err)
-
-		return ParsedResult{}
+		return ParsedResult{}, pkgerrors.ErrChecklistAnswerDidNotParse(path, err)
 	}
 
 	return ParsedResult{
 		Answer:    renderAnswerNode(&result.Answer),
 		Context:   result.Context,
 		FixPrompt: strings.TrimSpace(result.FixPrompt),
+	}, nil
+}
+
+// canonicalStatus holds the answer to the universal pass/fail contract. An
+// answer outside it used to grade StatusFail silently.
+func canonicalStatus(answer, path string) (checklist.Status, error) {
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "pass":
+		return checklist.StatusPass, nil
+	case "fail":
+		return checklist.StatusFail, nil
+	default:
+		return checklist.StatusFail, pkgerrors.ErrChecklistAnswerNotCanonical(path, answer)
 	}
 }
 

@@ -119,6 +119,10 @@ scenarios:
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the file "tests/suite/canary_test.go" is unchanged
         - and: the file "docs/architecture/architecture.yaml" is unchanged
+        # Independent outcome check: the harness runs the suite itself in
+        # the tree the fix loop left. Last, so the run it appends to
+        # suite-runs.log lands after the line-count clause and both snapshots.
+        - and: the command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   E2E-006:
     description: A spec the loader cannot decode must be refused with the file named
     service: bdd-cli
@@ -228,15 +232,14 @@ scenarios:
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/frontend/Dockerfile" is created
         - and: the file "services/frontend/package.json" is created
-        - and: the file "services/frontend/tsconfig.json" is created
-        - and: the file "services/frontend/app/layout.tsx" is created
-        - and: the file "services/frontend/app/page.tsx" is created
-        - and: the file "services/frontend/app/page.tsx" matches (?i)<h1[^>]*>[^<]*hello world
-        - and: exactly 1 file matching "services/frontend/next.config.*" is created
         - but: the file "docker-compose.yaml" is unchanged
         - and: the file "tests/integration/frontend-home.spec.ts" is unchanged
         - and: the file "docs/architecture/architecture.yaml" is unchanged
         - and: no file outside "tmp" and "services/frontend" changed
+        # THE assertion this scenario exists for: the harness runs the
+        # declared browser suite itself, against the app the loop produced.
+        # Every file clause above is a proxy for this one.
+        - and: the command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
         - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
         - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
   E2E-012:

@@ -19,7 +19,7 @@ acceptance_criteria:
     description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
     steps:
       - given:
-          - "a Google Doc is not shared with the Claude User's account"
+          - "a Google Doc exists that is not shared with the Claude User's account"
       - when:
           - "the Claude User asks Claude to summarize the document"
       - then:
@@ -43,7 +43,7 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of the first 10000 words"
-          - "Claude states that only the first 10000 words were summarized"
+          - and: "Claude states that only the first 10000 words were summarized"
   - id: "AC-5"
     description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
     steps:

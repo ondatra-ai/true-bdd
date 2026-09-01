@@ -4,8 +4,12 @@ engine:
   # model flag. A checklist asks for a tier by name.
   models:
     xhigh: "claude:claude-fable-5"
-    high: "claude:claude-opus-4-8"
+    high: "claude:claude-opus-5"
     coder: "crush:zhipu-coding/glm-5.2"
+    # Pinned FULL id, never an alias: the BDD harness's judge resolves
+    # its model here, and a floating alias silently migrates every
+    # future verdict out from under the recordings it is compared to.
+    quick: "claude:claude-sonnet-5"
   # Tier per AI role, used when neither a prompt nor its checklist names
   # one. A checklist overrides any of these in its own `engine:` block.
   default_prompt_model: high

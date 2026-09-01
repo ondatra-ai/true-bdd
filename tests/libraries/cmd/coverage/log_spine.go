@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"regexp"
 	"strings"
 
@@ -141,7 +142,9 @@ func parseLogLine(line []byte) (logEvent, bool, bool) {
 			PromptIndex: int(raw.PromptIndex)}, true, false
 	case "Fix applied successfully":
 		return logEvent{Kind: evFixApplied, Subject: raw.SubjectID}, true, false
-	case "No FILE_START/FILE_END content found in response", "Failed to parse result YAML":
+	// One ERROR now replaces the two Warns this keyed on: a protocol
+	// accident aborts the walk instead of grading a fabricated fail.
+	case enginelog.MsgAnswerUnusable:
 		return logEvent{Kind: evWarnProtocol, File: filePath}, true, false
 	default:
 		return logEvent{}, false, false

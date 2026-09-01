@@ -25,7 +25,7 @@ You are a Technical Scrum Master applying fixes to a user story.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/2026-08-31-13-01-54-337/apply-96.2-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.2-iter1-result.yaml ===
 id: "<story id>"
 title: "<story title>"
 as_a: "<role>"
@@ -52,7 +52,7 @@ acceptance_criteria:
           - "action"
       - then:
           - "outcome"
-=== FILE_END: tmp/2026-08-31-13-01-54-337/apply-96.2-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.2-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -113,20 +113,33 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1's description violates the rule-based format (it contains Given/When/Then text and lacks must/should). AC-2 through AC-5 already pass — they are reproduced verbatim below, descriptions and steps unchanged.
+Only AC-1 fails the `us-refine/acceptance_criteria` check. Its **description** carries Gherkin Given/When/Then text and lacks the `must`/`should` keyword. Gherkin belongs in the `steps` field — and AC-1's `steps` field already carries it correctly, so **the steps are not touched**. AC-2 through AC-5 already follow the rule-based format and are reproduced word for word, steps included.
 
 ### Change #1: AC-1
-**Before:** Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.
-**Issue:** Contains Gherkin Given/When/Then text in the description (Gherkin belongs in the steps field), and is missing the required keyword "must"/"should".
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**After (steps):** _(unchanged — the failed check faults only the description field; the existing steps are already valid and are preserved verbatim)_
+**Before:** `Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.`
+
+**Issue:** Contains Gherkin Given/When/Then text in the description field (`"Given a Google Doc is shared..."`), and is missing the `must`/`should` keyword. The Gherkin already lives in this AC's `steps` field, so the description duplicates it in the wrong place.
+
+**After (description):** `Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.`
+
+- `must` chosen over `should`: this is the story's core functionality — without it the story is not done.
+- One sentence, 149 characters, no vague words, no implementation detail, uses the exact role from the story's `as_a` clause ("Claude User").
+
+**After (steps):** UNCHANGED — AC-1's existing steps are correct and stay exactly as they are:
 ```yaml
 - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
 - when: "the Claude User asks Claude to summarize the document"
 - then: "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
+### No other changes
+- No AC descriptions other than AC-1 are modified.
+- No `steps` fields are modified anywhere, including AC-1's.
+- No ACs are added, merged, or removed. AC-1 (summary of body text) and AC-5 (list of section headings) describe distinct behaviours and are not duplicates.
+
 ## Complete Fixed Acceptance Criteria
+
+Replace the story's whole acceptance-criteria list with the block below (all five ACs; only AC-1's `description` differs from the current file):
 
 ```yaml
 - ac_id: AC-1
@@ -167,6 +180,8 @@ Only AC-1's description violates the rule-based format (it contains Given/When/T
     - then: "Claude displays each section heading in its original order"
 ```
 
+Note on AC-4: the `(and)` marker shown next to its second `then` in the validation report is a display annotation for a consecutive `then` step — it is not part of the YAML and must not be written into the file.
+
 ---
 
 ## Instructions
@@ -180,7 +195,7 @@ the fix prompt does not touch.
 Output the complete updated story body using FILE_START/FILE_END
 markers:
 
-=== FILE_START: tmp/2026-08-31-13-01-54-337/apply-96.2-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-96.2-iter1-result.yaml ===
 (Complete story body YAML here — every top-level field plus
 `acceptance_criteria`)
-=== FILE_END: tmp/2026-08-31-13-01-54-337/apply-96.2-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-96.2-iter1-result.yaml ===

@@ -24,6 +24,23 @@ type State struct {
 
 	Context playwright.BrowserContext
 	Page    playwright.Page
+
+	// Tree is the host project a Given step materialized.
+	Tree *ProjectTree
+	// Remote is the `true-bdd remote` a Given step started in it.
+	Remote *Remote
+	// Session is the registry entry that remote registered, resolved by
+	// the Then step that waits for the relay to list it.
+	Session *sessionSummary
+	// Runs maps the label a scenario dispatched a run under ("R1") to the
+	// run id the relay created, which a later clause names as {R1}.
+	Runs map[string]string
+	// Dispatches holds the body each labelled dispatch sent, so the clause
+	// about re-sending the same token sends exactly that body again.
+	Dispatches map[string]dispatchBody
+	// Response is the last relay response an API step read, so the clause
+	// after it reads the error name off the same body.
+	Response *apiResponse
 }
 
 // NewState returns the per-scenario state constructor bddgo calls before
@@ -39,10 +56,12 @@ func NewState(harness *Harness) func(*bddgo.World) (*State, error) {
 		world.T.Cleanup(func() { _ = browserContext.Close() })
 
 		return &State{
-			T:        world.T,
-			Scenario: world.Scenario,
-			Harness:  harness,
-			Context:  browserContext,
+			T:          world.T,
+			Scenario:   world.Scenario,
+			Harness:    harness,
+			Context:    browserContext,
+			Runs:       map[string]string{},
+			Dispatches: map[string]dispatchBody{},
 		}, nil
 	}
 }

@@ -1,81 +1,135 @@
-// Package steps binds the mcp suite's Given/When/Then step text to Go
-// step definitions. Register wires every definition onto the suite the
-// harness passes in; the suite drives them per scenario.
+//go:build bdd
+
+// Step definitions for the `mcp` suite (service: mcp-service).
+//
+// First definitions file for this suite: it establishes the state the
+// suite's steps share and the Register function listing everything the
+// suite binds.
 package steps
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
-// Registrar is the seam the test harness satisfies: it binds an anchored
-// regexp to a handler. Kept minimal and consumer-defined so any suite
-// runner can satisfy it without this package importing the harness.
-type Registrar interface {
-	Step(pattern string, fn any)
+const (
+	defaultPort    = "8080"
+	dialTimeout    = 5 * time.Second
+	requestTimeout = 10 * time.Second
+	bodySnippetMax = 512
+)
+
+// State is the per-scenario state every definition in this suite shares:
+// Given fills BaseURL, When fills Status and Body, Then reads them.
+type State struct {
+	BaseURL string
+	Status  int
+	Body    []byte
 }
 
-// World is the state the three definitions share across one scenario:
-// which server is up, its base URL, and the last response's status.
-type World struct {
-	server     string
-	baseURL    string
-	lastStatus int
+// Suite is the registrar the suite's runner hands to Register.
+type Suite interface {
+	Step(pattern string, fn func(s *State, args []string) error)
 }
 
-// Register adds every step definition the mcp suite binds. This is the
-// suite's single Register call site — new definitions join it here.
-func Register(suite Registrar) {
-	w := &World{}
-	suite.Step(`^the (\S+) server is running on its configured port$`, w.serverRunning)
-	suite.Step(`^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$`, w.postJSONRPC)
-	suite.Step(`^the server returns HTTP (\d+)$`, w.assertStatus)
+// Register lists every step definition the `mcp` suite binds.
+func Register(suite Suite) {
+	suite.Step(`^the MCP server is running on its configured port$`, givenMCPServerRunning)
+	suite.Step(`^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$`, whenPostJSONRPC)
+	suite.Step(`^the server returns HTTP (\d{3})$`, thenServerReturnsStatus)
 }
 
-// serverRunning (Given) records the named server as up and resolves its
-// configured base URL.
-func (w *World) serverRunning(name string) error {
-	w.server = name
-	w.baseURL = "http://127.0.0.1:8080"
+// givenMCPServerRunning resolves the configured port and proves something
+// is listening on it before the scenario spends a request.
+func givenMCPServerRunning(s *State, _ []string) error {
+	port := os.Getenv("MCP_PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
+	address := net.JoinHostPort("127.0.0.1", port)
+
+	conn, err := net.DialTimeout("tcp", address, dialTimeout)
+	if err != nil {
+		return fmt.Errorf("expected the MCP server listening on %s, got: %w", address, err)
+	}
+
+	_ = conn.Close()
+	s.BaseURL = "http://" + address
+
 	return nil
 }
 
-// postJSONRPC (When) posts a JSON-RPC request of the given method to the
-// given path and records the response status.
-func (w *World) postJSONRPC(method, path string) error {
-	payload, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      1,
-		"method":  method,
-	})
-	if err != nil {
-		return fmt.Errorf("encoding %s request: %w", method, err)
+// whenPostJSONRPC posts one JSON-RPC request and records what came back.
+func whenPostJSONRPC(s *State, args []string) error {
+	method, endpoint := args[0], args[1]
+
+	params := `{}`
+	if method == "initialize" {
+		params = `{"protocolVersion":"2024-11-05","capabilities":{},` +
+			`"clientInfo":{"name":"true-bdd","version":"0.0.0"}}`
 	}
 
-	resp, err := http.Post(w.baseURL+path, "application/json", bytes.NewReader(payload))
-	if err != nil {
-		return fmt.Errorf("posting %s to %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
+	payload := fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":%s}`, method, params)
 
-	w.lastStatus = resp.StatusCode
+	req, err := http.NewRequestWithContext(
+		context.Background(), http.MethodPost, s.BaseURL+endpoint, strings.NewReader(payload),
+	)
+	if err != nil {
+		return fmt.Errorf("building the JSON-RPC %s request to %s: %w", method, endpoint, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+
+	resp, err := (&http.Client{Timeout: requestTimeout}).Do(req)
+	if err != nil {
+		return fmt.Errorf("posting the JSON-RPC %s request to %s: %w", method, endpoint, err)
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading the response to the JSON-RPC %s request: %w", method, err)
+	}
+
+	s.Status = resp.StatusCode
+	s.Body = body
+
 	return nil
 }
 
-// assertStatus (Then) fails unless the last response carried the wanted
-// HTTP status, naming both sides.
-func (w *World) assertStatus(code string) error {
-	want, err := strconv.Atoi(code)
+// thenServerReturnsStatus asserts the status the When step recorded.
+func thenServerReturnsStatus(s *State, args []string) error {
+	want, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("status code %q is not a number: %w", code, err)
+		return fmt.Errorf("step names a non-numeric HTTP status %q: %w", args[0], err)
 	}
 
-	if w.lastStatus != want {
-		return fmt.Errorf("expected HTTP %d, got %d", want, w.lastStatus)
+	if s.Status == 0 {
+		return fmt.Errorf("expected HTTP %d, but no response was recorded: no request was posted", want)
+	}
+
+	if s.Status != want {
+		return fmt.Errorf("expected HTTP %d, got %d; body: %s", want, s.Status, snippet(s.Body))
 	}
 
 	return nil
+}
+
+// snippet keeps a failure message readable when the body is large.
+func snippet(body []byte) string {
+	if len(body) > bodySnippetMax {
+		return string(body[:bodySnippetMax]) + "..."
+	}
+
+	return string(body)
 }

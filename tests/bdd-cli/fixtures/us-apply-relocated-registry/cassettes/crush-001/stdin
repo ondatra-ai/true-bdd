@@ -74,31 +74,14 @@ Then:
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Required Changes
+### Change #1: Add scenario E2E-961 for lineage 95.2-001
+**Issue:** No entry under `scenarios:` has a `user_stories[]` list containing both the story path `docs/product/stories/95.2-relocated-registry.yaml` and the lineage scenario id `95.2-001`, so the us-apply/merge check fails ("AC AC-1 (lineage 95.2-001): not present").
 
-### Change #1: Add a new scenario entry for AC 95.2-001
-
-**Issue:** The `us-apply/merge` check ("present?") fails: no entry under
-`scenarios:` has a `user_stories[]` item referencing story
-`docs/product/stories/95.2-relocated-registry.yaml` with lineage
-`scenario_id: 95.2-001`. The AC is not yet in the registry.
-
-**Action:** Use the Edit tool on the target file with the exact
-`old_string` and `new_string` below. This appends one new scenario
-(`E2E-961`) immediately after the existing `E2E-960` entry.
-
-Notes for the applier:
-- Only ONE entry is added. Do NOT touch `E2E-960`, `metadata:`, or any
-  other line — the fixture asserts every other entry is left alone.
-- Id `E2E-961` follows the existing `E2E-960` numbering; E2E (not INT)
-  per the tie-break for an end-to-end HTTP request/response scenario.
-- No `path:` field is set, matching the shape of the existing `E2E-960`
-  entry (which has none) — the registry carries no `path:` to reuse and
-  no suite reference to construct one from.
-- `service: ""` per the merge template (the `"web-service"` value belongs
-  to the unrelated `E2E-960` entry only).
-- Steps are copied verbatim, including the leading `and ` on the second
-  `then` step.
-- `last_updated` and `merge_date` are both today, `2026-09-01`.
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends one new scenario entry after `E2E-960`, mirroring `E2E-960`'s exact field set and indentation. Notes:
+- Id `E2E-961` is the next free id after `E2E-960` (e2e default per the fix template).
+- `path:` is intentionally omitted — `E2E-960` carries no `path:`, there is no `path:` from a same-family scenario to reuse, and this file has no `architecture.testing.suites[]` section to derive one from. The merge check keys only on `user_stories[]`, and `E2E-960` proves the structure is valid without `path:`.
+- `then` steps are copied verbatim, including the leading `and` on the second step.
+- Change exactly one entry: do NOT modify `E2E-960` or `metadata.last_updated`.
 
 **old_string:**
 ```
@@ -110,7 +93,7 @@ Notes for the applier:
       then:
         - "the settings page renders the account section"
   E2E-961:
-    description: "MCP server /health returns HTTP 200 with a healthy JSON status body"
+    description: "MCP server /health endpoint returns HTTP 200 with a healthy status body"
     service: ""
     last_updated: "2026-09-01"
     user_stories:
@@ -127,10 +110,6 @@ Notes for the applier:
         - "the server returns HTTP 200"
         - "and the response body reports the service status as healthy"
 ```
-
-## Verification
-After applying, re-running the `us-apply/merge` check should emit:
-`AC AC-1 (lineage 95.2-001): present in E2E-961`
 
 ---
 

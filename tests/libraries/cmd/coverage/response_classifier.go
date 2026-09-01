@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"regexp"
 	"strings"
 
@@ -41,6 +42,12 @@ type evaluatorResult struct {
 // production extraction rules (exact then fuzzy FILE markers, then
 // YAML with a flexible answer node).
 func ClassifyResponse(response, expectedPath string) VerdictClass {
+	// A schema-bearing turn answers with the bare object; only a turn on a
+	// CLI that cannot enforce one still carries FILE markers.
+	if class, ok := classifyStructured(response); ok {
+		return class
+	}
+
 	content := extractFileContent(response, expectedPath)
 	if content == "" {
 		return ClassProtocolNoMarker
@@ -54,6 +61,37 @@ func ClassifyResponse(response, expectedPath string) VerdictClass {
 	}
 
 	return classifyAnswerNode(result.Answer)
+}
+
+// classifyStructured reads a schema-enforced answer. The second return is
+// false when the response is not JSON at all, which sends it down the
+// delimited path rather than scoring it a protocol accident.
+func classifyStructured(response string) (VerdictClass, bool) {
+	trimmed := strings.TrimSpace(response)
+	if !strings.HasPrefix(trimmed, "{") {
+		return "", false
+	}
+
+	var decoded struct {
+		Answer string `json:"answer"`
+	}
+
+	if json.Unmarshal([]byte(trimmed), &decoded) != nil {
+		return ClassProtocolBadYAML, true
+	}
+
+	switch BranchKind(strings.ToLower(strings.TrimSpace(decoded.Answer))) {
+	case KindPass:
+		return ClassPassCanonical, true
+	case KindFail:
+		return ClassFailCanonical, true
+	// KindFix names a branch, never an answer — an answer spelling it is
+	// as non-canonical as any other word.
+	case KindFix:
+		return ClassNonCanonical, true
+	default:
+		return ClassNonCanonical, true
+	}
 }
 
 // classifyAnswerNode maps the parsed answer node to a verdict class:

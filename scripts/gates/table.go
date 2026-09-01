@@ -58,14 +58,6 @@ var (
 		"docs/architecture/**", "docs/product/**", "scripts/lint/**",
 	}
 
-	// replayInputs is what tests/libraries/runner copies into each fixture
-	// tmpdir, plus the trees the binary is rebuilt from.
-	replayInputs = []string{
-		"services/bdd-cli/**", "pkg/**", "true-bdd/**", "templates/**", registry,
-		"tests/bdd-cli/**", "tests/libraries/bddgo/**",
-		"tests/libraries/runner/**", "tests/libraries/aiproxy/**",
-	}
-
 	// All is the pipeline. Every entry must also be a step of CI's gates job.
 	All = []Gate{
 		{
@@ -99,12 +91,16 @@ var (
 			Globs:   []string{"tests/**"},
 		},
 		{
-			Name: "BDD fixtures (replay)",
+			// The replay FIXTURES are off the gate (they ask the real judge
+			// now, so they need `claude`, a key, and money per run). These
+			// guards are hand-written, model-free, and answer in a second.
+			Name: "BDD cli coverage guards",
 			Command: []string{
-				goBin, testVerb, tagsFlag, bddTag,
-				"-timeout=20m", "./tests/bdd-cli/", "-mode=replay",
+				goBin, testVerb, tagsFlag, bddTag, "-count=1", "-run",
+				"^Test(ScenarioCoverage|StepCoverage|FixtureTreesArePaired)$",
+				"./tests/bdd-cli/",
 			},
-			Globs: replayInputs,
+			Globs: []string{registry, "tests/bdd-cli/**"},
 		},
 		{
 			Name: "BDD web coverage guards",

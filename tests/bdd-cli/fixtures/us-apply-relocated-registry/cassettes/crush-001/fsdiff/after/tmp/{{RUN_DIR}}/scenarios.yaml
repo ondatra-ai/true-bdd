@@ -45,7 +45,7 @@ scenarios:
       then:
         - "the settings page renders the account section"
   E2E-961:
-    description: "MCP server /health returns HTTP 200 with a healthy JSON status body"
+    description: "MCP server /health endpoint returns HTTP 200 with a healthy status body"
     service: ""
     last_updated: "2026-09-01"
     user_stories:

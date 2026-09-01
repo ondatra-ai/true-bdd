@@ -2,10 +2,10 @@ package checklist
 
 // ClarifyQuestion represents a question the AI needs answered before generating a fix.
 type ClarifyQuestion struct {
-	ID       string   `yaml:"id"`       // Unique identifier (e.g., "q1", "q2")
-	Question string   `yaml:"question"` // The question text
-	Context  string   `yaml:"context"`  // Why this question matters
-	Options  []string `yaml:"options"`  // Suggested answers (user can provide custom)
+	ID       string   `json:"id"       yaml:"id"`       // Unique identifier (e.g., "q1", "q2")
+	Question string   `json:"question" yaml:"question"` // The question text
+	Context  string   `json:"context"  yaml:"context"`  // Why this question matters
+	Options  []string `json:"options"  yaml:"options"`  // Suggested answers (user can provide custom)
 }
 
 // GenerateResult represents the output of fix prompt generation.
