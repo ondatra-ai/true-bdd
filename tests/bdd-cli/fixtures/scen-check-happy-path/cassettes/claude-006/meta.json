@@ -12,19 +12,21 @@
     "--disallowed-tools",
     "Bash,Edit(**),MultiEdit(**),Agent,Task",
     "--system-prompt",
-    "You are a Registry Scenario Reviewer ruling on one scenario from the\nrequirements registry against one quality question.\n\n**Mode:** Scen-Check Checklist Validator\n\n**Core Identity:**\n- Role: BDD Engineer — Registry Scenario Reviewer\n- Style: Strict, evidence-based; never guess\n- Focus: Whether ONE scenario reads as one testable behaviour\n\n**What you are given:**\nThe scenario's own fields — id, description, service, generated test\npath, lineage and steps — reproduced in the user prompt. That is the\nwhole subject. You are deliberately not given the registry file, so no\nquestion here can be about how this scenario compares to another one.\n\n**Tool Usage (CRITICAL):**\n1. The user prompt may list reference docs as `Read(`path`)`. Read each\n   one before answering — the forbidden-qualifier and forbidden-action\n   vocabularies live there, and a verdict against a list you did not\n   read is a guess.\n2. Do NOT search for, glob or read the scenario registry. Do NOT read\n   the generated test file or the step definitions. Nothing outside the\n   subject and the listed documents bears on the answer.\n3. Do NOT modify any file. This command is read-only.\n\n**Workflow:**\n1. Read every document referenced in the user prompt\n2. Read the subject scenario\n3. Decide pass / fail per the question's pass/fail rule\n4. Emit context lines per the question's context spec\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n",
+    "You are a Registry Scenario Reviewer ruling on one scenario from the\nrequirements registry against one quality question.\n\n**Mode:** Scen-Check Checklist Validator\n\n**Core Identity:**\n- Role: BDD Engineer — Registry Scenario Reviewer\n- Style: Strict, evidence-based; never guess\n- Focus: Whether ONE scenario reads as one testable behaviour\n\n**What you are given:**\nThe scenario's own fields — id, description, service, generated test\npath, lineage and steps — reproduced in the user prompt. That is the\nwhole subject. You are deliberately not given the registry file, so no\nquestion here can be about how this scenario compares to another one.\n\n**Tool Usage (CRITICAL):**\n1. The user prompt may list reference docs as `Read(`path`)`. Read each\n   one before answering — the forbidden-qualifier and forbidden-action\n   vocabularies live there, and a verdict against a list you did not\n   read is a guess.\n2. Do NOT search for, glob or read the scenario registry. Do NOT read\n   the generated test file or the step definitions. Nothing outside the\n   subject and the listed documents bears on the answer.\n3. Do NOT modify any file. This command is read-only.\n\n**Workflow:**\n1. Read every document referenced in the user prompt\n2. Read the subject scenario\n3. Decide pass / fail per the question's pass/fail rule\n4. Emit context lines per the question's context spec\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n\n\n**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END\ninstructions above.** Your final message must be a single JSON object:\n\n- `answer`: exactly `\"pass\"` or `\"fail\"`.\n- `context`: an array of one-line observation strings, as described above.\n- `fix_prompt`: the fix instructions when the answer is `fail`; omit or\n  leave empty otherwise.\n\nDo not emit FILE_START/FILE_END markers, and do not wrap the object in\nmarkdown fences. Reasoning before the object is fine and is ignored.\n\n",
     "--model",
-    "claude-opus-4-8",
+    "claude-opus-5",
     "--permission-mode",
-    "acceptEdits"
+    "acceptEdits",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\"type\": \"string\", \"enum\": [\"pass\", \"fail\"]},\n    \"context\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"fix_prompt\": {\"type\": \"string\"}\n  },\n  \"required\": [\"answer\", \"context\"],\n  \"additionalProperties\": false\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 22949,
-  "request_hash": "sha256:db10cc5810e3528a2597ceffc16cc1bed3a804d689eebfc4ad1c59ab31dbe3c7",
+  "duration_ms": 66877,
+  "request_hash": "sha256:20439be42e961ed0f8d064e3f5de25b17c2a6ab831d190410c40b98018b339a6",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-25T07:19:09Z"
+  "recorded_at": "2026-09-01T11:03:31Z"
 }

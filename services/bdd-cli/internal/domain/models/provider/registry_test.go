@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	fableRef = "claude:" + fableModel
-	opusRef  = "claude:" + opusModel
-	glmRef   = "crush:" + glmModel
+	fableRef  = "claude:" + fableModel
+	opusRef   = "claude:" + opusModel
+	glmRef    = "crush:" + glmModel
+	sonnetRef = "claude:" + sonnetModel
 
 	tierHigh = "high"
 )
@@ -229,5 +230,45 @@ func TestNewRegistryRejectsBadConfig(t *testing.T) {
 				t.Errorf("NewRegistry error = %q, want it to name %q", err, testCase.wantKey)
 			}
 		})
+	}
+}
+
+// The quick tier is what the BDD harness's judge resolves its model
+// from, so it has to survive the registry like any other tier.
+func TestRegistryResolvesTheQuickTier(t *testing.T) {
+	t.Parallel()
+
+	models := validModels()
+	models["quick"] = sonnetRef
+
+	registry, err := provider.NewRegistry(models, validDefaults())
+	if err != nil {
+		t.Fatalf("NewRegistry: %v", err)
+	}
+
+	quick, err := registry.Resolve(provider.TierQuick)
+	if err != nil {
+		t.Fatalf("Resolve(quick): %v", err)
+	}
+
+	if quick.CLI != provider.CLIClaude || quick.Model != sonnetModel {
+		t.Errorf("Resolve(quick) = %v", quick)
+	}
+}
+
+// Adding a fourth tier to the vocabulary must not make it mandatory:
+// every host config — and every fixture tree in this repo — declares
+// only the three it always had.
+func TestRegistryWithoutQuickStillValidates(t *testing.T) {
+	t.Parallel()
+
+	registry, err := provider.NewRegistry(validModels(), validDefaults())
+	if err != nil {
+		t.Fatalf("NewRegistry: %v", err)
+	}
+
+	_, err = registry.Resolve(provider.TierQuick)
+	if err == nil {
+		t.Fatal("Resolve(quick) succeeded against a config that never configured it")
 	}
 }

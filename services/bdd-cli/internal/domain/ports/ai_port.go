@@ -17,5 +17,8 @@ type AIPort interface {
 		userPrompt string,
 		model provider.ModelRef,
 		mode provider.ExecutionMode,
+		// resultSchema empty leaves the turn unconstrained; set, the
+		// answer IS that schema's object.
+		resultSchema string,
 	) (string, error)
 }

@@ -55,10 +55,13 @@ type FileChangeRecord struct {
 // far edge on purpose: the report measures the trailing harness block
 // from the engine's last log record to the judge's end.
 type JudgeRecord struct {
-	StartedAt    time.Time      `json:"started_at"`
-	EndedAt      time.Time      `json:"ended_at"`
-	CLI          string         `json:"cli"`
-	Model        string         `json:"model"`
+	StartedAt time.Time `json:"started_at"`
+	EndedAt   time.Time `json:"ended_at"`
+	CLI       string    `json:"cli"`
+	Model     string    `json:"model"`
+	// InputHash fingerprints the prompt the judge was shown. Two runs
+	// with one hash and two verdicts is judge noise, and now countable.
+	InputHash    string         `json:"judge_input_hash,omitempty"`
 	CostUSD      float64        `json:"cost_usd"`
 	Tokens       int            `json:"tokens"`
 	TokensByKind map[string]int `json:"tokens_by_kind,omitempty"`
@@ -208,7 +211,8 @@ func (r *HarnessRecorder) ObserveVerdict(verdict Verdict) {
 	r.record.Judge.StartedAt = verdict.JudgeStartedAt
 	r.record.Judge.EndedAt = verdict.JudgeEndedAt
 	r.record.Judge.CLI = "claude"
-	r.record.Judge.Model = judgeModel
+	r.record.Judge.Model = verdict.JudgeModel
+	r.record.Judge.InputHash = verdict.JudgeInputHash
 
 	// Only what the judge actually produced. An empty file would read as
 	// "the judge was asked and said nothing", which is a different fact

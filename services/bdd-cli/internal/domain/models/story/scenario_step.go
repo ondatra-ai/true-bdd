@@ -83,3 +83,32 @@ type ScenarioStep struct {
 	When  []StepStatement `json:"when,omitempty"  yaml:"when,omitempty"`
 	Then  []StepStatement `json:"then,omitempty"  yaml:"then,omitempty"`
 }
+
+// UnmarshalYAML implements custom YAML unmarshaling
+// A scalar `given: "text"` becomes a one-element list, the same leniency
+// StepStatement grants a lone statement one level down.
+func (s *ScenarioStep) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 1; index < len(node.Content); index += yamlMappingNodeContentSize {
+			value := node.Content[index]
+			if value.Kind == yaml.SequenceNode || value.Tag == "!!null" {
+				continue
+			}
+
+			node.Content[index] = &yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{value}}
+		}
+	}
+
+	type plain ScenarioStep
+
+	var step plain
+
+	err := node.Decode(&step)
+	if err != nil {
+		return fmt.Errorf("scenario step decode error: %w", err)
+	}
+
+	*s = ScenarioStep(step)
+
+	return nil
+}

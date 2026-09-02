@@ -33,6 +33,9 @@ type fixData struct {
 	FailedCheck failedCheck
 	UserAnswers map[string]string
 	ResultPath  string
+	// Structured selects the answer contract; false renders the
+	// delimited-marker branch these tests assert on.
+	Structured bool
 }
 
 func statement(text string) []story.StepStatement {

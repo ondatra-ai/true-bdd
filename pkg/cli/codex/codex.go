@@ -50,6 +50,9 @@ type Turn struct {
 	Prompt string
 	// Env is the COMPLETE environment, not a derivation of the parent's.
 	Env []string
+	// SchemaPath points at a JSON Schema file the answer must satisfy.
+	// codex takes a PATH here, unlike claude's inline --json-schema.
+	SchemaPath string
 }
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
@@ -69,6 +72,10 @@ func (t Turn) Args() []string {
 
 	if t.Model != "" {
 		args = append(args, "-m", t.Model)
+	}
+
+	if t.SchemaPath != "" {
+		args = append(args, "--output-schema", t.SchemaPath)
 	}
 
 	return append(args, "-o", t.AnswerPath, "-")

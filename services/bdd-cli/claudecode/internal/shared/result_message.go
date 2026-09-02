@@ -17,6 +17,13 @@ type ResultMessage struct {
 	TotalCostUSD  *float64        `json:"total_cost_usd,omitempty"`
 	Usage         *map[string]any `json:"usage,omitempty"`
 	Result        *map[string]any `json:"result,omitempty"`
+	// ResultText carries a STRING-typed `result` — a plain run, a
+	// --json-schema run's serialized object, or the CLI's own error text.
+	// Result is object-only and silently dropped all three.
+	ResultText string `json:"-"`
+	// StructuredOutput is the schema-conforming object a --json-schema
+	// run returns. Nil when the flag was not passed.
+	StructuredOutput any `json:"structured_output,omitempty"`
 }
 
 // Type returns the message type for ResultMessage.

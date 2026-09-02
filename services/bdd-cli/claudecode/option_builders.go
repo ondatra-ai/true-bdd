@@ -34,3 +34,12 @@ func WithPermissionMode(mode PermissionMode) Option {
 		o.PermissionMode = &mode
 	}
 }
+
+// WithJSONSchema constrains the final answer via the CLI's --json-schema
+// flag. The conforming object arrives on the ResultMessage, NOT in the
+// text blocks — under a schema those carry only pre-answer narration.
+func WithJSONSchema(schema string) Option {
+	return func(o *Options) {
+		o.ExtraArgs["json-schema"] = &schema
+	}
+}

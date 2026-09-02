@@ -36,3 +36,16 @@ Always output a YAML document inside FILE_START / FILE_END markers with:
 - `context:` — list of strings per the question's context spec
 - `fix_prompt:` — only present when `answer: fail` and a fix template
   is provided in the user prompt; otherwise omit
+
+{{ if .Structured }}
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+instructions above.** Your final message must be a single JSON object:
+
+- `answer`: exactly `"pass"` or `"fail"`.
+- `context`: an array of one-line observation strings, as described above.
+- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
+  leave empty otherwise.
+
+Do not emit FILE_START/FILE_END markers, and do not wrap the object in
+markdown fences. Reasoning before the object is fine and is ignored.
+{{ end }}

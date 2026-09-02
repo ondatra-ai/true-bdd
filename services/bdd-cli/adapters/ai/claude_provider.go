@@ -31,23 +31,38 @@ func (c *ClaudeProvider) Name() string {
 	return "claude"
 }
 
+// claudeAnswer holds a turn's two channels. Under a result schema the
+// answer rides the result message; the text blocks carry only whatever
+// narration preceded it.
+type claudeAnswer struct {
+	text    strings.Builder
+	payload string
+}
+
 // Execute runs one single-turn prompt. The router owns the timeout.
 func (c *ClaudeProvider) Execute(ctx context.Context, req Request) (string, error) {
 	c.logPromptExecution(req.SystemPrompt, req.UserPrompt)
 
-	opts := c.buildClientOptions(req.SystemPrompt, req.Model, req.Mode)
+	opts := c.buildClientOptions(req.SystemPrompt, req.Model, req.Mode, req.ResultSchema)
 
-	var resultStr string
+	var answer claudeAnswer
 
 	err := claudecode.WithClient(ctx, func(client claudecode.Client) error {
-		var queryErr error
-
-		resultStr, queryErr = c.executeQuery(ctx, client, req.UserPrompt)
-
-		return queryErr
+		return c.executeQuery(ctx, client, req.UserPrompt, &answer)
 	}, opts...)
 
-	return c.handleExecutionResult(resultStr, err)
+	if req.ResultSchema == "" {
+		return c.handleExecutionResult(answer.text.String(), err)
+	}
+
+	// A schema-constrained turn that came back without its object is an
+	// infrastructure failure; falling back to the narration would grade
+	// whatever the model happened to say on the way to the answer.
+	if err == nil && answer.payload == "" {
+		return "", pkgerrors.ErrClaudeStreamNoOutput
+	}
+
+	return c.handleExecutionResult(answer.payload, err)
 }
 
 func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
@@ -58,7 +73,9 @@ func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 	}
 }
 
-func (c *ClaudeProvider) buildClientOptions(systemPrompt, model string, mode ExecutionMode) []claudecode.Option {
+func (c *ClaudeProvider) buildClientOptions(
+	systemPrompt, model string, mode ExecutionMode, resultSchema string,
+) []claudecode.Option {
 	var opts []claudecode.Option
 
 	if systemPrompt != "" {
@@ -71,6 +88,10 @@ func (c *ClaudeProvider) buildClientOptions(systemPrompt, model string, mode Exe
 	opts = append(opts, claudecode.WithModel(model))
 	opts = append(opts, claudecode.WithPermissionMode(claudecode.PermissionModeAcceptEdits))
 	opts = append(opts, c.getToolOptions(mode)...)
+
+	if resultSchema != "" {
+		opts = append(opts, claudecode.WithJSONSchema(resultSchema))
+	}
 
 	return opts
 }
@@ -95,7 +116,8 @@ func (c *ClaudeProvider) executeQuery(
 	ctx context.Context,
 	client claudecode.Client,
 	userPrompt string,
-) (string, error) {
+	answer *claudeAnswer,
+) error {
 	slog.Debug("Connected to Claude client")
 	slog.Debug("Sending user prompt to Claude", "length", len(userPrompt))
 
@@ -103,22 +125,22 @@ func (c *ClaudeProvider) executeQuery(
 	if err != nil {
 		slog.Error("Query failed", "error", err)
 
-		return "", fmt.Errorf("failed to send query: %w", pkgerrors.ErrSendQueryFailed(err))
+		return fmt.Errorf("failed to send query: %w", pkgerrors.ErrSendQueryFailed(err))
 	}
 
 	slog.Debug("Query sent successfully")
 
-	return c.streamMessages(ctx, client)
+	return c.streamMessages(ctx, client, answer)
 }
 
-func (c *ClaudeProvider) streamMessages(ctx context.Context, client claudecode.Client) (string, error) {
-	var result strings.Builder
-
+func (c *ClaudeProvider) streamMessages(
+	ctx context.Context, client claudecode.Client, answer *claudeAnswer,
+) error {
 	slog.Debug("Starting message stream")
 
 	iter := client.ReceiveResponse(ctx)
 	if iter == nil {
-		return "", pkgerrors.ErrClaudeStreamClosed
+		return pkgerrors.ErrClaudeStreamClosed
 	}
 
 	defer func() { _ = iter.Close() }()
@@ -130,33 +152,33 @@ func (c *ClaudeProvider) streamMessages(ctx context.Context, client claudecode.C
 		if err != nil {
 			if errors.Is(err, claudecode.ErrNoMoreMessages) {
 				if messageCount == 0 {
-					return "", pkgerrors.ErrClaudeStreamNoOutput
+					return pkgerrors.ErrClaudeStreamNoOutput
 				}
 				// Stream ended without ResultMessage but we got some messages
-				return result.String(), nil
+				return nil
 			}
 
-			return result.String(), fmt.Errorf("stream error: %w", err)
+			return fmt.Errorf("stream error: %w", err)
 		}
 
 		messageCount++
 		slog.Debug("Message received", "count", messageCount, "type", fmt.Sprintf("%T", message))
 
-		done, processErr := c.processMessage(message, &result)
+		done, processErr := c.processMessage(message, answer)
 		if processErr != nil {
-			return result.String(), processErr
+			return processErr
 		}
 
 		if done {
-			return result.String(), nil
+			return nil
 		}
 	}
 }
 
-func (c *ClaudeProvider) processMessage(message any, result *strings.Builder) (bool, error) {
+func (c *ClaudeProvider) processMessage(message any, answer *claudeAnswer) (bool, error) {
 	switch msg := message.(type) {
 	case *claudecode.AssistantMessage:
-		c.processAssistantMessage(msg, result)
+		c.processAssistantMessage(msg, &answer.text)
 	case *claudecode.UserMessage:
 		slog.Debug("UserMessage received")
 		slog.Debug("UserMessage content", "content", fmt.Sprintf("%+v", msg))
@@ -164,7 +186,7 @@ func (c *ClaudeProvider) processMessage(message any, result *strings.Builder) (b
 		slog.Debug("SystemMessage received")
 		slog.Debug("SystemMessage content", "content", fmt.Sprintf("%+v", msg))
 	case *claudecode.ResultMessage:
-		return c.processResultMessage(msg)
+		return c.processResultMessage(msg, answer)
 	default:
 		slog.Debug("Unhandled message type", "type", fmt.Sprintf("%T", message))
 		slog.Debug("Unhandled message content", "content", fmt.Sprintf("%+v", message))
@@ -217,7 +239,7 @@ func (c *ClaudeProvider) logUnknownBlock(block any) {
 	}
 }
 
-func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bool, error) {
+func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage, answer *claudeAnswer) (bool, error) {
 	slog.Debug(enginelog.MsgResult, "is_error", msg.IsError, "result", msg.Result)
 
 	logTurnUsage(msg)
@@ -226,7 +248,24 @@ func (c *ClaudeProvider) processResultMessage(msg *claudecode.ResultMessage) (bo
 		return false, fmt.Errorf("claude returned error: %w", pkgerrors.ErrClaudeError(fmt.Sprintf("%v", msg.Result)))
 	}
 
+	answer.payload = resultPayload(msg)
+
 	return true, nil
+}
+
+// resultPayload returns a schema-constrained turn's answer object,
+// preferring the parsed form over the string the CLI also emits.
+func resultPayload(msg *claudecode.ResultMessage) string {
+	if msg.StructuredOutput != nil {
+		encoded, err := json.Marshal(msg.StructuredOutput)
+		if err == nil {
+			return string(encoded)
+		}
+
+		slog.Warn("structured output not re-encodable", "error", err)
+	}
+
+	return strings.TrimSpace(msg.ResultText)
 }
 
 // logTurnUsage logs the cost/token counters as a standalone "AI turn usage"

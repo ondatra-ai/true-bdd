@@ -1,108 +1,135 @@
 //go:build bdd
 
-// Package steps holds the step definitions for the `mcp` test suite
-// (service mcp-service, rooted at tests/mcp per
-// docs/architecture/architecture.yaml). `build tests` resolves each
-// registry scenario's Given/When/Then steps against the patterns
-// registered in Register below.
+// Step definitions for the `mcp` suite (service: mcp-service).
+//
+// First definitions file for this suite: it establishes the state the
+// suite's steps share and the Register function listing everything the
+// suite binds.
 package steps
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// State is the shared state every step definition in the mcp suite
-// operates on. A Given prepares it, a When records the HTTP response it
-// produced, and a Then asserts against that response.
+const (
+	defaultPort    = "8080"
+	dialTimeout    = 5 * time.Second
+	requestTimeout = 10 * time.Second
+	bodySnippetMax = 512
+)
+
+// State is the per-scenario state every definition in this suite shares:
+// Given fills BaseURL, When fills Status and Body, Then reads them.
 type State struct {
-	// BaseURL is the origin of the running MCP server, e.g.
-	// "http://127.0.0.1:8080".
 	BaseURL string
-	// Response is the most recent HTTP response captured by a When step.
-	Response *http.Response
+	Status  int
+	Body    []byte
 }
 
-// StepFunc is the shape of every step definition: it receives the shared
-// State and the regexp capture groups of the matched step, and returns a
-// non-nil error naming what it expected and what it got when the step
-// fails.
-type StepFunc func(s *State, args ...string) error
-
-// Suite is the subset of the mcp runner (tests/mcp/scenarios) that step
-// definitions bind against. It is declared here so this package never
-// imports the runner and the two cannot form an import cycle.
+// Suite is the registrar the suite's runner hands to Register.
 type Suite interface {
-	Step(pattern string, fn StepFunc)
+	Step(pattern string, fn func(s *State, args []string) error)
 }
 
-// Register binds every step definition the mcp suite owns. Every future
-// scenario assigned to this suite adds its definitions here, so one call
-// site still lists everything the suite binds.
+// Register lists every step definition the `mcp` suite binds.
 func Register(suite Suite) {
-	suite.Step(`^the MCP server is running on its configured port$`, givenServerRunning)
-	suite.Step(`^the Claude User posts a valid JSON-RPC (\w+) request to (\S+)$`, whenPostJSONRPC)
-	suite.Step(`^the server returns HTTP (\d+)$`, thenServerReturnsStatus)
+	suite.Step(`^the MCP server is running on its configured port$`, givenMCPServerRunning)
+	suite.Step(`^the Claude User posts a valid JSON-RPC (\S+) request to (\S+)$`, whenPostJSONRPC)
+	suite.Step(`^the server returns HTTP (\d{3})$`, thenServerReturnsStatus)
 }
 
-// givenServerRunning confirms the MCP server is up on its configured port
-// and records its base URL for the When step that follows.
-func givenServerRunning(s *State, _ ...string) error {
-	if s.BaseURL == "" {
-		port := os.Getenv("MCP_PORT")
-		if port == "" {
-			port = "8080"
-		}
-		s.BaseURL = "http://127.0.0.1:" + port
+// givenMCPServerRunning resolves the configured port and proves something
+// is listening on it before the scenario spends a request.
+func givenMCPServerRunning(s *State, _ []string) error {
+	port := os.Getenv("MCP_PORT")
+	if port == "" {
+		port = defaultPort
 	}
-	resp, err := http.Get(s.BaseURL + "/healthz")
+
+	address := net.JoinHostPort("127.0.0.1", port)
+
+	conn, err := net.DialTimeout("tcp", address, dialTimeout)
 	if err != nil {
-		return fmt.Errorf("MCP server is not running at %s: %w", s.BaseURL, err)
+		return fmt.Errorf("expected the MCP server listening on %s, got: %w", address, err)
 	}
-	_ = resp.Body.Close()
+
+	_ = conn.Close()
+	s.BaseURL = "http://" + address
+
 	return nil
 }
 
-// whenPostJSONRPC posts a valid JSON-RPC request of the captured method
-// to the captured path and records the response on the state.
-func whenPostJSONRPC(s *State, args ...string) error {
-	if len(args) < 2 {
-		return fmt.Errorf("expected a JSON-RPC method and a path, got %v", args)
+// whenPostJSONRPC posts one JSON-RPC request and records what came back.
+func whenPostJSONRPC(s *State, args []string) error {
+	method, endpoint := args[0], args[1]
+
+	params := `{}`
+	if method == "initialize" {
+		params = `{"protocolVersion":"2024-11-05","capabilities":{},` +
+			`"clientInfo":{"name":"true-bdd","version":"0.0.0"}}`
 	}
-	method, path := args[0], args[1]
-	body := fmt.Sprintf(
-		`{"jsonrpc":"2.0","id":1,"method":%q,"params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"claude","version":"1.0"}}}`,
-		method,
+
+	payload := fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":%s}`, method, params)
+
+	req, err := http.NewRequestWithContext(
+		context.Background(), http.MethodPost, s.BaseURL+endpoint, strings.NewReader(payload),
 	)
-	resp, err := http.Post(s.BaseURL+path, "application/json", strings.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("POST %s%s (%s) failed: %w", s.BaseURL, path, method, err)
+		return fmt.Errorf("building the JSON-RPC %s request to %s: %w", method, endpoint, err)
 	}
-	s.Response = resp
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+
+	resp, err := (&http.Client{Timeout: requestTimeout}).Do(req)
+	if err != nil {
+		return fmt.Errorf("posting the JSON-RPC %s request to %s: %w", method, endpoint, err)
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading the response to the JSON-RPC %s request: %w", method, err)
+	}
+
+	s.Status = resp.StatusCode
+	s.Body = body
+
 	return nil
 }
 
-// thenServerReturnsStatus asserts the recorded response carried the
-// captured HTTP status code.
-func thenServerReturnsStatus(s *State, args ...string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("expected an HTTP status code in the step, got %v", args)
-	}
+// thenServerReturnsStatus asserts the status the When step recorded.
+func thenServerReturnsStatus(s *State, args []string) error {
 	want, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("HTTP status %q is not a number: %w", args[0], err)
+		return fmt.Errorf("step names a non-numeric HTTP status %q: %w", args[0], err)
 	}
-	if s.Response == nil {
-		return fmt.Errorf("expected HTTP %d but no response was captured; a When step must run first", want)
+
+	if s.Status == 0 {
+		return fmt.Errorf("expected HTTP %d, but no response was recorded: no request was posted", want)
 	}
-	defer func() { _ = s.Response.Body.Close() }()
-	if s.Response.StatusCode != want {
-		snippet, _ := io.ReadAll(io.LimitReader(s.Response.Body, 512))
-		return fmt.Errorf("expected HTTP %d, got %d (body: %s)", want, s.Response.StatusCode, strings.TrimSpace(string(snippet)))
+
+	if s.Status != want {
+		return fmt.Errorf("expected HTTP %d, got %d; body: %s", want, s.Status, snippet(s.Body))
 	}
+
 	return nil
+}
+
+// snippet keeps a failure message readable when the body is large.
+func snippet(body []byte) string {
+	if len(body) > bodySnippetMax {
+		return string(body[:bodySnippetMax]) + "..."
+	}
+
+	return string(body)
 }

@@ -43,6 +43,12 @@ func (p *CrushProvider) Name() string {
 
 // Execute runs one turn, guarded by a generated per-run config.
 func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error) {
+	// crush offers no schema flag at all. Failing closed beats silently
+	// downgrading a guarantee the caller believes it bought.
+	if req.ResultSchema != "" {
+		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrResultSchemaUnsupported)
+	}
+
 	executable, err := os.Executable()
 	if err != nil {
 		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)

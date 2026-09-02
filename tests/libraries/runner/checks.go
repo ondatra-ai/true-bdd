@@ -19,9 +19,9 @@ var (
 // quotes back. Enough to see what the run did print instead.
 const stdoutTailBytes = 2048
 
-// Verdict captures how one fixture was graded ABOVE its scenario. Live
-// and record call the judge; replay compares the golden diff instead —
-// the check that didn't run defaults true, so Pass requires both.
+// Verdict captures how one fixture was graded ABOVE its scenario. The
+// judge rules in every mode; replay adds the golden byte-compare on top.
+// The check that didn't run defaults true, so Pass requires both.
 type Verdict struct {
 	JudgeOK  bool
 	GoldenOK bool
@@ -38,6 +38,11 @@ type Verdict struct {
 	JudgeSystemPrompt string
 	JudgeUserPrompt   string
 	JudgeResponse     string
+	// JudgeModel is the pinned id the verdict was taken on.
+	JudgeModel string
+	// JudgeInputHash fingerprints the prompt the judge was shown, so two
+	// runs can be told apart as judge noise versus harness drift.
+	JudgeInputHash string
 }
 
 // Pass reports whether every check that ran was satisfied.
@@ -45,9 +50,9 @@ func (v Verdict) Pass() bool {
 	return v.JudgeOK && v.GoldenOK
 }
 
-// EvaluateRecorded grades a replay run against its recording: every
-// cassette consumed, and the resulting tree byte for byte. No model is
-// asked — this suite has watched one judge the same bytes PASS, FAIL, and PASS.
+// EvaluateRecorded grades a replay run's WHEN-stage fidelity: every
+// cassette consumed, and the resulting tree byte for byte. It asks no
+// model — the judge grades the outcome separately, in every mode.
 func EvaluateRecorded(
 	result *RunResult,
 	golden *GoldenTree,
@@ -87,6 +92,8 @@ func Evaluate(ctx context.Context, req JudgeRequest, judge Judge) Verdict {
 	verdict.JudgeSystemPrompt = outcome.SystemPrompt
 	verdict.JudgeUserPrompt = outcome.UserPrompt
 	verdict.JudgeResponse = outcome.Response
+	verdict.JudgeModel = outcome.Model
+	verdict.JudgeInputHash = outcome.InputHash
 
 	if err != nil {
 		verdict.JudgeOK = false

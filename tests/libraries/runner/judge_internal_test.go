@@ -6,123 +6,6 @@ import (
 	"testing"
 )
 
-func TestParseJudgeVerdict(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name       string
-		response   string
-		wantPass   bool
-		wantReason string
-	}{
-		{
-			name:     "the bare verdict the rubric asks for",
-			response: "PASS",
-			wantPass: true,
-		},
-		{
-			name:       "a bare failure carries its reason",
-			response:   "FAIL: the registry was modified",
-			wantReason: "the registry was modified",
-		},
-		{
-			// The case that failed real fixtures: the judge works through
-			// the rubric point by point and answers at the END.
-			name: "a reasoned reply ending in the verdict",
-			response: "Looking at the diff against the specification:\n\n" +
-				"1. Created file at a valid path — satisfies requirement 1.\n" +
-				"2. References scenario id INT-900 — satisfies requirement 2.\n\n" +
-				"All conditions are satisfied.\n\nPASS",
-			wantPass: true,
-		},
-		{
-			name:       "a reasoned reply ending in a failure",
-			response:   "The spec file is missing.\n\nFAIL: no test references INT-900",
-			wantReason: "no test references INT-900",
-		},
-		{
-			// The conclusion is what the reply means, so a verdict named
-			// while reasoning must not outrank the one at the end.
-			name:     "a verdict quoted mid-reasoning loses to the conclusion",
-			response: "Requirement 2 would be FAIL: if the id were absent, but it is present.\n\nPASS",
-			wantPass: true,
-		},
-		{
-			name:     "emphasis and a trailing stop are decoration, not content",
-			response: "Everything checks out.\n\n**PASS**.",
-			wantPass: true,
-		},
-		{
-			name:       "trailing prose after the verdict does not hide it",
-			response:   "FAIL: the story file was rewritten\n\nSee the diff for details.",
-			wantReason: "the story file was rewritten",
-		},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			pass, reason, err := parseJudgeVerdict(testCase.response)
-			if err != nil {
-				t.Fatalf("parseJudgeVerdict: %v", err)
-			}
-
-			if pass != testCase.wantPass {
-				t.Fatalf("pass = %v, want %v", pass, testCase.wantPass)
-			}
-
-			if reason != testCase.wantReason {
-				t.Fatalf("reason = %q, want %q", reason, testCase.wantReason)
-			}
-		})
-	}
-}
-
-// Tolerating prose must not tip into guessing: a reply that never states
-// a verdict is an error, not a pass.
-func TestParseJudgeVerdictRejects(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name     string
-		response string
-		wantErr  error
-	}{
-		{
-			name:     "no verdict anywhere",
-			response: "I could not tell whether the run was correct.",
-			wantErr:  ErrJudgeMalformedResponse,
-		},
-		{
-			name:     "the word appears only inside prose",
-			response: "The first two checks pass and the third passes too.",
-			wantErr:  ErrJudgeMalformedResponse,
-		},
-		{
-			name:     "empty response",
-			response: "",
-			wantErr:  ErrJudgeMalformedResponse,
-		},
-		{
-			name:     "a failure with no reason breaks the contract",
-			response: "FAIL:",
-			wantErr:  ErrJudgeEmptyFailReason,
-		},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			_, _, err := parseJudgeVerdict(testCase.response)
-			if !errors.Is(err, testCase.wantErr) {
-				t.Fatalf("err = %v, want %v", err, testCase.wantErr)
-			}
-		})
-	}
-}
-
 // The clauses a scenario collected become the numbered rubric the judge
 // was always handed. Checked because nothing else does: replay never calls
 // the judge, so a rendering bug would only ever surface in a live run.
@@ -163,5 +46,136 @@ func TestBuildJudgeUserPromptDisclaimsWhatWasCheckedMechanically(t *testing.T) {
 		if !strings.Contains(flat, want) {
 			t.Errorf("prompt must tell the judge what is not its job; missing %q", want)
 		}
+	}
+}
+
+const testRegistryPath = "docs/scenarios.yaml"
+
+func TestJudgeGradedDropsScratch(t *testing.T) {
+	t.Parallel()
+
+	diff := []FileChange{
+		{Path: "tmp/2026-01-01/checklist-01.txt"},
+		{Path: "docs/product/stories/96.1-story.yaml"},
+		{Path: "tmp/aiproxy-state/cursor-crush"},
+		{Path: testRegistryPath},
+	}
+
+	got := judgeGraded(diff)
+
+	want := []string{
+		"docs/product/stories/96.1-story.yaml",
+		testRegistryPath,
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("len = %d, want %d", len(got), len(want))
+	}
+
+	for index, path := range want {
+		if got[index].Path != path {
+			t.Errorf("position %d = %q, want %q", index, got[index].Path, path)
+		}
+	}
+}
+
+func TestWriteDiffSummaryShowsBothStates(t *testing.T) {
+	t.Parallel()
+
+	var buf strings.Builder
+
+	writeDiffSummary(&buf, []FileChange{
+		{Path: testRegistryPath, Kind: "modified", Before: []byte("seed text"), After: []byte("new text")},
+		{Path: "docs/gone.yaml", Kind: KindDeleted, Before: []byte("removed text")},
+		{Path: "docs/new.yaml", Kind: "created", After: []byte("fresh text")},
+	})
+
+	out := buf.String()
+
+	for _, want := range []string{"seed text", "new text", "removed text", "fresh text"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("diff summary is missing %q:\n%s", want, out)
+		}
+	}
+
+	if strings.Contains(out, "omitting before-content") {
+		t.Error("deleted files must show what was removed, not a placeholder")
+	}
+}
+
+// The whole point of the schema: a verdict is read as data, so a reply
+// that reasons its way through "FAIL … PASS" can no longer be scraped
+// into the wrong ruling.
+func TestDecodeJudgeVerdictsPasses(t *testing.T) {
+	t.Parallel()
+
+	payload := `{"verdicts":[{"rule":1,"verdict":"pass","reason":"the node survived"}]}`
+
+	pass, reason, err := decodeJudgeVerdicts(payload, 1)
+	if err != nil {
+		t.Fatalf("decodeJudgeVerdicts: %v", err)
+	}
+
+	if !pass || reason != "" {
+		t.Errorf("decodeJudgeVerdicts = (%v, %q), want (true, \"\")", pass, reason)
+	}
+}
+
+// A failing rule names itself, so a flip is diagnosable without reading
+// prose: which rule, and why.
+func TestDecodeJudgeVerdictsNamesEveryFailingRule(t *testing.T) {
+	t.Parallel()
+
+	payload := `{"verdicts":[
+		{"rule":1,"verdict":"pass","reason":"fine"},
+		{"rule":2,"verdict":"fail","reason":"the settings page lost its account section"}
+	]}`
+
+	pass, reason, err := decodeJudgeVerdicts(payload, 2)
+	if err != nil {
+		t.Fatalf("decodeJudgeVerdicts: %v", err)
+	}
+
+	if pass {
+		t.Error("decodeJudgeVerdicts passed a run with a failing rule")
+	}
+
+	if !strings.Contains(reason, "rule 2:") || !strings.Contains(reason, "account section") {
+		t.Errorf("reason = %q, want it to name rule 2 and carry its reason", reason)
+	}
+}
+
+// A rule the model never ruled on is malformed, not a silent pass — the
+// failure mode that let a whole clause go ungraded.
+func TestDecodeJudgeVerdictsRejects(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		payload string
+		clauses int
+	}{
+		{"not json", "PASS", 1},
+		{"empty", "", 1},
+		{"fewer verdicts than clauses", `{"verdicts":[{"rule":1,"verdict":"pass","reason":"x"}]}`, 2},
+		{"more verdicts than clauses", `{"verdicts":[
+			{"rule":1,"verdict":"pass","reason":"x"},
+			{"rule":2,"verdict":"pass","reason":"y"}]}`, 1},
+		{"rule out of range", `{"verdicts":[{"rule":7,"verdict":"pass","reason":"x"}]}`, 1},
+		{"repeated rule", `{"verdicts":[
+			{"rule":1,"verdict":"pass","reason":"x"},
+			{"rule":1,"verdict":"pass","reason":"y"}]}`, 2},
+		{"unknown ruling", `{"verdicts":[{"rule":1,"verdict":"maybe","reason":"x"}]}`, 1},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, _, err := decodeJudgeVerdicts(testCase.payload, testCase.clauses)
+			if !errors.Is(err, ErrJudgeMalformedResponse) {
+				t.Fatalf("decodeJudgeVerdicts error = %v, want %v", err, ErrJudgeMalformedResponse)
+			}
+		})
 	}
 }

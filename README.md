@@ -152,7 +152,7 @@ Every checklist cell runs up to three AI turns with genuinely different
 needs: **validating** a `Q:` wants strong reasoning, turning a failure
 into a **fix prompt** wants a mid model, and **writing the fix** wants a
 cheap high-context coder. The best model for each may live behind a
-different CLI, so the engine names three tiers and binds each to a
+different CLI, so the engine names four tiers and binds each to a
 `"<cli>:<model>"` pair — then gives each of the three roles its own
 default, because one fallback tier cannot serve turns this different:
 
@@ -160,12 +160,17 @@ default, because one fallback tier cannot serve turns this different:
 engine:
   models:
     xhigh: "claude:claude-fable-5"
-    high: "claude:claude-opus-4-8"
+    high: "claude:claude-opus-5"
     coder: "crush:zhipu-coding/glm-5.2"
+    quick: "claude:claude-sonnet-5"
   default_prompt_model: high
   default_fix_model: high
   default_apply_model: coder
 ```
+
+**quick** is the fourth tier: a cheap, fast graded answer with a short
+reason. No role defaults to it — the BDD harness's judge resolves its
+model from it, and a checklist may name it for a low-stakes cell.
 
 The value splits on the **first** colon, so hyphenated and
 provider-qualified model ids survive intact. Supported CLIs are

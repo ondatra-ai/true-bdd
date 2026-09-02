@@ -50,6 +50,7 @@ func (r *Router) ExecutePromptWithSystem(
 	userPrompt string,
 	model provider.ModelRef,
 	mode ExecutionMode,
+	resultSchema string,
 ) (string, error) {
 	target, ok := r.providers[model.CLI]
 	if !ok {
@@ -82,6 +83,7 @@ func (r *Router) ExecutePromptWithSystem(
 		WorkDir:      r.workDir,
 		TmpDir:       r.tmpDir,
 		Label:        label,
+		ResultSchema: resultSchema,
 	})
 
 	// Logged on both paths: a turn that burned twenty minutes and then

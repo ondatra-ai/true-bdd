@@ -109,6 +109,10 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
+	// The independent outcome check: the harness itself runs a command the
+	// scenario names, in a directory under the run's tmpdir — e.g. the host
+	// suite the fix loop was meant to make pass. See command_steps.go.
+	suite.Step(`^the command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run

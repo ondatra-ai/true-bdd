@@ -69,7 +69,7 @@ func newGoldenEntry(change FileChange) GoldenEntry {
 
 	// A deletion's claim is that the file is gone; there is no content to
 	// digest, and After is empty for exactly that reason.
-	if change.Kind == "deleted" {
+	if change.Kind == KindDeleted {
 		return entry
 	}
 

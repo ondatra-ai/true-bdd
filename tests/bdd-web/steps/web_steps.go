@@ -29,6 +29,69 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) opens "([^"]*)"$`, openPath)
 	suite.Step(`^the page title is "([^"]*)"$`, assertTitle)
 	suite.Step(`^the page shows "([^"]*)"$`, assertText)
+	// The protocol vocabulary: a host project, a remote running in it, and
+	// what the registry and the sessions list then say about the session it
+	// registered. Implemented in session_steps.go.
+	suite.Step(`^the "([^"]+)" project tree$`, prepareProjectTree)
+	suite.Step(`^a remote is running through a symlink to its project tree$`,
+		startRemoteThroughSymlink)
+	suite.Step(`^the session is listed$`, assertSessionListed)
+	suite.Step(`^the session's folder is the project tree's real path$`,
+		assertSessionFolderIsRealPath)
+	suite.Step(`^the session's row shows the project tree's real path$`,
+		assertRowShowsRealPath)
+	suite.Step(`^the session's row does not show the symlink path$`,
+		assertRowHidesSymlinkPath)
+	// The run vocabulary: a remote in the tree, a dispatch the scenario
+	// labels, the signal that disconnects it, and the HTTP surface every
+	// clause about a gone session reads. Implemented in api_steps.go.
+	suite.Step(`^a remote is running$`, startRemoteInTree)
+	suite.Step(
+		`^the (Product Owner|System Architect|Quality Engineer) dispatches "([^"]+)" on the session as run "([^"]+)"$`,
+		dispatchRun)
+	suite.Step(`^the remote is stopped with "([^"]+)"$`, stopRemoteWithSignal)
+	suite.Step(`^the session is not listed$`, assertSessionNotListed)
+	suite.Step(`^a GET to "([^"]+)" returns status (\d+)$`, assertGetStatus)
+	suite.Step(
+		`^a POST to "([^"]+)" with the dispatch body for command "([^"]*)" returns status (\d+)$`,
+		assertDispatchStatus)
+	suite.Step(`^the response names error "([^"]+)"$`, assertResponseError)
+	// The run-lifecycle vocabulary: what a dispatched run publishes, and what
+	// re-sending its token answers. Implemented in run_steps.go.
+	suite.Step(`^run "([^"]+)" publishes a "([^"]+)" prompt$`, assertPromptPublished)
+	suite.Step(`^dispatching the same token returns run "([^"]+)" with status (\d+)$`,
+		assertSameTokenReturnsRun)
+	// The session page's rendered surface: one selector grammar
+	// (`name[key=value] > child[key=value]`) spliced into every clause below.
+	// Implemented in page_steps.go.
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) opens the session page$`,
+		openSessionPage)
+	suite.Step(`^the page shows (`+selectorPattern+`)$`, assertElementShown)
+	// The keyed-child presence clause: same assertion, disjoint pattern —
+	// the child's bracket is required here and impossible above, so a step
+	// matches exactly one of the two.
+	suite.Step(`^the page shows (`+keyedChildSelectorPattern+`)$`, assertElementShown)
+	suite.Step(`^(`+selectorPattern+`) has attribute "([^"]*)" = "([^"]*)"$`, assertAttribute)
+	suite.Step(`^(`+selectorPattern+`) has text "([^"]*)"$`, assertElementText)
+	suite.Step(`^(`+selectorPattern+`) is enabled$`, assertEnabled)
+	suite.Step(`^(`+selectorPattern+`) has the "([^"]*)" of "([^"]*)"$`, assertFieldOfFile)
+	suite.Step(`^(`+selectorPattern+`) has the "([^"]*)" of story "([^"]*)" of "([^"]*)"$`,
+		assertFieldOfStory)
+	// The interaction vocabulary over the same grammar: the page already open
+	// as a Given, a click, and the absence clause that reads what the click
+	// did. Implemented in page_steps.go.
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) has the session page open$`,
+		openSessionPage)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) clicks (`+selectorPattern+`)$`,
+		clickElement)
+	suite.Step(`^the page does not show (`+selectorPattern+`)$`, assertElementNotShown)
+	suite.Step(`^the page shows exactly (\d+) (`+selectorPattern+`)$`, assertElementCount)
+	// The registry-mutation vocabulary: a change written to the project tree
+	// outside the browser, which a refresh must pick up. Implemented in
+	// registry_steps.go.
+	suite.Step(
+		`^the (Product Owner|System Architect|Quality Engineer) appends a scenario covering "([^"]+)" to "([^"]+)"$`,
+		appendCoveringScenario)
 }
 
 // relayIsRunning asserts the precondition the harness already

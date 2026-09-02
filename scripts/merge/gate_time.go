@@ -2,13 +2,10 @@ package merge
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/github"
-	"github.com/ondatra-ai/true-bdd/scripts/gates"
 )
 
 // What CI calls the workflow and the job the gates run in: ci.yml's `name:`
@@ -18,17 +15,6 @@ const (
 	ciGatesJob = "gates"
 )
 
-// The two conclusions a step that actually executed can carry. A gate after a
-// red one is stamped `skipped` at the failure's own instant, and reporting
-// that as 0s would claim a gate ran in no time when it never ran at all.
-const (
-	ciSuccess = "success"
-	ciFailure = "failure"
-)
-
-// The gh argv fragments this file repeats.
-const ()
-
 // gateRun is one finished CI gates job, as much of it as the log wants.
 type gateRun struct {
 	id         int64
@@ -36,7 +22,6 @@ type gateRun struct {
 	conclusion string
 	url        string
 	total      time.Duration
-	perGate    []string
 }
 
 // attrs is the record's attributes, and none of report's keys: with no `tree`
@@ -48,7 +33,6 @@ func (g gateRun) attrs() []any {
 		"sha", short(g.sha),
 		"conclusion", g.conclusion,
 		"seconds", int64(g.total.Seconds()),
-		"gates", strings.Join(g.perGate, ", "),
 		"url", g.url,
 	}
 }
@@ -66,54 +50,19 @@ type ciJob struct {
 	HTMLURL     string    `json:"html_url"`
 	StartedAt   time.Time `json:"started_at"`
 	CompletedAt time.Time `json:"completed_at"`
-	Steps       []ciStep  `json:"steps"`
 }
 
-// fold walks the gate table rather than the payload: the breakdown carries the
-// pipeline's own rows in its own order, and CI's setup steps never appear.
-// Timestamps are second-resolution, so a fast gate honestly reads 0s.
+// fold reads the gates job's own wall clock. There is no per-gate breakdown
+// to read: ci.yml runs the pipeline as ONE step so the gate table stays the
+// only place gates are listed, and GitHub times steps, not what runs inside.
 func (j ciJob) fold() gateRun {
-	folded := gateRun{
+	return gateRun{
 		id:         j.RunID,
 		sha:        j.HeadSHA,
 		conclusion: j.Conclusion,
 		url:        j.HTMLURL,
 		total:      j.CompletedAt.Sub(j.StartedAt),
 	}
-
-	ran := make(map[string]ciStep, len(j.Steps))
-
-	for _, step := range j.Steps {
-		if step.ran() {
-			ran[step.Name] = step
-		}
-	}
-
-	for _, gate := range gates.All {
-		step, executed := ran[gate.Name]
-		if executed {
-			folded.perGate = append(folded.perGate,
-				fmt.Sprintf("%s %ds", gate.Name, step.seconds()))
-		}
-	}
-
-	return folded
-}
-
-type ciStep struct {
-	Name        string    `json:"name"`
-	Conclusion  string    `json:"conclusion"`
-	StartedAt   time.Time `json:"started_at"`
-	CompletedAt time.Time `json:"completed_at"`
-}
-
-// ran reports whether the step executed, rather than being stamped in passing.
-func (s ciStep) ran() bool {
-	return s.Conclusion == ciSuccess || s.Conclusion == ciFailure
-}
-
-func (s ciStep) seconds() int64 {
-	return int64(s.CompletedAt.Sub(s.StartedAt).Seconds())
 }
 
 // gateTimings folds the jobs payload into the gates job's own wall clock.

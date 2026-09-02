@@ -116,6 +116,14 @@ func (s *OptionalFieldsStrategy) ParseFields(data map[string]any, result *shared
 		if resultMap, ok := resultData.(map[string]any); ok {
 			result.Result = &resultMap
 		}
+
+		if resultText, ok := resultData.(string); ok {
+			result.ResultText = resultText
+		}
+	}
+
+	if structured, ok := data["structured_output"]; ok {
+		result.StructuredOutput = structured
 	}
 
 	return nil

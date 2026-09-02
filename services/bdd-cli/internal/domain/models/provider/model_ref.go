@@ -1,5 +1,5 @@
 // Package provider holds the engine's model-routing vocabulary: the
-// named tiers a checklist selects (xhigh / high / coder) and the
+// named tiers a checklist selects (xhigh / high / coder / quick) and the
 // (cli, model) pair each tier resolves to.
 package provider
 

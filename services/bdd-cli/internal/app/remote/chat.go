@@ -268,8 +268,16 @@ func claudeChatTurn(ctx context.Context, payload chatPayload) chatResult {
 		DisallowedTools: []string{"Bash", "Write", "Edit", "MultiEdit", "NotebookEdit", "Agent", "Task"},
 	}
 
+	// The {reply_text, edit} contract was already spelled out in prose;
+	// where the CLI can enforce it, the scrape below never runs.
+	schema := ""
+	if ai.SupportsResultSchema(model.CLI) {
+		schema = chatResultSchema
+	}
+
 	raw, execErr := client.ExecutePromptWithSystem(
-		ctx, provider.RolePrompt, chatSystemPrompt(payload), lastUserMessage(payload.Conversation), model, mode,
+		ctx, provider.RolePrompt, chatSystemPrompt(payload),
+		lastUserMessage(payload.Conversation), model, mode, schema,
 	)
 	if execErr != nil {
 		if ctx.Err() != nil {
@@ -301,6 +309,25 @@ func enforceTargetBinding(result chatResult, currentPath *string) chatResult {
 
 	return result
 }
+
+// chatResultSchema is the reply contract for a CLI that can enforce one.
+const chatResultSchema = `{
+  "type": "object",
+  "properties": {
+    "reply_text": {"type": "string"},
+    "edit": {
+      "type": ["object", "null"],
+      "properties": {
+        "path": {"type": "string"},
+        "new_content": {"type": "string"}
+      },
+      "required": ["path", "new_content"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["reply_text", "edit"],
+  "additionalProperties": false
+}`
 
 // parseChatResult extracts and decodes the structured JSON object from a raw
 // Claude reply (models sometimes wrap JSON in prose despite instructions).

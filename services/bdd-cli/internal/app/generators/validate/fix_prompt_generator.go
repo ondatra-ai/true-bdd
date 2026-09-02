@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters/ai"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
@@ -29,7 +31,34 @@ type FixPromptData struct {
 	UserAnswers map[string]string // Answers from user (nil if first iteration)
 	Iteration   int               // Current iteration number
 	DocPaths    map[string]string // Maps doc key to file path (e.g., "product" -> "docs/product/product.yaml")
+	// Structured is true when the resolved CLI enforces a result schema.
+	Structured bool
 }
+
+// fixResultSchema mirrors checklist.GenerateResult: exactly one of the two
+// branches carries content, which the engine re-checks after decoding.
+const fixResultSchema = `{
+  "type": "object",
+  "properties": {
+    "fix_prompt": {"type": "string"},
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "question": {"type": "string"},
+          "context": {"type": "string"},
+          "options": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["id", "question", "context", "options"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["fix_prompt", "questions"],
+  "additionalProperties": false
+}`
 
 // GenerateParams contains parameters for fix prompt generation.
 type GenerateParams struct {
@@ -104,12 +133,12 @@ func (g *FixPromptGenerator) Generate(
 	resultPath := fmt.Sprintf("%s/%02d-%s-fix-prompts.md", params.TmpDir, promptIndex, sanitizeID(params.SubjectID))
 	promptData := g.buildPromptData(params, resultPath, iteration)
 
-	response, err := g.executeAIGeneration(ctx, params, promptData, promptIndex, iteration)
+	response, structured, err := g.executeAIGeneration(ctx, params, promptData, promptIndex, iteration)
 	if err != nil {
 		return checklist.GenerateResult{}, err
 	}
 
-	return g.parseAndSaveResponse(response, resultPath)
+	return g.parseAndSaveResponse(response, resultPath, structured)
 }
 
 func (g *FixPromptGenerator) logGenerationStart(params GenerateParams, promptIndex, iteration int) {
@@ -172,15 +201,25 @@ func (g *FixPromptGenerator) executeAIGeneration(
 	params GenerateParams,
 	promptData FixPromptData,
 	promptIndex, iteration int,
-) (string, error) {
+) (string, bool, error) {
+	// The tier travels on the failed check — the evaluator resolved it
+	// while the prompt was still in scope. Resolved first: it decides
+	// which answer contract the templates render.
+	model, err := g.models.ResolveRole(provider.RoleFix, params.FailedCheck.FixModelTier)
+	if err != nil {
+		return "", false, pkgerrors.ErrResolveModelTierFailed("fix generation", err)
+	}
+
+	promptData.Structured = ai.SupportsResultSchema(model.CLI)
+
 	systemPrompt, err := g.systemLoader.LoadTemplate(promptData)
 	if err != nil {
-		return "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
+		return "", false, pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
 	}
 
 	userPrompt, err := g.userLoader.LoadTemplate(promptData)
 	if err != nil {
-		return "", pkgerrors.ErrLoadChecklistUserPromptFailed(err)
+		return "", false, pkgerrors.ErrLoadChecklistUserPromptFailed(err)
 	}
 
 	suffix := fmt.Sprintf("fix-iter%d", iteration)
@@ -189,50 +228,99 @@ func (g *FixPromptGenerator) executeAIGeneration(
 
 	mode := g.modeFactory.GetThinkMode()
 
-	// The tier travels on the failed check — the evaluator resolved it
-	// while the prompt was still in scope.
-	model, err := g.models.ResolveRole(provider.RoleFix, params.FailedCheck.FixModelTier)
-	if err != nil {
-		return "", pkgerrors.ErrResolveModelTierFailed("fix generation", err)
+	schema := ""
+	if promptData.Structured {
+		schema = fixResultSchema
 	}
 
 	response, err := g.aiClient.ExecutePromptWithSystem(
-		ctx, provider.RoleFix, systemPrompt, userPrompt, model, mode,
+		ctx, provider.RoleFix, systemPrompt, userPrompt, model, mode, schema,
 	)
 	if err != nil {
-		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
+		return "", false, pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
 
 	g.savePromptFile(params.TmpDir, params.SubjectID, promptIndex, suffix+"-response", response)
 
-	return response, nil
+	return response, promptData.Structured, nil
 }
 
-func (g *FixPromptGenerator) parseAndSaveResponse(response, resultPath string) (checklist.GenerateResult, error) {
+func (g *FixPromptGenerator) parseAndSaveResponse(
+	response, resultPath string, structured bool,
+) (checklist.GenerateResult, error) {
+	if structured {
+		return g.decodeStructuredResult(response, resultPath)
+	}
+
 	if g.hasQuestions(response) {
 		questions, parseErr := g.parseQuestions(response)
 		if parseErr != nil {
-			slog.Warn("Failed to parse questions, treating as fix prompt", "error", parseErr)
-		} else {
-			slog.Info("AI needs clarification", "questionCount", len(questions))
+			slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath, "error", parseErr)
 
-			return checklist.GenerateResult{Questions: questions}, nil
+			return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorQuestionsDidNotParse(parseErr)
 		}
+
+		slog.Info("AI needs clarification", "questionCount", len(questions))
+
+		return checklist.GenerateResult{Questions: questions}, nil
 	}
 
+	// An empty result here used to reach the caller as CellFailedNoFix, which
+	// says "the checklist has no F: for this cell" — a different fact.
 	fixPrompt := g.extractFixPrompt(response, resultPath)
 	if fixPrompt == "" {
-		slog.Warn("No fix prompt content found in response")
+		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath)
 
-		return checklist.GenerateResult{}, nil
+		return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorEmptyAnswer(resultPath)
 	}
 
+	g.saveFixPrompt(resultPath, fixPrompt)
+
+	return checklist.GenerateResult{FixPrompt: fixPrompt}, nil
+}
+
+// saveFixPrompt keeps the per-turn artifact the run dir carries.
+func (g *FixPromptGenerator) saveFixPrompt(resultPath, fixPrompt string) {
 	err := disk.Write(resultPath, []byte(fixPrompt), disk.Shared)
 	if err != nil {
 		slog.Warn("Failed to save fix prompt file", "path", resultPath, "error", err)
 	} else {
 		slog.Info("Fix prompt saved", "file", resultPath)
 	}
+}
+
+// decodeStructuredResult reads a schema-enforced fix answer. Exactly one
+// of the two branches carries content — the schema cannot express that,
+// so the engine checks it here.
+func (g *FixPromptGenerator) decodeStructuredResult(
+	response, resultPath string,
+) (checklist.GenerateResult, error) {
+	var decoded struct {
+		FixPrompt string                      `json:"fix_prompt"`
+		Questions []checklist.ClarifyQuestion `json:"questions"`
+	}
+
+	err := json.Unmarshal([]byte(response), &decoded)
+	if err != nil {
+		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath, "error", err)
+
+		return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorQuestionsDidNotParse(err)
+	}
+
+	fixPrompt := strings.TrimSpace(decoded.FixPrompt)
+	if (fixPrompt == "") == (len(decoded.Questions) == 0) {
+		slog.Error(enginelog.MsgAnswerUnusable, "path", resultPath)
+
+		return checklist.GenerateResult{}, pkgerrors.ErrFixGeneratorEmptyAnswer(resultPath)
+	}
+
+	if len(decoded.Questions) > 0 {
+		slog.Info("AI needs clarification", "questionCount", len(decoded.Questions))
+
+		return checklist.GenerateResult{Questions: decoded.Questions}, nil
+	}
+
+	g.saveFixPrompt(resultPath, fixPrompt)
 
 	return checklist.GenerateResult{FixPrompt: fixPrompt}, nil
 }

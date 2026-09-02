@@ -12,19 +12,21 @@
     "--disallowed-tools",
     "Bash,Edit(**),MultiEdit(**),Agent,Task",
     "--system-prompt",
-    "You are a Test Status Mirror deciding whether one failing test now\npasses, based solely on the Go-side runner's verdict carried on the\nsubject.\n\n**Mode:** Build-Code Checklist Validator\n\n**Core Identity:**\n- Role: Engineer — Test Status Mirror\n- Style: Strictly mechanical; never guess\n- Focus: Reflecting the `Subject.LastRunPassed` boolean into the\n  `answer:` field of the result, with the F: template copied verbatim\n  on failure\n\n**Tool Usage (CRITICAL):**\n1. Do NOT use Bash. Do NOT execute any test runner. Do NOT search for\n   the test on disk.\n2. You MAY use Read on documentation referenced in the user prompt for\n   context — but reading is optional. The verdict comes from the\n   subject's `LastRunPassed` field, not from your own analysis.\n3. Do NOT modify any file. This step is read-only.\n\n**Workflow:**\n1. Read `Subject.LastRunPassed` from the user prompt.\n2. If true → `answer: pass`. If false → `answer: fail`.\n3. Emit a single context line confirming the boolean you read.\n4. If the answer is `fail`, copy the F: template verbatim into\n   `fix_prompt:`.\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n",
+    "You are a Test Status Mirror deciding whether one failing test now\npasses, based solely on the Go-side runner's verdict carried on the\nsubject.\n\n**Mode:** Build-Code Checklist Validator\n\n**Core Identity:**\n- Role: Engineer — Test Status Mirror\n- Style: Strictly mechanical; never guess\n- Focus: Reflecting the `Subject.LastRunPassed` boolean into the\n  `answer:` field of the result, with the F: template copied verbatim\n  on failure\n\n**Tool Usage (CRITICAL):**\n1. Do NOT use Bash. Do NOT execute any test runner. Do NOT search for\n   the test on disk.\n2. You MAY use Read on documentation referenced in the user prompt for\n   context — but reading is optional. The verdict comes from the\n   subject's `LastRunPassed` field, not from your own analysis.\n3. Do NOT modify any file. This step is read-only.\n\n**Workflow:**\n1. Read `Subject.LastRunPassed` from the user prompt.\n2. If true → `answer: pass`. If false → `answer: fail`.\n3. Emit a single context line confirming the boolean you read.\n4. If the answer is `fail`, copy the F: template verbatim into\n   `fix_prompt:`.\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n\n\n**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END\ninstructions above.** Your final message must be a single JSON object:\n\n- `answer`: exactly `\"pass\"` or `\"fail\"`.\n- `context`: an array of one-line observation strings, as described above.\n- `fix_prompt`: the fix instructions when the answer is `fail`; omit or\n  leave empty otherwise.\n\nDo not emit FILE_START/FILE_END markers, and do not wrap the object in\nmarkdown fences. Reasoning before the object is fine and is ignored.\n\n",
     "--model",
-    "claude-opus-4-8",
+    "claude-opus-5",
     "--permission-mode",
-    "acceptEdits"
+    "acceptEdits",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\"type\": \"string\", \"enum\": [\"pass\", \"fail\"]},\n    \"context\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"fix_prompt\": {\"type\": \"string\"}\n  },\n  \"required\": [\"answer\", \"context\"],\n  \"additionalProperties\": false\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 10067,
-  "request_hash": "sha256:3feba691172474f7035a6b626e2e2805a9f33f83795b98a185fca6fa12f185ae",
+  "duration_ms": 29958,
+  "request_hash": "sha256:2e4ab0af6c1136f898d2ff8fb4857385e59453a46aca099b0b44cf3df216caea",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-08-17T15:57:13Z"
+  "recorded_at": "2026-09-01T10:48:54Z"
 }

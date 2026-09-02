@@ -65,3 +65,16 @@ fix_prompt: |
   <if answer is pass, omit this field entirely>
 {{- end }}
 === FILE_END: {{.ResultPath}} ===
+
+{{ if .Structured }}
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+instructions above.** Your final message must be a single JSON object:
+
+- `answer`: exactly `"pass"` or `"fail"`.
+- `context`: an array of one-line observation strings, as described above.
+- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
+  leave empty otherwise.
+
+Do not emit FILE_START/FILE_END markers, and do not wrap the object in
+markdown fences. Reasoning before the object is fine and is ignored.
+{{ end }}

@@ -33,6 +33,21 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrCreateTmpDirectory)
 	}
 
+	// codex takes a schema FILE, not an inline string like claude.
+	schemaPath := ""
+
+	if req.ResultSchema != "" {
+		schemaPath = artifactPath(req, "codex-schema.json")
+		if schemaPath == "" {
+			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrCreateTmpDirectory)
+		}
+
+		writeErr := disk.Write(schemaPath, []byte(req.ResultSchema), disk.Shared)
+		if writeErr != nil {
+			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), writeErr)
+		}
+	}
+
 	turn := codex.Turn{
 		Sandbox:    codexSandbox(req.Mode),
 		WorkDir:    req.WorkDir,
@@ -40,6 +55,7 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 		AnswerPath: answerPath,
 		Prompt:     composePrompt(req),
 		Env:        os.Environ(),
+		SchemaPath: schemaPath,
 	}
 
 	trace, runErr := turn.Run()

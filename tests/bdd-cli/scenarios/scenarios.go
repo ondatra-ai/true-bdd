@@ -172,18 +172,13 @@ func bootHarness(t *testing.T) (string, error) {
 
 	mode := *proxyMode
 
-	// Replay needs no model: turns and verdict both come from the
-	// cassette. That's what lets it run in CI and offline, so it must
-	// NOT skip for a missing agent CLI.
-	if mode != runner.ProxyModeReplay {
-		why, err := missingCLI()
-		if err != nil {
-			return "", err
-		}
+	why, err := requiredCLIs(mode)
+	if err != nil {
+		return "", err
+	}
 
-		if why != "" {
-			return why, nil
-		}
+	if why != "" {
+		return why, nil
 	}
 
 	var shimDir string
@@ -197,7 +192,7 @@ func bootHarness(t *testing.T) (string, error) {
 		}
 	}
 
-	judge, err := runner.NewClaudeJudge()
+	judge, err := runner.NewClaudeJudge(filepath.Join(repoRoot, "true-bdd", "true-bdd.yaml"))
 	if err != nil {
 		return "", fmt.Errorf("init judge: %w", err)
 	}
@@ -387,4 +382,20 @@ func flagValue(name string) string {
 	}
 
 	return found.Value.String()
+}
+
+// requiredCLIs gates boot on the binaries this mode needs. Replay shims
+// the turns but still asks the real judge, so it needs `claude` — and a
+// miss FAILS rather than skips: a judgeless green would hide the gap.
+func requiredCLIs(mode string) (string, error) {
+	if mode != runner.ProxyModeReplay {
+		return missingCLI()
+	}
+
+	err := cli.Require("claude")
+	if err != nil {
+		return "", fmt.Errorf("replay needs the judge's `claude` CLI: %w", err)
+	}
+
+	return "", nil
 }

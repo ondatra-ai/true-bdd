@@ -25,11 +25,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/playwright-community/playwright-go"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -78,6 +80,11 @@ type Harness struct {
 
 	driver *playwright.Playwright
 	server *cli.Process
+
+	// cliBuild and materializerBuild are the two binaries a protocol
+	// scenario needs, compiled at most once per `go test` invocation.
+	cliBuild          buildOnce
+	materializerBuild buildOnce
 }
 
 // NewHarness builds the application, starts it on a free loopback port,
@@ -115,6 +122,55 @@ func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), e
 	}
 
 	return harness, harness.stop, nil
+}
+
+// buildOnce is a binary this suite compiles at most once, remembering the
+// failure too: a second asker is told the same thing rather than
+// rebuilding into the same error.
+type buildOnce struct {
+	once sync.Once
+	path string
+	err  error
+}
+
+// resolve builds pkg into tmp/bdd-web-bin/<binName> on the first ask.
+func (b *buildOnce) resolve(repoRoot, binName, pkg string) (string, error) {
+	b.once.Do(func() {
+		dir := filepath.Join(repoRoot, "tmp", "bdd-web-bin")
+
+		err := disk.Dir(dir, disk.Shared)
+		if err != nil {
+			b.err = fmt.Errorf("create the bin dir: %w", err)
+
+			return
+		}
+
+		path := filepath.Join(dir, binName)
+
+		err = gotool.Build(cli.Options{Timeout: buildTimeout}, repoRoot, path, pkg)
+		if err != nil {
+			b.err = fmt.Errorf("build %s: %w", pkg, err)
+
+			return
+		}
+
+		b.path = path
+	})
+
+	return b.path, b.err
+}
+
+// CLIBinary is the true-bdd a remote is spawned from.
+func (h *Harness) CLIBinary() (string, error) {
+	return h.cliBuild.resolve(h.RepoRoot, "true-bdd", "./services/bdd-cli")
+}
+
+// MaterializerBinary is the shared fixture materializer this suite shells
+// to rather than re-implementing overlay, checklist-filter and prep
+// semantics; its doc.go states the CLI contract.
+func (h *Harness) MaterializerBinary() (string, error) {
+	return h.materializerBuild.resolve(h.RepoRoot, "materializer",
+		"./tests/libraries/materializer")
 }
 
 // buildBundle compiles the app and assembles the standalone bundle

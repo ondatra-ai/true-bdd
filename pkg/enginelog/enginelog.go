@@ -19,6 +19,8 @@ const (
 	MsgAssistant = "AssistantMessage received"
 	MsgResult    = "ResultMessage received"
 	MsgUsage     = "AI turn usage"
+	// MsgAnswerUnusable marks a model answer the engine refused to grade.
+	MsgAnswerUnusable = "Model answer unusable"
 	MsgReturned  = "AI turn returned"
 	MsgFailed    = "AI turn failed"
 	// MsgTranscriptSaved is crush's and codex's only result boundary: they
