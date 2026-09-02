@@ -10,15 +10,11 @@ import (
 // test asserts against those bytes through this export_test.go seam, which
 // the compiler drops from any non-test build.
 
-// PlanFieldsForTest is the plan the filing prompt carries, and
-// PlanStampsForTest the shorter one a deferral carries. The stamp is the
-// caller's: now() reads the clock and HEAD, which a test cannot pin.
+// PlanFieldsForTest is the plan the filing prompt carries — one plan now, for
+// every source. The stamp is the caller's: now() reads the clock and HEAD,
+// which a test cannot pin.
 func PlanFieldsForTest(queue []Finding, millis int64, commit string) []byte {
 	return encodePlan(planFields(queue, stamp{Millis: millis, Commit: commit}))
-}
-
-func PlanStampsForTest(queue []Finding, millis int64, commit string) []byte {
-	return encodePlan(planStamps(queue, stamp{Millis: millis, Commit: commit}))
 }
 
 func encodePlan(plans []fieldPlan) []byte {
@@ -91,31 +87,27 @@ func CountHeadingsForTest(document string) int {
 	return countHeadings(document)
 }
 
-// DocumentPromptForTest is the document turn's prompt, as it is sent — built
-// from sections a fake scorer has already judged, since the turn cannot run.
-func DocumentPromptForTest(document, tag string, score int) string {
-	kept := TriageSectionsForTest(document, func(_ triage.Subject) (triage.Verdict, error) {
-		return triage.Verdict{Score: score, Reason: "why", Description: "### Why\n\nrefreshed."}, nil
-	})
+// DeferralOriginForTest is the provenance FileDocument names; the filing turn
+// it reaches cannot run in a test.
+func DeferralOriginForTest() string { return deferralOrigin }
 
-	prompt, err := documentPrompt(kept, tag, stamp{Millis: 1, Commit: "abc"})
-	if err != nil {
-		panic(err)
-	}
-
-	return prompt
+// FindingsOfForTest is a deferral document as the one creator sees it: a
+// queue of candidates, raw prose in Body, shaped later by ticket.yaml.
+func FindingsOfForTest(document string) []Finding {
+	return findingsOf(splitSections(document))
 }
 
-// TriageSectionsForTest is the keep-or-drop decision, over a fake scorer.
-func TriageSectionsForTest(document string, score scorer) []section {
-	return triageSections(splitSections(document), score)
+// ScoredForTest is the keep-or-drop decision every creating path runs, over a
+// fake scorer — the turn itself cannot run in a test.
+func ScoredForTest(queue []Finding, score func(triage.Subject) (triage.Verdict, error)) []Finding {
+	return scored(queue, score)
 }
 
-// SectionTitlesForTest names what survived, in order.
-func SectionTitlesForTest(kept []section) []string {
+// TitlesForTest names what survived, in order.
+func TitlesForTest(kept []Finding) []string {
 	titles := make([]string, 0, len(kept))
-	for _, held := range kept {
-		titles = append(titles, held.Title)
+	for _, finding := range kept {
+		titles = append(titles, finding.Title)
 	}
 
 	return titles
@@ -208,10 +200,4 @@ func ClustersForTest(rows []CorpusRow, pairs [][2]string) [][]string {
 // CorpusEntryForTest is one ticket as it lands in CorpusDir.
 func CorpusEntryForTest(row CorpusRow) string {
 	return row.render()
-}
-
-// SurvivingSectionsForTest is which of a document's sections a gate's answer
-// keeps; the gate's own turns cannot run in a test.
-func SurvivingSectionsForTest(document string, kept []Finding) []string {
-	return SectionTitlesForTest(surviving(splitSections(document), kept))
 }

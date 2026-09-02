@@ -37,9 +37,11 @@ func TestPlanFieldsDerivesTheGlobAndTheIndex(t *testing.T) {
 		{"skill markdown", ".claude/skills/pr-merge/SKILL.md", 10, ".claude/skills/pr-merge/**", "9"},
 		{"lowest score", "scripts/clickup/list.go", 1, "scripts/clickup/**", "0"},
 		{"repository root", "CLAUDE.md", 5, rootGlob, "4"},
-		// `?` is what orUnknown renders for a finding that named no file.
-		{"no file", "?", 4, rootGlob, "3"},
-		{"empty file", "", 4, rootGlob, "3"},
+		// No file bounded nothing, so the row omits the field and task-handle
+		// halts until a person fills it. `?` is what a queue row carries when
+		// the reviewer named none.
+		{"no file", "?", 4, "", "3"},
+		{"empty file", "", 4, "", "3"},
 		// An unscored finding leaves the dropdown alone rather than claiming
 		// the bottom of the band, so the row omits the key entirely.
 		{"unscored", "scripts/merge/land.go", 0, mergeGlob, ""},

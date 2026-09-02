@@ -1,0 +1,24 @@
+
+`reason` is one sentence, for whoever decides whether to act. `story` is what
+they read once they have decided, and it is the ticket's whole value to
+someone who was not in the room.
+
+If you score it 6 or above, ALSO return `story`: three short paragraphs, for
+a reader who will open these files cold.
+
+  1. How it behaves today. Name the functions and the `file:line` that carry
+     the behaviour, and say what they do, in order. Describe the code, not
+     the defect.
+  2. What goes wrong. The situation that reaches it — the invocation, the
+     input, the state left on disk — and the wrong thing that happens then,
+     said as an outcome somebody would notice.
+  3. Where it is fixed: the file that would be rewritten, and what in it.
+
+Write what you read. Quote the symbol that settles each claim. If you cannot
+find the code that produces the behaviour, say that in `story` rather than
+inventing a mechanism.
+
+If you score it 5 or below, return `story` empty. A subject about to be
+dropped is not worth narrating.
+
+Return `description` empty either way: there is no ticket body to rewrite.

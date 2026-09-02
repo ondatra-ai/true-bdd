@@ -7,10 +7,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
 )
 
-// bodyLimit caps how much of a subject reaches the turn. It matches the cap
-// scripts/clickup renders a ticket body at, so a ticket cannot arrive longer
-// than a refresh is allowed to return.
-const bodyLimit = 4000
+// bodyLimit caps how much of a subject reaches the turn. It holds a WHOLE
+// rendered ticket — two 4,000-rune fields plus its headings — because a
+// refresh returns what it was shown, so a tail cut here is a tail deleted.
+const bodyLimit = 10000
 
 // Subject is one claim about this repository, awaiting judgement.
 type Subject struct {
@@ -24,21 +24,24 @@ type Subject struct {
 	Origin   string
 	Severity string
 
-	// Refresh asks for Body rewritten against HEAD. Set by the callers whose
-	// body is a ticket carrying the four headings; false for a review finding,
-	// whose body is the reviewer's own prose and whose caller keeps it verbatim.
-	Refresh bool
+	// Filed marks a subject that IS a ticket the tracker already holds: rewrite
+	// it against HEAD, and never grow it into a newer shape. Set by the sweep
+	// alone. Every creating path leaves it unset and is asked for a story.
+	Filed bool
 }
 
-// prompt is the whole turn: the rubric, the refresh clause when one is wanted,
-// and the subject.
+// prompt is the whole turn: the rubric, the clause that says where the
+// narrative goes, and the subject. Filed is the one branch — the two clauses
+// are the two homes a story can have, not a second axis.
 func (s Subject) prompt() string {
 	var built strings.Builder
 
 	built.WriteString(rubricPrompt)
 
-	if s.Refresh {
+	if s.Filed {
 		built.WriteString(refreshPrompt)
+	} else {
+		built.WriteString(storyPrompt)
 	}
 
 	fmt.Fprintf(&built, `

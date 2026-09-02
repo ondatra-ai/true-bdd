@@ -79,3 +79,37 @@ This adds a third mover of a Ticket's status, after `task-start` and
 only to `not relevant`: a Ticket a person promoted to `to do` stays there,
 because a sweep judges whether the work is still real, not whether it is
 queued.
+
+**Amended 2026-09-02.** One rubric was not one process. `clickup defer` reached
+the same `Score` and then ran a pipeline of its own: a second filing prompt
+(`documentPromptTemplate`), a second field plan (`planStamps`), its own gate
+wrapper and its own `section` type — and, decisively, its own SHAPE. A deferral
+never touched `ticket.yaml`; it arrived carrying four `###` headings a person
+had typed, and the only thing holding it to them was a sentence in a prompt.
+The template was shared as a convention, not as a mechanism.
+
+It is one mechanism now. `clickup.fileQueue` is the single creator — a review
+finding, a postmortem proposal and a hand-written deferral all reach it as a
+`[]Finding` and are rendered through `ticket.yaml` — and `clickup.apply` is the
+single updater. A source contributes two things and no more: the raw material,
+and the origin it names. The deferral's prose is Body, raw material for
+`### What to change`, and its `### Why` is written by the scoring turn like
+every other ticket's.
+
+`Subject.Refresh` is now `Subject.Filed`, because the boolean was carrying two
+distinctions that only coincided by accident: "this body is already ticket-
+shaped, rewrite it" and "this ticket already exists in the tracker, do not grow
+it into a newer shape". They come apart on `clickup defer`, whose body was
+ticket-shaped while the ticket did not exist — so the no-backfill clause fired
+on a ticket being created, and a deferral could be filed permanently without
+the story `triage.Verdict.validate` exists to require. Set by the sweep and
+nothing else, `Filed` means only the second, and the sentence above — "set by
+the callers whose body is a Ticket carrying the four `###` headings" — is
+superseded: there is one such caller, and it is the updater.
+
+One behaviour changed with it. `expectedChanges` filled in `./*` for a finding
+that named no file; the deferral path had always refused to, on the ground that
+`./*` passes task-handle's scope check without anything having been bounded.
+That refusal is every source's now: no file, no Expected Changes, and a person
+bounds it. A file at the repository root still derives `./*`, because there its
+directory really is the root.

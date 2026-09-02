@@ -9,68 +9,23 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/triage"
 )
 
-// A hand-written deferral: `## ` opens a ticket, `### ` is one of its four
-// headings, and neither the title nor a body line may be miscounted.
+// A hand-written deferral. `## ` opens a ticket and everything under it is raw
+// prose — including a `### `, which ticket.yaml now renders around rather than
+// taking as the ticket's own shape.
 const deferral = `# Deferrals
 
 ## Fix the orphaned joins cross-reference
 
-### Why
-
 The renumbering moved them.
 
-### What to change
-
 ` + "```" + `
-### this is a fence, not a heading
+## this is a fence, and splitSections opens a ticket on it anyway
 ` + "```" + `
 
 ## Publish a killable pid
 
-### Why
-
 ` + "`kill -9`" + ` on ` + "`go run`" + ` never reaches the child.
 `
-
-func TestCountHeadingsCountsTicketsNotSections(t *testing.T) {
-	t.Parallel()
-
-	if got := clickup.CountHeadingsForTest(deferral); got != 2 {
-		t.Fatalf("counted %d ticket(s), want 2 — `### ` and `# ` are not tickets", got)
-	}
-}
-
-func TestCountHeadingsOnADocumentWithNoTicket(t *testing.T) {
-	t.Parallel()
-
-	if got := clickup.CountHeadingsForTest("# Title\n\nProse, and no ticket.\n"); got != 0 {
-		t.Fatalf("counted %d, want 0 so FileDocument refuses", got)
-	}
-}
-
-// The document turn must carry the backlog stamp the queue turn carries:
-// one const feeds both, and this is what proves it reached this one.
-func TestDocumentPromptStampsBacklog(t *testing.T) {
-	t.Parallel()
-
-	prompt := clickup.DocumentPromptForTest(deferral, "deferred", passing)
-
-	for _, want := range []string{
-		"- status: backlog",
-		"Never `to do`",
-		"- tag: deferred",
-		"Exactly one task per `## ` heading — 2 in total.",
-		"Expected Changes, Scope and Good For Agent are a\nperson's to fill",
-	} {
-		if !strings.Contains(prompt, want) {
-			t.Errorf("the prompt does not carry %q", want)
-		}
-	}
-
-	if !strings.Contains(prompt, "Publish a killable pid") {
-		t.Error("the document was not embedded verbatim")
-	}
-}
 
 // The two scores the table needs: one that files, one that does not.
 const (
@@ -78,60 +33,128 @@ const (
 	failing = 3
 )
 
-// splitSections and countHeadings must never disagree about how many tickets
-// a document holds — the count check that catches a silent drop compares one
-// against the other.
-func TestSplitSectionsAgreesWithCountHeadings(t *testing.T) {
+// A deferral reaches the one creator as a queue of candidates. Its prose is
+// Body — raw material for `### What to change` — and never the ticket's shape.
+func TestFindingsOfCarriesProseNotShape(t *testing.T) {
 	t.Parallel()
 
-	kept := clickup.TriageSectionsForTest(deferral, keeping(passing))
+	queue := clickup.FindingsOfForTest(deferral)
 
-	if got, want := len(kept), clickup.CountHeadingsForTest(deferral); got != want {
-		t.Fatalf("split into %d section(s), countHeadings says %d", got, want)
+	titles := clickup.TitlesForTest(queue)
+	want := []string{
+		"Fix the orphaned joins cross-reference",
+		"this is a fence, and splitSections opens a ticket on it anyway",
+		"Publish a killable pid",
 	}
 
-	titles := clickup.SectionTitlesForTest(kept)
-	if titles[0] != "Fix the orphaned joins cross-reference" || titles[1] != "Publish a killable pid" {
-		t.Errorf("titles = %q, want the two `## ` headings in order", titles)
+	if len(titles) != len(want) {
+		t.Fatalf("split into %d ticket(s): %q, want %q", len(titles), titles, want)
+	}
+
+	for index := range want {
+		if titles[index] != want[index] {
+			t.Errorf("ticket %d is %q, want %q", index, titles[index], want[index])
+		}
+	}
+
+	if queue[0].Source != "deferral" {
+		t.Errorf("source = %q, want the deferral source that names its raiser", queue[0].Source)
+	}
+
+	if strings.Contains(queue[0].Body, "## ") {
+		t.Errorf("the `## ` line leaked into the body:\n%s", queue[0].Body)
 	}
 }
 
-// A section below the floor is not filed. It leaves the document, and the
-// count the turn is given shortens with it.
-func TestTriageSectionsDropsBelowTheFloor(t *testing.T) {
+// A candidate below the floor is not filed, whatever raised it.
+func TestScoredDropsBelowTheFloor(t *testing.T) {
 	t.Parallel()
 
-	if got := clickup.TriageSectionsForTest(deferral, keeping(failing)); len(got) != 0 {
-		t.Errorf("kept %d section(s) scored %d, want none below the floor", len(got), failing)
+	queue := clickup.FindingsOfForTest(deferral)
+
+	if got := clickup.ScoredForTest(queue, keeping(failing)); len(got) != 0 {
+		t.Errorf("kept %d candidate(s) scored %d, want none below the floor", len(got), failing)
 	}
 
-	prompt := clickup.DocumentPromptForTest(deferral, "deferred", passing)
-	if !strings.Contains(prompt, "— 2 in total.") {
-		t.Error("the surviving count did not reach the prompt")
+	kept := clickup.ScoredForTest(queue, keeping(passing))
+	if len(kept) != len(queue) {
+		t.Fatalf("kept %d of %d scored %d", len(kept), len(queue), passing)
+	}
+
+	if kept[0].Story != anyStory {
+		t.Errorf("story = %q, want the verdict's — a creating path always carries one", kept[0].Story)
 	}
 }
 
-// A section the scorer could not judge is dropped, not filed unscored — which
-// is what this path did before, leaving every deferral unsortable by task-loop.
-func TestTriageSectionsDropsWhatItCannotScore(t *testing.T) {
+// A candidate the scorer could not judge is dropped, not filed unscored, which
+// would leave it unsortable by the queue task-loop works.
+func TestScoredDropsWhatItCannotScore(t *testing.T) {
 	t.Parallel()
 
 	refused := func(_ triage.Subject) (triage.Verdict, error) {
 		return triage.Verdict{}, errRefused
 	}
 
-	if got := clickup.TriageSectionsForTest(deferral, refused); len(got) != 0 {
-		t.Errorf("kept %d unscored section(s), want none", len(got))
+	if got := clickup.ScoredForTest(clickup.FindingsOfForTest(deferral), refused); len(got) != 0 {
+		t.Errorf("kept %d unscored candidate(s), want none", len(got))
 	}
+}
+
+// A row merge already scored keeps its verdict: its disposition was decided
+// against merge's Floors table, and re-scoring it here would overrule that.
+func TestScoredLeavesAScoredRowAlone(t *testing.T) {
+	t.Parallel()
+
+	scored := []clickup.Finding{{Title: "already judged", Score: 9, Reason: "merge said so"}}
+
+	kept := clickup.ScoredForTest(scored, func(_ triage.Subject) (triage.Verdict, error) {
+		t.Error("a scored row was sent to the scoring turn")
+
+		return triage.Verdict{}, errRefused
+	})
+
+	if len(kept) != 1 || kept[0].Score != 9 {
+		t.Errorf("kept %+v, want the row unchanged at 9", kept)
+	}
+}
+
+// The requirement this change exists for: a deferral is shaped by ticket.yaml,
+// not by the prose someone typed. Same four headings, same story, same
+// renderer a review finding gets — the source decides only its provenance.
+func TestADeferralRendersThroughTheOneTemplate(t *testing.T) {
+	t.Parallel()
+
+	kept := clickup.ScoredForTest(clickup.FindingsOfForTest(deferral), keeping(passing))
+
+	document := clickup.Render(kept, "deferred", clickup.DeferralOriginForTest())
+
+	for _, want := range append(headingLines(),
+		"A person raised this on a hand-written deferral; triage scored it **8/10**.",
+		anyStory,
+	) {
+		if !strings.Contains(document, want) {
+			t.Errorf("a filed deferral does not carry %q:\n%s", want, document)
+		}
+	}
+}
+
+// headingLines is the four `### ` sections, as ticket.yaml declares them.
+func headingLines() []string {
+	names := clickup.Headings()
+
+	lines := make([]string, 0, len(names))
+	for _, name := range names {
+		lines = append(lines, "### "+name)
+	}
+
+	return lines
 }
 
 var errRefused = errors.New("the turn failed")
 
-// keeping is a scorer that answers the same way for every section.
+// keeping is a scorer that answers the same way for every candidate.
 func keeping(score int) func(triage.Subject) (triage.Verdict, error) {
 	return func(_ triage.Subject) (triage.Verdict, error) {
-		return triage.Verdict{
-			Score: score, Reason: anyReason, Description: anyRefreshed,
-		}, nil
+		return triage.Verdict{Score: score, Reason: anyReason, Story: anyStory}, nil
 	}
 }

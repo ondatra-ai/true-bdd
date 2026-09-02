@@ -21,10 +21,6 @@ const (
 	scoreCeiling = 10
 )
 
-// repoWide is the blast radius of a finding that names no file. Legitimate
-// per ticket-schema.yaml, which allows it "when the change really is repo-wide".
-const repoWide = "./*"
-
 // fieldPlan is one ticket's custom fields, keyed to its `## ` heading number
 // so the filing turn can match a row to the task it just created.
 type fieldPlan struct {
@@ -54,21 +50,7 @@ func planFields(queue []Finding, taken stamp) []fieldPlan {
 	return plans
 }
 
-// planStamps is the same for a hand-written deferral, which names no file to
-// derive a blast radius from. Expected Changes stays a person's: a `./*` here
-// would pass task-handle's scope check without ever having bounded anything.
-func planStamps(queue []Finding, taken stamp) []fieldPlan {
-	plans := make([]fieldPlan, 0, len(queue))
-
-	for index, finding := range queue {
-		plans = append(plans, stampedRow(index, finding, taken))
-	}
-
-	return plans
-}
-
-// stampedRow is what both plans share: the verdict, and when and against what
-// it was reached.
+// stampedRow is the verdict, and when and against what it was reached.
 func stampedRow(index int, finding Finding, taken stamp) fieldPlan {
 	return fieldPlan{
 		Ticket:                index + 1,
@@ -91,13 +73,18 @@ func orderindexOf(score int) *int {
 	return &index
 }
 
-// expectedChanges is the directory a finding's file sits in, as a glob. Never
-// the file itself: an exact path forbids adding the test beside it, which is
-// not what the scope check is for (ticket-schema.yaml).
+// repoWide is the blast radius of a file that sits at the repository root.
+// Legitimate per ticket-schema.yaml, which allows it "when the change really
+// is repo-wide" — and a root file's directory IS the root.
+const repoWide = "./*"
+
+// expectedChanges is the directory a finding's file sits in, as a glob — never
+// the file itself (ticket-schema.yaml). No file, no glob: `./*` passed
+// task-handle's scope check having bounded nothing, so no source writes it.
 func expectedChanges(file string) string {
 	trimmed := strings.TrimSpace(file)
-	if trimmed == "" {
-		return repoWide
+	if trimmed == "" || trimmed == "?" {
+		return ""
 	}
 
 	dir := path.Dir(trimmed)

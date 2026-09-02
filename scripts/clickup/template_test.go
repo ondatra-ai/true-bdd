@@ -7,9 +7,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
 )
 
-// The four headings CLAUDE.md requires of a deferral, in order. Restated here
-// so reordering or renaming one in ticket.yaml fails rather than quietly
-// changing the shape of every ticket this repository files.
+// The four headings every Ticket carries, in order. Restated here so renaming
+// or reordering one in ticket.yaml fails rather than quietly reshaping every
+// ticket this repository files — and halting task-handle on the ones it did.
 func TestTicketHeadingsAreTheFourInOrder(t *testing.T) {
 	t.Parallel()
 
@@ -53,11 +53,13 @@ func TestStatusRuleNamesTheStatusItDeclares(t *testing.T) {
 func TestRaiserNamesWhoActuallyRaisedIt(t *testing.T) {
 	t.Parallel()
 
-	// The two values scripts/merge/comments.go sets, and the postmortem's.
+	// The two values scripts/merge/comments.go sets, the postmortem's, and the
+	// deferral's — the three sources the one creator files.
 	cases := map[string]string{
 		"thread":     "CodeRabbit",
 		"body-only":  "CodeRabbit",
 		"postmortem": "The merge postmortem",
+		"deferral":   "A person",
 		"":           "An unrecorded source",
 	}
 

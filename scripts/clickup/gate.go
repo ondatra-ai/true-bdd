@@ -51,45 +51,6 @@ func decide(queue, kept []Finding, err error, strict bool) ([]Finding, error) {
 	return queue, nil
 }
 
-// withoutDuplicates is the same gate over a hand-written deferral's sections.
-// Run BEFORE triage so a duplicate never spends a refresh turn, and strict:
-// `clickup defer` is a person at a keyboard, who can be told to try again.
-func withoutDuplicates(sections []section) ([]section, error) {
-	queue := make([]Finding, 0, len(sections))
-	for _, held := range sections {
-		queue = append(queue, Finding{Title: held.Title, Body: held.Body})
-	}
-
-	kept, err := gated(queue, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return surviving(sections, kept), nil
-}
-
-// surviving keeps the sections the gate did not drop, in order. A count and
-// not a set: two sections can share a title, and the intra-queue pass keeps
-// exactly one of them — a set would hand both back and file both.
-func surviving(sections []section, kept []Finding) []section {
-	allowed := make(map[string]int, len(kept))
-	for _, finding := range kept {
-		allowed[finding.Title]++
-	}
-
-	survivors := make([]section, 0, len(kept))
-
-	for _, held := range sections {
-		if allowed[held.Title] > 0 {
-			allowed[held.Title]--
-
-			survivors = append(survivors, held)
-		}
-	}
-
-	return survivors
-}
-
 // runGate runs the three passes, cheapest first. The corpus and the ranker are
 // parameters so this is reachable from a test — neither turn is.
 func runGate(queue []Finding, rows []CorpusRow, rank ranker) ([]Finding, error) {

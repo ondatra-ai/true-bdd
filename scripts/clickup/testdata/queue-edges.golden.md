@@ -84,8 +84,6 @@ An unrecorded source raised this on PR #76; triage scored it **0/10**.
 
 ### What to change
 
-`?:?`
-
 
 
 ### Verification

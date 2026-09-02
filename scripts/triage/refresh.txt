@@ -11,3 +11,8 @@ is there now, and say under `### Why` what had moved.
 
 If you score it 5 or below, return `description` empty. A ticket that is
 about to be retired is not worth rewriting.
+
+Return `story` empty. Under a refresh the story is part of `description`:
+where `### Why` already tells how the code behaves today and what goes wrong,
+keep it and correct it against HEAD — and where it has none, add none. A
+ticket already filed is refreshed, not rewritten into a newer shape.

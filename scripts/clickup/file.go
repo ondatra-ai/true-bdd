@@ -10,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/claudecli"
 	"github.com/ondatra-ai/true-bdd/scripts/internal/textutil"
+	"github.com/ondatra-ai/true-bdd/scripts/triage"
 )
 
 // ErrNotFiled reports that the queue and the ticket list disagree, in either
@@ -53,7 +54,8 @@ row whose "ticket" is that heading's number:
   - field %s — the "triage_score_orderindex" integer, passed VERBATIM. It
     addresses the dropdown option by POSITION, so passing the score instead
     sets the wrong one. When the row omits it, leave this field alone.
-  - field %s — the "expected_changes" string.
+  - field %s — the "expected_changes" string. When the row omits it, leave
+    this field alone: nothing bounded that change, and a person must.
   - field %s — the "triage_date_millis" integer, passed VERBATIM. It is a
     ClickUp date field, which takes unix MILLISECONDS.
   - field %s — the "triage_commit" string. When the row omits it, leave this
@@ -135,30 +137,38 @@ func file(queuePath, tag, pullRequest string, strict bool) error {
 		return nil
 	}
 
-	queue, err = gated(queue, strict)
+	return fileQueue(queue, tag, Origin(pullRequest), strict)
+}
+
+// fileQueue is the ONE creator. A review finding, a postmortem proposal and a
+// hand-written deferral all reach ClickUp through here, differing only in the
+// queue they hand over and the origin they name.
+func fileQueue(queue []Finding, tag, origin string, strict bool) error {
+	kept, err := prepared(queue, strict)
+	if err != nil || len(kept) == 0 {
+		return err
+	}
+
+	document, err := WriteRendered(kept, tag, origin)
 	if err != nil {
 		return err
 	}
 
-	if len(queue) == 0 {
-		slog.Info("Every ticket in the queue is already filed", "queue", queuePath)
+	slog.Info("Tickets rendered", "count", len(kept), "path", TicketsMarkdown)
 
-		return nil
+	// A body that embeds a `## ` asks the turn for a task the queue does not
+	// have. report catches the fallout after the turn; this names it before.
+	if headings := countHeadings(document); headings != len(kept) {
+		slog.Warn("A rendered body embeds a `## `, so the turn is told a count the queue does not hold",
+			"headings", headings, "queued", len(kept))
 	}
 
-	document, err := WriteRendered(queue, tag, pullRequest)
+	plans, err := encodeFields(planFields(kept, now()))
 	if err != nil {
 		return err
 	}
 
-	slog.Info("Tickets rendered", "count", len(queue), "path", TicketsMarkdown)
-
-	plans, err := encodeFields(planFields(queue, now()))
-	if err != nil {
-		return err
-	}
-
-	prompt := fmt.Sprintf(filePromptTemplate, len(queue), listID(), ticketStatus(), tag,
+	prompt := fmt.Sprintf(filePromptTemplate, len(kept), listID(), ticketStatus(), tag,
 		statusRule(), triageScoreField, expectedChangesField, triageDateField,
 		triageCommitField, plans, document)
 
@@ -167,10 +177,33 @@ func file(queuePath, tag, pullRequest string, strict bool) error {
 		return err
 	}
 
-	return report(len(queue), created)
+	return report(len(kept), created)
 }
 
-// encodeFields is the FIELDS block both filing prompts embed.
+// prepared is the two drops every source runs, in this order: the duplicate
+// gate first, so a duplicate never spends a scoring turn, then the floor. An
+// empty result is not an error — nothing was owed a ticket.
+func prepared(queue []Finding, strict bool) ([]Finding, error) {
+	kept, err := gated(queue, strict)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(kept) == 0 {
+		slog.Info("Nothing to file: the tracker already carries every ticket in this queue")
+
+		return nil, nil
+	}
+
+	kept = scored(kept, triage.Score)
+	if len(kept) == 0 {
+		slog.Warn("Nothing to file: nothing reached the floor", "floor", triage.Floor)
+	}
+
+	return kept, nil
+}
+
+// encodeFields is the FIELDS block the filing prompt embeds.
 func encodeFields(plans []fieldPlan) ([]byte, error) {
 	encoded, err := json.MarshalIndent(plans, "", "  ")
 	if err != nil {

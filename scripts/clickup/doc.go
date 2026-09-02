@@ -18,6 +18,11 @@
 // artifact: it is what a person reads before anything is uploaded, and it is
 // what the model is asked to transcribe rather than invent.
 //
+// One creator, one updater, many sources. fileQueue is the only path to a NEW
+// ticket — a review finding, a postmortem proposal and a hand-written deferral
+// all reach it as a []Finding and are shaped by ticket.yaml. apply is the only
+// path that rewrites one already filed, and it is the sweep's alone.
+//
 // The command is the single ClickUp interface for anything running OUTSIDE a
 // Claude session, which has no MCP server to inherit — task-handle included,
 // since it is a Go command now. The /task-* skills call MCP directly:

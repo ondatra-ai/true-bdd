@@ -11,8 +11,10 @@ import (
 // The floor is restated here so the boundary case fails if it ever moves.
 const (
 	floor = 6
-	// reason stands in for any non-empty one: validate only checks that.
+	// reason and story stand in for any non-empty ones: validate only checks
+	// that they are not blank.
 	reason = "why"
+	story  = "run.go:112 calls it; a `--fix` run then files nothing"
 )
 
 func TestValidateRejectsWhatTheSchemaCannot(t *testing.T) {
@@ -24,13 +26,16 @@ func TestValidateRejectsWhatTheSchemaCannot(t *testing.T) {
 		refresh bool
 		wantErr bool
 	}{
-		{"a scored finding", triage.Verdict{Score: 9, Reason: "run.go:112 still calls it"}, false, false},
-		{"zero is below the band", triage.Verdict{Score: 0, Reason: reason}, false, true},
-		{"eleven is above it", triage.Verdict{Score: 11, Reason: reason}, false, true},
+		{
+			"a scored finding",
+			triage.Verdict{Score: 9, Reason: "run.go:112 still calls it", Story: story}, false, false,
+		},
+		{"zero is below the band", triage.Verdict{Score: 0, Reason: reason, Story: story}, false, true},
+		{"eleven is above it", triage.Verdict{Score: 11, Reason: reason, Story: story}, false, true},
 		{"one is in the band", triage.Verdict{Score: 1, Reason: "the file is gone"}, false, false},
-		{"ten is in the band", triage.Verdict{Score: 10, Reason: reason}, false, false},
-		{"a score with no reason", triage.Verdict{Score: 7}, false, true},
-		{"a reason of only spaces", triage.Verdict{Score: 7, Reason: "   "}, false, true},
+		{"ten is in the band", triage.Verdict{Score: 10, Reason: reason, Story: story}, false, false},
+		{"a score with no reason", triage.Verdict{Score: 7, Story: story}, false, true},
+		{"a reason of only spaces", triage.Verdict{Score: 7, Reason: "   ", Story: story}, false, true},
 		{
 			"at the floor under refresh, with no description",
 			triage.Verdict{Score: floor, Reason: reason}, true, true,
@@ -44,8 +49,20 @@ func TestValidateRejectsWhatTheSchemaCannot(t *testing.T) {
 			triage.Verdict{Score: floor - 1, Reason: reason}, true, false,
 		},
 		{
-			"at the floor WITHOUT refresh needs none",
-			triage.Verdict{Score: floor, Reason: reason}, false, false,
+			"at the floor WITHOUT refresh needs no description",
+			triage.Verdict{Score: floor, Reason: reason, Story: story}, false, false,
+		},
+		{
+			"at the floor WITHOUT refresh, with no story",
+			triage.Verdict{Score: floor, Reason: reason}, false, true,
+		},
+		{
+			"a story of only spaces",
+			triage.Verdict{Score: floor, Reason: reason, Story: "  \n "}, false, true,
+		},
+		{
+			"below the floor needs no story",
+			triage.Verdict{Score: floor - 1, Reason: reason}, false, false,
 		},
 	}
 
@@ -93,8 +110,8 @@ func TestSchemaParsesAndBoundsTheBand(t *testing.T) {
 		t.Fatalf("the verdict schema does not parse: %v", err)
 	}
 
-	if got := strings.Join(schema.Required, ","); got != "score,reason,description" {
-		t.Errorf("required = %q, want all three fields", got)
+	if got := strings.Join(schema.Required, ","); got != "score,reason,description,story" {
+		t.Errorf("required = %q, want all four fields", got)
 	}
 
 	if schema.Properties.Score.Minimum != 1 || schema.Properties.Score.Maximum != 10 {

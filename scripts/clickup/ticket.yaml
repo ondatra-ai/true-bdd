@@ -20,23 +20,30 @@ status_rule: |
   task-loop works unattended, and a filed proposal waits for a person.
 
 # The four headings, in order, rendered as `### ` under the ticket's `## `
-# title. `body` is a Go text/template over one review finding; a hand-written
-# deferral supplies its own prose and is transcribed instead (clickup defer).
+# title. `body` is a Go text/template over one candidate — a deferral's prose
+# is raw material for `What to change`, not its own shape (ADR 0004).
 headings:
 
-  # `Raiser`, not a hardcoded name: "CodeRabbit raised this" credited it with
-  # 35 postmortem tickets it never saw.
+  # `Raiser`, not a hardcoded name: it credited CodeRabbit with 35 postmortem
+  # tickets. The story sits here, not under a fifth heading `Headings()` would
+  # demand of every Ticket filed before it; guarded, so an old row is unchanged.
   - name: Why
     body: |
       {{.Raiser}} raised this on {{.Origin}}; triage scored it **{{.Score}}/10**.
 
       > {{.Reason}}
+      {{- with .Story}}
 
+      {{.}}
+      {{- end}}
+
+  # Guarded: a source naming no file rendered the literal `?:?`, noise where a
+  # blank is honest — and a deferral names none now that this holds its prose.
   - name: What to change
     body: |
-      `{{.File}}:{{.Line}}`
+      {{with .Location}}`{{.}}`
 
-      {{.Body}}
+      {{end}}{{.Body}}
 
   - name: Verification
     body: |

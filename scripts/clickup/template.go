@@ -16,7 +16,9 @@ import (
 //go:embed ticket.yaml
 var ticketYAML []byte
 
-// bodyLimit caps how much of a finding reaches the ticket.
+// bodyLimit caps each of the two long fields a finding reaches the ticket
+// with. A story runs to ~2,800 runes when the turn has read the code, so a
+// tighter cap for it would cut the third paragraph off, silently.
 const bodyLimit = 4000
 
 // heading is one `### ` section of a ticket.
@@ -64,15 +66,16 @@ type findingView struct {
 	Raiser   string
 	Score    int
 	Reason   string
-	File     string
-	Line     string
+	Story    string
+	Location string
 	Body     string
 	Severity string
 	Source   string
 }
 
 // viewOf resolves what the ticket shows. A queue row can be short of any
-// field, and `?` in a heading is readable where an empty line is not.
+// field, and `?` in a heading is readable where an empty line is not — except
+// Story, which the heading guards on instead, so an old row renders as before.
 func viewOf(finding Finding, origin string) findingView {
 	reason := strings.TrimSpace(finding.Reason)
 	if reason == "" {
@@ -84,12 +87,24 @@ func viewOf(finding Finding, origin string) findingView {
 		Raiser:   raiserOf(finding.Source),
 		Score:    finding.Score,
 		Reason:   reason,
-		File:     orUnknown(finding.File),
-		Line:     orUnknown(finding.Line),
+		Story:    textutil.Truncate(strings.TrimSpace(finding.Story), bodyLimit),
+		Location: locationOf(finding),
 		Body:     textutil.Truncate(strings.TrimSpace(finding.Body), bodyLimit),
 		Severity: orUnknown(finding.Severity),
 		Source:   orUnknown(finding.Source),
 	}
+}
+
+// locationOf is the `file:line` a ticket points at, or nothing at all. A
+// source that named no file used to render `?:?`, which reads as a bug rather
+// than as the absence it is; the heading omits the line instead.
+func locationOf(finding Finding) string {
+	file := strings.TrimSpace(finding.File)
+	if file == "" || file == "?" {
+		return ""
+	}
+
+	return file + ":" + orUnknown(finding.Line)
 }
 
 // raiserOf names who raised a finding, in words. `thread` and `body-only` are
@@ -101,6 +116,8 @@ func raiserOf(source string) string {
 		return "CodeRabbit"
 	case "postmortem":
 		return "The merge postmortem"
+	case deferralSource:
+		return "A person"
 	case "":
 		return "An unrecorded source"
 	default:
