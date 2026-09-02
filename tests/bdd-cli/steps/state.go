@@ -212,9 +212,10 @@ func (s *State) grade() {
 	verdict := s.finalVerdict()
 	s.Recorder.ObserveVerdict(verdict)
 
-	// A judge refusal already stopped the scenario as a step failure.
-	// Reporting it again here would show one verdict as two.
-	if !s.judged {
+	// A judge refusal already stopped the scenario as a step failure, and
+	// reporting it here too would show one verdict as two. Golden and
+	// census failures reach the test through this line or nowhere.
+	if verdict.JudgeOK {
 		for _, failure := range verdict.Failures {
 			s.T.Errorf("  - %s", failure)
 		}
@@ -255,7 +256,13 @@ func (s *State) finalVerdict() runner.Verdict {
 	// check subsumes the other, so both must hold.
 	if s.judged {
 		verdict.JudgeOK = s.judgeVerdict.JudgeOK
-		verdict.JudgeMsg = s.judgeVerdict.JudgeMsg
+
+		// A judge that passed states no reason, and the golden count
+		// EvaluateRecorded left here is worth more than that emptiness.
+		if s.judgeVerdict.JudgeMsg != "" {
+			verdict.JudgeMsg = s.judgeVerdict.JudgeMsg
+		}
+
 		verdict.JudgeModel = s.judgeVerdict.JudgeModel
 		verdict.JudgeInputHash = s.judgeVerdict.JudgeInputHash
 		verdict.JudgeStartedAt = s.judgeVerdict.JudgeStartedAt
