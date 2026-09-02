@@ -39,7 +39,7 @@ func Score(subject Subject) (Verdict, error) {
 	var last error
 
 	for attempt := range attempts {
-		verdict, err := ask(prompt, subject.Refresh)
+		verdict, err := ask(prompt, subject.Filed)
 
 		switch {
 		case err == nil:
@@ -61,7 +61,7 @@ func Score(subject Subject) (Verdict, error) {
 }
 
 // ask runs one turn and reads its answer back.
-func ask(prompt string, refresh bool) (Verdict, error) {
+func ask(prompt string, filed bool) (Verdict, error) {
 	raw, err := claudecli.RunJSON(prompt, claudecli.Options{
 		AllowedTools:   tools,
 		PermissionMode: planMode,
@@ -81,7 +81,7 @@ func ask(prompt string, refresh bool) (Verdict, error) {
 			errRejected, err, textutil.Truncate(string(raw), diagnostic))
 	}
 
-	err = verdict.validate(refresh)
+	err = verdict.validate(filed)
 	if err != nil {
 		return Verdict{}, fmt.Errorf("%w: %w", errRejected, err)
 	}

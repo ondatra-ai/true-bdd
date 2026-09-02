@@ -186,28 +186,40 @@ func TestRankPromptNamesTheCorpusTheCandidateAndTheExclusion(t *testing.T) {
 	}
 }
 
-// A set of kept titles would hand both sections back and file both, because
-// they share the title the intra-queue pass kept exactly one of.
-func TestASectionTitleFiledTwiceInOneDocumentSurvivesOnce(t *testing.T) {
+// A deferral reaches the same intra-queue pass a review finding does, so two
+// `## ` headings sharing a title file one ticket. It used to need its own
+// mapping back onto sections; the sections are Findings before the gate now.
+func TestATitleWrittenTwiceInOneDeferralSurvivesOnce(t *testing.T) {
 	t.Parallel()
 
 	document := "## Poll before sleeping\n\nfirst\n\n## Poll before sleeping\n\nsecond\n"
-	kept := []clickup.Finding{{Title: "Poll before sleeping"}}
 
-	got := clickup.SurvivingSectionsForTest(document, kept)
-	if len(got) != 1 {
-		t.Fatalf("%d section(s) survived %v, want 1", len(got), got)
+	kept, err := clickup.RunGateForTest(clickup.FindingsOfForTest(document), nil, unmatched)
+	if err != nil {
+		t.Fatalf("gating a deferral: %v", err)
+	}
+
+	if len(kept) != 1 {
+		t.Fatalf("%d candidate(s) survived %v, want 1", len(kept), clickup.TitlesForTest(kept))
 	}
 }
 
-func TestSurvivingKeepsTheSectionsTheGateDidNotDrop(t *testing.T) {
+// And the ones that differ all survive, in document order.
+func TestADeferralKeepsWhatTheGateDidNotDrop(t *testing.T) {
 	t.Parallel()
 
 	document := "## one\n\na\n\n## two\n\nb\n\n## three\n\nc\n"
-	kept := []clickup.Finding{{Title: first}, {Title: third}}
 
-	got := clickup.SurvivingSectionsForTest(document, kept)
-	if len(got) != 2 || got[0] != first || got[1] != third {
-		t.Fatalf("survived %v, want [one three] in document order", got)
+	kept, err := clickup.RunGateForTest(clickup.FindingsOfForTest(document), nil, unmatched)
+	if err != nil {
+		t.Fatalf("gating a deferral: %v", err)
+	}
+
+	got := clickup.TitlesForTest(kept)
+	if len(got) != 3 || got[0] != first || got[2] != third {
+		t.Fatalf("survived %v, want [one two three] in document order", got)
 	}
 }
+
+// unmatched is a ranker that finds nothing, so only the cheap passes decide.
+func unmatched(_ clickup.Finding, _ string) ([]clickup.Match, error) { return nil, nil }

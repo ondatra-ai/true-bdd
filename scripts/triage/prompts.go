@@ -15,3 +15,8 @@ var rubricPrompt string
 //
 //go:embed refresh.txt
 var refreshPrompt string
+
+// storyPrompt is appended instead for a ticket with no `### Why` to write under.
+//
+//go:embed story.txt
+var storyPrompt string

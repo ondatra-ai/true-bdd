@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
@@ -61,10 +62,41 @@ func TestRenderMatchesGolden(t *testing.T) {
 				t.Fatalf("reading the golden: %v", err)
 			}
 
-			if got := clickup.Render(queue, testCase.tag, testCase.pr); got != string(want) {
+			origin := clickup.Origin(testCase.pr)
+			if got := clickup.Render(queue, testCase.tag, origin); got != string(want) {
 				t.Errorf("render differs from %s\n%s", testCase.golden, firstDifference(got, string(want)))
 			}
 		})
+	}
+}
+
+// The story renders under `### Why`, and its absence renders exactly what it
+// always did — which is what keeps every ticket already filed out of this
+// change.
+func TestStoryRendersUnderWhyOrNotAtAll(t *testing.T) {
+	t.Parallel()
+
+	bare := clickup.Finding{Title: "a title", Source: "thread", Score: 7, Reason: "the reason"}
+	told := bare
+	told.Story = "How it behaves today.\n\nWhat goes wrong, and where it is fixed."
+
+	const (
+		quoted = "> the reason\n"
+		next   = "\n### What to change"
+	)
+
+	if located := clickup.Render([]clickup.Finding{{File: "?", Line: "?"}}, "t", "o"); strings.Contains(located, "`?:?`") {
+		t.Error("a row whose file is the literal `?` still renders `?:?` as a location")
+	}
+
+	without := clickup.Render([]clickup.Finding{bare}, "fix-now", clickup.Origin("76"))
+	if !strings.Contains(without, quoted+next) {
+		t.Errorf("a finding with no story does not render as it did:\n%s", without)
+	}
+
+	with := clickup.Render([]clickup.Finding{told}, "fix-now", clickup.Origin("76"))
+	if !strings.Contains(with, quoted+"\n"+told.Story+"\n"+next) {
+		t.Errorf("the story is not under `### Why` in its own paragraph:\n%s", with)
 	}
 }
 

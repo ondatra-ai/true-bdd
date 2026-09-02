@@ -33,11 +33,12 @@ func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
 			r.dief("scoring %s: %v", finding.ID, err)
 		}
 
-		// Only the verdict's two judgements are carried back. The body stays
-		// the reviewer's own words, which the fix agent and the thread reply
-		// are both anchored to.
+		// Only what the verdict judged and wrote is carried back. The body
+		// stays the reviewer's own words, which the fix agent and the thread
+		// reply are both anchored to.
 		findings[index].Score = verdict.Score
 		findings[index].Reason = verdict.Reason
+		findings[index].Story = verdict.Story
 	}
 
 	r.save(r.roundDir(round)+"/scored.json", findings)
@@ -46,8 +47,8 @@ func (r *Run) triage(findings []clickup.Finding, round int) []clickup.Finding {
 }
 
 // subjectOf is the whole difference between merge's caller and the others:
-// where the subject comes from. Refresh stays unset — a review comment carries
-// no ticket headings to rewrite, and this caller keeps the body verbatim.
+// where the subject comes from. Filed stays unset — this creates a ticket, so
+// the turn is asked for a story and the body stays the reviewer's own words.
 func (r *Run) subjectOf(finding clickup.Finding) triage.Subject {
 	// A postmortem proposal arrives with no id — the prompt returns none — and
 	// the id is only ever a label in a diagnostic, so the title stands in.

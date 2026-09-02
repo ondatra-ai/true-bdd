@@ -50,6 +50,7 @@ func (r *Run) scoreProposals(proposals []clickup.Finding) []clickup.Finding {
 
 		proposals[index].Score = verdict.Score
 		proposals[index].Reason = verdict.Reason
+		proposals[index].Story = verdict.Story
 	}
 
 	return proposals

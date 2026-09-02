@@ -17,6 +17,7 @@ const matchWidth = 60
 const (
 	anyReason    = "why"
 	anyRefreshed = "### Why\n\nrefreshed."
+	anyStory     = "run.go:112 calls it; a `--fix` run then files nothing"
 	anyCreated   = "2026-01-01T00:00:00Z"
 )
 

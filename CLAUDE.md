@@ -170,10 +170,10 @@ volume of code you write: Simplicity First still applies there.
 
 Tasks live in ClickUp: <https://app.clickup.com/90151491867/v/l/li/901523097822>
 **"Defer this" means `clickup defer`** — not MCP `createTask`, not the session
-todo list. It and `clickup file` are the only creation paths, both stamping
-`backlog` (`to do` is what `task-loop` works), headings from `ticket.yaml`,
-scores from the ONE rubric `scripts/triage.Score` — floor 6, vs HEAD — and both
-gated on duplicates, ADR 0007. `clickup triage <N>` re-scores the N stalest.
+todo list. It and `clickup file` are the only creation paths; a defer doc is
+PROSE, not headings — ONE creator shapes every source by `ticket.yaml`, stamps
+`backlog`, scores by the ONE rubric `scripts/triage.Score` (floor 6, vs HEAD)
+and gates on duplicates, ADR 0007. `clickup triage <N>` re-scores the N stalest.
 
 ## Response Style
 

@@ -153,8 +153,8 @@ func runFile(command string, args []string) error {
 	return nil
 }
 
-// runDefer files a hand-written deferral. The document already carries the
-// four headings, so it is transcribed rather than rendered from a finding.
+// runDefer files a hand-written deferral. The document is raw material — a
+// title and prose per ticket — and is shaped by ticket.yaml like any source.
 func runDefer(command string, args []string) error {
 	set := flag.NewFlagSet(command, flag.ContinueOnError)
 	doc := set.String("doc", "", "path to the markdown document (required)")
@@ -196,7 +196,7 @@ func render(queuePath, tag, pullRequest string) error {
 		return fmt.Errorf("loading the queue: %w", err)
 	}
 
-	_, err = clickup.WriteRendered(queue, tag, pullRequest)
+	_, err = clickup.WriteRendered(queue, tag, clickup.Origin(pullRequest))
 	if err != nil {
 		return fmt.Errorf("rendering the queue: %w", err)
 	}

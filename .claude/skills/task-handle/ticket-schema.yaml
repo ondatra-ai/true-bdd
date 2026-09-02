@@ -77,7 +77,11 @@ fields:
 body:
   required_headings:
     - name: "### Why"
-      holds: the reason the change is worth making
+      holds: >-
+        the reason the change is worth making and, on anything filed since
+        triage began writing one, the story: how the code behaves today, what
+        goes wrong in which situation, and which file would be rewritten.
+        Older Tickets carry only the reason, and are not held to the rest
     - name: "### What to change"
       holds: file:line, concretely enough to start from
     - name: "### Verification"

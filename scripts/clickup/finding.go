@@ -28,6 +28,10 @@ type Finding struct {
 	// Added by triage.
 	Score  int    `json:"score,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Story is how the code behaves today, what goes wrong in which situation
+	// and which file would be rewritten. Absent on a row scored before it
+	// existed, so the heading that renders it is guarded rather than `?`.
+	Story string `json:"story,omitempty"`
 
 	// Added by a fix that ran.
 	FixSummary   string   `json:"fix_summary,omitempty"`

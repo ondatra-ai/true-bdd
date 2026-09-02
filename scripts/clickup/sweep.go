@@ -126,16 +126,16 @@ func sweep(stale []Task, bodies map[string]prior) error {
 	return nil
 }
 
-// subjectOfTicket is where this caller's subject comes from. Refresh is set:
-// the body is a ticket carrying the four headings, and refreshing it against
-// HEAD is the whole reason the sweep exists.
+// subjectOfTicket is where this caller's subject comes from. Filed is set here
+// and nowhere else: this is the ONE updater, and the flag is what forbids it
+// growing a ticket somebody already filed into a newer shape.
 func subjectOfTicket(ticket Task, body string) triage.Subject {
 	return triage.Subject{
-		ID:      ticket.ID,
-		Title:   ticket.Name,
-		Body:    body,
-		Origin:  "ClickUp " + ticket.ID + ", last triaged " + orNever(ticket.TriageDate),
-		Refresh: true,
+		ID:     ticket.ID,
+		Title:  ticket.Name,
+		Body:   body,
+		Origin: "ClickUp " + ticket.ID + ", last triaged " + orNever(ticket.TriageDate),
+		Filed:  true,
 	}
 }
 
