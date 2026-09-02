@@ -73,6 +73,18 @@ func FileDocument(path, tag string) error {
 
 	slog.Info("Document split into tickets", "count", len(sections), "document", path)
 
+	sections, err = withoutDuplicates(sections)
+	if err != nil {
+		return err
+	}
+
+	if len(sections) == 0 {
+		slog.Warn("Nothing was filed: the tracker already carries every ticket in the document",
+			"document", path)
+
+		return nil
+	}
+
 	kept := triageSections(sections, triage.Score)
 	if len(kept) == 0 {
 		slog.Warn("Nothing was filed: every ticket in the document scored below the floor",

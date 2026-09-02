@@ -77,9 +77,20 @@ type prior struct {
 func fetchBodies(stale []Task) (map[string]prior, error) {
 	ids := make([]string, 0, len(stale))
 	for _, ticket := range stale {
-		ids = append(ids, "  - "+ticket.ID+"  ("+ticket.Name+")")
+		ids = append(ids, labelled(ticket.ID, ticket.Name))
 	}
 
+	return bodiesOf(ids)
+}
+
+// labelled is one line of the bodies turn's id block. The name rides along so
+// a transcription error is visible in the prompt rather than only in the answer.
+func labelled(id, name string) string {
+	return "  - " + id + "  (" + name + ")"
+}
+
+// bodiesOf runs one bodies turn over an already-labelled batch of ids.
+func bodiesOf(ids []string) (map[string]prior, error) {
 	type body struct {
 		ID          string `json:"id"`
 		Description string `json:"description"`
@@ -87,7 +98,7 @@ func fetchBodies(stale []Task) (map[string]prior, error) {
 	}
 
 	rows, err := listing[body](
-		fmt.Sprintf(bodiesPromptTemplate, len(stale), strings.Join(ids, "\n")),
+		fmt.Sprintf(bodiesPromptTemplate, len(ids), strings.Join(ids, "\n")),
 		listTools, "the ticket bodies")
 	if err != nil {
 		return nil, err

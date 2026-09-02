@@ -17,6 +17,8 @@ const (
 	backlogStatus     = "backlog"
 	queuedStatus      = "to do"
 	notRelevantStatus = "not relevant"
+	doneStatus        = "done"
+	failedStatus      = "failed"
 )
 
 // Triage re-judges the count least-recently-triaged tickets against HEAD.

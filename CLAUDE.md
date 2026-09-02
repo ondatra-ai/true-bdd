@@ -172,8 +172,8 @@ Tasks live in ClickUp: <https://app.clickup.com/90151491867/v/l/li/901523097822>
 **"Defer this" means `clickup defer`** — not MCP `createTask`, not the session
 todo list. It and `clickup file` are the only creation paths, both stamping
 `backlog` (`to do` is what `task-loop` works), headings from `ticket.yaml`,
-scores from the ONE rubric `scripts/triage.Score` — floor 6, vs HEAD. `clickup
-triage <N>` re-scores the N stalest and stamps them.
+scores from the ONE rubric `scripts/triage.Score` — floor 6, vs HEAD — and both
+gated on duplicates, ADR 0007. `clickup triage <N>` re-scores the N stalest.
 
 ## Response Style
 

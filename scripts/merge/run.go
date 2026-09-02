@@ -201,8 +201,8 @@ func (r *Run) round(round int) bool {
 	issues := r.triage(r.readComments(), round)
 	toFix, toCreate, toIgnore := r.split(issues, round)
 
-	fixed, created, ignored := r.disposeConcurrently(toFix, toCreate, toIgnore, round)
-	r.resolveConversations(fixed, created, ignored)
+	fixed, _, ignored := r.dispose(toFix, toCreate, toIgnore, round)
+	r.resolveConversations(fixed, ignored)
 
 	if len(toFix) == 0 {
 		return false

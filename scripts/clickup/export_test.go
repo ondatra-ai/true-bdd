@@ -145,3 +145,73 @@ func FieldIDs() map[string]string {
 		"Triage Commit":    triageCommitField,
 	}
 }
+
+// ListPromptForTest is the queue listing turn's prompt, as it is sent.
+func ListPromptForTest(tag string) string {
+	return listPrompt(tag)
+}
+
+// RankPromptForTest is the similarity turn's prompt, as it is sent.
+func RankPromptForTest(candidate Finding, exclude string) string {
+	return rankPrompt(candidate, exclude)
+}
+
+// ResolveMatchesForTest is the check on an answer the schema cannot make; the
+// turn that produces the matches cannot run in a test.
+func ResolveMatchesForTest(rows []CorpusRow, matches []Match, exclude string) ([]Match, error) {
+	return judge{byID: index(rows)}.resolve(matches, exclude)
+}
+
+// RunGateForTest is the three dedup passes over a corpus and a ranker the test
+// supplies; neither the dump nor the turn can run in a test.
+func RunGateForTest(queue []Finding, rows []CorpusRow,
+	rank func(Finding, string) ([]Match, error),
+) ([]Finding, error) {
+	return runGate(queue, rows, rank)
+}
+
+// DecideForTest is what a gate that could not answer means, by caller.
+func DecideForTest(queue []Finding, failure error, strict bool) ([]Finding, error) {
+	return decide(queue, nil, failure, strict)
+}
+
+// KeeperForTest is the copy that survives a cluster.
+func KeeperForTest(members []CorpusRow) string {
+	return keeperOf(members).ID
+}
+
+// ClustersForTest folds judged pairs into clusters, each one named keeper
+// first — the shape the report is built from.
+func ClustersForTest(rows []CorpusRow, pairs [][2]string) [][]string {
+	edges := make([]edge, 0, len(pairs))
+	for _, judged := range pairs {
+		edges = append(edges, edge{
+			From: judged[0], To: judged[1], Score: dupeFloor, Reason: "the same proposal",
+		})
+	}
+
+	clusters := clustersOf(edges, index(rows))
+	found := make([][]string, 0, len(clusters))
+
+	for _, group := range clusters {
+		members := []string{group.Keeper.ID}
+		for _, loser := range group.Losers {
+			members = append(members, loser.ID)
+		}
+
+		found = append(found, members)
+	}
+
+	return found
+}
+
+// CorpusEntryForTest is one ticket as it lands in CorpusDir.
+func CorpusEntryForTest(row CorpusRow) string {
+	return row.render()
+}
+
+// SurvivingSectionsForTest is which of a document's sections a gate's answer
+// keeps; the gate's own turns cannot run in a test.
+func SurvivingSectionsForTest(document string, kept []Finding) []string {
+	return SectionTitlesForTest(surviving(splitSections(document), kept))
+}
