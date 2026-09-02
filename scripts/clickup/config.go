@@ -15,6 +15,11 @@ const (
 	TicketsMarkdown = "tmp/merge/tickets.md"
 	// FiledRecord is what came back from the filing turn, ticket by ticket.
 	FiledRecord = "tmp/merge/filed.json"
+	// CorpusDir holds one markdown file per existing ticket — what the
+	// similarity turn reads, and the only ClickUp it is allowed to see.
+	CorpusDir = "tmp/dupes/corpus"
+	// DupesReport is the cluster report `clickup dupes` writes.
+	DupesReport = "tmp/dupes/report.md"
 )
 
 // The MCP allowlists. Narrow by intent: `list` cannot create a task even if
@@ -33,7 +38,16 @@ const (
 		"mcp__claude_ai_ClickUP__setCustomFieldValue," +
 		"mcp__claude_ai_ClickUP__getTask," +
 		"mcp__claude_ai_ClickUP__addTaskComment"
+	// The similarity turn reads the dumped corpus and no ClickUp at all.
+	// Plan mode refuses writes at the permission layer, so a judge handed
+	// Read cannot become one that edits (scripts/triage/score.go:18).
+	rankTools = "Read,Glob,Grep"
+	rankMode  = "plan"
 )
+
+// attempts is the one retry a rejected ANSWER gets — never a failed turn,
+// which would spend a second timeout to learn what the first one said.
+const attempts = 2
 
 const (
 	defaultListID  = "901523097822"

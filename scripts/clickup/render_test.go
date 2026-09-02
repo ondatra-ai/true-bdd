@@ -42,7 +42,7 @@ func TestRenderMatchesGolden(t *testing.T) {
 			name:   "real queue",
 			queue:  "queue-real.json",
 			golden: "queue-real.golden.md",
-			tag:    "merge-improvements",
+			tag:    improve,
 			pr:     "81",
 		},
 	}

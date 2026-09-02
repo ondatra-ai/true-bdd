@@ -2,7 +2,6 @@ package merge
 
 import (
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/scripts/clickup"
@@ -27,6 +26,8 @@ func (r *Run) create(toCreate []clickup.Finding, round int) []clickup.Finding {
 			len(toCreate), err)
 	}
 
+	r.answerCreated(toCreate)
+
 	return toCreate
 }
 
@@ -40,47 +41,26 @@ func (r *Run) ignore(toIgnore []clickup.Finding, round int) []clickup.Finding {
 	return toIgnore
 }
 
-// disposeConcurrently runs the three dispositions at once.
-//
-// Only fix touches the worktree, so the other two are free to run beside it.
-func (r *Run) disposeConcurrently(
+// dispose runs the three dispositions in order, on this goroutine. create
+// before fix because fix is the only one that edits: a stop after it edits
+// leaves a dirty tree the next run refuses to start on.
+func (r *Run) dispose(
 	toFix, toCreate, toIgnore []clickup.Finding, round int,
 ) ([]clickup.Finding, []clickup.Finding, []clickup.Finding) {
-	var (
-		fixed, created, ignored []clickup.Finding
-		group                   sync.WaitGroup
-	)
+	started := time.Now()
+	created := r.create(toCreate, round)
 
-	group.Add(3) //nolint:mnd // the three dispositions, named on the next three lines.
+	report.Leaf("create tickets", started, "tickets", len(created))
 
-	// Each times ITSELF rather than opening a node: three concurrent start/end
-	// pairs interleave, and a tree parsed from order cannot survive that.
-	go func() {
-		defer group.Done()
+	started = time.Now()
+	ignored := r.ignore(toIgnore, round)
 
-		started := time.Now()
-		fixed = r.fix(toFix)
+	report.Leaf("ignore", started, "findings", len(ignored))
 
-		report.Leaf("fix", started, "findings", len(toFix))
-	}()
-	go func() {
-		defer group.Done()
+	started = time.Now()
+	fixed := r.fix(toFix)
 
-		started := time.Now()
-		created = r.create(toCreate, round)
-
-		report.Leaf("create tickets", started, "tickets", len(created))
-	}()
-	go func() {
-		defer group.Done()
-
-		started := time.Now()
-		ignored = r.ignore(toIgnore, round)
-
-		report.Leaf("ignore", started, "findings", len(ignored))
-	}()
-
-	group.Wait()
+	report.Leaf("fix", started, "findings", len(toFix))
 
 	return fixed, created, ignored
 }

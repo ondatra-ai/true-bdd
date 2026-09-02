@@ -82,14 +82,15 @@ Return ONLY a JSON array, no prose and no code fence:
 `
 
 // File renders the queue and asks a headless turn to create one ClickUp task
-// per heading.
+// per heading. Gated, but never blocked by the gate: scripts/merge/tickets.go:25
+// dies on the error, so a gate that cannot answer files the queue ungated.
 func File(queuePath, tag, pullRequest string) error {
 	return file(queuePath, tag, pullRequest, false)
 }
 
-// FileDeduped files only what no open task under tag already covers. The
-// postmortem's door: a review finding recurring across PRs is news, a process
-// proposal recurring while its ticket sits unimplemented is a duplicate.
+// FileDeduped is the same filing under a gate that files NOTHING when it
+// cannot answer. Both are gated now: "a finding recurring across PRs is news"
+// left File open, and re-runs of one PR filed three pairs on 2026-09-01.
 func FileDeduped(queuePath, tag, pullRequest string) error {
 	return file(queuePath, tag, pullRequest, true)
 }
@@ -122,7 +123,7 @@ func dropAlreadyOpen(queue []Finding, open []Task) ([]Finding, []Task) {
 	return kept, dropped
 }
 
-func file(queuePath, tag, pullRequest string, dedupe bool) error {
+func file(queuePath, tag, pullRequest string, strict bool) error {
 	queue, err := LoadQueue(queuePath)
 	if err != nil {
 		return err
@@ -134,17 +135,15 @@ func file(queuePath, tag, pullRequest string, dedupe bool) error {
 		return nil
 	}
 
-	if dedupe {
-		queue, err = withoutOpen(queue, tag)
-		if err != nil {
-			return err
-		}
+	queue, err = gated(queue, strict)
+	if err != nil {
+		return err
+	}
 
-		if len(queue) == 0 {
-			slog.Info("Every ticket in the queue is already open", "queue", queuePath)
+	if len(queue) == 0 {
+		slog.Info("Every ticket in the queue is already filed", "queue", queuePath)
 
-			return nil
-		}
+		return nil
 	}
 
 	document, err := WriteRendered(queue, tag, pullRequest)
@@ -169,23 +168,6 @@ func file(queuePath, tag, pullRequest string, dedupe bool) error {
 	}
 
 	return report(len(queue), created)
-}
-
-// withoutOpen lists the open tickets under tag and drops what they cover. A
-// listing that fails files nothing: not knowing what is open is exactly the
-// state this filters for.
-func withoutOpen(queue []Finding, tag string) ([]Finding, error) {
-	open, err := openTasks(tag)
-	if err != nil {
-		return nil, fmt.Errorf("%w: the open %s tickets could not be listed: %w", ErrNotFiled, tag, err)
-	}
-
-	kept, dropped := dropAlreadyOpen(queue, open)
-	for _, task := range dropped {
-		slog.Info("Already open", "ticket", task.ID, "title", task.Name)
-	}
-
-	return kept, nil
 }
 
 // encodeFields is the FIELDS block both filing prompts embed.

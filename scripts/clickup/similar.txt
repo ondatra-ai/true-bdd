@@ -1,0 +1,42 @@
+You are deciding whether ONE proposed ticket already exists in the tracker.
+
+The folder named below holds every ticket that is already filed, one markdown
+file per ticket: the filename is the ticket's id, the header carries its id,
+status, url, tags, creation date and triage fields, and the body follows the
+`---` rule.
+
+Read the folder. Then find the THREE existing tickets most similar to the
+CANDIDATE below, and score each one for IDENTITY, 1 to 10:
+
+  10  The same proposal. It asks for the same change to the same thing, and
+      doing one would be doing the other. The wording may differ completely.
+   8-9  Substantially the same proposal, differing only in scope or in an
+      incidental detail — one names two call sites and the other three, or
+      one adds a test the other leaves implied.
+   6-7  The same underlying problem, but a different remedy, or the same
+      remedy applied somewhere else. Whoever picked one up would want to
+      know about the other.
+   4-5  Related: the same file, subsystem or theme, and plausibly worth
+      reading side by side, but neither one does the other's work.
+   1-3  Different. It may touch nearby code or share vocabulary, but the
+      change being asked for is not the same change.
+   1  Nothing in common beyond being a ticket in this repository.
+
+Score by whether the CHANGE is the same, never by how alike the two are
+worded. Two tickets that describe the same fix in unrelated prose are a 10.
+Two that share a title style and a filename but ask for different edits are
+a 2.
+
+Read the candidate's body, not only its title: a duplicate is routinely filed
+under a different title, and that is the case this exists to catch.
+
+Return the three highest-scoring tickets, best first. Return FEWER than three
+when fewer than three exist, and an empty list when the folder holds nothing
+resembling the candidate at all — padding the list with unrelated tickets to
+reach three is a wrong answer.
+
+Every `id` you return must be the id of a file that is actually in the folder,
+copied exactly. Do not invent one, and do not return an id you did not read.
+
+`reason` is one sentence naming what the two tickets both ask for, or why the
+resemblance is superficial.

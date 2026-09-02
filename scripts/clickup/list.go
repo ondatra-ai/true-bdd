@@ -24,6 +24,10 @@ type Task struct {
 const listPromptTemplate = `Use the ClickUp MCP tools to list every OPEN (not closed, not complete) task
 in list %s carrying the tag ` + "`%s`" + `.
 
+A task whose status is %s is NOT open; leave it out. Named rather than left to
+judgement: listTasks returns a "not relevant" task even with includeClosed
+false, so nothing but this sentence excludes a retired ticket.
+
 Return ONLY a JSON array sorted OLDEST FIRST by creation date, no prose and
 no code fence:
 [{"id": "<id>", "name": "<name>", "status": "<status>", "url": "<url>"}]
@@ -32,6 +36,17 @@ Oldest first matters: this is a work queue, and ClickUp's default ordering
 is newest-first, which leaves the oldest item permanently last.
 If there are none, return [].
 `
+
+// settledStatuses are the statuses that end a ticket's life. Spelled into the
+// prompt because listTasks returns a `not relevant` task even with
+// includeClosed false (probed 2026-09-02), so nothing else excludes one.
+const settledStatuses = `"` + notRelevantStatus + `", "` + doneStatus +
+	`" or "` + failedStatus + `"`
+
+// listPrompt names the list, the tag, and what does not count as open.
+func listPrompt(tag string) string {
+	return fmt.Sprintf(listPromptTemplate, listID(), tag, settledStatuses)
+}
 
 // List prints the open tasks carrying tag, oldest first.
 func List(tag string) error {
@@ -53,7 +68,7 @@ func List(tag string) error {
 
 // openTasks runs the listing turn and reads its array back.
 func openTasks(tag string) ([]Task, error) {
-	answer, err := claudecli.Run(fmt.Sprintf(listPromptTemplate, listID(), tag), claudecli.Options{
+	answer, err := claudecli.Run(listPrompt(tag), claudecli.Options{
 		AllowedTools: listTools,
 		Role:         roleClickUp,
 		Timeout:      claudeTimeout(),

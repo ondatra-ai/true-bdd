@@ -77,3 +77,4 @@ func PanicStop(message string) { panic(stopSentinel{message: message}) }
 
 // Guard is the recover-to-error wrapper Execute and Embed are built on.
 func Guard(body func()) error { return guard(body) }
+

@@ -52,6 +52,18 @@ _Avoid_: result, judgement, assessment
 Scoring one Subject 1-10 by the consequence of leaving it undone, read against the tree as it stands. One rubric for the whole repository (`scripts/triage`), because relevance is not a second axis: a claim about code that no longer exists has no consequence, and scores 1. The disposition is the caller's — merge fixes, tickets or drops by its own Floors; `scripts/clickup` retires below 6 or refuses to file.
 _Avoid_: scoring, grooming, prioritisation, ranking
 
+**Corpus**:
+Every Ticket in the tracker, dumped to one markdown file each under `tmp/dupes/corpus/` for a model to read. Written fresh on every gate run and never cached: one merge files `fix-now` and then the postmortem minutes later, so the second Corpus has to hold what the first filing just created. Holds every status, because a proposal recurring after it was retired is a duplicate too.
+_Avoid_: index, cache, snapshot, dump
+
+**Duplicate gate**:
+The check every filing path runs before the render: a cheap 60-rune title prefix against open Tickets, then the same within the queue, then one model turn per candidate scoring it 1-10 for identity against the Corpus. Files only at 3 or lower. Dropping before the render is load-bearing — the heading count, the field plan and the filed-count check all have to agree on one shortened queue.
+_Avoid_: dedupe, filter, similarity check
+
+**Keeper**:
+The copy of a duplicated proposal that survives, the rest retired to `not relevant` with a comment naming its URL. Chosen by rule, not by hand: what shipped, then what a person promoted, then the higher Triage Score, the fresher Triage Date, and failing all of those the older Ticket, whose URL anything outside ClickUp would already cite.
+_Avoid_: primary, canonical, original, master
+
 **Task**:
 One session's unit of work — the history file under `docs/history/` that `/task-start` opens. At most one Ticket is bound to it, from `/task-start` until `/task-done` or `/task-fail`.
 _Avoid_: session, run, thread
@@ -77,7 +89,7 @@ One operation or sub-operation of a Run, opened and closed by a pair of `tree=st
 _Avoid_: step, stage, span, phase
 
 **Leaf**:
-One measured thing inside a Node — a single record carrying its own `duration_ms`, and no markers. What the three concurrent dispositions, every gate and every AI turn emit, because interleaved start/end pairs cannot be parsed from order.
+One measured thing inside a Node — a single record carrying its own `duration_ms`, and no markers. What the three dispositions, every gate and every AI turn emit — a thing measured rather than a span nested inside other spans.
 _Avoid_: event, point, sample
 
 **Disk access**:

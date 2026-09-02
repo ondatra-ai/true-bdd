@@ -17,6 +17,20 @@ Propose improvements to EXACTLY these files, and no others:
 Read them before proposing anything — a proposal that misreads the current
 code is worse than none. You have read-only tools; do not attempt to edit.
 
+The folder tmp/dupes/corpus/ holds one markdown file per ticket ALREADY in
+the tracker — filename is the ticket id, then a header and the ticket's body.
+Read it first, with Glob and Grep.
+
+Do not propose anything it already carries. A proposal reworded is still the
+same proposal: this postmortem has filed "poll before sleeping in the wait
+loops" five times under five different titles, and "give pr-merge a killable
+pid" six times. If the tracker already holds what you were about to propose,
+leave it out and propose the next thing instead.
+
+The folder may be absent on a fresh checkout, and may be one run out of date.
+Absent means propose normally; out of date means the last few tickets may be
+missing, and a filing gate catches those.
+
 Do not score what you propose. Every proposal is triaged afterwards, by a
 separate turn holding one rubric shared with the rest of this repository's
 tooling, and a self-assessed number would only be overwritten.

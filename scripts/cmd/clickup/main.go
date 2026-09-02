@@ -9,6 +9,7 @@
 //	clickup defer  --doc tmp/deferral.md --tag deferred
 //	clickup list   --tag fix-now
 //	clickup triage 10
+//	clickup dupes  86cbcw2zk
 package main
 
 import (
@@ -31,6 +32,7 @@ const usage = `usage:
   clickup defer  --doc <path> --tag <tag>
   clickup list   --tag <tag>
   clickup triage <count>
+  clickup dupes  [TICKET...]
   clickup status <TICKET> <STATUS> <comment...>
   clickup close  <STATUS> <comment...>
 `
@@ -52,23 +54,31 @@ func run(args []string) error {
 
 	command, rest := args[0], args[1:]
 
-	switch command {
-	case "render":
-		return runRender(command, rest)
-	case "file":
-		return runFile(command, rest)
-	case "defer":
-		return runDefer(command, rest)
-	case "list":
-		return runList(command, rest)
-	case "triage":
-		return runTriage(rest)
-	case "status":
-		return runStatus(rest)
-	case "close":
-		return runClose(rest)
-	default:
+	handler, known := commands()[command]
+	if !known {
 		return fmt.Errorf("%w: %q\n%s", errUnknownCommand, command, usage)
+	}
+
+	return handler(command, rest)
+}
+
+// commands is the dispatch. A table rather than a switch: the switch reached
+// cyclop's ceiling at the eighth subcommand. The four positional ones ignore
+// the name, which only the flag parsers need.
+func commands() map[string]func(string, []string) error {
+	positional := func(handle func([]string) error) func(string, []string) error {
+		return func(_ string, args []string) error { return handle(args) }
+	}
+
+	return map[string]func(string, []string) error{
+		"render": runRender,
+		"file":   runFile,
+		"defer":  runDefer,
+		"list":   runList,
+		"triage": positional(runTriage),
+		"dupes":  positional(runDupes),
+		"status": positional(runStatus),
+		"close":  positional(runClose),
 	}
 }
 
@@ -83,6 +93,18 @@ func runStatus(args []string) error {
 	err := clickup.Status(args[0], args[1], strings.Join(args[2:], " "))
 	if err != nil {
 		return fmt.Errorf("closing the ticket: %w", err)
+	}
+
+	return nil
+}
+
+// runDupes audits filed tickets for duplicates and writes the report. The ids
+// are positional and optional: with none it audits every ticket a person could
+// still be asked to work. It changes nothing in ClickUp.
+func runDupes(args []string) error {
+	err := clickup.Dupes(args)
+	if err != nil {
+		return fmt.Errorf("auditing for duplicates: %w", err)
 	}
 
 	return nil
