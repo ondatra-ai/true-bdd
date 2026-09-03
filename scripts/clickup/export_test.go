@@ -201,3 +201,16 @@ func ClustersForTest(rows []CorpusRow, pairs [][2]string) [][]string {
 func CorpusEntryForTest(row CorpusRow) string {
 	return row.render()
 }
+
+// TicketIDForTest is the id inside whatever a person pasted.
+func TicketIDForTest(ref string) string { return ticketID(ref) }
+
+// WalkableForTest is the status fence the per-ticket form applies; the read
+// turn that produces the Detail cannot run in a test.
+func WalkableForTest(status string) error {
+	return walkable(Detail{ID: "86cb9feh1", Status: status})
+}
+
+// FilePromptTemplateForTest is the creating turn's prompt, before the queue
+// is rendered into it; the turn itself cannot run in a test.
+func FilePromptTemplateForTest() string { return filePromptTemplate }

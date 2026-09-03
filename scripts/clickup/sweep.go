@@ -46,6 +46,75 @@ func Triage(count int) error {
 	return sweep(stale, bodies)
 }
 
+// TriageTickets re-judges exactly the tickets named, wherever they sit in the
+// sweep's order. A person naming one has already decided which; the count form
+// is for advancing the backlog, this one for answering about a ticket.
+func TriageTickets(refs []string) error {
+	if len(refs) == 0 {
+		return fmt.Errorf("%w: none named", errNothingToTriage)
+	}
+
+	named, bodies, err := namedTickets(refs)
+	if err != nil {
+		return err
+	}
+
+	return sweep(named, bodies)
+}
+
+// namedTickets reads each named ticket whole. Fetch answers with the body and
+// the fields in one turn, so the walk and the bodies pass are both skipped.
+func namedTickets(refs []string) ([]Task, map[string]prior, error) {
+	named := make([]Task, 0, len(refs))
+	bodies := make(map[string]prior, len(refs))
+
+	for _, ref := range refs {
+		detail, err := Fetch(ticketID(ref))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		err = walkable(detail)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		named = append(named, Task{
+			ID: detail.ID, Name: detail.Name, Status: detail.Status,
+			URL: detail.URL, TriageDate: detail.TriageDate,
+		})
+		bodies[detail.ID] = prior{Description: detail.Description, Score: detail.TriageScore}
+	}
+
+	return named, bodies, nil
+}
+
+// ticketID is the id inside whatever a person pasted — a ClickUp URL's last
+// path segment, or the bare id already.
+func ticketID(ref string) string {
+	trimmed := strings.TrimRight(strings.TrimSpace(ref), "/")
+
+	slash := strings.LastIndex(trimmed, "/")
+	if slash < 0 {
+		return trimmed
+	}
+
+	return trimmed[slash+1:]
+}
+
+// walkable refuses a ticket the count form would never have reached.
+// dispositionOf retires anything below the floor, and retiring a `done` ticket
+// to `not relevant` rewrites work somebody already finished.
+func walkable(detail Detail) error {
+	status := strings.ToLower(strings.TrimSpace(detail.Status))
+	if status == backlogStatus || status == queuedStatus {
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s is %q, not %q or %q",
+		errNotWalkable, detail.ID, detail.Status, backlogStatus, queuedStatus)
+}
+
 // staleTickets lists every walkable ticket and picks the oldest-triaged. The
 // sort is Go's: ClickUp cannot order by a custom field, so the turn transcribes
 // and this decides.
@@ -131,11 +200,12 @@ func sweep(stale []Task, bodies map[string]prior) error {
 // growing a ticket somebody already filed into a newer shape.
 func subjectOfTicket(ticket Task, body string) triage.Subject {
 	return triage.Subject{
-		ID:     ticket.ID,
-		Title:  ticket.Name,
-		Body:   body,
-		Origin: "ClickUp " + ticket.ID + ", last triaged " + orNever(ticket.TriageDate),
-		Filed:  true,
+		ID:       ticket.ID,
+		Title:    ticket.Name,
+		Body:     body,
+		Origin:   "ClickUp " + ticket.ID + ", last triaged " + orNever(ticket.TriageDate),
+		Filed:    true,
+		Headings: Headings(),
 	}
 }
 

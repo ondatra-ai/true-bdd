@@ -90,3 +90,35 @@ func TestPromptCarriesAWholeTicket(t *testing.T) {
 		t.Errorf("a %d-rune ticket lost its tail before the turn saw it", len(body))
 	}
 }
+
+// The shape a refresh must come back in is NAMED to the turn, from the
+// caller's list — ticket.yaml declares the headings once, and refresh.txt
+// carrying its own copy is the drift this avoids.
+func TestPromptNamesTheHeadingsARefreshMustCarry(t *testing.T) {
+	t.Parallel()
+
+	subject := triage.Subject{
+		ID: "86cb9feh1", Body: "a body", Filed: true,
+		Headings: []string{why, "What to change"},
+	}
+
+	const block = "--- BEGIN REQUIRED HEADINGS ---"
+
+	prompt := triage.PromptForTest(subject)
+	for _, want := range []string{block, "### Why", "### What to change"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("the refresh prompt does not carry %q", want)
+		}
+	}
+
+	// A creating path has no body to reshape, so it is told about none.
+	subject.Filed = false
+	if strings.Contains(triage.PromptForTest(subject), block) {
+		t.Error("a creating subject was handed a refresh's heading block")
+	}
+
+	subject.Filed, subject.Headings = true, nil
+	if strings.Contains(triage.PromptForTest(subject), block) {
+		t.Error("a subject naming no headings rendered an empty block")
+	}
+}

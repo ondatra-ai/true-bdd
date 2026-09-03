@@ -46,11 +46,12 @@ var (
 	errNoReason       = errors.New("no reason given")
 	errNoRefresh      = errors.New("no refreshed description given")
 	errNoStory        = errors.New("no story given")
+	errMissingHeading = errors.New("the refreshed body is missing a heading")
 )
 
 // validate is what the schema cannot say. The band is restated here because
 // --json-schema is an instruction to a model and this is a check on its answer.
-func (v Verdict) validate(filed bool) error {
+func (v Verdict) validate(filed bool, headings []string) error {
 	if v.Score < minScore || v.Score > maxScore {
 		return fmt.Errorf("%w: %d is not %d-%d", errScoreOutOfBand, v.Score, minScore, maxScore)
 	}
@@ -59,18 +60,55 @@ func (v Verdict) validate(filed bool) error {
 		return fmt.Errorf("%w for the score %d", errNoReason, v.Score)
 	}
 
-	if filed && v.Score >= Floor && strings.TrimSpace(v.Description) == "" {
-		return fmt.Errorf("%w: scored %d, which is at or above the floor of %d",
-			errNoRefresh, v.Score, Floor)
+	// Below the floor neither branch owes a body: one is about to be retired,
+	// the other never filed.
+	if v.Score < Floor {
+		return nil
 	}
 
-	// The same rule for the other branch. A ticket filed without the story is
-	// the ticket this field exists to stop being filed, and the turn that read
-	// the code is the only one that could have written it.
-	if !filed && v.Score >= Floor && strings.TrimSpace(v.Story) == "" {
+	if filed {
+		return v.refreshValid(headings)
+	}
+
+	// A ticket filed without the story is the ticket this field exists to stop
+	// being filed, and the turn that read the code is the only one that could
+	// have written it.
+	if strings.TrimSpace(v.Story) == "" {
 		return fmt.Errorf("%w: scored %d, which is at or above the floor of %d",
 			errNoStory, v.Score, Floor)
 	}
 
 	return nil
+}
+
+// refreshValid holds a refreshed body to the shape the caller named. A body
+// that came back missing a heading is rejected rather than written, which
+// spends Score's one retry instead of storing a ticket nothing can read back.
+func (v Verdict) refreshValid(headings []string) error {
+	if strings.TrimSpace(v.Description) == "" {
+		return fmt.Errorf("%w: scored %d, which is at or above the floor of %d",
+			errNoRefresh, v.Score, Floor)
+	}
+
+	for _, name := range headings {
+		if !hasHeading(v.Description, name) {
+			return fmt.Errorf("%w: %q", errMissingHeading, headingMarker+name)
+		}
+	}
+
+	return nil
+}
+
+// hasHeading reads the body a line at a time: a heading named inside a
+// paragraph is prose, not a section.
+func hasHeading(body, name string) bool {
+	want := headingMarker + name
+
+	for line := range strings.SplitSeq(body, "\n") {
+		if strings.EqualFold(strings.TrimSpace(line), want) {
+			return true
+		}
+	}
+
+	return false
 }

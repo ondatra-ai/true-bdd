@@ -4,7 +4,9 @@ package triage
 // them through this seam, which the compiler drops from any non-test build.
 
 // ValidateForTest is the check on an answer that the schema cannot express.
-func ValidateForTest(verdict Verdict, filed bool) error { return verdict.validate(filed) }
+func ValidateForTest(verdict Verdict, filed bool, headings []string) error {
+	return verdict.validate(filed, headings)
+}
 
 // PromptForTest is the whole turn a subject renders to.
 func PromptForTest(subject Subject) string { return subject.prompt() }

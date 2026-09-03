@@ -4,10 +4,18 @@ that do not change the verdict: a renamed file, a moved symbol, a quoted
 snippet that no longer matches the source.
 
 If you score it 6 or above, ALSO return `description`: the same ticket,
-rewritten against the code as it stands. Keep its four `### ` headings and
-their order. Keep what the ticket asks for — you are refreshing its evidence,
-not renegotiating its scope. Correct every path, symbol and quotation to what
-is there now, and say under `### Why` what had moved.
+rewritten against the code as it stands. It MUST carry every heading listed
+under REQUIRED HEADINGS below, each with its `### ` marker, each alone on its
+line, in that order.
+
+The body you are shown may arrive FLATTENED. A ticket filed before this was
+fixed reads back with its heading text on a bare line and no `### ` at all,
+and with the backticks gone from its code spans. Restore them; do not assume
+what you were shown is what was stored.
+
+Keep what the ticket asks for — you are refreshing its evidence, not
+renegotiating its scope. Correct every path, symbol and quotation to what is
+there now, and say under `### Why` what had moved.
 
 If you score it 5 or below, return `description` empty. A ticket that is
 about to be retired is not worth rewriting.
