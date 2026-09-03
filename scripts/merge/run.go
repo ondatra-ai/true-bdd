@@ -126,6 +126,13 @@ func Start(args []string) *Run {
 		usage("cannot enter the repository root: " + err.Error())
 	}
 
+	// Every file below belongs to this run; a stale filed.json answers a
+	// thread with another PR's ticket.
+	err = disk.RemoveTree(StateDir)
+	if err != nil {
+		usage("cannot clear " + StateDir + ": " + err.Error())
+	}
+
 	requireTools()
 
 	run := &Run{
