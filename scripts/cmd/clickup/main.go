@@ -9,6 +9,7 @@
 //	clickup defer  --doc tmp/deferral.md --tag deferred
 //	clickup list   --tag fix-now
 //	clickup triage 10
+//	clickup triage https://app.clickup.com/t/90151491867/86cb9feh1
 //	clickup dupes  86cbcw2zk
 package main
 
@@ -31,7 +32,7 @@ const usage = `usage:
   clickup file   --queue <path> --tag <tag> [--pr <number>]
   clickup defer  --doc <path> --tag <tag>
   clickup list   --tag <tag>
-  clickup triage <count>
+  clickup triage <count> | <TICKET|URL>...
   clickup dupes  [TICKET...]
   clickup status <TICKET> <STATUS> <comment...>
   clickup close  <STATUS> <comment...>
@@ -110,24 +111,42 @@ func runDupes(args []string) error {
 	return nil
 }
 
-// runTriage re-judges the oldest-triaged tickets against HEAD. The count is
-// positional: a sweep has exactly one number to give it.
+// runTriage re-judges tickets against HEAD. One number sweeps that many of the
+// oldest-triaged; anything else is the ticket a person named, by id or by URL.
 func runTriage(args []string) error {
-	if len(args) != 1 {
+	if len(args) == 0 {
 		return fmt.Errorf("%w\n%s", errMissingFlag, usage)
 	}
 
-	count, err := strconv.Atoi(args[0])
-	if err != nil {
-		return fmt.Errorf("%w: the count %q is not a number\n%s", errMissingFlag, args[0], usage)
+	count, sweeping := sweepCount(args)
+	if sweeping {
+		err := clickup.Triage(count)
+		if err != nil {
+			return fmt.Errorf("triaging the backlog: %w", err)
+		}
+
+		return nil
 	}
 
-	err = clickup.Triage(count)
+	err := clickup.TriageTickets(args)
 	if err != nil {
-		return fmt.Errorf("triaging the backlog: %w", err)
+		return fmt.Errorf("triaging the named tickets: %w", err)
 	}
 
 	return nil
+}
+
+// sweepCount reads a count sweep out of the args. One bare number is a sweep;
+// anything else names tickets. A ClickUp id is base36 and could in principle be
+// all digits, so paste the URL when it is — that is never ambiguous.
+func sweepCount(args []string) (int, bool) {
+	if len(args) != 1 {
+		return 0, false
+	}
+
+	count, err := strconv.Atoi(args[0])
+
+	return count, err == nil
 }
 
 func runRender(command string, args []string) error {

@@ -12,6 +12,10 @@ import (
 // refresh returns what it was shown, so a tail cut here is a tail deleted.
 const bodyLimit = 10000
 
+// headingMarker is what a ticket's section line opens with. Asked for in the
+// prompt and checked in the answer, so both spell it the same way.
+const headingMarker = "### "
+
 // Subject is one claim about this repository, awaiting judgement.
 type Subject struct {
 	// ID is the caller's handle — a ticket id, a finding id. Echoed in
@@ -28,6 +32,11 @@ type Subject struct {
 	// it against HEAD, and never grow it into a newer shape. Set by the sweep
 	// alone. Every creating path leaves it unset and is asked for a story.
 	Filed bool
+
+	// Headings is the shape a refreshed body must come back in, named by the
+	// caller because this package must not import the one that owns
+	// ticket.yaml. Both asked for and checked; empty asks for neither.
+	Headings []string
 }
 
 // prompt is the whole turn: the rubric, the clause that says where the
@@ -40,6 +49,7 @@ func (s Subject) prompt() string {
 
 	if s.Filed {
 		built.WriteString(refreshPrompt)
+		built.WriteString(s.headingBlock())
 	} else {
 		built.WriteString(storyPrompt)
 	}
@@ -55,6 +65,27 @@ title    : %s
 --- END SUBJECT ---
 `, orUnknown(s.Origin), orUnknown(s.File), orUnknown(s.Line), orUnknown(s.Severity),
 		orUnknown(s.Title), textutil.Truncate(strings.TrimSpace(s.Body), bodyLimit))
+
+	return built.String()
+}
+
+// headingBlock names the shape a refreshed body must come back in. Rendered
+// from the caller's list, not written into refresh.txt: ticket.yaml declares
+// the headings once, and a second copy in a prompt file drifts.
+func (s Subject) headingBlock() string {
+	if len(s.Headings) == 0 {
+		return ""
+	}
+
+	var built strings.Builder
+
+	built.WriteString("\n--- BEGIN REQUIRED HEADINGS ---\n")
+
+	for _, name := range s.Headings {
+		built.WriteString(headingMarker + name + "\n")
+	}
+
+	built.WriteString("--- END REQUIRED HEADINGS ---\n")
 
 	return built.String()
 }

@@ -16,6 +16,7 @@ import (
 var (
 	errNothingToTriage = errors.New("a sweep needs a count of at least one ticket")
 	errNotTriaged      = errors.New("tickets were walked but not triaged")
+	errNotWalkable     = errors.New("a sweep may only re-judge an open ticket")
 	errApplyRefused    = errors.New("the ticket was not updated")
 )
 
@@ -70,9 +71,12 @@ type applied struct {
 // so the turn reads four steps either way.
 const (
 	keepDescription = "2. Leave its description exactly as it is."
-	setDescription  = "2. Replace its description with the markdown between the BEGIN DESCRIPTION\n" +
+	setDescription  = "2. Replace its description with the text between the BEGIN DESCRIPTION\n" +
 		"   and END DESCRIPTION markers below, verbatim. Do not summarise, extend\n" +
-		"   or reformat it."
+		"   or reformat it. Pass it as updateTask's `description` parameter and\n" +
+		"   NEVER as `markdownContent`: ClickUp parses markdownContent into rich\n" +
+		"   content, and getTask then returns the body flattened, with the `### `\n" +
+		"   markers this ticket's own format depends on stripped out of it."
 	descriptionBlock = "\n\n--- BEGIN DESCRIPTION ---\n%s\n--- END DESCRIPTION ---"
 )
 

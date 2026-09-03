@@ -43,7 +43,10 @@ tools. Exactly one task per ` + "`## `" + ` heading — %d in total.
 For each:
   - list id: %s
   - name: the heading text, without its leading number
-  - markdownContent: everything under that heading, verbatim
+  - description: everything under that heading, verbatim. That PLAIN-TEXT
+    parameter, never markdownContent: ClickUp parses markdownContent into rich
+    content, and getTask then returns the body flattened, with the ` + "`### `" + `
+    markers every later reader needs stripped out of it.
   - status: %s
   - tag: %s
 
