@@ -58,7 +58,6 @@ reviews:
     # regenerate-and-compare. Reviewing the output instead of the
     # generator files findings nobody can act on.
     - "!tests/**/*_test.go"
-    - "!tests/legacy/**"
     - "!**/node_modules/**"
     - "!**/package-lock.json"
 
@@ -66,7 +65,7 @@ reviews:
     # Instruction blocks for .claude/skills/** and services/bdd-cli/**
     # were removed with the tests-only scope above — those paths are no
     # longer reviewed. Recover them from git history if the scope widens.
-    - path: "tests/libraries/**"
+    - path: "pkg/testkit/**"
       instructions: |
         The BDD harness. Correctness of the record/replay proxy, the
         fs-diff, and the golden comparison matters most: a bug here makes

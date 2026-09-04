@@ -5,9 +5,10 @@
 // services/bdd-cli/claudecode speaks a bidirectional JSON protocol over pipes
 // and is a different thing that happens to spawn the same binary.
 //
-// Cost accounting is deliberately absent: pkg/ may import no root, so the
-// report.Leaf that every scripts/ turn is measured by stays with the caller
-// in scripts/internal/claudecli.
+// Cost accounting stays with the caller: pkg/ may import no root, so the
+// report.Leaf that every scripts/ turn is measured by lives in
+// scripts/internal/claudecli. The envelope's own totals ride back on Answer,
+// which is plain JSON and imports nothing.
 package claude
 
 import (
@@ -51,6 +52,14 @@ type Options struct {
 	// Schema, when set, switches the turn to --output-format json with this
 	// as --json-schema. Use RunJSON to read the result.
 	Schema string
+	// Model pins the turn to one model id. Empty leaves the CLI's default,
+	// which is only ever right for a turn nobody grades.
+	Model string
+	// SystemPrompt replaces the CLI's own system prompt.
+	SystemPrompt string
+	// DisallowedTools strips the turn of tools by name. A turn whose whole
+	// input is its prompt must be given no way to reach anything else.
+	DisallowedTools []string
 	// Role labels the turn in the conversation history via CLAUDE_HISTORY_ROLE.
 	Role string
 	// Timeout bounds the turn.
@@ -59,9 +68,21 @@ type Options struct {
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (o Options) Args(prompt string) []string {
-	args := make([]string, 0, 9) //nolint:mnd // the longest form: 4 flag pairs and -p.
+	args := make([]string, 0, 15) //nolint:mnd // the longest form: 7 flag pairs and -p.
 	if o.AllowedTools != "" {
 		args = append(args, "--allowedTools", o.AllowedTools)
+	}
+
+	if len(o.DisallowedTools) > 0 {
+		args = append(args, "--disallowed-tools", strings.Join(o.DisallowedTools, ","))
+	}
+
+	if o.Model != "" {
+		args = append(args, "--model", o.Model)
+	}
+
+	if o.SystemPrompt != "" {
+		args = append(args, "--system-prompt", o.SystemPrompt)
 	}
 
 	if o.PermissionMode != "" {
@@ -114,18 +135,32 @@ func Run(prompt string, opts Options) (string, error) {
 	return result.Stdout, nil
 }
 
+// Answer is one schema-constrained turn: the structured payload, and what
+// the turn cost. The totals are the envelope's own fields, carried so a
+// caller that bills a turn does not have to spawn it a second way to find out.
+type Answer struct {
+	Data    json.RawMessage
+	CostUSD float64
+	Tokens  map[string]int
+}
+
 // RunJSON performs one headless turn under Options.Schema and returns the
 // structured answer. `--output-format json` wraps it in an envelope: read
 // structured_output when the schema was honoured, else result.
-func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
+func RunJSON(prompt string, opts Options) (Answer, error) {
 	stdout, err := Run(prompt, opts)
 	if err != nil {
-		return nil, err
+		return Answer{}, err
 	}
 
 	var envelope struct {
 		StructuredOutput json.RawMessage `json:"structured_output"`
 		Result           json.RawMessage `json:"result"`
+		CostUSD          float64         `json:"total_cost_usd"`
+		// Nested, not flat: alongside the token counts the CLI reports
+		// objects (output_tokens_details, server_tool_use), so the values
+		// are read loosely and the non-numeric ones dropped.
+		Usage map[string]any `json:"usage"`
 		// A denial is not a failure: in -p anything that would have prompted
 		// is refused silently and the run still reports success, so a turn
 		// that could not read looks exactly like one that read everything.
@@ -137,16 +172,30 @@ func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	if json.Unmarshal([]byte(stdout), &envelope) != nil {
 		const envelopeLimit = 400
 
-		return nil, fmt.Errorf("%w: %s", ErrUnparseable, truncate(stdout, envelopeLimit))
+		return Answer{}, fmt.Errorf("%w: %s", ErrUnparseable, truncate(stdout, envelopeLimit))
 	}
 
 	warnDenials(envelope.PermissionDenials, opts.Role)
 
+	answer := Answer{Data: envelope.StructuredOutput, CostUSD: envelope.CostUSD, Tokens: counts(envelope.Usage)}
 	if isEmptyJSON(envelope.StructuredOutput) {
-		return envelope.Result, nil
+		answer.Data = envelope.Result
 	}
 
-	return envelope.StructuredOutput, nil
+	return answer, nil
+}
+
+// counts keeps the scalar token tallies and drops the nested breakdowns.
+func counts(usage map[string]any) map[string]int {
+	tokens := make(map[string]int, len(usage))
+
+	for key, value := range usage {
+		if number, ok := value.(float64); ok {
+			tokens[key] = int(number)
+		}
+	}
+
+	return tokens
 }
 
 func warnDenials(denials []struct {

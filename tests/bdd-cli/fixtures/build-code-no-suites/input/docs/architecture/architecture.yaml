@@ -1,9 +1,10 @@
-# An architectural spec that declares services but no test suites.
-# Syntactically valid, semantically nothing to run: `architecture.testing`
-# is absent entirely, so no command exists for `build code` to execute.
+# An architectural spec that declares services but never says how its
+# tests run. Syntactically valid, semantically nothing to run:
+# `architecture.testing` is absent entirely, so there is no framework and
+# no command for `build code` to execute.
 #
 # Sibling of `build-code-no-services`, which covers the other half of the
-# same emptiness. Both guard the quiet failure: a walk over zero suites
+# same emptiness. Both guard the quiet failure: a walk over nothing
 # discovers zero failing tests, converges, and reports success — so
 # "you declared no tests" would read as "all your tests pass".
 

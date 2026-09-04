@@ -258,21 +258,20 @@ with sprig).
 The architectural spec has one `testing:` section for the whole project,
 beside the services it exercises — how a project runs its tests is a
 property of the project, not of any one service. `build code` does not
-know how to run your tests; the spec says. Each declared suite carries a
-`commands:` block with one complete command line per AI-dependency mode:
+know how to run your tests; the spec says. There are no suites: which
+service a test belongs to and which file it lives in are the scenario's
+own `service:` and `path:`, and its tests live in `tests/<service>/`.
+The `commands:` block carries one complete command line per
+AI-dependency mode:
 
 ```yaml
 architecture:
   testing:
-    suites:
-      - name: bdd-cli
-        service: bdd-cli          # must name an entry in services[]
-        path: tests/bdd-cli
-        framework: go-test        # go-test | jest | playwright
-        commands:
-          record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=record"
-          replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=replay"
-          live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=live"
+    framework: go-test            # go-test | jest | playwright
+    commands:
+      record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:live,tests:live"
   services:
     - name: bdd-cli
       path: services/bdd-cli
@@ -339,11 +338,13 @@ cleanup after the post-run snapshot, e.g. stopping a compose stack), and
 evaluates). The runner builds the CLI, pre-populates a tmpdir with the
 live engine ingredients (checklists and prompt templates), overlays the
 fixture's input tree, snapshots, runs what the scenario's When step
-names, and — in live and record only — asks Claude to score the
-resulting diff against the scenario's `judge:` clauses. In live and
-record a scenario skips when `claude`, or any CLI a model tier names, is
-not on `$PATH`; under `-mode=replay` nothing skips, because no model is
-spawned at all.
+names, and asks Claude to score the resulting diff against the
+scenario's `judge:` clauses. `-mode` names a mode per caller —
+`target:` for the engine under test, `tests:` for that scoring call —
+so a run can replay the engine while judging for real, or replay both.
+A scenario skips when `claude`, or any CLI a model tier names, is not on
+`$PATH`; under `-mode=target:replay,tests:replay` nothing skips, because
+no model is spawned at all.
 
 ## How it compares
 

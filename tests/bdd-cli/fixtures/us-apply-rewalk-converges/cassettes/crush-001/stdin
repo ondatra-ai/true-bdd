@@ -73,38 +73,23 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
+Use the relative path exactly as written above.
+
 ## Required Changes
 
-### Change #1: Add scenario `E2E-001` carrying the lineage for AC-1
+### Change #1: Add scenario `E2E-001` for lineage id 99.3-001
 
-**Issue:** The registry's `scenarios:` block is the empty flow map `{}`. No
-entry exists whose `user_stories[]` list contains the story path
-`docs/product/stories/99.3-rewalk-fixture.yaml` together with the lineage
-scenario id `99.3-001`, so the merge check reports
-`AC AC-1 (lineage 99.3-001): not present`.
+**Issue:** The registry's `scenarios:` block is the empty map `{}` — no entry
+has a `user_stories[]` element carrying both the story path
+`docs/product/stories/99.3-rewalk-fixture.yaml` and the lineage scenario id
+`99.3-001`, so the merge check fails. (An empty `scenarios:` map is also a
+load-time refusal under `true-bdd/scenarios_yaml-schema.yaml`, which requires
+`map(include('scenario'), min=1)`.)
 
-**Decisions already made for you — do not re-derive them:**
-- **Id `E2E-001`** — the registry is empty, so no id is taken. The AC drives a
-  running server over real HTTP, and the template says prefer `E2E-NNN` when
-  unsure. Numbering therefore starts at `001`.
-- **`service: ""`** — verbatim from the fix template.
-- **`path: tests/mcp-server/mcp_endpoint_test.go`** — there is no existing
-  scenario whose `path:` could be reused, and this fixture ships no
-  `docs/architecture/architecture.yaml`, so no `architecture.testing.suites[]`
-  entry can be resolved. The path is therefore invented under the host's
-  declared test root (`paths.test_write_globs` → `./tests/**`) and named for
-  the `/mcp` endpoint family. **Do not go hunting for an architecture file.**
-- **Dates `"2026-09-01"`** — today.
-- **`then:` second step keeps the `- and:` mapping form**, verbatim from the
-  story file (`docs/product/stories/99.3-rewalk-fixture.yaml` line 19). This
-  is the schema's supported modifier form (`map(str())`), which the engine
-  flattens to `and <text>`. Do not rewrite it as a plain string.
-
-**Action:** Use the Edit tool on the target file with the exact `old_string`
-and `new_string` below. The `old_string` spans the last `metadata:` line, the
-blank line after it, and the `scenarios: {}` line — it occurs exactly once in
-the file. Do not modify the header comment block, and do not touch
-`metadata.last_updated`.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml`
+with the exact `old_string` and `new_string` below. `scenarios: {}` occurs
+exactly once in the file (last line); the surrounding context is included to
+make the match unambiguous.
 
 **old_string:**
 ```
@@ -119,14 +104,14 @@ scenarios: {}
 
 scenarios:
   E2E-001:
-    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize POST to /mcp"
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize request to /mcp"
     service: ""
-    path: "tests/mcp-server/mcp_endpoint_test.go"
-    last_updated: "2026-09-01"
+    path: tests/mcp-server/mcp_endpoint_test.go
+    last_updated: "2026-09-03"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
         scenario_id: "99.3-001"
-        merge_date: "2026-09-01"
+        merge_date: "2026-09-03"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -138,12 +123,36 @@ scenarios:
         - and: the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
+## Constraints (do not deviate)
+
+- **`scenarios:` must stay a MAP keyed by scenario id**, never a list. The
+  engine hard-fails at decode on a list. The new entry is the mapping key
+  `E2E-001:` indented two spaces under `scenarios:`.
+- **Id choice:** the registry is empty, so `E2E-001` is the next free id, and
+  the fix template says prefer `E2E-NNN` when the layer is unclear. Do not
+  reuse it for anything else.
+- **Add only this one entry.** AC-2 (lineage `99.3-002`) is a separate
+  checklist cell and gets its own entry (`E2E-002`) from its own fix — do not
+  pre-create it here.
+- **Do not modify anything else in the file:** leave the leading comment block,
+  the `metadata:` block, and `metadata.last_updated: "2026-05-14"` untouched.
+- **Keep the step text verbatim** from the AC in
+  `docs/product/stories/99.3-rewalk-fixture.yaml`, including the `- and: …`
+  one-key mapping form in `then:` (the schema allows `str()` or `map(str())`
+  and the engine flattens it to `and <text>`). Do not reword or collapse it to
+  a plain string.
+- Quote `scenario_id: "99.3-001"` and both dates so they parse as strings —
+  walk #2's pass depends on an exact lineage-id match.
+- Two-space indentation throughout, matching the file's existing style.
+
 ## Verification
-After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must contain
-exactly one entry under `scenarios:` — `E2E-001` — whose `user_stories[]`
-carries both `docs/product/stories/99.3-rewalk-fixture.yaml` and `99.3-001`.
-Two-space indentation throughout; scenario ids at 2 spaces, their fields at 4.
-No other entry, key, or comment in the file may change.
+
+After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must contain a
+single entry under `scenarios:` whose `user_stories[]` list holds both
+`story: docs/product/stories/99.3-rewalk-fixture.yaml` and
+`scenario_id: "99.3-001"` — that is exactly what the `us-apply/merge` check
+looks for, and it should then report:
+`AC AC-1 (lineage 99.3-001): present in E2E-001`.
 
 ---
 

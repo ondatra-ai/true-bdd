@@ -35,11 +35,11 @@ one failing test passes — without modifying the test itself.
 
 **Output Format:**
 ```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -57,9 +57,9 @@ summary: "<one-line summary>"
 
 ## Subject — Failing Test
 
-**Test ID:** calc/e2e/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** calc
-**Suite:** e2e
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+**Service:** 
+**Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
 **Source File:** fixture/buildcodefix/tests/suite
@@ -76,68 +76,67 @@ summary: "<one-line summary>"
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Failing Test calc/e2e/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+
+## Diagnosis
+`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The production
+function in `services/calc/calc.go` subtracts instead of adds:
+
+```go
+func Add(a, b int) int {
+	return a - b
+}
+```
+
+`2 - 3 = -1`, which is exactly the reported failure
+(`Add(2, 3) = -1, want 5`). The test is correct; the production operator
+is wrong.
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT modify anything under `tests/`, any `*_test.go`, or anything under `docs/`.
-
-## Root Cause
-`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The production function in `services/calc/calc.go` returns `a - b`, so it yields `-1`:
-
-```
-=== RUN   TestAddSumsItsArguments
-    add_test.go:19: Add(2, 3) = -1, want 5
---- FAIL: TestAddSumsItsArguments (0.00s)
-```
-
-The defect is the arithmetic operator in `Add`. Correcting it to `+` makes `Add(2, 3)` return `5` and satisfies the assertion without weakening, skipping, or removing anything.
+Apply the change under `services/*` only. The test at
+`tests/suite/add_test.go` is the contract — do NOT modify it, do NOT
+weaken/skip/remove any assertion, and do NOT touch anything under
+`tests/`, any `*_test.go`, or anything under `docs/`.
 
 ## Required Changes
 
-### Change #1: Correct the operator in `calc.Add`
+### Change #1: Correct the arithmetic operator in `calc.Add`
 **File:** `services/calc/calc.go`
-**Action:** Use the **Edit** tool on this existing file. Replace the single return statement inside `func Add(a, b int) int`.
+**Action:** Use the **Edit** tool on this existing file. Replace the single
+return statement inside `func Add`. The line is indented with one TAB
+character (Go standard formatting) — preserve it exactly. The string
+`return a - b` occurs exactly once in the file, so this anchor is unique.
 
 **old_string:**
 ```
-return a - b
+	return a - b
 ```
 
 **new_string:**
 ```
-return a + b
+	return a + b
 ```
 
-Notes for the applier:
-- `return a - b` occurs exactly once in `services/calc/calc.go`; it is indented with one tab inside the function body. If your Edit call includes the leading whitespace, keep it identical in both `old_string` and `new_string` (a single tab character).
-- Change **nothing else** in this file — leave the `package calc` declaration, the package doc comment, and the `Add` doc comment exactly as they are.
-
-## Do Not
-- Do not edit `tests/suite/add_test.go` or `tests/suite/canary_test.go`.
-- Do not edit `docs/architecture/architecture.yaml`, anything else under `docs/`, or anything under `true-bdd/`.
-- Do not create any new files.
-- Do not reformat, re-comment, or otherwise touch code unrelated to the single return statement above.
-
-## Expected Result
-After the edit, `services/calc/calc.go` reads:
+After the edit, the function must read:
 
 ```go
-// Package calc is the fixture host project's production source. The
-// build-code fix loop is allowed to edit exactly this tree.
-package calc
-
-// Add returns the sum of a and b.
-//
-// It does not: the operator is wrong, deliberately. This is the planted
-// defect the fix loop has to correct, and it is in PRODUCTION source —
-// the test asserting 5 is right, and repairing the code rather than the
-// assertion is the whole contract of `build code`.
 func Add(a, b int) int {
 	return a + b
 }
 ```
 
-`TestAddSumsItsArguments` then computes `Add(2, 3) = 5` and passes.
+## Scope Discipline
+- This is the ONLY change required. Do not edit the doc comment above
+  `Add`, do not reformat the file, do not add helpers, tests, or new
+  files.
+- Do not create or modify anything under `tests/`, `docs/`, or
+  `true-bdd/`.
+- Do not run the test suite yourself — the Go-side runner re-executes
+  the narrowed test and is authoritative.
+
+## Expected Result
+`calc.Add(2, 3)` returns `5`, so `TestAddSumsItsArguments` passes and the
+`build-code/test-passes` check flips to `pass`.
 
 ---
 
@@ -161,8 +160,8 @@ func Add(a, b int) int {
    The test is the contract; the production code must conform to it.
 6. After the changes succeed, output the confirmation block below.
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "<repo-relative path of the file you wrote/edited>"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

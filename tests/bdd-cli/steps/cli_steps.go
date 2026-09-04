@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // Register binds every step this suite's scenarios can use — each one
@@ -138,40 +138,58 @@ func prepareTree(state *State, args []string) error {
 	return nil
 }
 
-// resolveProxy decides where this scenario's AI calls come from: live is
-// unmediated, replay REFUSES a scenario with no recording (never skips),
-// and record writes to staging, published only once the scenario passes.
+// resolveProxy decides where this scenario's AI calls come from, per
+// caller: the target's turns and the judge's verdict are independent.
 func (s *State) resolveProxy(name string) (ProxySetup, error) {
-	if s.Harness.Mode == runner.ProxyModeLive {
-		return ProxySetup{}, nil
+	setup := ProxySetup{}
+
+	err := s.resolveTargetProxy(name, &setup)
+	if err != nil {
+		return ProxySetup{}, err
+	}
+
+	err = s.resolveJudgeProxy(name, &setup)
+	if err != nil {
+		return ProxySetup{}, err
+	}
+
+	return setup, nil
+}
+
+// resolveTargetProxy wires the engine's turns: live is unmediated, replay
+// REFUSES a scenario with no recording (never skips), and record writes to
+// staging, published only once the scenario passes.
+func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
+	if s.Harness.Modes.Target == runner.ProxyModeLive {
+		return nil
 	}
 
 	cassettes, err := s.Harness.CassetteDir(name)
 	if err != nil {
-		return ProxySetup{}, s.fail("resolving cassettes dir: %w", err)
+		return s.fail("resolving cassettes dir: %w", err)
 	}
 
-	setup := ProxySetup{Cassettes: cassettes}
+	setup.Cassettes = cassettes
 
-	if s.Harness.Mode == runner.ProxyModeReplay {
+	if s.Harness.Modes.Target == runner.ProxyModeReplay {
 		_, statErr := os.Stat(setup.Cassettes)
 		if statErr != nil {
-			return ProxySetup{}, s.fail("%w: %s\n%s", ErrNoCassettes, name, RecordHint(s.Scenario))
+			return s.fail("%w: %s\n%s", ErrNoCassettes, name, RecordHint(s.Scenario))
 		}
 
 		golden, goldenErr := runner.ReadGolden(setup.Cassettes)
 		if goldenErr != nil {
-			return ProxySetup{}, s.fail("%w: %s: %w\n%s",
+			return s.fail("%w: %s: %w\n%s",
 				ErrNoGolden, name, goldenErr, RecordHint(s.Scenario))
 		}
 
 		setup.Golden = golden
 	}
 
-	if s.Harness.Mode == runner.ProxyModeRecord {
+	if s.Harness.Modes.Target == runner.ProxyModeRecord {
 		staging, stagingErr := s.Harness.prepareStaging(name)
 		if stagingErr != nil {
-			return ProxySetup{}, s.fail("preparing staging cassettes: %w", stagingErr)
+			return s.fail("preparing staging cassettes: %w", stagingErr)
 		}
 
 		setup.Staging = staging
@@ -184,9 +202,64 @@ func (s *State) resolveProxy(name string) (ProxySetup, error) {
 	setup.StateDir = filepath.Join(
 		runner.RunDir(s.Harness.SessionRoot, name), "tmp", "aiproxy-state")
 	setup.Env = runner.AIProxyEnv(
-		s.Harness.Mode, s.Harness.ShimDir, setup.Cassettes, setup.StateDir)
+		s.Harness.Modes.Target, s.Harness.Shims.Target,
+		setup.Cassettes, setup.StateDir, s.Harness.Shims.All())
 
-	return setup, nil
+	return nil
+}
+
+// resolveJudgeProxy wires the verdict call, checked at SETUP rather than
+// where the judge runs: the judge is a scenario's last act, so a missing
+// shelf would otherwise burn a whole replay before saying so.
+func (s *State) resolveJudgeProxy(name string, setup *ProxySetup) error {
+	mode := s.Harness.Modes.Tests
+
+	// A scenario with no `judge:` clause never reaches a judge, so it owes
+	// no recording — demanding one would refuse most of the suite for a
+	// call it was never going to make.
+	if mode == runner.ProxyModeLive || !asksJudge(s.Scenario) {
+		return nil
+	}
+
+	shelf, err := s.Harness.JudgeShelf(name)
+	if err != nil {
+		return s.fail("resolving judge shelf: %w", err)
+	}
+
+	if mode == runner.ProxyModeReplay {
+		_, statErr := os.Stat(shelf)
+		if statErr != nil {
+			return s.fail("%w: %s\n%s", ErrNoJudgeRecording, name, JudgeRecordHint(s.Scenario))
+		}
+	}
+
+	if mode == runner.ProxyModeRecord {
+		staging, stagingErr := s.Harness.prepareJudgeStaging(name)
+		if stagingErr != nil {
+			return s.fail("preparing judge staging: %w", stagingErr)
+		}
+
+		setup.JudgeStaging = staging
+		shelf = staging
+	}
+
+	stateDir := filepath.Join(
+		runner.RunDir(s.Harness.SessionRoot, name), "tmp", "aiproxy-state-judge")
+	setup.JudgeEnv = runner.AIProxyEnv(
+		mode, s.Harness.Shims.Tests, shelf, stateDir, s.Harness.Shims.All())
+
+	return nil
+}
+
+// asksJudge reports whether this scenario carries a `judge:` clause.
+func asksJudge(scenario bddgo.Scenario) bool {
+	for _, step := range scenario.Steps {
+		if step.Mode == bddgo.ModeRule {
+			return true
+		}
+	}
+
+	return false
 }
 
 // runCLI executes the invocation the scenario names, once. The captured

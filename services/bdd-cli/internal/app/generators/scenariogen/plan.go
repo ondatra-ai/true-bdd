@@ -79,16 +79,21 @@ func BuildPlan(
 		return nil, err
 	}
 
+	err = checkOneRootPerService(scenarios)
+	if err != nil {
+		return nil, err
+	}
+
 	grouped := map[string][]*registry.RegistryScenario{}
 	order := []string{}
 
 	for _, scenario := range scenarios {
-		suite, suiteErr := suiteFor(scenario, arch)
-		if suiteErr != nil {
-			return nil, suiteErr
+		serviceErr := checkService(scenario, arch)
+		if serviceErr != nil {
+			return nil, serviceErr
 		}
 
-		checkErr := checkPath(scenario, suite)
+		checkErr := checkPath(scenario)
 		if checkErr != nil {
 			return nil, checkErr
 		}
@@ -151,25 +156,21 @@ func planFile(
 	arch *architecture.Architecture,
 	repoRoot, registryPath string,
 ) (PlannedFile, error) {
-	suite, err := suiteFor(scenarios[0], arch)
+	err := checkService(scenarios[0], arch)
 	if err != nil {
 		return PlannedFile{}, err
 	}
 
-	for _, scenario := range scenarios[1:] {
-		if scenario.Service != scenarios[0].Service {
-			return PlannedFile{}, fmt.Errorf("%s: %s and %s: %w (%q vs %q)",
-				filePath, scenarios[0].ID, scenario.ID, ErrPathCrossSuite,
-				scenarios[0].Service, scenario.Service)
-		}
-	}
+	// The suite root is the directory the scenario's own `path:` names.
+	// It was a suite field; the scenario has always carried the same value.
+	suiteRoot := path.Dir(filepath.ToSlash(filePath))
 
-	scenariosPkg, err := scenariosImportPath(repoRoot, suite.Path)
+	scenariosPkg, err := scenariosImportPath(repoRoot, suiteRoot)
 	if err != nil {
 		return PlannedFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
 
-	pkg, err := packageName(suite.Name)
+	pkg, err := packageName(path.Base(suiteRoot))
 	if err != nil {
 		return PlannedFile{}, fmt.Errorf("%s: %w", filePath, err)
 	}
@@ -235,32 +236,30 @@ func planScenario(scenario *registry.RegistryScenario) (PlannedScenario, error) 
 	}, nil
 }
 
-// suiteFor resolves the one suite whose `service:` the scenario names.
-func suiteFor(
+// checkService refuses a scenario whose `service:` the architecture does
+// not declare, and a repository whose framework this package cannot render.
+func checkService(
 	scenario *registry.RegistryScenario,
 	arch *architecture.Architecture,
-) (architecture.Suite, error) {
-	for _, suite := range arch.Suites {
-		if suite.Service != scenario.Service {
-			continue
-		}
-
-		if !hasRenderer(suite.Framework) {
-			return architecture.Suite{}, fmt.Errorf("%s: suite %s: %w: %q",
-				scenario.ID, suite.Label(), ErrNoGeneratorForFramework, suite.Framework)
-		}
-
-		return suite, nil
+) error {
+	_, known := arch.ServicePath(scenario.Service)
+	if !known {
+		return fmt.Errorf("%s: service %q: %w",
+			scenario.ID, scenario.Service, ErrNoSuiteForService)
 	}
 
-	return architecture.Suite{}, fmt.Errorf("%s: service %q: %w",
-		scenario.ID, scenario.Service, ErrNoSuiteForService)
+	if !hasRenderer(arch.Testing.Framework) {
+		return fmt.Errorf("%s: %w: %q",
+			scenario.ID, ErrNoGeneratorForFramework, arch.Testing.Framework)
+	}
+
+	return nil
 }
 
 // checkPath refuses everything about a `path:` the schema cannot see and
 // that would make the file wrong rather than missing. Validates the target
 // as WRITTEN, not a trimmed copy — else a trailing-space path passes every check and drifts forever.
-func checkPath(scenario *registry.RegistryScenario, suite architecture.Suite) error {
+func checkPath(scenario *registry.RegistryScenario) error {
 	target := scenario.Path
 
 	if strings.TrimSpace(target) == "" {
@@ -280,18 +279,37 @@ func checkPath(scenario *registry.RegistryScenario, suite architecture.Suite) er
 		return fmt.Errorf("%s: %q: %w", scenario.ID, target, ErrPathNotTestFile)
 	}
 
-	suiteRoot := path.Clean(filepath.ToSlash(suite.Path))
-
-	// Before the suite-root check, not after: a path under steps/ fails both,
-	// and the reader is better served by the message that says which tree
-	// they landed in than "not directly in the suite's directory".
-	if strings.HasPrefix(target, suiteRoot+"/steps/") {
+	// Before the root check, not after: a path under steps/ fails both, and
+	// the reader is better served by the message naming the tree they
+	// landed in than "not directly in the suite's directory".
+	if strings.Contains(target, "/steps/") {
 		return fmt.Errorf("%s: %q: %w", scenario.ID, target, ErrPathInStepsTree)
 	}
 
-	if path.Dir(target) != suiteRoot {
-		return fmt.Errorf("%s: %q: %w (suite %s declares %q)",
-			scenario.ID, target, ErrPathNotInSuiteRoot, suite.Label(), suiteRoot)
+	return nil
+}
+
+// checkOneRootPerService refuses a service whose scenarios span two
+// directories: the package clause and scenarios import derive from that
+// directory, so two roots is two packages claiming one service's state.
+func checkOneRootPerService(scenarios []*registry.RegistryScenario) error {
+	roots := map[string]*registry.RegistryScenario{}
+
+	for _, scenario := range scenarios {
+		root := path.Dir(filepath.ToSlash(scenario.Path))
+
+		first, seen := roots[scenario.Service]
+		if !seen {
+			roots[scenario.Service] = scenario
+
+			continue
+		}
+
+		if path.Dir(filepath.ToSlash(first.Path)) != root {
+			return fmt.Errorf("%s: %q: %w (%s puts %s in %q)",
+				scenario.ID, scenario.Path, ErrPathNotInSuiteRoot,
+				first.ID, scenario.Service, path.Dir(filepath.ToSlash(first.Path)))
+		}
 	}
 
 	return nil

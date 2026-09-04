@@ -148,14 +148,15 @@ linters:
     depguard:
       rules:
         # pkg/ is the floor: every root imports it, it imports none. The
-        # `**/pkg/**` glob also matches services/bdd-cli/internal/pkg/, which
-        # is not the floor — hence the negations.
+        # negations: `**/pkg/**` also matches internal/pkg/, not the floor;
+        # pkg/testkit/ is the harness, which exists to reach roots (ADR 0008).
         root-pkg-floor:
           files:
             - "**/pkg/**"
             - "!**/services/**"
             - "!**/scripts/**"
             - "!**/tests/**"
+            - "!**/pkg/testkit/**"
           deny:
             - pkg: "github.com/ondatra-ai/true-bdd/services"
               desc: 'pkg is the floor: every root imports it, it imports none'
@@ -357,7 +358,7 @@ linters:
         linters:
           - forbidigo
         text: 'log construction:'
-      - path: ^tests/libraries/runner/harness_logging\.go$
+      - path: ^pkg/testkit/runner/harness_logging\.go$
         linters:
           - forbidigo
         text: 'log construction:'

@@ -45,7 +45,7 @@ func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	answer, err := claude.RunJSON(prompt, opts)
 	report.Leaf(turnName, started, attrs(opts.Role, err)...)
 
-	return answer, err
+	return answer.Data, err
 }
 
 // attrs marks the report node failed when the turn was, and says nothing

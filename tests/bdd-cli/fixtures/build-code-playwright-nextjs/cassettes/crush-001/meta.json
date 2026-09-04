@@ -10,10 +10,11 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 27025,
-  "request_hash": "sha256:5d8039ce4f41f0bb4e2e84e7a8516af6741ac7ed9888517dcb1ac878f52e9d9c",
+  "duration_ms": 23670,
+  "request_hash": "sha256:3df579c294d2bd3eac1f8ccf597179e07275d95cbfdab132102a79c198be7ede",
   "fsdiff": {
     "created": [
+      "services/frontend/.dockerignore",
       "services/frontend/Dockerfile",
       "services/frontend/app/layout.tsx",
       "services/frontend/app/page.tsx",
@@ -23,5 +24,5 @@
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-09-01T10:47:12Z"
+  "recorded_at": "2026-09-03T21:27:26Z"
 }

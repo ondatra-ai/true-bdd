@@ -8,7 +8,7 @@ Synthetic host project driven by TrueBDD's `build tests --fix`.
   `suite.Step(`<regexp>`, <func>)` call in the `steps/` package of the
   suite that owns it.
 - Which suite owns it comes from `docs/architecture/architecture.yaml`:
-  the `architecture.testing.suites[]` entry whose `service:` matches the
+  the tests/<service>/ tree whose `service:` matches the
   scenario's. Here that is `mcp`, rooted at `tests/mcp`, so definitions
   belong in `tests/mcp/steps/`.
 - Never modify `docs/scenarios.yaml` or `true-bdd/`.

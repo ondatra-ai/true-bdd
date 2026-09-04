@@ -1,22 +1,17 @@
 # Architectural spec for the fixture host project.
 #
 # `build tests` reads it to resolve which suite owns a scenario: the
-# `architecture.testing.suites[]` entry whose `service:` matches the
+# tests/<service>/ tree whose `service:` matches the
 # scenario's. That is what tells the walk where the step definitions
 # for this behaviour live.
 
 architecture:
   testing:
-    suites:
-      - name: mcp
-        service: mcp-service
-        path: tests/mcp
-        framework: go-test
-        commands:
-          record: "go test -json -count=1 ./tests/mcp/... -mode=record"
-          replay: "go test -json -count=1 ./tests/mcp/... -mode=replay"
-          live: "go test -json -count=1 ./tests/mcp/..."
-
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/mcp/... -mode=record
+      replay: go test -json -count=1 ./tests/mcp/... -mode=replay
+      live: go test -json -count=1 ./tests/mcp/...
   services:
     - name: mcp-service
       path: services/mcp-service

@@ -73,15 +73,18 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Required Changes
-### Change #1: Add scenario E2E-961 for lineage 95.2-001
-**Issue:** No entry under `scenarios:` has a `user_stories[]` list containing both the story path `docs/product/stories/95.2-relocated-registry.yaml` and the lineage scenario id `95.2-001`, so the us-apply/merge check fails ("AC AC-1 (lineage 95.2-001): not present").
+## Context
+- Failed check `us-apply/merge`: AC-1 (lineage 95.2-001) is **not present** — no `scenarios:` entry references story `docs/product/stories/95.2-relocated-registry.yaml` with scenario id `95.2-001`.
+- Fix = add exactly ONE new scenario entry. Leave the only existing entry (`E2E-960`) byte-for-byte untouched.
+- Id choice: the only existing numbering is `E2E-960`; this is an e2e-layer behaviour (an external Claude User sends an HTTP GET and asserts status + body), so use the next free e2e id `E2E-961`.
+- `service: ""` per the merge template (an MCP server is not the web app, so `"web-service"` would be wrong).
+- **No `path:` field.** The template's path rule is unexecutable on this file: there is no existing `path:` to reuse, and its invent-rule requires a scenario whose `service:` matches this one's — with `service: ""` none matches. The seed's existing `E2E-960` entry is itself pathless and passed validation, so mirror its exact shape (description, service, last_updated, user_stories, merged_steps) rather than fabricate a path.
+- Steps are copied verbatim from the AC, including the leading `and` in the last `then` step.
 
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends one new scenario entry after `E2E-960`, mirroring `E2E-960`'s exact field set and indentation. Notes:
-- Id `E2E-961` is the next free id after `E2E-960` (e2e default per the fix template).
-- `path:` is intentionally omitted — `E2E-960` carries no `path:`, there is no `path:` from a same-family scenario to reuse, and this file has no `architecture.testing.suites[]` section to derive one from. The merge check keys only on `user_stories[]`, and `E2E-960` proves the structure is valid without `path:`.
-- `then` steps are copied verbatim, including the leading `and` on the second step.
-- Change exactly one entry: do NOT modify `E2E-960` or `metadata.last_updated`.
+## Required Changes
+### Change #1: Append the new scenario entry `E2E-961`
+**Issue:** The registry has no scenario for story `docs/product/stories/95.2-relocated-registry.yaml` / lineage `95.2-001`, so the merge check fails.
+**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. The old_string is the file's unique tail, so `E2E-960` stays byte-identical above the insertion. Preserve indentation exactly (id at 2 spaces, fields at 4, list items at 6, step strings at 8).
 
 **old_string:**
 ```
@@ -92,14 +95,15 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 ```
       then:
         - "the settings page renders the account section"
+
   E2E-961:
-    description: "MCP server /health endpoint returns HTTP 200 with a healthy status body"
+    description: "GET /health returns HTTP 200 with a healthy status body"
     service: ""
-    last_updated: "2026-09-01"
+    last_updated: "2026-09-03"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-09-01"
+        merge_date: "2026-09-03"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -110,6 +114,9 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
         - "the server returns HTTP 200"
         - "and the response body reports the service status as healthy"
 ```
+
+## Verify
+After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` contains an entry whose `user_stories[]` lists story `docs/product/stories/95.2-relocated-registry.yaml` with `scenario_id: 95.2-001` (satisfies `us-apply/merge`), exactly one entry was added, and `E2E-960` is unchanged.
 
 ---
 

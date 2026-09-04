@@ -237,7 +237,7 @@ func (p *buildTestsPrep) askSuites(
 	// Everything checkable about every suite's command is checked before the
 	// first subprocess, so an unrunnable suite is reported immediately rather
 	// than after earlier suites have already paid to compile a test binary.
-	err := stepcoverage.Validate(arch.Suites)
+	err := stepcoverage.Validate(arch.Testing)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -245,12 +245,8 @@ func (p *buildTestsPrep) askSuites(
 	examined := map[string]bool{}
 	gaps := map[string][]string{}
 
-	for _, suite := range arch.Suites {
-		if strings.TrimSpace(suite.Commands.Coverage) == "" {
-			continue
-		}
-
-		answer, askErr := stepcoverage.Ask(ctx, suite, p.repoRoot)
+	if strings.TrimSpace(arch.Testing.Commands.Coverage) != "" {
+		answer, askErr := stepcoverage.Ask(ctx, arch.Testing, serviceNames(arch.Services), p.repoRoot)
 		if askErr != nil {
 			return nil, nil, askErr
 		}
@@ -265,6 +261,17 @@ func (p *buildTestsPrep) askSuites(
 	}
 
 	return examined, gaps, nil
+}
+
+// serviceNames is every service the architecture declares, which is what
+// a coverage report's `suite` field must name.
+func serviceNames(services []architecture.Service) []string {
+	names := make([]string, 0, len(services))
+	for _, svc := range services {
+		names = append(names, svc.Name)
+	}
+
+	return names
 }
 
 // checkGeneratedTestsSurvived re-verifies the generated files after a

@@ -12,7 +12,7 @@ to bind a scenario's unbound steps to executable code.
 
 **Where the fix goes:**
 The architectural spec names it. The subject scenario's `service:`
-selects the `architecture.testing.suites[]` entry that owns it; that
+selects the `tests/<service>/` tree that owns it; that
 entry's `path:` is the suite root, and `<path>/steps/` is the only tree
 the applier may write. There is no fallback: a suite the spec does not
 declare is a suite this fix cannot be written for, and saying so is

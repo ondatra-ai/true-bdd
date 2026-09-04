@@ -21,16 +21,16 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-web/steps"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 	"log/slog"
 )
 
-// -mode mirrors the CLI suite's flag; the web suite reaches no model yet, so the value only travels with the report.
+// -mode mirrors the CLI suite's flag; this suite reaches no model yet.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
-var proxyMode = flag.String("mode", runner.ProxyModeLive,
-	"AI CLI mode: live, record, or replay")
+var proxyMode = flag.String("mode", "",
+	"per-caller AI CLI mode, e.g. target:replay,tests:replay")
 
 // -allow-missing-toolchain skips instead of failing on missing node/npm; off by default so it can't silently go green.
 //
@@ -50,6 +50,7 @@ var errToolchainMissing = errors.New("toolchain missing")
 var (
 	suite    *bddgo.Suite[steps.State]
 	repoRoot string
+	runModes runner.Modes
 
 	bootOnce  sync.Once
 	errBoot   error
@@ -64,14 +65,16 @@ func Main(m *testing.M) int {
 
 	flag.Parse()
 
-	mode := *proxyMode
-	if mode != runner.ProxyModeLive && mode != runner.ProxyModeRecord && mode != runner.ProxyModeReplay {
-		slog.Error("invalid -mode", "mode", mode, "want", "live, record, or replay")
+	// Absence is legal, as it is for the CLI suite: the coverage guards
+	// pass no mode and bring no harness up.
+	modes, err := runner.ParseModes(*proxyMode)
+	if err != nil {
+		slog.Error("invalid -mode", "error", err)
 
 		return 1
 	}
 
-	var err error
+	runModes = modes
 
 	repoRoot, err = runner.FindRepoRoot()
 	if err != nil {
@@ -157,7 +160,7 @@ func bootHarness(t *testing.T) (string, error) {
 			errToolchainMissing, reason)
 	}
 
-	harness, stop, err := steps.NewHarness(context.Background(), *proxyMode, repoRoot)
+	harness, stop, err := steps.NewHarness(context.Background(), runModes.Target, repoRoot)
 	if err != nil {
 		return "", fmt.Errorf("bring up the application under test: %w", err)
 	}

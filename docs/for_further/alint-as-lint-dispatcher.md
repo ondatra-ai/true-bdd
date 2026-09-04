@@ -207,7 +207,7 @@ extraction stopped being load-bearing, because no `command_idempotent` rule was 
 Nothing to wire. The only eslint config in the tree is `services/bdd-web/eslint.config.mjs`,
 and that subtree is fenced out of the root module by a sentinel `go.mod` and excluded from
 alint's rules; `eslint` is not on PATH here. The tracked JS that alint *does* see —
-`tests/libraries/reportserver/web/app.js` — has no eslint config at all. The `command`
+`pkg/testkit/reportserver/web/app.js` — has no eslint config at all. The `command`
 rule shape covers eslint whenever the repository decides to lint that file; the design
 does not add a gate for a linter this repository does not run.
 

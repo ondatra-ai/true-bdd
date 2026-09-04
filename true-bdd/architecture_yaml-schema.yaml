@@ -9,7 +9,7 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing.suites[]` and
+# The engine decodes only `testing:` and
 # `services[].{name,path,language}`; everything else here is spec a host
 # writes for its own readers and for the checklists' prompts. Which is
 # exactly why it needs a schema: nothing else would notice a typo in it.
@@ -25,40 +25,22 @@ vocabulary: include('vocabulary', required=False)
 
 ---
 # One `testing:` section for the whole repository, beside the services it
-# exercises: a suite is named once, says how it runs, and names the
-# service whose source `build code` may edit when it fails.
+# exercises: it says how the tests run, once. Which service a test belongs
+# to and which file it lives in are the scenario's, not a suite's.
 architecture:
   testing: include('testing')
   services: list(include('service'), min=1)
 
 ---
-# The suites `build code` walks and `build tests` writes into. At least
-# one, because a spec that declares no way to run its tests describes a
-# project no build pipeline can act on.
+# How this repository's tests run. `framework` routes to a runner and
+# decides what `build tests` renders; `commands` is how each mode is
+# invoked. Declaring neither describes a project nothing can build.
 testing:
-  suites: list(include('suite'), min=1)
-
----
-suite:
-  # Suite name. Appears in progress lines and in every failing test's id.
-  name: str()
-  # The one service this suite exercises; must name an entry in services[].
-  # build code takes that service's path: as the only root its fix applier
-  # may write — a suite covering two services is two suites.
-  service: str()
-  # Repo-relative root the suite's specs live under. `build tests`
-  # authors missing tests here.
-  path: str()
   framework: enum('go-test', 'jest', 'playwright')
-  # Framework config file. Doubles as the working directory the suite's
-  # commands run in (its containing directory); a suite without one runs
-  # from wherever the engine was invoked.
+  # Framework config file. Its containing directory is the working
+  # directory every command runs in; without one they run from wherever
+  # the engine was invoked.
   config: str(required=False)
-  pattern: str(required=False)
-  # Test helpers available in this suite. `us refine` reads these when
-  # sketching steps ("use only what's declared in architecture.yaml") — a
-  # host that omits them gets invented ones.
-  helpers: list(include('helper'), required=False)
   commands: include('commands')
 
 ---
@@ -111,7 +93,9 @@ code_gate:
 commands:
   # Real AI CLIs, recording their calls for later replay.
   record: str()
-  # Recorded calls served back: no model, no cost. What `build code` runs.
+  # Recorded calls served back. MUST reach no model and cost nothing —
+  # `build code` runs it in its fix loop, where a paid call would bill a
+  # walk per attempt. Every AI caller in the run replays, not just some.
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
@@ -119,11 +103,6 @@ commands:
   # $TRUEBDD_COVERAGE_REPORT. `examined[]` matters — an empty `unbound[]`
   # means nothing for a scenario missing from it. A MISSING report file is a refusal, not "nothing to report".
   coverage: str(required=False)
-
----
-helper:
-  name: str()
-  description: str()
 
 ---
 # Mirrors `vocabulary` in product-schema.yaml — duplicated (yamale has no

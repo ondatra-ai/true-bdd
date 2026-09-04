@@ -33,7 +33,7 @@ sections:
 
           First find the suite. Read the architectural spec listed under
           Reference Documentation and look through
-          `architecture.testing.suites[]` for the entry whose `service:`
+          the tree `tests/<service>/`, where `service:`
           equals this scenario's **Service**. That entry's `path:` is
           the suite's root; its step definitions live under
           `<path>/steps/`.
@@ -66,7 +66,7 @@ sections:
 
           Steps:
             1. Read the architectural spec and find the
-               `architecture.testing.suites[]` entry whose `service:`
+               tree `tests/<service>/`, where `service:`
                matches this scenario's. Its `path:` is the suite root.
             2. Read the existing definitions under `<suite path>/steps/`
                to learn the state type they share and the helpers

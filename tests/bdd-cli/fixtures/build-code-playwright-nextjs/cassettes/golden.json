@@ -3,18 +3,25 @@
   "fixture": "build-code-playwright-nextjs",
   "files": [
     {
+      "path": "services/frontend/.dockerignore",
+      "kind": "created",
+      "size": 39,
+      "sha256": "7105a4df9a7477e852932092ad0775ae8858bb976c4a14271d8c7e911bdfeece",
+      "text": "node_modules\n.next\nnpm-debug.log\n*.log\n"
+    },
+    {
       "path": "services/frontend/Dockerfile",
       "kind": "created",
-      "size": 157,
-      "sha256": "da815eb2f7031d85cc4bec40ebb47850234ac7468c27729316826fa31e3e6818",
-      "text": "FROM node:20-alpine\n\nWORKDIR /app\n\nCOPY package.json ./\nRUN npm install --no-audit --no-fund\n\nCOPY . .\n\nRUN npm run build\n\nEXPOSE 3000\n\nCMD [\"npm\", \"start\"]\n"
+      "size": 226,
+      "sha256": "e3223f560107452ee5a297a7510705a1f8be31853069ff2a334582f637bd6005",
+      "text": "FROM node:20-slim\n\nWORKDIR /app\n\nENV NEXT_TELEMETRY_DISABLED=1\nENV HOSTNAME=0.0.0.0\nENV PORT=3000\n\nCOPY package.json ./\nRUN npm install --no-audit --no-fund\n\nCOPY . .\nRUN npm run build\n\nEXPOSE 3000\nCMD [\"npm\", \"run\", \"start\"]\n"
     },
     {
       "path": "services/frontend/app/layout.tsx",
       "kind": "created",
-      "size": 297,
-      "sha256": "8c39f5299ebb8acd4f57cd594feabc366cfb42048961af7b93cfafd5908498be",
-      "text": "import type { Metadata } from 'next';\nimport type { ReactNode } from 'react';\n\nexport const metadata: Metadata = {\n  title: 'Frontend',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
+      "size": 249,
+      "sha256": "3d04636801b9a19f8afe36a7062f97dcbe32fabcd560be045b58cc32c3d850a1",
+      "text": "import type { ReactNode } from 'react';\n\nexport const metadata = {\n  title: 'Frontend',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
     },
     {
       "path": "services/frontend/app/page.tsx",
@@ -26,16 +33,16 @@
     {
       "path": "services/frontend/package.json",
       "kind": "created",
-      "size": 451,
-      "sha256": "9b5c6e29e25e99420db686bbf0f5002dd52afd5ad9fd9895f26e0ad54cb571de",
-      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"^15.1.0\",\n    \"react\": \"^19.0.0\",\n    \"react-dom\": \"^19.0.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"^22.10.0\",\n    \"@types/react\": \"^19.0.0\",\n    \"@types/react-dom\": \"^19.0.0\",\n    \"typescript\": \"^5.7.0\"\n  }\n}\n"
+      "size": 445,
+      "sha256": "74fdc321356adb80be104936e35d25c2b1e165be5b6be5543c4ec3d02d91d7d1",
+      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"14.2.5\",\n    \"react\": \"18.3.1\",\n    \"react-dom\": \"18.3.1\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"20.14.10\",\n    \"@types/react\": \"18.3.3\",\n    \"@types/react-dom\": \"18.3.0\",\n    \"typescript\": \"5.5.3\"\n  }\n}\n"
     },
     {
       "path": "services/frontend/tsconfig.json",
       "kind": "created",
-      "size": 572,
-      "sha256": "f376074b41f9ea59f63682af69f0a3b19879dc22751dc68479e8cacf83255600",
-      "text": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2017\",\n    \"lib\": [\"dom\", \"dom.iterable\", \"esnext\"],\n    \"allowJs\": true,\n    \"skipLibCheck\": true,\n    \"strict\": true,\n    \"noEmit\": true,\n    \"esModuleInterop\": true,\n    \"module\": \"esnext\",\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"jsx\": \"preserve\",\n    \"incremental\": true,\n    \"plugins\": [{ \"name\": \"next\" }],\n    \"paths\": {\n      \"@/*\": [\"./*\"]\n    }\n  },\n  \"include\": [\"next-env.d.ts\", \"**/*.ts\", \"**/*.tsx\", \".next/types/**/*.ts\"],\n  \"exclude\": [\"node_modules\"]\n}\n"
+      "size": 529,
+      "sha256": "ada3de449c79555d2f5c1dc6b5cc804eacc3869f2de4aef4e6b78a9eca6eb53a",
+      "text": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2017\",\n    \"lib\": [\"dom\", \"dom.iterable\", \"esnext\"],\n    \"allowJs\": true,\n    \"skipLibCheck\": true,\n    \"strict\": true,\n    \"noEmit\": true,\n    \"esModuleInterop\": true,\n    \"module\": \"esnext\",\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"jsx\": \"preserve\",\n    \"incremental\": true,\n    \"plugins\": [{ \"name\": \"next\" }]\n  },\n  \"include\": [\"next-env.d.ts\", \"**/*.ts\", \"**/*.tsx\", \".next/types/**/*.ts\"],\n  \"exclude\": [\"node_modules\"]\n}\n"
     }
   ]
 }

@@ -21,12 +21,12 @@
     "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\"type\": \"string\", \"enum\": [\"pass\", \"fail\"]},\n    \"context\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"fix_prompt\": {\"type\": \"string\"}\n  },\n  \"required\": [\"answer\", \"context\"],\n  \"additionalProperties\": false\n}"
   ],
   "exit_code": 0,
-  "duration_ms": 81005,
-  "request_hash": "sha256:625cb074868059c474bdc3714ee328552f80ea3036afc0b576500952bfa6f9db",
+  "duration_ms": 52018,
+  "request_hash": "sha256:c73e641f360a9ca14b6eeecdcc5bde28b1be71176fc3e929fc73cf78d8a38493",
   "fsdiff": {
     "created": [],
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-09-01T11:40:57Z"
+  "recorded_at": "2026-09-03T21:04:53Z"
 }

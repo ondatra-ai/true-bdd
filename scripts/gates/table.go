@@ -34,12 +34,16 @@ const (
 	testVerb = "test"
 	tagsFlag = "-tags"
 	bddTag   = "bdd"
-	registry = "docs/scenarios.yaml"
-	goGlob   = "**/*.go"
-	goMod    = "go.mod"
-	goSum    = "go.sum"
-	lintCmd  = "./scripts/cmd/linters"
-	runVerb  = "run"
+	// testkitGlob is the harness tree every BDD gate depends on.
+	testkitGlob = "pkg/testkit/**"
+	// countOnce defeats the test cache, so a gate re-runs what it claims to.
+	countOnce = "-count=1"
+	registry  = "docs/scenarios.yaml"
+	goGlob    = "**/*.go"
+	goMod     = "go.mod"
+	goSum     = "go.sum"
+	lintCmd   = "./scripts/cmd/linters"
+	runVerb   = "run"
 )
 
 // Cheapest first, so a doomed run dies in under a second.
@@ -87,28 +91,37 @@ var (
 			// `generated: lax` skips the generated tests — where a Testfoo
 			// that compiles, never runs and passes is exactly the risk.
 			Name:    "Vet the BDD tree",
-			Command: []string{goBin, "vet", tagsFlag, bddTag, "./tests/..."},
-			Globs:   []string{"tests/**"},
+			Command: []string{goBin, "vet", tagsFlag, bddTag, "./tests/...", "./pkg/testkit/..."},
+			Globs:   []string{"tests/**", testkitGlob},
 		},
 		{
-			// The replay FIXTURES are off the gate (they ask the real judge
-			// now, so they need `claude`, a key, and money per run). These
-			// guards are hand-written, model-free, and answer in a second.
+			// Back on the gate: with a mode per caller the judge replays
+			// from its own shelf, so a full run reaches no model, needs no
+			// key and costs nothing — about a minute for the whole suite.
+			Name: "BDD cli replay",
+			Command: []string{
+				goBin, testVerb, tagsFlag, bddTag, countOnce, "-timeout=40m",
+				"./tests/bdd-cli/", "-mode=target:replay,tests:replay",
+			},
+			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob, "services/bdd-cli/**", "pkg/**"},
+		},
+		{
+			// Hand-written, model-free, and answer in a second.
 			Name: "BDD cli coverage guards",
 			Command: []string{
-				goBin, testVerb, tagsFlag, bddTag, "-count=1", "-run",
+				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
 				"^Test(ScenarioCoverage|StepCoverage|FixtureTreesArePaired)$",
 				"./tests/bdd-cli/",
 			},
-			Globs: []string{registry, "tests/bdd-cli/**"},
+			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob},
 		},
 		{
 			Name: "BDD web coverage guards",
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag,
-				"-count=1", "-run", "^TestScenarioCoverage$", "./tests/bdd-web/",
+				countOnce, "-run", "^TestScenarioCoverage$", "./tests/bdd-web/",
 			},
-			Globs: []string{registry, "tests/bdd-web/**"},
+			Globs: []string{registry, "tests/bdd-web/**", testkitGlob},
 		},
 	}
 )

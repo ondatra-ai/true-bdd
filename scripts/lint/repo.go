@@ -13,12 +13,18 @@ import (
 // findings already, so a caller must not print this on top of them.
 var ErrFailed = errors.New("lint failed")
 
-// tests/legacy/ is there to be deleted; the fixtures are host content.
+// Fixtures and testdata are host content, not this repository's source.
 //
 //nolint:gochecknoglobals // a prefix list; a constant in all but syntax.
-var excludedTrees = []string{"tests/bdd-cli/fixtures/", "tests/legacy/"}
+var excludedTrees = []string{"tests/bdd-cli/fixtures/"}
 
 func excludedTree(path string) bool {
+	// testdata is invisible to the Go toolchain wherever it sits, and holds
+	// host content this repository did not author.
+	if strings.Contains(path, "/testdata/") {
+		return true
+	}
+
 	for _, prefix := range excludedTrees {
 		if strings.HasPrefix(path, prefix) {
 			return true

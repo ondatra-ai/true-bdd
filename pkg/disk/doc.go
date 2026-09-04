@@ -6,7 +6,7 @@
 // function returns. The parent rather than the file itself because Write ends
 // in a rename, and an flock on the replaced inode is invisible to the next
 // writer, who opens the new one. A directory's inode is stable, nothing here
-// renames one, and tests/libraries/fstree records regular files only — so a
+// renames one, and pkg/testkit/fstree records regular files only — so a
 // hold can never appear in a BDD fixture's judged diff, which a lock sidecar
 // beside the target would.
 //

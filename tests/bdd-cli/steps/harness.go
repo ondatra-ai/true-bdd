@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // StagingDirName holds record mode's in-flight cassettes, one
@@ -40,6 +40,11 @@ var ErrNoCassettes = errors.New("no cassettes for this scenario")
 // grade against.
 var ErrNoGolden = errors.New("no recorded outcome for this scenario")
 
+// ErrNoJudgeRecording marks a fixture asked to replay a verdict it has
+// never recorded. Infrastructure, not a verdict: routing it through the
+// judge's own refusal would suppress the golden mismatch beside it.
+var ErrNoJudgeRecording = errors.New("no recorded judge verdict for this scenario")
+
 // Harness is everything the suite builds once per `go test` invocation
 // and every scenario then shares: the binary under test, where the
 // session's run directories go, the shim, and the judge.
@@ -48,11 +53,11 @@ type Harness struct {
 	BinPath string
 	// SessionRoot is tmp/test_run/<timestamp>/.
 	SessionRoot string
-	// ShimDir holds the aiproxy symlinks, prepended to the CLI
-	// subprocess's PATH. Empty in live mode.
-	ShimDir string
-	// Mode is live, record or replay.
-	Mode string
+	// Shims holds one aiproxy dir per caller. A caller running live has
+	// no dir at all.
+	Shims runner.ShimDirs
+	// Modes is the per-caller mode this run was given.
+	Modes runner.Modes
 	// Judge grades live and record runs. Never called in replay.
 	Judge runner.Judge
 	// FixturesDir is where a scenario's Given step looks for its tree.
@@ -81,6 +86,60 @@ func (h *Harness) CassetteDir(name string) (string, error) {
 	}
 
 	return dir, nil
+}
+
+// JudgeShelf is the fixture's committed judge recordings — its own
+// shelf, because both callers spawn `claude` and the shim matches by
+// arrival order per binary name: one shared dir would cross their cursors.
+func (h *Harness) JudgeShelf(name string) (string, error) {
+	dir, err := h.CassetteDir(name)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "judge"), nil
+}
+
+// prepareJudgeStaging gives a judge recording somewhere to land. It sits
+// inside the target's staging root, so a run recording both publishes
+// them in one rename.
+func (h *Harness) prepareJudgeStaging(name string) (string, error) {
+	staging := filepath.Join(h.SessionRoot, StagingDirName, name, "judge")
+
+	err := disk.RemoveTree(staging)
+	if err != nil {
+		return "", fmt.Errorf("clear judge staging: %w", err)
+	}
+
+	err = disk.Dir(staging, disk.Shared)
+	if err != nil {
+		return "", fmt.Errorf("create judge staging: %w", err)
+	}
+
+	return staging, nil
+}
+
+// promoteJudgeShelf publishes only the judge recordings, for a run whose
+// target was not recording — a whole-dir rename would delete the engine
+// cassettes this run replayed from.
+func (h *Harness) promoteJudgeShelf(name, staging string) error {
+	dest, err := h.JudgeShelf(name)
+	if err != nil {
+		return err
+	}
+
+	err = disk.RemoveTree(dest)
+	if err != nil {
+		return fmt.Errorf("clear judge shelf: %w", err)
+	}
+
+	//nolint:forbidigo // a directory publish, not a file write.
+	err = os.Rename(staging, dest)
+	if err != nil {
+		return fmt.Errorf("publish judge shelf to %s: %w", dest, err)
+	}
+
+	return nil
 }
 
 // prepareStaging gives a record-mode run an empty directory to write
@@ -125,6 +184,15 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 	}
 
 	return nil
+}
+
+// JudgeRecordHint is the command that records one scenario's judge
+// verdict without re-running a single engine turn: the target keeps
+// replaying, so the recording costs one model call and nothing else.
+func JudgeRecordHint(scenario bddgo.Scenario) string {
+	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
+		"$' ./tests/bdd-cli/ '-mode=target:replay,tests:record'  # fixture: " +
+		FixtureName(scenario)
 }
 
 // RecordHint is the command that re-records one scenario, printed by

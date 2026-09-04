@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/reporter"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/reporter"
 )
 
 // ErrPathEscapesRun is returned when a step's path resolves outside the

@@ -1,7 +1,7 @@
-No existing `steps/` package and no `Register` anywhere under `tests/` — this fix creates the first definitions file. Writing it now.Verification via shell is blocked in this mode; LSP diagnostics on the written file report 0 errors (the one project warning is the pre-existing missing `scenarios` package in `mcp_test.go`, which the fix prompt says is expected and off-limits). The file was created verbatim from the fix prompt with all three registrations in the single `Register`.
+State confirmed: `tests/mcp/steps/` doesn't exist and no `Register` function exists yet. Creating the file exactly as specified.Verifying the new package compiles:Shell access is denied in this mode, so verification is limited to gopls diagnostics (0 errors in the written file). The file was created with the exact content from the fix prompt.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's first step definitions file: State, Suite interface, Register binding the Given/When/Then steps for INT-900, and the three handler functions."
+summary: "Created the mcp suite's steps package with State, Suite, and a single Register binding all three INT-900 steps (server running, JSON-RPC POST, HTTP status assertion)"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

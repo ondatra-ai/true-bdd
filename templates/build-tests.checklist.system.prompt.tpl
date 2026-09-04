@@ -18,7 +18,7 @@ wording must bind whether it appears as a Then or as the And after it.
 
 **Tool Usage (CRITICAL):**
 1. Read the architectural spec named in the user prompt and resolve the
-   subject's suite through `architecture.testing.suites[]`: the entry
+   subject's tests through its `service:`: they live in `tests/<service>/`
    whose `service:` equals the subject's Service. Its `path:` is where
    the suite lives.
 2. Glob `<suite path>/steps/*.go` and Read every file. Collect the

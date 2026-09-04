@@ -1,9 +1,7 @@
-`services/` doesn't exist — creating the five files as specified.All five files created under `services/frontend/` (package.json, tsconfig.json, app/layout.tsx, app/page.tsx, Dockerfile). No forbidden paths touched; the runner owns the test verdict.
+`services/` doesn't exist yet; creating all six files exactly as specified.All six files created under `services/frontend/`.
 
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml ===
 applied: true
-target: "services/frontend/package.json"
-summary: "Created Next.js+React+TS frontend service (package.json, tsconfig.json, app/layout.tsx, app/page.tsx, Dockerfile) serving the single h1 'Hello world' on port 3000"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-frontend-integration-playwright-startup--iter1-result.yaml ===
-```
+target: "services/frontend/"
+summary: "Created missing Next.js frontend service (package.json, tsconfig.json, app/layout.tsx, app/page.tsx with single h1 'Hello world', Dockerfile, .dockerignore) so docker compose build succeeds and port 3000 serves the asserted page"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml ===

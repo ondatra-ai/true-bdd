@@ -8,7 +8,7 @@ that owns it.
 
 ## Instructions
 1. Read the architectural spec listed under Reference Documentation and
-   find the `architecture.testing.suites[]` entry whose `service:`
+   the scenario's tests live in `tests/<service>/`, where `service:`
    equals the subject's **Service**. That entry's `path:` is the suite
    root; its step definitions live under `<path>/steps/`.
 2. Glob and Read every file under `<suite path>/steps/` and collect the

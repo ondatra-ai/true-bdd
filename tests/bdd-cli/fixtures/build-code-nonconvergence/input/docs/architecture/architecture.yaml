@@ -4,16 +4,11 @@
 
 architecture:
   testing:
-    suites:
-      - name: e2e
-        service: calc
-        path: tests
-        framework: go-test
-        commands:
-          record: "go test -json -count=1 ./tests/suite/..."
-          replay: "go test -json -count=1 ./tests/suite/..."
-          live: "go test -json -count=1 ./tests/suite/..."
-
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/suite/...
+      replay: go test -json -count=1 ./tests/suite/...
+      live: go test -json -count=1 ./tests/suite/...
   services:
     - name: calc
       path: services/calc

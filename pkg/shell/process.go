@@ -104,7 +104,7 @@ func (p *Process) Pid() int {
 }
 
 // ForwardSignals relays the named signals to the child until the returned
-// stop is called. tests/libraries/aiproxy stands in for the real CLI, so a
+// stop is called. pkg/testkit/aiproxy stands in for the real CLI, so a
 // SIGTERM meant for that CLI has to arrive there.
 func (p *Process) ForwardSignals(signals ...os.Signal) func() {
 	inbox := make(chan os.Signal, 1)
