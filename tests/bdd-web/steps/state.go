@@ -7,7 +7,7 @@ import (
 
 	"github.com/playwright-community/playwright-go"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // ErrNoPage is returned when a step needs a browser page and no earlier

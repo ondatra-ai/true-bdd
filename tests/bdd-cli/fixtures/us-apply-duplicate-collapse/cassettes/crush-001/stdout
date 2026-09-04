@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Unioned E2E-901's merged_steps into E2E-900 (2 given, 1 when, 2 then) and deleted the duplicate E2E-901 entry; E2E-950 untouched"
+summary: "Collapsed duplicate lineage 95.1-001: unioned E2E-901 merged_steps into E2E-900 and deleted E2E-901; E2E-950 untouched"
 === FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===

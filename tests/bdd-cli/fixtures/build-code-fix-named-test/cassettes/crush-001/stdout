@@ -1,7 +1,7 @@
-Edit applied; shell execution is blocked by a hook in this mode, but the change matches the fix prompt's expected result exactly.
+Edit applied; test execution blocked by environment hook, but the change matches the fix prompt exactly.
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed Add's return from a - b to a + b so Add(2, 3) = 5"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-e2e-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+summary: "Corrected Add to return a + b instead of a - b so Add(2, 3) equals 5"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

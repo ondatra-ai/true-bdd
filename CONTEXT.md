@@ -32,6 +32,10 @@ _Avoid_: check, cell-run
 One full traversal of every Cell in a run. A fix applied mid-walk restarts the traversal from the first Cell.
 _Avoid_: pass, sweep, iteration
 
+**Services**:
+The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
+_Avoid_: SUT, subject, system, target
+
 ## Repository vocabulary
 
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.
@@ -73,7 +77,7 @@ A program's ANSWER — bytes a caller reads verbatim in a shape it fixed, plus t
 _Avoid_: output, print, terminal, UI
 
 **Log**:
-One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program also appends to the Task's shared log under `docs/history/task_logs/`, each record naming its writer in `tool` and its process in `run`; `scripts/report` folds one `run`'s tree back out of it. `pkg/logging` is the only implementation; the engine's message strings and attribute keys are a wire contract `tests/libraries/reporter` reads.
+One `log/slog` record: everything a program says ABOUT its own run. Severity is a level, never a choice of stream — the stream is bound once per program in `main()`, and every `scripts/` program also appends to the Task's shared log under `docs/history/task_logs/`, each record naming its writer in `tool` and its process in `run`; `scripts/report` folds one `run`'s tree back out of it. `pkg/logging` is the only implementation; the engine's message strings and attribute keys are a wire contract `pkg/testkit/reporter` reads.
 _Avoid_: trace, diagnostic, stderr
 
 **Report**:

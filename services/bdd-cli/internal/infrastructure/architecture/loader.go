@@ -17,18 +17,18 @@ var ErrNoServices = errors.New(
 	"architecture file has no services to walk",
 )
 
-// ErrNoTestSuites signals no `architecture.testing.suites:` declared. A
-// spec that never says how tests run is a startup refusal, not a walk
-// over zero items quietly reported as green.
-var ErrNoTestSuites = errors.New(
-	"architecture file has no test suites to walk",
+// ErrNoFramework signals no `architecture.testing.framework:` declared.
+// A spec that never says how its tests run is a startup refusal, not a
+// walk over zero items quietly reported as green.
+var ErrNoFramework = errors.New(
+	"architecture file declares no testing framework",
 )
 
-// ErrUnknownSuiteService signals a suite whose `service:` names no entry
-// in `services[]`: that name is what grants the fix applier its write
-// root, so an uncaught typo would grant nothing and look like a fix that never lands.
+// ErrUnknownSuiteService signals a scenario whose `service:` names no
+// entry in `services[]`: that name is what grants the fix applier its
+// write root, so an uncaught typo grants nothing and looks like a fix that never lands.
 var ErrUnknownSuiteService = errors.New(
-	"test suite names a service the architecture does not declare",
+	"scenario names a service the architecture does not declare",
 )
 
 // ErrMissingSuiteCommand signals a suite left one of the three mandatory
@@ -49,25 +49,20 @@ type SuiteCommands struct {
 	Coverage string `yaml:"coverage,omitempty"`
 }
 
-// Suite is one entry under `architecture.testing.suites[]`, mirroring
-// testrunner.Config (converted at the LoadItems boundary). Service names
-// the ONE service this suite exercises — a suite covering two is two suites, since a fix prompt needs one root.
-type Suite struct {
-	Name       string        `yaml:"name"`
-	Service    string        `yaml:"service"`
-	Path       string        `yaml:"path"`
-	Framework  string        `yaml:"framework"`
+// Testing is `architecture.testing:` — how this repository runs its
+// tests, stated once. There is no per-suite entry: which service a test
+// belongs to and which file it lives in are the scenario's (ADR 0009).
+type Testing struct {
+	Framework string `yaml:"framework"`
+	// ConfigFile is the framework's config file. Its directory is where
+	// every command runs — a playwright host resolves testDir from there,
+	// so without it the runner starts in the wrong tree and finds nothing.
 	ConfigFile string        `yaml:"config,omitempty"`
-	Pattern    string        `yaml:"pattern,omitempty"`
 	Commands   SuiteCommands `yaml:"commands"`
 }
 
-// Label is how a suite is named in progress lines and refusals:
-// `<service>/<suite>`. Both halves: a repo with two suites over one
-// service, or one suite over two, is unambiguous only when the pair prints.
-func (s Suite) Label() string {
-	return s.Service + "/" + s.Name
-}
+// Label names the testing block in progress lines and refusals.
+func (t Testing) Label() string { return t.Framework }
 
 // Service is one entry in `architecture.services[]`. Only the three
 // fields the build pipeline reads are decoded — `path` above all, since
@@ -81,7 +76,7 @@ type Service struct {
 // Architecture is the loaded view of architecture.yaml — only the
 // fields the build pipeline needs are decoded.
 type Architecture struct {
-	Suites   []Suite
+	Testing  Testing
 	Services []Service
 }
 
@@ -100,7 +95,9 @@ func (a *Architecture) ServicePath(name string) (string, bool) {
 // rawTesting mirrors the `architecture.testing:` block — the single
 // place a repository states how its tests run.
 type rawTesting struct {
-	Suites []Suite `yaml:"suites"`
+	Framework  string        `yaml:"framework"`
+	ConfigFile string        `yaml:"config"`
+	Commands   SuiteCommands `yaml:"commands"`
 }
 
 // rawDef mirrors the top-level `architecture:` block. Every other key a
@@ -136,23 +133,20 @@ func Load(path string) (*Architecture, error) {
 		return nil, fmt.Errorf("%s: %w", path, ErrNoServices)
 	}
 
-	if len(raw.Architecture.Testing.Suites) == 0 {
-		return nil, fmt.Errorf("%s: %w", path, ErrNoTestSuites)
-	}
-
 	arch := &Architecture{
-		Suites:   append([]Suite(nil), raw.Architecture.Testing.Suites...),
+		Testing: Testing{
+			Framework:  raw.Architecture.Testing.Framework,
+			ConfigFile: raw.Architecture.Testing.ConfigFile,
+			Commands:   raw.Architecture.Testing.Commands,
+		},
 		Services: append([]Service(nil), raw.Architecture.Services...),
 	}
 
-	sort.Slice(arch.Suites, func(i, j int) bool {
-		return arch.Suites[i].Name < arch.Suites[j].Name
-	})
 	sort.Slice(arch.Services, func(i, j int) bool {
 		return arch.Services[i].Name < arch.Services[j].Name
 	})
 
-	err = validateSuites(path, arch)
+	err = arch.Testing.validate(path)
 	if err != nil {
 		return nil, err
 	}
@@ -160,32 +154,20 @@ func Load(path string) (*Architecture, error) {
 	slog.Info("Loaded architecture",
 		"file", path,
 		"services", len(arch.Services),
-		"suites", len(arch.Suites),
+		"framework", arch.Testing.Framework,
 	)
 
 	return arch, nil
 }
 
-// validateSuites refuses a spec whose suites cannot be walked — unknown
-// service, or an empty `commands:` entry — before the first subprocess
-// spawns; messages name the full YAML path since a bare error can't tell suites apart.
-func validateSuites(path string, arch *Architecture) error {
-	for _, suite := range arch.Suites {
-		_, known := arch.ServicePath(suite.Service)
-		if !known {
-			return fmt.Errorf(
-				"%s: architecture.testing.suites[%s]: service %q: %w",
-				path, suite.Name, suite.Service, ErrUnknownSuiteService,
-			)
-		}
-
-		err := suite.Commands.validate(path, suite.Name)
-		if err != nil {
-			return err
-		}
+// validate refuses a testing block that cannot be walked — no framework,
+// or an empty `commands:` entry — before the first subprocess spawns.
+func (t Testing) validate(path string) error {
+	if strings.TrimSpace(t.Framework) == "" {
+		return fmt.Errorf("%s: architecture.testing.framework: %w", path, ErrNoFramework)
 	}
 
-	return nil
+	return t.Commands.validate(path, t.Framework)
 }
 
 // validate reports the first empty command in the block, named by the
@@ -206,7 +188,7 @@ func (c SuiteCommands) validate(path, suite string) error {
 		}
 
 		return fmt.Errorf(
-			"%s: architecture.testing.suites[%s]: commands.%s: %w",
+			"%s: architecture.testing[%s]: commands.%s: %w",
 			path, suite, mode.key, ErrMissingSuiteCommand,
 		)
 	}

@@ -19,7 +19,7 @@
 // rather than merely cluttering it.
 //
 // THE MESSAGE STRINGS AND ATTRIBUTE KEYS ARE A WIRE CONTRACT.
-// tests/libraries/reporter/engine_log.go folds a run into turns on seven exact
+// pkg/testkit/reporter/engine_log.go folds a run into turns on seven exact
 // messages and pins about forty attribute keys as JSON tags. Renaming one
 // breaks the report and the report server silently: nothing goes red, the
 // turns just stop appearing.

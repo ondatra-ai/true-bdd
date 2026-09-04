@@ -1,5 +1,7 @@
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Replaced empty scenarios map with E2E-001 carrying lineage 99.3-001 for story 99.3-rewalk-fixture.yaml"
+summary: "Added scenario E2E-001 for lineage 99.3-001 (AC-1) replacing the empty scenarios map"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-iter1-result.yaml ===
+```

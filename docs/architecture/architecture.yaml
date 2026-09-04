@@ -15,39 +15,21 @@
 # want them; this repo declares neither.
 
 architecture:
+  # How this repository runs its tests, stated once. No suites: a test's
+  # service and file are the scenario's own (docs/adr/0009).
   testing:
-    suites:
-      # Scenario-driven fixture harness under tests/bdd-cli/ (scenarios from
-      # docs/scenarios.yaml). Gated behind //go:build bdd with a -mode flag —
-      # neither guessable, hence commands:. All 3 modes mandatory; build code uses replay (spawns no model).
-      - name: bdd-cli
-        service: bdd-cli
-        path: tests/bdd-cli
-        framework: go-test
-        commands:
-          record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=record"
-          replay: "go test -tags bdd -json -count=1 -timeout=20m ./tests/bdd-cli/ -mode=replay"
-          live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=live"
-          # Asked by `build tests` before it walks anything: which registry
-          # steps bind to no definition. Deterministic, under a second, no
-          # harness brought up — the question is about two files on disk.
-          coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-cli/"
-
-      # The web relay's suite, same runner and registry — steps drive a
-      # browser via playwright-go instead of a subprocess. Parked TypeScript
-      # suite it replaces: tests/legacy/bdd-web-playwright/.
-      - name: bdd-web
-        service: bdd-web
-        path: tests/bdd-web
-        framework: go-test
-        commands:
-          record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=record"
-          replay: "go test -tags bdd -json -count=1 -timeout=30m ./tests/bdd-web/ -mode=replay"
-          live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-web/ -mode=live"
-          # Answers without node, without a build and without a browser,
-          # which is the whole reason it is a separate command from the
-          # three above.
-          coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-web/"
+    framework: go-test
+    # Gated behind //go:build bdd with a -mode flag naming a mode per
+    # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
+    # hence commands:. build code runs replay, which reaches no model.
+    commands:
+      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:live,tests:live"
+      # Asked by `build tests` before it walks anything: which registry
+      # steps bind to no definition. Deterministic, no harness brought up.
+      # bdd-cli only — bdd-web's step definitions have not landed.
+      coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/bdd-cli/"
 
   services:
     - name: bdd-cli

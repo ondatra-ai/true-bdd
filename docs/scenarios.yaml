@@ -4,8 +4,8 @@
 #
 # `build tests` walks it and asks whether each scenario's steps resolve to
 # a step definition in the suite that owns it — the entry in
-# architecture.testing.suites[] whose `service:` matches the scenario's.
-# tests/libraries/bddgo then RUNS it: one Go subtest per scenario, steps
+# the tests/<service>/ tree its `service:` names.
+# pkg/testkit/bddgo then RUNS it: one Go subtest per scenario, steps
 # bound by regexp to the definitions under that suite's path.
 #
 # Derived once from the tests/bdd-cli fixtures, which already were these
@@ -30,7 +30,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches msg="Cannot run suite" suite=calc/e2e'
+        - 'stdout matches msg="Cannot run suite" framework=go-test'
         - stdout matches true-bdd-no-such-runner
         - stdout matches discovery failed
         - but: no file outside "tmp" changed
@@ -52,7 +52,7 @@ scenarios:
         - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches must emit machine-readable output
         - stdout matches is missing -json
-        - stdout matches calc/e2e
+        - stdout matches go-test
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -68,8 +68,8 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 0
-        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
-        - stdout matches msg="Suite failures" failures=0 suite=calc/e2e
+        - stdout matches msg="Running tests" framework=go-test
+        - stdout matches msg="Suite failures" failures=0 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=0'
         - stdout matches BUILD CODE COMPLETE
         - but: no file outside "tmp" changed
@@ -88,7 +88,7 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - 'stdout matches calc/e2e: test suite command is empty'
+        - 'stdout matches go-test: test suite command is empty'
         - 'stdout matches test suite command is empty: \\"''''\\"'
         - stdout matches level=ERROR msg="Refusing to start" command="build code"
         - but: no file outside "tmp" changed
@@ -108,8 +108,8 @@ scenarios:
         - the System Architect runs "build code --fix"
       then:
         - the command exits with code 0
-        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
-        - stdout matches msg="Suite failures" failures=1 suite=calc/e2e
+        - stdout matches msg="Running tests" framework=go-test
+        - stdout matches msg="Suite failures" failures=1 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=1'
         - stdout matches msg="Fix applied; re-running this test in isolation"
         - stdout matches BUILD CODE COMPLETE
@@ -156,7 +156,7 @@ scenarios:
         - the command exits with code 1
         - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches commands\.replay
-        - stdout matches architecture\.testing\.suites\[e2e\]
+        - stdout matches architecture\.testing\[go-test\]
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -178,7 +178,7 @@ scenarios:
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
   E2E-009:
-    description: An architectural spec that declares no test suites must be refused, not walked to a trivial success
+    description: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories: []
@@ -190,7 +190,7 @@ scenarios:
       then:
         - the command exits with code 1
         - 'stdout matches level=ERROR msg="Refusing to start'
-        - stdout matches no test suites to walk
+        - stdout matches declares no testing framework
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -206,8 +206,8 @@ scenarios:
         - the System Architect runs "build code"
       then:
         - the command exits with code 1
-        - stdout matches msg="Running tests" suite=calc/e2e framework=go-test
-        - stdout matches msg="Suite failures" failures=1 suite=calc/e2e
+        - stdout matches msg="Running tests" framework=go-test
+        - stdout matches msg="Suite failures" failures=1 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=1'
         - stdout matches BUILD CODE COMPLETE
         - but: no file outside "tmp" changed
@@ -218,7 +218,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories: []
-    timeout: 15m
+    timeout: 25m
     merged_steps:
       given:
         - the "build-code-playwright-nextjs" project tree
@@ -228,7 +228,7 @@ scenarios:
         - the System Architect runs "build code --fix"
       then:
         - the command exits with code 0
-        - stdout matches msg="Running tests" suite=frontend/integration framework=playwright
+        - stdout matches msg="Running tests" framework=playwright
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/frontend/Dockerfile" is created
         - and: the file "services/frontend/package.json" is created
@@ -257,26 +257,6 @@ scenarios:
         - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches unknown test framework
         - stdout matches rspec
-        - stdout matches calc/e2e
-        - but: no file outside "tmp" changed
-        - and: the engine spawned no test runner
-        - and: the engine dispatched no AI turns
-  E2E-013:
-    description: A suite whose `service:` names no declared service must be refused
-    service: bdd-cli
-    path: tests/bdd-cli/build_code_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "build-code-unknown-suite-service" project tree
-      when:
-        - the System Architect runs "build code"
-      then:
-        - the command exits with code 1
-        - 'stdout matches level=ERROR msg="Refusing to start'
-        - stdout matches architecture\.testing\.suites\[e2e\]
-        - 'stdout matches service \\"calulator\\"'
-        - stdout matches names a service the architecture does not declare
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -294,7 +274,7 @@ scenarios:
         - the command exits with code 1
         - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches unterminated quote
-        - stdout matches calc/e2e
+        - stdout matches go-test
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns

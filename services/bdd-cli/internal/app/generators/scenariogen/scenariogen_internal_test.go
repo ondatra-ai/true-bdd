@@ -20,13 +20,15 @@ const (
 	registryPath = "docs/scenarios.yaml"
 )
 
-// arch is a one-suite spec: the cli suite, on go-test, at tests/bdd-cli.
+// arch is a spec declaring both services on go-test. There are no suites:
+// a scenario's own service and path place its generated file.
 func arch() *architecture.Architecture {
 	return &architecture.Architecture{
-		Suites: []architecture.Suite{{
-			Name: suiteName, Service: suiteName, Path: suitePath, Framework: FrameworkGoTest,
-		}},
-		Services: []architecture.Service{{Name: suiteName, Path: "services/bdd-cli", Language: "go"}},
+		Testing: architecture.Testing{Framework: FrameworkGoTest},
+		Services: []architecture.Service{
+			{Name: suiteName, Path: "services/bdd-cli", Language: "go"},
+			{Name: webSuite, Path: "services/bdd-web", Language: "typescript"},
+		},
 	}
 }
 
@@ -175,8 +177,6 @@ func TestBuildPlanRefusesABadPath(t *testing.T) {
 		"absolute":        {"/tmp/x_test.go", ErrPathNotRelative},
 		"escaping":        {"../x_test.go", ErrPathNotRelative},
 		"not a test file": {"tests/bdd-cli/x.go", ErrPathNotTestFile},
-		"another suite":   {"tests/bdd-web/x_test.go", ErrPathNotInSuiteRoot},
-		"a subdirectory":  {"tests/bdd-cli/sub/x_test.go", ErrPathNotInSuiteRoot},
 	}
 
 	for name, testCase := range cases {
@@ -215,31 +215,6 @@ func TestBuildPlanRefusesThePathInsideTheStepsTree(t *testing.T) {
 	}
 }
 
-// Two scenarios sharing one file must belong to one suite — the file is one
-// Go package bound to one suite's state. Reachable only when two suites
-// declare the SAME root; different roots are already caught by the per-scenario path check.
-func TestBuildPlanRefusesTwoServicesInOneFile(t *testing.T) {
-	t.Parallel()
-
-	other := scenario("E2E-002", testFile)
-	other.Service = webSuite
-
-	spec := arch()
-	spec.Suites = append(spec.Suites, architecture.Suite{
-		Name: webSuite, Service: webSuite, Path: suitePath, Framework: FrameworkGoTest,
-	})
-
-	root := repoWithModule(t)
-
-	_, err := BuildPlan([]*registry.RegistryScenario{
-		scenario("E2E-001", testFile), other,
-	}, spec, root, registryPath)
-
-	if !errors.Is(err, ErrPathCrossSuite) {
-		t.Fatalf("want ErrPathCrossSuite, got %v", err)
-	}
-}
-
 // Two ids that render one Go name would make `-run TestE2E001`
 // ambiguous and, in one file, would not compile at all.
 func TestBuildPlanRefusesCollidingIdentifiers(t *testing.T) {
@@ -257,8 +232,9 @@ func TestBuildPlanRefusesCollidingIdentifiers(t *testing.T) {
 	}
 }
 
-// A scenario naming a service no suite declares is a behaviour nothing
-// runs, so it is refused rather than rendered into a file no suite owns.
+// A scenario naming a service the architecture does not declare is a
+// behaviour nothing runs, refused rather than rendered into a file no
+// service owns.
 func TestBuildPlanRefusesAnUnknownService(t *testing.T) {
 	t.Parallel()
 
@@ -273,13 +249,13 @@ func TestBuildPlanRefusesAnUnknownService(t *testing.T) {
 	}
 }
 
-// A framework with no renderer is named, not skipped: a suite quietly
-// left ungenerated is a suite whose scenarios nothing executes.
+// A framework with no renderer is named, not skipped: scenarios quietly
+// left ungenerated are behaviours nothing executes.
 func TestBuildPlanRefusesAnUnrenderableFramework(t *testing.T) {
 	t.Parallel()
 
 	spec := arch()
-	spec.Suites[0].Framework = "jest"
+	spec.Testing.Framework = "jest"
 
 	root := repoWithModule(t)
 
@@ -477,13 +453,12 @@ func TestBuildPlanRefusesAPackageClauseMismatch(t *testing.T) {
 	root := repoWithModule(t)
 
 	err := os.WriteFile(filepath.Join(root, suitePath, "main_test.go"),
-		[]byte("package bddcli_test\n"), 0o600)
+		[]byte("package cli_test\n"), 0o600)
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 
 	spec := arch()
-	spec.Suites[0].Name = "cli"
 
 	_, err = BuildPlan([]*registry.RegistryScenario{
 		scenario("E2E-001", testFile),
@@ -494,7 +469,7 @@ func TestBuildPlanRefusesAPackageClauseMismatch(t *testing.T) {
 	}
 }
 
-// A suite name that derives no legal Go identifier is named here rather
+// A directory that derives no legal Go identifier is named here rather
 // than surfacing later as a parse error from format.Source that names
 // nothing.
 func TestBuildPlanRefusesAnInvalidPackageName(t *testing.T) {
@@ -503,13 +478,48 @@ func TestBuildPlanRefusesAnInvalidPackageName(t *testing.T) {
 	root := repoWithModule(t)
 
 	spec := arch()
-	spec.Suites[0].Name = "2e2"
+	spec.Services = append(spec.Services,
+		architecture.Service{Name: "2e2", Path: "services/2e2", Language: "go"})
 
-	_, err := BuildPlan([]*registry.RegistryScenario{
-		scenario("E2E-001", testFile),
-	}, spec, root, registryPath)
+	item := scenario("E2E-001", "tests/2e2/x_test.go")
+	item.Service = "2e2"
+
+	_, err := BuildPlan([]*registry.RegistryScenario{item}, spec, root, registryPath)
 
 	if !errors.Is(err, ErrPackageNameInvalid) {
 		t.Fatalf("want ErrPackageNameInvalid, got %v", err)
+	}
+}
+
+// A service's tests all live in one directory — whichever the host chose.
+// The generator derives the package clause and the scenarios import from
+// it, so two directories is two packages claiming one service's state.
+func TestBuildPlanRefusesAServiceSplitAcrossDirectories(t *testing.T) {
+	t.Parallel()
+
+	root := repoWithModule(t)
+
+	_, err := BuildPlan([]*registry.RegistryScenario{
+		scenario("E2E-001", testFile),
+		scenario("E2E-002", "tests/bdd-cli/sub/x_test.go"),
+	}, arch(), root, registryPath)
+
+	if !errors.Is(err, ErrPathNotInSuiteRoot) {
+		t.Fatalf("want ErrPathNotInSuiteRoot, got %v", err)
+	}
+}
+
+// A host may name its test tree whatever it likes: `tests/mcp/` for a
+// service called `mcp-service` is a naming choice, not a defect.
+func TestBuildPlanAcceptsATreeNamedUnlikeItsService(t *testing.T) {
+	t.Parallel()
+
+	root := repoWithModule(t)
+
+	item := scenario("E2E-001", "tests/bdd-cli/x_test.go")
+
+	_, err := BuildPlan([]*registry.RegistryScenario{item}, arch(), root, registryPath)
+	if err != nil {
+		t.Fatalf("BuildPlan: %v", err)
 	}
 }

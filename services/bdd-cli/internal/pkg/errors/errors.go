@@ -14,7 +14,6 @@ const (
 	CategoryGitHub         Category = "github"
 	CategoryParsing        Category = "parsing"
 	CategoryInfrastructure Category = "infrastructure"
-	CategoryParser         Category = "parser"
 )
 
 // AppError represents a structured application error.
@@ -39,20 +38,19 @@ func (e *AppError) Unwrap() error {
 
 // AI Errors.
 var (
-	ErrCreateTmpDirectory  = errors.New("failed to create tmp directory")
-	ErrLoadData            = errors.New("failed to load data")
-	ErrGenerateContent     = errors.New("failed to generate content")
-	ErrWriteResponseFile   = errors.New("failed to write response file")
-	ErrParseResponse       = errors.New("failed to parse response")
-	ErrValidation          = errors.New("validation failed")
-	ErrFileNotFound        = errors.New("file not found")
-	ErrParseYAML           = errors.New("failed to parse YAML")
-	ErrKeyNotFoundInYAML   = errors.New("key not found in YAML")
-	ErrReadTemplateFile    = errors.New("failed to read template file")
-	ErrParseTemplate       = errors.New("failed to parse template")
-	ErrSendQuery           = errors.New("failed to send query")
-	ErrClaudeReturnedError = errors.New("claude returned error")
-	ErrResponseTooLarge    = errors.New("claude response too large for buffer")
+	ErrCreateTmpDirectory = errors.New("failed to create tmp directory")
+	ErrLoadData           = errors.New("failed to load data")
+	ErrGenerateContent    = errors.New("failed to generate content")
+	ErrWriteResponseFile  = errors.New("failed to write response file")
+	ErrParseResponse      = errors.New("failed to parse response")
+	ErrValidation         = errors.New("validation failed")
+	ErrFileNotFound       = errors.New("file not found")
+	ErrParseYAML          = errors.New("failed to parse YAML")
+	ErrKeyNotFoundInYAML  = errors.New("key not found in YAML")
+	ErrReadTemplateFile   = errors.New("failed to read template file")
+	ErrParseTemplate      = errors.New("failed to parse template")
+	ErrSendQuery          = errors.New("failed to send query")
+	ErrResponseTooLarge   = errors.New("claude response too large for buffer")
 )
 
 func ErrReadTemplateFileFailed(filePath string, cause error) error {
@@ -70,24 +68,6 @@ func ErrParseTemplateFailed(cause error) error {
 		Code:     "PARSE_TEMPLATE_FAILED",
 		Message:  "failed to parse template",
 		Cause:    errors.Join(ErrParseTemplate, cause),
-	}
-}
-
-func ErrSendQueryFailed(cause error) error {
-	return &AppError{
-		Category: CategoryAI,
-		Code:     "SEND_QUERY_FAILED",
-		Message:  "failed to send query",
-		Cause:    errors.Join(ErrSendQuery, cause),
-	}
-}
-
-func ErrClaudeError(result string) error {
-	return &AppError{
-		Category: CategoryAI,
-		Code:     "CLAUDE_RETURNED_ERROR",
-		Message:  "Claude returned error: " + result,
-		Cause:    ErrClaudeReturnedError,
 	}
 }
 
@@ -251,184 +231,9 @@ func ErrToolInBothLists(tool string) error {
 	}
 }
 
-// Parser Errors (for claudecode/internal/parser).
 var (
-	ErrBufferOverflow    = errors.New("buffer overflow")
-	ErrParseContentBlock = errors.New("failed to parse content block")
+	ErrClaudeStreamNoOutput = errors.New("claude process produced no output")
 )
-
-func ErrBufferSizeExceeded(bufferSize, maxSize int) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "BUFFER_SIZE_EXCEEDED",
-		Message:  fmt.Sprintf("buffer size %d exceeds limit %d", bufferSize, maxSize),
-		Cause:    ErrBufferOverflow,
-	}
-}
-
-func ErrParseContentBlockFailed(index int, cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "PARSE_CONTENT_BLOCK_FAILED",
-		Message:  fmt.Sprintf("failed to parse content block %d", index),
-		Cause:    errors.Join(ErrParseContentBlock, cause),
-	}
-}
-
-// Transport Errors (for claudecode/internal/subprocess).
-var (
-	ErrCreateStdinPipe  = errors.New("failed to create stdin pipe")
-	ErrCreateStdoutPipe = errors.New("failed to create stdout pipe")
-	ErrCreateStderrFile = errors.New("failed to create stderr file")
-	ErrMarshalMessage   = errors.New("failed to marshal message")
-	ErrWriteMessage     = errors.New("failed to write message")
-	ErrStdoutScanner    = errors.New("stdout scanner error")
-)
-
-func ErrCreateStdinPipeFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CREATE_STDIN_PIPE_FAILED",
-		Message:  "failed to create stdin pipe",
-		Cause:    errors.Join(ErrCreateStdinPipe, cause),
-	}
-}
-
-func ErrCreateStdoutPipeFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CREATE_STDOUT_PIPE_FAILED",
-		Message:  "failed to create stdout pipe",
-		Cause:    errors.Join(ErrCreateStdoutPipe, cause),
-	}
-}
-
-func ErrCreateStderrFileFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CREATE_STDERR_FILE_FAILED",
-		Message:  "failed to create stderr file",
-		Cause:    errors.Join(ErrCreateStderrFile, cause),
-	}
-}
-
-func ErrMarshalMessageFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "MARSHAL_MESSAGE_FAILED",
-		Message:  "failed to marshal message",
-		Cause:    errors.Join(ErrMarshalMessage, cause),
-	}
-}
-
-func ErrWriteMessageFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "WRITE_MESSAGE_FAILED",
-		Message:  "failed to write message",
-		Cause:    errors.Join(ErrWriteMessage, cause),
-	}
-}
-
-func ErrStdoutScannerFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "STDOUT_SCANNER_FAILED",
-		Message:  "stdout scanner error",
-		Cause:    errors.Join(ErrStdoutScanner, cause),
-	}
-}
-
-// Client Errors (for claudecode).
-var (
-	ErrWorkingDirectoryNotExist  = errors.New("working directory does not exist")
-	ErrInvalidMaxTurns           = errors.New("invalid max_turns")
-	ErrInvalidPermissionMode     = errors.New("invalid permission mode")
-	ErrConnectClient             = errors.New("failed to connect client")
-	ErrCLINotFound               = errors.New("claude CLI not found")
-	ErrConnectTransport          = errors.New("failed to connect transport")
-	ErrInvalidConfiguration      = errors.New("invalid configuration")
-	ErrCloseTransport            = errors.New("failed to close transport")
-	ErrClientNotConnected        = errors.New("client not connected")
-	ErrTransportAlreadyConnected = errors.New("transport already connected")
-	ErrTransportNotConnected     = errors.New("transport not connected or stdin closed")
-	ErrProcessNotRunning         = errors.New("process not running")
-	ErrInterruptNotSupported     = errors.New("interrupt not supported by windows")
-	ErrClaudeStreamClosed        = errors.New("claude stream closed before receiving messages")
-	ErrClaudeStreamNoOutput      = errors.New("claude process produced no output")
-)
-
-func ErrWorkingDirectoryDoesNotExist(path string) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "WORKING_DIRECTORY_NOT_EXIST",
-		Message:  "working directory does not exist: " + path,
-		Cause:    ErrWorkingDirectoryNotExist,
-	}
-}
-
-func ErrMaxTurnsMustBeNonNegative(value int) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "INVALID_MAX_TURNS",
-		Message:  fmt.Sprintf("max_turns must be non-negative, got: %d", value),
-		Cause:    ErrInvalidMaxTurns,
-	}
-}
-
-func ErrInvalidPermissionModeValue(mode string) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "INVALID_PERMISSION_MODE",
-		Message:  "invalid permission mode: " + mode,
-		Cause:    ErrInvalidPermissionMode,
-	}
-}
-
-func ErrConnectClientFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CONNECT_CLIENT_FAILED",
-		Message:  "failed to connect client",
-		Cause:    errors.Join(ErrConnectClient, cause),
-	}
-}
-
-func ErrCLINotFoundError(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CLI_NOT_FOUND",
-		Message:  "claude CLI not found",
-		Cause:    errors.Join(ErrCLINotFound, cause),
-	}
-}
-
-func ErrConnectTransportFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CONNECT_TRANSPORT_FAILED",
-		Message:  "failed to connect transport",
-		Cause:    errors.Join(ErrConnectTransport, cause),
-	}
-}
-
-func ErrInvalidConfigurationError(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "INVALID_CONFIGURATION",
-		Message:  "invalid configuration",
-		Cause:    errors.Join(ErrInvalidConfiguration, cause),
-	}
-}
-
-func ErrCloseTransportFailed(cause error) error {
-	return &AppError{
-		Category: CategoryParser,
-		Code:     "CLOSE_TRANSPORT_FAILED",
-		Message:  "failed to close transport",
-		Cause:    errors.Join(ErrCloseTransport, cause),
-	}
-}
 
 func ErrInitializeConfigFailed(cause error) error {
 	return &AppError{

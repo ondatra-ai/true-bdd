@@ -148,14 +148,15 @@ linters:
     depguard:
       rules:
         # pkg/ is the floor: every root imports it, it imports none. The
-        # `**/pkg/**` glob also matches services/bdd-cli/internal/pkg/, which
-        # is not the floor — hence the negations.
+        # negations: `**/pkg/**` also matches internal/pkg/, not the floor;
+        # pkg/testkit/ is the harness, which exists to reach roots (ADR 0008).
         root-pkg-floor:
           files:
             - "**/pkg/**"
             - "!**/services/**"
             - "!**/scripts/**"
             - "!**/tests/**"
+            - "!**/pkg/testkit/**"
           deny:
             - pkg: "github.com/ondatra-ai/true-bdd/services"
               desc: 'pkg is the floor: every root imports it, it imports none'
@@ -191,8 +192,6 @@ linters:
               desc: 'the domain defines; it does not reach outward'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters"
               desc: 'a port names domain types only — never its own implementation'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode"
-              desc: 'the domain defines; it does not reach outward'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
               desc: 'the domain defines; it does not reach outward'
         # Spawning is the fourth channel (ADR 0005). _test.go is exempt: several
@@ -322,7 +321,7 @@ linters:
           - tagliatelle
       # Don't require wrapping for internal package returns
       # Our internal/pkg/errors package provides properly wrapped errors
-      - path: (services/bdd-cli/internal/.*|services/bdd-cli/claudecode/.*|services/bdd-cli/adapters/.*)\.go
+      - path: (services/bdd-cli/internal/.*|services/bdd-cli/adapters/.*)\.go
         linters:
           - wrapcheck
         text: 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors'
@@ -357,7 +356,7 @@ linters:
         linters:
           - forbidigo
         text: 'log construction:'
-      - path: ^tests/libraries/runner/harness_logging\.go$
+      - path: ^pkg/testkit/runner/harness_logging\.go$
         linters:
           - forbidigo
         text: 'log construction:'

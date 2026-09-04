@@ -10,8 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // ErrJudgeRefused is returned when the judge ruled against a scenario's
@@ -88,6 +88,12 @@ type ProxySetup struct {
 	Staging string
 	// Golden is the recorded outcome, loaded in replay mode only.
 	Golden *runner.GoldenTree
+	// JudgeEnv arms THIS process for the verdict call, and is empty when
+	// the tests axis runs live. Applied around that call only: the engine
+	// subprocess inherits this environment.
+	JudgeEnv []string
+	// JudgeStaging is non-empty when the tests axis records.
+	JudgeStaging string
 }
 
 // NewState returns the per-scenario state constructor bddgo calls before
@@ -99,7 +105,7 @@ func NewState(harness *Harness) func(*bddgo.World) (*State, error) {
 
 		name := FixtureName(world.Scenario)
 		state.Recorder = runner.NewHarnessRecorder(
-			harness.SessionRoot, name, harness.Mode, harness.Usage)
+			harness.SessionRoot, name, harness.Modes.String(), harness.Usage)
 
 		world.T.Cleanup(state.finish)
 
@@ -126,6 +132,13 @@ func (s *State) Judge(clauses []bddgo.Step) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.Harness.JudgeTimeout)
 	defer cancel()
+
+	// Armed for the call and no longer: what this process exports is what
+	// the next fixture's engine subprocess inherits.
+	if len(s.Proxy.JudgeEnv) > 0 {
+		restore := runner.ArmProcess(s.Proxy.JudgeEnv)
+		defer restore()
+	}
 
 	s.judgeVerdict = runner.Evaluate(ctx, runner.JudgeRequest{
 		Cmd:     s.Fixture.Cmd,
@@ -221,22 +234,51 @@ func (s *State) grade() {
 		}
 	}
 
-	// t.Failed() covers the steps as well as the verdict, which is what
-	// makes this the promotion gate: a recording is published only for a
-	// scenario that passed WHOLE.
-	if s.Harness.Mode != runner.ProxyModeRecord {
+	s.publishRecordings()
+}
+
+// publishRecordings promotes whatever this run recorded. t.Failed() covers
+// the steps as well as the verdict, which is what makes this the promotion
+// gate: a recording is published only for a scenario that passed WHOLE.
+func (s *State) publishRecordings() {
+	recordingServices := s.Harness.Modes.Services == runner.ProxyModeRecord
+	if !recordingServices && s.Proxy.JudgeStaging == "" {
 		return
 	}
 
 	if s.T.Failed() {
 		dest, _ := s.Harness.CassetteDir(s.Fixture.Name)
-		s.T.Logf("cassettes NOT recorded — the run failed; the rejected recording is at %s "+
-			"and %s is unchanged", s.Proxy.Staging, dest)
+		s.T.Logf("recordings NOT published — the run failed; the rejected recording is at %s "+
+			"and %s is unchanged", s.stagingRoot(), dest)
 
 		return
 	}
 
-	s.recordOutcome()
+	// A recording services caller publishes by renaming its whole staging dir, and
+	// the judge's shelf sits inside it — one rename carries both.
+	if recordingServices {
+		s.recordOutcome()
+
+		return
+	}
+
+	err := s.Harness.promoteJudgeShelf(s.Fixture.Name, s.Proxy.JudgeStaging)
+	if err != nil {
+		s.T.Errorf("publish judge shelf: %v", err)
+
+		return
+	}
+
+	s.T.Logf("recorded the judge verdict; the engine's cassettes are untouched")
+}
+
+// stagingRoot is whichever staging directory this run wrote into.
+func (s *State) stagingRoot() string {
+	if s.Proxy.Staging != "" {
+		return s.Proxy.Staging
+	}
+
+	return s.Proxy.JudgeStaging
 }
 
 // finalVerdict is what the record states, which is not always what the
@@ -247,7 +289,7 @@ func (s *State) finalVerdict() runner.Verdict {
 
 	// Golden and census are WHEN-stage fidelity: they prove the replay
 	// reproduced the recorded tree and consumed every recorded turn.
-	if s.Harness.Mode == runner.ProxyModeReplay {
+	if s.Harness.Modes.Services == runner.ProxyModeReplay {
 		verdict = runner.EvaluateRecorded(
 			s.Result, s.Proxy.Golden, s.Proxy.Cassettes, s.Proxy.StateDir)
 	}

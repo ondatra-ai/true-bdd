@@ -15,6 +15,7 @@
 package scenarios
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -27,17 +28,17 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/steps"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
 	"log/slog"
 )
 
-// -mode selects how scenarios reach the AI CLIs: live, record, or replay.
+// -mode selects how each caller reaches the AI CLIs, per process.
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
-var proxyMode = flag.String("mode", runner.ProxyModeLive,
-	"AI CLI mode for scenarios: live, record, or replay")
+var proxyMode = flag.String("mode", "",
+	"per-caller AI CLI mode, e.g. services:replay,tests:live")
 
 const (
 	// scenarioTimeout caps the CLI run alone; prep/teardown have their own
@@ -55,10 +56,18 @@ const (
 	buildTimeout = 2 * time.Minute
 )
 
+// Errors this suite refuses to boot with.
+var (
+	// errModeRequired marks a harness asked to run with no -mode. Absence
+	// is legal for the model-free guards, which never reach this point.
+	errModeRequired = errors.New("-mode is required to run a scenario")
+)
+
 //nolint:gochecknoglobals // process-wide suite state, built once in Main
 var (
 	suite    *bddgo.Suite[steps.State]
 	repoRoot string
+	runModes runner.Modes
 
 	bootOnce  sync.Once
 	errBoot   error
@@ -76,14 +85,16 @@ func Main(m *testing.M) int {
 	// Parsed explicitly: m.Run parses too late for a flag Main reads.
 	flag.Parse()
 
-	mode := *proxyMode
-	if mode != runner.ProxyModeLive && mode != runner.ProxyModeRecord && mode != runner.ProxyModeReplay {
-		slog.Error("invalid -mode", "mode", mode, "want", "live, record, or replay")
+	// A supplied value must be readable; an absent one is legal here and
+	// refused at boot, since the coverage guards run with no mode at all.
+	modes, err := runner.ParseModes(*proxyMode)
+	if err != nil {
+		slog.Error("invalid -mode", "error", err)
 
 		return 1
 	}
 
-	var err error
+	runModes = modes
 
 	repoRoot, err = runner.FindRepoRoot()
 	if err != nil {
@@ -170,9 +181,12 @@ func ensureHarness(t *testing.T) {
 func bootHarness(t *testing.T) (string, error) {
 	t.Helper()
 
-	mode := *proxyMode
+	err := runnableModes(runModes)
+	if err != nil {
+		return "", err
+	}
 
-	why, err := requiredCLIs(mode)
+	why, err := requiredCLIs(runModes)
 	if err != nil {
 		return "", err
 	}
@@ -181,18 +195,13 @@ func bootHarness(t *testing.T) (string, error) {
 		return why, nil
 	}
 
-	var shimDir string
-
-	if mode != runner.ProxyModeLive {
-		var err error
-
-		shimDir, err = installShimDir()
-		if err != nil {
-			return "", err
-		}
+	shims, err := installShims(runModes)
+	if err != nil {
+		return "", err
 	}
 
-	judge, err := runner.NewClaudeJudge(filepath.Join(repoRoot, "true-bdd", "true-bdd.yaml"))
+	judge, err := runner.NewClaudeJudge(
+		filepath.Join(repoRoot, "true-bdd", "true-bdd.yaml"), runModes.Tests)
 	if err != nil {
 		return "", fmt.Errorf("init judge: %w", err)
 	}
@@ -222,8 +231,8 @@ func bootHarness(t *testing.T) (string, error) {
 	harness = &steps.Harness{
 		BinPath:      binPath,
 		SessionRoot:  sessionRoot,
-		ShimDir:      shimDir,
-		Mode:         mode,
+		Shims:        shims,
+		Modes:        runModes,
 		Judge:        judge,
 		FixturesDir:  FixturesDir,
 		Timeout:      scenarioTimeout,
@@ -233,7 +242,7 @@ func bootHarness(t *testing.T) (string, error) {
 
 	suite.Init(steps.NewState(harness))
 
-	return "", writeSessionMeta(sessionRoot, mode)
+	return "", writeSessionMeta(sessionRoot, runModes.String())
 }
 
 // writeSessionMeta records what this invocation set out to run, before
@@ -312,39 +321,66 @@ func missingCLI() (string, error) {
 	return "", nil
 }
 
-// installShimDir builds the aiproxy shim and installs it as claude/crush/
-// codex in a temp dir, prepended only to the CLI subprocess's PATH — never
-// the test process's — so it intercepts spawns without touching resolution.
-func installShimDir() (string, error) {
-	dir, err := disk.TempDir("", "true-bdd-shim-")
+// installShims builds the aiproxy shim once and installs it under the AI
+// CLIs' names, one directory per caller — the shim reads its mode from flat
+// env vars, so separate dirs are what let one caller replay as another records.
+func installShims(modes runner.Modes) (runner.ShimDirs, error) {
+	base, err := disk.TempDir("", "true-bdd-shim-")
 	if err != nil {
-		return "", fmt.Errorf("create shim dir: %w", err)
+		return runner.ShimDirs{}, fmt.Errorf("create shim dir: %w", err)
 	}
 
-	teardowns = append(teardowns, func() { _ = disk.RemoveTree(dir) })
+	teardowns = append(teardowns, func() { _ = disk.RemoveTree(base) })
 
-	shimDir := filepath.Join(dir, "shim")
+	proxyPath := filepath.Join(base, "aiproxy")
 
-	err = disk.Dir(shimDir, disk.Shared)
+	err = goBuild(proxyPath, "./pkg/testkit/aiproxy")
 	if err != nil {
-		return "", fmt.Errorf("create shim dir: %w", err)
+		return runner.ShimDirs{}, err
 	}
 
-	proxyPath := filepath.Join(shimDir, "aiproxy")
+	var dirs runner.ShimDirs
 
-	err = goBuild(proxyPath, "./tests/libraries/aiproxy")
+	for caller, mode := range map[string]string{
+		runner.CallerServices: modes.Services,
+		runner.CallerTests:    modes.Tests,
+	} {
+		if mode == runner.ProxyModeLive {
+			continue
+		}
+
+		dir, dirErr := installShimNames(base, caller, proxyPath)
+		if dirErr != nil {
+			return runner.ShimDirs{}, dirErr
+		}
+
+		if caller == runner.CallerServices {
+			dirs.Services = dir
+		} else {
+			dirs.Tests = dir
+		}
+	}
+
+	return dirs, nil
+}
+
+// installShimNames symlinks one caller's shim dir.
+func installShimNames(base, caller, proxyPath string) (string, error) {
+	dir := filepath.Join(base, caller)
+
+	err := disk.Dir(dir, disk.Shared)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create shim dir for %s: %w", caller, err)
 	}
 
 	for _, name := range []string{"claude", "crush", "codex"} {
-		err = os.Symlink(proxyPath, filepath.Join(shimDir, name))
+		err = os.Symlink(proxyPath, filepath.Join(dir, name))
 		if err != nil {
 			return "", fmt.Errorf("install shim %s: %w", name, err)
 		}
 	}
 
-	return shimDir, nil
+	return dir, nil
 }
 
 func buildTrueBDD() (string, error) {
@@ -384,18 +420,30 @@ func flagValue(name string) string {
 	return found.Value.String()
 }
 
-// requiredCLIs gates boot on the binaries this mode needs. Replay shims
-// the turns but still asks the real judge, so it needs `claude` — and a
-// miss FAILS rather than skips: a judgeless green would hide the gap.
-func requiredCLIs(mode string) (string, error) {
-	if mode != runner.ProxyModeReplay {
-		return missingCLI()
+// runnableModes refuses a boot this harness cannot honour. Absence is
+// legal at the flag but not here: only a real scenario reaches this.
+func runnableModes(modes runner.Modes) error {
+	if !modes.Set() {
+		return fmt.Errorf("%w; want %s", errModeRequired, runner.ModeSpecForm())
 	}
 
-	err := cli.Require("claude")
-	if err != nil {
-		return "", fmt.Errorf("replay needs the judge's `claude` CLI: %w", err)
+	return nil
+}
+
+// requiredCLIs gates boot on the binaries these modes need, per axis: a
+// miss FAILS rather than skips, since a judgeless green hides the gap.
+func requiredCLIs(modes runner.Modes) (string, error) {
+	if modes.Tests != runner.ProxyModeReplay {
+		err := cli.Require("claude")
+		if err != nil {
+			return "", fmt.Errorf("tests:%s needs the judge's `claude` CLI: %w", modes.Tests, err)
+		}
 	}
 
-	return "", nil
+	// A replaying services caller spawns no real CLI; anything else does.
+	if modes.Services == runner.ProxyModeReplay {
+		return "", nil
+	}
+
+	return missingCLI()
 }

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // assertScenarioStepsMatched pins that a `build tests --fix` run left a

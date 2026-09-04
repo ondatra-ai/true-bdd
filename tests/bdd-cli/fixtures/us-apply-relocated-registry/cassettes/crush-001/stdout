@@ -2,6 +2,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Added scenario E2E-961 for lineage 95.2-001 (story 95.2-relocated-registry.yaml) after E2E-960; E2E-960 and metadata untouched"
+summary: "Appended scenario E2E-961 for story 95.2-relocated-registry.yaml / lineage 95.2-001 (GET /health -> 200 healthy); E2E-960 untouched"
 === FILE_END: tmp/{{RUN_DIR}}/apply-95.2-001-iter1-result.yaml ===
 ```

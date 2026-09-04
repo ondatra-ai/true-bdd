@@ -37,13 +37,12 @@ acceptance_criteria:
       - then:
           - "Claude displays the message 'The summary timed out - please try again'"
   - id: "AC-4"
-    description: "Claude must display the message 'Only the first 10000 words were summarized' when the document contains more than 10000 words."
+    description: "Claude must display the message 'Only the first 10000 words were summarized' within 30 seconds when the document contains more than 10000 words."
     steps:
       - given:
           - "a Google Doc with more than 10000 words is shared with the Claude User's account"
       - when:
           - "the Claude User asks Claude to summarize the document"
       - then:
-          - "Claude displays the message 'Only the first 10000 words were summarized'"
-          - and: "Claude displays a summary of 150 words or fewer in the conversation"
+          - "Claude displays the message 'Only the first 10000 words were summarized' within 30 seconds"
 === FILE_END: tmp/{{RUN_DIR}}/apply-96.7-iter1-result.yaml ===

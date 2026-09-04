@@ -72,46 +72,28 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
+## Context
+The registry currently holds exactly one scenario, `E2E-001`, which is
+merged from `docs/product/stories/99.3-rewalk-fixture.yaml` lineage id
+`99.3-001`. No entry references lineage id `99.3-002`, so AC-2 is not
+present and must be added as a NEW scenario.
+
+Next free id following existing numbering: `E2E-002`.
+Reuse the existing path from the same feature family (`E2E-001`):
+`tests/mcp/mcp_endpoint_test.go`.
+
 ## Required Changes
 
-### Change #1: Add scenario `E2E-002` carrying the lineage for AC-2
+### Change #1: Add scenario E2E-002 for lineage 99.3-002
+**Issue:** AC-2 (lineage `99.3-002`) has no entry under `scenarios:` whose
+`user_stories[]` contains both the story path
+`docs/product/stories/99.3-rewalk-fixture.yaml` and the lineage id
+`99.3-002`.
 
-**Issue:** The registry currently holds exactly one entry, `E2E-001`, whose
-`user_stories[]` carries lineage id `99.3-001`. No entry anywhere in the file
-lists the story path `docs/product/stories/99.3-rewalk-fixture.yaml` together
-with the lineage scenario id `99.3-002`, so the merge check reports
-`AC AC-2 (lineage 99.3-002): not present`.
-
-**Decisions already made for you — do not re-derive them:**
-- **Id `E2E-002`** — `E2E-001` is taken and is the only id in the file, so the
-  next free number in the existing `E2E-NNN` sequence is `002`. This AC drives
-  a running server over real HTTP, so the `E2E-` prefix is correct. Do not
-  reuse `E2E-001` and do not renumber it.
-- **`path: tests/mcp-server/mcp_endpoint_test.go`** — REUSED verbatim from the
-  existing `E2E-001` entry. Both scenarios exercise the same `/mcp` endpoint
-  family (a valid POST vs. a rejected GET), so template step 3 requires they
-  share one generated test file. **Note this reasoning differs from the AC-1
-  fix prompt**, which had to invent this path because the registry was empty
-  then; do not copy that prompt's "no existing path to reuse" rationale, and
-  do not go hunting for an `architecture.yaml` — this fixture ships none.
-- **`service: ""`** — verbatim from the fix template, and matching `E2E-001`.
-- **Dates `"2026-09-01"`** — today, for both `last_updated` and `merge_date`,
-  matching `E2E-001`.
-- **`then:` second step keeps the `- and:` mapping form**, verbatim from the
-  story file (`docs/product/stories/99.3-rewalk-fixture.yaml` line 29). This is
-  the schema's supported modifier form (`then: list(any(str(), map(str())))`),
-  which the engine flattens to `and <text>`. Do not rewrite it as a plain
-  string, and do not quote it.
-- **AC-2 has no second `given:` step.** Its `given:` block is a single line.
-  Do not carry over `the server accepts JSON-RPC over HTTP POST at /mcp` from
-  `E2E-001`.
-
-**Action:** Use the Edit tool on the target file with the exact `old_string`
-and `new_string` below. The `old_string` is the three-line `then:` block that
-ends `E2E-001` — it occurs exactly once in the file. The `new_string` repeats
-those three lines unchanged and appends the new `E2E-002:` entry directly
-after them, at 2-space indent, with no blank line between the two scenarios
-(matching how `E2E-001` sits directly under `scenarios:`).
+**Action:** Use the Edit tool on the target file with the exact
+`old_string` and `new_string` below. This appends the new entry after
+`E2E-001`, at the end of the file, preserving existing ordering and
+indentation. Do not touch any other entry.
 
 **old_string:**
 ```
@@ -128,12 +110,12 @@ after them, at 2-space indent, with no blank line between the two scenarios
   E2E-002:
     description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: ""
-    path: "tests/mcp-server/mcp_endpoint_test.go"
-    last_updated: "2026-09-01"
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-09-04"
     user_stories:
       - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
         scenario_id: "99.3-002"
-        merge_date: "2026-09-01"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -141,24 +123,15 @@ after them, at 2-space indent, with no blank line between the two scenarios
         - the Claude User sends an HTTP GET request to /mcp
       then:
         - the server returns HTTP 405 Method Not Allowed
-        - and: the response indicates the method is not allowed for this endpoint
+        - and the response indicates the method is not allowed for this endpoint
 ```
 
 ## Verification
-After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must contain
-exactly two entries under `scenarios:`, in this order: `E2E-001` then
-`E2E-002`.
-
-- `E2E-002.user_stories[]` carries both
-  `docs/product/stories/99.3-rewalk-fixture.yaml` and `99.3-002`.
-- `E2E-001` is byte-for-byte unchanged — same id, same `path:`, same
-  `user_stories[]` (still `99.3-001`), same steps.
-- The leading header comment block (lines 1–19) and the whole `metadata:`
-  block, including `metadata.last_updated: "2026-05-14"`, are untouched.
-- Two-space indentation throughout: scenario ids at 2 spaces, their fields at
-  4, list items under `merged_steps` at 8.
-- No other entry, key, comment, or blank line in the file may change, and no
-  third scenario may be added.
+After the edit, the file must contain a `scenarios:` entry `E2E-002`
+whose `user_stories[]` has an item with
+`story: "docs/product/stories/99.3-rewalk-fixture.yaml"` and
+`scenario_id: "99.3-002"`. `E2E-001`, the leading comment block, and the
+`metadata:` block must be byte-identical to before.
 
 ---
 

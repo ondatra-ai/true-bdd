@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Added scenario E2E-002 (lineage 99.3-002, GET /mcp -> 405) after E2E-001; E2E-001 and metadata untouched"
+summary: "Added scenario E2E-002 for lineage 99.3-002 (HTTP 405 for GET /mcp), appended after E2E-001; all other entries untouched"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-iter2-result.yaml ===

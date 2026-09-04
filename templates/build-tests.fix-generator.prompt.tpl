@@ -8,7 +8,7 @@
 ## Where the fix goes
 
 Read the architectural spec above and find the
-`architecture.testing.suites[]` entry whose `service:` equals the
+tree `tests/<service>/`, where `service:` equals the
 subject's **Service**. That entry's `path:` is the suite root, and the
 only tree the applier may write:
 

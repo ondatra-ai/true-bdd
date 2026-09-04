@@ -20,7 +20,7 @@ func Run(argv []string, opt shell.Options) (shell.Result, error) {
 }
 
 // Start spawns an assembled argv and returns without waiting, for
-// tests/libraries/aiproxy, which stands in for the real CLI and must pump its
+// pkg/testkit/aiproxy, which stands in for the real CLI and must pump its
 // streams byte for byte.
 func Start(ctx context.Context, argv []string, opt shell.Options) (*shell.Process, error) {
 	return shell.Start(ctx, argv, opt)

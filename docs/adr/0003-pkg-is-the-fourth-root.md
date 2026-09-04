@@ -113,3 +113,10 @@ A process killed between create and rename leaves one staging file inside the
 tree. The name is deterministic rather than random, so residue is bounded to
 one per target and the next write of that target clears it; the realistic kill
 is a fixture's own timeout, where the run is already red.
+
+**Amended 2026-09-03.** `pkg/` holds a ninth package that is not an IO channel:
+`pkg/testkit/`, the BDD harness, moved from `tests/libraries/` (ADR 0008). It
+is also the one package here exempt from `root-pkg-floor` — a harness exists to
+import the roots it exercises, so its dependency direction is inverted. The
+floor claim above therefore holds for every package under `pkg/` except that
+one, which the deny list names.

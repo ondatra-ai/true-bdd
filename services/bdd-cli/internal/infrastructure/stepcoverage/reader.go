@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -114,16 +115,14 @@ const schemaVersion = 1
 // Validate checks every declared coverage command before the first one is
 // spawned — same reason `build code` has a pre-pass: finding one unsplittable
 // after two suites already compiled costs minutes for a verdict the spec could give immediately.
-func Validate(suites []architecture.Suite) error {
-	for _, suite := range suites {
-		if strings.TrimSpace(suite.Commands.Coverage) == "" {
-			continue
-		}
+func Validate(testing architecture.Testing) error {
+	if strings.TrimSpace(testing.Commands.Coverage) == "" {
+		return nil
+	}
 
-		_, err := testrunner.SplitCommand(suite.Commands.Coverage)
-		if err != nil {
-			return fmt.Errorf("%s: commands.coverage: %w", suite.Label(), err)
-		}
+	_, err := testrunner.SplitCommand(testing.Commands.Coverage)
+	if err != nil {
+		return fmt.Errorf("%s: commands.coverage: %w", testing.Label(), err)
 	}
 
 	return nil
@@ -132,8 +131,10 @@ func Validate(suites []architecture.Suite) error {
 // Ask runs one suite's coverage command and returns what it examined and
 // found. Exit status is ignored on purpose: a coverage test legitimately
 // FAILS when it finds gaps, so the report file — not the status — is the answer.
-func Ask(ctx context.Context, suite architecture.Suite, repoRoot string) (*Answer, error) {
-	argv, err := testrunner.SplitCommand(suite.Commands.Coverage)
+func Ask(ctx context.Context, testing architecture.Testing, services []string, repoRoot string) (*Answer, error) {
+	suite := testing
+
+	argv, err := testrunner.SplitCommand(testing.Commands.Coverage)
 	if err != nil {
 		return nil, fmt.Errorf("%s: commands.coverage: %w", suite.Label(), err)
 	}
@@ -145,14 +146,14 @@ func Ask(ctx context.Context, suite architecture.Suite, repoRoot string) (*Answe
 
 	defer cleanup()
 
-	output, runErr := runCoverage(argv, commandDir(suite, repoRoot), reportPath)
+	output, runErr := runCoverage(argv, repoRoot, reportPath)
 
 	report, err := readReport(reportPath)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w\n%s", suite.Label(), errors.Join(err, runErr), output)
 	}
 
-	err = checkReport(suite, report, output)
+	err = checkReport(suite, services, report, output)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +181,7 @@ func Ask(ctx context.Context, suite architecture.Suite, repoRoot string) (*Answe
 }
 
 // checkReport refuses a report the engine must not act on.
-func checkReport(suite architecture.Suite, report *Report, output string) error {
+func checkReport(suite architecture.Testing, services []string, report *Report, output string) error {
 	if report.Schema != schemaVersion {
 		return fmt.Errorf("%s: %w: got %d, want %d",
 			suite.Label(), ErrUnknownSchema, report.Schema, schemaVersion)
@@ -191,9 +192,9 @@ func checkReport(suite architecture.Suite, report *Report, output string) error 
 	}
 
 	// Checked, not merely decoded: a copy-pasted `coverage:` command runs the
-	// wrong package and returns a well-formed report the rest of this function
-	// can't tell is wrong. A blank `suite` is refused too, not exempted, so an unfilled field can't slip through.
-	if report.Suite != suite.Name {
+	// wrong package and returns a well-formed report nothing else can tell is
+	// wrong. No suite name survives, so the check is against the services.
+	if !slices.Contains(services, report.Suite) {
 		return fmt.Errorf("%s: %w: the report says %q\n%s",
 			suite.Label(), ErrWrongSuiteReported, report.Suite, output)
 	}
@@ -226,34 +227,13 @@ func checkReport(suite architecture.Suite, report *Report, output string) error 
 
 // reportFile allocates the path the suite writes to, and the cleanup
 // that removes it.
-func reportFile(suite architecture.Suite) (string, func(), error) {
+func reportFile(suite architecture.Testing) (string, func(), error) {
 	dir, err := disk.TempDir("", "true-bdd-coverage-")
 	if err != nil {
 		return "", nil, fmt.Errorf("%s: create coverage report dir: %w", suite.Label(), err)
 	}
 
 	return filepath.Join(dir, "coverage.json"), func() { _ = disk.RemoveTree(dir) }, nil
-}
-
-// commandDir is where the coverage command runs: the directory holding
-// the suite's `config:`, or the invocation dir when it declares none —
-// same rule as testrunner.CommandDir, so all four `commands:` keys resolve identically.
-func commandDir(suite architecture.Suite, repoRoot string) string {
-	config := strings.TrimSpace(suite.ConfigFile)
-	if config == "" {
-		return repoRoot
-	}
-
-	dir := filepath.Dir(filepath.FromSlash(config))
-
-	// Absolute stays absolute, exactly as testrunner.CommandDir leaves it:
-	// filepath.Join(repoRoot, dir) would still produce `<repoRoot>/srv/app` for
-	// an absolute `config: /srv/app/...`, landing this command in a directory that does not exist.
-	if filepath.IsAbs(dir) {
-		return dir
-	}
-
-	return filepath.Join(repoRoot, dir)
 }
 
 // runCoverage executes the command and returns its combined output for a

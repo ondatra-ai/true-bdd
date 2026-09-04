@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -95,7 +94,7 @@ func loadFailingTests(
 			return nil, fmt.Errorf("failed to load architecture: %w", err)
 		}
 
-		err = validateSuites(deps.TestRunnerDispatcher, arch.Suites)
+		err = validateSuites(deps.TestRunnerDispatcher, arch.Testing)
 		if err != nil {
 			return nil, err
 		}
@@ -120,36 +119,28 @@ func loadFailingTests(
 	}
 }
 
-// validateSuites checks every declared suite before the first subprocess:
+// validateSuites checks the testing block before the first subprocess:
 // its framework routes to a runner and its replay command is valid — a
-// pre-pass, so an unrunnable suite is caught before a progress line already claims work that cannot start.
-func validateSuites(dispatcher *testrunner.Dispatcher, suites []architecture.Suite) error {
-	for _, suite := range suites {
-		err := validateSuite(dispatcher, suite)
-		if err != nil {
-			return fmt.Errorf("%s: %w", suite.Label(), err)
-		}
+// pre-pass, so unrunnable work is caught before a progress line claims it.
+func validateSuites(dispatcher *testrunner.Dispatcher, testing architecture.Testing) error {
+	_, err := dispatcher.For(testing.Framework)
+	if err != nil {
+		return fmt.Errorf("%s: %w", testing.Label(), err)
+	}
+
+	err = testrunner.ValidateCommand(testing.Framework, replayCommand(testing))
+	if err != nil {
+		return fmt.Errorf("%s: %w", testing.Label(), err)
 	}
 
 	return nil
 }
 
-// validateSuite reports the first thing that makes one declared suite
-// unrunnable.
-func validateSuite(dispatcher *testrunner.Dispatcher, suite architecture.Suite) error {
-	_, err := dispatcher.For(suite.Framework)
-	if err != nil {
-		return err
-	}
-
-	return testrunner.ValidateCommand(suite.Framework, replayCommand(suite))
-}
-
 // replayCommand picks the mode `build code` runs under. Hardcoded to replay:
 // `record` and `live` are declared and validated by the loader but no
 // command reaches them yet.
-func replayCommand(suite architecture.Suite) string {
-	return suite.Commands.Replay
+func replayCommand(testing architecture.Testing) string {
+	return testing.Commands.Replay
 }
 
 // servicePaths collects each declared service's source root, skipping
@@ -174,37 +165,7 @@ func walkSuites(
 	dispatcher *testrunner.Dispatcher,
 	arch *architecture.Architecture,
 ) ([]*testrunner.FailingTest, error) {
-	seen := make(map[string]bool)
-	out := make([]*testrunner.FailingTest, 0)
-
-	for _, suite := range arch.Suites {
-		// The command joins the key because it is what actually runs:
-		// two suites sharing framework, path and config but declaring
-		// different commands are different work — collapsing them would silently drop one.
-		dedupKey := strings.Join([]string{
-			suite.Framework,
-			suite.Path,
-			suite.ConfigFile,
-			replayCommand(suite),
-		}, "\x00")
-
-		if seen[dedupKey] {
-			slog.Info("Skipping suite; already covered by another", "suite", suite.Label())
-
-			continue
-		}
-
-		seen[dedupKey] = true
-
-		failures, runErr := runSuiteDiscovery(ctx, dispatcher, suite)
-		if runErr != nil {
-			return nil, runErr
-		}
-
-		out = append(out, failures...)
-	}
-
-	return out, nil
+	return runSuiteDiscovery(ctx, dispatcher, arch)
 }
 
 // runSuiteDiscovery dispatches one suite's config to its framework
@@ -213,9 +174,11 @@ func walkSuites(
 func runSuiteDiscovery(
 	ctx context.Context,
 	dispatcher *testrunner.Dispatcher,
-	suite architecture.Suite,
+	arch *architecture.Architecture,
 ) ([]*testrunner.FailingTest, error) {
-	slog.Info("Running tests", "suite", suite.Label(), "framework", suite.Framework)
+	suite := arch.Testing
+
+	slog.Info("Running tests", "framework", suite.Framework)
 
 	runnerImpl, err := dispatcher.For(suite.Framework)
 	if err != nil {
@@ -223,25 +186,22 @@ func runSuiteDiscovery(
 	}
 
 	rcfg := testrunner.Config{
-		Path:       suite.Path,
 		Framework:  suite.Framework,
 		ConfigFile: suite.ConfigFile,
-		Pattern:    suite.Pattern,
 		Command:    replayCommand(suite),
 	}
 
-	failures, err := runnerImpl.Discover(ctx, rcfg, suite.Service, suite.Name)
+	failures, err := runnerImpl.Discover(ctx, rcfg, "", suite.Framework)
 	if err != nil {
 		// Reported here, on both channels: this is the one failure the
 		// command path cannot validate ahead of time. Left to cobra it
 		// would surface as a raw stderr traceback under a usage dump, right after the "Running ..." progress line.
 		slog.Error("Cannot run test suite",
-			"suite", suite.Name,
-			"service", suite.Service,
+			"suite", suite.Framework,
 			"command", rcfg.Command,
 			"error", err,
 		)
-		slog.Error("Cannot run suite", "suite", suite.Label(), "error", err)
+		slog.Error("Cannot run suite", "framework", suite.Label(), "error", err)
 
 		// Marked as reported so the generic startup refusal stays quiet: this
 		// already carries a specific diagnosis on both channels, and came
@@ -249,7 +209,7 @@ func runSuiteDiscovery(
 		return nil, runner.Reported(fmt.Errorf("discover %s: %w", suite.Label(), err))
 	}
 
-	slog.Info("Suite failures", "failures", len(failures), "suite", suite.Label())
+	slog.Info("Suite failures", "failures", len(failures), "framework", suite.Label())
 
 	return failures, nil
 }

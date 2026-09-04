@@ -18,7 +18,7 @@ const scenariosPkgDir = "scenarios"
 
 // scenariosImportPath computes the import path of a suite's scenarios shim
 // by walking up to the nearest go.mod — not assumed, since sentinel modules
-// (services/bdd-web, tests/legacy, every fixture tree) give a suite inside them an unrelated module path.
+// (services/bdd-web, every fixture tree) give a suite inside them an unrelated module path.
 func scenariosImportPath(repoRoot, suitePath string) (string, error) {
 	suiteDir := filepath.Join(repoRoot, filepath.FromSlash(suitePath))
 

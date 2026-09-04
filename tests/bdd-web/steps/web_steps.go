@@ -6,7 +6,7 @@ import (
 
 	"github.com/playwright-community/playwright-go"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // ErrRelayNotRunning is returned when a scenario asserts the relay is up

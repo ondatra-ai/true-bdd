@@ -134,7 +134,7 @@ func elementCSS(name, key, value string) string {
 
 // dynamicTestID answers whether the UI encodes this reference's key in the
 // testid itself rather than in a data attribute, per the contract in
-// tests/legacy/bdd-web-playwright/helpers/README-testids.md.
+// the data-testid contract, which now lives only in these selectors.
 func dynamicTestID(name, key, value string) (string, bool) {
 	// Keyed on the PAIR: story-row is dynamic under create-id and a plain
 	// data attribute under the workspace's story-id.

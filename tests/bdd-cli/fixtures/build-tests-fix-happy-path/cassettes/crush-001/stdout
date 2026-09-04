@@ -1,7 +1,9 @@
-No existing `steps/` package and no `Register` anywhere under `tests/` — this fix creates the first definitions file. Writing it now.Verification via shell is blocked in this mode; LSP diagnostics on the written file report 0 errors (the one project warning is the pre-existing missing `scenarios` package in `mcp_test.go`, which the fix prompt says is expected and off-limits). The file was created verbatim from the fix prompt with all three registrations in the single `Register`.
+Directory `tests/mcp/steps/` doesn't exist (no files found). Let me inspect the suite root briefly, then perform the seed write.Confirmed: empty steps package. Writing the seed file exactly as specified.File written. Verifying it type-checks with the `bdd` tag:Shell is blocked by a guard hook; verifying via grep instead:Seeded the empty package with exactly the fix prompt's content; all three registrations verified in the single `Register`.
 
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's first step definitions file: State, Suite interface, Register binding the Given/When/Then steps for INT-900, and the three handler functions."
+summary: "Seeded the mcp suite's steps package with State, Suite, and three anchored suite.Step definitions for INT-900's Given/When/Then"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+```

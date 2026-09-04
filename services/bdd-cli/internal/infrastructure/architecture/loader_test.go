@@ -10,17 +10,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 )
 
-// specWith renders a one-suite, one-service architecture document, splicing
-// the given commands: body in verbatim so a test can omit a key instead of
-// setting it empty.
+// specWith renders a one-service architecture document, splicing the given
+// commands: body in verbatim so a test can omit a key instead of setting
+// it empty.
 func specWith(commands string) string {
 	return `architecture:
   testing:
-    suites:
-      - name: calc
-        service: calc
-        path: tests
-        framework: go-test
+    framework: go-test
 ` + commands + `  services:
     - name: calc
       path: services/calc
@@ -42,10 +38,10 @@ func writeSpec(t *testing.T, body string) string {
 	return path
 }
 
-const allThreeCommands = `        commands:
-          record: "go test -json ./... -mode=record"
-          replay: "go test -json ./... -mode=replay"
-          live: "go test -json ./..."
+const allThreeCommands = `    commands:
+      record: "go test -json ./... -mode=record"
+      replay: "go test -json ./... -mode=replay"
+      live: "go test -json ./..."
 `
 
 func TestLoadKeepsAllThreeCommands(t *testing.T) {
@@ -56,7 +52,7 @@ func TestLoadKeepsAllThreeCommands(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	got := arch.Suites[0].Commands
+	got := arch.Testing.Commands
 	if got.Replay != "go test -json ./... -mode=replay" {
 		t.Errorf("replay: got %q", got.Replay)
 	}
@@ -73,17 +69,17 @@ func TestLoadRejectsEachMissingCommand(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]string{
-		"record": `        commands:
-          replay: "go test -json ./..."
-          live: "go test -json ./..."
+		"record": `    commands:
+      replay: "go test -json ./..."
+      live: "go test -json ./..."
 `,
-		"replay": `        commands:
-          record: "go test -json ./..."
-          live: "go test -json ./..."
+		"replay": `    commands:
+      record: "go test -json ./..."
+      live: "go test -json ./..."
 `,
-		"live": `        commands:
-          record: "go test -json ./..."
-          replay: "go test -json ./..."
+		"live": `    commands:
+      record: "go test -json ./..."
+      replay: "go test -json ./..."
 `,
 		"whole block": "",
 	}
@@ -100,21 +96,20 @@ func TestLoadRejectsEachMissingCommand(t *testing.T) {
 	}
 }
 
-// The message has to name the suite and the key: a spec with several
-// suites has several places this can be wrong, and a refusal that names
-// none of them sends the reader hunting.
-func TestLoadNamesTheOffendingSuite(t *testing.T) {
+// The message has to name the framework and the key: a refusal that names
+// neither sends the reader hunting through the document.
+func TestLoadNamesTheOffendingCommand(t *testing.T) {
 	t.Parallel()
 
-	_, err := architecture.Load(writeSpec(t, specWith(`        commands:
-          record: "go test -json ./..."
-          live: "go test -json ./..."
+	_, err := architecture.Load(writeSpec(t, specWith(`    commands:
+      record: "go test -json ./..."
+      live: "go test -json ./..."
 `)))
 	if err == nil {
 		t.Fatal("want an error")
 	}
 
-	for _, want := range []string{"architecture.testing.suites[calc]", "commands.replay"} {
+	for _, want := range []string{"architecture.testing[go-test]", "commands.replay"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error %q does not name %q", err, want)
 		}
@@ -127,44 +122,19 @@ func TestLoadNamesTheOffendingSuite(t *testing.T) {
 func TestLoadRejectsBlankCommand(t *testing.T) {
 	t.Parallel()
 
-	_, err := architecture.Load(writeSpec(t, specWith(`        commands:
-          record: "go test -json ./..."
-          replay: "   "
-          live: "go test -json ./..."
+	_, err := architecture.Load(writeSpec(t, specWith(`    commands:
+      record: "go test -json ./..."
+      replay: "   "
+      live: "go test -json ./..."
 `)))
 	if !errors.Is(err, architecture.ErrMissingSuiteCommand) {
 		t.Fatalf("want ErrMissingSuiteCommand, got %v", err)
 	}
 }
 
-// A suite's `service:` is what decides which source root a fix may
-// write. A name that matches no declared service grants nothing, so it
-// is refused at load rather than discovered as a fix that never lands.
-func TestLoadRejectsSuiteNamingUnknownService(t *testing.T) {
-	t.Parallel()
-
-	spec := `architecture:
-  testing:
-    suites:
-      - name: calc
-        service: typo
-        path: tests
-        framework: go-test
-` + allThreeCommands + `  services:
-    - name: calc
-      path: services/calc
-      language: go
-`
-
-	_, err := architecture.Load(writeSpec(t, spec))
-	if !errors.Is(err, architecture.ErrUnknownSuiteService) {
-		t.Fatalf("want ErrUnknownSuiteService, got %v", err)
-	}
-}
-
 // A spec that declares services but never says how their tests run
 // describes a project no build pipeline can act on.
-func TestLoadRejectsSpecWithoutSuites(t *testing.T) {
+func TestLoadRejectsSpecWithoutFramework(t *testing.T) {
 	t.Parallel()
 
 	spec := `architecture:
@@ -175,8 +145,8 @@ func TestLoadRejectsSpecWithoutSuites(t *testing.T) {
 `
 
 	_, err := architecture.Load(writeSpec(t, spec))
-	if !errors.Is(err, architecture.ErrNoTestSuites) {
-		t.Fatalf("want ErrNoTestSuites, got %v", err)
+	if !errors.Is(err, architecture.ErrNoFramework) {
+		t.Fatalf("want ErrNoFramework, got %v", err)
 	}
 }
 
@@ -187,19 +157,7 @@ func TestLoadKeepsEverySuite(t *testing.T) {
 
 	spec := `architecture:
   testing:
-    suites:
-      - name: web
-        service: web
-        path: tests/web
-        framework: go-test
-        commands:
-          record: "go test -json ./tests/web/ -mode=record"
-          replay: "go test -json ./tests/web/ -mode=replay"
-          live: "go test -json ./tests/web/"
-      - name: calc
-        service: calc
-        path: tests/calc
-        framework: go-test
+    framework: go-test
 ` + allThreeCommands + `  services:
     - name: calc
       path: services/calc
@@ -214,13 +172,13 @@ func TestLoadKeepsEverySuite(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	if len(arch.Suites) != 2 {
-		t.Fatalf("want 2 suites, got %d", len(arch.Suites))
+	if len(arch.Services) != 2 {
+		t.Fatalf("want 2 services, got %d", len(arch.Services))
 	}
 
-	if arch.Suites[0].Name != "calc" || arch.Suites[1].Name != "web" {
-		t.Errorf("suites must load sorted by name, got %q then %q",
-			arch.Suites[0].Name, arch.Suites[1].Name)
+	if arch.Services[0].Name != "calc" || arch.Services[1].Name != "web" {
+		t.Errorf("services must load sorted by name, got %q then %q",
+			arch.Services[0].Name, arch.Services[1].Name)
 	}
 
 	path, ok := arch.ServicePath("web")

@@ -8,7 +8,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 )
 
-// engineLogFile is the JSON log tests/libraries/reporter reads back.
+// engineLogFile is the JSON log pkg/testkit/reporter reads back.
 const engineLogFile = "true-bdd.log.json"
 
 // configureLogging binds the engine's stream. Stdout, not stderr: 22 steps in

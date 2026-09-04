@@ -24,6 +24,8 @@ func TestArgsOrder(t *testing.T) {
 	}
 
 	want := []string{
+		"--setting-sources", "project",
+		"--strict-mcp-config",
 		"--allowedTools", "Read,Glob",
 		"--permission-mode", "plan",
 		"--output-format", "json", "--json-schema", "/tmp/schema.json",
@@ -46,12 +48,43 @@ func TestArgsPromptIsLast(t *testing.T) {
 	}
 }
 
-func TestArgsZeroValueIsBarePrompt(t *testing.T) {
+// The zero value is a prompt and the isolation preamble — never a bare -p.
+// A turn that could opt back into the operator's user settings is how this
+// package acquired an advisor nobody configured, so isolation is not a knob.
+func TestArgsZeroValueIsIsolatedPrompt(t *testing.T) {
 	t.Parallel()
 
-	got := claude.Options{}.Args("body")
-	if !slices.Equal(got, []string{"-p", "body"}) {
-		t.Errorf("args: got %q, want [-p body]", got)
+	want := []string{"--setting-sources", "project", "--strict-mcp-config", "-p", "body"}
+	if got := (claude.Options{}).Args("body"); !slices.Equal(got, want) {
+		t.Errorf("args:\n got %q\nwant %q", got, want)
+	}
+}
+
+// A schema-less turn still has to report what it cost, so RunJSON's envelope
+// is reachable without one.
+func TestArgsEnvelopeWithoutSchema(t *testing.T) {
+	t.Parallel()
+
+	got := claude.Options{Envelope: true}.Args("body")
+	if !slices.Contains(got, "--output-format") || slices.Contains(got, "--json-schema") {
+		t.Errorf("envelope without schema: got %q", got)
+	}
+}
+
+// The advisor is a server-side tool: --disallowed-tools cannot reach it, and
+// this variable is the only thing that can. Asserted through a real spawn.
+func TestEnvDisablesTheAdvisor(t *testing.T) {
+	// No t.Parallel: t.Setenv forbids it.
+	t.Setenv("CLAUDE_CODE_DISABLE_ADVISOR_TOOL", "")
+
+	result, err := shell.Run(t.Context(), []string{"/bin/sh", "-c", `echo "$CLAUDE_CODE_DISABLE_ADVISOR_TOOL"`},
+		shell.Options{Env: claude.Options{}.Env()})
+	if err != nil {
+		t.Fatalf("spawn: %v", err)
+	}
+
+	if strings.TrimSpace(result.Stdout) != "1" {
+		t.Errorf("advisor gate: got %q, want 1", strings.TrimSpace(result.Stdout))
 	}
 }
 

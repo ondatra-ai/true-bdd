@@ -4,14 +4,13 @@
 # by Redis on redis://127.0.0.1:6379. On Vercel, REDIS_URL is provisioned by the
 # platform; locally the harness reaches Redis over the compose network (redis:6379).
 #
-# The `harness` service here is the MANUAL dev stack only. The e2e suite
-# (tests/legacy/bdd-web-playwright) uses ONLY the `redis` service from this file (`up -d redis`,
-# left running across local invocations); it runs each test's harness as a host
-# `node server.js` process from a cached Next standalone bundle — no per-test
-# container — see tests/legacy/bdd-web-playwright/helpers/server-controller.ts + harness-build.ts.
+# The `harness` service here is the MANUAL dev stack only. The e2e suite uses
+# ONLY the `redis` service from this file (`up -d redis`, left running across
+# local invocations); it runs each test's harness as a host `node server.js`
+# process from a cached Next standalone bundle — no per-test container.
 #
 # Per-test isolation is by REDIS_KEY_PREFIX (every relay key is prefixed), NOT by
-# logical-DB selection — see tests/legacy/bdd-web-playwright/helpers/redis.ts.
+# logical-DB selection.
 services:
   redis:
     image: redis:7-alpine

@@ -18,11 +18,14 @@ const (
 	MsgDispatch  = "Dispatching AI turn"
 	MsgAssistant = "AssistantMessage received"
 	MsgResult    = "ResultMessage received"
-	MsgUsage     = "AI turn usage"
+	// MsgToolUse carries a tool-use block as {name, input} on the content
+	// key. It is the only record of what a turn actually DID.
+	MsgToolUse = "ToolUseBlock details"
+	MsgUsage   = "AI turn usage"
 	// MsgAnswerUnusable marks a model answer the engine refused to grade.
 	MsgAnswerUnusable = "Model answer unusable"
-	MsgReturned  = "AI turn returned"
-	MsgFailed    = "AI turn failed"
+	MsgReturned       = "AI turn returned"
+	MsgFailed         = "AI turn failed"
 	// MsgTranscriptSaved is crush's and codex's only result boundary: they
 	// stream nothing, so the archived transcript is the first evidence the
 	// turn produced anything.

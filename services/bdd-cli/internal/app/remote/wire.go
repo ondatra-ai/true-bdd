@@ -8,7 +8,7 @@ import (
 
 // This file defines the v2 register / poll / reply wire DTOs (plan §2) the
 // remote speaks to the STATELESS RELAY, plus the browser-facing projection
-// shapes, which must match tests/legacy/bdd-web-playwright/helpers/api-client.ts exactly.
+// shapes, which the relay's HTTP clients must match exactly.
 
 // ── Agent protocol (plan §2) ──
 

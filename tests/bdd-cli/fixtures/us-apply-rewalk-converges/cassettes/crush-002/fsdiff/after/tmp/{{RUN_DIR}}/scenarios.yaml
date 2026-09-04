@@ -26,14 +26,14 @@ metadata:
 
 scenarios:
   E2E-001:
-    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize POST to /mcp"
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize request to /mcp"
     service: ""
-    path: "tests/mcp-server/mcp_endpoint_test.go"
-    last_updated: "2026-09-01"
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-09-04"
     user_stories:
       - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
         scenario_id: "99.3-001"
-        merge_date: "2026-09-01"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -46,12 +46,12 @@ scenarios:
   E2E-002:
     description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: ""
-    path: "tests/mcp-server/mcp_endpoint_test.go"
-    last_updated: "2026-09-01"
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-09-04"
     user_stories:
       - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
         scenario_id: "99.3-002"
-        merge_date: "2026-09-01"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -59,4 +59,4 @@ scenarios:
         - the Claude User sends an HTTP GET request to /mcp
       then:
         - the server returns HTTP 405 Method Not Allowed
-        - and: the response indicates the method is not allowed for this endpoint
+        - and the response indicates the method is not allowed for this endpoint

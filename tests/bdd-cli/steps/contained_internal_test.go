@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/tests/libraries/runner"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
 )
 
 // runAt builds the minimum State the containment helpers read: a run whose

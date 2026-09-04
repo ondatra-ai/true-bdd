@@ -81,7 +81,7 @@ Configuration); the root `true-bdd/` here is the fixtures' seed.
 `alint` and `markdownlint-cli2` are PATH tools. The engine still *supports*
 both as host `framework:` values (`build-code-playwright-nextjs` covers it).
 `.alint.yml` fences JS to `services/bdd-web/`, the report UI's `web/`,
-fixtures, `tests/legacy/` — and `no-shell` allows only `start.sh`.
+fixtures — and `no-shell` allows only `start.sh`.
 
 ## Scoped context
 
@@ -115,12 +115,13 @@ alint check          # every gate; the PostToolUse hook scopes it per edit
 go run ./scripts/cmd/linters <gate> [FILE...]   # one gate, by hand
 mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
-go run ./tests/libraries/cmd/report-server    # report UI on :7331
-# BDD suites. `-mode` MUST come after the package path.
-go test -tags bdd ./tests/bdd-cli/ -mode=replay       # hermetic, <1 min
-go test -tags bdd -timeout=180m ./tests/bdd-cli/...   # live, ~3-5 min ea
+go run ./pkg/testkit/cmd/report-server    # report UI on :7331
+# BDD suites. `-mode` follows the package path, a mode per CALLER —
+# `services:` engine, `tests:` judge; both always, no shorthand. Replaying
+# both is hermetic (<1 min); `services:replay,tests:record` mints a judge
+# shelf without re-running one engine turn.
+go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay
 go test -tags bdd -timeout=25m ./tests/bdd-web/       # needs node+browser
-go test -tags bdd -run '^TestE2E016$' ./tests/bdd-cli/ -mode=record
 go test -tags bdd ./tests/bdd-cli/ \
   -run '^Test(ScenarioCoverage|FixtureTreesArePaired|StepCoverage)$'
 ```
@@ -143,16 +144,15 @@ hand-edit a cassette. Full contract: `.claude/rules/bdd-harness.md`.
 ## Project Structure
 
 Four roots, gated by `.alint.yml`: `services/<name>/` + `tests/<name>/`
-mirror what TrueBDD asks of a host (plus `tests/libraries/`); `scripts/` is
-this repo's tooling; `pkg/` is the four IO channels. `ls` for the tree.
+mirror what TrueBDD asks of a host — `tests/` holds only scenarios and
+steps; `scripts/` is this repo's tooling; `pkg/` is the four IO channels
+plus `pkg/testkit/`, the BDD harness (ADR 0008). `ls` for the tree.
 
 - **Never import `os/exec`** — spawn via `pkg/cli/<tool>` (ADR 0005).
 - `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
   not show it: the bdd-web scenarios and suite are the spec.
-- Sentinel `go.mod`s fence root `go test`/lint out of `services/bdd-web/`,
-  `tests/legacy/…` and `tests/bdd-cli/fixtures/`; each states its trap.
-- `tests/legacy/bdd-web-playwright/` exists to be DELETED per spec family,
-  in the same commit binding that family's steps. Never add to it.
+- Sentinel `go.mod`s fence root `go test`/lint out of `services/bdd-web/`
+  and `tests/bdd-cli/fixtures/`; each states its trap.
 - `docs/*.html`: merging to `main` IS the deploy — never publish one as a
   Claude artifact; a new page needs a `cp` line AND a `paths:` trigger in
   `deploy-pages.yml`.

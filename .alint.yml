@@ -23,7 +23,6 @@ rules:
         - "**/*.pyc"
         - "**/*.pyo"
       exclude:
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
       Python in a Go and sh repository. Port it to Go under scripts/, or
@@ -36,7 +35,6 @@ rules:
       include:
         - "**/__pycache__"
       exclude:
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: "rm -rf the __pycache__ — this repository runs no Python."
 
@@ -52,7 +50,6 @@ rules:
         - "**/*.bash"
       exclude:
         - "start.sh"
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
       Shell in a Go repository. Port it to Go under scripts/ and invoke it as
@@ -113,6 +110,7 @@ rules:
         - "pkg/enginelog/**"
         - "pkg/claude/**"
         - "pkg/alint/**"
+        - "pkg/testkit/**"
     message: >-
       A new package under pkg/. pkg/ is the floor every root may import, not
       somewhere to park code: it holds the four IO channels, pkg/cli's typed
@@ -132,7 +130,6 @@ rules:
         - "**/*.go"
       exclude:
         - "pkg/shell/**"
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
         - "**/*_test.go"
     forbid: '^os/exec$'
@@ -150,7 +147,6 @@ rules:
       exclude:
         - "pkg/shell/**"
         - "pkg/cli/**"
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
         - "**/*_test.go"
     forbid: 'true-bdd/pkg/shell$'
@@ -192,7 +188,6 @@ rules:
         - "**/*_mips64.go"
         - "**/*_loong64.go"
       exclude:
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
       A GOOS/GOARCH filename suffix makes this file invisible to golangci-lint
@@ -209,7 +204,6 @@ rules:
       include:
         - "**/*.go"
       exclude:
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     pattern: '^// \+build '
     message: >-
@@ -232,8 +226,7 @@ rules:
         - "**/*.tsx"
       exclude:
         - "services/bdd-web/**"
-        - "tests/libraries/reportserver/web/**"
-        - "tests/legacy/**"
+        - "pkg/testkit/reportserver/web/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
       JavaScript where this repo is Go and sh. The frontend and the report
@@ -254,7 +247,6 @@ rules:
         - "**/node_modules/**"
       exclude:
         - "services/bdd-web/**"
-        - "tests/legacy/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
       A manifest or lockfile means a second build system. Keep them to
@@ -303,7 +295,7 @@ rules:
     timeout: 300
     paths:
       include: ["**/*.go"]
-      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -320,7 +312,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.md"]
-      exclude: ["CLAUDE.md", "tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+      exclude: ["CLAUDE.md", "tests/bdd-cli/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -337,7 +329,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.go", "**/*.sh", "**/*.yaml", "**/*.yml"]
-      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -373,7 +365,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.yaml", "**/*.yml"]
-      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
+      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"

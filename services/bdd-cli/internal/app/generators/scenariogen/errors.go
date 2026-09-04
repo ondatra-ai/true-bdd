@@ -36,11 +36,6 @@ var ErrPathNotInSuiteRoot = errors.New("path: must sit directly in the owning su
 // overwrite a step definition — the one thing here no regeneration can reproduce.
 var ErrPathInStepsTree = errors.New("path: must not be inside the suite's steps/ tree")
 
-// ErrPathCrossSuite signals two scenarios sharing a `path:` while naming
-// different services. One file is one Go package bound to one suite's
-// state; two suites' scenarios in it could not both compile.
-var ErrPathCrossSuite = errors.New("scenarios sharing a path: must name the same service")
-
 // ErrNoSuiteForService signals a scenario whose `service:` matches no
 // `architecture.testing.suites[]` entry — a scenario no suite runs.
 var ErrNoSuiteForService = errors.New("no test suite declares this scenario's service")

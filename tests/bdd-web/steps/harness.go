@@ -2,7 +2,7 @@
 // that executes the Given/When/Then lines of every registry scenario
 // whose `service:` is bdd-web.
 //
-// Same runner as the CLI suite, different verbs. tests/libraries/bddgo
+// Same runner as the CLI suite, different verbs. pkg/testkit/bddgo
 // knows nothing about either — it binds a step's text to a function and
 // hands that function whatever state the suite chose to keep. Here that
 // state is a browser page; in tests/bdd-cli/steps it is a subprocess and
@@ -11,7 +11,7 @@
 // once and pointed at either.
 //
 // This is the first slice of the Go replacement for the parked
-// Playwright suite at tests/legacy/bdd-web-playwright. It covers the
+// Playwright suite this one replaced. It covers the
 // scenarios the registry assigns to bdd-web today and no more; the rest
 // of that suite is ported behind it, scenario by scenario, and the
 // parked tree is deleted only when nothing is left in it.
@@ -35,7 +35,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli/npm"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
-	"github.com/ondatra-ai/true-bdd/tests/libraries/bddgo"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // ErrServerNotReady is returned when the application never answered
@@ -170,7 +170,7 @@ func (h *Harness) CLIBinary() (string, error) {
 // semantics; its doc.go states the CLI contract.
 func (h *Harness) MaterializerBinary() (string, error) {
 	return h.materializerBuild.resolve(h.RepoRoot, "materializer",
-		"./tests/libraries/materializer")
+		"./pkg/testkit/materializer")
 }
 
 // buildBundle compiles the app and assembles the standalone bundle
