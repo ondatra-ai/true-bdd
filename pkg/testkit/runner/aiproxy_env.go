@@ -72,15 +72,15 @@ func absOrSelf(dir string) string {
 // the shim reads its whole configuration from flat env vars, so the only
 // way to give two callers different modes is to give them different dirs.
 type ShimDirs struct {
-	Target string
-	Tests  string
+	Services string
+	Tests    string
 }
 
 // All is every installed shim dir, for the known-shims contract.
 func (d ShimDirs) All() []string {
 	dirs := make([]string, 0, 2) //nolint:mnd // one dir per caller.
 
-	for _, dir := range []string{d.Target, d.Tests} {
+	for _, dir := range []string{d.Services, d.Tests} {
 		if dir != "" {
 			dirs = append(dirs, dir)
 		}
@@ -91,7 +91,7 @@ func (d ShimDirs) All() []string {
 
 // ArmProcess applies env entries to THIS process and returns a function
 // restoring what was there. Scoped: the engine subprocess inherits this
-// environment, so a shelf left armed answers a target turn from it.
+// environment, so a shelf left armed answers a services turn from it.
 func ArmProcess(entries []string) func() {
 	undo := make([]func(), 0, len(entries))
 

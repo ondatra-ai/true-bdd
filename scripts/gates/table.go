@@ -101,7 +101,7 @@ var (
 			Name: "BDD cli replay",
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag, countOnce, "-timeout=40m",
-				"./tests/bdd-cli/", "-mode=target:replay,tests:replay",
+				"./tests/bdd-cli/", "-mode=services:replay,tests:replay",
 			},
 			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob, "services/bdd-cli/**", "pkg/**"},
 		},

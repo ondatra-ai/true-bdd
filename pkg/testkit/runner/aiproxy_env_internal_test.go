@@ -10,17 +10,17 @@ import (
 // A caller's own shim leads its PATH; every other caller's is scrubbed
 // out of it, because the child inherits this environment.
 func TestAIProxyEnvScrubsTheOtherCallersShim(t *testing.T) {
-	target, tests := t.TempDir(), t.TempDir()
+	services, tests := t.TempDir(), t.TempDir()
 	t.Setenv("PATH", tests+string(os.PathListSeparator)+"/usr/bin")
 
-	entries := AIProxyEnv(ProxyModeReplay, target, "/shelf", "/state",
-		ShimDirs{Target: target, Tests: tests}.All())
+	entries := AIProxyEnv(ProxyModeReplay, services, "/shelf", "/state",
+		ShimDirs{Services: services, Tests: tests}.All())
 
 	path := valueOf(t, entries, "PATH")
 	dirs := filepath.SplitList(path)
 
-	if dirs[0] != target {
-		t.Errorf("PATH leads with %q, want the caller's own shim %q", dirs[0], target)
+	if dirs[0] != services {
+		t.Errorf("PATH leads with %q, want the caller's own shim %q", dirs[0], services)
 	}
 
 	for _, dir := range dirs {
@@ -33,14 +33,14 @@ func TestAIProxyEnvScrubsTheOtherCallersShim(t *testing.T) {
 // Every shim dir is named, so a recording shim skips all of them rather
 // than finding another shim and exec'ing it.
 func TestAIProxyEnvNamesEveryShim(t *testing.T) {
-	target, tests := t.TempDir(), t.TempDir()
+	services, tests := t.TempDir(), t.TempDir()
 	t.Setenv("PATH", "/usr/bin")
 
-	entries := AIProxyEnv(ProxyModeRecord, target, "/shelf", "/state",
-		ShimDirs{Target: target, Tests: tests}.All())
+	entries := AIProxyEnv(ProxyModeRecord, services, "/shelf", "/state",
+		ShimDirs{Services: services, Tests: tests}.All())
 
 	known := valueOf(t, entries, EnvKnownShims)
-	for _, want := range []string{target, tests} {
+	for _, want := range []string{services, tests} {
 		if !strings.Contains(known, want) {
 			t.Errorf("%s = %q, missing %q", EnvKnownShims, known, want)
 		}

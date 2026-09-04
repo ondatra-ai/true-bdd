@@ -73,39 +73,27 @@ Then:
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Context
-The registry currently holds exactly one entry, `E2E-001`, whose
-`user_stories[]` references `docs/product/stories/99.3-rewalk-fixture.yaml`
-with `scenario_id: "99.3-001"` (AC-1). No entry references lineage id
-`99.3-002`, so AC-2 is absent and must be added as a NEW scenario.
+The registry currently holds exactly one scenario, `E2E-001`, which is
+merged from `docs/product/stories/99.3-rewalk-fixture.yaml` lineage id
+`99.3-001`. No entry references lineage id `99.3-002`, so AC-2 is not
+present and must be added as a NEW scenario.
 
-- Next free id following the existing numbering: `E2E-002` (e2e layer,
-  matching its sibling `E2E-001`).
-- `path:` REUSES the existing file `tests/mcp-server/mcp_endpoint_test.go` —
-  same `/mcp` endpoint family as `E2E-001`, so both behaviours are read
-  together. Do not invent a new file.
-- `merged_steps` are copied verbatim from the story file's AC-2 block,
-  including the one-key `and:` mapping form on the second `then:` step
-  (`true-bdd/scenarios_yaml-schema.yaml` allows `any(str(), map(str()))`
-  and the engine flattens `{and: …}` to `and <text>`; `E2E-001` uses the
-  same form).
+Next free id following existing numbering: `E2E-002`.
+Reuse the existing path from the same feature family (`E2E-001`):
+`tests/mcp/mcp_endpoint_test.go`.
 
 ## Required Changes
 
-### Change #1: Append scenario `E2E-002` for lineage 99.3-002
-**Issue:** No entry under `scenarios:` lists
-`docs/product/stories/99.3-rewalk-fixture.yaml` with
-`scenario_id: "99.3-002"`, so the `us-apply/merge` check fails with
-"AC AC-2 (lineage 99.3-002): not present".
+### Change #1: Add scenario E2E-002 for lineage 99.3-002
+**Issue:** AC-2 (lineage `99.3-002`) has no entry under `scenarios:` whose
+`user_stories[]` contains both the story path
+`docs/product/stories/99.3-rewalk-fixture.yaml` and the lineage id
+`99.3-002`.
 
-**Action:** Use the Edit tool on
-`tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string`
-and `new_string` below. The `old_string` is the final three content lines
-of the file (`E2E-001`'s `then:` block) and is unique; the `new_string`
-repeats them and appends the new entry directly after, with no blank line
-between entries. Do not modify `E2E-001` or the header comment/metadata,
-and keep the file's existing indentation (scenario id at 2 spaces, fields
-at 4, `user_stories` list items at 6 with continuation keys at 8,
-`given:/when:/then:` at 6, step items at 8).
+**Action:** Use the Edit tool on the target file with the exact
+`old_string` and `new_string` below. This appends the new entry after
+`E2E-001`, at the end of the file, preserving existing ordering and
+indentation. Do not touch any other entry.
 
 **old_string:**
 ```
@@ -122,12 +110,12 @@ at 4, `user_stories` list items at 6 with continuation keys at 8,
   E2E-002:
     description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: ""
-    path: tests/mcp-server/mcp_endpoint_test.go
-    last_updated: "2026-09-03"
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-09-04"
     user_stories:
-      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
         scenario_id: "99.3-002"
-        merge_date: "2026-09-03"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -135,13 +123,15 @@ at 4, `user_stories` list items at 6 with continuation keys at 8,
         - the Claude User sends an HTTP GET request to /mcp
       then:
         - the server returns HTTP 405 Method Not Allowed
-        - and: the response indicates the method is not allowed for this endpoint
+        - and the response indicates the method is not allowed for this endpoint
 ```
 
 ## Verification
-After the edit, `scenarios:` holds exactly two entries, `E2E-001` and
-`E2E-002`, and the merge check reports:
-`AC AC-2 (lineage 99.3-002): present in E2E-002`.
+After the edit, the file must contain a `scenarios:` entry `E2E-002`
+whose `user_stories[]` has an item with
+`story: "docs/product/stories/99.3-rewalk-fixture.yaml"` and
+`scenario_id: "99.3-002"`. `E2E-001`, the leading comment block, and the
+`metadata:` block must be byte-identical to before.
 
 ---
 

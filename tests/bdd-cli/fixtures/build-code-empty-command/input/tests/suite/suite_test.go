@@ -1,6 +1,6 @@
 // Package suite_test is the fixture host project's test layer. It is
 // present, runnable, and holds a failing test — which is the whole
-// point: the layer's replay command is `''`, so the run must be refused
+// point: the layer's replay command is `”`, so the run must be refused
 // before any test runner is spawned. This failure is the decoy that
 // makes the refusal falsifiable. If the engine ever fell back to some
 // substituted invocation, it would run this test, find the failure, and

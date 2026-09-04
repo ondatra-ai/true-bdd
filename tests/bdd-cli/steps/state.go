@@ -241,8 +241,8 @@ func (s *State) grade() {
 // the steps as well as the verdict, which is what makes this the promotion
 // gate: a recording is published only for a scenario that passed WHOLE.
 func (s *State) publishRecordings() {
-	recordingTarget := s.Harness.Modes.Target == runner.ProxyModeRecord
-	if !recordingTarget && s.Proxy.JudgeStaging == "" {
+	recordingServices := s.Harness.Modes.Services == runner.ProxyModeRecord
+	if !recordingServices && s.Proxy.JudgeStaging == "" {
 		return
 	}
 
@@ -254,9 +254,9 @@ func (s *State) publishRecordings() {
 		return
 	}
 
-	// A recording target publishes by renaming its whole staging dir, and
+	// A recording services caller publishes by renaming its whole staging dir, and
 	// the judge's shelf sits inside it — one rename carries both.
-	if recordingTarget {
+	if recordingServices {
 		s.recordOutcome()
 
 		return
@@ -289,7 +289,7 @@ func (s *State) finalVerdict() runner.Verdict {
 
 	// Golden and census are WHEN-stage fidelity: they prove the replay
 	// reproduced the recorded tree and consumed every recorded turn.
-	if s.Harness.Modes.Target == runner.ProxyModeReplay {
+	if s.Harness.Modes.Services == runner.ProxyModeReplay {
 		verdict = runner.EvaluateRecorded(
 			s.Result, s.Proxy.Golden, s.Proxy.Cassettes, s.Proxy.StateDir)
 	}

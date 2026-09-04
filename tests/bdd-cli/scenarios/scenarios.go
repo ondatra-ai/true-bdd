@@ -38,7 +38,7 @@ import (
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var proxyMode = flag.String("mode", "",
-	"per-caller AI CLI mode, e.g. target:replay,tests:live")
+	"per-caller AI CLI mode, e.g. services:replay,tests:live")
 
 const (
 	// scenarioTimeout caps the CLI run alone; prep/teardown have their own
@@ -342,8 +342,8 @@ func installShims(modes runner.Modes) (runner.ShimDirs, error) {
 	var dirs runner.ShimDirs
 
 	for caller, mode := range map[string]string{
-		runner.CallerTarget: modes.Target,
-		runner.CallerTests:  modes.Tests,
+		runner.CallerServices: modes.Services,
+		runner.CallerTests:    modes.Tests,
 	} {
 		if mode == runner.ProxyModeLive {
 			continue
@@ -354,8 +354,8 @@ func installShims(modes runner.Modes) (runner.ShimDirs, error) {
 			return runner.ShimDirs{}, dirErr
 		}
 
-		if caller == runner.CallerTarget {
-			dirs.Target = dir
+		if caller == runner.CallerServices {
+			dirs.Services = dir
 		} else {
 			dirs.Tests = dir
 		}
@@ -440,8 +440,8 @@ func requiredCLIs(modes runner.Modes) (string, error) {
 		}
 	}
 
-	// A replaying target spawns no real CLI at all; anything else does.
-	if modes.Target == runner.ProxyModeReplay {
+	// A replaying services caller spawns no real CLI; anything else does.
+	if modes.Services == runner.ProxyModeReplay {
 		return "", nil
 	}
 

@@ -19,7 +19,7 @@ acceptance_criteria:
     description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
     steps:
       - given:
-          - "a Google Doc exists that is not shared with the Claude User's account"
+          - "a Google Doc is not shared with the Claude User's account"
       - when:
           - "the Claude User asks Claude to summarize the document"
       - then:

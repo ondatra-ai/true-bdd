@@ -74,18 +74,23 @@ Then:
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Context
-- Failed check `us-apply/merge`: AC-1 (lineage 95.2-001) is **not present** — no `scenarios:` entry references story `docs/product/stories/95.2-relocated-registry.yaml` with scenario id `95.2-001`.
-- Fix = add exactly ONE new scenario entry. Leave the only existing entry (`E2E-960`) byte-for-byte untouched.
-- Id choice: the only existing numbering is `E2E-960`; this is an e2e-layer behaviour (an external Claude User sends an HTTP GET and asserts status + body), so use the next free e2e id `E2E-961`.
-- `service: ""` per the merge template (an MCP server is not the web app, so `"web-service"` would be wrong).
-- **No `path:` field.** The template's path rule is unexecutable on this file: there is no existing `path:` to reuse, and its invent-rule requires a scenario whose `service:` matches this one's — with `service: ""` none matches. The seed's existing `E2E-960` entry is itself pathless and passed validation, so mirror its exact shape (description, service, last_updated, user_stories, merged_steps) rather than fabricate a path.
-- Steps are copied verbatim from the AC, including the leading `and` in the last `then` step.
+The `us-apply/merge` "present?" check failed: no entry under `scenarios:`
+references story `docs/product/stories/95.2-relocated-registry.yaml` with
+lineage id `95.2-001`. The registry currently holds exactly one scenario,
+`E2E-960`, which must remain untouched. Add exactly one new entry for this
+AC, mirroring `E2E-960`'s field shape (it uses a non-empty `service:` and
+omits `path:` — follow that shape; do not add fields the registry does not
+use).
 
 ## Required Changes
-### Change #1: Append the new scenario entry `E2E-961`
-**Issue:** The registry has no scenario for story `docs/product/stories/95.2-relocated-registry.yaml` / lineage `95.2-001`, so the merge check fails.
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. The old_string is the file's unique tail, so `E2E-960` stays byte-identical above the insertion. Preserve indentation exactly (id at 2 spaces, fields at 4, list items at 6, step strings at 8).
-
+### Change #1: Append a new scenario entry for AC 95.2-001
+**Issue:** The AC (story `docs/product/stories/95.2-relocated-registry.yaml`,
+lineage `95.2-001`) does not appear as any scenario in the registry, so the
+merge "present?" check fails.
+**Action:** Use the Edit tool on the target file with the exact
+old_string and new_string below. This appends `E2E-961` after the existing
+`E2E-960` entry (next free id in the existing `E2E-NNN` numbering) and leaves
+`E2E-960` byte-for-byte unchanged.
 **old_string:**
 ```
       then:
@@ -95,15 +100,14 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 ```
       then:
         - "the settings page renders the account section"
-
   E2E-961:
-    description: "GET /health returns HTTP 200 with a healthy status body"
-    service: ""
-    last_updated: "2026-09-03"
+    description: "MCP server returns HTTP 200 and healthy JSON on GET /health"
+    service: "mcp-server"
+    last_updated: "2026-09-04"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-09-03"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"
@@ -115,8 +119,14 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
         - "and the response body reports the service status as healthy"
 ```
 
-## Verify
-After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` contains an entry whose `user_stories[]` lists story `docs/product/stories/95.2-relocated-registry.yaml` with `scenario_id: 95.2-001` (satisfies `us-apply/merge`), exactly one entry was added, and `E2E-960` is unchanged.
+## Verification
+- The new entry `E2E-961` lists story
+  `docs/product/stories/95.2-relocated-registry.yaml` with
+  `scenario_id: "95.2-001"` under `user_stories[]` — satisfies the
+  "present?" check.
+- Exactly one new entry was added — satisfies the "duplicate?" check.
+- `E2E-960` is unchanged — satisfies the "leave every other entry alone"
+  assertion.
 
 ---
 

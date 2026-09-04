@@ -1,7 +1,7 @@
-```
+Edit applied; test execution blocked by environment hook, but the change matches the fix prompt exactly.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed calc.Add return from subtraction (a - b) to addition (a + b) so it sums its arguments"
+summary: "Corrected Add to return a + b instead of a - b so Add(2, 3) equals 5"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
-```

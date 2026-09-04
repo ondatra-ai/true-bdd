@@ -1,7 +1,9 @@
-State confirmed: `tests/mcp/steps/` doesn't exist and no `Register` function exists yet. Creating the file exactly as specified.Verifying the new package compiles:Shell access is denied in this mode, so verification is limited to gopls diagnostics (0 errors in the written file). The file was created with the exact content from the fix prompt.
+Directory `tests/mcp/steps/` doesn't exist (no files found). Let me inspect the suite root briefly, then perform the seed write.Confirmed: empty steps package. Writing the seed file exactly as specified.File written. Verifying it type-checks with the `bdd` tag:Shell is blocked by a guard hook; verifying via grep instead:Seeded the empty package with exactly the fix prompt's content; all three registrations verified in the single `Register`.
 
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's steps package with State, Suite, and a single Register binding all three INT-900 steps (server running, JSON-RPC POST, HTTP status assertion)"
+summary: "Seeded the mcp suite's steps package with State, Suite, and three anchored suite.Step definitions for INT-900's Given/When/Then"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+```

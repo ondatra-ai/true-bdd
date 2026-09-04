@@ -20,12 +20,12 @@ architecture:
   testing:
     framework: go-test
     # Gated behind //go:build bdd with a -mode flag naming a mode per
-    # CALLER (`target:` the engine, `tests:` the judge) — not guessable,
+    # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
     commands:
-      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=target:record,tests:record"
-      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=target:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=target:live,tests:live"
+      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:live,tests:live"
       # Asked by `build tests` before it walks anything: which registry
       # steps bind to no definition. Deterministic, no harness brought up.
       # bdd-cli only — bdd-web's step definitions have not landed.

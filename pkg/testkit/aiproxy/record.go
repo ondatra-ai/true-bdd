@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/fstree"
@@ -106,9 +107,11 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 	start := time.Now()
 
 	// Transparent proxy: argv passes through; lifetime is the parent's, so
-	// the context is deliberately never cancelled here.
+	// the context is deliberately never cancelled here. The advisor gate is
+	// set, not merely inherited — see ADR 0010.
 	proc, err := spec.Start(context.Background(),
-		append([]string{realPath}, argv...), cli.Options{Output: cli.Pipe()})
+		append([]string{realPath}, argv...),
+		cli.Options{Output: cli.Pipe(), Env: cli.Inherit().Set(claude.AdvisorOff)})
 	if err != nil {
 		return nil, fmt.Errorf("start %s: %w", realPath, err)
 	}
@@ -116,8 +119,8 @@ func runReal(realPath string, argv []string) (*realRun, error) {
 	stdinPipe, stdoutPipe, stderrPipe := proc.Stdin, proc.Stdout, proc.Stderr
 
 	// Relays SIGTERM/SIGINT, keeping the child on claude's
-	// stdin-close→SIGTERM→5s→SIGKILL schedule (transport.go) while the shim
-	// finalizes; SIGKILL needs no relay — the engine kills by process group.
+	// stdin-close→SIGTERM→5s→SIGKILL schedule while the shim finalizes;
+	// SIGKILL needs no relay — the engine kills by process group.
 	defer proc.ForwardSignals(syscall.SIGTERM, syscall.SIGINT)()
 
 	var stdinBuf, stdoutBuf, stderrBuf lockedBuffer

@@ -117,10 +117,10 @@ mkdir -p ./bin && go build -o ./bin/true-bdd ./services/bdd-cli
 go test ./... && golangci-lint run   # unit only; BDD tree is -tags bdd
 go run ./pkg/testkit/cmd/report-server    # report UI on :7331
 # BDD suites. `-mode` follows the package path, a mode per CALLER —
-# `target:` engine, `tests:` judge; both always, no shorthand. Replaying
-# both is hermetic (<1 min); `target:replay,tests:record` mints a judge
+# `services:` engine, `tests:` judge; both always, no shorthand. Replaying
+# both is hermetic (<1 min); `services:replay,tests:record` mints a judge
 # shelf without re-running one engine turn.
-go test -tags bdd ./tests/bdd-cli/ -mode=target:replay,tests:replay
+go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay
 go test -tags bdd -timeout=25m ./tests/bdd-web/       # needs node+browser
 go test -tags bdd ./tests/bdd-cli/ \
   -run '^Test(ScenarioCoverage|FixtureTreesArePaired|StepCoverage)$'

@@ -32,9 +32,9 @@ _Avoid_: check, cell-run
 One full traversal of every Cell in a run. A fix applied mid-walk restarts the traversal from the first Cell.
 _Avoid_: pass, sweep, iteration
 
-**Target**:
-The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Target declaring none has a vacuous mode axis.
-_Avoid_: SUT, subject, system
+**Services**:
+The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.
+_Avoid_: SUT, subject, system, target
 
 ## Repository vocabulary
 

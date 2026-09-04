@@ -11,11 +11,11 @@ import (
 // mode. One mode for both is what let `replay` mean "hermetic" while
 // the judge still called out for real.
 const (
-	// CallerTarget is the service under test — the subprocess whose
-	// third_party CLI dependencies get shimmed.
-	CallerTarget = "target"
+	// CallerServices is the services/ tree under test — the subprocess
+	// whose third_party CLI dependencies get shimmed.
+	CallerServices = "services"
 	// CallerTests is the test process itself, which reaches a model to
-	// grade what the target did.
+	// grade what the services did.
 	CallerTests = "tests"
 )
 
@@ -28,12 +28,12 @@ var ErrModeMalformed = errors.New("malformed -mode")
 // flag, which stays legal: the coverage guards run with no mode and
 // bring no harness up, so the boot refuses an unset mode, not the parse.
 type Modes struct {
-	Target string
-	Tests  string
+	Services string
+	Tests    string
 }
 
 // Set reports whether a mode was supplied.
-func (m Modes) Set() bool { return m.Target != "" && m.Tests != "" }
+func (m Modes) Set() bool { return m.Services != "" && m.Tests != "" }
 
 // String renders the spec back, so a refusal or a record can quote what
 // it was given rather than describing it.
@@ -42,16 +42,16 @@ func (m Modes) String() string {
 		return ""
 	}
 
-	return CallerTarget + ":" + m.Target + "," + CallerTests + ":" + m.Tests
+	return CallerServices + ":" + m.Services + "," + CallerTests + ":" + m.Tests
 }
 
 // callers is the closed set of processes that may be named.
-func callers() []string { return []string{CallerTarget, CallerTests} }
+func callers() []string { return []string{CallerServices, CallerTests} }
 
 // modes is the closed set of values a caller may take.
 func modes() []string { return []string{ProxyModeLive, ProxyModeRecord, ProxyModeReplay} }
 
-// ParseModes reads `target:<mode>,tests:<mode>`. No shorthand and no
+// ParseModes reads `services:<mode>,tests:<mode>`. No shorthand and no
 // default: both make a run mean something its operator did not type.
 // An empty spec is the absent flag and parses to the zero value.
 func ParseModes(spec string) (Modes, error) {
@@ -116,12 +116,12 @@ func assembled(seen map[string]string) (Modes, error) {
 			ErrModeMalformed, strings.Join(unnamed, " and "), ModeSpecForm())
 	}
 
-	return Modes{Target: seen[CallerTarget], Tests: seen[CallerTests]}, nil
+	return Modes{Services: seen[CallerServices], Tests: seen[CallerTests]}, nil
 }
 
 // ModeSpecForm is the accepted spelling, quoted by every refusal so the
 // message carries its own fix.
 func ModeSpecForm() string {
-	return CallerTarget + ":<mode>," + CallerTests + ":<mode> with mode one of " +
+	return CallerServices + ":<mode>," + CallerTests + ":<mode> with mode one of " +
 		strings.Join(modes(), "|")
 }

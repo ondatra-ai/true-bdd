@@ -269,9 +269,9 @@ architecture:
   testing:
     framework: go-test            # go-test | jest | playwright
     commands:
-      record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:record,tests:record"
-      replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=target:live,tests:live"
+      record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:record,tests:record"
+      replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:replay,tests:replay"
+      live: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:live,tests:live"
   services:
     - name: bdd-cli
       path: services/bdd-cli
@@ -340,10 +340,10 @@ live engine ingredients (checklists and prompt templates), overlays the
 fixture's input tree, snapshots, runs what the scenario's When step
 names, and asks Claude to score the resulting diff against the
 scenario's `judge:` clauses. `-mode` names a mode per caller —
-`target:` for the engine under test, `tests:` for that scoring call —
+`services:` for the engine under test, `tests:` for that scoring call —
 so a run can replay the engine while judging for real, or replay both.
 A scenario skips when `claude`, or any CLI a model tier names, is not on
-`$PATH`; under `-mode=target:replay,tests:replay` nothing skips, because
+`$PATH`; under `-mode=services:replay,tests:replay` nothing skips, because
 no model is spawned at all.
 
 ## How it compares

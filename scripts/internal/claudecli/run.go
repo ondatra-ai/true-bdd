@@ -31,7 +31,7 @@ const turnName = "ai turn"
 func Run(prompt string, opts Options) (string, error) {
 	started := time.Now()
 
-	stdout, err := claude.Run(prompt, opts)
+	stdout, err := claude.Run(prompt, withModel(opts))
 	report.Leaf(turnName, started, attrs(opts.Role, err)...)
 
 	return stdout, err
@@ -42,10 +42,21 @@ func Run(prompt string, opts Options) (string, error) {
 func RunJSON(prompt string, opts Options) (json.RawMessage, error) {
 	started := time.Now()
 
-	answer, err := claude.RunJSON(prompt, opts)
+	answer, err := claude.RunJSON(prompt, withModel(opts))
 	report.Leaf(turnName, started, attrs(opts.Role, err)...)
 
 	return answer.Data, err
+}
+
+// withModel fills in the configured model for a turn that named none. Turns
+// used to inherit the operator's user-scope `model`; isolation cut that, so
+// the choice is config now rather than ambient (docs/adr/0010).
+func withModel(opts Options) Options {
+	if opts.Model == "" {
+		opts.Model = Model(opts.Role)
+	}
+
+	return opts
 }
 
 // attrs marks the report node failed when the turn was, and says nothing

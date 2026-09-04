@@ -1,8 +1,7 @@
 //go:build bdd
 
-// Package steps holds the step definitions for the mcp suite. Every
-// Given/When/Then step of a scenario whose service is mcp-service binds
-// to exactly one pattern registered in Register below.
+// Package steps holds this suite's step definitions: one
+// suite.Step(regexp, func) per wording the registry's scenarios use.
 package steps
 
 import (
@@ -15,43 +14,42 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
-// State is the value every definition in this suite shares: one scenario
-// gets one State, threaded from its Given steps through to its Thens.
+const (
+	defaultPort    = 8080
+	dialTimeout    = 5 * time.Second
+	requestTimeout = 30 * time.Second
+	bodyExcerpt    = 512
+)
+
+// Suite is the registration surface the harness hands to Register: one
+// call per step definition, a regexp bound to the func that runs it.
+type Suite interface {
+	Step(pattern string, fn func(s *State, args []string) error)
+}
+
+// State is what this suite's steps share: a Given prepares it, a When
+// acts and records into it, a Then asserts against it.
 type State struct {
 	BaseURL    string
 	StatusCode int
-	Body       string
+	Body       []byte
 }
 
-// Suite is the registrar the scenario runner hands to Register. It matches
-// a step's text against the pattern and calls fn with the suite state
-// followed by one string per capture group.
-type Suite interface {
-	Step(pattern string, fn any)
-}
-
-const (
-	defaultPort   = 8080
-	dialTimeout   = 5 * time.Second
-	clientTimeout = 30 * time.Second
-	bodySnippet   = 200
-)
-
-// Register binds every step this suite understands.
+// Register binds every wording this suite's scenarios use, so one call
+// site still lists everything the suite binds.
 func Register(suite Suite) {
-	suite.Step(`^the (.+) server is running on its configured port$`, serverIsRunning)
-	suite.Step(`^the (.+) posts a valid JSON-RPC (\S+) request to (\S+)$`, postsJSONRPCRequest)
+	suite.Step(`^the (.+) server is running on (?:its configured port|port (\d+))$`, serverIsRunning)
+	suite.Step(`^the (.+) posts a valid JSON-RPC ([A-Za-z0-9_./-]+) request to (\S+)$`, postsJSONRPCRequest)
 	suite.Step(`^the server returns HTTP (\d{3})$`, serverReturnsStatus)
 }
 
-// serverIsRunning is a Given: it resolves the port the named service is
-// configured on and records the base URL once the port answers.
-func serverIsRunning(s *State, service string) error {
-	port, err := configuredPort(service)
+func serverIsRunning(s *State, args []string) error {
+	name := arg(args, 0)
+
+	port, err := resolvePort(arg(args, 1))
 	if err != nil {
 		return err
 	}
@@ -60,108 +58,122 @@ func serverIsRunning(s *State, service string) error {
 
 	conn, err := net.DialTimeout("tcp", addr, dialTimeout)
 	if err != nil {
-		return fmt.Errorf("expected the %s server listening on %s, but dialing it failed: %w", service, addr, err)
+		return fmt.Errorf("expected the %s server listening on %s, but nothing accepted a connection there: %w", name, addr, err)
 	}
 
-	defer func() { _ = conn.Close() }()
-
+	_ = conn.Close()
 	s.BaseURL = "http://" + addr
 
 	return nil
 }
 
-// configuredPort reads the port from <SERVICE>_PORT, which is how whatever
-// booted the service tells the suite where it went.
-func configuredPort(service string) (int, error) {
-	key := strings.ToUpper(strings.NewReplacer("-", "_", " ", "_").Replace(service)) + "_PORT"
-
-	raw, ok := os.LookupEnv(key)
-	if !ok {
-		return defaultPort, nil
-	}
-
-	port, err := strconv.Atoi(raw)
-	if err != nil {
-		return 0, fmt.Errorf("expected %s to hold a port number, got %q: %w", key, raw, err)
-	}
-
-	return port, nil
-}
-
-// postsJSONRPCRequest is a When: it posts a well-formed JSON-RPC request for
-// the named method and records the response for the Then steps.
-func postsJSONRPCRequest(s *State, actor, method, path string) error {
+func postsJSONRPCRequest(s *State, args []string) error {
+	actor, method, path := arg(args, 0), arg(args, 1), arg(args, 2)
 	if s.BaseURL == "" {
-		return fmt.Errorf("%s cannot post to %s: no server address recorded — the Given step that starts the server has not run", actor, path)
+		return fmt.Errorf("expected a running server for %s to post to, but no Given step recorded one", actor)
 	}
 
-	payload, err := json.Marshal(map[string]any{
+	body, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      1,
 		"method":  method,
-		"params":  map[string]any{},
+		"params":  paramsFor(method, actor),
 	})
 	if err != nil {
-		return fmt.Errorf("building the JSON-RPC %s request body: %w", method, err)
+		return fmt.Errorf("expected a marshalable JSON-RPC %s request: %w", method, err)
 	}
 
-	req, err := http.NewRequestWithContext(
-		context.Background(), http.MethodPost, s.BaseURL+path, bytes.NewReader(payload))
+	url := s.BaseURL + path
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("building the POST to %s%s: %w", s.BaseURL, path, err)
+		return fmt.Errorf("expected to build a POST to %s: %w", url, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 
-	client := &http.Client{Timeout: clientTimeout}
+	client := &http.Client{Timeout: requestTimeout}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("posting the JSON-RPC %s request to %s: %w", method, path, err)
+		return fmt.Errorf("expected a response from POST %s, got a transport error: %w", url, err)
 	}
-
 	defer func() { _ = resp.Body.Close() }()
 
-	raw, err := io.ReadAll(resp.Body)
+	payload, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("reading the response to the JSON-RPC %s request: %w", method, err)
+		return fmt.Errorf("expected to read the response body of POST %s: %w", url, err)
 	}
 
 	s.StatusCode = resp.StatusCode
-	s.Body = string(raw)
+	s.Body = payload
 
 	return nil
 }
 
-// serverReturnsStatus is a Then: it asserts the recorded status, naming what
-// was expected and what arrived.
-func serverReturnsStatus(s *State, want string) error {
-	code, err := strconv.Atoi(want)
+func serverReturnsStatus(s *State, args []string) error {
+	spoken := arg(args, 0)
+
+	want, err := strconv.Atoi(spoken)
 	if err != nil {
-		return fmt.Errorf("expected a numeric HTTP status in the step text, got %q: %w", want, err)
+		return fmt.Errorf("expected an HTTP status code, got %q: %w", spoken, err)
 	}
 
 	if s.StatusCode == 0 {
-		return fmt.Errorf("expected HTTP %d, but no response was recorded — no When step posted a request", code)
+		return fmt.Errorf("expected HTTP %d, but no response was recorded: no When step sent a request", want)
 	}
 
-	if s.StatusCode != code {
-		return fmt.Errorf("expected HTTP %d, got %d (body: %s)", code, s.StatusCode, snippet(s.Body))
+	if s.StatusCode != want {
+		return fmt.Errorf("expected HTTP %d, got %d; body: %s", want, s.StatusCode, excerpt(s.Body))
 	}
 
 	return nil
 }
 
-// snippet keeps a failure message readable when the body is large.
-func snippet(body string) string {
-	if body == "" {
-		return "<empty>"
+// resolvePort: the port the step names, else the configured one, else
+// the default.
+func resolvePort(spoken string) (int, error) {
+	if spoken == "" {
+		spoken = os.Getenv("MCP_PORT")
 	}
 
-	if len(body) > bodySnippet {
-		return body[:bodySnippet] + "..."
+	if spoken == "" {
+		return defaultPort, nil
 	}
 
-	return body
+	port, err := strconv.Atoi(spoken)
+	if err != nil {
+		return 0, fmt.Errorf("expected a port number, got %q: %w", spoken, err)
+	}
+
+	return port, nil
+}
+
+func paramsFor(method, actor string) map[string]any {
+	if method != "initialize" {
+		return map[string]any{}
+	}
+
+	return map[string]any{
+		"protocolVersion": "2024-11-05",
+		"capabilities":    map[string]any{},
+		"clientInfo":      map[string]any{"name": actor, "version": "1.0.0"},
+	}
+}
+
+func arg(args []string, i int) string {
+	if i >= len(args) {
+		return ""
+	}
+
+	return args[i]
+}
+
+func excerpt(body []byte) string {
+	if len(body) > bodyExcerpt {
+		return string(body[:bodyExcerpt]) + "..."
+	}
+
+	return string(body)
 }

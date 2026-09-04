@@ -1,6 +1,7 @@
 package reporter
 
 import (
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,7 +28,7 @@ const (
 	msgStoryLoaded     = "Story document loaded"
 	msgStoryScenarios  = "Parsed story scenarios for apply"
 	msgToolsConfigured = "Claude tools configured"
-	msgToolUse         = "ToolUseBlock details"
+	msgToolUse         = enginelog.MsgToolUse
 	msgSpawnAgent      = "Spawning agent CLI"
 	msgSpawnRunner     = "Spawning test runner"
 	msgRunnerReturned  = "Test runner returned"

@@ -15,10 +15,9 @@
 // is now stated at each call site.
 //
 // TWO TIERS. Run covers the ~35 sites that spawn, wait and read. Start returns
-// a Process for the six that cannot: a bidirectional JSON protocol
-// (services/bdd-cli/claudecode/.../transport.go), supervised process groups
-// holding inherited descriptors (internal/app/remote/managed_child.go), a
-// byte-exact stdio proxy (pkg/testkit/aiproxy), and a long-lived server
+// a Process for the five that cannot: supervised process groups holding
+// inherited descriptors (internal/app/remote/managed_child.go), a byte-exact
+// stdio proxy (pkg/testkit/aiproxy), and a long-lived server
 // (tests/bdd-web/steps/harness.go). Their needs are single-site and each is
 // documented where it is declared.
 //

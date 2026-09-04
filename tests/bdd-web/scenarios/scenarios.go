@@ -20,9 +20,9 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
-	"github.com/ondatra-ai/true-bdd/tests/bdd-web/steps"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
+	"github.com/ondatra-ai/true-bdd/tests/bdd-web/steps"
 	"log/slog"
 )
 
@@ -30,7 +30,7 @@ import (
 //
 //nolint:gochecknoglobals // test-binary flag; parsed by `go test`
 var proxyMode = flag.String("mode", "",
-	"per-caller AI CLI mode, e.g. target:replay,tests:replay")
+	"per-caller AI CLI mode, e.g. services:replay,tests:replay")
 
 // -allow-missing-toolchain skips instead of failing on missing node/npm; off by default so it can't silently go green.
 //
@@ -160,7 +160,7 @@ func bootHarness(t *testing.T) (string, error) {
 			errToolchainMissing, reason)
 	}
 
-	harness, stop, err := steps.NewHarness(context.Background(), runModes.Target, repoRoot)
+	harness, stop, err := steps.NewHarness(context.Background(), runModes.Services, repoRoot)
 	if err != nil {
 		return "", fmt.Errorf("bring up the application under test: %w", err)
 	}

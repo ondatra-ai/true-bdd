@@ -44,15 +44,14 @@ scenarios:
         - "the Claude User opens the settings page"
       then:
         - "the settings page renders the account section"
-
   E2E-961:
-    description: "GET /health returns HTTP 200 with a healthy status body"
-    service: ""
-    last_updated: "2026-09-03"
+    description: "MCP server returns HTTP 200 and healthy JSON on GET /health"
+    service: "mcp-server"
+    last_updated: "2026-09-04"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001"
-        merge_date: "2026-09-03"
+        merge_date: "2026-09-04"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"

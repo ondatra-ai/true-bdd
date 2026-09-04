@@ -73,49 +73,37 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-(Resolved absolute path, in case your working directory differs:
-`{{CWD}}/tmp/{{RUN_DIR}}/scenarios.yaml`)
+## Context
+Two entries reference the same lineage scenario id `95.1-001` for story
+`docs/product/stories/95.1-duplicate-collapse.yaml`:
 
-## Diagnosis
-Two registry entries reference the same lineage scenario id `95.1-001`
-for story `docs/product/stories/95.1-duplicate-collapse.yaml`, both on
-service `mcp-service`:
+  - match: E2E-900 — 'MCP /mcp endpoint responds 200 to a valid initialize POST'
+  - match: E2E-901 — 'Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope'
 
-- `E2E-900` — "MCP /mcp endpoint responds 200 to a valid initialize POST"
-- `E2E-901` — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
+Verdict: duplicate (2 entries). Both are `service: mcp-service` and describe the
+same observable behavior. Collapse them.
 
-Verdict: duplicate (2 entries). `E2E-950` references a different story
-(`docs/product/stories/90.1-unrelated.yaml`, `90.1-001`) and is NOT a match.
+Winner: **E2E-900** (lower-numbered id; both entries are `E2E-` layer, so the
+lower id wins). Loser: **E2E-901** (deleted).
 
-## Merge decision
-- **Winner: `E2E-900`** — lower-numbered id. No `INT-` entry exists in this
-  registry, so the `INT-` preference does not apply.
-- **Loser: `E2E-901`** — deleted.
-- **`user_stories[]` requires NO edit.** Both entries carry the byte-identical
-  item `story: docs/product/stories/95.1-duplicate-collapse.yaml`,
-  `scenario_id: 95.1-001`, `merge_date: 2026-07-25`. Deduplicating by
-  `(story, scenario_id)` leaves `E2E-900`'s list exactly as it already is —
-  do **not** append a second copy.
-- **`merged_steps` are unioned** into `E2E-900`, winner's steps first, then
-  the loser's new ones appended:
-  - `given`: gains `"the server accepts JSON-RPC over HTTP POST at /mcp"`
-  - `when`: unchanged (identical in both)
-  - `then`: gains `"the response body is a well-formed JSON-RPC envelope referencing the request id"`
-- **Do NOT touch** `description`, `service`, or `last_updated` on `E2E-900`.
-- **Do NOT renumber** any ids. **Do NOT modify `E2E-950`** or `metadata:`.
+- `user_stories[]`: both entries carry the identical `(story, scenario_id)` pair
+  `(docs/product/stories/95.1-duplicate-collapse.yaml, 95.1-001)`, so the union
+  deduplicates to the single item already present in E2E-900 — no change there.
+- `merged_steps`: union adds E2E-901's `given` step "the server accepts JSON-RPC
+  over HTTP POST at /mcp" and `then` step "the response body is a well-formed
+  JSON-RPC envelope referencing the request id" into E2E-900, preserving order.
+- E2E-950 is untouched.
 
 ## Required Changes
 
-### Change #1: Union E2E-901's steps into E2E-900 and delete E2E-901
-**Issue:** `E2E-900` and `E2E-901` are duplicate entries for lineage
-scenario `95.1-001`; only one entry may reference this AC.
+### Change #1: Union E2E-901's merged_steps into E2E-900 and delete E2E-901
 
-**Action:** Use the Edit tool on the target file with the exact
-old_string and new_string below. This single edit both unions the
-`merged_steps` into `E2E-900` and removes the whole `E2E-901` block.
-The old_string is unique in the file (it contains the sole occurrence
-of `  E2E-901:`), and it stops immediately before line `  E2E-950:`,
-which is left untouched.
+**Issue:** E2E-900 and E2E-901 are duplicate registry entries for lineage
+scenario `95.1-001`; the registry must contain exactly one entry for this AC.
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml`
+with the exact `old_string` and `new_string` below. This single edit both unions
+the steps into the winner and removes the losing entry.
 
 **old_string:**
 ```
@@ -158,12 +146,38 @@ which is left untouched.
         - "the response body is a well-formed JSON-RPC envelope referencing the request id"
 ```
 
-## Expected result after the edit
-`scenarios:` contains exactly two entries — `E2E-900` and `E2E-950`.
-`E2E-900` keeps its original `description`, `service`, `last_updated`
-and its single `user_stories[]` item, and now carries all five unioned
-steps (2 given, 1 when, 2 then). `E2E-901` is gone. `E2E-950` and the
-`metadata:` block are byte-identical to before.
+## Do Not
+- Do not renumber `E2E-900` or any other id.
+- Do not modify or reorder the `E2E-950` entry.
+- Do not change `metadata:` or the leading comment block.
+- Do not add a second `user_stories[]` item for `95.1-001` (it is a duplicate of
+  the one already on E2E-900).
+
+## Verification
+After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must contain
+exactly two scenarios — `E2E-900` and `E2E-950` — with `E2E-900` reading:
+
+```
+  E2E-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
+        scenario_id: "95.1-001"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+        - "the server accepts JSON-RPC over HTTP POST at /mcp"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+        - "the response body is a well-formed JSON-RPC envelope referencing the request id"
+```
+
+Exactly one entry references lineage scenario id `95.1-001`.
 
 ---
 

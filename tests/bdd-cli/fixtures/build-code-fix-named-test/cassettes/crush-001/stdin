@@ -78,34 +78,16 @@ summary: "<one-line summary>"
 
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
-## Diagnosis
-`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The production
-function in `services/calc/calc.go` subtracts instead of adds:
-
-```go
-func Add(a, b int) int {
-	return a - b
-}
-```
-
-`2 - 3 = -1`, which is exactly the reported failure
-(`Add(2, 3) = -1, want 5`). The test is correct; the production operator
-is wrong.
-
 ## Target
-Apply the change under `services/*` only. The test at
-`tests/suite/add_test.go` is the contract — do NOT modify it, do NOT
-weaken/skip/remove any assertion, and do NOT touch anything under
-`tests/`, any `*_test.go`, or anything under `docs/`.
+Apply the change under `services/*` only. The test at `tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT weaken or remove its assertion.
+
+## Root Cause
+`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The production function in `services/calc/calc.go` computes `a - b` instead of `a + b`, so `Add(2, 3)` returns `-1`. The failure output (`Add(2, 3) = -1, want 5`) matches exactly. The defect is in production source; the fix is to correct the operator.
 
 ## Required Changes
-
-### Change #1: Correct the arithmetic operator in `calc.Add`
+### Change #1: correct the arithmetic operator in `calc.Add`
 **File:** `services/calc/calc.go`
-**Action:** Use the **Edit** tool on this existing file. Replace the single
-return statement inside `func Add`. The line is indented with one TAB
-character (Go standard formatting) — preserve it exactly. The string
-`return a - b` occurs exactly once in the file, so this anchor is unique.
+**Action:** Use the Edit tool on this existing file. Replace the single return statement — do not touch the package clause, the doc comment, or anything else.
 
 **old_string:**
 ```
@@ -117,26 +99,14 @@ character (Go standard formatting) — preserve it exactly. The string
 	return a + b
 ```
 
-After the edit, the function must read:
-
-```go
-func Add(a, b int) int {
-	return a + b
-}
-```
-
-## Scope Discipline
-- This is the ONLY change required. Do not edit the doc comment above
-  `Add`, do not reformat the file, do not add helpers, tests, or new
-  files.
-- Do not create or modify anything under `tests/`, `docs/`, or
-  `true-bdd/`.
-- Do not run the test suite yourself — the Go-side runner re-executes
-  the narrowed test and is authoritative.
+## Do Not
+- Do not edit `tests/suite/add_test.go` or any other file under `tests/`.
+- Do not edit `docs/architecture/architecture.yaml` or anything else under `docs/`.
+- Do not edit anything under `true-bdd/`.
+- Do not add new files, helpers, or packages — this is a one-character production fix.
 
 ## Expected Result
-`calc.Add(2, 3)` returns `5`, so `TestAddSumsItsArguments` passes and the
-`build-code/test-passes` check flips to `pass`.
+`calc.Add(2, 3)` returns `5`, and `TestAddSumsItsArguments` passes under `go test -json -count=1 ./tests/suite/...`.
 
 ---
 

@@ -68,3 +68,15 @@ documents:
   product: "./docs/product/product.yaml"
   architecture_yaml: "./docs/architecture/architecture.yaml"
   scenarios_yaml: "./docs/scenarios.yaml"
+
+# Models for scripts/ turns, which reach `claude` directly and never the
+# engine's router. Most specific wins: command, then script, then default.
+# Plain model ids — this tooling has exactly one CLI (docs/adr/0010).
+scripts:
+  models:
+    # What these turns ran before isolation cut the operator's user `model`.
+    default: "opus[1m]"
+    # Keyed by scripts/cmd/<name>: commit, merge, clickup, task-handle, ...
+    per_script: {}
+    # Keyed by the Role a call site passes: commit-msg, merge-fix, ...
+    per_command: {}

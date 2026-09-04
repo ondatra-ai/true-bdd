@@ -139,7 +139,7 @@ func prepareTree(state *State, args []string) error {
 }
 
 // resolveProxy decides where this scenario's AI calls come from, per
-// caller: the target's turns and the judge's verdict are independent.
+// caller: the services caller's turns and the judge's verdict are independent.
 func (s *State) resolveProxy(name string) (ProxySetup, error) {
 	setup := ProxySetup{}
 
@@ -160,7 +160,7 @@ func (s *State) resolveProxy(name string) (ProxySetup, error) {
 // REFUSES a scenario with no recording (never skips), and record writes to
 // staging, published only once the scenario passes.
 func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
-	if s.Harness.Modes.Target == runner.ProxyModeLive {
+	if s.Harness.Modes.Services == runner.ProxyModeLive {
 		return nil
 	}
 
@@ -171,7 +171,7 @@ func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
 
 	setup.Cassettes = cassettes
 
-	if s.Harness.Modes.Target == runner.ProxyModeReplay {
+	if s.Harness.Modes.Services == runner.ProxyModeReplay {
 		_, statErr := os.Stat(setup.Cassettes)
 		if statErr != nil {
 			return s.fail("%w: %s\n%s", ErrNoCassettes, name, RecordHint(s.Scenario))
@@ -186,7 +186,7 @@ func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
 		setup.Golden = golden
 	}
 
-	if s.Harness.Modes.Target == runner.ProxyModeRecord {
+	if s.Harness.Modes.Services == runner.ProxyModeRecord {
 		staging, stagingErr := s.Harness.prepareStaging(name)
 		if stagingErr != nil {
 			return s.fail("preparing staging cassettes: %w", stagingErr)
@@ -202,7 +202,7 @@ func (s *State) resolveTargetProxy(name string, setup *ProxySetup) error {
 	setup.StateDir = filepath.Join(
 		runner.RunDir(s.Harness.SessionRoot, name), "tmp", "aiproxy-state")
 	setup.Env = runner.AIProxyEnv(
-		s.Harness.Modes.Target, s.Harness.Shims.Target,
+		s.Harness.Modes.Services, s.Harness.Shims.Services,
 		setup.Cassettes, setup.StateDir, s.Harness.Shims.All())
 
 	return nil

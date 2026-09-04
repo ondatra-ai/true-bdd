@@ -84,20 +84,26 @@ const MODE_TITLES = {
   replay: 'replay — turns served from cassettes, no AI CLI spawned',
 };
 
-// A mode is per CALLER now: `target:replay,tests:live` runs the engine
+// A mode is per CALLER now: `services:replay,tests:live` runs the engine
 // from cassettes while a real judge grades it. Single-word values are
 // sessions recorded before the split and mean both callers at once.
-const CALLERS = ['target', 'tests'];
+const CALLERS = ['services', 'tests'];
+
+// This caller was spelled `target` until ADR 0010 renamed it, and the
+// recorded sessions that say so are history rather than a mistake — so the
+// old name reads forever, or 43 stored runs render as '?'.
+const CALLER_ALIASES = { target: 'services' };
 
 const parseMode = (mode) => {
   const raw = (mode || '').trim();
   if (!raw) return {};
-  if (!raw.includes(':')) return { target: raw, tests: raw };
+  if (!raw.includes(':')) return { services: raw, tests: raw };
 
   const out = {};
   raw.split(',').forEach((part) => {
     const [caller, value] = part.split(':').map((s) => s.trim());
-    if (CALLERS.includes(caller)) out[caller] = value;
+    const name = CALLER_ALIASES[caller] || caller;
+    if (CALLERS.includes(name)) out[name] = value;
   });
 
   return out;
@@ -113,12 +119,12 @@ const isReplayed = (mode, caller) => {
 };
 
 // The matrix header has room for a word, not a spec: one letter per
-// caller, in target-then-tests order.
+// caller, in services-then-tests order.
 const shortMode = (mode) => {
   const parsed = parseMode(mode);
   const letters = CALLERS.map((caller) => (parsed[caller] || '?')[0]);
 
-  return letters.every((l) => l === letters[0]) ? (parsed.target || '?') : letters.join('/');
+  return letters.every((l) => l === letters[0]) ? (parsed.services || '?') : letters.join('/');
 };
 
 // One chip per caller, each coloured by its own mode: a run that replays
@@ -126,7 +132,7 @@ const shortMode = (mode) => {
 // chip could only tell one of them.
 const modeChip = (mode) => {
   const parsed = parseMode(mode);
-  if (!parsed.target && !parsed.tests) {
+  if (!parsed.services && !parsed.tests) {
     return h('span', {
       class: 'chip mode unknown',
       title: 'mode unknown — this session predates the record',
@@ -432,7 +438,7 @@ async function renderRun(runID) {
     tile('Passed / failed / planned', outcomeTriple(t)),
     tile('Wall clock', secs(t.wall_seconds)),
     tile('AI turns', t.turns),
-    tile('Engine cost', cost(t.cost_usd, t.mode, 'target')),
+    tile('Engine cost', cost(t.cost_usd, t.mode, 'services')),
     tile('Judge cost', cost(t.judge_cost_usd, t.mode, 'tests')),
   );
 
@@ -441,7 +447,7 @@ async function renderRun(runID) {
     h('td', {}, verdictChip(test.verdict)),
     h('td', { class: 'num' }, secs(test.wall_seconds, test.has_wall)),
     h('td', { class: 'num' }, test.turns || '—'),
-    h('td', { class: 'num' }, cost(test.cost_usd, t.mode, 'target')),
+    h('td', { class: 'num' }, cost(test.cost_usd, t.mode, 'services')),
     h('td', { class: 'num' }, count(test.tokens)),
     h('td', { class: 'num' }, test.exit_code === null ? '—' : test.exit_code),
     h('td', { class: 'num' }, test.diff_count || '—'),
@@ -477,7 +483,7 @@ async function renderTest(runID, name) {
       tile('Wall clock', secs(d.summary.wall_seconds, d.summary.has_wall)),
       tile('Turns', d.summary.turns),
       tile('Model time', secs(d.summary.model_seconds)),
-      tile('Cost', cost(d.summary.cost_usd, d.summary.mode, 'target')),
+      tile('Cost', cost(d.summary.cost_usd, d.summary.mode, 'services')),
       tile('Files changed', d.files.length)),
     expectedVsActual(d),
     turnList(runID, name, d),

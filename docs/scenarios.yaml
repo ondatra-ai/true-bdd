@@ -218,7 +218,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories: []
-    timeout: 15m
+    timeout: 25m
     merged_steps:
       given:
         - the "build-code-playwright-nextjs" project tree

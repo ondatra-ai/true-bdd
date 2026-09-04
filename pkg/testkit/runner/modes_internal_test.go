@@ -9,13 +9,13 @@ import (
 func TestParseModesReadsBothCallers(t *testing.T) {
 	t.Parallel()
 
-	modes, err := ParseModes("target:replay,tests:live")
+	modes, err := ParseModes("services:replay,tests:live")
 	if err != nil {
 		t.Fatalf("ParseModes: %v", err)
 	}
 
-	if modes.Target != ProxyModeReplay || modes.Tests != ProxyModeLive {
-		t.Fatalf("got %+v, want target=replay tests=live", modes)
+	if modes.Services != ProxyModeReplay || modes.Tests != ProxyModeLive {
+		t.Fatalf("got %+v, want services=replay tests=live", modes)
 	}
 
 	if !modes.Set() {
@@ -42,12 +42,12 @@ func TestParseModesRefuses(t *testing.T) {
 	t.Parallel()
 
 	for _, spec := range []string{
-		"replay",                    // the old shorthand, now refused
-		"target:replay",             // tests left unnamed
-		"tests:replay",              // target left unnamed
-		"engine:replay,tests:live",  // no such caller
-		"target:replay,tests:mock",  // no such mode
-		"target:replay,target:live", // named twice
+		"replay",                        // the old shorthand, now refused
+		"services:replay",               // tests left unnamed
+		"tests:replay",                  // services left unnamed
+		"engine:replay,tests:live",      // no such caller
+		"services:replay,tests:mock",    // no such mode
+		"services:replay,services:live", // named twice
 	} {
 		_, err := ParseModes(spec)
 		if !errors.Is(err, ErrModeMalformed) {
@@ -61,9 +61,9 @@ func TestParseModesRefuses(t *testing.T) {
 func TestParseModesRefusalNamesTheForm(t *testing.T) {
 	t.Parallel()
 
-	_, err := ParseModes("target:replay")
+	_, err := ParseModes("services:replay")
 	if err == nil {
-		t.Fatal("ParseModes(\"target:replay\") = nil error")
+		t.Fatal("ParseModes(\"services:replay\") = nil error")
 	}
 
 	if want := ModeSpecForm(); !strings.Contains(err.Error(), want) {
@@ -74,7 +74,7 @@ func TestParseModesRefusalNamesTheForm(t *testing.T) {
 func TestModesStringRoundTrips(t *testing.T) {
 	t.Parallel()
 
-	spec := "target:record,tests:replay"
+	spec := "services:record,tests:replay"
 
 	modes, err := ParseModes(spec)
 	if err != nil {

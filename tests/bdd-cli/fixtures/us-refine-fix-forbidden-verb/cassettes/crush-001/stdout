@@ -24,7 +24,7 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize that document"
       - then:
           - "Claude displays the message 'This document is not shared with your account'"
-          - and: "Claude does not display any content from the document"
+          - "Claude does not display any content from the document"
   - id: "AC-3"
     description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
     steps:
@@ -44,5 +44,5 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of the first 10000 words"
-          - and: "Claude states that only the first 10000 words were summarized"
+          - "Claude states that only the first 10000 words were summarized"
 === FILE_END: tmp/{{RUN_DIR}}/apply-96.8-iter1-result.yaml ===

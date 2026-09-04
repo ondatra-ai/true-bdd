@@ -46,9 +46,9 @@ func quoteArg(arg string) string {
 	return "'" + strings.ReplaceAll(arg, "'", `'\''`) + "'"
 }
 
-// Base flags src/claudecode/internal/cli/discovery.go always passes,
-// mirrored here only for the reconstruction path (logs predating argv
-// recording still get a command line, labelled Reconstructed).
+// Base flags the deleted SDK transport passed (ADR 0010). Frozen history:
+// they reconstruct a command line for logs written before argv recording.
+// Do not track pkg/cli/claude's argv here.
 func claudeBaseArgs() []string {
 	return []string{
 		"--output-format", "stream-json", "--verbose",
@@ -56,7 +56,7 @@ func claudeBaseArgs() []string {
 	}
 }
 
-// claudePermissionMode is what ClaudeProvider.buildClientOptions pins.
+// claudePermissionMode is what ClaudeProvider.options pins.
 const claudePermissionMode = "acceptEdits"
 
 // reconstructClaudeInvocation rebuilds the claude command from options the

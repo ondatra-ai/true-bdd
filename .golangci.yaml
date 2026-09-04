@@ -192,8 +192,6 @@ linters:
               desc: 'the domain defines; it does not reach outward'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/adapters"
               desc: 'a port names domain types only — never its own implementation'
-            - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/claudecode"
-              desc: 'the domain defines; it does not reach outward'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
               desc: 'the domain defines; it does not reach outward'
         # Spawning is the fourth channel (ADR 0005). _test.go is exempt: several
@@ -323,7 +321,7 @@ linters:
           - tagliatelle
       # Don't require wrapping for internal package returns
       # Our internal/pkg/errors package provides properly wrapped errors
-      - path: (services/bdd-cli/internal/.*|services/bdd-cli/claudecode/.*|services/bdd-cli/adapters/.*)\.go
+      - path: (services/bdd-cli/internal/.*|services/bdd-cli/adapters/.*)\.go
         linters:
           - wrapcheck
         text: 'github\.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors'

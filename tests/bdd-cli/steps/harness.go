@@ -101,7 +101,7 @@ func (h *Harness) JudgeShelf(name string) (string, error) {
 }
 
 // prepareJudgeStaging gives a judge recording somewhere to land. It sits
-// inside the target's staging root, so a run recording both publishes
+// inside the services caller's staging root, so a run recording both publishes
 // them in one rename.
 func (h *Harness) prepareJudgeStaging(name string) (string, error) {
 	staging := filepath.Join(h.SessionRoot, StagingDirName, name, "judge")
@@ -120,7 +120,7 @@ func (h *Harness) prepareJudgeStaging(name string) (string, error) {
 }
 
 // promoteJudgeShelf publishes only the judge recordings, for a run whose
-// target was not recording — a whole-dir rename would delete the engine
+// services caller was not recording — a whole-dir rename would delete the engine
 // cassettes this run replayed from.
 func (h *Harness) promoteJudgeShelf(name, staging string) error {
 	dest, err := h.JudgeShelf(name)
@@ -187,11 +187,11 @@ func (h *Harness) promoteCassettes(name, staging string) error {
 }
 
 // JudgeRecordHint is the command that records one scenario's judge
-// verdict without re-running a single engine turn: the target keeps
+// verdict without re-running a single engine turn: the services caller keeps
 // replaying, so the recording costs one model call and nothing else.
 func JudgeRecordHint(scenario bddgo.Scenario) string {
 	return "record it with: go test -tags bdd -run '^" + TestName(scenario) +
-		"$' ./tests/bdd-cli/ '-mode=target:replay,tests:record'  # fixture: " +
+		"$' ./tests/bdd-cli/ '-mode=services:replay,tests:record'  # fixture: " +
 		FixtureName(scenario)
 }
 

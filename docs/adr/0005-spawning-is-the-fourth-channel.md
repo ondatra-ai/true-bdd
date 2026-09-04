@@ -76,7 +76,7 @@ replaying green until a live run disagreed.
 
 ## Two tiers, and why the second is not a general API
 
-`Run` covers roughly 35 sites: spawn, wait, read. `Start` exists for six that
+`Run` covers roughly 35 sites: spawn, wait, read. `Start` exists for five that
 cannot be expressed that way, and it was tempting to leave those on raw
 `os/exec` with a documented exemption. That was rejected for the reason above —
 an exemption list is a ban that stops being checkable.
@@ -87,7 +87,6 @@ names its one caller where it is declared:
 | capability | sole site | why |
 |---|---|---|
 | `ExtraFiles` | `remote/managed_child.go:76,115` | lock fd, release pipe on fd 3 |
-| stderr to a real file | `subprocess/transport.go:526-529` | a pipe deadlocks once the child fills it |
 | signal forwarding | `aiproxy/record.go:201` | relays SIGTERM/SIGINT to the proxied CLI |
 | stdin from the console | `remote/supervisor.go:55` | raw descriptor passthrough |
 
@@ -135,3 +134,12 @@ It also does not touch `pkg/logging` or `pkg/console`. Removing the child
 descriptors drops roughly eight importers from `console` as a side effect, and
 that is as far as it goes: `logging.Install`'s `Stream` parameter, whose doc
 still names a stdout parser that no longer exists, is left for its own change.
+
+**Amended 2026-09-04.** The `Start` table's `stderr to a real file` row named
+`subprocess/transport.go:526-529`, the vendored SDK that ran the engine's
+`claude` turns. That package is deleted (ADR 0010): it complied with this ADR
+while being a second answer to the question this ADR exists to have one answer
+to, and the divergence was not academic — the SDK path spawned children that
+inherited the operator's user-scope settings, and one fixture paid $2.46 of a
+$4.30 bill to an advisor tool nobody configured. `Run`'s two-tier claim is
+unchanged; there are five single-site `Start` callers now, not six.
