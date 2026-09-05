@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
 )
 
 // ErrMalformedLineage is returned when a step names a coverage id that is
@@ -25,6 +26,43 @@ const (
 	// declares no stories_dir.
 	defaultStoriesRel = "docs/product/stories"
 )
+
+// registerTreeEditSteps binds the clauses that change the project tree from
+// OUTSIDE the browser — the edits an already-open page must notice.
+func registerTreeEditSteps(suite *bddgo.Suite[State]) {
+	suite.Step(
+		`^the (Product Owner|System Architect|Quality Engineer) removes the "([^"]+)" `+
+			`story declaration from "([^"]+)"$`,
+		removeStoryDeclaration)
+}
+
+// removeStoryDeclaration cuts one story's block out of an epic document in the
+// project tree — the disk change a modal open on that story must notice.
+// args[0] is the role, discarded as appendCoveringScenario's is.
+func removeStoryDeclaration(state *State, args []string) error {
+	storyID, relPath := args[1], args[2]
+
+	raw, err := fixtureFile(state, relPath)
+	if err != nil {
+		return err
+	}
+
+	block, err := storyBlock(raw, storyID)
+	if err != nil {
+		return state.fail("%s: %w", relPath, err)
+	}
+
+	// The block is a line-exact slice of the file, so cutting it leaves a blank
+	// line where it stood: legal YAML, and simpler than rebuilding the list.
+	rest := strings.Replace(raw, block, "", 1)
+
+	err = disk.Write(filepath.Join(state.Tree.Dir, relPath), []byte(rest), disk.Shared)
+	if err != nil {
+		return state.fail("removing story %q from %s: %w", storyID, relPath, err)
+	}
+
+	return nil
+}
 
 // appendCoveringScenario writes a registry entry covering one lineage id
 // into the project tree — the change made OUTSIDE the browser that a

@@ -30,13 +30,19 @@ func openSessionPage(state *State, _ []string) error {
 		return err
 	}
 
+	return showSessionPage(state, session)
+}
+
+// showSessionPage opens a page on one session's route — the navigation the
+// unlabelled clause and the named-session one share.
+func showSessionPage(state *State, session *sessionSummary) error {
 	page, err := state.Context.NewPage()
 	if err != nil {
 		return state.fail("open a page: %w", err)
 	}
 
 	state.Page = page
-	url := state.Harness.BaseURL + sessionRoute + session.SessionID
+	url := state.RelayURL + sessionRoute + session.SessionID
 
 	_, err = page.Goto(url,
 		playwright.PageGotoOptions{WaitUntil: playwright.WaitUntilStateDomcontentloaded})
@@ -81,10 +87,33 @@ func assertElementNotShown(state *State, args []string) error {
 	return nil
 }
 
+// elementShown answers whether the page shows an element NOW, without waiting:
+// its callers use it to decide what to click, not to assert.
+func elementShown(state *State, text string) (bool, error) {
+	page, err := state.page()
+	if err != nil {
+		return false, err
+	}
+
+	sel, err := parseSelector(text)
+	if err != nil {
+		return false, state.fail("%w", err)
+	}
+
+	visible, err := sel.element(page).First().IsVisible()
+	if err != nil {
+		return false, state.fail("reading whether the page shows %s: %w", sel, err)
+	}
+
+	return visible, nil
+}
+
 // clickElement is the interaction When: the selector is args[1] because the
 // captured role is args[0], discarded — held to the product document's role
 // list by the pattern itself, as openPath is.
 func clickElement(state *State, args []string) error {
+	rememberPageState(state)
+
 	sel, locator, err := locateStep(state, args[1])
 	if err != nil {
 		return err
@@ -155,6 +184,26 @@ func assertEnabled(state *State, args []string) error {
 
 	if !matched {
 		return state.fail("%s is %s, want enabled", sel, got)
+	}
+
+	return nil
+}
+
+// assertDisabled is the twin clause, polling for the same reason: a control
+// the page has not finished rendering its run state for starts out enabled.
+func assertDisabled(state *State, args []string) error {
+	sel, locator, err := locateStep(state, args[0])
+	if err != nil {
+		return err
+	}
+
+	got, matched, err := await(readEnabled(locator), equals("disabled"))
+	if err != nil {
+		return state.fail("%s: %w", sel, err)
+	}
+
+	if !matched {
+		return state.fail("%s is %s, want disabled", sel, got)
 	}
 
 	return nil
@@ -251,6 +300,8 @@ func locateStep(state *State, text string) (selector, playwright.Locator, error)
 		return selector{}, nil, err
 	}
 
+	state.LastSelector = text
+
 	return sel, locator, nil
 }
 
@@ -258,7 +309,15 @@ func locateStep(state *State, text string) (selector, playwright.Locator, error)
 // value it saw with whether it ever matched — so a giving-up caller names
 // what the page actually showed rather than only what it wanted.
 func await(read func() (string, error), matches func(string) bool) (string, bool, error) {
-	deadline := time.Now().Add(valueTimeout)
+	return awaitWithin(valueTimeout, read, matches)
+}
+
+// awaitWithin is that poll on the caller's own budget, which a clause waiting
+// on a round trip rather than on a render needs.
+func awaitWithin(timeout time.Duration, read func() (string, error),
+	matches func(string) bool,
+) (string, bool, error) {
+	deadline := time.Now().Add(timeout)
 
 	for {
 		got, err := read()

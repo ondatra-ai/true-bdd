@@ -1,165 +1,190 @@
 //go:build bdd
 
-// Package steps holds this suite's step definitions: one
-// suite.Step(regexp, func) per wording the registry's scenarios use.
+// Package steps binds the mcp-service scenarios' step text to executable
+// Go. The runner matches a step's text — keyword stripped — against the
+// patterns Register installs and calls the single definition that matches.
 package steps
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
-	defaultPort    = 8080
-	dialTimeout    = 5 * time.Second
-	requestTimeout = 30 * time.Second
-	bodyExcerpt    = 512
+	defaultPort    = "8080"
+	dialTimeout    = 2 * time.Second
+	requestTimeout = 10 * time.Second
+	maxBodySnippet = 200
 )
 
-// Suite is the registration surface the harness hands to Register: one
-// call per step definition, a regexp bound to the func that runs it.
+// StepFunc runs one step against the scenario state. args holds the
+// pattern's capture groups in order; a group that did not participate is
+// the empty string.
+type StepFunc func(state *State, args []string) error
+
+// Suite is what the scenario runner offers this package: one call per
+// definition, anchored pattern plus body.
 type Suite interface {
-	Step(pattern string, fn func(s *State, args []string) error)
+	Step(pattern string, fn StepFunc)
 }
 
-// State is what this suite's steps share: a Given prepares it, a When
-// acts and records into it, a Then asserts against it.
+// Response is the last HTTP reply a When step received.
+type Response struct {
+	Status int
+	Body   []byte
+}
+
+// State is the per-scenario state every definition in this package shares.
 type State struct {
-	BaseURL    string
-	StatusCode int
-	Body       []byte
+	BaseURL  string
+	Response *Response
 }
 
-// Register binds every wording this suite's scenarios use, so one call
-// site still lists everything the suite binds.
+// NewState returns the state a scenario starts from.
+func NewState() *State {
+	return &State{}
+}
+
+// Register installs every step definition this suite binds.
 func Register(suite Suite) {
-	suite.Step(`^the (.+) server is running on (?:its configured port|port (\d+))$`, serverIsRunning)
-	suite.Step(`^the (.+) posts a valid JSON-RPC ([A-Za-z0-9_./-]+) request to (\S+)$`, postsJSONRPCRequest)
-	suite.Step(`^the server returns HTTP (\d{3})$`, serverReturnsStatus)
+	suite.Step(
+		`^the (.+) server is running on (?:its configured port|port (\d+))$`,
+		givenServerRunning,
+	)
+	suite.Step(
+		`^the (.+) posts a valid JSON-RPC ([A-Za-z][\w/.-]*) request to (/\S*)$`,
+		whenPostsJSONRPC,
+	)
+	suite.Step(`^the server returns HTTP (\d{3})$`, thenServerReturnsStatus)
 }
 
-func serverIsRunning(s *State, args []string) error {
+// givenServerRunning records the base URL the When steps post to, and
+// proves the port is actually accepting connections before any of them run.
+func givenServerRunning(state *State, args []string) error {
 	name := arg(args, 0)
 
-	port, err := resolvePort(arg(args, 1))
-	if err != nil {
-		return err
+	port := arg(args, 1)
+	if port == "" {
+		port = defaultPort
 	}
 
-	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+	addr := net.JoinHostPort("127.0.0.1", port)
 
 	conn, err := net.DialTimeout("tcp", addr, dialTimeout)
 	if err != nil {
-		return fmt.Errorf("expected the %s server listening on %s, but nothing accepted a connection there: %w", name, addr, err)
+		return fmt.Errorf(
+			"expected the %s server to be listening on %s, got no connection: %w",
+			name, addr, err,
+		)
 	}
 
 	_ = conn.Close()
-	s.BaseURL = "http://" + addr
+	state.BaseURL = "http://" + addr
 
 	return nil
 }
 
-func postsJSONRPCRequest(s *State, args []string) error {
-	actor, method, path := arg(args, 0), arg(args, 1), arg(args, 2)
-	if s.BaseURL == "" {
-		return fmt.Errorf("expected a running server for %s to post to, but no Given step recorded one", actor)
+// whenPostsJSONRPC posts one JSON-RPC request and records the reply for
+// the Then steps to assert on.
+func whenPostsJSONRPC(state *State, args []string) error {
+	role, method, path := arg(args, 0), arg(args, 1), arg(args, 2)
+	if state.BaseURL == "" {
+		return errors.New(
+			"expected a running server from a Given step, got none: no base URL recorded",
+		)
 	}
 
-	body, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      1,
-		"method":  method,
-		"params":  paramsFor(method, actor),
-	})
-	if err != nil {
-		return fmt.Errorf("expected a marshalable JSON-RPC %s request: %w", method, err)
-	}
+	url := state.BaseURL + path
 
-	url := s.BaseURL + path
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, url, strings.NewReader(jsonRPCBody(method, role)),
+	)
 	if err != nil {
-		return fmt.Errorf("expected to build a POST to %s: %w", url, err)
+		return fmt.Errorf("expected to build a POST to %s, got: %w", url, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 
-	client := &http.Client{Timeout: requestTimeout}
-
-	resp, err := client.Do(req)
+	resp, err := (&http.Client{Timeout: requestTimeout}).Do(req)
 	if err != nil {
-		return fmt.Errorf("expected a response from POST %s, got a transport error: %w", url, err)
+		return fmt.Errorf(
+			"expected a reply to the JSON-RPC %s POST to %s, got: %w", method, url, err,
+		)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
-	payload, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("expected to read the response body of POST %s: %w", url, err)
+		return fmt.Errorf("expected to read the reply body from %s, got: %w", url, err)
 	}
 
-	s.StatusCode = resp.StatusCode
-	s.Body = payload
+	state.Response = &Response{Status: resp.StatusCode, Body: body}
 
 	return nil
 }
 
-func serverReturnsStatus(s *State, args []string) error {
-	spoken := arg(args, 0)
+// thenServerReturnsStatus asserts the recorded status code, naming both
+// sides and the body when they disagree.
+func thenServerReturnsStatus(state *State, args []string) error {
+	raw := arg(args, 0)
 
-	want, err := strconv.Atoi(spoken)
+	want, err := strconv.Atoi(raw)
 	if err != nil {
-		return fmt.Errorf("expected an HTTP status code, got %q: %w", spoken, err)
+		return fmt.Errorf(
+			"expected a numeric HTTP status in the step text, got %q: %w", raw, err,
+		)
 	}
 
-	if s.StatusCode == 0 {
-		return fmt.Errorf("expected HTTP %d, but no response was recorded: no When step sent a request", want)
+	if state.Response == nil {
+		return fmt.Errorf(
+			"expected HTTP %d, got no response at all: no request step ran before this one",
+			want,
+		)
 	}
 
-	if s.StatusCode != want {
-		return fmt.Errorf("expected HTTP %d, got %d; body: %s", want, s.StatusCode, excerpt(s.Body))
+	if state.Response.Status != want {
+		return fmt.Errorf(
+			"expected HTTP %d, got %d (body: %s)",
+			want, state.Response.Status, bodySnippet(state.Response.Body),
+		)
 	}
 
 	return nil
 }
 
-// resolvePort: the port the step names, else the configured one, else
-// the default.
-func resolvePort(spoken string) (int, error) {
-	if spoken == "" {
-		spoken = os.Getenv("MCP_PORT")
+// jsonRPCBody renders a well-formed JSON-RPC request; initialize carries
+// the handshake params the MCP spec requires of it.
+func jsonRPCBody(method, role string) string {
+	params := "{}"
+	if method == "initialize" {
+		params = fmt.Sprintf(
+			`{"protocolVersion":"2024-11-05","capabilities":{},`+
+				`"clientInfo":{"name":%q,"version":"1.0.0"}}`,
+			role,
+		)
 	}
 
-	if spoken == "" {
-		return defaultPort, nil
-	}
-
-	port, err := strconv.Atoi(spoken)
-	if err != nil {
-		return 0, fmt.Errorf("expected a port number, got %q: %w", spoken, err)
-	}
-
-	return port, nil
+	return fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":%s}`, method, params)
 }
 
-func paramsFor(method, actor string) map[string]any {
-	if method != "initialize" {
-		return map[string]any{}
+func bodySnippet(body []byte) string {
+	if len(body) > maxBodySnippet {
+		return string(body[:maxBodySnippet]) + "..."
 	}
 
-	return map[string]any{
-		"protocolVersion": "2024-11-05",
-		"capabilities":    map[string]any{},
-		"clientInfo":      map[string]any{"name": actor, "version": "1.0.0"},
-	}
+	return string(body)
 }
 
 func arg(args []string, i int) string {
@@ -168,12 +193,4 @@ func arg(args []string, i int) string {
 	}
 
 	return args[i]
-}
-
-func excerpt(body []byte) string {
-	if len(body) > bodyExcerpt {
-		return string(body[:bodyExcerpt]) + "..."
-	}
-
-	return string(body)
 }

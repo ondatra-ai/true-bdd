@@ -62,7 +62,8 @@ sections:
           - architecture_yaml
         F: |
           Author the missing step definition(s) in the suite that owns
-          this scenario.
+          this scenario — and, in the same pass, the ones its registry
+          neighbours are missing for the same reason.
 
           Steps:
             1. Read the architectural spec and find the
@@ -73,18 +74,30 @@ sections:
                already available. REUSE them — a new definition that
                re-implements what a sibling already does is the drift
                this command exists to prevent.
-            3. For each unbound step, register one definition:
+            3. Widen the job before you write any of it. Read this
+               scenario's neighbours in `docs/scenarios.yaml` — the
+               scenarios of the same `service:` that follow it, about
+               ten of them — and collect THEIR steps that nothing under
+               `<suite path>/steps/` binds either. You are authoring a
+               vocabulary, not patching one scenario: every such step
+               you leave unbound buys another whole validate-fix-apply
+               cycle when the walk reaches it, and the walk reaches it
+               within minutes.
+            4. Register one definition per unbound step you collected —
+               this scenario's and the neighbours':
                `suite.Step(`^<anchored regexp>$`, <func>)`. Put a
                capture group where the step's text varies — a quoted
                run, a number — so one definition serves every scenario
                phrasing it that way, and do not write a definition whose
                pattern is a literal copy of one scenario's line.
-            4. Implement the function against the suite's state type.
+            5. Implement every function against the suite's state type.
                Given prepares, When acts, Then asserts and returns an
-               error naming what it expected and what it got.
-            5. Do not weaken an existing definition to make this step
+               error naming what it expected and what it got. A
+               neighbour's definition is held to the same standard as
+               this scenario's — an unimplemented stub is not a fix.
+            6. Do not weaken an existing definition to make a step
                match. Do not edit the registry.
-            6. Never write a definition for a step whose text opens with
+            7. Never write a definition for a step whose text opens with
                `llm:` or `judge:`. Those are run by a model by the
                scenario author's explicit choice, and a pattern that
                captured one would take that choice back.

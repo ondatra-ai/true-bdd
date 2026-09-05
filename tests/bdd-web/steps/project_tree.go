@@ -35,6 +35,10 @@ type ProjectTree struct {
 	Dir string
 	// Link is a symlink to Dir, empty until a step makes one.
 	Link string
+	// Baseline is the tree hash the materializer took after prep and before the
+	// scenario ran — every mutation clause's only evidence, since nothing else
+	// records what the tree looked like before.
+	Baseline map[string]string
 }
 
 // materializeTree prepares the named fixture in a fresh directory under
@@ -60,7 +64,7 @@ func materializeTree(harness *Harness, scenarioID, name string) (*ProjectTree, e
 		return nil, fmt.Errorf("clear %s: %w", scenarioDir, err)
 	}
 
-	target, err := runMaterializer(binary, fixture,
+	target, baseline, err := runMaterializer(binary, fixture,
 		filepath.Join(scenarioDir, "host"), harness.RepoRoot)
 	if err != nil {
 		return nil, err
@@ -71,13 +75,13 @@ func materializeTree(harness *Harness, scenarioID, name string) (*ProjectTree, e
 		return nil, fmt.Errorf("resolve %s to its real path: %w", target, err)
 	}
 
-	return &ProjectTree{Name: name, Dir: canonical}, nil
+	return &ProjectTree{Name: name, Dir: canonical, Baseline: baseline}, nil
 }
 
 // runMaterializer spawns the materializer and returns the target it
 // reports. stdout is the JSON result and stderr the diagnostics, so a
 // failure carries the materializer's own one-line reason.
-func runMaterializer(binary, fixture, target, repoRoot string) (string, error) {
+func runMaterializer(binary, fixture, target, repoRoot string) (string, map[string]string, error) {
 	finished, err := spec.Run(
 		[]string{binary, "-fixture", fixture, "-target", target, "-repo", repoRoot},
 		cli.Options{Timeout: materializeTimeout})
@@ -86,19 +90,20 @@ func runMaterializer(binary, fixture, target, repoRoot string) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("materialize %s: %w\n%s", fixture, err, finished.Stderr)
+		return "", nil, fmt.Errorf("materialize %s: %w\n%s", fixture, err, finished.Stderr)
 	}
 
 	var result struct {
-		Target string `json:"target"`
+		Target   string            `json:"target"`
+		Baseline map[string]string `json:"baseline"`
 	}
 
 	err = json.Unmarshal([]byte(finished.Stdout), &result)
 	if err != nil {
-		return "", fmt.Errorf("read the materializer's result: %w\n%s", err, finished.Stdout)
+		return "", nil, fmt.Errorf("read the materializer's result: %w\n%s", err, finished.Stdout)
 	}
 
-	return result.Target, nil
+	return result.Target, result.Baseline, nil
 }
 
 // linkThrough puts a symlink to the tree beside it. A remote started

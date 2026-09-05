@@ -56,7 +56,10 @@ func (response *apiResponse) snippet() string {
 // fix flag a protocol dispatch leaves false, and the relay's idempotency
 // key.
 type dispatchBody struct {
-	Command     string `json:"command"`
+	Command string `json:"command"`
+	// StoryID is set only by a story command; omitted otherwise, so a dispatch
+	// that names no story is the byte-identical body it always was.
+	StoryID     string `json:"story_id,omitempty"`
 	Fix         bool   `json:"fix"`
 	ClientToken string `json:"client_token"`
 }
@@ -72,33 +75,14 @@ func dispatchRun(state *State, args []string) error {
 		return err
 	}
 
-	path := fmt.Sprintf("%s/%s/runs", sessionsPath, session.SessionID)
+	return postDispatch(state, session, command, label)
+}
 
-	// Deterministic token rather than random: the relay dedups on it, and a
-	// scenario's session is fresh, so (scenario, label) is already unique.
-	body := dispatchBody{
-		Command:     command,
-		Fix:         false,
-		ClientToken: fmt.Sprintf("e2e-%s-%s", state.Scenario.ID, label),
-	}
-
-	response, err := apiPostJSON(state.Harness.BaseURL, path, body)
-	if err != nil {
-		return state.fail("%w", err)
-	}
-
-	state.Response = response
-
-	err = recordRun(state, command, label, response)
-	if err != nil {
-		return err
-	}
-
-	// Kept verbatim: the token-replay clause re-sends THIS body, so what it
-	// asserts is the relay's dedup and not a rebuilt body's.
-	state.Dispatches[label] = body
-
-	return nil
+// postDispatch sends the dispatch the UI sends to one session and records the
+// run under the label the scenario named it by — the request the unlabelled
+// clause and the named-session one both make.
+func postDispatch(state *State, session *sessionSummary, command, label string) error {
+	return postDispatchTo(state, state.RelayURL, session, command, label, false)
 }
 
 // recordRun holds the relay to accepting the dispatch and remembers the
@@ -144,7 +128,7 @@ func assertGetStatus(state *State, args []string) error {
 			args[1], err)
 	}
 
-	response, err := apiGet(state.Harness.BaseURL, path)
+	response, err := apiGet(state.RelayURL, path)
 	if err != nil {
 		return state.fail("%w", err)
 	}
@@ -176,7 +160,7 @@ func assertDispatchStatus(state *State, args []string) error {
 			args[2], err)
 	}
 
-	response, err := apiPostJSON(state.Harness.BaseURL, path, dispatchBody{
+	response, err := apiPostJSON(state.RelayURL, path, dispatchBody{
 		Command:     command,
 		Fix:         false,
 		ClientToken: probeToken(state, command),
@@ -312,7 +296,7 @@ func recordedIDs(state *State) []string {
 	}
 
 	if len(names) == 0 {
-		return []string{"none"}
+		return []string{noneWord}
 	}
 
 	sort.Strings(names)

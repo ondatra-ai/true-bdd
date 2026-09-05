@@ -408,10 +408,10 @@ func (s *Suite[S]) Unbound() (map[string][]Step, error) {
 	return gaps, nil
 }
 
-// coverageReportEnv names the file `build tests` asks a suite to write
-// its step-coverage report to. The same string is deliberately
-// duplicated in the engine's stepcoverage package — a language-agnostic wire protocol.
-const coverageReportEnv = "TRUEBDD_COVERAGE_REPORT"
+// coverageReportEnv names the DIRECTORY the suites write their reports
+// into, one file each — one command may start several, and a shared path
+// keeps only the last writer. Duplicated in the engine: a wire protocol.
+const coverageReportEnv = "TRUEBDD_COVERAGE_REPORT_DIR"
 
 // coverageSchema is the report format's version. The engine refuses a
 // number it does not know rather than reading a future shape with
@@ -505,13 +505,13 @@ func (s *Suite[S]) ReportStepCoverage(t *testing.T) {
 }
 
 // writeCoverageReport publishes the report when the engine asked for
-// one. Absent env means a person is running the test, and a person
-// reads the failures.
+// one. Absent env means a person is running the test, and a person reads
+// the failures. Named after the suite, so two suites never collide.
 func writeCoverageReport(t *testing.T, report coverageReport) {
 	t.Helper()
 
-	path := os.Getenv(coverageReportEnv)
-	if path == "" {
+	dir := os.Getenv(coverageReportEnv)
+	if dir == "" {
 		return
 	}
 
@@ -520,7 +520,14 @@ func writeCoverageReport(t *testing.T, report coverageReport) {
 		t.Fatalf("render the coverage report: %v", err)
 	}
 
-	err = disk.Write(path, data, disk.Shared)
+	// Created, not assumed: the runner handing the path over need not be
+	// this engine.
+	err = disk.Dir(dir, disk.Shared)
+	if err != nil {
+		t.Fatalf("create the coverage report directory: %v", err)
+	}
+
+	err = disk.Write(filepath.Join(dir, report.Suite+".json"), data, disk.Shared)
 	if err != nil {
 		t.Fatalf("write the coverage report: %v", err)
 	}

@@ -90,9 +90,12 @@ Analyze if you have enough context to generate a confident fix.
 **If you can generate a confident fix**, output a fix prompt the applier
 can execute. It may Write a new file or Edit an existing one under
 `<suite path>/steps/` and nowhere else. The fix MUST:
-- Register one definition per unbound step:
-  `suite.Step(`^<anchored regexp>$`, <func>)`, added to the suite's
-  existing `Register` function rather than a new one.
+- Register one definition per unbound step — this scenario's, and the
+  ones its registry neighbours leave unbound for the same reason, as the
+  fix template directs: `suite.Step(`^<anchored regexp>$`, <func>)`,
+  added to the suite's existing `Register` function rather than a new
+  one. A fix that binds only the subject scenario leaves the walk to buy
+  a full cycle for each neighbour it could have covered here.
 - Put a capture group where the step's text varies — a quoted run, a
   number — so the definition serves every scenario phrasing it that
   way. A pattern that is a literal copy of one scenario's line is a
