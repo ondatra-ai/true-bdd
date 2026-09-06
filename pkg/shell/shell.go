@@ -26,8 +26,8 @@ var (
 // the command, short enough not to paste a whole prompt into an error.
 const labelWords = 4
 
-// Find resolves a binary on PATH. Two callers need the path itself rather
-// than the yes-or-no: the claude transport spawns it, and bdd-web symlinks it.
+// Find resolves a binary on PATH, for the caller that needs the path itself
+// rather than the yes-or-no: the claude transport spawns it.
 func Find(name string) (string, error) {
 	path, err := exec.LookPath(name)
 	if err != nil {

@@ -10,30 +10,6 @@
 /dist/
 /node_modules/
 
-# Web harness (Next.js) — dependencies, build output, runtime data,
-# and Playwright artefacts
-/services/bdd-web/node_modules/
-/services/bdd-web/.next/
-/services/bdd-web/data/
-/services/bdd-web/playwright-report/
-/services/bdd-web/test-results/
-/services/bdd-web/*.tsbuildinfo
-/services/bdd-web/next-env.d.ts
-
-# Web harness source is GENERATED code (Spec-as-Source): the e2e suite under
-# The bdd-web test suite is the spec, and ALL bdd-web production code + unit tests are
-# regeneratable from it, under the single /services/bdd-web/src/ root. Working
-# copies stay on disk but are never tracked.
-/services/bdd-web/src/
-
-# Parked Playwright E2E suite (tests/legacy/bdd-web-playwright) — deps +
-# artefacts. Kept until the Go suite at tests/bdd-web/ covers it.
-/tests/legacy/bdd-web-playwright/node_modules/
-/tests/legacy/bdd-web-playwright/test-results/
-/tests/legacy/bdd-web-playwright/playwright-report/
-/tests/legacy/bdd-web-playwright/.tmp/
-/tests/legacy/bdd-web-playwright/tmp/
-
 # Conversation history captured by scripts/cmd/history
 /docs/history/
 coverage.txt
@@ -50,8 +26,3 @@ coverage.out
 # Local secrets and environment overrides
 .env
 .env.local
-
-# Design gold-standard screenshots (the parked suite's goldens, incl. the
-# per-component crops/ subdir) MUST be tracked — the user-level
-# ~/.gitignore_global ignores *.png, so re-include them here.
-!tests/legacy/bdd-web-playwright/goldens/**/*.png
