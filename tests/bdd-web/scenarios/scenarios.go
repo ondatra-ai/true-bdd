@@ -119,14 +119,6 @@ func CheckCoverage(t *testing.T) {
 	suite.CheckCoverage(t, ".", repoRoot)
 }
 
-// CheckStepCoverage reports every registry step that binds to no step
-// definition, and writes the report `build tests` reads.
-func CheckStepCoverage(t *testing.T) {
-	t.Helper()
-
-	suite.ReportStepCoverage(t)
-}
-
 func ensureHarness(t *testing.T) {
 	t.Helper()
 

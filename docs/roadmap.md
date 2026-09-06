@@ -134,11 +134,12 @@ records the current position.
 | 1 — code + tests exist | Done. 46 bdd-cli scenarios over 46 fixture trees. |
 | 2 — generate code from tests | Done. `build code` walks each suite's declared `replay` command and drives a fix turn per failure. |
 | 3 — generate GWT tests | Done. `build tests` renders one `func Test<Id>` per scenario into the file that scenario's `path:` names — deterministic codegen, verified without `--fix` by regenerating and comparing. It covers all 290 registry scenarios across both suites. |
-| 4 — scenarios → tests + steps + judgements | **Steps are the gap.** `build tests --fix` authors a step definition per gap, and that mechanism works — but `tests/bdd-web/steps` registers four definitions against ~1680 unbound steps, so the 244 web scenarios are rendered and *not runnable*, and `tests/legacy/bdd-web-playwright/` is still the only thing testing the web surface. Judgements: the `judge:` prefix exists and 12 of 46 bdd-cli scenarios use it. Vocabulary and features: not started. |
+| 4 — scenarios → tests + steps + judgements | **Steps are the gap.** `build tests --fix` authors a step definition per gap, and that mechanism works — and as of #121 `tests/bdd-web/steps` binds every step of all 244 web scenarios, so they are rendered *and* runnable; `tests/legacy/bdd-web-playwright/` is no longer the only thing testing the web surface. Judgements: the `judge:` prefix exists and 12 of 46 bdd-cli scenarios use it. Vocabulary and features: not started. |
 
-The single number that gates milestone 4 is the 1680: until the web step definitions land,
-`TestStepCoverage` cannot join the gate line for bdd-web, and `build tests` on this repository
-cannot reach zero AI turns. That is tracked at <https://app.clickup.com/t/86cb6fjwy>.
+That number is now zero: the web step definitions landed in #121, every step of all 299
+registry scenarios binds, and `build tests` on this repository dispatches no AI turn at all.
+Step coverage itself stopped being a test in ADR 0012 — the engine reads the `steps/` packages
+directly, so there is no step-coverage gate to join.
 
 ## Decision log
 

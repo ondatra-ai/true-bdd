@@ -26,10 +26,6 @@ architecture:
       record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
       live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:live,tests:live"
-      # Asked by `build tests` before it walks anything: which registry
-      # steps bind to no definition, deterministically. EVERY test tree —
-      # naming one bills a model turn per scenario in all the others.
-      coverage: "go test -tags bdd -count=1 -run '^TestStepCoverage$' ./tests/..."
 
   services:
     - name: bdd-cli

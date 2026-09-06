@@ -99,10 +99,6 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
-  # Unbound steps, without running a scenario: JSON per suite under
-  # $TRUEBDD_COVERAGE_REPORT_DIR, so one command may ask several trees.
-  # `examined[]` matters — an empty `unbound[]` means nothing for a scenario missing from it; an EMPTY dir is a refusal.
-  coverage: str(required=False)
 
 ---
 # Mirrors `vocabulary` in product-schema.yaml — duplicated (yamale has no

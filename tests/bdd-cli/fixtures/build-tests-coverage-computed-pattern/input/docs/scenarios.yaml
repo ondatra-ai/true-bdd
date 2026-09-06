@@ -1,0 +1,28 @@
+# Seed registry for the `build-tests-coverage-computed-pattern` fixture.
+#
+# One scenario whose steps WOULD all bind — if the engine could read the
+# patterns. One of them is built by a call rather than written as a
+# constant, so the engine cannot know what it will match and must refuse
+# by name instead of skipping it. Skipping is the defect this guards:
+# a skipped definition reports every step it binds as unbound, and a
+# false gap looks exactly like real work to a fix turn.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-09-06"
+  description: "Seed for build-tests-coverage-in-process fixture"
+
+scenarios:
+  INT-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"

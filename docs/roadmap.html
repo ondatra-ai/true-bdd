@@ -488,9 +488,9 @@ footer .inner { display: flex; flex-wrap: wrap; gap: 12px 30px; justify-content:
           <td>
             <span class="pill p-part">Partial</span><b>Steps are the gap.</b>
             <code>build tests --fix</code> authors a step definition per gap, and that mechanism works —
-            but <code>tests/bdd-web/steps</code> registers four definitions against ~1680 unbound steps,
-            so the 244 web scenarios are rendered and <em>not runnable</em>, and
-            <code>tests/legacy/bdd-web-playwright/</code> is still the only thing testing the web surface.
+            and as of #121 <code>tests/bdd-web/steps</code> binds every step of all 244 web scenarios,
+            so they are rendered <em>and</em> runnable;
+            <code>tests/legacy/bdd-web-playwright/</code> is no longer the only thing testing the web surface.
             <b>Judgements:</b> the <code>judge:</code> prefix exists and 12 of 46 bdd-cli scenarios use it.
             <b>Vocabulary and features:</b> not started.
           </td>
@@ -499,10 +499,10 @@ footer .inner { display: flex; flex-wrap: wrap; gap: 12px 30px; justify-content:
     </table>
     </div>
     <p class="sub" style="margin:36px 0 0">
-      The single number gating milestone 4 is the <b>1680</b>: until the web step definitions land,
-      <code>TestStepCoverage</code> cannot join the gate line for bdd-web, and <code>build tests</code> on
-      this repository cannot reach zero AI turns. Tracked at
-      <a href="https://app.clickup.com/t/86cb6fjwy">app.clickup.com/t/86cb6fjwy</a>.
+      That number is now <b>zero</b>: the web step definitions landed in #121, every step of all 299
+      registry scenarios binds, and <code>build tests</code> on this repository dispatches no AI turn.
+      Step coverage stopped being a test in ADR 0012 — the engine reads the <code>steps/</code>
+      packages directly, so there is no step-coverage gate to join.
     </p>
   </div>
 </section>

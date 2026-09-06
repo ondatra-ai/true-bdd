@@ -148,15 +148,6 @@ func CheckFixtureTrees(t *testing.T) {
 	suite.CheckFixtureTrees(t, FixturesDir, steps.FixtureName)
 }
 
-// CheckStepCoverage reports every registry step with no bound definition
-// and writes the report `build tests` reads. It runs the real resolver
-// rather than parsing source: some patterns are built at registration.
-func CheckStepCoverage(t *testing.T) {
-	t.Helper()
-
-	suite.ReportStepCoverage(t)
-}
-
 // ensureHarness builds everything a scenario shares, once.
 func ensureHarness(t *testing.T) {
 	t.Helper()

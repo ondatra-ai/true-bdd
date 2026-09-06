@@ -121,10 +121,11 @@ type buildTestsPrep struct {
 	walking bool
 }
 
-// run is the Prepare hook: it renders the generated tests, then narrows the
-// walk to the scenarios a suite reports as unbound — both answerable without a model.
+// run is the Prepare hook: it resolves which steps bind, renders the
+// generated tests, then narrows the walk to the scenarios with a gap —
+// all three answerable without a model.
 func (p *buildTestsPrep) run(
-	ctx context.Context,
+	_ context.Context,
 	scenarios []*registry.RegistryScenario,
 ) ([]*registry.RegistryScenario, error) {
 	arch, err := architecture.Load(p.architectureFile)
@@ -142,19 +143,21 @@ func (p *buildTestsPrep) run(
 		return nil, err
 	}
 
-	err = p.renderTests()
+	// Before codegen: the scan reads steps/, which codegen never writes,
+	// so a pattern it cannot resolve refuses before a byte is written.
+	answer, err := p.scanSuites(scenarios)
 	if err != nil {
 		return nil, err
 	}
 
-	selected, err := p.scenariosWithGaps(ctx, arch, scenarios)
+	err = p.renderTests()
 	if err != nil {
 		return nil, err
 	}
 
 	p.walking = true
 
-	return selected, nil
+	return scenariosWithGaps(scenarios, answer), nil
 }
 
 // renderTests writes the generated files under --fix, and refuses a run
@@ -187,26 +190,18 @@ func (p *buildTestsPrep) renderTests() error {
 	return nil
 }
 
-// scenariosWithGaps asks every suite which of its steps bind and returns
-// only the scenarios needing a fix turn. A suite with no `coverage:` command
-// sends all its scenarios to the walk rather than skipping them.
-func (p *buildTestsPrep) scenariosWithGaps(
-	ctx context.Context,
-	arch *architecture.Architecture,
+// scenariosWithGaps keeps only the scenarios needing a fix turn.
+func scenariosWithGaps(
 	scenarios []*registry.RegistryScenario,
-) ([]*registry.RegistryScenario, error) {
-	examined, gaps, err := p.askSuites(ctx, arch)
-	if err != nil {
-		return nil, err
-	}
-
+	answer *stepcoverage.Answer,
+) []*registry.RegistryScenario {
 	selected := make([]*registry.RegistryScenario, 0, len(scenarios))
 
 	for _, scenario := range scenarios {
-		// Gated on EXAMINED, not merely having a coverage command: a suite
-		// reads its own configured registry, so a scenario from a different
-		// `--requirements <other>` was never examined and must still be walked.
-		if examined[scenario.ID] && len(gaps[scenario.ID]) == 0 {
+		// Gated on EXAMINED, not merely on having no gap: a scenario the
+		// scan never looked at has an empty gap list too, and walking it
+		// is the safe reading of that.
+		if answer.Examined[scenario.ID] && len(answer.Gaps[scenario.ID]) == 0 {
 			continue
 		}
 
@@ -225,53 +220,25 @@ func (p *buildTestsPrep) scenariosWithGaps(
 			len(scenarios)-len(selected), len(scenarios), len(selected)))
 	}
 
-	return selected, nil
+	return selected
 }
 
-// askSuites runs every declared coverage command and merges the answers:
-// which scenarios were examined, and which of them have a gap.
-func (p *buildTestsPrep) askSuites(
-	ctx context.Context,
-	arch *architecture.Architecture,
-) (map[string]bool, map[string][]string, error) {
-	// Everything checkable about every suite's command is checked before the
-	// first subprocess, so an unrunnable suite is reported immediately rather
-	// than after earlier suites have already paid to compile a test binary.
-	err := stepcoverage.Validate(arch.Testing)
+// scanSuites reads every suite's step definitions and reports which
+// registry steps bind to none of them.
+func (p *buildTestsPrep) scanSuites(
+	scenarios []*registry.RegistryScenario,
+) (*stepcoverage.Answer, error) {
+	answer, err := stepcoverage.Scan(scenarios, p.repoRoot)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	examined := map[string]bool{}
-	gaps := map[string][]string{}
+	slog.Info("Resolved which steps bind",
+		"examined", len(answer.Examined),
+		"scenarios_with_gaps", len(answer.Gaps),
+	)
 
-	if strings.TrimSpace(arch.Testing.Commands.Coverage) != "" {
-		answer, askErr := stepcoverage.Ask(ctx, arch.Testing, serviceNames(arch.Services), p.repoRoot)
-		if askErr != nil {
-			return nil, nil, askErr
-		}
-
-		for id := range answer.Examined {
-			examined[id] = true
-		}
-
-		for id, steps := range answer.Gaps {
-			gaps[id] = steps
-		}
-	}
-
-	return examined, gaps, nil
-}
-
-// serviceNames is every service the architecture declares, which is what
-// a coverage report's `suite` field must name.
-func serviceNames(services []architecture.Service) []string {
-	names := make([]string, 0, len(services))
-	for _, svc := range services {
-		names = append(names, svc.Name)
-	}
-
-	return names
+	return answer, nil
 }
 
 // checkGeneratedTestsSurvived re-verifies the generated files after a

@@ -43,10 +43,6 @@ type SuiteCommands struct {
 	Record string `yaml:"record"`
 	Replay string `yaml:"replay"`
 	Live   string `yaml:"live"`
-	// Coverage reports which registry steps bind to no step definition,
-	// without running a scenario. The only optional command: a suite
-	// without one falls back to `build tests` asking a model the same question in prose.
-	Coverage string `yaml:"coverage,omitempty"`
 }
 
 // Testing is `architecture.testing:` — how this repository runs its

@@ -32,9 +32,9 @@ _Avoid_: check, cell-run
 One full traversal of every Cell in a run. A fix applied mid-walk restarts the traversal from the first Cell.
 _Avoid_: pass, sweep, iteration
 
-**Coverage report**:
-What one test tree writes when `build tests` asks which of its Scenarios have a step no definition binds: the Scenarios it examined, the unbound steps among them, and any step two definitions match. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario the tree never looked at. One file per tree in the directory the engine hands over, because one command may start several and the engine merges every report it finds.
-_Avoid_: coverage output, step report, gap list
+**Step coverage**:
+The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Resolved in-process by parsing each suite's `steps/` package, never by running a test (ADR 0012); a step two definitions match is a refusal rather than a gap.
+_Avoid_: coverage report, coverage output, step report, gap list
 
 **Services**:
 The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.

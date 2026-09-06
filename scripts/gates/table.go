@@ -99,7 +99,7 @@ var (
 			Name: "BDD cli coverage guards",
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
-				"^Test(ScenarioCoverage|StepCoverage|FixtureTreesArePaired)$",
+				"^Test(ScenarioCoverage|FixtureTreesArePaired)$",
 				"./tests/bdd-cli/",
 			},
 			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob},

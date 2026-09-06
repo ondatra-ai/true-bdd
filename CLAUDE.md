@@ -123,7 +123,7 @@ go run ./pkg/testkit/cmd/report-server    # report UI on :7331
 go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay
 go test -tags bdd -timeout=25m ./tests/bdd-web/       # needs node+browser
 go test -tags bdd ./tests/bdd-cli/ \
-  -run '^Test(ScenarioCoverage|FixtureTreesArePaired|StepCoverage)$'
+  -run '^Test(ScenarioCoverage|FixtureTreesArePaired)$'
 ```
 
 Run the CLI from inside a session as

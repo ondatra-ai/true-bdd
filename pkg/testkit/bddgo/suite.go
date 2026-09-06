@@ -20,8 +20,7 @@ var ErrNoScenariosForSuite = errors.New("no registry scenario names this suite's
 var ErrAmbiguousStep = errors.New("step matches more than one definition")
 
 // AmbiguousStepError is the ambiguity resolve found, with its three
-// parts kept apart — typed rather than formatted, for the coverage
-// report's per-field rendering (see ReportStepCoverage in coverage.go).
+// parts kept apart so a caller can render them itself.
 type AmbiguousStepError struct {
 	Scenario string
 	Step     string
