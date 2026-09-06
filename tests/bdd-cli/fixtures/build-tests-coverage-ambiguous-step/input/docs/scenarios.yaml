@@ -1,0 +1,26 @@
+# Seed registry for the `build-tests-coverage-ambiguous-step` fixture.
+#
+# One scenario whose Then step is matched by TWO definitions. Which one
+# runs depends on the order Register installed them, so the engine
+# refuses rather than reporting the step as bound — and rather than
+# reporting it as a gap, which would send a fix turn to write a third.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-09-06"
+  description: "Seed for build-tests-coverage-in-process fixture"
+
+scenarios:
+  INT-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"

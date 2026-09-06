@@ -1,5 +1,9 @@
 # A coverage report per suite, in a directory the engine hands over
 
+**Superseded by ADR 0012.** The engine reads step coverage from source now;
+`coverage:`, `$TRUEBDD_COVERAGE_REPORT_DIR` and the report format below are all
+gone. Kept for the reasoning, which ADR 0012 answers rather than repeats.
+
 `build tests` asks the host how its steps bind before it walks anything, through
 the one `architecture.testing.commands.coverage` command. That command used to
 be handed a single file path in `$TRUEBDD_COVERAGE_REPORT`. It is now handed a

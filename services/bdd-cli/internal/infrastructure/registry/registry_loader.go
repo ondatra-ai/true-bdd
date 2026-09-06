@@ -52,7 +52,11 @@ const (
 // separate methods, so "and"/"but" must stay a keyword, not plain text.
 type Statement struct {
 	Keyword string
-	Text    string
+	// Mode says who executes the step, resolved against the BLOCK's
+	// keyword. Text keeps any `llm:`/`judge:` prefix verbatim: the
+	// generated test quotes Text and bddgo strips the prefix there.
+	Mode StepMode
+	Text string
 }
 
 // RegistryScenario is one entry in `docs/scenarios.yaml#/scenarios`
@@ -183,7 +187,7 @@ func modifierKeyword(key string) (string, bool) {
 // statements renders the three blocks into one ordered list, keywords
 // intact: the first step takes the block's keyword, the rest default to
 // And — the same rule bddgo's loader applies, so both classify identically.
-func (r rawMergedSteps) statements() []Statement {
+func (r rawMergedSteps) statements() ([]Statement, error) {
 	out := make([]Statement, 0, len(r.Given)+len(r.When)+len(r.Then))
 
 	blocks := []struct {
@@ -197,14 +201,20 @@ func (r rawMergedSteps) statements() []Statement {
 
 	for _, block := range blocks {
 		for index, step := range block.steps {
+			mode, err := statementMode(step.text, block.keyword)
+			if err != nil {
+				return nil, err
+			}
+
 			out = append(out, Statement{
 				Keyword: statementKeyword(step, block.keyword, index),
+				Mode:    mode,
 				Text:    step.text,
 			})
 		}
 	}
 
-	return out
+	return out, nil
 }
 
 // statementKeyword resolves one step's keyword: the BLOCK's keyword MUST
@@ -275,26 +285,14 @@ func (l *RegistryLoader) Load(path string) ([]*RegistryScenario, error) {
 
 	scenarios := make([]*RegistryScenario, 0, len(raw.Scenarios))
 
-	for id, entry := range raw.Scenarios {
-		scenarios = append(scenarios, &RegistryScenario{
-			ID:          id,
-			Description: entry.Description,
-			Service:     entry.Service,
-			Path:        entry.Path,
-			Requirement: entry.Requirement,
-			Steps: template.MergedSteps{
-				Given: flattenStatements(entry.MergedSteps.Given),
-				When:  flattenStatements(entry.MergedSteps.When),
-				Then:  flattenStatements(entry.MergedSteps.Then),
-			},
-			Statements:  entry.MergedSteps.statements(),
-			UserStories: entry.UserStories,
-		})
-	}
+	for _, id := range sortedIDs(raw.Scenarios) {
+		scenario, scErr := newScenario(id, raw.Scenarios[id])
+		if scErr != nil {
+			return nil, fmt.Errorf("%s: %s: %w", path, id, scErr)
+		}
 
-	sort.Slice(scenarios, func(i, j int) bool {
-		return scenarios[i].ID < scenarios[j].ID
-	})
+		scenarios = append(scenarios, scenario)
+	}
 
 	slog.Info("Loaded requirements registry",
 		"file", path,
@@ -302,6 +300,44 @@ func (l *RegistryLoader) Load(path string) ([]*RegistryScenario, error) {
 	)
 
 	return scenarios, nil
+}
+
+// sortedIDs orders the registry's ids. YAML maps are unordered in Go, so
+// without this both the output order and WHICH scenario a per-scenario
+// refusal names would vary run to run.
+func sortedIDs(entries map[string]rawScenario) []string {
+	ids := make([]string, 0, len(entries))
+
+	for id := range entries {
+		ids = append(ids, id)
+	}
+
+	sort.Strings(ids)
+
+	return ids
+}
+
+// newScenario materializes one registry entry.
+func newScenario(scenarioID string, entry rawScenario) (*RegistryScenario, error) {
+	statements, err := entry.MergedSteps.statements()
+	if err != nil {
+		return nil, err
+	}
+
+	return &RegistryScenario{
+		ID:          scenarioID,
+		Description: entry.Description,
+		Service:     entry.Service,
+		Path:        entry.Path,
+		Requirement: entry.Requirement,
+		Steps: template.MergedSteps{
+			Given: flattenStatements(entry.MergedSteps.Given),
+			When:  flattenStatements(entry.MergedSteps.When),
+			Then:  flattenStatements(entry.MergedSteps.Then),
+		},
+		Statements:  statements,
+		UserStories: entry.UserStories,
+	}, nil
 }
 
 // flattenStatements turns []rawStatement into a flat []string.

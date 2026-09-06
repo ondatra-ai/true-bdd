@@ -5320,3 +5320,56 @@ scenarios:
         - but: stdout does not match BUILD TESTS
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+
+  E2E-298:
+    description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-coverage-in-process" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: stdout matches 2 of 2 scenario\(s\) already bind every step; walking 0\.
+        - and: the engine dispatched no AI turns
+        - and: the engine spawned no test runners
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - but: no file outside "tmp" and "tests" changed
+
+  E2E-299:
+    description: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-coverage-computed-pattern" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: stdout matches step pattern is not a constant expression
+        - and: stdout matches tests/mcp/steps/steps\.go
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  E2E-300:
+    description: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-coverage-ambiguous-step" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: stdout matches step matches more than one definition
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

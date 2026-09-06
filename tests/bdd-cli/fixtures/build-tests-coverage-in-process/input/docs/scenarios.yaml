@@ -1,0 +1,43 @@
+# Seed registry for the `build-tests-coverage-in-process` BDD fixture.
+#
+# Two scenarios, and every step of both binds to a definition already
+# sitting in tests/mcp/steps/. The engine must work that out on its own
+# — no `coverage:` command is declared, because the key no longer
+# exists — and walk neither of them, dispatching no AI turn.
+#
+# The two differ in their When and Then so that one definition per step
+# text is exercised, and the shared Given proves a definition binding
+# two scenarios is counted once rather than reported as an ambiguity.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-09-06"
+  description: "Seed for build-tests-coverage-in-process fixture"
+
+scenarios:
+  INT-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+
+  INT-901:
+    description: "MCP /mcp endpoint responds 400 to a malformed POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a malformed JSON-RPC request to /mcp"
+      then:
+        - "the server returns HTTP 400"

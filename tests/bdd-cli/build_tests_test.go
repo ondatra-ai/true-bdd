@@ -106,3 +106,44 @@ func TestE2E297(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// E2E-298: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
+func TestE2E298(t *testing.T) {
+	s := scenarios.New(t, "E2E-298")
+	s.Given(`the "build-tests-coverage-in-process" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches 2 of 2 scenario\(s\) already bind every step; walking 0\.`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned no test runners`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// E2E-299: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
+func TestE2E299(t *testing.T) {
+	s := scenarios.New(t, "E2E-299")
+	s.Given(`the "build-tests-coverage-computed-pattern" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches step pattern is not a constant expression`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-300: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
+func TestE2E300(t *testing.T) {
+	s := scenarios.New(t, "E2E-300")
+	s.Given(`the "build-tests-coverage-ambiguous-step" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches step matches more than one definition`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
