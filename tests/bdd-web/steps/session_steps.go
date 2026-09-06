@@ -57,6 +57,12 @@ type sessionSummary struct {
 	SessionID string `json:"session_id"`
 	Folder    string `json:"folder"`
 	PID       int    `json:"pid"`
+	// Version is the build the remote reported at register, which the row's
+	// version cell is graded against.
+	Version string `json:"version"`
+	// ConnectedAt is when the registry first held this session; the restart
+	// clause holds it to being the same instant after the process died.
+	ConnectedAt int64 `json:"connected_at"`
 }
 
 // prepareProjectTree materializes the named fixture, so the steps after it
@@ -70,6 +76,13 @@ func prepareProjectTree(state *State, args []string) error {
 	}
 
 	state.Tree = tree
+
+	before, err := readAllowedDocuments(state)
+	if err != nil {
+		return err
+	}
+
+	state.TreeDocsBefore = before
 
 	return nil
 }
@@ -103,16 +116,28 @@ func startRemoteInTree(state *State, _ []string) error {
 
 // attachRemote starts a remote in dir, hands its lifetime to the
 // scenario's cleanup, and makes it the remote every session clause reads.
-func attachRemote(state *State, dir string) error {
-	remote, err := startRemote(state.Harness, dir)
+func attachRemote(state *State, dir string, env ...string) error {
+	remote, err := launchRemote(state, dir, env...)
 	if err != nil {
-		return state.fail("%w", err)
+		return err
 	}
 
-	state.T.Cleanup(remote.stop)
 	state.Remote = remote
 
 	return nil
+}
+
+// launchRemote starts a remote in dir and hands its lifetime to the
+// scenario's cleanup, without deciding which vocabulary owns it.
+func launchRemote(state *State, dir string, env ...string) (*Remote, error) {
+	remote, err := startRemote(state.Harness, state.RelayURL, dir, env...)
+	if err != nil {
+		return nil, state.fail("%w", err)
+	}
+
+	state.T.Cleanup(remote.stop)
+
+	return remote, nil
 }
 
 // stopRemoteWithSignal is the When of a disconnect scenario: the named
@@ -121,6 +146,13 @@ func attachRemote(state *State, dir string) error {
 func stopRemoteWithSignal(state *State, args []string) error {
 	if state.Remote == nil {
 		return state.fail("%w", ErrNoRemote)
+	}
+
+	// Resolved before the signal: a remote frozen before it registered leaves
+	// every later clause asserting about a session that never existed.
+	_, err := ensureSession(state)
+	if err != nil {
+		return err
 	}
 
 	name := args[0]
@@ -160,24 +192,49 @@ func ensureSession(state *State) (*sessionSummary, error) {
 		return nil, state.fail("%w", ErrNoRemote)
 	}
 
+	session, err := awaitSession(state, state.Remote)
+	if err != nil {
+		return nil, err
+	}
+
+	state.Session = session
+
+	return session, nil
+}
+
+// awaitSession waits for the relay's registry to list one remote — the poll
+// the unlabelled session and a labelled one both resolve through.
+func awaitSession(state *State, remote *Remote) (*sessionSummary, error) {
+	return awaitRegistered(state, fmt.Sprintf("the remote (pid %d)", remote.PID),
+		func(entry *sessionSummary) bool { return entry.PID == remote.PID })
+}
+
+// awaitRegistered polls the registry until one entry matches, naming what it
+// was hunting when it gives up — the poll a first resolution and a re-read
+// after a restart share.
+func awaitRegistered(state *State, subject string,
+	matches func(*sessionSummary) bool,
+) (*sessionSummary, error) {
 	deadline := time.Now().Add(sessionAppearTimeout)
 	last := ErrSessionNotListed
 
 	for time.Now().Before(deadline) {
-		session, err := findSession(state.Harness.BaseURL, state.Remote.PID)
-		if err == nil {
-			state.Session = session
-
-			return session, nil
+		sessions, err := listSessions(state.RelayURL)
+		if err != nil {
+			last = err
 		}
 
-		last = err
+		for index := range sessions {
+			if matches(&sessions[index]) {
+				return &sessions[index], nil
+			}
+		}
 
 		time.Sleep(sessionPollInterval)
 	}
 
-	return nil, state.fail("the relay never listed the remote (pid %d) within %s: %w",
-		state.Remote.PID, sessionAppearTimeout, last)
+	return nil, state.fail("the relay never listed %s within %s: %w",
+		subject, sessionAppearTimeout, last)
 }
 
 // assertSessionNotListed waits for the registry to DROP the remote: every
@@ -192,7 +249,7 @@ func assertSessionNotListed(state *State, _ []string) error {
 	reason := "the relay still lists it"
 
 	for time.Now().Before(deadline) {
-		_, err := findSession(state.Harness.BaseURL, state.Remote.PID)
+		_, err := findSession(state.RelayURL, state.Remote.PID)
 
 		// Only an absent entry is gone; a failed registry read is a failed
 		// read, and keeps the poll running.

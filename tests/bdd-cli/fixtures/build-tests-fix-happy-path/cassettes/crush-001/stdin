@@ -75,208 +75,227 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
+= Fix Prompt for Scenario INT-900: MCP /mcp endpoint responds 200 to a valid initialize POST
 
-## Suite resolution (already done — do not re-derive it differently)
+## Suite resolution (already done — do not re-derive)
 
-`docs/architecture/architecture.yaml` declares one service, `mcp-service`,
-and its testing commands target `./tests/mcp/...`. The scenario's `path:`
-is `tests/mcp/mcp_test.go`. The suite root is therefore **`tests/mcp`**,
-and the only tree you may write is **`tests/mcp/steps/`**.
+`docs/architecture/architecture.yaml` declares one service, `mcp-service`.
+Its test tree is `tests/mcp/` (the scenario's `path:` is
+`tests/mcp/mcp_test.go`), so the only tree you may write is:
 
-`tests/mcp/steps/` does not exist yet: the suite has no sibling step
-definitions, no shared state type and no helpers to reuse. This fix
-therefore seeds the package — the state type it introduces is the one
-every later definition in this suite must be written against.
+    tests/mcp/steps/
 
-## Target
-`tests/mcp/steps/steps.go` (new file)
+That directory does not exist yet: `tests/mcp/` holds only the generated
+`mcp_test.go`. There are no sibling step definitions, no pre-existing state
+type and no helpers to reuse — this fix creates the package, so it must be
+self-contained (standard library only, no import of a package that does not
+exist in this module).
+
+Registry neighbours: `docs/scenarios.yaml` holds exactly ONE scenario
+(INT-900). There are no neighbours of the same `service:` with unbound
+steps, so the vocabulary to author is exactly this scenario's three steps —
+each written with a capture group where its text varies, so a second
+scenario phrasing it that way binds without a new definition. Do NOT invent
+extra definitions for steps no registry scenario states.
 
 ## Required Changes
 
-### Change #1: Check first whether the package is really empty
-**Action:** Use Glob on `tests/mcp/steps/*.go`.
+### Change #1: create the suite's steps package
 
-- If it returns **no files** (expected), perform Change #2 exactly as
-  written: a single Write of the new file.
-- If it returns **any file**, do NOT write the file below. Instead Edit
-  the existing file: reuse its state type and helpers verbatim, and add
-  only the three `suite.Step(...)` lines from Change #2's `Register`
-  function (rewritten against that state type) to the suite's existing
-  `Register` function. Never create a second `Register`.
-
-Do not create any file outside `tests/mcp/steps/`. Do not touch
-`docs/scenarios.yaml`, `docs/architecture/architecture.yaml`,
-`tests/mcp/mcp_test.go`, or anything under `true-bdd/`.
-
-### Change #2: Seed the suite's steps package with the three definitions
 **File:** `tests/mcp/steps/steps.go`
-**Action:** Use the Write tool to create the file with exactly this
-content.
+**Action:** Use the **Write** tool (new file) with exactly the content
+below. Do not create any other file, do not touch `docs/scenarios.yaml`,
+`tests/mcp/mcp_test.go`, `true-bdd/` or anything outside `tests/mcp/steps/`.
+
 **Content:**
 ```go
 //go:build bdd
 
-// Package steps holds this suite's step definitions: one
-// suite.Step(regexp, func) per wording the registry's scenarios use.
+// Package steps binds the mcp-service scenarios' step text to executable
+// Go. The runner matches a step's text — keyword stripped — against the
+// patterns Register installs and calls the single definition that matches.
 package steps
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 const (
-	defaultPort    = 8080
-	dialTimeout    = 5 * time.Second
-	requestTimeout = 30 * time.Second
-	bodyExcerpt    = 512
+	defaultPort    = "8080"
+	dialTimeout    = 2 * time.Second
+	requestTimeout = 10 * time.Second
+	maxBodySnippet = 200
 )
 
-// Suite is the registration surface the harness hands to Register: one
-// call per step definition, a regexp bound to the func that runs it.
+// StepFunc runs one step against the scenario state. args holds the
+// pattern's capture groups in order; a group that did not participate is
+// the empty string.
+type StepFunc func(state *State, args []string) error
+
+// Suite is what the scenario runner offers this package: one call per
+// definition, anchored pattern plus body.
 type Suite interface {
-	Step(pattern string, fn func(s *State, args []string) error)
+	Step(pattern string, fn StepFunc)
 }
 
-// State is what this suite's steps share: a Given prepares it, a When
-// acts and records into it, a Then asserts against it.
+// Response is the last HTTP reply a When step received.
+type Response struct {
+	Status int
+	Body   []byte
+}
+
+// State is the per-scenario state every definition in this package shares.
 type State struct {
-	BaseURL    string
-	StatusCode int
-	Body       []byte
+	BaseURL  string
+	Response *Response
 }
 
-// Register binds every wording this suite's scenarios use, so one call
-// site still lists everything the suite binds.
+// NewState returns the state a scenario starts from.
+func NewState() *State {
+	return &State{}
+}
+
+// Register installs every step definition this suite binds.
 func Register(suite Suite) {
-	suite.Step(`^the (.+) server is running on (?:its configured port|port (\d+))$`, serverIsRunning)
-	suite.Step(`^the (.+) posts a valid JSON-RPC ([A-Za-z0-9_./-]+) request to (\S+)$`, postsJSONRPCRequest)
-	suite.Step(`^the server returns HTTP (\d{3})$`, serverReturnsStatus)
+	suite.Step(
+		`^the (.+) server is running on (?:its configured port|port (\d+))$`,
+		givenServerRunning,
+	)
+	suite.Step(
+		`^the (.+) posts a valid JSON-RPC ([A-Za-z][\w/.-]*) request to (/\S*)$`,
+		whenPostsJSONRPC,
+	)
+	suite.Step(`^the server returns HTTP (\d{3})$`, thenServerReturnsStatus)
 }
 
-func serverIsRunning(s *State, args []string) error {
+// givenServerRunning records the base URL the When steps post to, and
+// proves the port is actually accepting connections before any of them run.
+func givenServerRunning(state *State, args []string) error {
 	name := arg(args, 0)
 
-	port, err := resolvePort(arg(args, 1))
-	if err != nil {
-		return err
+	port := arg(args, 1)
+	if port == "" {
+		port = defaultPort
 	}
 
-	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+	addr := net.JoinHostPort("127.0.0.1", port)
 
 	conn, err := net.DialTimeout("tcp", addr, dialTimeout)
 	if err != nil {
-		return fmt.Errorf("expected the %s server listening on %s, but nothing accepted a connection there: %w", name, addr, err)
+		return fmt.Errorf(
+			"expected the %s server to be listening on %s, got no connection: %w",
+			name, addr, err,
+		)
 	}
 
 	_ = conn.Close()
-	s.BaseURL = "http://" + addr
+	state.BaseURL = "http://" + addr
 
 	return nil
 }
 
-func postsJSONRPCRequest(s *State, args []string) error {
-	actor, method, path := arg(args, 0), arg(args, 1), arg(args, 2)
-	if s.BaseURL == "" {
-		return fmt.Errorf("expected a running server for %s to post to, but no Given step recorded one", actor)
+// whenPostsJSONRPC posts one JSON-RPC request and records the reply for
+// the Then steps to assert on.
+func whenPostsJSONRPC(state *State, args []string) error {
+	role, method, path := arg(args, 0), arg(args, 1), arg(args, 2)
+	if state.BaseURL == "" {
+		return errors.New(
+			"expected a running server from a Given step, got none: no base URL recorded",
+		)
 	}
 
-	body, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      1,
-		"method":  method,
-		"params":  paramsFor(method, actor),
-	})
-	if err != nil {
-		return fmt.Errorf("expected a marshalable JSON-RPC %s request: %w", method, err)
-	}
+	url := state.BaseURL + path
 
-	url := s.BaseURL + path
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, url, strings.NewReader(jsonRPCBody(method, role)),
+	)
 	if err != nil {
-		return fmt.Errorf("expected to build a POST to %s: %w", url, err)
+		return fmt.Errorf("expected to build a POST to %s, got: %w", url, err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 
-	client := &http.Client{Timeout: requestTimeout}
-
-	resp, err := client.Do(req)
+	resp, err := (&http.Client{Timeout: requestTimeout}).Do(req)
 	if err != nil {
-		return fmt.Errorf("expected a response from POST %s, got a transport error: %w", url, err)
+		return fmt.Errorf(
+			"expected a reply to the JSON-RPC %s POST to %s, got: %w", method, url, err,
+		)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
-	payload, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("expected to read the response body of POST %s: %w", url, err)
+		return fmt.Errorf("expected to read the reply body from %s, got: %w", url, err)
 	}
 
-	s.StatusCode = resp.StatusCode
-	s.Body = payload
+	state.Response = &Response{Status: resp.StatusCode, Body: body}
 
 	return nil
 }
 
-func serverReturnsStatus(s *State, args []string) error {
-	spoken := arg(args, 0)
+// thenServerReturnsStatus asserts the recorded status code, naming both
+// sides and the body when they disagree.
+func thenServerReturnsStatus(state *State, args []string) error {
+	raw := arg(args, 0)
 
-	want, err := strconv.Atoi(spoken)
+	want, err := strconv.Atoi(raw)
 	if err != nil {
-		return fmt.Errorf("expected an HTTP status code, got %q: %w", spoken, err)
+		return fmt.Errorf(
+			"expected a numeric HTTP status in the step text, got %q: %w", raw, err,
+		)
 	}
 
-	if s.StatusCode == 0 {
-		return fmt.Errorf("expected HTTP %d, but no response was recorded: no When step sent a request", want)
+	if state.Response == nil {
+		return fmt.Errorf(
+			"expected HTTP %d, got no response at all: no request step ran before this one",
+			want,
+		)
 	}
 
-	if s.StatusCode != want {
-		return fmt.Errorf("expected HTTP %d, got %d; body: %s", want, s.StatusCode, excerpt(s.Body))
+	if state.Response.Status != want {
+		return fmt.Errorf(
+			"expected HTTP %d, got %d (body: %s)",
+			want, state.Response.Status, bodySnippet(state.Response.Body),
+		)
 	}
 
 	return nil
 }
 
-// resolvePort: the port the step names, else the configured one, else
-// the default.
-func resolvePort(spoken string) (int, error) {
-	if spoken == "" {
-		spoken = os.Getenv("MCP_PORT")
+// jsonRPCBody renders a well-formed JSON-RPC request; initialize carries
+// the handshake params the MCP spec requires of it.
+func jsonRPCBody(method, role string) string {
+	params := "{}"
+	if method == "initialize" {
+		params = fmt.Sprintf(
+			`{"protocolVersion":"2024-11-05","capabilities":{},`+
+				`"clientInfo":{"name":%q,"version":"1.0.0"}}`,
+			role,
+		)
 	}
 
-	if spoken == "" {
-		return defaultPort, nil
-	}
-
-	port, err := strconv.Atoi(spoken)
-	if err != nil {
-		return 0, fmt.Errorf("expected a port number, got %q: %w", spoken, err)
-	}
-
-	return port, nil
+	return fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"method":%q,"params":%s}`, method, params)
 }
 
-func paramsFor(method, actor string) map[string]any {
-	if method != "initialize" {
-		return map[string]any{}
+func bodySnippet(body []byte) string {
+	if len(body) > maxBodySnippet {
+		return string(body[:maxBodySnippet]) + "..."
 	}
 
-	return map[string]any{
-		"protocolVersion": "2024-11-05",
-		"capabilities":    map[string]any{},
-		"clientInfo":      map[string]any{"name": actor, "version": "1.0.0"},
-	}
+	return string(body)
 }
 
 func arg(args []string, i int) string {
@@ -286,42 +305,36 @@ func arg(args []string, i int) string {
 
 	return args[i]
 }
-
-func excerpt(body []byte) string {
-	if len(body) > bodyExcerpt {
-		return string(body[:bodyExcerpt]) + "..."
-	}
-
-	return string(body)
-}
 ```
 
-## Why these patterns (do not narrow them to the scenario's literal lines)
+## How each subject step binds
 
-| step | pattern | what varies |
-|---|---|---|
-| `the MCP server is running on its configured port` | `^the (.+) server is running on (?:its configured port\|port (\d+))$` | the server's name, and an explicitly named port |
-| `the Claude User posts a valid JSON-RPC initialize request to /mcp` | `^the (.+) posts a valid JSON-RPC ([A-Za-z0-9_./-]+) request to (\S+)$` | the actor, the JSON-RPC method, the endpoint path |
-| `the server returns HTTP 200` | `^the server returns HTTP (\d{3})$` | the status code |
+- `the MCP server is running on its configured port` ->
+  `^the (.+) server is running on (?:its configured port|port (\d+))$`
+  (capture 1 = the server's name, capture 2 = an explicit port when a
+  scenario names one, so `the MCP server is running on port 9000` binds to
+  the same definition).
+- `the Claude User posts a valid JSON-RPC initialize request to /mcp` ->
+  `^the (.+) posts a valid JSON-RPC ([A-Za-z][\w/.-]*) request to (/\S*)$`
+  (capture 1 = the actor, capture 2 = the JSON-RPC method, capture 3 = the
+  endpoint path — `the Admin posts a valid JSON-RPC tools/list request to
+  /mcp` binds without a new definition).
+- `the server returns HTTP 200` -> `^the server returns HTTP (\d{3})$`
+  (capture 1 = any status code).
 
-Every pattern is anchored `^…$`, each captures what a second scenario
-would phrase differently, and none matches another of the three.
+Each pattern is anchored `^…$`, none is a literal copy of the scenario's
+line, and no two of the three can match the same text.
 
 ## Constraints for the applier
-- Write only under `tests/mcp/steps/`. If that directory cannot be
-  created, report the failure — do not invent a sibling directory.
-- Do not modify the scenario registry (`docs/scenarios.yaml`), the
-  generated test, or `true-bdd/`.
-- Register all three definitions in the one `Register` function.
-- Do not add a definition for any step whose text opens with `llm:` or
-  `judge:` — this scenario has none.
 
-## Verification
-After the write, `tests/mcp/steps/steps.go` exists and contains three
-`suite.Step(` calls whose anchored regexps match, respectively:
-`the MCP server is running on its configured port`,
-`the Claude User posts a valid JSON-RPC initialize request to /mcp`, and
-`the server returns HTTP 200` — one match each, no step matched twice.
+1. Write only `tests/mcp/steps/steps.go`. Creating the directory as part of
+   the Write is expected; inventing a sibling directory is not.
+2. All three definitions are registered in the one `Register` function —
+   do not split them across a second registration function.
+3. Do not modify `docs/scenarios.yaml`, the generated test, or any file
+   outside `tests/mcp/steps/`.
+4. No step here opens with `llm:` or `judge:`, so all three take a
+   definition; if you notice one that does, leave it alone.
 
 ---
 

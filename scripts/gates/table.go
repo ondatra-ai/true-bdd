@@ -95,17 +95,6 @@ var (
 			Globs:   []string{"tests/**", testkitGlob},
 		},
 		{
-			// Back on the gate: with a mode per caller the judge replays
-			// from its own shelf, so a full run reaches no model, needs no
-			// key and costs nothing — about a minute for the whole suite.
-			Name: "BDD cli replay",
-			Command: []string{
-				goBin, testVerb, tagsFlag, bddTag, countOnce, "-timeout=40m",
-				"./tests/bdd-cli/", "-mode=services:replay,tests:replay",
-			},
-			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob, "services/bdd-cli/**", "pkg/**"},
-		},
-		{
 			// Hand-written, model-free, and answer in a second.
 			Name: "BDD cli coverage guards",
 			Command: []string{

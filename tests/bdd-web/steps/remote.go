@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
@@ -32,22 +33,26 @@ type Remote struct {
 	PID int
 
 	process *cli.Process
+	// waited is closed once the single Wait this suite runs has reaped the
+	// process, and nil until a clause asks for it: exec's Wait cannot be called
+	// twice, so one owner claims it and stop() joins.
+	waited chan struct{}
 }
 
 // startRemote spawns the remote in dir and returns without waiting. PWD
 // travels along, so a remote reading the environment rather than the
 // kernel sees the path it was handed; the child outlives this call.
-func startRemote(harness *Harness, dir string) (*Remote, error) {
+func startRemote(harness *Harness, serverURL, dir string, env ...string) (*Remote, error) {
 	binary, err := harness.CLIBinary()
 	if err != nil {
 		return nil, err
 	}
 
 	process, err := spec.Start(context.Background(),
-		[]string{binary, "remote", "--server", harness.BaseURL},
+		[]string{binary, "remote", "--server", serverURL},
 		cli.Options{
 			Dir:    dir,
-			Env:    cli.Inherit().Set("PWD=" + dir),
+			Env:    cli.Inherit().Set(append([]string{"PWD=" + dir}, env...)...),
 			Output: cli.Streams(console.Err(), console.Err()),
 		})
 	if err != nil {
@@ -61,7 +66,37 @@ func startRemote(harness *Harness, dir string) (*Remote, error) {
 // over, and a remote left running holds its folder and its session.
 func (remote *Remote) stop() {
 	_ = remote.process.Signal(os.Kill)
+
+	if remote.waited != nil {
+		<-remote.waited
+
+		return
+	}
+
 	_, _ = remote.process.Wait()
+}
+
+// waitFor waits for the remote to be reaped, answering whether it went within
+// the budget: a signalled process that is merely no longer running is a zombie,
+// which every liveness read still lists.
+func (remote *Remote) waitFor(timeout time.Duration) bool {
+	if remote.waited == nil {
+		waited := make(chan struct{})
+		remote.waited = waited
+
+		go func() {
+			_, _ = remote.process.Wait()
+
+			close(waited)
+		}()
+	}
+
+	select {
+	case <-remote.waited:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // signal delivers one signal to the remote process itself. pkg/shell starts

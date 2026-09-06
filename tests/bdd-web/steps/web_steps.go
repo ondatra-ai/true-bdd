@@ -74,6 +74,7 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^(`+selectorPattern+`) has attribute "([^"]*)" = "([^"]*)"$`, assertAttribute)
 	suite.Step(`^(`+selectorPattern+`) has text "([^"]*)"$`, assertElementText)
 	suite.Step(`^(`+selectorPattern+`) is enabled$`, assertEnabled)
+	suite.Step(`^(`+selectorPattern+`) is disabled$`, assertDisabled)
 	suite.Step(`^(`+selectorPattern+`) has the "([^"]*)" of "([^"]*)"$`, assertFieldOfFile)
 	suite.Step(`^(`+selectorPattern+`) has the "([^"]*)" of story "([^"]*)" of "([^"]*)"$`,
 		assertFieldOfStory)
@@ -92,12 +93,111 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(
 		`^the (Product Owner|System Architect|Quality Engineer) appends a scenario covering "([^"]+)" to "([^"]+)"$`,
 		appendCoveringScenario)
+	registerNamedSessionSteps(suite)
+	registerRelayProcessSteps(suite)
+	registerRelayRequestSteps(suite)
+	registerPortedSteps(suite)
+}
+
+// registerPortedSteps binds the relay and run vocabularies ported behind the
+// first slice — restart survival, a run's lifecycle, the agent work queue —
+// and hands the workspace half to registerPortedWebSteps.
+func registerPortedSteps(suite *bddgo.Suite[State]) {
+	registerRestartSteps(suite)
+	registerRunLifecycleSteps(suite)
+	registerModalSteps(suite)
+	registerStoryOracleSteps(suite)
+	registerAgentWorkSteps(suite)
+	registerTreeEditSteps(suite)
+	registerAgentEpochSteps(suite)
+	registerPromptAnswerSteps(suite)
+	registerConcurrentReadSteps(suite)
+	registerPromptProgressSteps(suite)
+	registerCrossSessionAnswerSteps(suite)
+	registerCrossRelaySteps(suite)
+	registerCrossRelayWorkSteps(suite)
+	registerRedisSteps(suite)
+	registerRunStreamSteps(suite)
+	registerSweepSteps(suite)
+
+	registerPortedWebSteps(suite)
+}
+
+// registerPortedWebSteps binds the workspace half of that port: documents,
+// layout, the design assertions and the tables. Split from its caller only to
+// stay inside the statement ceiling.
+func registerPortedWebSteps(suite *bddgo.Suite[State]) {
+	registerWorkspaceSteps(suite)
+	registerFileViewSteps(suite)
+	registerEditorSteps(suite)
+	registerDocumentEditSteps(suite)
+	registerDocWriteSteps(suite)
+	registerProductDocumentSteps(suite)
+	registerProductOutlineSteps(suite)
+	registerMultiDocumentEditSteps(suite)
+	registerNewStorySteps(suite)
+	registerFeatureTaggingSteps(suite)
+	registerServedProductSteps(suite)
+	registerChatDockSteps(suite)
+	registerLayoutSteps(suite)
+	registerOverviewSteps(suite)
+	registerOverviewStateSteps(suite)
+	registerBreadcrumbSteps(suite)
+	registerPageTextSteps(suite)
+	registerElementShapeSteps(suite)
+	registerDesignTokenSteps(suite)
+	registerDesignMeasureSteps(suite)
+	registerDesignScaleSteps(suite)
+	registerPageScrollSteps(suite)
+	registerRailSteps(suite)
+	registerFileCardSteps(suite)
+	registerFeatureRowSteps(suite)
+	registerScenarioTableSteps(suite)
+	registerSessionsHomeSteps(suite)
+	registerAIRunSteps(suite)
+}
+
+// registerAIRunSteps binds the vocabulary the AI scenarios share: a fix dispatch,
+// answers to its prompts, what the run reads back as, what it did to the tree,
+// what it spent, and the session left behind. One call, for its caller's ceiling.
+func registerAIRunSteps(suite *bddgo.Suite[State]) {
+	registerAIDispatchSteps(suite)
+	registerPromptChoiceSteps(suite)
+	registerRunFactSteps(suite)
+	registerTreeChangeSteps(suite)
+	registerAICallSteps(suite)
+	registerSessionRunSteps(suite)
+	registerStoryRowSteps(suite)
+	registerElementCompareSteps(suite)
+	registerRunArtifactSteps(suite)
+	registerRegistryBlockSteps(suite)
+	registerProjectTestsSteps(suite)
+	registerRemoteSignalSteps(suite)
+	registerProjectHistorySteps(suite)
+	registerCommandChildSteps(suite)
+}
+
+// registerNamedSessionSteps binds the vocabulary a scenario running more than
+// one remote uses: each session addressed by the label its Given gave it.
+// Implemented in named_session_steps.go.
+func registerNamedSessionSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^a remote is running as "([^"]+)"$`, startNamedRemote)
+	suite.Step(`^a remote is running as "([^"]+)" in the same project tree$`, startSiblingRemote)
+	suite.Step(
+		`^the (Product Owner|System Architect|Quality Engineer) dispatches `+
+			`"([^"]+)" on session "([^"]+)" as run "([^"]+)"$`,
+		dispatchRunOnNamedSession)
+	suite.Step(
+		`^the (Product Owner|System Architect|Quality Engineer) opens the session page of "([^"]+)"$`,
+		openNamedSessionPage)
+	suite.Step(`^remote "([^"]+)" is stopped with "([^"]+)"$`, stopNamedRemoteWithSignal)
+	suite.Step(`^remote "([^"]+)" is running$`, assertNamedRemoteRunning)
 }
 
 // relayIsRunning asserts the precondition the harness already
 // established, so a scenario states it rather than assuming it.
 func relayIsRunning(state *State, _ []string) error {
-	if state.Harness.BaseURL == "" {
+	if state.RelayURL == "" {
 		return state.fail("%w", ErrRelayNotRunning)
 	}
 
@@ -115,12 +215,22 @@ func openPath(state *State, args []string) error {
 		return state.fail("open a page: %w", err)
 	}
 
+	err = observeRequests(state, page)
+	if err != nil {
+		return err
+	}
+
+	err = observeSessionsGate(state, page)
+	if err != nil {
+		return err
+	}
+
 	state.Page = page
 
-	_, err = page.Goto(state.Harness.BaseURL+path,
+	_, err = page.Goto(state.RelayURL+path,
 		playwright.PageGotoOptions{WaitUntil: playwright.WaitUntilStateDomcontentloaded})
 	if err != nil {
-		return state.fail("%w: %s%s: %w", ErrNavigation, state.Harness.BaseURL, path, err)
+		return state.fail("%w: %s%s: %w", ErrNavigation, state.RelayURL, path, err)
 	}
 
 	return nil
@@ -173,7 +283,7 @@ func assertText(state *State, args []string) error {
 // visibleText renders what the page DID show, so a missing-text failure
 // carries the alternative instead of sending the reader to a screenshot.
 func visibleText(page playwright.Page) string {
-	body, err := page.Locator("body").InnerText()
+	body, err := page.Locator(bodyKey).InnerText()
 	if err != nil {
 		return "(the page's text could not be read)"
 	}

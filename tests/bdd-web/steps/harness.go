@@ -74,6 +74,12 @@ type Harness struct {
 	RepoRoot string
 	// BaseURL is where the application under test answers.
 	BaseURL string
+	// Port is the loopback port it answers on, kept so a restart comes back
+	// where the remote already polling it is pointed.
+	Port int
+	// Bundle is the assembled standalone build every relay this suite starts
+	// is served from, the harness's own included.
+	Bundle string
 	// Browser is shared; each scenario opens its own context, so cookies
 	// and storage never leak from one scenario into the next.
 	Browser playwright.Browser
@@ -105,6 +111,8 @@ func NewHarness(ctx context.Context, mode, repoRoot string) (*Harness, func(), e
 		Mode:     mode,
 		RepoRoot: repoRoot,
 		BaseURL:  fmt.Sprintf("http://127.0.0.1:%d", port),
+		Port:     port,
+		Bundle:   bundle,
 	}
 
 	err = harness.startServer(ctx, bundle, port)
@@ -241,34 +249,56 @@ func freePort(ctx context.Context) (int, error) {
 	return addr.Port, nil
 }
 
+// Restart kills the shared relay and starts another on the same port, so a
+// scenario about restart survival keeps the URL its remote is polling.
+func (h *Harness) Restart(ctx context.Context) error {
+	if h.server != nil {
+		_ = h.server.Signal(os.Kill)
+		_, _ = h.server.Wait()
+	}
+
+	return h.startServer(ctx, h.Bundle, h.Port)
+}
+
 // startServer spawns the bundle's own `node server.js` and waits for it
-// to answer. Deliberately not CommandContext — see the nolint below: its
-// lifetime is stop's, not this call's.
+// to answer.
 func (h *Harness) startServer(ctx context.Context, bundle string, port int) error {
-	// context.WithoutCancel: the server outlives this call, and stop() owns
-	// its lifetime rather than the caller's context.
-	server, err := npm.StartNode(context.WithoutCancel(ctx), []string{"server.js"}, cli.Options{
-		Dir:    bundle,
-		Env:    cli.Inherit().Set(fmt.Sprintf("PORT=%d", port), "HOSTNAME=127.0.0.1"),
-		Output: cli.Streams(console.Err(), console.Err()),
-	})
+	server, err := startNodeServer(ctx, bundle, port, nil)
 	if err != nil {
-		return fmt.Errorf("start the application under test: %w", err)
+		return err
 	}
 
 	h.server = server
 
-	return h.waitForApp(ctx)
+	return waitForRelay(ctx, h.BaseURL)
 }
 
-// waitForApp blocks until the application answers, or reports that it
+// startNodeServer spawns one relay process on port, under the settings a
+// caller adds to the two every relay needs. Deliberately not CommandContext:
+// the server outlives this call, and the caller's teardown owns it.
+func startNodeServer(ctx context.Context, bundle string, port int, env []string) (*cli.Process, error) {
+	settings := append([]string{fmt.Sprintf("PORT=%d", port), "HOSTNAME=127.0.0.1"}, env...)
+
+	server, err := npm.StartNode(context.WithoutCancel(ctx), []string{"server.js"}, cli.Options{
+		Dir:    bundle,
+		Env:    cli.Inherit().Set(settings...),
+		Output: cli.Streams(console.Err(), console.Err()),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("start the application under test: %w", err)
+	}
+
+	return server, nil
+}
+
+// waitForRelay blocks until the relay at baseURL answers, or reports that it
 // never did.
-func (h *Harness) waitForApp(ctx context.Context) error {
+func waitForRelay(ctx context.Context, baseURL string) error {
 	client := &http.Client{Timeout: probeTimeout}
 	deadline := time.Now().Add(bootTimeout)
 
 	for time.Now().Before(deadline) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.BaseURL+"/", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/", nil)
 		if err != nil {
 			return fmt.Errorf("build the readiness probe: %w", err)
 		}
@@ -283,7 +313,7 @@ func (h *Harness) waitForApp(ctx context.Context) error {
 		time.Sleep(bootPollInterval)
 	}
 
-	return fmt.Errorf("%w: %s did not answer within %s", ErrServerNotReady, h.BaseURL, bootTimeout)
+	return fmt.Errorf("%w: %s did not answer within %s", ErrServerNotReady, baseURL, bootTimeout)
 }
 
 // openBrowser assembles the driver, makes sure chromium is present, and
@@ -343,7 +373,7 @@ func (h *Harness) stop() {
 func Options(repoRoot string) bddgo.Options {
 	return bddgo.Options{
 		Registry:     filepath.Join(repoRoot, "docs", "scenarios.yaml"),
-		Architecture: filepath.Join(repoRoot, "docs", "architecture", "architecture.yaml"),
+		Architecture: filepath.Join(repoRoot, "docs", architectureNode, "architecture.yaml"),
 		Suite:        "bdd-web",
 	}
 }
