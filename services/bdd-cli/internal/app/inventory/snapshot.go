@@ -3,8 +3,7 @@
 // story, registry, checklist, config) without constructing a bootstrap
 // container, so it runs honestly in a bare or degraded folder and never
 // panics on malformed input. The remote uploads the resulting Snapshot;
-// the harness server stores it opaquely and the browser renders it (the
-// data-testid contract is the bdd-web step definitions themselves).
+// a relay server stores it opaquely and a browser renders it.
 //
 // # Snapshot JSON schema (binding for the server + UI phases)
 //

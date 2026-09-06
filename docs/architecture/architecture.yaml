@@ -9,8 +9,7 @@
 #
 # Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
 #
-# This repository tests in Go and only in Go: `go-test` for everything,
-# with playwright-go driving the browser inside the bdd-web suite. The
+# This repository tests in Go and only in Go: `go-test` for everything. The
 # engine still supports `jest` and `playwright` for host projects that
 # want them; this repo declares neither.
 
@@ -23,9 +22,9 @@ architecture:
     # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
     commands:
-      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:record,tests:record"
+      record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
-      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ ./tests/bdd-web/ -mode=services:live,tests:live"
+      live: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:live,tests:live"
 
   services:
     - name: bdd-cli
@@ -52,24 +51,3 @@ architecture:
           protocol: cli
           scope: third_party
 
-    - name: bdd-web
-      path: services/bdd-web
-      type: "web:frontend"
-      language: typescript
-      frameworks:
-        - next.js
-        - react
-
-      design_system:
-        path: services/bdd-web/design/system
-
-      dependencies:
-        # The remotes (`true-bdd remote --server <url>`) register with
-        # and poll this relay over its HTTP API — bdd-web never spawns
-        # the CLI itself.
-        - name: bdd-cli
-          protocol: http
-          scope: internal
-        - name: redis
-          protocol: redis
-          scope: self_hosted

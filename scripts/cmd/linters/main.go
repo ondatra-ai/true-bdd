@@ -74,8 +74,6 @@ func gate(req alint.AlintLintParams, log *slog.Logger) error {
 			return lint.ClaudeMD(out)
 		case "golint":
 			return lint.GoPackage(out, packages(req, rest), req.Fix)
-		case "eslint":
-			return lint.ESLint(out, files, req.Fix)
 		default:
 			return fmt.Errorf("%w: %s", errUnknownGate, name)
 		}
@@ -102,7 +100,6 @@ func everything(log *slog.Logger) error {
 		{"comments", func(out *bytes.Buffer) error { return lint.Comments(out, nil) }},
 		{"markdown", func(out *bytes.Buffer) error { return lint.Markdown(out, nil) }},
 		{"schemas", func(out *bytes.Buffer) error { return lint.Schemas(out, nil) }},
-		{"eslint", func(out *bytes.Buffer) error { return lint.ESLint(out, nil, false) }},
 	} {
 		err := capture(log, leaf.name, leaf.run)
 		if err != nil {

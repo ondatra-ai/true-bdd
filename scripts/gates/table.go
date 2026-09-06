@@ -58,7 +58,7 @@ var (
 	lintInputs = []string{
 		goGlob, goMod, goSum, "**/*.md", "**/*.sh",
 		"**/*.yaml", "**/*.yml", "**/*.py",
-		"services/bdd-web/**", "true-bdd/**",
+		"true-bdd/**",
 		"docs/architecture/**", "docs/product/**", "scripts/lint/**",
 	}
 
@@ -103,14 +103,6 @@ var (
 				"./tests/bdd-cli/",
 			},
 			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob},
-		},
-		{
-			Name: "BDD web coverage guards",
-			Command: []string{
-				goBin, testVerb, tagsFlag, bddTag,
-				countOnce, "-run", "^TestScenarioCoverage$", "./tests/bdd-web/",
-			},
-			Globs: []string{registry, "tests/bdd-web/**", testkitGlob},
 		},
 	}
 )

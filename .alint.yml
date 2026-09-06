@@ -210,9 +210,9 @@ rules:
       Pre-1.17 build-tag syntax; go-build-tag-allowlist only reads //go:build.
       Use //go:build and add the tag to run.build-tags plus that rule.
 
-  # JS belongs to the frontend, the report UI's browser code, and the fenced
-  # fixture and legacy trees. This repository authors no other JavaScript:
-  # what it refuses is JS in scripts/, services/bdd-cli/ or the bdd-cli tests.
+  # JS belongs to the report UI's browser code and the fenced fixture trees.
+  # This repository authors no other JavaScript: what it refuses is JS in
+  # scripts/, services/bdd-cli/ or the bdd-cli tests.
   - id: js-fenced
     kind: file_absent
     level: error
@@ -225,15 +225,14 @@ rules:
         - "**/*.ts"
         - "**/*.tsx"
       exclude:
-        - "services/bdd-web/**"
         - "pkg/testkit/reportserver/web/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
-      JavaScript where this repo is Go and sh. The frontend and the report
-      UI's browser code are the exceptions; everything else is Go or sh.
+      JavaScript where this repo is Go and sh. The report UI's browser code
+      is the exception; everything else is Go or sh.
 
   # The load-bearing half: JS does not spread one file at a time, it spreads
-  # through `npm install`. A manifest outside the frontend means a second
+  # through `npm install`. A manifest this repository authors means a second
   # build system has arrived, which is how the fence stops being one.
   - id: no-npm-manifests
     kind: file_absent
@@ -246,11 +245,10 @@ rules:
         - "**/pnpm-lock.yaml"
         - "**/node_modules/**"
       exclude:
-        - "services/bdd-web/**"
         - "tests/bdd-cli/fixtures/**"
     message: >-
-      A manifest or lockfile means a second build system. Keep them to
-      services/bdd-web/, which is a frontend and needs one.
+      A manifest or lockfile means a second build system. This repository
+      authors none; only a fixture tree may carry one.
 
   # CLAUDE.md is a cache of the repository loaded into every session, so its
   # cost is paid constantly and its growth is invisible one commit at a time.
@@ -338,25 +336,6 @@ rules:
         # the default and would warn on every bare `alint check`.
         expect_nonempty: false
     command: ["go", "run", "./scripts/cmd/linters", "comments"]
-
-  - id: eslint-scoped
-    kind: command
-    level: error
-    when: "env.TRUEBDD_SCOPE"
-    timeout: 300
-    paths:
-      include: ["services/bdd-web/**/*.js", "services/bdd-web/**/*.jsx",
-                "services/bdd-web/**/*.ts", "services/bdd-web/**/*.tsx",
-                "services/bdd-web/**/*.mjs", "services/bdd-web/**/*.cjs"]
-      # design/ is a Next.js prototype carried for reference, not authored
-      # product code: eslint reports 7963 problems in it.
-      exclude: ["**/node_modules/**", "services/bdd-web/design/**"]
-    scope_filter:
-      include_manifest_paths:
-        source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
-        extract: { lines: {} }
-        expect_nonempty: false
-    command: ["go", "run", "./scripts/cmd/linters", "eslint", "--fix"]
 
   - id: schemas-scoped
     kind: command

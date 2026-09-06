@@ -120,7 +120,7 @@ Each linter becomes a pair, selected by that one variable.
     timeout: 300
     paths:
       include: ["**/*.go"]
-      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**", "services/bdd-web/**"]
+      exclude: ["tests/legacy/**", "tests/bdd-cli/fixtures/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/alint-scope.txt')}}"
@@ -204,12 +204,10 @@ extraction stopped being load-bearing, because no `command_idempotent` rule was 
 
 ## eslint
 
-Nothing to wire. The only eslint config in the tree is `services/bdd-web/eslint.config.mjs`,
-and that subtree is fenced out of the root module by a sentinel `go.mod` and excluded from
-alint's rules; `eslint` is not on PATH here. The tracked JS that alint *does* see —
-`pkg/testkit/reportserver/web/app.js` — has no eslint config at all. The `command`
-rule shape covers eslint whenever the repository decides to lint that file; the design
-does not add a gate for a linter this repository does not run.
+Nothing to wire. There is no eslint config in the tree at all, and `eslint` is not on
+PATH here. The only tracked JS alint sees — `pkg/testkit/reportserver/web/app.js` — has
+none either. The `command` rule shape covers eslint whenever the repository decides to
+lint that file; the design does not add a gate for a linter this repository does not run.
 
 ## Decision log
 

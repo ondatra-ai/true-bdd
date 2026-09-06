@@ -77,11 +77,11 @@ Spec-as-Source) driving Claude-mediated checklists over user stories.
 Configuration); the root `true-bdd/` here is the fixtures' seed.
 
 **Go, and one shell script.** Engine and tooling are Go (`scripts/`, via
-`go run`); `go test` everywhere, `playwright-go`, no jest. `yamale`,
+`go run`); `go test` everywhere, no jest and no playwright. `yamale`,
 `alint` and `markdownlint-cli2` are PATH tools. The engine still *supports*
 both as host `framework:` values (`build-code-playwright-nextjs` covers it).
-`.alint.yml` fences JS to `services/bdd-web/`, the report UI's `web/`,
-fixtures — and `no-shell` allows only `start.sh`.
+`.alint.yml` fences JS to the report UI's `web/` and fixtures — and
+`no-shell` allows only `start.sh`.
 
 ## Scoped context
 
@@ -121,7 +121,6 @@ go run ./pkg/testkit/cmd/report-server    # report UI on :7331
 # both is hermetic (<1 min); `services:replay,tests:record` mints a judge
 # shelf without re-running one engine turn.
 go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay
-go test -tags bdd -timeout=25m ./tests/bdd-web/       # needs node+browser
 go test -tags bdd ./tests/bdd-cli/ \
   -run '^Test(ScenarioCoverage|FixtureTreesArePaired)$'
 ```
@@ -149,10 +148,8 @@ steps; `scripts/` is this repo's tooling; `pkg/` is the four IO channels
 plus `pkg/testkit/`, the BDD harness (ADR 0008). `ls` for the tree.
 
 - **Never import `os/exec`** — spawn via `pkg/cli/<tool>` (ADR 0005).
-- `services/bdd-web/src/` is GENERATED and gitignored, so a listing does
-  not show it: the bdd-web scenarios and suite are the spec.
-- Sentinel `go.mod`s fence root `go test`/lint out of `services/bdd-web/`
-  and `tests/bdd-cli/fixtures/`; each states its trap.
+- A sentinel `go.mod` fences root `go test`/lint out of
+  `tests/bdd-cli/fixtures/`; it states its trap.
 - `docs/*.html`: merging to `main` IS the deploy — never publish one as a
   Claude artifact; a new page needs a `cp` line AND a `paths:` trigger in
   `deploy-pages.yml`.

@@ -480,17 +480,16 @@ footer .inner { display: flex; flex-wrap: wrap; gap: 12px 30px; justify-content:
             <span class="pill p-done">Done</span><code>build tests</code> renders one
             <code>func Test&lt;Id&gt;</code> per scenario into the file that scenario's <code>path:</code>
             names — deterministic codegen, verified without <code>--fix</code> by regenerating and
-            comparing. It covers all 290 registry scenarios across both suites.
+            comparing. It covers all 55 registry scenarios.
           </td>
         </tr>
         <tr>
           <td>4 · scenarios&nbsp;→&nbsp;tests, steps, judgements</td>
           <td>
-            <span class="pill p-part">Partial</span><b>Steps are the gap.</b>
-            <code>build tests --fix</code> authors a step definition per gap, and that mechanism works —
-            and as of #121 <code>tests/bdd-web/steps</code> binds every step of all 244 web scenarios,
-            so they are rendered <em>and</em> runnable;
-            <code>tests/legacy/bdd-web-playwright/</code> is no longer the only thing testing the web surface.
+            <span class="pill p-part">Partial</span><b>Partly done.</b>
+            <code>build tests --fix</code> authors a step definition per gap, and that mechanism works:
+            every step of every registry scenario binds, so all of them are rendered
+            <em>and</em> runnable.
             <b>Judgements:</b> the <code>judge:</code> prefix exists and 12 of 46 bdd-cli scenarios use it.
             <b>Vocabulary and features:</b> not started.
           </td>
@@ -499,8 +498,8 @@ footer .inner { display: flex; flex-wrap: wrap; gap: 12px 30px; justify-content:
     </table>
     </div>
     <p class="sub" style="margin:36px 0 0">
-      That number is now <b>zero</b>: the web step definitions landed in #121, every step of all 299
-      registry scenarios binds, and <code>build tests</code> on this repository dispatches no AI turn.
+      That number is now <b>zero</b>: every step of all 55 registry scenarios binds, and
+      <code>build tests</code> on this repository dispatches no AI turn.
       Step coverage stopped being a test in ADR 0012 — the engine reads the <code>steps/</code>
       packages directly, so there is no step-coverage gate to join.
     </p>

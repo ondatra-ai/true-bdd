@@ -44,12 +44,6 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
             | sh -s -- -b "$(go env GOPATH)/bin" v2.13.1
 
-      # eslint is a devDependency of the frontend, so the gate cannot reach it
-      # until the tree is installed. Absent, `alint` would report the leaf
-      # missing rather than the code clean.
-      - name: Install the frontend
-        run: npm --prefix services/bdd-web ci
-
       # ONE call, so the gate list lives in exactly one place —
       # scripts/gates/table.go. Adding a gate there reaches CI for free.
       - name: Gates

@@ -1,7 +1,0 @@
-node_modules
-.next
-.git
-.vercel
-.env*.local
-src/tests
-*.md

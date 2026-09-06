@@ -78,8 +78,7 @@ type rawArchitectureShape struct {
 }
 
 // rawWorkspaceArchitectureShape mirrors the second supported architecture
-// schema, services/bdd-web/src/app/lib/workspace/derive.ts's
-// deriveArchitecture: a top-level `services:` map, no `architecture:` wrapper.
+// schema: a top-level `services:` map, no `architecture:` wrapper.
 type rawWorkspaceArchitectureShape struct {
 	Services map[string]yaml.Node `yaml:"services"`
 }

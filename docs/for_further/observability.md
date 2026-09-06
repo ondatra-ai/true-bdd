@@ -205,8 +205,9 @@ the old one answers "what just happened on this machine", the new one answers
 Current behaviour is the hard requirement: the maintainer must see exactly what
 they see today.
 
-1. Drive the **current** report server with playwright-go (already in this
-   repo, `tests/bdd-web`) — exploratory crawl, record every path.
+1. Drive the **current** report server with playwright-go (still declared in
+   `go.mod`, though no suite uses it now) — exploratory crawl, record every
+   path.
 2. Save those paths as **goldens**: screenshots for layout, `/api/*` JSON for
    content. Screenshots catch a broken layout and miss a wrong number; JSON
    catches a wrong number and misses a broken layout. Both are needed.

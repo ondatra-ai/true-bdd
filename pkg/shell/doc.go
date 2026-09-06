@@ -14,12 +14,11 @@
 // themselves: that policy differed silently between the three predecessors and
 // is now stated at each call site.
 //
-// TWO TIERS. Run covers the ~35 sites that spawn, wait and read. Start returns
-// a Process for the five that cannot: supervised process groups holding
-// inherited descriptors (internal/app/remote/managed_child.go), a byte-exact
-// stdio proxy (pkg/testkit/aiproxy), and a long-lived server
-// (tests/bdd-web/steps/harness.go). Their needs are single-site and each is
-// documented where it is declared.
+// TWO TIERS. Run covers the ~30 sites that spawn, wait and read. Start returns
+// a Process for the three that cannot: supervised process groups holding
+// inherited descriptors (internal/app/remote/managed_child.go) and a
+// byte-exact stdio proxy (pkg/testkit/aiproxy). Their needs are single-site
+// and each is documented where it is declared.
 //
 // THE ENV DISTINCTION IS LOAD-BEARING. Blank sets a key to empty; Strip
 // removes it. Three sites blank CLAUDECODE, because a child should know it is
