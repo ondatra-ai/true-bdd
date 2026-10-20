@@ -7,6 +7,8 @@ byte-for-byte shape — survives a rebuild. Today the tool operates one
 level down — **Spec-Anchored** — driving Claude-mediated checklists over
 user stories.
 
+Built by [Peter Ovchyn](https://ovchyn.me).
+
 ## Table of contents
 
 - [Background — the three levels of SDD](#background--the-three-levels-of-sdd)
