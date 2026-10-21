@@ -8,14 +8,12 @@ description:
   summary: >-
     TrueBDD moves the source of truth from the code to the
     specification, so an agent can rebuild the code from the
-    documentation alone. It has two parts built on one engine: a Go
-    console harness that walks a project's user stories and
-    scenarios through checklists, turns each scenario into an
-    executable test, and drives an agent until those tests pass; and a
-    stateless web app that shows the same harness in a browser, so a
-    run can be watched and driven from another screen. The harness and
-    the project's files stay on the developer's machine and are the
-    only state. It works with any technology stack.
+    documentation alone. It is a Go console harness that walks a
+    project's user stories and scenarios through checklists, turns
+    each scenario into an executable test, and drives an agent until
+    those tests pass. The harness and the project's files stay on the
+    developer's machine and are the only state. It works with any
+    technology stack.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
@@ -55,10 +53,13 @@ description:
     application by hand, so the checking bottleneck goes away and the
     expected speedup becomes reachable.
 
+  # Vision, goals, releases and not_goals are declared empty until the
+  # session that settles them; an empty value is a decision on the record.
+  vision: ""
+
   goals: []
 
-  # Adoption, not internals: the usage that proves the product works.
-  targets: []
+  releases: []
 
   not_goals: []
 
@@ -72,7 +73,7 @@ roles:
       document and the user stories, writing each story directly out of
       a discussion of a Feature, and decides which behaviour the system
       must show.
-    primary_use_case: "Turning a product goal into registered scenarios — writes stories, runs us refine and us apply"
+    primary_use_case: "Turning a product goal into registered scenarios — discusses Features, writes stories, runs us refine and us apply"
     characteristics:
       - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
       - "Works inside the action vocabulary the product document declares"
@@ -82,11 +83,11 @@ roles:
   - name: System Architect
     definition: >-
       Defines the technical shape of the system — its services, their
-      interfaces, and the test layers used to observe behaviour.
-    primary_use_case: "Declaring the architectural contract and running the regeneration loop — build tests, build code"
+      dependencies, and the test suite that observes behaviour.
+    primary_use_case: "Owning the architecture and running the regeneration loop — runs build tests and build code"
     characteristics:
-      - "Owns architecture.yaml: services, quality-gate test layers and frameworks"
-      - "Designs so behaviour can be tested — every scenario must be observable through a declared layer"
+      - "Owns architecture.yaml: services, their dependencies, and how the test suite runs"
+      - "Designs so behaviour can be tested — every scenario must be observable through a declared service"
       - "Fixes the contracts that must survive regeneration and leaves the rest free to change"
       - "Never edits a scenario to make a failing test pass"
 
@@ -95,7 +96,7 @@ roles:
       Accountable for the scenario set being complete and executable:
       the failure cases are written down, and every step can be
       automated.
-    primary_use_case: "Strengthening scenarios before they reach the registry — us refine"
+    primary_use_case: "Verifying the scenarios in the registry — runs scen check"
     characteristics:
       - "Asks what could go wrong: permission denied, not found, timeout, boundary values"
       - "Rejects steps that no test runner could execute"
@@ -112,8 +113,6 @@ vocabulary:
       means: "invokes the true-bdd CLI with that subcommand in a terminal"
     - name: "answers the prompt"
       means: "types a choice (apply / refine / exit) into the --fix loop"
-    - name: "opens the run report"
-      means: "loads the report server page in a browser"
 
   # Vague words that must not appear in AC descriptions or steps.
   forbidden_qualifiers:
