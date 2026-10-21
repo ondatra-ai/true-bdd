@@ -34,6 +34,7 @@ func CheckResult(
 	return checklist.ValidationResult{
 		SectionPath:    promptCtx.GetFullSectionPath(),
 		Question:       promptCtx.Prompt.Label(),
+		Check:          strings.TrimSpace(promptCtx.Prompt.Check),
 		ActualAnswer:   answer,
 		Context:        verdict.Context,
 		Status:         status,

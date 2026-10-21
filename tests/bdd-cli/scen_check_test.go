@@ -324,6 +324,26 @@ func TestE2E103(t *testing.T) {
 	s.Done()
 }
 
+// E2E-104: `scen check --fix` must propose a definition for a declared term the glossary lacks, asking what it means first, record the definition the user applies in the product glossary and never in the Scenario, and pass the re-walk
+func TestE2E104(t *testing.T) {
+	s := scenarios.New(t, "E2E-104")
+	s.Given(`the "scen-check-fix-records-term" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: "the service answers "\{reply\}"" declares "reply", which the glossary does not define`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is defined: mcp service, message, reply\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")

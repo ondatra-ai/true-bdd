@@ -81,6 +81,28 @@ A good entry phrases the step in the shape other Scenarios will reuse:
 quoted runs and numbers become slots, the words that carry the meaning
 stay literal. It must not also match a step another entry already
 phrases, or that step becomes ambiguous.
+{{- if eq .FailedCheck.Check "declared-terms" }}
+
+## The glossary
+
+The product document's `glossary:` list defines the words catalogue
+entries declare in their `terms`. A glossary entry has two fields:
+
+- `term`: the word, spelled exactly as the catalogue entries declaring
+  it spell it, case and spacing included. A term is looked up by that
+  spelling and nothing else.
+- `means`: what the word is in this product and why it matters to a
+  reader of a Scenario, in product words. It says what the word means,
+  never how the code implements it.
+
+Every term a catalogue entry declares, through a step that matches
+that entry, must be defined exactly once. A term defined twice has two
+meanings, so a reader can rely on neither.
+
+A good definition reads true in every Scenario whose phrases declare
+the term, not only in this one: read the `means` of each catalogue
+entry declaring it before you write it.
+{{- end }}
 
 {{- if .UserAnswers }}
 
@@ -122,6 +144,10 @@ feedback to CORRECT IT:
 DO NOT ask questions.
 {{- else if .UserAnswers }}
 Using the user's clarifications above, generate a complete fix prompt.
+{{- else if eq .FailedCheck.Check "declared-terms" }}
+Decide whether the Scenario and the documents already say what each
+term the findings name means. When the fix template asks you to ask
+first, or the meaning is not plain, ask; otherwise generate the fix.
 {{- else }}
 Decide whether the Scenario and the documents already say what the
 failing step means. When the fix template asks you to ask first, or the
@@ -130,17 +156,43 @@ meaning is not plain, ask; otherwise generate the fix.
 
 **If you can generate a confident fix**, output a fix prompt the applier
 can execute against the term document. The fix MUST:
+{{- if eq .FailedCheck.Check "declared-terms" }}
+- Add or change only the glossary entries the findings call for: for a
+  term the glossary does not define, one new entry defining it; for a
+  term it defines more than once, a single entry in place of them all.
+- Leave the catalogue, and every glossary entry the findings do not
+  name, exactly as they are.
+- Give the exact YAML of each entry, so the applier copies it rather
+  than composing it.
+{{- else }}
 - Add or change only the entries the findings call for: for a step that
   matches no template, one new entry phrasing it.
 - Leave every other step of this Scenario, and every step the other
   entries phrase, matching exactly one template.
 - Give the exact YAML of each entry, its template single-quoted, so the
   applier copies it rather than composing it.
+{{- end }}
 - Never edit the Scenario, a generated test, a step definition or
   another document.
 
 === FILE_START: {{.ResultPath}} ===
 # Fix Prompt for Scenario {{.SubjectID}}: {{.Subject.Description}}
+{{- if eq .FailedCheck.Check "declared-terms" }}
+
+## Target
+The `product` document: its `glossary:` list.
+
+## Required Changes
+### Change #N: [description]
+**Document:** product
+**Action:** Append this entry to the end of the `glossary:` list
+(or: replace old_string with new_string, verbatim).
+**YAML:**
+```yaml
+  - term: <the term, spelled exactly as the catalogue declares it>
+    means: <what the word is in this product, and why it matters>
+```
+{{- else }}
 
 ## Target
 The `<key>` document: its `catalogue:` list (or its `glossary:` list).
@@ -157,6 +209,7 @@ The `<key>` document: its `catalogue:` list (or its `glossary:` list).
     means: <what a step of this shape means>
     terms: [<glossary term>, ...]
 ```
+{{- end }}
 === FILE_END: {{.ResultPath}} ===
 
 **If you need clarification first**, output questions with suggested

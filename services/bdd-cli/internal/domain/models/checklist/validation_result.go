@@ -21,6 +21,7 @@ func (s Status) String() string {
 type ValidationResult struct {
 	SectionPath  string   // e.g., "template/who" or "invest/valuable"
 	Question     string   // The question that was asked
+	Check        string   // The built-in check a `D:` prompt names; "" for a model's `Q:`
 	ActualAnswer string   // The actual answer from AI evaluation (pass/fail)
 	Context      []string // Per-question context lines from AI (one observation per line)
 	Status       Status   // PASS, WARN, FAIL, or SKIP
