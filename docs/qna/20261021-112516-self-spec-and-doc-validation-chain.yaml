@@ -1112,3 +1112,194 @@ log:
       keep the four wrappers in pkg/cli?
     answer: |
       Да, я разрешаю, но я хотел бы, чтобы это было четко объяснено, что короче говоря, чтобы в этих штуках было в линтере, чтобы указали, что не что угодно можно, а именно 4 этих штуки доступны для внутри того короче, внутри движка. Вот.
+  - decision_trace:
+      research:
+        - |
+          Spike #133 (its result is the 2026-10-21 comment on the issue) ran a throwaway
+          matcher on feat/127-self-spec at 0a7d4999: 56 Scenarios, 604 steps, 592 of them
+          deterministic (12 `judge:`). A draft catalogue of 37 templates matches each of the
+          592 exactly once (none 0, several 0, wrong block 0), and the 37 templates map one
+          to one onto 37 of the 38 step definitions; the 38th
+          (tests/bdd-cli/steps/cli_steps.go:74) is used by no step.
+        - |
+          The grammar #133 first named (slots only for quoted runs and numbers, a pattern
+          tail only after `stdout matches`) needs 50 templates, and 9 step definitions are
+          then reached by 22 templates, so it is not one to one. The wider grammar's slots
+          across the 37 templates: text 46, inflection 10, number 8, pattern 8, role 2; 34
+          of 114 filled number slots hold the word "no"; 69 steps open with a role.
+        - |
+          23 glossary words carry the 37 meanings; each is defined once and mapped once.
+      recommendation: |
+        Confirm (c), with more slot kinds: a pattern slot at the end of any template, a role
+        slot, "no" as a number, inflections and literal alternatives. 37 phrases cover 592
+        steps; 23 words carry the meanings.
+      settled: |
+        (c) confirmed, no longer provisional (Q7): closure checks both the step phrase and
+        the word. A catalogue entry is `template`, `block`, `means` and `terms`; the template
+        is its identity, so it has no id. Grammar: literals, `"{name}"`, `{name:number}`
+        (digits or "no"), `{name:role}` (a role the product document declares),
+        `{name:pattern}` (last, opaque, never parsed), `[a|b]` and `[s]`. Every step but a
+        `judge:` or `llm:` one matches exactly one template in the whole catalogue, in the
+        block the entry declares; there is no precedence and no longest match.
+    question: |
+      Q34 - Spike #133 is done: confirm Q7 (c), step phrases and words both, with the
+      template grammar widened past quoted runs and numbers (a pattern slot ending any
+      template, a role slot, "no" as a number, inflections and literal alternatives)?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          Spike #133 put the whole catalogue and the glossary in docs/product/product.yaml and
+          only a word mapping in docs/architecture/architecture.yaml (`architecture.terms`:
+          term, technical, observed_by). Yamale passes the schema additions on scratch copies
+          with the draft merged in, and on the committed documents.
+        - |
+          All 37 meanings were written in product words. What is technical about the
+          observation and setup phrases Q13 (b) would have sent to architecture (stdout in
+          196 steps, log record 196, file change 99, AI turn 39, test runner 16) went into
+          each word's `technical` and `observed_by`, not into a phrase.
+      recommendation: |
+        Revise to (a): catalogue and glossary both in the product document; architecture
+        holds only the word mapping.
+      settled: |
+        (a), revising Q13's provisional (b): `catalogue:` and `glossary:` are top-level lists
+        of the product document; the architecture document gains only `architecture.terms`,
+        saying how each product word becomes the implementation and how a step definition
+        sets it up or observes it, in words that never name a Go identifier. No link from a
+        catalogue entry to a step definition is stored; that correspondence is computed.
+        Overrides Q13 (b).
+    question: |
+      Q35 - Revise Q13 to (a): the phrase catalogue and the glossary both in product.yaml,
+      and architecture.yaml only the mapping from each product word to its implementation?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          Spike #133 matched all 592 deterministic steps without rewriting one. The 67 stdout
+          patterns that pin a log field (`key=`) fall under `stdout matches
+          {expected:pattern}`, whose meaning names the answer line or log record the engine
+          prints.
+        - |
+          The words that look technical (AI turn, test runner, log record, engine, step
+          definition) each got a product meaning and an architecture mapping. AI turn: one
+          request through the engine's AI router to claude, crush or codex, logged once as
+          `msg="Dispatching AI turn"`, observed by counting those records in the run's JSON
+          log file.
+        - |
+          Two templates use a glossary word in another sense (Q38).
+      recommendation: |
+        Confirm (a): all step phrases are product language; no step had to be rewritten.
+      settled: |
+        (a) confirmed, no longer provisional (Q14): every step phrase is product language
+        and the steps keep their wording, apart from the two homonyms Q38 rewords. The
+        product glossary says what each word is and why it matters; the architecture
+        mapping says how it is implemented and observed. Whether a pattern tail names
+        observable product output is for the model closure Prompts to judge (#138); no `D:`
+        check parses or compiles it.
+    question: |
+      Q36 - Confirm Q14 (a): every step phrase is product language, the steps stay as they
+      are, and architecture only maps the words their meanings rely on?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          No `build tests` fixture has a product document, so a closure check must stay off
+          where none is declared (Q31). All 63 Scenarios still carry `user_stories: []`, so
+          a contract keyed on a Story's claim lets the catalogue grow Story by Story while
+          the rest of the Registry stays unconverted. #133 had worded the contract per
+          catalogued Story.
+      recommendation: |
+        Declared means the file at `documents.product` exists and has a top-level
+        `catalogue` list (an empty one counts); a missing key, file or setting means not
+        declared, never a refusal. Not declared: every closure check passes every Item with
+        "not checked: the product document declares no catalogue". Declared: a Scenario is
+        checked once a Story claims it (non-empty `user_stories`), an unclaimed one passes
+        with "not checked: no Story claims this Scenario yet"; `us refine` always checks the
+        Story it walks; `build tests` checks every Scenario in the Registry. No explicit list.
+      settled: |
+        As recommended. Verdicts stay pass or fail (ADR 0015); "not checked" is a pass with
+        a context line. Phase 4 converts a Story by writing it, rekeying its Scenarios and
+        filling their `user_stories`. #135's criterion "an uncatalogued Story is not
+        checked" becomes "a Scenario no Story claims is not checked".
+    question: |
+      Q37 - How does term closure switch on: a catalogue counts as declared when
+      product.yaml has a top-level `catalogue` list; once declared, `scen check` checks a
+      Scenario a Story claims (non-empty `user_stories`) and passes an unclaimed one as
+      "not checked", `us refine` always checks its Story, `build tests` checks every
+      Scenario, and no explicit list of converted Stories exists?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 2: "Activation: a Scenario is
+      checked once a Story claims it (non-empty `user_stories`); unclaimed Scenarios pass
+      as "not checked". No explicit list. (§7 as written.)"
+  - decision_trace:
+      research:
+        - |
+          Spike #133's matcher found two templates whose wording uses a glossary word in
+          another sense: `the {actor:role} answers "{answer}" to every prompt` (13 steps),
+          where a Prompt is one element of a Checklist, and `the command "{shell_command}"
+          run in "{dir}" exits with code {code:number}` (2 steps), where a command is one of
+          TrueBDD's own.
+        - |
+          These steps reach no recorded request: a run dir layers only `true-bdd/` and
+          `templates/` under a fixture's `input/`, and the judge prompt carries only `judge:`
+          clauses, so rewording them changes no cassette.
+      recommendation: |
+        Reword both: `… answers "1" to every question` and `the shell command "…" run in
+        "…" exits with code N`.
+      settled: |
+        Reworded to `the <role> answers "<answer>" to every question` and `the shell command
+        "<argv>" run in "<dir>" exits with code N`. 15 Registry steps and 2 step definitions
+        change, the generated tests re-render with no AI turn, and no cassette changes.
+    question: |
+      Q38 - Reword the two homonyms: `the <role> answers "1" to every prompt` becomes `… to
+      every question`, and `the command "…" run in "…" exits with code N` becomes `the
+      shell command "…" run in "…" exits with code N`?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 3: "Homonyms: reword both.
+      `the {role} answers "1" to every prompt` becomes `... answers "1" to every question`;
+      `the command "…" run in "…" exits with code N` becomes `the shell command "…" run in
+      "…" exits with code N`. 15 Registry steps and 2 step definitions change; tests
+      re-render; no cassette changes."
+  - decision_trace:
+      research:
+        - |
+          product.yaml `vocabulary.actions` holds two When actions, "runs <command>" and
+          "answers the prompt", each with a meaning; true-bdd/product-schema.yaml requires
+          at least one, and true-bdd/checklists/us-refine.yaml asks for "an allowed action
+          verb from the architecture vocabulary".
+        - |
+          The catalogue's templates `the {actor:role} runs "{command}"` (when) and `the
+          {actor:role} answers "{answer}" to every question` (given) state the same two
+          actions, each with a meaning, so keeping both lists means two sources that drift.
+      recommendation: |
+        Retire `vocabulary.actions` in favour of the catalogue, the one source of step
+        phrasing.
+      settled: |
+        `vocabulary.actions` is retired in favour of the catalogue; its removal, schema
+        included, lands with #135, and #152 points `us refine` at the catalogue. The ruling
+        leaves `forbidden_qualifiers` and `forbidden_actions` as they are.
+    question: |
+      Q39 - Retire product.yaml's `vocabulary.actions` in favour of the catalogue, so step
+      phrasing has one source, with #152 pointing `us refine` at the catalogue?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 4: "`vocabulary.actions` in
+      the product document is RETIRED in favour of the catalogue (one source). #152 points
+      `us refine` at the catalogue."
