@@ -258,9 +258,6 @@ func newTriples(
 	})
 	buildCodeTrip.fixApplier.UseEditMode()
 
-	// No UseEditMode and no write roots: every scen-check prompt is
-	// read-only, and the applier this triple carries exists only so
-	// runner.Run has a non-nil dependency to refuse --fix against.
 	scenCheckTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.scen_check_checklist_system",
 		checklist:          "templates.prompts.scen_check_checklist",
@@ -269,6 +266,9 @@ func newTriples(
 		fixApplierSystem:   "templates.prompts.scen_check_fix_applier_system",
 		fixApplier:         "templates.prompts.scen_check_fix_applier",
 	})
+	// EditMode reaches tmp only: a fix edits the term documents' scratch
+	// copies, which the engine commits once they parse.
+	scenCheckTrip.fixApplier.UseEditMode()
 
 	return triples{
 		apply:      applyTrip,

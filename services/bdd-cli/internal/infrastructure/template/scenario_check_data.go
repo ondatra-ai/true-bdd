@@ -27,6 +27,9 @@ type ScenarioCheckData struct {
 	// Phrases are the same steps as the closure checks read them: each
 	// one's own text, without its and:/but: keyword, beside its block.
 	Phrases []catalogue.Step
+	// TermDocuments are the documents a --fix run may write; empty
+	// without --fix. A fix defines a term there, never in the Scenario.
+	TermDocuments []TermDocument
 }
 
 // FormatSteps renders the scenario's Given / When / Then for the

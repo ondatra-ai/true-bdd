@@ -22,6 +22,7 @@ const (
 func stepPhrases() Check[*template.ScenarioCheckData] {
 	return Check[*template.ScenarioCheckData]{
 		Params: nil,
+		Docs:   []string{docs.KeyProduct},
 		Run: func(item *template.ScenarioCheckData, input Input) (Verdict, error) {
 			source, err := product.LoadCatalogue(input.Docs[docs.KeyProduct])
 			if err != nil {

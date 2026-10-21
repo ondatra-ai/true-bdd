@@ -233,6 +233,40 @@ func TestE2E096(t *testing.T) {
 	s.Done()
 }
 
+// E2E-097: `scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user applies in the product document and never in the Scenario, and pass the re-walk
+func TestE2E097(t *testing.T) {
+	s := scenarios.New(t, "E2E-097")
+	s.Given(`the "scen-check-fix-records-phrase" project tree`)
+	s.And(`the Quality Engineer answers "1" to every prompt`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: then step "the service answers within 200 milliseconds" matches no template`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches the service answers within`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// E2E-098: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
+func TestE2E098(t *testing.T) {
+	s := scenarios.New(t, "E2E-098")
+	s.Given(`the "scen-check-phrase-docs-unlisted" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")
