@@ -261,3 +261,23 @@ func TestE2E048(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// E2E-049: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
+func TestE2E049(t *testing.T) {
+	s := scenarios.New(t, "E2E-049")
+	s.Given(`the "us-refine-fix-keeps-feature" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "1" to every prompt`)
+	s.When(`the Product Owner runs "us refine doc-summary --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Fix applied; re-running validation"`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/doc-summary-keeps-feature.yaml"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has id "doc-summary"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.Done()
+}

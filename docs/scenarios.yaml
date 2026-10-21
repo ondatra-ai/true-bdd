@@ -986,6 +986,30 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/x-outside-stories.yaml" is unchanged
         - and: the engine dispatched no AI turns
+  E2E-049:
+    description: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "us-refine-fix-keeps-feature" project tree
+        - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
+        - the Product Owner answers "1" to every prompt
+      when:
+        - the Product Owner runs "us refine doc-summary --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Fix applied; re-running validation"
+        - stdout matches ALL CHECKS PASSED!
+        - 'stdout matches msg="Story saved"'
+        - stdout matches REFINE COMPLETE
+        - and: the only file changed outside "tmp" is "docs/product/stories/doc-summary-keeps-feature.yaml"
+        - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has id "doc-summary"
+        - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
+        - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
+        - and: stdout does not match Hit max apply attempts
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli

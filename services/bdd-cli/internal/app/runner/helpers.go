@@ -430,9 +430,9 @@ func StorySubject(item *story.Story) (string, string) {
 	return item.ID, item.Title
 }
 
-// StoryPostFix returns the PostFix closure for story-based commands: it
-// unmarshals the applier's YAML onto a zero Story, so a partial body
-// zeroes whatever it omits — only the ID is reasserted here as a backstop.
+// StoryPostFix returns the PostFix closure for story-based commands: the
+// applier's YAML lands on a zero Story, zeroing what it omits, so the ID and
+// the Feature label (its template never shows it) are reasserted from the item.
 func StoryPostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context, item *story.Story, applierContent string) (*story.Story, error) {
@@ -445,6 +445,7 @@ func StoryPostFix(
 		}
 
 		updated.ID = item.ID
+		updated.Feature = item.Feature
 
 		_, err = versionMgr.SaveNextVersion(&updated)
 		if err != nil {
