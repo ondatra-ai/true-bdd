@@ -182,3 +182,41 @@ func TestE2E062(t *testing.T) {
 	s.And(`stdout does not match RE-WALK`)
 	s.Done()
 }
+
+// E2E-141: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+func TestE2E141(t *testing.T) {
+	s := scenarios.New(t, "E2E-141")
+	s.Given(`the "us-apply-shared-prefix" project tree`)
+	s.When(`the Product Owner runs "us apply scen-check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story scen-check`)
+	s.And(`stdout matches docs/product/stories/scen-check-verifier\.yaml: story has no acceptance_criteria entries to apply`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`stdout does not match multiple story files`)
+	s.And(`stdout does not match scen-check-phrases`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/scen-check-verifier.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-142: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+func TestE2E142(t *testing.T) {
+	s := scenarios.New(t, "E2E-142")
+	s.Given(`the "us-apply-story-id-mismatch" project tree`)
+	s.When(`the Product Owner runs "us apply scen"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story scen`)
+	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-phrases-tag\.yaml declared_id=scen-check-phrases`)
+	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-verifier\.yaml declared_id=scen-check`)
+	s.And(`stdout matches story file docs/product/stories/scen-check-phrases-tag\.yaml declares id scen-check-phrases, not scen`)
+	s.And(`stdout matches story file docs/product/stories/scen-check-verifier\.yaml declares id scen-check, not scen`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`stdout does not match multiple story files`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
