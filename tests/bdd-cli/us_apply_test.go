@@ -163,3 +163,22 @@ func TestE2E061(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// E2E-062: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
+func TestE2E062(t *testing.T) {
+	s := scenarios.New(t, "E2E-062")
+	s.Given(`the "us-apply-reordered-criteria" project tree`)
+	s.And(`the Product Owner answers "1" to every prompt`)
+	s.When(`the Product Owner runs "us apply mcp-endpoint --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches APPLY COMPLETE`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the scenario from acceptance criterion "mcp-endpoint-001-initialize-ok" in "docs/scenarios.yaml" is keyed "mcp-endpoint-001-initialize-ok"`)
+	s.And(`the scenario from acceptance criterion "mcp-endpoint-002-get-refused" in "docs/scenarios.yaml" is keyed "mcp-endpoint-002-get-refused"`)
+	s.And(`the engine dispatched 4 AI turns`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`stdout does not match RE-WALK`)
+	s.Done()
+}

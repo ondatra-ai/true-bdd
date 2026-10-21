@@ -1050,6 +1050,29 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
+  E2E-062:
+    description: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "us-apply-reordered-criteria" project tree
+        - the Product Owner answers "1" to every prompt
+      when:
+        - the Product Owner runs "us apply mcp-endpoint --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
+        - stdout matches ALL CHECKS PASSED!
+        - stdout matches APPLY COMPLETE
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the scenario from acceptance criterion "mcp-endpoint-001-initialize-ok" in "docs/scenarios.yaml" is keyed "mcp-endpoint-001-initialize-ok"
+        - and: the scenario from acceptance criterion "mcp-endpoint-002-get-refused" in "docs/scenarios.yaml" is keyed "mcp-endpoint-002-get-refused"
+        - and: the engine dispatched 4 AI turns
+        - but: no file outside "tmp" changed
+        - and: stdout does not match RE-WALK
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli
