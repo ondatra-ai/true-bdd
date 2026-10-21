@@ -38,18 +38,30 @@ func FixtureName(scenario bddgo.Scenario) string {
 	return scenario.ID
 }
 
-// TestName is the generated Go test function for a scenario, mirroring
-// the engine's own derivation so a record hint names a filter that
-// actually selects something.
+// TestName is the generated Go test function for a scenario, mirroring the
+// engine's CamelCase of its key (ADR 0014) so a record hint names a filter
+// that actually selects something.
 func TestName(scenario bddgo.Scenario) string {
 	var name strings.Builder
 
 	name.WriteString("Test")
 
+	segmentStart := true
+
 	for _, char := range scenario.ID {
-		if unicode.IsLetter(char) || unicode.IsDigit(char) {
-			name.WriteRune(char)
+		if !unicode.IsLetter(char) && !unicode.IsDigit(char) {
+			segmentStart = true
+
+			continue
 		}
+
+		if segmentStart {
+			char = unicode.ToUpper(char)
+		}
+
+		name.WriteRune(char)
+
+		segmentStart = false
 	}
 
 	return name.String()
