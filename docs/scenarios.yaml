@@ -1819,6 +1819,72 @@ scenarios:
         - and: 'stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases'
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
+  E2E-140:
+    description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-shared-prefix" project tree
+      when:
+        - the Product Owner runs "us refine scen-check"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story scen-check
+        - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml
+        - 'stdout matches invalid modifier type: or'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: stdout does not match multiple story files
+        - and: stdout does not match scen-check-phrases
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-141:
+    description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-shared-prefix" project tree
+      when:
+        - the Product Owner runs "us apply scen-check"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story scen-check
+        - 'stdout matches docs/product/stories/scen-check-verifier\.yaml: story has no acceptance_criteria entries to apply'
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+        - but: stdout does not match multiple story files
+        - and: stdout does not match scen-check-phrases
+        - and: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-142:
+    description: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-story-id-mismatch" project tree
+      when:
+        - the Product Owner runs "us apply scen"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story scen
+        - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-phrases-tag\.yaml declared_id=scen-check-phrases
+        - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-verifier\.yaml declared_id=scen-check
+        - stdout matches story file docs/product/stories/scen-check-phrases-tag\.yaml declares id scen-check-phrases, not scen
+        - stdout matches story file docs/product/stories/scen-check-verifier\.yaml declares id scen-check, not scen
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+        - but: stdout does not match multiple story files
+        - and: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the engine dispatched no AI turns
   scen-check-001-claimed-scenario-passes:
     description: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
     service: bdd-cli
