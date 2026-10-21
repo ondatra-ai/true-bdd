@@ -13,7 +13,7 @@ The single YAML file holding every Scenario, resolved from `documents.scenarios_
 _Avoid_: requirements file, scenarios file, spec file
 
 **Scenario**:
-One entry in the Registry, keyed by id, carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from.
+One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy entries keep an `E2E-NNN` key until their Story renames them), carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from, and named after: the key in CamelCase.
 _Avoid_: test case, requirement, feature
 
 **Story**:
@@ -25,7 +25,7 @@ A named group of Stories that together deliver one product capability. A label a
 _Avoid_: epic, theme, module
 
 **Acceptance Criterion**:
-One testable condition inside a refined user story, before it is merged into the Registry. An AC becomes a Scenario; the two are the same shape and different lifecycle stages.
+One testable condition inside a refined user story, before it is merged into the Registry. An AC becomes a Scenario; the two are the same shape and different lifecycle stages. Its id is `<NNN>-<slug>`, written by the author, and becomes the second half of that Scenario's key.
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:

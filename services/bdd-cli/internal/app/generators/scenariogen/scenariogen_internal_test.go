@@ -398,15 +398,41 @@ func TestBuildPlanRefusesAnUnrunnableTestName(t *testing.T) {
 	root := repoWithModule(t)
 
 	_, err := BuildPlan([]*registry.RegistryScenario{
-		scenario("int-900", testFile),
+		scenario("ß-900", testFile),
 	}, arch(), root, registryPath)
 
 	if !errors.Is(err, ErrUnrunnableTestName) {
 		t.Fatalf("want ErrUnrunnableTestName, got %v", err)
 	}
 
-	if !strings.Contains(err.Error(), "Testint900") {
+	if !strings.Contains(err.Error(), "Testß900") {
 		t.Errorf("the refusal must name what it would have rendered, got %q", err)
+	}
+}
+
+// A key renders its test name in CamelCase (ADR 0014): a lower-case
+// lineage key gets a name `go test` runs, and a legacy key keeps the name
+// it always had. The harness mirror, steps.TestName, pins the same table.
+func TestFuncNameCamelCasesTheKey(t *testing.T) {
+	t.Parallel()
+
+	for key, want := range map[string]string{
+		"E2E-021":                           "TestE2E021",
+		"INT-900":                           "TestINT900",
+		"int-900":                           "TestInt900",
+		"96.2-001-foo-bar":                  "Test962001FooBar",
+		"mcp-endpoint-001-initialize-ok":    "TestMcpEndpoint001InitializeOk",
+		"scen-check-001-unknown-id-refused": "TestScenCheck001UnknownIdRefused",
+	} {
+		got := funcName(key)
+		if got != want {
+			t.Errorf("funcName(%q) = %q, want %q", key, got, want)
+		}
+
+		err := checkRunnableTestName(key, got)
+		if err != nil {
+			t.Errorf("%q renders %q, which must be runnable: %v", key, got, err)
+		}
 	}
 }
 

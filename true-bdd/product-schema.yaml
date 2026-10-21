@@ -8,9 +8,10 @@
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
 # Every field is required. Only `roles` and the vocabulary's own lists
-# must carry an entry; `goals`, `targets`, `not_goals` and `glossary` may
-# be empty, but the key must be declared rather than omitted, so an empty
-# list reads as a decision on the record instead of an oversight.
+# must carry an entry; `vision` may be an empty string and `goals`,
+# `releases`, `not_goals` and `glossary` empty lists, but the key must be
+# declared rather than omitted, so an empty value reads as a decision on
+# the record instead of an oversight.
 
 title: str()
 description: include('description')
@@ -19,12 +20,36 @@ vocabulary: include('vocabulary')
 glossary: list(include('glossary_entry'))
 
 ---
+# vision: why; goals: where to; releases: the next steps, each target
+# showing one arrived; not_goals: where it does not turn. A checklist may
+# cite a goal's `outcome` and a not_goal; vision and releases are context.
 description:
   summary: str()
   problem: str()
-  goals: list(str())
-  targets: list(str())
+  vision: str()
+  goals: list(include('goal'))
+  releases: list(include('release'))
   not_goals: list(str())
+
+---
+goal:
+  id: str()
+  outcome: str()
+  measure: str()
+
+---
+release:
+  version: str()
+  goal: str()
+  due: day()
+  targets: list(include('target'))
+
+---
+# A number or a yes/no, with how it is measured.
+target:
+  id: str()
+  statement: str()
+  measure: str()
 
 ---
 # A role is a responsibility, not a persona: `name` is the closed

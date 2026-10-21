@@ -1,0 +1,37 @@
+# Story seed for `us-apply-unshaped-criterion-id`.
+#
+# A refined story whose second acceptance criterion still carries a legacy
+# `AC-N` id. `us apply` keys each merged Scenario `<story-id>-<ac-id>`
+# (ADR 0014), so `AC-2` would become the Registry key `95.6-AC-2`: a key
+# that says nothing about what it tests. The run must refuse before its
+# first AI turn and name the criterion, not merge the first one and stop.
+#
+# The first criterion is well-formed on purpose: the refusal must come
+# from the id that is wrong, not from whichever criterion is read first.
+
+story:
+    id: "95.6"
+    title: BDD fixture - us apply legacy criterion id
+    as_a: Claude User
+    i_want: a synthetic story whose second acceptance criterion keeps a legacy id
+    so_that: the BDD harness can assert us apply refuses an id it cannot key a Scenario by
+    status: PLANNED
+    acceptance_criteria:
+        - id: 001-health-ok
+          description: The MCP server must respond with a 200 status when a Claude User sends a GET request to the /health endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User sends a GET request to /health
+            - then:
+                - the server returns HTTP 200
+        - id: AC-2
+          description: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a DELETE request to the /health endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User sends a DELETE request to /health
+            - then:
+                - the server returns HTTP 405 Method Not Allowed

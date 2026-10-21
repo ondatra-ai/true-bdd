@@ -27,11 +27,11 @@ registry (the scratch copy of `docs/scenarios.yaml` for this run).
 
 **Output Format:**
 ```
-=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "<scratch path>"
 summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 ```
 
 **CRITICAL:**
@@ -48,8 +48,8 @@ summary: "<one-line summary>"
 
 **Story ID:** 95.1
 **Story Path:** docs/product/stories/95.1-duplicate-collapse.yaml
-**AC ID:** AC-1
-**Lineage Scenario ID:** 95.1-001
+**AC ID:** 001-mcp-initialize
+**Lineage Scenario ID:** 95.1-001-mcp-initialize
 **Description:** The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
 **Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
 
@@ -68,59 +68,43 @@ Then:
 
 ## Fix Prompt to Apply
 
-# Fix Prompt for AC 95.1-001: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+# Fix Prompt for AC 95.1-001-mcp-initialize: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
 
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context
-Two entries reference the same lineage scenario id `95.1-001` for story
-`docs/product/stories/95.1-duplicate-collapse.yaml`:
+## Context (current state)
+Two entries under `scenarios:` both reference the subject's lineage scenario id `95.1-001-mcp-initialize` from story `docs/product/stories/95.1-duplicate-collapse.yaml`:
 
-  - match: E2E-900 — 'MCP /mcp endpoint responds 200 to a valid initialize POST'
-  - match: E2E-901 — 'Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope'
+- `E2E-901` — "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope" (service `mcp-service`, 2 given / 1 when / 2 then)
+- `95.1-001-mcp-initialize` — "MCP /mcp endpoint responds 200 to a valid initialize POST" (service `mcp-service`, 1 given / 1 when / 1 then)
 
-Verdict: duplicate (2 entries). Both are `service: mcp-service` and describe the
-same observable behavior. Collapse them.
+They describe the same observable behavior on the same service, so they are duplicates. Per the merge rule, the **winner is the entry already keyed by the lineage scenario id** (`95.1-001-mcp-initialize`); `E2E-901` is the loser and must be deleted. `E2E-950` is unrelated and must be left exactly as it is.
 
-Winner: **E2E-900** (lower-numbered id; both entries are `E2E-` layer, so the
-lower id wins). Loser: **E2E-901** (deleted).
+Both entries carry the identical single `user_stories[]` item `(story: docs/product/stories/95.1-duplicate-collapse.yaml, scenario_id: 95.1-001-mcp-initialize)`, so after deduplicating by `(story, scenario_id)` the winner keeps exactly that one item — do not duplicate it.
 
-- `user_stories[]`: both entries carry the identical `(story, scenario_id)` pair
-  `(docs/product/stories/95.1-duplicate-collapse.yaml, 95.1-001)`, so the union
-  deduplicates to the single item already present in E2E-900 — no change there.
-- `merged_steps`: union adds E2E-901's `given` step "the server accepts JSON-RPC
-  over HTTP POST at /mcp" and `then` step "the response body is a well-formed
-  JSON-RPC envelope referencing the request id" into E2E-900, preserving order.
-- E2E-950 is untouched.
+The `merged_steps` union adds two steps to the winner, each appended after the step it already has in that phase, preserving `E2E-901`'s relative order:
+- `given`: add `"the server accepts JSON-RPC over HTTP POST at /mcp"`
+- `when`: no change (already identical)
+- `then`: add `"the response body is a well-formed JSON-RPC envelope referencing the request id"`
 
 ## Required Changes
 
-### Change #1: Union E2E-901's merged_steps into E2E-900 and delete E2E-901
+### Change #1: Collapse E2E-901 into 95.1-001-mcp-initialize and delete E2E-901
 
-**Issue:** E2E-900 and E2E-901 are duplicate registry entries for lineage
-scenario `95.1-001`; the registry must contain exactly one entry for this AC.
+**Issue:** The registry contains two entries (`E2E-901` and `95.1-001-mcp-initialize`) that both reference lineage scenario id `95.1-001-mcp-initialize` for the same service and the same observable behavior. The `us-apply/merge` check requires exactly one entry per AC.
 
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml`
-with the exact `old_string` and `new_string` below. This single edit both unions
-the steps into the winner and removes the losing entry.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This single replacement removes the `E2E-901` block and rewrites the winner's `merged_steps` with the unioned steps in one pass. Keep the file's two-space indentation under `scenarios:` and four-space indentation for entry fields exactly as shown. Do not touch the leading comment block, `metadata:`, or the `E2E-950` entry.
 
 **old_string:**
 ```
-    merged_steps:
-      given:
-        - "the MCP server is running on its configured port"
-      when:
-        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
-      then:
-        - "the server returns HTTP 200"
   E2E-901:
     description: "Valid initialize POST to /mcp returns HTTP 200 with a JSON-RPC envelope"
     service: "mcp-service"
     last_updated: "2026-07-25"
     user_stories:
       - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
-        scenario_id: "95.1-001"
+        scenario_id: "95.1-001-mcp-initialize"
         merge_date: "2026-07-25"
     merged_steps:
       given:
@@ -131,40 +115,32 @@ the steps into the winner and removes the losing entry.
       then:
         - "the server returns HTTP 200"
         - "the response body is a well-formed JSON-RPC envelope referencing the request id"
-```
-
-**new_string:**
-```
-    merged_steps:
-      given:
-        - "the MCP server is running on its configured port"
-        - "the server accepts JSON-RPC over HTTP POST at /mcp"
-      when:
-        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
-      then:
-        - "the server returns HTTP 200"
-        - "the response body is a well-formed JSON-RPC envelope referencing the request id"
-```
-
-## Do Not
-- Do not renumber `E2E-900` or any other id.
-- Do not modify or reorder the `E2E-950` entry.
-- Do not change `metadata:` or the leading comment block.
-- Do not add a second `user_stories[]` item for `95.1-001` (it is a duplicate of
-  the one already on E2E-900).
-
-## Verification
-After the edit, `tmp/{{RUN_DIR}}/scenarios.yaml` must contain
-exactly two scenarios — `E2E-900` and `E2E-950` — with `E2E-900` reading:
-
-```
-  E2E-900:
+  95.1-001-mcp-initialize:
     description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
     service: "mcp-service"
     last_updated: "2026-07-25"
     user_stories:
       - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
-        scenario_id: "95.1-001"
+        scenario_id: "95.1-001-mcp-initialize"
+        merge_date: "2026-07-25"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+```
+
+**new_string:**
+```
+  95.1-001-mcp-initialize:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    last_updated: "2026-07-25"
+    user_stories:
+      - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
+        scenario_id: "95.1-001-mcp-initialize"
         merge_date: "2026-07-25"
     merged_steps:
       given:
@@ -177,7 +153,14 @@ exactly two scenarios — `E2E-900` and `E2E-950` — with `E2E-900` reading:
         - "the response body is a well-formed JSON-RPC envelope referencing the request id"
 ```
 
-Exactly one entry references lineage scenario id `95.1-001`.
+## Verification
+After the edit, the file must satisfy all of the following:
+1. `scenarios:` contains exactly two keys, in this order: `95.1-001-mcp-initialize`, then `E2E-950`.
+2. No occurrence of the string `E2E-901` remains anywhere in the file.
+3. Exactly one entry references lineage scenario id `95.1-001-mcp-initialize`, and its `user_stories[]` has exactly one item (story `docs/product/stories/95.1-duplicate-collapse.yaml`, scenario_id `95.1-001-mcp-initialize`, merge_date `2026-07-25`).
+4. The winner's `merged_steps` contains 2 `given`, 1 `when`, and 2 `then` steps, matching the AC's steps verbatim.
+5. The `E2E-950` entry and the `metadata:` block are byte-for-byte unchanged; no other entry was renamed.
+6. The file is still valid YAML (the `95.1-001-mcp-initialize` key stays unquoted, exactly as it was before the edit).
 
 ---
 
@@ -190,8 +173,8 @@ Exactly one entry references lineage scenario id `95.1-001`.
    `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
 3. After the edits succeed, output the confirmation block below.
 
-=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
 summary: "<one-line summary of what changed>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===

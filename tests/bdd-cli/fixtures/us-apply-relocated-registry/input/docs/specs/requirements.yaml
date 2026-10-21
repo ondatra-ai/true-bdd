@@ -10,7 +10,8 @@
 #
 #   - "present?" FAILS: nothing here references story
 #     docs/product/stories/95.2-relocated-registry.yaml. The F: adds a
-#     scenario for lineage 95.2-001 to the scratch registry.
+#     scenario keyed by its lineage, 95.2-001-health-ok, to the scratch
+#     registry.
 #   - "duplicate?" PASSES: the fix added exactly one entry.
 #
 # The re-walk then finds both prompts clean, the walk converges, and the

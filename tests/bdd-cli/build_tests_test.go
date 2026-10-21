@@ -94,6 +94,21 @@ func TestE2E019(t *testing.T) {
 	s.Done()
 }
 
+// E2E-060: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
+func TestE2E060(t *testing.T) {
+	s := scenarios.New(t, "E2E-060")
+	s.Given(`the "build-tests-lineage-key-test-names" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`the file "tests/mcp/mcp_test.go" matches func TestMcpEndpoint001InitializeOk\(t \*testing\.T\)`)
+	s.And(`the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "mcp-endpoint-001-initialize-ok"\)`)
+	s.And(`the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
 // E2E-297: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
 func TestE2E297(t *testing.T) {
 	s := scenarios.New(t, "E2E-297")

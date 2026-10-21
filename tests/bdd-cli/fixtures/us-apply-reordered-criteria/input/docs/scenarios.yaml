@@ -1,0 +1,53 @@
+# Seed registry for the `us-apply-reordered-criteria` BDD fixture.
+#
+# Exactly what `us apply mcp-endpoint --fix` wrote when the story still
+# listed 001 before 002: one entry per criterion, each keyed by its lineage
+# id. The story now lists 002 first. Walking it again through the SHIPPED
+# us-apply checklist, every cell must pass:
+#
+#   - "present?" PASSES for both: each lineage id is cited here.
+#   - "duplicate?" PASSES for both: each is cited exactly once.
+#
+# No fix runs, the walk converges, and the scratch copy committed over
+# this file is byte-identical to it.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Already-applied seed for us-apply-reordered-criteria fixture"
+
+scenarios:
+  mcp-endpoint-001-initialize-ok:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize request to /mcp"
+    service: ""
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/mcp-endpoint-requests.yaml"
+        scenario_id: "mcp-endpoint-001-initialize-ok"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+      when:
+        - the Claude User posts a valid JSON-RPC initialize request to /mcp
+      then:
+        - the server returns HTTP 200
+        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+  mcp-endpoint-002-get-refused:
+    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
+    service: ""
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/mcp-endpoint-requests.yaml"
+        scenario_id: "mcp-endpoint-002-get-refused"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+      when:
+        - the Claude User sends an HTTP GET request to /mcp
+      then:
+        - the server returns HTTP 405 Method Not Allowed

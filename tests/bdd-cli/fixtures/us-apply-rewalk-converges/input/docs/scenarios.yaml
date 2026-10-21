@@ -3,10 +3,10 @@
 # Engineered so that `us apply 99.3 --fix` must apply TWO fixes during
 # walk #1 (one per AC), and walk #2 then verifies a clean fixpoint:
 #
-#   - AC-1's "present?" prompt FAILS because no entry references
-#     lineage id 99.3-001. F: adds a new entry.
-#   - AC-2's "present?" prompt FAILS because no entry references
-#     lineage id 99.3-002. F: adds a new entry.
+#   - AC 001's "present?" prompt FAILS because no entry references
+#     lineage id 99.3-001-mcp-initialize. F: adds a new entry keyed by it.
+#   - AC 002's "present?" prompt FAILS because no entry references
+#     lineage id 99.3-002-mcp-get-refused. F: adds a new entry keyed by it.
 #
 # After walk #1, `anyFixApplied=true` → the engine re-walks. Walk #2
 # finds AC-1 and AC-2 both present, no duplicates, all prompts pass,
