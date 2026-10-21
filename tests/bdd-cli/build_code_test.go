@@ -38,22 +38,6 @@ func TestE2E001(t *testing.T) {
 	s.Done()
 }
 
-// E2E-002: A command that runs fine but cannot be parsed must be refused
-func TestE2E002(t *testing.T) {
-	s := scenarios.New(t, "E2E-002")
-	s.Given(`the "build-code-command-not-machine-readable" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches must emit machine-readable output`)
-	s.And(`stdout matches is missing -json`)
-	s.And(`stdout matches go-test`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned no test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-003: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestE2E003(t *testing.T) {
 	s := scenarios.New(t, "E2E-003")
@@ -67,21 +51,6 @@ func TestE2E003(t *testing.T) {
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned a test runner with arguments matching -run \^TestGreen\$`)
 	s.And(`the engine spawned exactly 1 test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-004: A suite command that is present but names no program must be refused
-func TestE2E004(t *testing.T) {
-	s := scenarios.New(t, "E2E-004")
-	s.Given(`the "build-code-empty-command" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches go-test: test suite command is empty`)
-	s.And(`stdout matches test suite command is empty: \\"''\\"`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build code"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned no test runner`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
@@ -146,9 +115,9 @@ func TestE2E011(t *testing.T) {
 	s.Done()
 }
 
-// E2E-012: A framework the engine cannot route to must be refused, not walked
-func TestE2E012(t *testing.T) {
-	s := scenarios.New(t, "E2E-012")
+// build-code-commands-001-unknown-framework-refused: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
+func TestBuildCodeCommands001UnknownFrameworkRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-001-unknown-framework-refused")
 	s.Given(`the "build-code-unknown-framework" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
@@ -161,14 +130,45 @@ func TestE2E012(t *testing.T) {
 	s.Done()
 }
 
-// E2E-014: A command whose quoting never closes must be refused, not guessed
-func TestE2E014(t *testing.T) {
-	s := scenarios.New(t, "E2E-014")
+// build-code-commands-002-empty-program-refused: A suite command that is present but names no program must be refused
+func TestBuildCodeCommands002EmptyProgramRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-002-empty-program-refused")
+	s.Given(`the "build-code-empty-command" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches go-test: test suite command is empty`)
+	s.And(`stdout matches test suite command is empty: \\"''\\"`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build code"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-commands-003-unclosed-quote-refused: A suite command whose quoting never closes must be refused, not guessed
+func TestBuildCodeCommands003UnclosedQuoteRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-003-unclosed-quote-refused")
 	s.Given(`the "build-code-unterminated-quote" project tree`)
 	s.When(`the System Architect runs "build code"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start`)
 	s.And(`stdout matches unterminated quote`)
+	s.And(`stdout matches go-test`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-commands-004-not-machine-readable-refused: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
+func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-004-not-machine-readable-refused")
+	s.Given(`the "build-code-command-not-machine-readable" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches must emit machine-readable output`)
+	s.And(`stdout matches is missing -json`)
 	s.And(`stdout matches go-test`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runner`)

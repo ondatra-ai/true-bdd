@@ -41,11 +41,14 @@ scenarios:
         - and: the engine spawned the test runner "true-bdd-no-such-runner"
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched no AI turns
-  E2E-002:
-    description: A command that runs fine but cannot be parsed must be refused
+  build-code-commands-004-not-machine-readable-refused:
+    description: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-004-not-machine-readable-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-command-not-machine-readable" project tree
@@ -80,11 +83,14 @@ scenarios:
         - and: the engine spawned a test runner with arguments matching -run \^TestGreen\$
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched no AI turns
-  E2E-004:
+  build-code-commands-002-empty-program-refused:
     description: A suite command that is present but names no program must be refused
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-002-empty-program-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-empty-command" project tree
@@ -258,11 +264,14 @@ scenarios:
         - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
         - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
         - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
-  E2E-012:
-    description: A framework the engine cannot route to must be refused, not walked
+  build-code-commands-001-unknown-framework-refused:
+    description: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-001-unknown-framework-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-unknown-framework" project tree
@@ -276,11 +285,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-014:
-    description: A command whose quoting never closes must be refused, not guessed
+  build-code-commands-003-unclosed-quote-refused:
+    description: A suite command whose quoting never closes must be refused, not guessed
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-003-unclosed-quote-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-unterminated-quote" project tree
