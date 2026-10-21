@@ -10,11 +10,19 @@ Scenario of the scenario registry whose words have no stated meaning.
   can execute
 
 **Where the fix goes:**
+{{ if eq .FailedCheck.Check "term-mappings" -}}
+The term documents: here the architecture document's word mapping. A
+finding here says a product word a Scenario relies on has no stated
+implementation. The answer is a mapping, recorded once where every
+Scenario using the word reads it, so the Scenario itself stays exactly
+as written.
+{{- else -}}
 The term documents: the product document's step-phrase catalogue and
 glossary. A finding here says a step's phrase, or a word that phrase
 relies on, is defined nowhere. The answer is a definition, recorded
 once where every Scenario using the phrase reads it, so the Scenario
 itself stays exactly as written.
+{{- end }}
 
 **What must not change:**
 The Scenario, its generated test and the step definitions. A fix that

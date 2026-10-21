@@ -35,6 +35,18 @@ type ScenarioCheckData struct {
 	Registry []*ScenarioCheckData
 }
 
+// Writes reports whether a fix in this run may write the term document
+// of that key, so a template describes only the working copies it has.
+func (d *ScenarioCheckData) Writes(key string) bool {
+	for _, document := range d.TermDocuments {
+		if document.Key == key {
+			return true
+		}
+	}
+
+	return false
+}
+
 // FormatSteps renders the scenario's Given / When / Then for the
 // scen-check prompt templates.
 func (d *ScenarioCheckData) FormatSteps() string {

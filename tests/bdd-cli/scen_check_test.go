@@ -473,6 +473,26 @@ func TestE2E118(t *testing.T) {
 	s.Done()
 }
 
+// E2E-119: `scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk
+func TestE2E119(t *testing.T) {
+	s := scenarios.New(t, "E2E-119")
+	s.Given(`the "scen-check-fix-records-mapping" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: "reply" has no mapping in the architecture`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=architecture_yaml`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
+	s.And(`the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")

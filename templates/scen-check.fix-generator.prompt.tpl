@@ -7,6 +7,16 @@
 
 ## Where the fix goes
 
+{{ if eq .FailedCheck.Check "term-mappings" -}}
+Into the term documents, and nowhere else: here the architecture
+document's word mapping, its `architecture.terms:` list. A term-mapping
+finding says a product word a Scenario relies on has no stated
+implementation: nothing says what it is in the code, or how a step
+definition sets it up or observes it. The answer is a mapping, written
+once, where every Scenario using the word reads it. The Scenario, the
+generated test rendered from it, the step definitions and the product
+document are never edited by this fix.
+{{- else -}}
 Into the term documents, and nowhere else: the product document's
 step-phrase catalogue and glossary. A scen-check finding says a phrase
 or a word a Scenario relies on has no stated meaning. The answer is a
@@ -14,6 +24,7 @@ definition, written once, where every Scenario using the phrase reads
 it. The Scenario, the generated test rendered from it and the step
 definitions are never edited by a scen-check fix. The fix template below
 says which document, and which kind of entry, the failed check wants.
+{{- end }}
 
 ## Subject — Registry Scenario
 
@@ -102,6 +113,50 @@ meanings, so a reader can rely on neither.
 A good definition reads true in every Scenario whose phrases declare
 the term, not only in this one: read the `means` of each catalogue
 entry declaring it before you write it.
+{{- else if eq .FailedCheck.Check "term-mappings" }}
+
+## The word mapping
+
+The architecture document's `architecture.terms:` list maps each
+product word the catalogue entries declare in their `terms` onto the
+implementation. A mapping has three fields:
+
+- `term`: the word, spelled exactly as the catalogue entries declaring
+  it spell it, case and spacing included. A term is looked up by that
+  spelling and nothing else.
+- `technical`: what the word is in the implementation: the process,
+  request, record, file or field that carries it, named in words.
+- `observed_by`: how a step definition sets the word up or observes
+  it, in words a reader can follow to write that definition: what it
+  starts, sends or reads, and what it compares. It never names a code
+  identifier, so the definition can be rebuilt from it.
+
+Every term a catalogue entry declares, through a step that matches
+that entry, must be mapped exactly once. A term mapped twice is built
+two ways, so no step definition can follow both.
+
+A good mapping holds for every Scenario whose phrases declare the
+term, not only for this one: read the `means` of each catalogue entry
+declaring it, the term's glossary entry, and the mappings already in
+the architecture document before you write it, and say the same kind
+of thing the existing mappings say.
+{{- else if eq .FailedCheck.Check "step-definitions" }}
+
+## The step definitions
+
+The suite's step definitions, in the `steps/` directory the findings
+name, bind each step's text to code. Catalogue templates and step
+definitions must correspond one to one over the steps of every Scenario
+a Story claims in that suite: every step matching one template binds to
+one and the same definition, and each such definition is reached by
+that template alone. A step no definition binds yet is not a finding.
+
+A fix here changes the catalogue only: split a template whose steps
+bind several definitions into one entry per definition, or merge the
+templates that reach one definition into one entry. The step
+definitions are never edited by a scen-check fix; when no catalogue
+change can close a finding, say so in the fix prompt instead of
+proposing one.
 {{- end }}
 
 {{- if .UserAnswers }}
@@ -148,6 +203,15 @@ Using the user's clarifications above, generate a complete fix prompt.
 Decide whether the Scenario and the documents already say what each
 term the findings name means. When the fix template asks you to ask
 first, or the meaning is not plain, ask; otherwise generate the fix.
+{{- else if eq .FailedCheck.Check "term-mappings" }}
+Decide whether the Scenario and the documents already say how each
+term the findings name is implemented and how a step definition
+observes it. When the fix template asks you to ask first, or that is
+not plain, ask; otherwise generate the fix.
+{{- else if eq .FailedCheck.Check "step-definitions" }}
+Decide whether the Scenario and the documents already say which phrases
+mean the same thing and which differ. When the fix template asks you to
+ask first, or that is not plain, ask; otherwise generate the fix.
 {{- else }}
 Decide whether the Scenario and the documents already say what the
 failing step means. When the fix template asks you to ask first, or the
@@ -164,6 +228,22 @@ can execute against the term document. The fix MUST:
   name, exactly as they are.
 - Give the exact YAML of each entry, so the applier copies it rather
   than composing it.
+{{- else if eq .FailedCheck.Check "term-mappings" }}
+- Add or change only the mappings the findings call for: for a term
+  the architecture does not map, one new entry mapping it; for a term
+  it maps more than once, a single entry in place of them all.
+- Leave every other part of the architecture document, and the product
+  document, exactly as they are.
+- Give the exact YAML of each entry, so the applier copies it rather
+  than composing it.
+{{- else if eq .FailedCheck.Check "step-definitions" }}
+- Change only the catalogue entries the findings name: split or merge
+  them so each template binds to one step definition and each
+  definition is reached by one template.
+- Leave every step that matches exactly one template today matching
+  exactly one template, and every other entry as it is.
+- Give the exact YAML of each entry, its template single-quoted, so the
+  applier copies it rather than composing it.
 {{- else }}
 - Add or change only the entries the findings call for: for a step that
   matches no template, one new entry phrasing it.
@@ -191,6 +271,23 @@ The `product` document: its `glossary:` list.
 ```yaml
   - term: <the term, spelled exactly as the catalogue declares it>
     means: <what the word is in this product, and why it matters>
+```
+{{- else if eq .FailedCheck.Check "term-mappings" }}
+
+## Target
+The `architecture_yaml` document: its `architecture.terms:` list.
+
+## Required Changes
+### Change #N: [description]
+**Document:** architecture_yaml
+**Action:** Append this entry to the end of the `architecture.terms:`
+list, creating the list under `architecture:` when there is none (or:
+replace old_string with new_string, verbatim).
+**YAML:**
+```yaml
+    - term: <the term, spelled exactly as the catalogue declares it>
+      technical: <what the word is in the implementation>
+      observed_by: <how a step definition sets it up or observes it>
 ```
 {{- else }}
 

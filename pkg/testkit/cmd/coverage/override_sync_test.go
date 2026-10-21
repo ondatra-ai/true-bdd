@@ -164,6 +164,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-definitions-correspond":       overrideChecks,
 		"scen-check-definitions-unreadable":       overrideChecks,
 		"scen-check-closure-no-catalogue":         overrideChecks,
+		"scen-check-fix-records-mapping":          overrideChecks,
 	}
 }
 

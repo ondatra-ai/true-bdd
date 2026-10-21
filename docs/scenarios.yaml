@@ -1530,6 +1530,30 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
+  E2E-119:
+    description: '`scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "scen-check-fix-records-mapping" project tree
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: 'stdout matches E2E-001: "reply" has no mapping in the architecture'
+        - and: stdout matches msg="AI needs clarification"
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=architecture_yaml
+        - and: 'stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"'
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
+        - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
+        - and: the engine dispatched 3 AI turns
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli
