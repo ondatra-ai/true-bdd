@@ -77,65 +77,6 @@ func TestE2E005(t *testing.T) {
 	s.Done()
 }
 
-// E2E-006: A spec the loader cannot decode must be refused with the file named
-func TestE2E006(t *testing.T) {
-	s := scenarios.New(t, "E2E-006")
-	s.Given(`the "build-code-malformed-spec" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches failed to parse architecture file`)
-	s.And(`stdout matches docs/architecture/architecture\.yaml`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
-	s.And(`the engine spawned no test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-007: A test suite that does not say how to run itself must be refused, not run some other way
-func TestE2E007(t *testing.T) {
-	s := scenarios.New(t, "E2E-007")
-	s.Given(`the "build-code-missing-suite-command" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches commands\.replay`)
-	s.And(`stdout matches architecture\.testing\[go-test\]`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned no test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-008: An architectural spec that declares no services at all must be refused, not walked to a trivial success
-func TestE2E008(t *testing.T) {
-	s := scenarios.New(t, "E2E-008")
-	s.Given(`the "build-code-no-services" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches no services to walk`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned no test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-009: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
-func TestE2E009(t *testing.T) {
-	s := scenarios.New(t, "E2E-009")
-	s.Given(`the "build-code-no-suites" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches declares no testing framework`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned no test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-010: A walk that ends with a test still failing must exit non-zero
 func TestE2E010(t *testing.T) {
 	s := scenarios.New(t, "E2E-010")
@@ -229,6 +170,65 @@ func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
 	s.And(`stdout matches must emit machine-readable output`)
 	s.And(`stdout matches is missing -json`)
 	s.And(`stdout matches go-test`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-spec-001-malformed-spec-refused: A spec the loader cannot decode must be refused with the file named
+func TestBuildCodeSpec001MalformedSpecRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-001-malformed-spec-refused")
+	s.Given(`the "build-code-malformed-spec" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches failed to parse architecture file`)
+	s.And(`stdout matches docs/architecture/architecture\.yaml`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-spec-002-no-services-refused: An architectural spec that declares no services at all must be refused, not walked to a trivial success
+func TestBuildCodeSpec002NoServicesRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-002-no-services-refused")
+	s.Given(`the "build-code-no-services" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches no services to walk`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-spec-003-no-test-suite-refused: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
+func TestBuildCodeSpec003NoTestSuiteRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-003-no-test-suite-refused")
+	s.Given(`the "build-code-no-suites" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches declares no testing framework`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-spec-004-no-replay-command-refused: A test suite that does not say how to run itself must be refused, not run some other way
+func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-004-no-replay-command-refused")
+	s.Given(`the "build-code-missing-suite-command" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches commands\.replay`)
+	s.And(`stdout matches architecture\.testing\[go-test\]`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runner`)
 	s.And(`the engine dispatched no AI turns`)
