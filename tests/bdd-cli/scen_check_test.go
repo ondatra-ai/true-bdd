@@ -22,76 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-070: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
-func TestE2E070(t *testing.T) {
-	s := scenarios.New(t, "E2E-070")
-	s.Given(`the "scen-check-prompt-with-both-kinds" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #2 carries both D: and Q:`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-071: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
-func TestE2E071(t *testing.T) {
-	s := scenarios.New(t, "E2E-071")
-	s.Given(`the "scen-check-prompt-with-no-kind" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-072: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
-func TestE2E072(t *testing.T) {
-	s := scenarios.New(t, "E2E-072")
-	s.Given(`the "scen-check-unknown-check" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-definitions, step-phrases, term-mappings`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-073: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
-func TestE2E073(t *testing.T) {
-	s := scenarios.New(t, "E2E-073")
-	s.Given(`the "scen-check-model-on-check" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-074: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
-func TestE2E074(t *testing.T) {
-	s := scenarios.New(t, "E2E-074")
-	s.Given(`the "scen-check-unknown-check-parameter" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-075: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
 func TestE2E075(t *testing.T) {
 	s := scenarios.New(t, "E2E-075")
@@ -104,25 +34,6 @@ func TestE2E075(t *testing.T) {
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-076: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
-func TestE2E076(t *testing.T) {
-	s := scenarios.New(t, "E2E-076")
-	s.Given(`the "scen-check-failed-check-skips-questions" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1`)
-	s.And(`stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL`)
-	s.And(`stdout matches SKIP: 1\n`)
-	s.And(`stdout matches Validation failed`)
-	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 1 AI turn`)
-	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
@@ -143,20 +54,6 @@ func TestE2E097(t *testing.T) {
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
 	s.And(`the file "docs/product/product.yaml" matches the service answers within`)
 	s.And(`the engine dispatched 3 AI turns`)
-	s.Done()
-}
-
-// E2E-098: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
-func TestE2E098(t *testing.T) {
-	s := scenarios.New(t, "E2E-098")
-	s.Given(`the "scen-check-phrase-docs-unlisted" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
@@ -407,6 +304,109 @@ func TestE2E293(t *testing.T) {
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b`)
 	s.And(`the engine dispatched 25 AI turns`)
+	s.Done()
+}
+
+// checklist-checks-001-checks-run-before-questions: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+func TestChecklistChecks001ChecksRunBeforeQuestions(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-001-checks-run-before-questions")
+	s.Given(`the "scen-check-failed-check-skips-questions" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1`)
+	s.And(`stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL`)
+	s.And(`stdout matches SKIP: 1\n`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// checklist-checks-002-check-and-question-refused: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+func TestChecklistChecks002CheckAndQuestionRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-002-check-and-question-refused")
+	s.Given(`the "scen-check-prompt-with-both-kinds" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 carries both D: and Q:`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-checks-003-neither-check-nor-question-refused: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+func TestChecklistChecks003NeitherCheckNorQuestionRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-003-neither-check-nor-question-refused")
+	s.Given(`the "scen-check-prompt-with-no-kind" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-checks-004-unknown-check-refused: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+func TestChecklistChecks004UnknownCheckRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-004-unknown-check-refused")
+	s.Given(`the "scen-check-unknown-check" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-definitions, step-phrases, term-mappings`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-checks-005-model-on-check-refused: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+func TestChecklistChecks005ModelOnCheckRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-005-model-on-check-refused")
+	s.Given(`the "scen-check-model-on-check" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-checks-006-unread-parameter-refused: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+func TestChecklistChecks006UnreadParameterRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-006-unread-parameter-refused")
+	s.Given(`the "scen-check-unknown-check-parameter" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-checks-007-unlisted-document-refused: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
+func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-checks-007-unlisted-document-refused")
+	s.Given(`the "scen-check-phrase-docs-unlisted" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
