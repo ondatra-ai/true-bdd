@@ -1,0 +1,57 @@
+# Product document for `scen-check-phrase-malformed`.
+#
+# No roles, and a catalogue whose templates break the grammar one rule
+# each. A step cannot be held to a broken catalogue.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: [mcp service]
+  - template: 'the mcp service is running'
+    block: given
+    means: The same phrase, declared a second time.
+    terms: [mcp service]
+  - template: 'the service answers {reply}'
+    block: then
+    means: A text slot outside double quotes.
+    terms: [mcp service]
+  - template: 'the service waits {delay:seconds}'
+    block: then
+    means: A slot of a kind the grammar does not have.
+    terms: [mcp service]
+  - template: 'the reply matches {expected:pattern} exactly'
+    block: then
+    means: A pattern slot that is not the last token.
+    terms: [mcp service]
+  - template: 'the reply matches{expected:pattern}'
+    block: then
+    means: A pattern slot glued to the word before it.
+    terms: [mcp service]
+  - template: 'the "{name}" service calls "{name}"'
+    block: when
+    means: One slot name used twice.
+    terms: [mcp service]
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: A role slot, while the document declares no roles.
+    terms: [mcp service]
+  - template: 'the service [answers|"replies"]'
+    block: then
+    means: A quote inside brackets.
+    terms: [mcp service]
+  - template: 'the service is {up'
+    block: then
+    means: A slot never closed.
+    terms: [mcp service]
+  - template: 'the service [answers'
+    block: then
+    means: Brackets never closed.
+    terms: [mcp service]

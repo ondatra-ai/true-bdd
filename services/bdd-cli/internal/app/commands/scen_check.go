@@ -65,7 +65,7 @@ func RunScenCheck(
 		StoryNumber: "",
 		Fix:         fix,
 
-		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids),
+		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix),
 		PostFix:     scenCheckPostFix,
 		Finalize:    finalizeScenCheck,
 		GetSubject:  scenCheckSubject,
@@ -91,11 +91,12 @@ func RunScenCheck(
 
 // loadCheckScenarios is the LoadItems factory for `scen check`: load the
 // registry, narrow it to the requested ids, and convert each survivor to
-// the subject the prompts see.
+// the subject the prompts see; under --fix, beside the documents a fix writes.
 func loadCheckScenarios(
 	deps ScenCheckDeps,
 	requirementsFile string,
 	ids []string,
+	fix bool,
 ) func(ctx context.Context) ([]*template.ScenarioCheckData, error) {
 	return func(_ context.Context) ([]*template.ScenarioCheckData, error) {
 		// Through the loader, so an empty registry raises its refusal
@@ -111,9 +112,20 @@ func loadCheckScenarios(
 			return nil, err
 		}
 
+		termDocuments := []template.TermDocument(nil)
+
+		if fix {
+			termDocuments, err = seedTermDocuments(deps.DocResolver, deps.RunDir.GetTmpOutPath())
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		items := make([]*template.ScenarioCheckData, 0, len(selected))
 		for _, scenario := range selected {
-			items = append(items, newScenarioCheckData(scenario))
+			item := newScenarioCheckData(scenario)
+			item.TermDocuments = termDocuments
+			items = append(items, item)
 		}
 
 		return items, nil
@@ -178,6 +190,7 @@ func newScenarioCheckData(scenario *registry.RegistryScenario) *template.Scenari
 		Path:        scenario.Path,
 		UserStories: stories,
 		Steps:       scenario.Steps,
+		Phrases:     scenario.Phrases(),
 	}
 }
 
@@ -193,14 +206,19 @@ func scenCheckOnItemStart(idx, total int, item *template.ScenarioCheckData) {
 	slog.Info("Scenario", "index", idx+1, "total", total, "id", item.ID)
 }
 
-// scenCheckPostFix is unreachable while no prompt carries an `F:` —
-// --fix is refused at startup. It returns the item untouched rather than
-// staying nil, which runner.Run's apply closure would dereference.
+// scenCheckPostFix commits the term documents the applier edited. The
+// Scenario itself never changes, so the item returns as it was; the
+// checks re-read the documents at their next Cell.
 func scenCheckPostFix(
 	_ context.Context,
 	item *template.ScenarioCheckData,
 	_ string,
 ) (*template.ScenarioCheckData, error) {
+	err := commitTermDocuments(item.TermDocuments)
+	if err != nil {
+		return nil, err
+	}
+
 	return item, nil
 }
 

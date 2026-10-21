@@ -98,7 +98,10 @@ Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
 refines, or exits. `--fix` is refused at startup when a prompt the walk
 would visit carries no `F:` fix template, which today refuses
-`scen check --fix`: no shipped `scen-check` prompt carries one.
+`scen check --fix` on the shipped checklist: no shipped `scen-check`
+prompt carries one. With a checklist whose prompts all do, a
+`scen check` fix defines the missing term in the product document,
+never in the Scenario (see "The step-phrase catalogue" below).
 `build tests` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
@@ -173,8 +176,47 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 `F:` drives the same fix loop. The engine refuses at startup a prompt
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
-`model:` on a `D:` prompt, since no model answers it. `scen check` holds
-one check today, `given-when-then`; no shipped checklist uses it yet.
+`model:` on a `D:` prompt, since no model answers it, and a `D:` whose
+`docs:` does not list a document its check reads. `scen check` holds two
+checks, `given-when-then` and `step-phrases` (below); no shipped
+checklist uses either yet.
+
+### The step-phrase catalogue
+
+The product document may declare a `catalogue:`, the shape each Given,
+When and Then step may take and what it means. `D: step-phrases` (with
+`docs: [product]`) holds every step of a Scenario to it:
+
+```yaml
+catalogue:
+  - template: 'the engine dispatched {turns:number} AI turn[s]'
+    block: then            # given, when or then: where such a step may sit
+    means: >-
+      The engine sent exactly that many AI turns during the run; "no"
+      means none, so the run cost no model call.
+    terms: [engine, AI turn]   # the glossary words the meaning relies on
+```
+
+A template is literal text plus slots: `"{name}"` (a quoted run, between
+literal double quotes), `{name:number}` (digits, or `no` for zero),
+`{name:role}` (one of the product's `roles[].name`) and `{name:pattern}`
+(the rest of the step, last token only); `[a|b]` is one of the
+alternatives, `[s]` an optional `s`, and `\{ \} \[ \] \\` are literal. A
+step's whole text, without its `and:`/`but:` keyword, must match exactly
+one template in the whole catalogue, declared for the step's block. A
+step matching none or several, or one declared for another block, fails
+its Scenario with a context line naming the step and the templates; a
+template the grammar refuses fails every checked Scenario. Steps opening
+with `llm:` or `judge:` are exempt, since a model runs them.
+
+Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
+passes "not checked: the product document declares no catalogue". With
+one, a Scenario is checked once a Story claims it (a non-empty
+`user_stories`); until then it passes "not checked: no Story claims this
+Scenario yet". Under `--fix` a failed check's `F:` drives the usual
+clarification loop, and the fix is written to a scratch copy of the
+product document in the run directory, which the engine puts in place of
+the document once it parses: the Scenario is never edited.
 
 ### Model tiers
 
@@ -269,7 +311,7 @@ The host project's documents live under `docs/`:
   (allowed action verbs, forbidden action verbs, forbidden qualifiers)
   cited by the `us refine` checks.
 - `docs/product/product.yaml` — the product document, including its
-  `roles:`. These are roles (responsibilities), not personas (invented
+  `roles:` and its step-phrase `catalogue:`. These are roles (responsibilities), not personas (invented
   individuals) — one person commonly holds two of them.
 - `docs/product/stories/*.yaml` — the stories, written by hand out of a
   discussion of a Feature, that `us refine` / `us apply` read, one

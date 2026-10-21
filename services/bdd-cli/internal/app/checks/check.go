@@ -25,9 +25,11 @@ type Input struct {
 }
 
 // Check is one built-in check over Items of type I. Params lists the
-// `with:` keys it reads; a Prompt passing any other is refused at startup.
+// `with:` keys it reads, Docs the document keys; a Prompt passing another
+// parameter, or not citing one of those documents, is refused at startup.
 type Check[I any] struct {
 	Params []string
+	Docs   []string
 	Run    func(item I, input Input) (Verdict, error)
 }
 

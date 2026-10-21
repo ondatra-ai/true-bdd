@@ -3,6 +3,8 @@ package template
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 )
 
 // StoryRef is one entry of a scenario's `user_stories[]` lineage, in the
@@ -22,6 +24,12 @@ type ScenarioCheckData struct {
 	Path        string      // generated test file the scenario renders into
 	UserStories []StoryRef  // lineage back to the stories it was merged from
 	Steps       MergedSteps // Given / When / Then as the registry holds them
+	// Phrases are the same steps as the closure checks read them: each
+	// one's own text, without its and:/but: keyword, beside its block.
+	Phrases []catalogue.Step
+	// TermDocuments are the documents a --fix run may write; empty
+	// without --fix. A fix defines a term there, never in the Scenario.
+	TermDocuments []TermDocument
 }
 
 // FormatSteps renders the scenario's Given / When / Then for the

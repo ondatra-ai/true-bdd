@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 )
 
 // writeRegistry lays down a registry document whose one scenario has the
@@ -47,9 +48,9 @@ func TestLoadKeepsModifierKeywords(t *testing.T) {
 	}
 
 	want := []Statement{
-		{Keyword: KeywordGiven, Text: "a thing"},
-		{Keyword: KeywordAnd, Text: "another"},
-		{Keyword: KeywordBut, Text: "not that"},
+		{Keyword: KeywordGiven, Block: catalogue.BlockGiven, Text: "a thing"},
+		{Keyword: KeywordAnd, Block: catalogue.BlockGiven, Text: "another"},
+		{Keyword: KeywordBut, Block: catalogue.BlockGiven, Text: "not that"},
 	}
 
 	got := scenarios[0].Statements

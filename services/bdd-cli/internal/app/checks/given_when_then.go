@@ -7,6 +7,7 @@ import "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/
 func givenWhenThen() Check[*template.ScenarioCheckData] {
 	return Check[*template.ScenarioCheckData]{
 		Params: nil,
+		Docs:   nil,
 		Run: func(item *template.ScenarioCheckData, _ Input) (Verdict, error) {
 			kinds := []struct {
 				name  string

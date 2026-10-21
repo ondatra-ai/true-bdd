@@ -1,0 +1,51 @@
+# Product document for `scen-check-fix-records-phrase`.
+#
+# The catalogue phrases every step of E2E-001 but its last; the fix adds
+# the entry that phrases "the service answers within 200 milliseconds".
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+glossary:
+  - term: mcp service
+    means: >-
+      The service this project builds: it takes a message from a client
+      and answers it. What every Scenario of the project observes.
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message, and how long it
+      took to arrive. A client waits on it, so its content and its delay
+      are both behaviour.
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: [mcp service]
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: That role sends the quoted message to the MCP service, once.
+    terms: [mcp service]
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: [mcp service, reply]
+  - template: 'the service answers within {budget:number} milliseconds'
+    block: then
+    means: >-
+      The MCP service's reply to the message the When step sent arrives, and
+      the round trip the sender observes — from the moment that message is
+      sent until its reply arrives back at the sender — is at most {budget}
+      milliseconds. A reply arriving at exactly {budget} milliseconds passes
+      (elapsed <= {budget}); no reply arriving at all fails this step.
+    terms: [mcp service, reply]

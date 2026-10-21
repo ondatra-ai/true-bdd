@@ -47,7 +47,9 @@ naming no entry, or given twice, is refused before the first turn.
 
 The CLI exits 1 when any scenario fails a check, so scen check can gate
 a change. --fix is refused at startup while a prompt it would walk
-carries no fix template, as every shipped scen-check prompt does.
+carries no fix template, as every shipped scen-check prompt does. A fix
+defines what a failed check found undefined in the product document,
+never in the scenario.
 
 Example:
   true-bdd scen check

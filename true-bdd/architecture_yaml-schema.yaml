@@ -30,6 +30,15 @@ vocabulary: include('vocabulary', required=False)
 architecture:
   testing: include('testing')
   services: list(include('service'), min=1)
+  terms: list(include('term_mapping'), required=False)
+
+---
+# How one product glossary word turns into the implementation, and how a
+# step definition sets it up or observes it, in words, never a Go name.
+term_mapping:
+  term: str()
+  technical: str()
+  observed_by: str()
 
 ---
 # How this repository's tests run. `framework` routes to a runner and
@@ -135,9 +144,9 @@ commands:
   live: str()
 
 ---
-# Mirrors `vocabulary` in product-schema.yaml — duplicated (yamale has no
-# cross-file include) because the block may live in either document. The
-# two must stay in step: one checklist reads whichever the host wrote.
+# Mirrors `vocabulary` in product-schema.yaml (yamale has no cross-file
+# include) but for `actions`, which the product retired for its catalogue
+# and `us refine` still cites here until it reads that catalogue.
 vocabulary:
   actions: list(include('action'), min=1)
   forbidden_qualifiers: list(str(), min=1)

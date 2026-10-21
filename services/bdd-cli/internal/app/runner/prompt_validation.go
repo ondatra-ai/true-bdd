@@ -18,6 +18,7 @@ var errPromptsNotWalkable = errors.New("checklist has prompts the engine cannot 
 var (
 	errUnknownCheck      = errors.New("names no built-in check of")
 	errUnknownCheckParam = errors.New("has no with: parameter")
+	errCheckDocUnlisted  = errors.New("so its docs: must list")
 )
 
 // validatePrompts refuses a checklist holding a prompt nothing could
@@ -30,7 +31,7 @@ func validatePrompts[I any](
 	offenders := make([]string, 0)
 
 	for idx := range prompts {
-		err := promptProblem(command, set, &prompts[idx].Prompt)
+		err := promptProblem(command, set, &prompts[idx])
 		if err == nil {
 			continue
 		}
@@ -47,8 +48,11 @@ func validatePrompts[I any](
 }
 
 // promptProblem is why one prompt cannot be walked by this command: its
-// shape, a check the command does not hold, or a parameter the check lacks.
-func promptProblem[I any](command string, set checks.Set[I], prompt *checklistmodels.Prompt) error {
+// shape, a check the command does not hold, a parameter the check lacks,
+// or a document the check reads that the prompt does not cite.
+func promptProblem[I any](command string, set checks.Set[I], promptCtx *checklistmodels.PromptWithContext) error {
+	prompt := &promptCtx.Prompt
+
 	err := prompt.ShapeError()
 	if err != nil {
 		return err
@@ -74,6 +78,21 @@ func promptProblem[I any](command string, set checks.Set[I], prompt *checklistmo
 		if !slices.Contains(check.Params, key) {
 			return fmt.Errorf("%s %w %s; it takes %s",
 				prompt.Label(), errUnknownCheckParam, key, describeParams(check.Params))
+		}
+	}
+
+	return uncitedDoc(promptCtx, check.Docs)
+}
+
+// uncitedDoc refuses a check prompt that does not cite a document its
+// check reads: the check would find nothing there and pass unchecked.
+func uncitedDoc(promptCtx *checklistmodels.PromptWithContext, reads []string) error {
+	cited := promptCtx.GetEffectiveDocs()
+
+	for _, key := range reads {
+		if !slices.Contains(cited, key) {
+			return fmt.Errorf("%s reads the %s document, %w %s",
+				promptCtx.Prompt.Label(), key, errCheckDocUnlisted, key)
 		}
 	}
 
