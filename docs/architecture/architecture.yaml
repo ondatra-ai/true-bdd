@@ -178,8 +178,9 @@ architecture:
 
     - term: command
       technical: >-
-        The quoted text, split into arguments by shell quoting rules and run
-        as the engine binary's arguments in a subprocess. Its working
+        The quoted text, split into arguments at whitespace (no quoting, so
+        an argument cannot hold a space) and run as the engine binary's
+        arguments in a subprocess. Its working
         directory is the run directory assembled from the project tree, its
         stdin carries the answers a Given step set (nothing otherwise), and
         the AI CLIs it finds on its PATH are the harness's record or replay
