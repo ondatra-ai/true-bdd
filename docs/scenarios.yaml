@@ -2324,6 +2324,30 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  build-tests-refusals-005-step-outside-catalogue-refused:
+    description: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-005-step-outside-catalogue-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-step-outside-catalogue" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: stdout matches registry steps outside the catalogue in \./docs/product/product\.yaml
+        - and: 'stdout matches INT-902: then step \\"the session is granted a ticket within 2 seconds\\" matches no template'
+        - and: 'stdout matches INT-903: then step \\"the server answers 200\\" matches 2 templates: \\"the server answers \{code:number\}\\"; \\"the server answers 200\\"'
+        - and: 'stdout matches INT-904: then step \\"the MCP server is running\\" matches \\"the MCP server is running\\", declared for given'
+        - but: 'stdout does not match INT-901:'
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
   build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
     service: bdd-cli

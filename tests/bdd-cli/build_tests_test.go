@@ -78,6 +78,23 @@ func TestBuildTestsRefusals004EmptyChecklistRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-tests-refusals-005-step-outside-catalogue-refused: When the product document declares a catalogue, a Registry step that does not match exactly one catalogue template of its own block must refuse `build tests` at startup, naming each such Scenario and step whether or not a Story claims that Scenario, before a generated test is written or an AI turn is spent
+func TestBuildTestsRefusals005StepOutsideCatalogueRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-005-step-outside-catalogue-refused")
+	s.Given(`the "build-tests-step-outside-catalogue" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches registry steps outside the catalogue in \./docs/product/product\.yaml`)
+	s.And(`stdout matches INT-902: then step \\"the session is granted a ticket within 2 seconds\\" matches no template`)
+	s.And(`stdout matches INT-903: then step \\"the server answers 200\\" matches 2 templates: \\"the server answers \{code:number\}\\"; \\"the server answers 200\\"`)
+	s.And(`stdout matches INT-904: then step \\"the MCP server is running\\" matches \\"the MCP server is running\\", declared for given`)
+	s.But(`stdout does not match INT-901:`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
 func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")
