@@ -32,6 +32,15 @@ func answerCheck[I any](
 		Docs:      docPaths,
 	})
 	if err != nil {
+		// Logged here: the walk stops on it, and cobra prints the error to
+		// stderr, which no `stdout matches` step reads.
+		slog.Error("Check could not answer",
+			"check", name,
+			"subjectID", subjectID,
+			"promptIndex", query.Index,
+			"error", err,
+		)
+
 		return checklistmodels.ValidationResult{}, fmt.Errorf("check %s: %w", name, err)
 	}
 

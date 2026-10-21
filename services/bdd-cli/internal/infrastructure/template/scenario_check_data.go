@@ -30,6 +30,9 @@ type ScenarioCheckData struct {
 	// TermDocuments are the documents a --fix run may write; empty
 	// without --fix. A fix defines a term there, never in the Scenario.
 	TermDocuments []TermDocument
+	// Registry is every Scenario of the Registry, this one included,
+	// whatever the walk selected: a check relating Scenarios reads it.
+	Registry []*ScenarioCheckData
 }
 
 // FormatSteps renders the scenario's Given / When / Then for the

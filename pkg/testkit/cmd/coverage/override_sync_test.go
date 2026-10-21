@@ -158,6 +158,12 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-term-unmapped":                overrideChecks,
 		"scen-check-terms-mapped":                 overrideChecks,
 		"scen-check-term-mapped-twice":            overrideChecks,
+		"scen-check-template-binds-twice":         overrideChecks,
+		"scen-check-definition-reached-twice":     overrideChecks,
+		"scen-check-step-binds-twice":             overrideChecks,
+		"scen-check-definitions-correspond":       overrideChecks,
+		"scen-check-definitions-unreadable":       overrideChecks,
+		"scen-check-closure-no-catalogue":         overrideChecks,
 	}
 }
 

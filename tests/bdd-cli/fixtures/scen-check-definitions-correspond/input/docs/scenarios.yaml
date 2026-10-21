@@ -1,0 +1,57 @@
+# Registry seed for `scen-check-definitions-correspond`.
+#
+# Two claimed Scenarios whose templates each bind one step definition,
+# one with a model-run step and one with a step no definition binds yet,
+# and an unclaimed one.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Templates and step definitions in one to one correspondence"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-001-answers-pong
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "ping"
+      then:
+        - the service answers "pong"
+        - and: 'judge: the answer reads as a reply to a ping'
+  E2E-002:
+    description: The service must answer a greeting and log it
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-002-logs-greeting
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Client Developer sends "hi"
+      then:
+        - the service answers "hello"
+        - and: the service logs "greeted"
+  E2E-003:
+    description: The service must answer a farewell with a farewell
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "quit"
+      then:
+        - the service answers "bye"

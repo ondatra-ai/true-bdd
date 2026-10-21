@@ -16,15 +16,19 @@ const (
 	// CheckTermMappings names the check that the architecture's word
 	// mapping maps, exactly once, every term those phrases declare.
 	CheckTermMappings = "term-mappings"
+	// CheckStepDefinitions names the check that those phrases and the
+	// suite's step definitions correspond one to one.
+	CheckStepDefinitions = "step-definitions"
 )
 
 // ForScenarios is the Set a `scen check` Prompt may name: every built-in
 // check that reads one Registry Scenario.
 func ForScenarios() Set[*template.ScenarioCheckData] {
 	return Set[*template.ScenarioCheckData]{
-		CheckGivenWhenThen: givenWhenThen(),
-		CheckStepPhrases:   stepPhrases(),
-		CheckDeclaredTerms: declaredTerms(),
-		CheckTermMappings:  termMappings(),
+		CheckGivenWhenThen:   givenWhenThen(),
+		CheckStepPhrases:     stepPhrases(),
+		CheckDeclaredTerms:   declaredTerms(),
+		CheckTermMappings:    termMappings(),
+		CheckStepDefinitions: stepDefinitions(),
 	}
 }
