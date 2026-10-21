@@ -231,7 +231,7 @@ func TestE2E046(t *testing.T) {
 	s.Done()
 }
 
-// E2E-047: A Story id that is a slug rather than `<epic>.<story>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+// E2E-047: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
 func TestE2E047(t *testing.T) {
 	s := scenarios.New(t, "E2E-047")
 	s.Given(`the "us-refine-slug-id-missing-story" project tree`)
