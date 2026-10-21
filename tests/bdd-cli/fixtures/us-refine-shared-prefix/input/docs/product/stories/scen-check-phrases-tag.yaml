@@ -1,0 +1,23 @@
+# A sibling Story in `us-refine-shared-prefix`: its id is
+# `scen-check-phrases`, yet its file also matches `scen-check-*.yaml`, and
+# sorts before `scen-check-verifier.yaml`. A well-formed Story, so had the
+# run picked this file it would have walked it with model turns.
+
+story:
+    id: scen-check-phrases
+    title: Check A Scenario's Steps Against The Catalogue
+    as_a: Quality Engineer
+    i_want: to check that every step of a claimed Scenario matches a phrase of the catalogue
+    so_that: a step the catalogue does not declare is caught before it ships
+    status: PLANNED
+    acceptance_criteria:
+        - id: 001-unmatched-step-fails
+          description: A claimed Scenario with a step no phrase of the catalogue matches must fail the walk.
+          steps:
+            - given:
+                - a Registry holding one claimed Scenario with a step no phrase matches
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - and: the command names the step that matches no phrase
