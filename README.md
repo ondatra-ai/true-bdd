@@ -92,13 +92,14 @@ until those tests pass.
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; the registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
-| `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one AI turn per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Advisory by design: a failed check is reported and the CLI still exits 0, so it cannot gate a commit. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
+| `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
 Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
-refines, or exits — except `scen check`, which registers the flag and
-refuses it at startup, because no `scen-check` prompt carries a fix
-template. `build tests` and `scen check` also take
+refines, or exits. `--fix` is refused at startup when a prompt the walk
+would visit carries no `F:` fix template, which today refuses
+`scen check --fix`: no shipped `scen-check` prompt carries one.
+`build tests` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
 and `documents.architecture_yaml` in `true-bdd.yaml`).
@@ -142,11 +143,38 @@ The host project supplies a `true-bdd/` directory at its root:
   the prompt at those files.
 - `checklists/` — one checklist per command, named by hyphenating the
   command path (`us refine` → `us-refine.yaml`, `build tests` →
-  `build-tests.yaml`, …).
+  `build-tests.yaml`, …). Each prompt is a `Q:` a model answers or a
+  `D:` the engine answers itself (below).
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
   the host project validates them in its lint step, outside the engine
   itself.
+
+### Deterministic prompts
+
+A checklist prompt is either `Q:`, a question a model answers, or
+`D: <check>`, which names one of the engine's built-in checks and is
+answered by the engine's own code, with no AI turn (ADR 0015). A check's
+parameters go under `with:`; `rationale`, `docs` (the documents the
+check reads) and `F:` keep their meaning, as do `fix_model` and
+`apply_model`:
+
+```yaml
+validation_prompts:
+  - D: given-when-then   # scen check: the scenario has given, when and then steps
+    rationale: "…"
+  - Q: "…"
+```
+
+Within an item every `D:` prompt runs first, in file order, then every
+`Q:` prompt, and an item failing a `D:` prompt skips its `Q:` prompts,
+reported as SKIP, so no turn is spent on it. A `D:` verdict has a
+model's shape (pass or fail plus context lines), and under `--fix` its
+`F:` drives the same fix loop. The engine refuses at startup a prompt
+carrying both `D:` and `Q:` or neither, a `D:` naming a check the
+command does not hold, a `with:` parameter the check does not read, and
+`model:` on a `D:` prompt, since no model answers it. `scen check` holds
+one check today, `given-when-then`; no shipped checklist uses it yet.
 
 ### Model tiers
 

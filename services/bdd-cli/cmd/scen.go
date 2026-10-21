@@ -33,18 +33,21 @@ func newScenCheckCmd(provide containerProvider) *cobra.Command {
 		Short: "Walk registry scenarios against the scen-check checklist",
 		Long: `Walk entries in the configured scenario registry
 (documents.scenarios_yaml, conventionally docs/scenarios.yaml) against
-the scen-check checklist, one AI turn per (scenario, prompt) cell. Each
-prompt reads one scenario's own fields — description, service, path,
-lineage and steps — and rules on that scenario alone; no prompt is shown
-the registry file, so none can ask a cross-registry question.
+the scen-check checklist, one cell per (scenario, prompt). Each prompt
+reads one scenario's own fields — description, service, path, lineage
+and steps — and rules on that scenario alone; no prompt is shown the
+registry file, so none can ask a cross-registry question. A Q: prompt
+costs one AI turn per scenario; a D: prompt is answered by one of the
+engine's built-in checks with no turn, before any Q: prompt, and a
+scenario failing one skips its Q: prompts.
 
 With no argument every scenario is walked; ids narrow the walk to those
 scenarios, in ascending id order whatever order they are typed. An id
 naming no entry, or given twice, is refused before the first turn.
 
-The command is advisory: a failed check is reported and the CLI still
-exits 0, so scen check cannot gate a commit. --fix is refused at startup,
-because no scen-check prompt carries a fix template.
+The CLI exits 1 when any scenario fails a check, so scen check can gate
+a change. --fix is refused at startup while a prompt it would walk
+carries no fix template, as every shipped scen-check prompt does.
 
 Example:
   true-bdd scen check

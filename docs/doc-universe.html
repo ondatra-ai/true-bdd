@@ -544,7 +544,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">scen check [id...]</span></td>
             <td>one <strong>registry scenario</strong> at a time — its own description, <code>service:</code>, <code>path:</code>, lineage and steps, and never the registry file itself</td>
             <td><span class="cl">scen-check.yaml</span></td>
-            <td><strong>nothing</strong>. Advisory: findings are reported and the CLI exits 0, so it cannot gate a commit</td>
+            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change</td>
           </tr>
         </tbody>
       </table>
