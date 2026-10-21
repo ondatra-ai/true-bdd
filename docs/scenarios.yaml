@@ -736,11 +736,14 @@ scenarios:
         - and: every acceptance criterion in the story "docs/product/stories/96.5-document-summary-steps.yaml" has given, when and then steps
         - and: stdout does not match Hit max apply attempts
         - and: 'judge: AC-2''s new given, when and then steps are derived from its own description, and the five criteria still cover the substance of the seed with every exact message and numeric threshold intact'
-  E2E-042:
+  us-refine-verdicts-001-passing-story-saved-in-place:
     description: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
+        scenario_id: us-refine-verdicts-001-passing-story-saved-in-place
+        merge_date: '2026-10-21'
     timeout: 25m
     merged_steps:
       given:
@@ -807,11 +810,14 @@ scenarios:
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: no file matching "docs/product/stories/96.9-*.yaml" is created
         - and: the engine dispatched no AI turns
-  E2E-045:
+  us-refine-verdicts-002-no-happy-path-fails:
     description: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
+        scenario_id: us-refine-verdicts-002-no-happy-path-fails
+        merge_date: '2026-10-21'
     timeout: 25m
     merged_steps:
       given:
@@ -825,12 +831,15 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
-        - and: 'stdout does not match Story saved to:'
-  E2E-046:
+        - and: 'stdout does not match msg="Story saved"'
+  us-refine-verdicts-003-implementation-and-subjective-fail:
     description: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
+        scenario_id: us-refine-verdicts-003-implementation-and-subjective-fail
+        merge_date: '2026-10-21'
     timeout: 25m
     merged_steps:
       given:
@@ -844,7 +853,7 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
-        - and: 'stdout does not match Story saved to:'
+        - and: 'stdout does not match msg="Story saved"'
   us-refine-refusals-002-slug-id-accepted:
     description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
     service: bdd-cli
