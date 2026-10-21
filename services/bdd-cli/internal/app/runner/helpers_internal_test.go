@@ -92,6 +92,41 @@ func TestStoryFinalizeConvergedWritesFile(t *testing.T) {
 	}
 }
 
+// TestStoryFinalizeConvergedWritesTheFileThatDeclaresItsID proves the write
+// lands on the file the walk loaded (#140): `4.1-*.yaml` also matches the
+// Story `4.1-0`, whose file sorts first.
+func TestStoryFinalizeConvergedWritesTheFileThatDeclaresItsID(t *testing.T) {
+	t.Parallel()
+
+	versionMgr := seedVersionManager(t)
+	storiesDir := t.TempDir()
+	storyPath := filepath.Join(storiesDir, "4.1-seed-story.yaml")
+	siblingPath := filepath.Join(storiesDir, "4.1-0-sibling.yaml")
+	sibling := []byte("story:\n  id: \"4.1-0\"\n")
+
+	for path, body := range map[string][]byte{storyPath: []byte("story:\n  id: \"4.1\"\n"), siblingPath: sibling} {
+		err := disk.Write(path, body, disk.Shared)
+		if err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+
+	err := StoryFinalize(storiesDir, "4.1", versionMgr, true)(&engine.Result[*story.Story]{Reason: engine.Converged})
+	if err != nil {
+		t.Fatalf("finalize returned error: %v", err)
+	}
+
+	written, err := disk.Read(storyPath)
+	if err != nil || !strings.Contains(string(written), "Seed Story") {
+		t.Fatalf("expected the converged story written over %s, got %q (err=%v)", storyPath, written, err)
+	}
+
+	untouched, err := disk.Read(siblingPath)
+	if err != nil || string(untouched) != string(sibling) {
+		t.Fatalf("expected %s untouched, got %q (err=%v)", siblingPath, untouched, err)
+	}
+}
+
 // TestStoryFinalizeNonConvergedIsClean proves non-converged stop reasons
 // stay success-at-finalize (the write only happens on Converged).
 func TestStoryFinalizeNonConvergedIsClean(t *testing.T) {
