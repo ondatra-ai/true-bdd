@@ -1410,11 +1410,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: 'the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
-  E2E-110:
+  scen-check-mappings-002-unmapped-term-fails:
     description: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-002-unmapped-term-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-unmapped" project tree
@@ -1428,11 +1431,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-111:
+  scen-check-mappings-001-mapped-terms-pass:
     description: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-001-mapped-terms-pass
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-mapped" project tree
@@ -1446,11 +1452,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-112:
+  scen-check-mappings-003-term-mapped-twice-fails:
     description: A term the architecture maps more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-003-term-mapped-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-mapped-twice" project tree
@@ -1549,11 +1558,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-118:
+  scen-check-mappings-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-004-no-catalogue-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-closure-no-catalogue" project tree
