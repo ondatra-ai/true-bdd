@@ -22,65 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-021: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
-func TestE2E021(t *testing.T) {
-	s := scenarios.New(t, "E2E-021")
-	s.Given(`the "us-apply-duplicate-collapse" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us apply 95.1 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg=AC index=1 total=1`)
-	s.And(`stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches APPLY COMPLETE`)
-	s.And(`the file "docs/scenarios.yaml" is modified`)
-	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "95.1-001-mcp-initialize"`)
-	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" is keyed "95.1-001-mcp-initialize"`)
-	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" cites the story "docs/product/stories/95.1-duplicate-collapse.yaml"`)
-	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" matches HTTP 200`)
-	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"`)
-	s.But(`the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged`)
-	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did`)
-	s.Done()
-}
-
-// E2E-022: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
-func TestE2E022(t *testing.T) {
-	s := scenarios.New(t, "E2E-022")
-	s.Given(`the "us-apply-malformed-scenarios" project tree`)
-	s.When(`the Product Owner runs "us apply 95.5"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US APPLY — Story 95\.5`)
-	s.And(`stdout matches msg="Seeded scratch registry"`)
-	s.And(`stdout matches us apply requires acceptance_criteria with embedded steps`)
-	s.And(`stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the file "docs/product/stories/95.5-legacy-test-scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-023: `us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for
-func TestE2E023(t *testing.T) {
-	s := scenarios.New(t, "E2E-023")
-	s.Given(`the "us-apply-missing-story" project tree`)
-	s.When(`the Product Owner runs "us apply 95.4"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US APPLY — Story 95\.4`)
-	s.And(`stdout matches msg="Seeded scratch registry"`)
-	s.And(`stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-024: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
 func TestE2E024(t *testing.T) {
 	s := scenarios.New(t, "E2E-024")
@@ -105,9 +46,9 @@ func TestE2E024(t *testing.T) {
 	s.Done()
 }
 
-// E2E-025: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
-func TestE2E025(t *testing.T) {
-	s := scenarios.New(t, "E2E-025")
+// us-apply-001-missing-criteria-added: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
+func TestUsApply001MissingCriteriaAdded(t *testing.T) {
+	s := scenarios.New(t, "us-apply-001-missing-criteria-added")
 	s.Given(`the "us-apply-rewalk-converges" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
 	s.And(`the Product Owner answers "1" to every question`)
@@ -132,41 +73,33 @@ func TestE2E025(t *testing.T) {
 	s.Done()
 }
 
-// E2E-026: `us apply` on a story that was created but never refined must be refused, not walked to a trivial success
-func TestE2E026(t *testing.T) {
-	s := scenarios.New(t, "E2E-026")
-	s.Given(`the "us-apply-story-without-acs" project tree`)
-	s.When(`the Product Owner runs "us apply 95.3"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US APPLY — Story 95\.3`)
-	s.And(`stdout matches msg="Seeded scratch registry"`)
-	s.And(`stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the file "docs/product/stories/95.3-document-summary-created-not-refined.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
+// us-apply-002-duplicates-collapse: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
+func TestUsApply002DuplicatesCollapse(t *testing.T) {
+	s := scenarios.New(t, "us-apply-002-duplicates-collapse")
+	s.Given(`the "us-apply-duplicate-collapse" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us apply 95.1 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg=AC index=1 total=1`)
+	s.And(`stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches APPLY COMPLETE`)
+	s.And(`the file "docs/scenarios.yaml" is modified`)
+	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "95.1-001-mcp-initialize"`)
+	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" is keyed "95.1-001-mcp-initialize"`)
+	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" cites the story "docs/product/stories/95.1-duplicate-collapse.yaml"`)
+	s.And(`the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" matches HTTP 200`)
+	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"`)
+	s.But(`the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did`)
 	s.Done()
 }
 
-// E2E-061: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
-func TestE2E061(t *testing.T) {
-	s := scenarios.New(t, "E2E-061")
-	s.Given(`the "us-apply-unshaped-criterion-id" project tree`)
-	s.When(`the Product Owner runs "us apply 95.6"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches docs/product/stories/95\.6-legacy-criterion-id\.yaml: acceptance criterion 2 has id AC-2`)
-	s.And(`stdout matches the id must be <NNN>-<slug>`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-062: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
-func TestE2E062(t *testing.T) {
-	s := scenarios.New(t, "E2E-062")
+// us-apply-003-reorder-keeps-keys: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
+func TestUsApply003ReorderKeepsKeys(t *testing.T) {
+	s := scenarios.New(t, "us-apply-003-reorder-keeps-keys")
 	s.Given(`the "us-apply-reordered-criteria" project tree`)
 	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint --fix"`)
@@ -183,9 +116,26 @@ func TestE2E062(t *testing.T) {
 	s.Done()
 }
 
-// E2E-141: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
-func TestE2E141(t *testing.T) {
-	s := scenarios.New(t, "E2E-141")
+// us-apply-refusals-001-missing-story-refused: `us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for
+func TestUsApplyRefusals001MissingStoryRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-001-missing-story-refused")
+	s.Given(`the "us-apply-missing-story" project tree`)
+	s.When(`the Product Owner runs "us apply 95.4"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story 95\.4`)
+	s.And(`stdout matches msg="Seeded scratch registry"`)
+	s.And(`stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-apply-refusals-002-shared-prefix-reads-own-story: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+func TestUsApplyRefusals002SharedPrefixReadsOwnStory(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-002-shared-prefix-reads-own-story")
 	s.Given(`the "us-apply-shared-prefix" project tree`)
 	s.When(`the Product Owner runs "us apply scen-check"`)
 	s.Then(`the command exits with code 1`)
@@ -202,9 +152,9 @@ func TestE2E141(t *testing.T) {
 	s.Done()
 }
 
-// E2E-142: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
-func TestE2E142(t *testing.T) {
-	s := scenarios.New(t, "E2E-142")
+// us-apply-refusals-003-mismatched-id-refused: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+func TestUsApplyRefusals003MismatchedIdRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-003-mismatched-id-refused")
 	s.Given(`the "us-apply-story-id-mismatch" project tree`)
 	s.When(`the Product Owner runs "us apply scen"`)
 	s.Then(`the command exits with code 1`)
@@ -216,6 +166,56 @@ func TestE2E142(t *testing.T) {
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
 	s.But(`stdout does not match multiple story files`)
 	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-apply-refusals-004-legacy-layout-refused: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
+func TestUsApplyRefusals004LegacyLayoutRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-004-legacy-layout-refused")
+	s.Given(`the "us-apply-malformed-scenarios" project tree`)
+	s.When(`the Product Owner runs "us apply 95.5"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story 95\.5`)
+	s.And(`stdout matches msg="Seeded scratch registry"`)
+	s.And(`stdout matches us apply requires acceptance_criteria with embedded steps`)
+	s.And(`stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/95.5-legacy-test-scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-apply-refusals-005-unrefined-story-refused: `us apply` on a story that was created but never refined must be refused, not walked to a trivial success
+func TestUsApplyRefusals005UnrefinedStoryRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-005-unrefined-story-refused")
+	s.Given(`the "us-apply-story-without-acs" project tree`)
+	s.When(`the Product Owner runs "us apply 95.3"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story 95\.3`)
+	s.And(`stdout matches msg="Seeded scratch registry"`)
+	s.And(`stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/95.3-document-summary-created-not-refined.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-apply-refusals-006-unshaped-criterion-id-refused: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
+func TestUsApplyRefusals006UnshapedCriterionIdRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-refusals-006-unshaped-criterion-id-refused")
+	s.Given(`the "us-apply-unshaped-criterion-id" project tree`)
+	s.When(`the Product Owner runs "us apply 95.6"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches docs/product/stories/95\.6-legacy-criterion-id\.yaml: acceptance criterion 2 has id AC-2`)
+	s.And(`stdout matches the id must be <NNN>-<slug>`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()

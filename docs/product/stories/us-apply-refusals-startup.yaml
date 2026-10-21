@@ -1,0 +1,126 @@
+# Story `us-apply-refusals`: `us apply` refusing at startup a Story it
+# cannot merge.
+#
+# Finding the Story, by the file whose own id is the one asked for, and
+# each refusal of a Story that is missing, in the older layout, unrefined
+# or carrying a criterion id of the wrong shape. The merge itself is the
+# Story `us-apply`.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `us-apply-refusals-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: us-apply-refusals
+    feature: us-apply
+    title: Refuse at startup a Story that us apply cannot merge, before any AI turn
+    as_a: Product Owner
+    i_want: to have us apply read the one Story file whose own id is the one I name, and refuse at startup, before any AI turn and with the Registry unchanged, a Story it cannot find or cannot merge (no file, no file declaring that id, the older layout, no Acceptance Criteria, or a criterion id of the wrong shape)
+    so_that: a mistake in a Story is named in the file where I can fix it, and never reaches the Registry as a guessed or empty merge
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-missing-story-refused
+          description: '`us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for'
+          steps:
+            - given:
+                - the "us-apply-missing-story" project tree
+            - when:
+                - the Product Owner runs "us apply 95.4"
+            - then:
+                - the command exits with code 1
+                - stdout matches US APPLY — Story 95\.4
+                - stdout matches msg="Seeded scratch registry"
+                - 'stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 002-shared-prefix-reads-own-story
+          description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+          steps:
+            - given:
+                - the "us-apply-shared-prefix" project tree
+            - when:
+                - the Product Owner runs "us apply scen-check"
+            - then:
+                - the command exits with code 1
+                - stdout matches US APPLY — Story scen-check
+                - 'stdout matches docs/product/stories/scen-check-verifier\.yaml: story has no acceptance_criteria entries to apply'
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: stdout does not match multiple story files
+                - and: stdout does not match scen-check-phrases
+                - and: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+                - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 003-mismatched-id-refused
+          description: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+          steps:
+            - given:
+                - the "us-apply-story-id-mismatch" project tree
+            - when:
+                - the Product Owner runs "us apply scen"
+            - then:
+                - the command exits with code 1
+                - stdout matches US APPLY — Story scen
+                - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-phrases-tag\.yaml declared_id=scen-check-phrases
+                - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-verifier\.yaml declared_id=scen-check
+                - stdout matches story file docs/product/stories/scen-check-phrases-tag\.yaml declares id scen-check-phrases, not scen
+                - stdout matches story file docs/product/stories/scen-check-verifier\.yaml declares id scen-check, not scen
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: stdout does not match multiple story files
+                - and: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 004-legacy-layout-refused
+          description: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
+          steps:
+            - given:
+                - the "us-apply-malformed-scenarios" project tree
+            - when:
+                - the Product Owner runs "us apply 95.5"
+            - then:
+                - the command exits with code 1
+                - stdout matches US APPLY — Story 95\.5
+                - stdout matches msg="Seeded scratch registry"
+                - stdout matches us apply requires acceptance_criteria with embedded steps
+                - stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the file "docs/product/stories/95.5-legacy-test-scenarios.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 005-unrefined-story-refused
+          description: '`us apply` on a story that was created but never refined must be refused, not walked to a trivial success'
+          steps:
+            - given:
+                - the "us-apply-story-without-acs" project tree
+            - when:
+                - the Product Owner runs "us apply 95.3"
+            - then:
+                - the command exits with code 1
+                - stdout matches US APPLY — Story 95\.3
+                - stdout matches msg="Seeded scratch registry"
+                - 'stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the file "docs/product/stories/95.3-document-summary-created-not-refined.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 006-unshaped-criterion-id-refused
+          description: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
+          steps:
+            - given:
+                - the "us-apply-unshaped-criterion-id" project tree
+            - when:
+                - the Product Owner runs "us apply 95.6"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches docs/product/stories/95\.6-legacy-criterion-id\.yaml: acceptance criterion 2 has id AC-2'
+                - stdout matches the id must be <NNN>-<slug>
+                - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the engine dispatched no AI turns
