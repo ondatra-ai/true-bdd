@@ -41,11 +41,14 @@ scenarios:
         - and: the engine spawned the test runner "true-bdd-no-such-runner"
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched no AI turns
-  E2E-002:
-    description: A command that runs fine but cannot be parsed must be refused
+  build-code-commands-004-not-machine-readable-refused:
+    description: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-004-not-machine-readable-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-command-not-machine-readable" project tree
@@ -80,11 +83,14 @@ scenarios:
         - and: the engine spawned a test runner with arguments matching -run \^TestGreen\$
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched no AI turns
-  E2E-004:
+  build-code-commands-002-empty-program-refused:
     description: A suite command that is present but names no program must be refused
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-002-empty-program-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-empty-command" project tree
@@ -127,11 +133,14 @@ scenarios:
         # the tree the fix loop left. Last, so the run it appends to
         # suite-runs.log lands after the line-count clause and both snapshots.
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
-  E2E-006:
+  build-code-spec-001-malformed-spec-refused:
     description: A spec the loader cannot decode must be refused with the file named
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-001-malformed-spec-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-malformed-spec" project tree
@@ -146,11 +155,14 @@ scenarios:
         - and: the file "docs/architecture/architecture.yaml" is unchanged
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-007:
+  build-code-spec-004-no-replay-command-refused:
     description: A test suite that does not say how to run itself must be refused, not run some other way
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-004-no-replay-command-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-missing-suite-command" project tree
@@ -164,11 +176,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-008:
+  build-code-spec-002-no-services-refused:
     description: An architectural spec that declares no services at all must be refused, not walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-002-no-services-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-no-services" project tree
@@ -181,11 +196,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-009:
+  build-code-spec-003-no-test-suite-refused:
     description: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-003-no-test-suite-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-no-suites" project tree
@@ -246,11 +264,14 @@ scenarios:
         - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
         - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
         - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
-  E2E-012:
-    description: A framework the engine cannot route to must be refused, not walked
+  build-code-commands-001-unknown-framework-refused:
+    description: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-001-unknown-framework-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-unknown-framework" project tree
@@ -264,11 +285,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-014:
-    description: A command whose quoting never closes must be refused, not guessed
+  build-code-commands-003-unclosed-quote-refused:
+    description: A suite command whose quoting never closes must be refused, not guessed
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-003-unclosed-quote-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-unterminated-quote" project tree
@@ -1290,11 +1314,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-100:
+  scen-check-terms-001-undefined-term-fails:
     description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-001-undefined-term-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-undefined" project tree
@@ -1309,11 +1336,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-101:
+  scen-check-terms-002-defined-terms-pass:
     description: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-002-defined-terms-pass
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-defined" project tree
@@ -1327,11 +1357,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-102:
+  scen-check-terms-003-term-defined-twice-fails:
     description: A term the glossary defines more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is defined, because a word with two meanings has none a reader can rely on
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-003-term-defined-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-defined-twice" project tree
@@ -1343,11 +1376,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-103:
+  scen-check-terms-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-004-no-catalogue-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-no-catalogue" project tree
@@ -1383,11 +1419,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: 'the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
-  E2E-110:
+  scen-check-mappings-002-unmapped-term-fails:
     description: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-002-unmapped-term-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-unmapped" project tree
@@ -1401,11 +1440,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-111:
+  scen-check-mappings-001-mapped-terms-pass:
     description: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-001-mapped-terms-pass
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-mapped" project tree
@@ -1419,11 +1461,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-112:
+  scen-check-mappings-003-term-mapped-twice-fails:
     description: A term the architecture maps more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-003-term-mapped-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-mapped-twice" project tree
@@ -1522,11 +1567,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-118:
+  scen-check-mappings-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-mappings-architecture-closure.yaml
+        scenario_id: scen-check-mappings-004-no-catalogue-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-closure-no-catalogue" project tree
@@ -1828,6 +1876,72 @@ scenarios:
         - and: 'stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases'
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
+  E2E-140:
+    description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-shared-prefix" project tree
+      when:
+        - the Product Owner runs "us refine scen-check"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story scen-check
+        - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml
+        - 'stdout matches invalid modifier type: or'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: stdout does not match multiple story files
+        - and: stdout does not match scen-check-phrases
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-141:
+    description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-shared-prefix" project tree
+      when:
+        - the Product Owner runs "us apply scen-check"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story scen-check
+        - 'stdout matches docs/product/stories/scen-check-verifier\.yaml: story has no acceptance_criteria entries to apply'
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+        - but: stdout does not match multiple story files
+        - and: stdout does not match scen-check-phrases
+        - and: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+        - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-142:
+    description: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-story-id-mismatch" project tree
+      when:
+        - the Product Owner runs "us apply scen"
+      then:
+        - the command exits with code 1
+        - stdout matches US APPLY — Story scen
+        - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-phrases-tag\.yaml declared_id=scen-check-phrases
+        - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-verifier\.yaml declared_id=scen-check
+        - stdout matches story file docs/product/stories/scen-check-phrases-tag\.yaml declares id scen-check-phrases, not scen
+        - stdout matches story file docs/product/stories/scen-check-verifier\.yaml declares id scen-check, not scen
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+        - but: stdout does not match multiple story files
+        - and: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the engine dispatched no AI turns
   scen-check-001-claimed-scenario-passes:
     description: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
     service: bdd-cli

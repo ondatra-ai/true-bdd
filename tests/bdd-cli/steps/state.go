@@ -142,6 +142,10 @@ func (s *State) Judge(clauses []bddgo.Step) error {
 		return s.fail("%w", ErrNoRun)
 	}
 
+	if s.Fixture == nil {
+		return s.fail("%w", ErrNoTreePrepared)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), s.Harness.JudgeTimeout)
 	defer cancel()
 
@@ -259,7 +263,7 @@ func (s *State) publishRecordings() {
 	}
 
 	if s.T.Failed() {
-		dest, _ := s.Harness.CassetteDir(s.Fixture.Name)
+		dest, _ := s.Harness.CassetteDir(s.fixtureName())
 		s.T.Logf("recordings NOT published — the run failed; the rejected recording is at %s "+
 			"and %s is unchanged", s.stagingRoot(), dest)
 
@@ -274,7 +278,7 @@ func (s *State) publishRecordings() {
 		return
 	}
 
-	err := s.Harness.promoteJudgeShelf(s.Fixture.Name, s.Proxy.JudgeStaging)
+	err := s.Harness.promoteJudgeShelf(s.fixtureName(), s.Proxy.JudgeStaging)
 	if err != nil {
 		s.T.Errorf("publish judge shelf: %v", err)
 
@@ -282,6 +286,13 @@ func (s *State) publishRecordings() {
 	}
 
 	s.T.Logf("recorded the judge verdict; the engine's cassettes are untouched")
+}
+
+// fixtureName is the tree this scenario's Given step names, the same name
+// its recorder, run dir and staging use: read from the scenario, so it holds
+// whether or not a step definition kept the Fixture it loaded.
+func (s *State) fixtureName() string {
+	return FixtureName(s.Scenario)
 }
 
 // stagingRoot is whichever staging directory this run wrote into.
@@ -334,7 +345,7 @@ func (s *State) finalVerdict() runner.Verdict {
 // publishes both, so a later replay has something deterministic to be
 // graded against.
 func (s *State) recordOutcome() {
-	golden := runner.NewGoldenTree(s.Fixture.Name, s.Result.Diff)
+	golden := runner.NewGoldenTree(s.fixtureName(), s.Result.Diff)
 
 	err := runner.WriteGolden(s.Proxy.Staging, golden)
 	if err != nil {
@@ -343,7 +354,7 @@ func (s *State) recordOutcome() {
 		return
 	}
 
-	err = s.Harness.promoteCassettes(s.Fixture.Name, s.Proxy.Staging)
+	err = s.Harness.promoteCassettes(s.fixtureName(), s.Proxy.Staging)
 	if err != nil {
 		s.T.Errorf("publish cassettes: %v", err)
 
