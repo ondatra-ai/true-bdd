@@ -95,6 +95,22 @@ func TestBuildTestsRefusals005StepOutsideCatalogueRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-tests-refusals-006-no-catalogue-walks-unrefused: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must walk the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
+func TestBuildTestsRefusals006NoCatalogueWalksUnrefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-006-no-catalogue-walks-unrefused")
+	s.Given(`the "build-tests-no-catalogue" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"`)
+	s.And(`stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.But(`stdout does not match Refusing to start`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
 // build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
 func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")

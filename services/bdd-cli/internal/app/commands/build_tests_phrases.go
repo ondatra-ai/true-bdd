@@ -28,6 +28,8 @@ func (p *buildTestsPrep) holdToCatalogue(
 	}
 
 	if !source.Declared {
+		slog.Info("Step phrases not checked", "reason", "the product document declares no catalogue")
+
 		return source, nil
 	}
 

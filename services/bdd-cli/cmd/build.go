@@ -113,6 +113,11 @@ drives a Claude-mediated test-authoring turn that Writes or Edits a step
 definition under that suite's path:; the registry is never touched. The
 CLI exits non-zero if any scenario is still uncovered after the walk.
 
+When the product document (documents.product) declares a catalogue:,
+every step of every scenario must first match exactly one of its
+templates, declared for the step's block, or the run is refused before
+it writes a file or spends an AI turn, naming each step outside it.
+
 Example:
   true-bdd build tests
   true-bdd build tests --fix

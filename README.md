@@ -90,7 +90,7 @@ until those tests pass.
 |---|---|
 | `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
-| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. The registry itself is never modified. |
+| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. The registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
@@ -256,7 +256,9 @@ Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
 passes "not checked: the product document declares no catalogue". With
 one, a Scenario is checked once a Story claims it (a non-empty
 `user_stories`); until then it passes "not checked: no Story claims this
-Scenario yet". Under `--fix` a failed check's `F:` drives the usual
+Scenario yet". `build tests` is stricter: once a catalogue is declared it
+holds every registry step to it, claimed or not, and refuses to start on
+a step outside it. Under `--fix` a failed check's `F:` drives the usual
 clarification loop, and the fix is written to a scratch copy of the
 product or architecture document in the run directory, which the engine
 puts in place of the document once it parses: the Scenario and the step

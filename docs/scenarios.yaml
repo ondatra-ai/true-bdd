@@ -2348,6 +2348,29 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  build-tests-refusals-006-no-catalogue-walks-unrefused:
+    description: When the product document declares no catalogue, `build tests` must say that it checks no step phrase and must walk the Registry without refusing any step for its wording, so a host adopts the catalogue only by writing one
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-006-no-catalogue-walks-unrefused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-no-catalogue" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Step phrases not checked" reason="the product document declares no catalogue"
+        - and: stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.
+        - and: stdout matches BUILD TESTS COMPLETE
+        - but: stdout does not match Refusing to start
+        - and: the engine dispatched no AI turns
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: no file outside "tmp" and "tests" changed
+
   build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
     service: bdd-cli
