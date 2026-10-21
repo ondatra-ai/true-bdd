@@ -25,8 +25,6 @@ thing. Boxed names are commands; everything else is a document on disk.
 
 ```text
                         prd.yaml
-                        epics/epic-1.yaml
-                        epics/epic-2.yaml
                         scenarios.yaml
 
                         user_story.yaml

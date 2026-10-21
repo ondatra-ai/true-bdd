@@ -9,7 +9,7 @@ description:
     TrueBDD moves the source of truth from the code to the
     specification, so an agent can rebuild the code from the
     documentation alone. It has two parts built on one engine: a Go
-    console harness that walks a project's epics, user stories, and
+    console harness that walks a project's user stories and
     scenarios through checklists, turns each scenario into an
     executable test, and drives an agent until those tests pass; and a
     stateless web app that shows the same harness in a browser, so a
@@ -69,9 +69,10 @@ roles:
   - name: Product Owner
     definition: >-
       Accountable for the value the product delivers. Owns the product
-      document, the epics, and the user stories, and decides which
-      behaviour the system must show.
-    primary_use_case: "Turning a product goal into registered scenarios — us create, us refine, us apply"
+      document and the user stories, writing each story directly out of
+      a discussion of a Feature, and decides which behaviour the system
+      must show.
+    primary_use_case: "Turning a product goal into registered scenarios — writes stories, runs us refine and us apply"
     characteristics:
       - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
       - "Works inside the action vocabulary the product document declares"
@@ -141,6 +142,6 @@ vocabulary:
       replacement: "Describe the visible result of reading the input."
 
 # Product glossary — empty on purpose (a recorded decision, not an
-# oversight). Fill it when `us create` mis-classifies one of our own words
+# oversight). Fill it when a checklist mis-classifies one of our own words
 # as an "internal implementation term" — listing it here declares it user-world, not implementation.
 glossary: []

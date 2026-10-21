@@ -134,9 +134,9 @@ h2 {
 .dgrid {
   position: relative;
   display: grid;
-  grid-template-columns: 170px .95fr .95fr 1.1fr 1.1fr .9fr;
+  grid-template-columns: 170px .95fr 1.1fr 1.1fr .9fr;
   gap: 56px 46px;
-  width: 1420px;
+  width: 1220px;
   padding: 8px 8px 4px 40px; /* left inset gives same-side loops room to bulge */
 }
 #edge-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
@@ -280,8 +280,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     <p class="eyebrow">true-bdd — host-project reference</p>
     <h1>The <span class="grad">document universe</span></h1>
     <p class="lede">
-      A host project hands TrueBDD five YAML documents under <code>docs/</code> plus an engine
-      configuration directory. Six CLI commands walk them in order — each one reads some documents,
+      A host project hands TrueBDD four kinds of YAML document under <code>docs/</code> plus an engine
+      configuration directory. Five CLI commands walk them in order — each one reads some documents,
       validates against a checklist, and writes exactly one thing, except <code>scen check</code>,
       which writes nothing. Every arrow below is a real cross-reference you can grep for.
     </p>
@@ -309,7 +309,6 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="trow"><span class="nm">product/</span></div>
             <div class="lvl">
               <div class="trow"><span class="nm t-story">product.yaml</span><span class="cm">product ref + roles + BDD vocabulary + glossary</span></div>
-              <div class="trow"><span class="nm">epics/<span class="t-story">epic-&lt;N&gt;-&lt;slug&gt;.yaml</span></span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
             <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">testing.suites[] + services</span></div>
@@ -320,7 +319,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
       </div>
       <div class="legend">
-        <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — epic — story</small></span></div>
+        <div><i class="sw" style="--cat:var(--c-story)"></i><span><span class="lab" style="color:var(--c-story)">Product docs</span><small>product (incl. the BDD vocabulary) — story</small></span></div>
         <div><i class="sw" style="--cat:var(--c-reg)"></i><span><span class="lab" style="color:var(--c-reg)">Scenario registry</span><small>the merge target — single source of truth for behavior</small></span></div>
         <div><i class="sw" style="--cat:var(--c-arch)"></i><span><span class="lab" style="color:var(--c-arch)">Architecture</span><small>one testing section (the suites), services</small></span></div>
         <div><i class="sw" style="--cat:var(--c-code)"></i><span><span class="lab" style="color:var(--c-code)">Code artifacts</span><small>specs, production source</small></span></div>
@@ -334,9 +333,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
   <div class="inner wide">
     <p class="slabel">02—Map</p>
     <h2>How the documents join</h2>
-    <p class="sub">The top row is the hierarchy spine — the product document contains epics, an epic seed becomes a story file
-    (<code>us create</code>), and the story's refined ACs — its scenarios — merge into the registry
-    (<code>us apply</code>). Labelled solid arrows carry data; thin faded arrows are reference joins; dashed
+    <p class="sub">The top row is the hierarchy spine — a story is written by hand, out of a discussion of a
+    Feature, and refined in place (<code>us refine</code>), and its refined ACs — its scenarios — merge into
+    the registry (<code>us apply</code>). Labelled solid arrows carry data; thin faded arrows are reference joins; dashed
     arrows are configuration wiring. Numbers index into the joins table below.</p>
 
     <div class="diagram-scroll">
@@ -357,7 +356,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="body">
             <div class="row"><span class="k">engine:</span> <span class="v">model</span></div>
             <div class="row hl" id="a-cfg-paths"><span class="k">paths:</span></div>
-            <div class="row ind1"><span class="v">epics_dir · stories_dir · checklists_dir · tmp_dir</span></div>
+            <div class="row ind1"><span class="v">stories_dir · checklists_dir · tmp_dir</span></div>
             <div class="row hl" id="a-cfg-docs"><span class="k">documents:</span></div>
             <div class="row ind1"><span class="v">product · architecture_yaml · scenarios_yaml</span></div>
             <div class="row hl" id="a-cfg-tpl"><span class="k">templates.prompts.*</span></div>
@@ -367,9 +366,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
 
         <div class="card c-cfg" id="card-cl" tabindex="0" style="grid-area:2/1">
-          <header><i class="sw"></i><span class="p">checklists/<wbr>&lt;command&gt;.yaml</span><small>×6</small></header>
+          <header><i class="sw"></i><span class="p">checklists/<wbr>&lt;command&gt;.yaml</span><small>×5</small></header>
           <div class="body">
-            <div class="row"><span class="v">us-create · us-refine · us-apply</span></div>
+            <div class="row"><span class="v">us-refine · us-apply</span></div>
             <div class="row"><span class="v">build-tests · build-code · scen-check</span></div>
             <div class="row"><span class="k">sections[].validation_prompts[]:</span></div>
             <div class="row ind1"><span class="k">Q:</span> <span class="v">pass/fail question</span></div>
@@ -408,21 +407,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="note">Embedded verbatim into prompts — the engine never parses it. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
         </div>
 
-        <!-- col 3 · epic -->
-        <div class="card c-story" id="card-epic" tabindex="0" style="grid-area:1/3/3/4; align-self:center">
-          <header><i class="sw"></i><span class="p">docs/product/epics/<wbr>epic-&lt;N&gt;-&lt;slug&gt;.yaml</span><small>epic</small></header>
-          <div class="body">
-            <div class="row"><span class="k">epic:</span> <span class="v">id · name · status · goal · context</span></div>
-            <div class="row hl" id="a-epic-stories"><span class="k">stories[]:</span> <span class="v">the seeds</span></div>
-            <div class="row ind1"><span class="k">id:</span> <span class="v">"99.1" · title · status</span></div>
-            <div class="row ind1"><span class="v">as_a · i_want · so_that</span></div>
-            <div class="row ind1"><span class="k">acceptance_criteria[]:</span> <span class="v">id + description</span></div>
-            <div class="row ind2"><span class="v">(seed only — no steps yet)</span></div>
-          </div>
-        </div>
-
-        <!-- col 4 · story -->
-        <div class="card c-story" id="card-story" tabindex="0" style="grid-area:1/4/3/5; align-self:center">
+        <!-- col 3 · story -->
+        <div class="card c-story" id="card-story" tabindex="0" style="grid-area:1/3/3/4; align-self:center">
           <header id="a-story-head"><i class="sw"></i><span class="p">docs/product/stories/<wbr>&lt;id&gt;-&lt;slug&gt;.yaml</span><small>story</small></header>
           <div class="body">
             <div class="row"><span class="k">story:</span></div>
@@ -443,8 +429,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           </div>
         </div>
 
-        <!-- col 5 · registry -->
-        <div class="card c-reg" id="card-scn" tabindex="0" style="grid-area:1/5/3/6; align-self:center">
+        <!-- col 4 · registry -->
+        <div class="card c-reg" id="card-scn" tabindex="0" style="grid-area:1/4/3/5; align-self:center">
           <header><i class="sw"></i><span class="p">docs/<wbr>scenarios.yaml</span><small>registry</small></header>
           <div class="body">
             <div class="row"><span class="k">metadata:</span> <span class="v">title · version · description · last_updated</span></div>
@@ -467,8 +453,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             collapse to the lower id, unioning <code>user_stories</code> and steps.</div>
         </div>
 
-        <!-- col 6 · code -->
-        <div class="card c-code" id="card-tests" tabindex="0" style="grid-area:1/6">
+        <!-- col 5 · code -->
+        <div class="card c-code" id="card-tests" tabindex="0" style="grid-area:1/5">
           <header><i class="sw"></i><span class="p">tests/<wbr>&lt;suite&gt;/steps/</span><small>step definitions</small></header>
           <div class="body">
             <div class="row hl" id="a-tests-ref"><span class="k">suite.Step(`^…$`, fn)</span></div>
@@ -479,7 +465,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
           <div class="note">Two mechanisms, one directory. The TEST is rendered from the scenario's <code>path:</code> by <code>build tests</code> — deterministic codegen, verified by regenerating and comparing. The step DEFINITIONS are authored by <code>build tests --fix</code>, because turning a sentence into a regexp is not mechanical. Both are strictly read-only for <code>build code</code>.</div>
         </div>
 
-        <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/6">
+        <div class="card c-code" id="card-svc" tabindex="0" style="grid-area:2/5">
           <header><i class="sw"></i><span class="p">services/<wbr>&lt;service&gt;/</span><small>source</small></header>
           <div class="body">
             <div class="row"><span class="v">path declared per service in architecture.yaml</span></div>
@@ -489,7 +475,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         </div>
 
         <!-- row 3 · architecture -->
-        <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/7">
+        <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/6">
           <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services</small></header>
           <div class="body">
             <div>
@@ -522,8 +508,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     command's output. Every command validates its subject against its own checklist, and with
     <code>--fix</code> drives a Claude-mediated loop until the walk is clean — but
     <code>--fix</code> refuses at startup when any prompt it would walk carries no <code>F:</code>
-    fix template. Against the shipped checklists that refuses <code>us create --fix</code>,
-    <code>us refine --fix</code> and <code>scen check --fix</code>; only <code>us apply</code>,
+    fix template. Against the shipped checklists that refuses <code>us refine --fix</code> and
+    <code>scen check --fix</code>; only <code>us apply</code>,
     <code>build tests</code> and <code>build code</code> carry an <code>F:</code> on every
     prompt.</p>
     <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
@@ -531,14 +517,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
         <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
         <tbody>
           <tr>
-            <td><span class="cmd">us create &lt;id&gt;</span></td>
-            <td>the story seed in its <strong>epic</strong>; <strong>product</strong> as prompt context</td>
-            <td><span class="cl">us-create.yaml</span></td>
-            <td>a new <strong>story file</strong> in <code>paths.stories_dir</code></td>
-          </tr>
-          <tr>
             <td><span class="cmd">us refine &lt;id&gt;</span></td>
-            <td>the <strong>story</strong>; <strong>product</strong> roles + vocabulary; <strong>architecture</strong> test suites (for sketches)</td>
+            <td>the hand-written <strong>story</strong>; <strong>product</strong> roles + vocabulary; <strong>architecture</strong> test suites (for sketches)</td>
             <td><span class="cl">us-refine.yaml</span></td>
             <td>the same <strong>story file, in place</strong> — ACs gain steps and rule-based descriptions</td>
           </tr>
@@ -581,39 +561,35 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
       <table id="joins">
         <thead><tr><th>#</th><th>From</th><th>To</th><th>How it joins</th></tr></thead>
         <tbody>
-          <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">product.yaml</td><td class="to">epics/*.yaml</td>
-            <td>epics are the product document's children — each decomposes the product goal into story seeds; the containment is by location: <code>docs/product/epics/</code>, declared by <code>paths.epics_dir</code></td></tr>
-          <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">epic stories[].id</td><td class="to">story file</td>
-            <td><strong>us create</strong> expands the short version in the epic into the long version: id <code>"99.1"</code> becomes <code>docs/product/stories/99.1-&lt;slug&gt;.yaml</code></td></tr>
-          <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>3</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
-            <td>the us-create "who" prompt matches <code>as_a: "Claude User"</code> against the role list — roles (responsibilities), not personas (invented individuals)</td></tr>
-          <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>4</td><td class="from">product vocabulary</td><td class="to">AC description + steps</td>
+          <tr data-edge="1"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>1</td><td class="from">story as_a</td><td class="to">product roles[].name</td>
+            <td>a story's <code>as_a: "Claude User"</code> names one of the product's roles — roles (responsibilities), not personas (invented individuals); no checklist prompt checks the match today</td></tr>
+          <tr data-edge="2"><td class="n"><i class="sw" style="--cat:var(--c-story)"></i>2</td><td class="from">product vocabulary</td><td class="to">AC description + steps</td>
             <td><strong>us refine</strong> rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block may also live in architecture.yaml (the engine's fixtures keep it there), though <code>product-schema.yaml</code> requires one in the product document</td></tr>
-          <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>5</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>
+          <tr data-edge="3"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>3</td><td class="from">AC position in story</td><td class="to">user_stories[].scenario_id</td>
             <td><strong>us apply</strong> bridges the gap between story and registry — it derives the lineage id <code>&lt;story-id&gt;-%03d</code> (AC-1 of story 95.1 → <code>"95.1-001"</code>) and merges the scenario in</td></tr>
-          <tr data-edge="6"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>6</td><td class="from">user_stories[].story</td><td class="to">story file path</td>
+          <tr data-edge="4"><td class="n"><i class="sw" style="--cat:var(--c-reg)"></i>4</td><td class="from">user_stories[].story</td><td class="to">story file path</td>
             <td>each registry entry names its source stories: <code>docs/product/stories/95.1-duplicate-collapse.yaml</code></td></tr>
-          <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
+          <tr data-edge="5"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>5</td><td class="from">scenario service:</td><td class="to">architecture services[].name</td>
             <td><code>service: "mcp-service"</code> must name a declared service</td></tr>
-          <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>8</td><td class="from">scenario steps</td><td class="to">step definitions</td>
+          <tr data-edge="6"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>6</td><td class="from">scenario steps</td><td class="to">step definitions</td>
             <td><strong>build tests</strong> passes only if every Given/When/Then step binds to exactly one <code>suite.Step(`regexp`, …)</code> in the owning suite's <code>steps/</code> package — except steps prefixed <code>llm:</code> (a model performs it) or <code>judge:</code> (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the <code>steps/</code> package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's <code>path:</code> names the generated <code>func Test&lt;Id&gt;</code> that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: <code>--fix</code> writes it, and without <code>--fix</code> the same renderer verifies the tree by regenerating and comparing</td></tr>
-          <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>9</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
+          <tr data-edge="7"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>7</td><td class="from">scenario service:</td><td class="to">testing.suites[].service</td>
             <td>the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code</td></tr>
-          <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>10</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
+          <tr data-edge="8"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>8</td><td class="from">services[].path</td><td class="to">services/&lt;name&gt;/</td>
             <td><code>path: services/bdd-cli</code> tells <strong>build code</strong> where production source lives — any path works; the fixtures use <code>services/calc</code></td></tr>
-          <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>11</td><td class="from">failing test</td><td class="to">production source</td>
+          <tr data-edge="9"><td class="n"><i class="sw" style="--cat:var(--c-code)"></i>9</td><td class="from">failing test</td><td class="to">production source</td>
             <td><strong>build code --fix</strong> edits the service's source (its <code>services[].path</code>) until the runner's <code>LastRunPassed</code> flips to true</td></tr>
-          <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>12</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
+          <tr data-edge="10"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>10</td><td class="from">checklist prompt docs:</td><td class="to">true-bdd.yaml documents:</td>
             <td><code>docs: [product, architecture_yaml]</code> are keys — resolved to file paths, contents embedded in the prompt</td></tr>
-          <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">command name</td><td class="to">checklist file</td>
+          <tr data-edge="11"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>11</td><td class="from">command name</td><td class="to">checklist file</td>
             <td><code>paths.checklists_dir</code> + hyphenation: <code>us apply</code> → <code>checklists/us-apply.yaml</code></td></tr>
-          <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · epics · stories dirs</td>
+          <tr data-edge="12"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>12</td><td class="from">true-bdd.yaml documents:/paths:</td><td class="to">product · architecture · scenario registry · stories dir</td>
             <td>all document locations are declared here; nothing else hardcodes a path</td></tr>
-          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>15</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
+          <tr data-edge="13"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>13</td><td class="from">templates.prompts.*</td><td class="to">templates/*.prompt.tpl</td>
             <td>each engine role (checklist / fix_generator / fix_applier, + <code>_system</code>) maps to one template file</td></tr>
-          <tr data-edge="16"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>16</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
+          <tr data-edge="14"><td class="n"><i class="sw" style="--cat:var(--c-cfg)"></i>14</td><td class="from">true-bdd/&lt;key&gt;-schema.yaml</td><td class="to">the document at documents.&lt;key&gt;</td>
             <td><code>product-schema.yaml</code> pins the shape of <code>documents.product</code>. The engine never parses these — the document reaches the checklists as prompt text — so the schema is enforced by the host's lint step (<code>go run ./scripts/cmd/lint schemas</code>, a CI gate), not by a command</td></tr>
-          <tr data-edge="17"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>17</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
+          <tr data-edge="15"><td class="n"><i class="sw" style="--cat:var(--c-arch)"></i>15</td><td class="from">testing.suites[].commands</td><td class="to">the suite that actually runs</td>
             <td>all three of <code>record</code> / <code>replay</code> / <code>live</code> are mandatory and complete, machine-readable flag included (<code>-json</code> / <code>--json</code> / <code>--reporter=json</code>); <strong>build code</strong> runs <code>replay</code>. The engine keeps no built-in invocation, so an incomplete block is a startup refusal, never a substituted default. There is no fourth key: <strong>build tests</strong> learns which steps bind by reading the <code>steps/</code> packages itself, so <code>coverage:</code> was deleted rather than made optional</td></tr>
         </tbody>
       </table>
@@ -633,26 +609,24 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
   // n: joins-table index · from/to: anchor element ids · sides: L R T B (+fraction)
   // kind: color family · flow: command-carrying edge (gets a label chip)
   const EDGES = [
-    // hierarchy spine: product ─contains→ epic ─us create→ story ─us apply→ registry
-    { n: 1,  from: 'card-product',       fs: 'R', ff: .5, to: 'card-epic',    ts: 'L', tf: .5, kind: 'story', cmd: 'contains' },
-    { n: 2,  from: 'a-epic-stories', fs: 'R',        to: 'a-story-head',   ts: 'L',        kind: 'story', cmd: 'us create' },
+    // hierarchy spine: story ─us refine→ story (in place) ─us apply→ registry
     // reference joins (thin, faded) — roles under the spine, vocabulary over it
-    { n: 3,  from: 'card-story',     fs: 'B', ff: .12, to: 'card-product',     ts: 'B', tf: .85, kind: 'story', ref: true },
-    { n: 4,  from: 'card-product',       fs: 'T', ff: .85, to: 'card-story',   ts: 'T', tf: .12, kind: 'story', ref: true },
-    { n: 4,  from: 'card-story',     fs: 'T', ff: .34, to: 'card-story',   ts: 'T', tf: .66, kind: 'story', cmd: 'us refine' },
-    { n: 5,  from: 'a-story-ac',     fs: 'R',        to: 'a-scn-us-sid',   ts: 'L',        kind: 'reg',   cmd: 'us apply' },
-    { n: 6,  from: 'a-scn-us-story', fs: 'L',        to: 'a-story-head',   ts: 'R', tf: .5, kind: 'reg',  ref: true },
-    { n: 7,  from: 'a-scn-service',  fs: 'B', ff: .15, to: 'a-arch-name',  ts: 'T', tf: .45, kind: 'arch' },
-    { n: 8,  from: 'a-scn-id',       fs: 'R',        to: 'a-tests-ref',    ts: 'L',        kind: 'code',  cmd: 'build tests' },
-    { n: 9,  from: 'a-arch-qg',      fs: 'T', ff: .55, to: 'card-tests',   ts: 'B', tf: .55, kind: 'arch' },
-    { n: 10, from: 'a-arch-path',    fs: 'T', ff: .85, to: 'card-svc',     ts: 'B', tf: .5, kind: 'arch' },
-    { n: 11, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
-    { n: 12, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
-    { n: 13, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
-    { n: 14, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
-    { n: 15, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
-    { n: 16, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
-    { n: 17, from: 'a-arch-cmds',    fs: 'T', ff: .45, to: 'card-tests',   ts: 'B', tf: .35, kind: 'arch' },
+    { n: 1, from: 'card-story',     fs: 'B', ff: .12, to: 'card-product',     ts: 'B', tf: .85, kind: 'story', ref: true },
+    { n: 2, from: 'card-product',       fs: 'T', ff: .85, to: 'card-story',   ts: 'T', tf: .12, kind: 'story', ref: true },
+    { n: 2, from: 'card-story',     fs: 'T', ff: .34, to: 'card-story',   ts: 'T', tf: .66, kind: 'story', cmd: 'us refine' },
+    { n: 3, from: 'a-story-ac',     fs: 'R',        to: 'a-scn-us-sid',   ts: 'L',        kind: 'reg',   cmd: 'us apply' },
+    { n: 4, from: 'a-scn-us-story', fs: 'L',        to: 'a-story-head',   ts: 'R', tf: .5, kind: 'reg',  ref: true },
+    { n: 5, from: 'a-scn-service',  fs: 'B', ff: .15, to: 'a-arch-name',  ts: 'T', tf: .45, kind: 'arch' },
+    { n: 6, from: 'a-scn-id',       fs: 'R',        to: 'a-tests-ref',    ts: 'L',        kind: 'code',  cmd: 'build tests' },
+    { n: 7, from: 'a-arch-qg',      fs: 'T', ff: .55, to: 'card-tests',   ts: 'B', tf: .55, kind: 'arch' },
+    { n: 8, from: 'a-arch-path',    fs: 'T', ff: .85, to: 'card-svc',     ts: 'B', tf: .5, kind: 'arch' },
+    { n: 9, from: 'card-tests',     fs: 'B', ff: .8,  to: 'card-svc',     ts: 'T', tf: .8, kind: 'code',  cmd: 'build code' },
+    { n: 10, from: 'a-cl-docs',      fs: 'T', ff: .7,  to: 'a-cfg-docs',   ts: 'B', tf: .7, kind: 'cfg' },
+    { n: 11, from: 'a-cfg-paths',    fs: 'B', ff: .18, to: 'card-cl',      ts: 'T', tf: .18, kind: 'cfg' },
+    { n: 12, from: 'a-cfg-docs',     fs: 'R',        to: 'card-product',       ts: 'L', tf: .55, kind: 'cfg' },
+    { n: 13, from: 'a-cfg-tpl',      fs: 'L', ff: .5,  to: 'card-tpl',     ts: 'L', tf: .3, kind: 'cfg' },
+    { n: 14, from: 'a-cfg-schema',   fs: 'R',         to: 'card-product',  ts: 'L', tf: .8, kind: 'cfg' },
+    { n: 15, from: 'a-arch-cmds',    fs: 'T', ff: .45, to: 'card-tests',   ts: 'B', tf: .35, kind: 'arch' },
   ];
   const COLOR = { story: 'var(--c-story)', reg: 'var(--c-reg)', arch: 'var(--c-arch)', code: 'var(--c-code)', cfg: 'var(--c-cfg)' };
 
