@@ -57,7 +57,7 @@ func TestE2E072(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has given-when-then`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-phrases`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
