@@ -3,6 +3,7 @@ package engine_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -462,6 +463,79 @@ func TestSequentialWalker_FixRestartsFromZero(t *testing.T) {
 
 	if queryCalls != 3 { // first fail, then restart: pass, pass.
 		t.Errorf("want 3 query calls, got %d", queryCalls)
+	}
+}
+
+// gatedWalk is a walker whose gate "d" fails until a fix bumps the item
+// to 2, recording which queries ran and which it skipped.
+type gatedWalk struct {
+	walker  *engine.SequentialWalker[int, string]
+	queried []string
+	skipped []string
+}
+
+func newGatedWalk(t *testing.T, fixMode bool) *gatedWalk {
+	t.Helper()
+
+	walk := &gatedWalk{}
+	handler := newHandler(t,
+		func(_ context.Context, item int, query string) (bool, error) {
+			walk.queried = append(walk.queried, query)
+
+			return query != "d" || item >= 2, nil
+		},
+		func(_ context.Context, _ int, _ string, _ map[string]string, _ int) (engine.FixResult, error) {
+			return engine.FixResult{FixPrompt: "x"}, nil
+		},
+		func(_ context.Context, item int, _ engine.FixDecision) (int, error) { return item + 1, nil },
+		&stubUI{actionsScript: []engine.UserAction{engine.UserActionApply}}, fixMode,
+	)
+	walk.walker = &engine.SequentialWalker[int, string]{
+		Cell:   handler,
+		Gate:   func(query string) bool { return query == "d" },
+		OnSkip: func(_ int, query string) { walk.skipped = append(walk.skipped, query) },
+	}
+
+	return walk
+}
+
+// TestSequentialWalker_FailedGateSkipsOtherQueries pins ADR 0015's skip: a
+// failed gate spares the item's other queries, which are never queried.
+func TestSequentialWalker_FailedGateSkipsOtherQueries(t *testing.T) {
+	t.Parallel()
+
+	walk := newGatedWalk(t, false)
+
+	out, err := walk.walker.Walk(context.Background(), 1, []string{"d", "q"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out.Passed || len(walk.queried) != 1 || len(walk.skipped) != 1 || walk.skipped[0] != "q" {
+		t.Errorf("want d failed and q skipped; got passed=%v queried=%v skipped=%v",
+			out.Passed, walk.queried, walk.skipped)
+	}
+}
+
+// TestSequentialWalker_FixLiftsTheGateSkip proves the fix that restarts
+// the item lifts the skip: the gate re-runs, passes, and q runs after it.
+func TestSequentialWalker_FixLiftsTheGateSkip(t *testing.T) {
+	t.Parallel()
+
+	walk := newGatedWalk(t, true)
+
+	out, err := walk.walker.Walk(context.Background(), 1, []string{"d", "q"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !out.Passed || !out.FixApplied {
+		t.Errorf("want passed after the gate's fix, got %+v", out)
+	}
+
+	if len(walk.skipped) != 0 || strings.Join(walk.queried, ",") != "d,d,q" {
+		t.Errorf("want d (failed, fixed), d, q queried and nothing skipped; got queried=%v skipped=%v",
+			walk.queried, walk.skipped)
 	}
 }
 
