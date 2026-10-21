@@ -59,8 +59,8 @@ story:
                 - the command exits with code 1
                 - 'stdout matches level=ERROR msg="Refusing to start'
                 - stdout matches documents\.scenarios_yaml
-                - but: no file outside "tmp" changed
-                - and: the file "docs/scenarios.yaml" is unchanged
+                - but: stdout does not match Loaded requirements registry
+                - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 004-empty-checklist-refused
           description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked

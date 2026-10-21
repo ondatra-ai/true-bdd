@@ -174,8 +174,8 @@ func TestBuildTestsRefusals003UndeclaredRegistryRefused(t *testing.T) {
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start`)
 	s.And(`stdout matches documents\.scenarios_yaml`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.But(`stdout does not match Loaded requirements registry`)
+	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
