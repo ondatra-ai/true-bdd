@@ -42,8 +42,8 @@ story:
                 - and: no two scenarios in "docs/scenarios.yaml" share the same steps
                 - but: the file "docs/product/stories/99.3-rewalk-fixture.yaml" is unchanged
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: stdout does not match RE-WALK 3/
-                - and: stdout does not match Hit max apply attempts
+                - and: 'stdout does not match msg="RE-WALK \(fixes applied, verifying\)" attempt=3'
+                - and: stdout does not match One or more scenarios did not pass
                 - and: 'judge: each scenario added to the registry carries the given, when and then steps of the acceptance criterion it came from in docs/product/stories/99.3-rewalk-fixture.yaml'
         - id: 002-duplicates-collapse
           description: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
@@ -67,7 +67,7 @@ story:
                 - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"
                 - but: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-                - and: stdout does not match Hit max apply attempts
+                - and: stdout does not match One or more scenarios did not pass
                 - and: 'judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did'
         - id: 003-reorder-keeps-keys
           description: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position

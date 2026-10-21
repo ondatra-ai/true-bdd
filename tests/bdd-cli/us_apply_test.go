@@ -67,8 +67,8 @@ func TestUsApply001MissingCriteriaAdded(t *testing.T) {
 	s.And(`no two scenarios in "docs/scenarios.yaml" share the same steps`)
 	s.But(`the file "docs/product/stories/99.3-rewalk-fixture.yaml" is unchanged`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`stdout does not match RE-WALK 3/`)
-	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`stdout does not match msg="RE-WALK \(fixes applied, verifying\)" attempt=3`)
+	s.And(`stdout does not match One or more scenarios did not pass`)
 	s.And(`judge: each scenario added to the registry carries the given, when and then steps of the acceptance criterion it came from in docs/product/stories/99.3-rewalk-fixture.yaml`)
 	s.Done()
 }
@@ -92,7 +92,7 @@ func TestUsApply002DuplicatesCollapse(t *testing.T) {
 	s.And(`exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"`)
 	s.But(`the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`stdout does not match One or more scenarios did not pass`)
 	s.And(`judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did`)
 	s.Done()
 }
