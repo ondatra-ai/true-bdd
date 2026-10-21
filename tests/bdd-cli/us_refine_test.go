@@ -22,9 +22,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-051: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
-func TestE2E051(t *testing.T) {
-	s := scenarios.New(t, "E2E-051")
+// engine-005-prompt-without-fix-refused: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
+func TestEngine005PromptWithoutFixRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-005-prompt-without-fix-refused")
 	s.Given(`the "us-refine-fix-unfixable-checklist" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt`)
 	s.When(`the Product Owner runs "us refine 96.1 --fix"`)
@@ -39,9 +39,9 @@ func TestE2E051(t *testing.T) {
 	s.Done()
 }
 
-// E2E-052: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
-func TestE2E052(t *testing.T) {
-	s := scenarios.New(t, "E2E-052")
+// engine-007-missing-document-refused: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
+func TestEngine007MissingDocumentRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-007-missing-document-refused")
 	s.Given(`the "us-refine-missing-document" project tree`)
 	s.When(`the Product Owner runs "us refine 96.1"`)
 	s.Then(`the command exits with code 1`)

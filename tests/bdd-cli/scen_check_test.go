@@ -22,21 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-075: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
-func TestE2E075(t *testing.T) {
-	s := scenarios.New(t, "E2E-075")
-	s.Given(`the "scen-check-fix-check-without-f" project tree`)
-	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply`)
-	s.And(`stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-097: `scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user applies in the product document and never in the Scenario, and pass the re-walk
 func TestE2E097(t *testing.T) {
 	s := scenarios.New(t, "E2E-097")
@@ -404,6 +389,21 @@ func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
 	s.And(`stdout matches scen-check/term_closure #1 D: step-phrases reads the product document, so its docs: must list product`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+func TestEngine006CheckWithoutFixRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-006-check-without-fix-refused")
+	s.Given(`the "scen-check-fix-check-without-f" project tree`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply`)
+	s.And(`stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
