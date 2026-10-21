@@ -39,37 +39,34 @@ func renderPrompt(idx int, prompt checklistmodels.PromptWithContext) *renderedPr
 // it drives, the items it walks, and per-command hooks (load, post-fix,
 // finalize) — everything else lives in Run. Fill it in and call Run.
 type Spec[I any] struct {
-	// Name is the human-facing command name (e.g. "us create").
+	// Name is the human-facing command name (e.g. "us refine").
 	// Used in headers and error messages.
 	Name string
-	// ChecklistName is the checklist YAML stem (e.g. "us-create").
+	// ChecklistName is the checklist YAML stem (e.g. "us-refine").
 	// Resolved by ChecklistLoader.
 	ChecklistName string
 	// StoryNumber is the positional CLI argument, the Story id: a slug
 	// (`scen-check`, `96.2`), refused at startup when it is not one.
 	StoryNumber string
-	// StoryIDRule, if non-nil, narrows StoryNumber past the slug. Only us
-	// create has one, EpicStoryNumber, since it addresses a Story in an epic.
-	StoryIDRule func(storyID string) error
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
 
-	// LoadItems is the per-command source: us create loads from the
-	// epic, us refine from docs/product/stories/, us apply parses the
-	// refined story into one item per AC and seeds the scratch registry.
+	// LoadItems is the per-command source: us refine loads from
+	// docs/product/stories/, us apply parses the refined story into one
+	// item per AC and seeds the scratch registry.
 	LoadItems func(ctx context.Context) ([]I, error)
 	// Prepare, if non-nil, runs after items load and before the first AI
 	// turn: it may refuse the run or narrow the item set. `build tests`
 	// narrows to unbound scenarios so a converged repo costs zero AI turns.
 	Prepare func(ctx context.Context, items []I) ([]I, error)
-	// PostFix is invoked after the FixApplier returns: us create/refine
-	// unmarshal the new ACs and store a new version; us apply's mutation
+	// PostFix is invoked after the FixApplier returns: us refine
+	// unmarshals the new ACs and stores a new version; us apply's mutation
 	// is already on disk via the Edit tool, so it returns the item unchanged.
 	PostFix func(ctx context.Context, item I, applierContent string) (I, error)
-	// Finalize handles the post-walk write. For us create it writes
-	// a new story file; us refine updates in place; us apply
-	// atomically renames the scratch registry over the canonical.
+	// Finalize handles the post-walk write: us refine updates the story
+	// file in place; us apply atomically renames the scratch registry
+	// over the canonical.
 	Finalize func(result *engine.Result[I]) error
 	// GetSubject reads the per-item (id, title) used for tmp file
 	// naming and the post-walk report table.
@@ -80,7 +77,7 @@ type Spec[I any] struct {
 	OnItemStart func(idx, total int, item I)
 
 	// Evaluator / FixGenerator / FixApplier form the generator triple: us
-	// create/refine use the standard triple, us apply the apply-flavoured
+	// refine uses the standard triple, us apply the apply-flavoured
 	// one (different templates, fix applier configured with EditMode).
 	Evaluator    *validate.ChecklistEvaluator
 	FixGenerator *validate.FixPromptGenerator
@@ -140,7 +137,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	builder.RenderAll(spec.Renderer, spec.Fix)
 
 	// Trailing banner has no em-dash so fixture regexes like
-	// "APPLY COMPLETE" / "CREATE COMPLETE" match as a contiguous
+	// "APPLY COMPLETE" / "REFINE COMPLETE" match as a contiguous
 	// substring of the upper-cased command name.
 	slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
 
@@ -165,7 +162,7 @@ func validateSpec[I any](spec Spec[I]) (
 	}
 
 	if spec.StoryNumber != "" {
-		err = validateStoryID(spec.StoryNumber, spec.StoryIDRule)
+		err = validateStoryID(spec.StoryNumber)
 		if err != nil {
 			return nil, nil, refuseStartup(spec.Name, err)
 		}

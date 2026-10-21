@@ -47,7 +47,7 @@ func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, er
 	return &parsed, nil
 }
 
-// Load reads the checklist for the named command (e.g. "us-create") and
+// Load reads the checklist for the named command (e.g. "us-refine") and
 // returns its prompts flattened with section context. Skipped prompts are
 // filtered out.
 func (l *ChecklistLoader) Load(commandName string) ([]checklist.PromptWithContext, error) {

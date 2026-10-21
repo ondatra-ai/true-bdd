@@ -25,8 +25,7 @@ type RefineDeps struct {
 func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix bool) error {
 	return runStoryCommand(
 		ctx, deps.StoryCommonDeps,
-		storyNumber, "us refine", "us-refine", fix, false,
-		nil,
+		storyNumber, "us refine", "us-refine", fix,
 		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*story.Story, error) {
 			return loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
 		},
@@ -44,14 +43,11 @@ func loadStoryFromFile(
 	return func(_ context.Context) ([]*story.Story, error) {
 		doc, err := loader.Load(storyNumber)
 		if err != nil {
-			// The "run us create first" advice applies only when the story is
+			// The "write it first" advice applies only when the story is
 			// genuinely absent, not when Load fails on a duplicate id, an
 			// unreadable file, or invalid YAML — that advice would be actively wrong for those cases.
 			if errors.Is(err, pkgerrors.ErrStoryFileNotFound) {
-				return nil, fmt.Errorf(
-					"story file not found — run `true-bdd us create %s` first: %w",
-					storyNumber, err,
-				)
+				return nil, fmt.Errorf("story file not found — write the Story file first: %w", err)
 			}
 
 			return nil, fmt.Errorf("failed to load story %s: %w", storyNumber, err)

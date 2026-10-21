@@ -5,8 +5,8 @@
 title: "MCP Google Docs Editor (BDD fixture stub)"
 summary: "Synthetic product document for BDD fixtures — deliberately minimal."
 
-# Roles (folded from the retired terms.yaml roles). The us-create
-# who prompt matches the story's as_a clause against these names.
+# Roles (folded from the retired terms.yaml roles): the names a story's
+# as_a clause may use.
 roles:
   - name: Claude User
     definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"

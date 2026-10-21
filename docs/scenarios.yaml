@@ -538,175 +538,6 @@ scenarios:
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the file "docs/product/stories/95.3-document-summary-created-not-refined.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-027:
-    description: Two files claiming the same epic number must be refused, not silently resolved by taking the first glob match
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-ambiguous-epic" project tree
-      when:
-        - the Product Owner runs "us create 92.1"
-      then:
-        - the command exits with code 1
-        - stdout matches US CREATE — Story 92\.1
-        - stdout matches failed to load epic 92
-        - stdout matches multiple epic files found matching pattern docs/product/epics/epic-92-\*\.yaml
-        - stdout matches \[docs/product/epics/epic-92-document-intelligence\.yaml docs/product/epics/epic-92-summaries\.yaml\]
-        - stdout matches level=ERROR msg="Refusing to start" command="us create"
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the engine dispatched no AI turns
-  E2E-028:
-    description: A story number that is not `<epic>.<story>` must be refused before anything is read
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-bad-story-number" project tree
-      when:
-        - the Product Owner runs "us create 4"
-      then:
-        - the command exits with code 1
-        - 'stdout matches expected <epic>\.<story>, got \\"4\\"'
-        - stdout matches level=ERROR msg="Refusing to start" command="us create"
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the engine dispatched no AI turns
-  E2E-029:
-    description: A `--fix` run must be refused when any prompt it would walk carries no `F:`, rather than spending a fix turn that has nothing to say
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-unfixable-checklist" project tree
-      when:
-        - the Product Owner runs "us create 99.1 --fix"
-      then:
-        - the command exits with code 1
-        - 'stdout matches us-create/format #1 Does the story follow the format'
-        - stdout matches level=ERROR msg="Refusing to start" command="us create"
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the engine dispatched no AI turns
-  E2E-030:
-    description: A story seed that passes every check must be written to the stories directory as one new file
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    timeout: 20m
-    merged_steps:
-      given:
-        - the "us-create-happy-path" project tree
-      when:
-        - the Product Owner runs "us create 99.1"
-      then:
-        - the command exits with code 0
-        - and: exactly 1 file matching "docs/product/stories/*.yaml" is created
-        - and: exactly 1 file matching "docs/product/stories/99.1-*.yaml" is created
-        - and: the story "docs/product/stories/99.1-*.yaml" has id "99.1"
-        - and: the story "docs/product/stories/99.1-*.yaml" has at least 3 acceptance criteria
-        - and: every acceptance criterion in the story "docs/product/stories/99.1-*.yaml" has an id matching ^AC-\d+$ and a non-empty description
-        - but: the file "docs/product/epics/epic-99-bdd-test.yaml" is unchanged
-        - and: no file outside "tmp" and "docs/product/stories" changed
-        - and: 'judge: the story''s as_a, i_want and so_that clauses keep the meaning of the epic''s — a Claude User who wants a short summary of a Google Doc on request, so as not to have to download it or copy sections of it into a separate tool just to get a quick gist'
-        - and: 'judge: the acceptance criteria cover the substance of the epic''s three — summarising a shared Google Doc, the error path when the document is not shared, and the partial-summary path when it is too long — in any order, with polished wording, and with extra criteria allowed'
-  E2E-031:
-    description: A story seed with no as_a clause and a generic so_that must fail both checks and write no story file
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    timeout: 20m
-    merged_steps:
-      given:
-        - the "us-create-missing-clause" project tree
-      when:
-        - the Product Owner runs "us create 97.1"
-      then:
-        - the command exits with code 0
-        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
-        - stdout matches CREATE COMPLETE
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: stdout does not match ALL CHECKS PASSED!
-        - and: 'stdout does not match Story saved to:'
-  E2E-032:
-    description: A checklist prompt may only ask for evidence the engine can actually hand it
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-missing-document" project tree
-      when:
-        - the Product Owner runs "us create 99.1"
-      then:
-        - the command exits with code 1
-        - stdout matches docs/product/product\.yaml
-        - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us create" checklist=us-create'
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the engine dispatched no AI turns
-  E2E-033:
-    description: An epic number with no file must be refused, and the refusal must show the filename pattern that found nothing
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-missing-epic" project tree
-      when:
-        - the Product Owner runs "us create 93.1"
-      then:
-        - the command exits with code 1
-        - stdout matches US CREATE — Story 93\.1
-        - stdout matches failed to load epic 93
-        - stdout matches no epic file found matching pattern docs/product/epics/epic-93-\*\.yaml
-        - stdout matches level=ERROR msg="Refusing to start" command="us create"
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the file "docs/product/epics/epic-99-bdd-test.yaml" is unchanged
-        - and: the engine dispatched no AI turns
-  E2E-034:
-    description: Asking for a story index the epic does not have must be refused with both numbers in the message
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    merged_steps:
-      given:
-        - the "us-create-story-out-of-range" project tree
-      when:
-        - the Product Owner runs "us create 94.7"
-      then:
-        - the command exits with code 1
-        - stdout matches US CREATE — Story 94\.7
-        - stdout matches story index 7 out of bounds for epic 94 \(has 2 stories\)
-        - stdout matches level=ERROR msg="Refusing to start" command="us create"
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: the engine dispatched no AI turns
-  E2E-035:
-    description: A story seed defective in every checked dimension must report each failure and write no story file
-    service: bdd-cli
-    path: tests/bdd-cli/us_create_test.go
-    user_stories: []
-    timeout: 20m
-    merged_steps:
-      given:
-        - the "us-create-validation-fails" project tree
-      when:
-        - the Product Owner runs "us create 98.1"
-      then:
-        - the command exits with code 0
-        - stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
-        - stdout matches CREATE COMPLETE
-        - but: no file outside "tmp" changed
-        - and: no file matching "docs/product/stories/*.yaml" is created
-        - and: stdout does not match ALL CHECKS PASSED!
-        - and: 'stdout does not match Story saved to:'
   E2E-036:
     description: Two files claiming the same story id must be refused, not silently resolved by picking one
     service: bdd-cli
@@ -897,7 +728,7 @@ scenarios:
         - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
         - and: the engine dispatched no AI turns
   E2E-044:
-    description: '`us refine` on a story that was never created must be refused, and the refusal must tell the user which command makes the file'
+    description: '`us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes'
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
@@ -910,10 +741,12 @@ scenarios:
         - the command exits with code 1
         - stdout matches US REFINE — Story 96\.9
         - stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml
+        - stdout matches story file not found — write the Story file first
         - stdout matches no story file found for story 96\.9 in docs/product/stories
         - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us refine"
-        - but: no file outside "tmp" changed
+        - but: stdout does not match us create
+        - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: no file matching "docs/product/stories/96.9-*.yaml" is created
         - and: the engine dispatched no AI turns
@@ -956,7 +789,7 @@ scenarios:
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match Story saved to:'
   E2E-047:
-    description: A Story id that is a slug rather than `<epic>.<story>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+    description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
     user_stories: []
@@ -1018,6 +851,82 @@ scenarios:
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
         - and: stdout does not match Hit max apply attempts
+  E2E-050:
+    description: '`us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`'
+    service: bdd-cli
+    path: tests/bdd-cli/cli_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-help-flag" project tree
+      when:
+        - the Product Owner runs "us --help"
+      then:
+        - the command exits with code 0
+        - 'stdout matches Available Commands:'
+        - stdout matches \brefine\b
+        - stdout matches \bapply\b
+        - but: stdout does not match \bcreate\b
+        - and: no file outside "tmp" changed
+  E2E-051:
+    description: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-fix-unfixable-checklist" project tree
+        - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
+      when:
+        - the Product Owner runs "us refine 96.1 --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
+        - 'stdout matches us-refine has 1 of 1 — us-refine/acceptance_criteria #1 Count the total number of acceptance criteria in the story'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: stdout does not match US REFINE — Story
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-052:
+    description: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-missing-document" project tree
+      when:
+        - the Product Owner runs "us refine 96.1"
+      then:
+        - the command exits with code 1
+        - stdout matches document file does not exist
+        - stdout matches docs/product/product\.yaml
+        - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us refine" checklist=us-refine'
+        - but: stdout does not match US REFINE — Story
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-053:
+    description: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-story-id-mismatch" project tree
+      when:
+        - the Product Owner runs "us refine scen"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story scen
+        - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-closure\.yaml declared_id=scen-check
+        - stdout matches story file docs/product/stories/scen-check-closure\.yaml declares id scen-check, not scen
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: 'stdout does not match msg="Story loaded"'
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/scen-check-closure.yaml" is unchanged
+        - and: the engine dispatched no AI turns
   E2E-060:
     description: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
     service: bdd-cli

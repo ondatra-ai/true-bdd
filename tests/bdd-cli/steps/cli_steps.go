@@ -63,15 +63,12 @@ func Register(suite *bddgo.Suite[State]) {
 	// The negative twin of the count assertion above: proves the run created
 	// NO file matching a glob. Implemented in file_steps.go.
 	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
-	// Story-shape assertions read a story a `us create … --fix` run authored:
+	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
 	// its id, acceptance-criteria count and shape, forbidden vocabulary.
-	// Filenames are resolved by glob since the fix loop names the file. See story_steps.go.
+	// Filenames are resolved by glob. See story_steps.go.
 	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
 	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
-	suite.Step(`^the story "([^"]+)" has at least (\d+) acceptance criteria$`, assertStoryCriteriaCount)
 	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
-	suite.Step(`^every acceptance criterion in the story "([^"]+)" has an id matching (.+) and a non-empty description$`,
-		assertStoryCriteriaWellFormed)
 	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
 		assertStoryCriteriaHaveSteps)
 	suite.Step(`^the "([^"]+)" clause of the story "([^"]+)" does not match (.+)$`, assertStoryClauseNoMatch)

@@ -1,7 +1,7 @@
 # Story seed for `us-apply-story-without-acs`.
 #
-# A story exactly as `us create` leaves it: narrative clauses, a status,
-# and no acceptance criteria yet. `us apply` walks acceptance criteria,
+# A story as a first draft leaves it: narrative clauses, a status, and
+# no acceptance criteria yet. `us apply` walks acceptance criteria,
 # so there is nothing here to apply — the user skipped `us refine`.
 #
 # The failure this guards is a silent one: a walk over zero ACs

@@ -120,14 +120,14 @@ func TestOperationSeparatesReWalkFromRestart(t *testing.T) {
 	}
 }
 
-// A section can hold several prompts — us-create's `format` holds two — and
+// A section can hold several prompts — us-refine's `acceptance_criteria` holds twelve — and
 // they are different questions, not retries of one; counting them as one
 // seat's attempts would label the second question "Re-validate" falsely.
 func TestOperationDoesNotConflatePromptsOfOneSection(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	write(t, dir, "true-bdd/checklists/us-create.yaml", `
+	write(t, dir, "true-bdd/checklists/us-refine.yaml", `
 sections:
   - id: format
     name: "Format"
@@ -137,9 +137,9 @@ sections:
 `)
 	writeLog(t, dir, []string{
 		logLine(t, "2026-08-10T23:17:01Z", "Loading full checklist", map[string]any{
-			fieldCommand: "us-create", fieldPath: "true-bdd/checklists/us-create.yaml"}),
-		sectionPromptTurn(t, 1, 1, "99.1", "us-create-format"),
-		sectionPromptTurn(t, 2, 2, "99.1", "us-create-format"),
+			fieldCommand: "us-refine", fieldPath: "true-bdd/checklists/us-refine.yaml"}),
+		sectionPromptTurn(t, 1, 1, "99.1", "us-refine-format"),
+		sectionPromptTurn(t, 2, 2, "99.1", "us-refine-format"),
 	})
 
 	fixture := loadFixtureForTest(t, dir)
@@ -272,8 +272,8 @@ sections:
 	}
 }
 
-// A prompt with no `F:` — every us-create prompt, seven of us-refine's
-// twelve — is answered against Q alone. Naming an F index there would
+// A prompt with no `F:` — seven of us-refine's twelve, every scen-check
+// one — is answered against Q alone. Naming an F index there would
 // point at something that does not exist.
 func TestOperationOmitsAbsentFixTemplate(t *testing.T) {
 	t.Parallel()
@@ -283,7 +283,7 @@ func TestOperationOmitsAbsentFixTemplate(t *testing.T) {
 		{SectionID: "format"}, {SectionID: "who"}, {SectionID: "why"},
 	}}
 
-	operation := describeTurn(turn, doc, "us-create")
+	operation := describeTurn(turn, doc, "us-refine")
 	if operation.Ref != "Q[3]" {
 		t.Errorf("ref = %q, want Q[3] with no F", operation.Ref)
 	}

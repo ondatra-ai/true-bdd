@@ -129,7 +129,6 @@ type LeaseHandle interface {
 // COMMANDS).
 const (
 	cmdVersion     = "version"
-	cmdUsCreate    = "us-create"
 	cmdUsRefine    = "us-refine"
 	cmdUsApply     = "us-apply"
 	cmdBuildTests  = "build-tests"
@@ -142,7 +141,6 @@ const (
 //nolint:gochecknoglobals // the dispatch allowlist is a package-wide constant set
 var allowedCommands = map[string]bool{
 	cmdVersion:     true,
-	cmdUsCreate:    true,
 	cmdUsRefine:    true,
 	cmdUsApply:     true,
 	cmdBuildTests:  true,

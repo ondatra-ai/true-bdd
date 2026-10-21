@@ -8,23 +8,20 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/inventory"
 )
 
-// These tests pin the scanner's config-driven paths (paths.epics_dir,
+// These tests pin the scanner's config-driven paths (paths.stories_dir,
 // documents.scenarios_yaml). Unlike the engine, which refuses on a missing
 // key, the scanner falls back to canonical defaults — a scan never fails.
 
 const configFileRel = "true-bdd/true-bdd.yaml"
 
-const configEpic80 = `epic:
-  id: 80
-stories:
-  - id: "80.1"
-`
-
 const configRegistry = `scenarios:
   SCEN-80-1:
     user_stories:
-      - id: "80.1"
+      - story: "docs/product/stories/80.1-config.yaml"
+        scenario_id: "80.1-001"
 `
+
+const configStory = "story:\n  id: \"80.1\"\n"
 
 func writeConfigTree(t *testing.T, files map[string]string) string {
 	t.Helper()
@@ -48,32 +45,34 @@ func writeConfigTree(t *testing.T, files map[string]string) string {
 	return folder
 }
 
-// TestScanHonorsConfiguredEpicsAndRegistryPaths relocates BOTH keys away
+// wantPresent asserts the registry and stories-dir chips both read present.
+func wantPresent(t *testing.T, snapshot inventory.Snapshot, why string) {
+	t.Helper()
+
+	for _, key := range []string{chipRegistry, chipStoriesDir} {
+		if got := snapshot.Documents[key]; got != inventory.StatusPresent {
+			t.Errorf("%s status = %q, want %q (%s)", key, got, inventory.StatusPresent, why)
+		}
+	}
+}
+
+// TestScanHonorsConfiguredStoriesAndRegistryPaths relocates BOTH keys away
 // from the canonical layout. Nothing exists at the default locations, so
-// any leftover hardcode would report the epic and registry as missing.
-func TestScanHonorsConfiguredEpicsAndRegistryPaths(t *testing.T) {
+// any leftover hardcode would report the stories dir and registry missing.
+func TestScanHonorsConfiguredStoriesAndRegistryPaths(t *testing.T) {
 	t.Parallel()
 
 	folder := writeConfigTree(t, map[string]string{
 		configFileRel: `paths:
-  epics_dir: "./planning/epics"
+  stories_dir: "./planning/stories"
 documents:
   scenarios_yaml: "./planning/registry.yaml"
 `,
-		"planning/epics/epic-80-config.yaml": configEpic80,
-		"planning/registry.yaml":             configRegistry,
+		"planning/stories/80.1-config.yaml": configStory,
+		"planning/registry.yaml":            configRegistry,
 	})
 
-	snapshot := inventory.Scan(folder)
-
-	if got := snapshot.Documents["registry"]; got != inventory.StatusPresent {
-		t.Errorf("registry status = %q, want %q", got, inventory.StatusPresent)
-	}
-
-	if snapshot.Totals.Epics != 1 {
-		t.Errorf("Totals.Epics = %d, want 1 (epic under configured epics_dir)",
-			snapshot.Totals.Epics)
-	}
+	wantPresent(t, inventory.Scan(folder), "configured paths")
 }
 
 // TestScanFallsBackToCanonicalPathsWhenKeysAbsent: a present config that
@@ -82,21 +81,12 @@ func TestScanFallsBackToCanonicalPathsWhenKeysAbsent(t *testing.T) {
 	t.Parallel()
 
 	folder := writeConfigTree(t, map[string]string{
-		configFileRel:                           "paths:\n  stories_dir: \"docs/product/stories\"\n",
-		"docs/product/epics/epic-80-canon.yaml": configEpic80,
+		configFileRel:                           "paths:\n  checklists_dir: \"true-bdd/checklists\"\n",
+		"docs/product/stories/80.1-config.yaml": configStory,
 		"docs/scenarios.yaml":                   configRegistry,
 	})
 
-	snapshot := inventory.Scan(folder)
-
-	if got := snapshot.Documents["registry"]; got != inventory.StatusPresent {
-		t.Errorf("registry status = %q, want %q", got, inventory.StatusPresent)
-	}
-
-	if snapshot.Totals.Epics != 1 {
-		t.Errorf("Totals.Epics = %d, want 1 (epic under canonical default)",
-			snapshot.Totals.Epics)
-	}
+	wantPresent(t, inventory.Scan(folder), "canonical defaults")
 }
 
 // TestScanFallsBackToCanonicalPathsOnBlankValues: whitespace-only values
@@ -106,22 +96,13 @@ func TestScanFallsBackToCanonicalPathsOnBlankValues(t *testing.T) {
 
 	folder := writeConfigTree(t, map[string]string{
 		configFileRel: `paths:
-  epics_dir: "   "
+  stories_dir: "   "
 documents:
   scenarios_yaml: ""
 `,
-		"docs/product/epics/epic-80-blank.yaml": configEpic80,
+		"docs/product/stories/80.1-config.yaml": configStory,
 		"docs/scenarios.yaml":                   configRegistry,
 	})
 
-	snapshot := inventory.Scan(folder)
-
-	if got := snapshot.Documents["registry"]; got != inventory.StatusPresent {
-		t.Errorf("registry status = %q, want %q", got, inventory.StatusPresent)
-	}
-
-	if snapshot.Totals.Epics != 1 {
-		t.Errorf("Totals.Epics = %d, want 1 (blank keys fall back to defaults)",
-			snapshot.Totals.Epics)
-	}
+	wantPresent(t, inventory.Scan(folder), "blank keys fall back to defaults")
 }

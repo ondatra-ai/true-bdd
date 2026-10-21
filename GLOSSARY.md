@@ -17,7 +17,7 @@ One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy 
 _Avoid_: test case, requirement, feature
 
 **Story**:
-One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document.
+One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document; no command creates one, and `us refine` is the first step of the pipeline that reads it.
 _Avoid_: epic story, ticket, requirement
 
 **Feature**:

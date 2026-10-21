@@ -9,11 +9,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// checklistStems are the five per-command checklists (plan §3.4).
+// checklistStems are the per-command checklists the chips report (plan §3.4).
 //
 //nolint:gochecknoglobals // fixed checklist vocabulary
 var checklistStems = []string{
-	"us-create", "us-refine", "us-apply", "build-tests", "build-code",
+	"us-refine", "us-apply", "build-tests", "build-code",
 }
 
 // docResult is one chip's status plus an optional parse error.
@@ -40,7 +40,6 @@ func scanDocuments(folder string, cfg resolvedConfig) (map[string]string, map[st
 	record("architecture", architectureDoc(filepath.Join(folder, cfg.architectureRel)))
 	record("registry", registryDoc(filepath.Join(folder, cfg.registryRel)))
 	record("stories-dir", dirDoc(filepath.Join(folder, cfg.storiesRel)))
-	record("epics-dir", dirDoc(filepath.Join(folder, cfg.epicsRel)))
 
 	for _, stem := range checklistStems {
 		path := filepath.Join(folder, cfg.checklistsRel, stem+".yaml")

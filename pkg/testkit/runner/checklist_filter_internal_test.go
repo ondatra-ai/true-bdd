@@ -115,9 +115,9 @@ func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
 		t.Error("generated prompt lost its F template")
 	}
 
-	created := parseGeneratedChecklist(t, tmpDir, "us-create")
-	if len(created.Sections) < 2 {
-		t.Errorf("us-create.yaml must stay unfiltered, got %d sections", len(created.Sections))
+	checked := parseGeneratedChecklist(t, tmpDir, "scen-check")
+	if len(checked.Sections) != 1 || len(checked.Sections[0].ValidationPrompts) < 2 {
+		t.Errorf("scen-check.yaml must stay unfiltered, got %+v", checked.Sections)
 	}
 }
 
@@ -205,7 +205,7 @@ func TestLoadFixtureRejectsBadFilterDeclarations(t *testing.T) {
 	}{
 		{
 			name:      "stem does not match cmd",
-			selection: "us-create:\n  - \"a snippet\"\n",
+			selection: "us-apply:\n  - \"a snippet\"\n",
 			wantErr:   ErrFilterStemMismatch,
 		},
 		{
@@ -400,7 +400,7 @@ func TestCommandChecklistStemStopsAtTheFirstArgument(t *testing.T) {
 	const scenCheck = "scen-check"
 
 	for cmd, want := range map[string]string{
-		"us create 99.1":             "us-create",
+		"us refine scen-check":       "us-refine",
 		"us apply 95.1 --fix":        "us-apply",
 		"build tests --fix":          "build-tests",
 		"scen check":                 scenCheck,

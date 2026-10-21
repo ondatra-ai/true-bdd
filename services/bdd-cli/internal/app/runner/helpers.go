@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 
 	"gopkg.in/yaml.v3"
 
@@ -67,43 +66,12 @@ var storyIDSlug = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*$`)
 // errInvalidStoryID is the canonical error returned by validateStoryID.
 var errInvalidStoryID = errors.New("invalid story id")
 
-// errInvalidStoryNumberFormat is the canonical error returned by
-// EpicStoryNumber. Wraps the package error so callers can both
-// errors.Is-match and format a useful message.
-var errInvalidStoryNumberFormat = errors.New("invalid story number format")
-
-// validateStoryID refuses a Story id that is not a safe slug, then applies
-// the command's own narrower rule when it has one. Both refusals name the
+// validateStoryID refuses a Story id that is not a safe slug, naming the
 // id: this is the user-facing message itself, not one a wrapper elaborates.
-func validateStoryID(storyID string, narrower func(string) error) error {
+func validateStoryID(storyID string) error {
 	if !storyIDSlug.MatchString(storyID) {
 		return fmt.Errorf("%w %q: expected a slug of lower-case letters, digits, dots and hyphens, "+
 			"starting with a letter or digit", errInvalidStoryID, storyID)
-	}
-
-	if narrower == nil {
-		return nil
-	}
-
-	err := narrower(storyID)
-	if err != nil {
-		return fmt.Errorf("invalid story number: %w", err)
-	}
-
-	return nil
-}
-
-// EpicStoryNumber is `us create`'s StoryIDRule: it addresses a Story by its
-// place in an epic, so it accepts only `<epic>.<story>`.
-func EpicStoryNumber(storyNumber string) error {
-	matched, err := regexp.MatchString(`^\d+\.\d+$`, storyNumber)
-	if err != nil {
-		return fmt.Errorf("regex failed: %w", err)
-	}
-
-	if !matched {
-		return fmt.Errorf("%w: expected <epic>.<story>, got %q",
-			errInvalidStoryNumberFormat, storyNumber)
 	}
 
 	return nil
@@ -254,30 +222,6 @@ func refuseStartup(command string, err error) error {
 	return err
 }
 
-// slugify converts a title string into a URL-friendly slug for use
-// in story filenames.
-func slugify(title string) string {
-	lower := strings.ToLower(title)
-
-	var builder strings.Builder
-
-	for _, r := range lower {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			builder.WriteRune(r)
-		} else {
-			builder.WriteRune('-')
-		}
-	}
-
-	slug := builder.String()
-
-	for strings.Contains(slug, "--") {
-		slug = strings.ReplaceAll(slug, "--", "-")
-	}
-
-	return strings.Trim(slug, "-")
-}
-
 // displayFailureInfo prints the section / question / rationale /
 // context block for the first failed check.
 func displayFailureInfo(failedCheck *checklistmodels.ValidationResult) {
@@ -307,40 +251,13 @@ func displayFixPrompt(fixPrompt string) {
 	console.Println(fixPrompt)
 }
 
-// writeNewStoryFile writes a fresh story YAML under `<id>-<slug>.yaml`
-// and returns its path. Used by `us create` after the walk converges.
-func writeNewStoryFile(storyData *story.Story, storiesDir string) (string, error) {
-	slug := slugify(storyData.Title)
-	filename := fmt.Sprintf("%s-%s.yaml", storyData.ID, slug)
-	filePath := filepath.Join(storiesDir, filename)
+// errStoryFileGone is returned by updateStoryFile when the file the walk
+// loaded no longer matches its id: rewriting under a guessed name would
+// leave the Story in two files, or in one nobody asked for.
+var errStoryFileGone = errors.New("the story file the walk loaded is gone")
 
-	err := disk.Dir(storiesDir, disk.Shared)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	wrapper := struct {
-		Story story.Story `yaml:"story"`
-	}{Story: *storyData}
-
-	data, err := yaml.Marshal(wrapper)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	err = disk.Write(filePath, data, disk.Shared)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	slog.Info("Story file created", "path", filePath)
-
-	return filePath, nil
-}
-
-// updateStoryFile replaces the canonical story file in place. Used by
-// `us refine` after the walk converges. Falls back to creating a new
-// file if no matching file is found.
+// updateStoryFile replaces the story file `us refine` loaded, in place,
+// after the walk converges.
 func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir string) (string, error) {
 	pattern := filepath.Join(storiesDir, storyNumber+"-*.yaml")
 
@@ -350,7 +267,7 @@ func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir s
 	}
 
 	if len(matches) == 0 {
-		return writeNewStoryFile(updatedStory, storiesDir)
+		return "", pkgerrors.ErrWriteStoryFileFailed(fmt.Errorf("%w: nothing matches %s", errStoryFileGone, pattern))
 	}
 
 	filePath := matches[0]
@@ -387,7 +304,7 @@ type fixPromptGenInput struct {
 }
 
 // runFixPromptGeneration adapts one call to FixPromptGenerator.Generate
-// into the engine's FixResult type, so us create/refine and us apply's
+// into the engine's FixResult type, so us refine's and us apply's
 // genFix closures don't need the engine to import validate directly.
 func runFixPromptGeneration(
 	ctx context.Context,
@@ -423,8 +340,7 @@ func runFixPromptGeneration(
 	return out, nil
 }
 
-// StorySubject is the GetSubject implementation shared by us create
-// and us refine. Pulls the (id, title) pair the report builder uses
+// StorySubject is the GetSubject implementation of us refine. Pulls the (id, title) pair the report builder uses
 // for table headings.
 func StorySubject(item *story.Story) (string, string) {
 	return item.ID, item.Title
@@ -465,17 +381,17 @@ func StoryPostFix(
 }
 
 // StoryFinalize returns the Finalize closure for story-based commands.
-// On Converged it writes the final story file (new or update toggle);
-// every other stop reason prints a help message and returns nil.
+// On Converged it rewrites the story file in place; every other stop
+// reason prints a help message and returns nil.
 func StoryFinalize(
 	storiesDir, storyNumber string,
 	versionMgr *fs.StoryVersionManager,
-	fix, writeNew bool,
+	fix bool,
 ) func(*engine.Result[*story.Story]) error {
 	return func(result *engine.Result[*story.Story]) error {
 		switch result.Reason {
 		case engine.Converged:
-			return writeConvergedStory(versionMgr, storiesDir, storyNumber, writeNew)
+			return writeConvergedStory(versionMgr, storiesDir, storyNumber)
 		case engine.NotFixed:
 			if fix {
 				slog.Warn("Validation failed. No fix was applied.")
@@ -498,13 +414,12 @@ func StoryFinalize(
 	}
 }
 
-// writeConvergedStory writes the engine's final item to disk (new file
-// or update, per writeNew) and propagates any write/load failure instead
-// of swallowing it (plan §3.2): a story that never landed no longer reports success.
+// writeConvergedStory writes the engine's final item over its story file
+// and propagates any write/load failure instead of swallowing it (plan
+// §3.2): a story that never landed no longer reports success.
 func writeConvergedStory(
 	versionMgr *fs.StoryVersionManager,
 	storiesDir, storyNumber string,
-	writeNew bool,
 ) error {
 	slog.Info("ALL CHECKS PASSED!")
 
@@ -515,14 +430,7 @@ func writeConvergedStory(
 		return fmt.Errorf("load latest story for writing: %w", err)
 	}
 
-	var storyPath string
-
-	if writeNew {
-		storyPath, err = writeNewStoryFile(latest, storiesDir)
-	} else {
-		storyPath, err = updateStoryFile(storyNumber, latest, storiesDir)
-	}
-
+	storyPath, err := updateStoryFile(storyNumber, latest, storiesDir)
 	if err != nil {
 		slog.Error("Could not write story file", "error", err)
 

@@ -18,8 +18,6 @@ func commandArgs(run RunSpec) ([]string, error) {
 		return []string{commandVersion}, nil
 	case commandPromptProbe:
 		return []string{commandPromptProbe}, nil
-	case "us-create":
-		return storyArgs("create", run)
 	case "us-refine":
 		return storyArgs("refine", run)
 	case "us-apply":

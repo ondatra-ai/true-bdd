@@ -4,7 +4,7 @@
 # story, both through the fix applier (which is never shown the label and
 # writes the whole story body back) and through the final save.
 #
-# The id is a slug (`doc-summary`), not `<epic>.<story>`, so the whole walk
+# The id is a slug (`doc-summary`), not a numeric `<N>.<M>`, so the whole walk
 # also runs on a slug id: per-cell tmp files, versions and the in-place save.
 #
 # ONE deliberate defect, so the walk takes exactly one fix:

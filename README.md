@@ -77,7 +77,9 @@ persistent contracts; the implementation in between is free to drift
 between rebuilds, as long as both contracts are honoured.
 
 `true-bdd` is the substrate this vision is being built on. The `us`
-subcommand suite manages the spec lifecycle; the `build` subcommands
+subcommand suite manages the spec lifecycle, starting from a Story the
+Product Owner writes directly, out of a discussion of a Feature, into
+`docs/product/stories/`; the `build` subcommands
 implement the regeneration loop — `build tests` derives executable
 tests from the registry, `build code` regenerates production code
 until those tests pass.
@@ -86,8 +88,7 @@ until those tests pass.
 
 | Subcommand | State |
 |---|---|
-| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/product/stories/`. |
-| `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
+| `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; the registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
@@ -117,7 +118,6 @@ a Claude Code session, unset `CLAUDECODE` first so the child has a
 clean environment:
 
 ```bash
-env -u CLAUDECODE ./bin/true-bdd us create 4.1
 env -u CLAUDECODE ./bin/true-bdd us refine 4.1 --fix
 env -u CLAUDECODE ./bin/true-bdd us apply  4.1 --fix
 env -u CLAUDECODE ./bin/true-bdd build tests --fix
@@ -133,7 +133,7 @@ env -u CLAUDECODE ./bin/true-bdd scen check E2E-001
 The host project supplies a `true-bdd/` directory at its root:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
-  `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`,
+  `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
   `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
   author into), per-command prompt-template paths, and a `documents:`
   map naming the files a check may cite (`product`, `architecture_yaml`,
@@ -141,12 +141,12 @@ The host project supplies a `true-bdd/` directory at its root:
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.
 - `checklists/` — one checklist per command, named by hyphenating the
-  command path (`us create` → `us-create.yaml`, `build tests` →
+  command path (`us refine` → `us-refine.yaml`, `build tests` →
   `build-tests.yaml`, …).
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
-  artifacts (stories, epics, the scenario registry, checklists,
-  `architecture.yaml`); the host project validates them in its lint
-  step, outside the engine itself.
+  documents (`product.yaml`, the scenario registry, `architecture.yaml`);
+  the host project validates them in its lint step, outside the engine
+  itself.
 
 ### Model tiers
 
@@ -240,14 +240,12 @@ The host project's documents live under `docs/`:
   and carries the BDD `vocabulary:`
   (allowed action verbs, forbidden action verbs, forbidden qualifiers)
   cited by the `us refine` checks.
-- `docs/product/product.yaml` — the product document, including the `roles:` that
-  `us create` validates a story's `as_a:` clause against. These are
-  roles (responsibilities), not personas (invented individuals) — one
-  person commonly holds two of them.
-- `docs/product/epics/*.yaml` — epic files that `us create` extracts
-  stories from.
-- `docs/product/stories/*.yaml` — the stories `us create` writes and
-  `us refine` / `us apply` read, one `<id>-<slug>.yaml` each. A story id is
+- `docs/product/product.yaml` — the product document, including its
+  `roles:`. These are roles (responsibilities), not personas (invented
+  individuals) — one person commonly holds two of them.
+- `docs/product/stories/*.yaml` — the stories, written by hand out of a
+  discussion of a Feature, that `us refine` / `us apply` read, one
+  `<id>-<slug>.yaml` each. No command creates one. A story id is
   a slug (`scen-check`, `96.2`), and a story may carry a `feature:` label
   that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
