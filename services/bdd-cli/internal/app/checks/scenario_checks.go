@@ -13,6 +13,9 @@ const (
 	// CheckDeclaredTerms names the check that the product glossary
 	// defines, exactly once, every term those phrases declare.
 	CheckDeclaredTerms = "declared-terms"
+	// CheckTermMappings names the check that the architecture's word
+	// mapping maps, exactly once, every term those phrases declare.
+	CheckTermMappings = "term-mappings"
 )
 
 // ForScenarios is the Set a `scen check` Prompt may name: every built-in
@@ -22,5 +25,6 @@ func ForScenarios() Set[*template.ScenarioCheckData] {
 		CheckGivenWhenThen: givenWhenThen(),
 		CheckStepPhrases:   stepPhrases(),
 		CheckDeclaredTerms: declaredTerms(),
+		CheckTermMappings:  termMappings(),
 	}
 }
