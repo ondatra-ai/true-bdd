@@ -996,7 +996,7 @@ scenarios:
       given:
         - the "scen-check-happy-path" project tree
       when:
-        - the System Architect runs "scen check"
+        - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK
@@ -1015,7 +1015,7 @@ scenarios:
       given:
         - the "scen-check-validation-fails" project tree
       when:
-        - the System Architect runs "scen check"
+        - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK
@@ -1033,7 +1033,7 @@ scenarios:
       given:
         - the "scen-check-fix-refused" project tree
       when:
-        - the System Architect runs "scen check --fix"
+        - the Quality Engineer runs "scen check --fix"
       then:
         - the command exits with code 1
         - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
@@ -1050,7 +1050,7 @@ scenarios:
       given:
         - the "scen-check-unknown-id" project tree
       when:
-        - the System Architect runs "scen check E2E-999"
+        - the Quality Engineer runs "scen check E2E-999"
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
@@ -1067,7 +1067,7 @@ scenarios:
       given:
         - the "scen-check-empty-registry" project tree
       when:
-        - the System Architect runs "scen check"
+        - the Quality Engineer runs "scen check"
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
@@ -1086,7 +1086,7 @@ scenarios:
         - the "scen-check-id-filter" project tree
         - and: the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
       when:
-        - the System Architect runs "scen check E2E-002 E2E-001"
+        - the Quality Engineer runs "scen check E2E-002 E2E-001"
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK

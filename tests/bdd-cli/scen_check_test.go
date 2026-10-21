@@ -26,7 +26,7 @@ import (
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")
 	s.Given(`the "scen-check-happy-path" project tree`)
-	s.When(`the System Architect runs "scen check"`)
+	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
@@ -40,7 +40,7 @@ func TestE2E291(t *testing.T) {
 func TestE2E292(t *testing.T) {
 	s := scenarios.New(t, "E2E-292")
 	s.Given(`the "scen-check-validation-fails" project tree`)
-	s.When(`the System Architect runs "scen check"`)
+	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches Validation failed`)
@@ -54,7 +54,7 @@ func TestE2E292(t *testing.T) {
 func TestE2E293(t *testing.T) {
 	s := scenarios.New(t, "E2E-293")
 	s.Given(`the "scen-check-fix-refused" project tree`)
-	s.When(`the System Architect runs "scen check --fix"`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
 	s.But(`stdout does not match SCEN CHECK`)
@@ -67,7 +67,7 @@ func TestE2E293(t *testing.T) {
 func TestE2E294(t *testing.T) {
 	s := scenarios.New(t, "E2E-294")
 	s.Given(`the "scen-check-unknown-id" project tree`)
-	s.When(`the System Architect runs "scen check E2E-999"`)
+	s.When(`the Quality Engineer runs "scen check E2E-999"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
@@ -80,7 +80,7 @@ func TestE2E294(t *testing.T) {
 func TestE2E295(t *testing.T) {
 	s := scenarios.New(t, "E2E-295")
 	s.Given(`the "scen-check-empty-registry" project tree`)
-	s.When(`the System Architect runs "scen check"`)
+	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
@@ -94,7 +94,7 @@ func TestE2E296(t *testing.T) {
 	s := scenarios.New(t, "E2E-296")
 	s.Given(`the "scen-check-id-filter" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
-	s.When(`the System Architect runs "scen check E2E-002 E2E-001"`)
+	s.When(`the Quality Engineer runs "scen check E2E-002 E2E-001"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
