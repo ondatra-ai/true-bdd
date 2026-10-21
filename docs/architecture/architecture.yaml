@@ -1,11 +1,13 @@
 # Architectural spec for this repository (the TrueBDD engine itself).
 #
-# Two sections, both read by the build pipeline:
+# Two sections read by the build pipeline, and one by `scen check`:
 #   testing:  — the suites `build code` walks and `build tests` writes
 #               into. One section for the whole repository, because how
 #               a project runs its tests is a property of the project,
 #               not of any one service.
 #   services: — the production source roots `build code --fix` may edit.
+#   terms:    — the word mapping: how each product glossary word is built
+#               and how a step definition observes it (`D: term-mappings`).
 #
 # Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
 #
@@ -159,3 +161,15 @@ architecture:
                 The environment is inherited unchanged. Process group, wait bound
                 and merged output are as for crush.
 
+  # How each product word the catalogue declares is built and observed, in
+  # words naming no code identifier, so the steps can be rebuilt from it.
+  # It grows as Stories claim Scenarios.
+  terms:
+    - term: AI turn
+      technical: >-
+        One request through the engine's AI router to claude, crush or codex,
+        logged once as msg="Dispatching AI turn" before the CLI is spawned; in
+        replay the answer comes from a cassette.
+      observed_by: >-
+        Count the "Dispatching AI turn" records in the run's JSON log file;
+        "no" is zero, and a missing log file fails instead of counting zero.
