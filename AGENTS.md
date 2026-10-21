@@ -45,4 +45,4 @@ Each triage role's label is the role's own name. Read `docs/agents/triage-labels
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase.
+Single-context: `GLOSSARY.md` at the repo root, ADRs in `docs/adr/`. Read `docs/agents/domain.md` before you explore the codebase. An ADR ends by naming the grilling Q&A log entries that decided it: the `docs/qna/<file>.yaml` path and each `Q<n>`.
