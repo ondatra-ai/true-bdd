@@ -11,6 +11,10 @@
 # Derived once from the tests/bdd-cli fixtures, which already were these
 # scenarios in every respect but name. Hand-owned since; `us apply` is
 # the writer for anything new.
+#
+# A scenario's key is its lineage id, `<story-id>-<ac-id>` (ADR 0014), and
+# its generated test is the key in CamelCase. The `E2E-NNN` keys below
+# predate that and are renamed as each Story of this repository is written.
 
 metadata:
   title: Scenario registry
