@@ -947,6 +947,45 @@ scenarios:
         - and: the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match Story saved to:'
+  E2E-047:
+    description: A Story id that is a slug rather than `<epic>.<story>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-slug-id-missing-story" project tree
+      when:
+        - the Product Owner runs "us refine scen-check"
+      then:
+        - the command exits with code 1
+        - stdout matches US REFINE — Story scen-check
+        - stdout matches level=ERROR msg="No story file found" story_number=scen-check pattern=docs/product/stories/scen-check-\*\.yaml
+        - stdout matches no story file found for story scen-check in docs/product/stories
+        - 'stdout matches \(expected format: scen-check-<slug>\.yaml\)'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: stdout does not match invalid story
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-048:
+    description: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-refine-path-like-story-id" project tree
+      when:
+        - the Product Owner runs "us refine ../x"
+      then:
+        - the command exits with code 1
+        - 'stdout matches invalid story id \\"\.\./x\\"'
+        - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+        - but: stdout does not match US REFINE — Story
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/x-outside-stories.yaml" is unchanged
+        - and: the engine dispatched no AI turns
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli

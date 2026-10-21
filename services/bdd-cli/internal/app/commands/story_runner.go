@@ -36,13 +36,14 @@ type storyLoadItemsFactory func(
 ) func(ctx context.Context) ([]*story.Story, error)
 
 // runStoryCommand is the shared body of `us create` and `us refine`: both
-// wire the engine identically given a LoadItems factory and a "writeNew vs
-// update" toggle, so per-command entry points stay tiny.
+// wire the engine identically given a LoadItems factory, a "writeNew vs
+// update" toggle and an optional narrower id rule, so entry points stay tiny.
 func runStoryCommand(
 	ctx context.Context,
 	deps StoryCommonDeps,
 	storyNumber, name, checklistName string,
 	fix, writeNew bool,
+	storyIDRule func(string) error,
 	loadItems storyLoadItemsFactory,
 ) error {
 	versionMgr := fs.NewStoryVersionManager(deps.RunDir, storyNumber)
@@ -51,6 +52,7 @@ func runStoryCommand(
 		Name:          name,
 		ChecklistName: checklistName,
 		StoryNumber:   storyNumber,
+		StoryIDRule:   storyIDRule,
 		Fix:           fix,
 
 		LoadItems:  loadItems(versionMgr),

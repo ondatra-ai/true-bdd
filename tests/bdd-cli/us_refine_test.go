@@ -228,3 +228,36 @@ func TestE2E046(t *testing.T) {
 	s.And(`stdout does not match Story saved to:`)
 	s.Done()
 }
+
+// E2E-047: A Story id that is a slug rather than `<epic>.<story>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+func TestE2E047(t *testing.T) {
+	s := scenarios.New(t, "E2E-047")
+	s.Given(`the "us-refine-slug-id-missing-story" project tree`)
+	s.When(`the Product Owner runs "us refine scen-check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story scen-check`)
+	s.And(`stdout matches level=ERROR msg="No story file found" story_number=scen-check pattern=docs/product/stories/scen-check-\*\.yaml`)
+	s.And(`stdout matches no story file found for story scen-check in docs/product/stories`)
+	s.And(`stdout matches \(expected format: scen-check-<slug>\.yaml\)`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match invalid story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-048: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
+func TestE2E048(t *testing.T) {
+	s := scenarios.New(t, "E2E-048")
+	s.Given(`the "us-refine-path-like-story-id" project tree`)
+	s.When(`the Product Owner runs "us refine ../x"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches invalid story id \\"\.\./x\\"`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match US REFINE — Story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/x-outside-stories.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
