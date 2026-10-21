@@ -160,9 +160,13 @@ glossary:
 
   - term: exit code
     means: >-
-      The number a finished command reports: 0 for success, anything else
-      for a refusal or a failure. It is what a script or a CI gate reads to
-      decide whether to go on.
+      The number a finished command reports: anything but 0 when it refused
+      to start or could not finish, 0 when it ran to its end. A check still
+      failing at the end makes `scen check`, `build tests` and `build code`
+      report non-zero too, since they gate a change; `us refine` and `us
+      apply` report that check on stdout instead, leave the file they would
+      rewrite as it was, and report 0. It is what a script or a CI gate
+      reads to decide whether to go on.
 
   - term: stdout
     means: >-
@@ -354,8 +358,11 @@ catalogue:
   - template: 'the command exits with code {code:number}'
     block: then
     means: >-
-      The command the role ran ended with this exit code: 0 when it
-      succeeded, non-zero when it refused to start or a check failed.
+      The command the role ran ended with this exit code: non-zero when it
+      refused to start or could not finish, 0 when it ran to its end. A
+      check still failing at the end is non-zero for `scen check`, `build
+      tests` and `build code`, and 0 for `us refine` and `us apply`, which
+      report it on stdout and leave the Story or the Registry as it was.
     terms: [command, exit code]
 
   - template: 'stdout matches {expected:pattern}'

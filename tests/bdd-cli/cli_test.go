@@ -22,9 +22,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-020: --help must print the command tree and change nothing on disk
-func TestE2E020(t *testing.T) {
-	s := scenarios.New(t, "E2E-020")
+// engine-001-help-prints-command-tree: --help must print the command tree and change nothing on disk
+func TestEngine001HelpPrintsCommandTree(t *testing.T) {
+	s := scenarios.New(t, "engine-001-help-prints-command-tree")
 	s.Given(`the "help-flag" project tree`)
 	s.When(`the System Architect runs "--help"`)
 	s.Then(`the command exits with code 0`)
@@ -39,9 +39,9 @@ func TestE2E020(t *testing.T) {
 	s.Done()
 }
 
-// E2E-050: `us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`
-func TestE2E050(t *testing.T) {
-	s := scenarios.New(t, "E2E-050")
+// engine-002-us-help-lists-story-commands: `us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`
+func TestEngine002UsHelpListsStoryCommands(t *testing.T) {
+	s := scenarios.New(t, "engine-002-us-help-lists-story-commands")
 	s.Given(`the "us-help-flag" project tree`)
 	s.When(`the Product Owner runs "us --help"`)
 	s.Then(`the command exits with code 0`)

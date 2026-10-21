@@ -81,30 +81,6 @@ func TestE2E023(t *testing.T) {
 	s.Done()
 }
 
-// E2E-024: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
-func TestE2E024(t *testing.T) {
-	s := scenarios.New(t, "E2E-024")
-	s.Given(`the "us-apply-relocated-registry" project tree`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us apply 95.2 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg=AC index=1 total=1`)
-	s.And(`stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches APPLY COMPLETE`)
-	s.And(`stdout matches msg="All ACs passed; updated from scratch" file=\./docs/specs/requirements\.yaml`)
-	s.And(`the file "docs/specs/requirements.yaml" is modified`)
-	s.And(`exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001-health-ok"`)
-	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" is keyed "95.2-001-health-ok"`)
-	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"`)
-	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" matches /health`)
-	s.And(`exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "90.2-001"`)
-	s.But(`no file matching "docs/scenarios.yaml" is created`)
-	s.And(`the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged`)
-	s.And(`judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did`)
-	s.Done()
-}
-
 // E2E-025: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
 func TestE2E025(t *testing.T) {
 	s := scenarios.New(t, "E2E-025")
@@ -180,5 +156,67 @@ func TestE2E062(t *testing.T) {
 	s.And(`the engine dispatched 4 AI turns`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`stdout does not match RE-WALK`)
+	s.Done()
+}
+
+// E2E-141: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+func TestE2E141(t *testing.T) {
+	s := scenarios.New(t, "E2E-141")
+	s.Given(`the "us-apply-shared-prefix" project tree`)
+	s.When(`the Product Owner runs "us apply scen-check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story scen-check`)
+	s.And(`stdout matches docs/product/stories/scen-check-verifier\.yaml: story has no acceptance_criteria entries to apply`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`stdout does not match multiple story files`)
+	s.And(`stdout does not match scen-check-phrases`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/scen-check-verifier.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-142: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
+func TestE2E142(t *testing.T) {
+	s := scenarios.New(t, "E2E-142")
+	s.Given(`the "us-apply-story-id-mismatch" project tree`)
+	s.When(`the Product Owner runs "us apply scen"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US APPLY — Story scen`)
+	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-phrases-tag\.yaml declared_id=scen-check-phrases`)
+	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-verifier\.yaml declared_id=scen-check`)
+	s.And(`stdout matches story file docs/product/stories/scen-check-phrases-tag\.yaml declares id scen-check-phrases, not scen`)
+	s.And(`stdout matches story file docs/product/stories/scen-check-verifier\.yaml declares id scen-check, not scen`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us apply"`)
+	s.But(`stdout does not match multiple story files`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-003-locations-come-from-config: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
+func TestEngine003LocationsComeFromConfig(t *testing.T) {
+	s := scenarios.New(t, "engine-003-locations-come-from-config")
+	s.Given(`the "us-apply-relocated-registry" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us apply 95.2 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg=AC index=1 total=1`)
+	s.And(`stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches APPLY COMPLETE`)
+	s.And(`stdout matches msg="All ACs passed; updated from scratch" file=\./docs/specs/requirements\.yaml`)
+	s.And(`the file "docs/specs/requirements.yaml" is modified`)
+	s.And(`exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001-health-ok"`)
+	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" is keyed "95.2-001-health-ok"`)
+	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"`)
+	s.And(`the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" matches /health`)
+	s.And(`exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "90.2-001"`)
+	s.But(`no file matching "docs/scenarios.yaml" is created`)
+	s.And(`the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged`)
+	s.And(`judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did`)
 	s.Done()
 }
