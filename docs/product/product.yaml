@@ -206,6 +206,104 @@ glossary:
       One request the engine sends to an AI model and waits on. It is the
       unit of model cost and time: a run that needs none costs nothing.
 
+  - term: fix loop
+    means: >-
+      What a command run with `--fix` does for each check that fails: it
+      may first ask clarifying questions, each with numbered suggested
+      answers, then shows the fix it proposes and asks whether to apply it,
+      refine it with the person's feedback, or exit. It is how a person
+      settles a failure in their own words without editing a document by
+      hand.
+
+  - term: test dependencies
+    means: >-
+      The packages and tools a project's own tests need before they can
+      start, such as the browser and the npm packages of browser tests.
+      They are installed into the project tree from outside it; no command
+      writes them, so a Scenario states them as a starting condition.
+
+  - term: glob
+    means: >-
+      A file path in which `*` stands for any run of characters within one
+      directory level, so a Scenario can count files whose exact names a
+      command chooses.
+
+  - term: Story
+    means: >-
+      One user story in its own file: who wants what and why, plus the
+      Acceptance Criteria that define it. A person writes it directly, out
+      of a discussion of a Feature; it is where a behaviour's reason is
+      recorded.
+
+  - term: Feature
+    means: >-
+      A named group of Stories that together deliver one product
+      capability. A label a Story carries, not a document of its own, so
+      related Stories can be found together.
+
+  - term: Acceptance Criterion
+    means: >-
+      One testable condition of a Story: an id the author writes as
+      `<NNN>-<slug>`, a description, and its own Given, When and Then
+      steps. When the Story is applied it becomes one Scenario of the
+      Registry, so it is the same behaviour at an earlier stage.
+
+  - term: step
+    means: >-
+      One line of a Scenario or an Acceptance Criterion: a Given sets up
+      where the behaviour starts, a When is what the role does, a Then is
+      what must be observed afterwards. Its text takes one shape the
+      catalogue declares, or is a `judge:` clause a model rules on.
+
+  - term: Scenario
+    means: >-
+      One behaviour the product is held to, written as an entry of the
+      Registry with its Given, When and Then steps. Each becomes one
+      executable test, and the test's verdict, not anyone's opinion, says
+      whether the product behaves.
+
+  - term: Registry
+    means: >-
+      The one file of a project holding every Scenario, so the whole
+      behaviour the product is held to can be read, checked and turned
+      into tests in one place.
+
+  - term: lineage
+    means: >-
+      The record on a Scenario of the Story and the Acceptance Criterion it
+      came from, the criterion named by its lineage id
+      `<story-id>-<ac-id>`. It is how a behaviour says which role wanted it
+      and why.
+
+  - term: Scenario key
+    means: >-
+      The name a Scenario has in the Registry: its lineage id
+      `<story-id>-<ac-id>` once a Story claims it. The Scenario's test is
+      named after it, so it is what a reader sees when the test fails.
+
+  - term: step definition
+    means: >-
+      The test code that carries out one shape of step against the running
+      product: it sets up what a Given states or observes what a Then
+      states. A step runs through the one definition whose pattern matches
+      its whole text. Unlike the tests rendered from the Registry, the
+      definitions are written, by a person or by `build tests --fix`.
+
+  - term: test runner
+    means: >-
+      The program a project runs its own tests with, such as `go test` or
+      `npx playwright test`, as the architecture document declares it.
+      `build code` starts it to find the failing tests and again to confirm
+      a fix.
+
+  - term: shell command
+    means: >-
+      A program with its arguments, as a person would type it in a
+      terminal, that a Scenario runs itself in a directory of the project
+      tree once the command has ended, apart from the engine: typically the
+      project's own tests, to confirm the outcome the command was driving
+      at. It reports its own exit status, 0 for success.
+
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
@@ -235,6 +333,15 @@ catalogue:
       holds only the one Prompt whose question contains the quoted text,
       so the run asks that Prompt and no other of that checklist.
     terms: [checklist, Prompt, command, project tree]
+
+  - template: "the project's browser test dependencies are installed"
+    block: given
+    means: >-
+      The test dependencies the project's browser tests need are installed
+      into the project tree before the command runs, so those tests can
+      start. The installation happens before the run, so the files it adds
+      are no file change of the run.
+    terms: [test dependencies, project tree, file change]
 
   - template: 'the {actor:role} runs "{command}"'
     block: when
@@ -274,9 +381,217 @@ catalogue:
       the project tree; every file outside it is as the run found it.
     terms: [file change, project tree]
 
+  - template: 'no file outside "{dir}" and "{other_dir}" changed'
+    block: then
+    means: >-
+      Every file change the run made lies under one of the two named
+      directories of the project tree; every file outside both is as the
+      run found it.
+    terms: [file change, project tree]
+
+  - template: 'the only file changed outside "{dir}" is "{file}"'
+    block: then
+    means: >-
+      Outside the named directory the run made exactly one file change,
+      and it is to the named file of the project tree: proof that, beside
+      that directory, the command changed that one file and nothing else.
+    terms: [file change, project tree]
+
+  - template: 'the file "{file}" is created'
+    block: then
+    means: >-
+      The run created the named file: it was not in the project tree when
+      the run started and is there when it ends.
+    terms: [file change, project tree]
+
+  - template: 'the file "{file}" is modified'
+    block: then
+    means: >-
+      The named file was in the project tree when the run started and the
+      run changed its content.
+    terms: [file change, project tree]
+
+  - template: 'the file "{file}" is unchanged'
+    block: then
+    means: >-
+      The named file is in the project tree after the run, and the run did
+      not create, modify or delete it. A path naming no file fails, so a
+      mistyped path cannot pass.
+    terms: [file change, project tree]
+
+  - template: 'the file "{file}" has exactly {lines:number} line[s]'
+    block: then
+    means: >-
+      After the run the named file of the project tree holds exactly that
+      many lines of text. A newline at its end closes the last line rather
+      than opening another, and an empty file has none.
+    terms: [project tree]
+
+  - template: 'the file "{file}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run the content of the named file of the project tree has a
+      match for the pattern somewhere: proof that a command wrote a file
+      that says the right thing.
+    terms: [project tree, pattern]
+
+  - template: 'exactly {count:number} file[s] matching "{glob}" [is|are] created'
+    block: then
+    means: >-
+      The run created exactly that many files whose path in the project
+      tree matches the glob; files it modified or deleted do not count. It
+      is how a Scenario pins new files whose names the command chooses.
+    terms: [file change, glob, project tree]
+
+  - template: 'no file[s] matching "{glob}" [is|are] created'
+    block: then
+    means: >-
+      The run created no file whose path in the project tree matches the
+      glob.
+    terms: [file change, glob, project tree]
+
+  - template: 'the story "{story_file}" has id "{id}"'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree
+      carries that id.
+    terms: [Story, project tree]
+
+  - template: 'the story "{story_file}" has feature "{feature}"'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree carries
+      that Feature.
+    terms: [Story, Feature, project tree]
+
+  - template: 'the story "{story_file}" has {count:number} acceptance criteria'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree holds
+      exactly that many Acceptance Criteria: none was dropped or added.
+    terms: [Story, Acceptance Criterion, project tree]
+
+  - template: 'every acceptance criterion in the story "{story_file}" has given, when and then steps'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has at
+      least one Acceptance Criterion, and each has at least one Given, one
+      When and one Then step.
+    terms: [Story, Acceptance Criterion, step, project tree]
+
+  - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, and its description has a match
+      for the pattern.
+    terms: [Story, Acceptance Criterion, pattern, project tree]
+
+  - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, and its description has no match
+      for the pattern: proof that a word or a shape is gone from it.
+    terms: [Story, Acceptance Criterion, pattern, project tree]
+
+  - template: 'the steps of acceptance criterion "{criterion}" of the story "{story_file}" do not match {unexpected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, it has steps, and the text of none
+      of them has a match for the pattern.
+    terms: [Story, Acceptance Criterion, step, pattern, project tree]
+
+  - template: 'every step of scenario "{scenario}" in "{registry}" is matched by a step definition under "{steps_dir}"'
+    block: then
+    means: >-
+      After the run every step of the Scenario under that Scenario key in
+      the named Registry, model-run steps aside, matches exactly one step
+      definition in the named directory of the project tree, so the
+      Scenario can run as a test.
+    terms: [Scenario, Scenario key, Registry, step, step definition, project tree]
+
+  - template: 'exactly {count:number} scenario[s] in "{registry}" come[s] from acceptance criterion "{criterion}"'
+    block: then
+    means: >-
+      After the run exactly that many Scenarios of the named Registry name,
+      in their lineage, the Acceptance Criterion with that lineage id.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" cites the story "{story_file}"'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and its lineage names
+      the Story file at that path.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Story]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" is keyed "{key}"'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and it sits in the
+      Registry under that Scenario key.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Scenario key]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and its whole entry,
+      written out as YAML, has a match for the pattern: proof that it kept
+      the behaviour, not only its name.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, pattern]
+
+  - template: 'no two scenarios in "{registry}" share the same steps'
+    block: then
+    means: >-
+      After the run no two Scenarios of the named Registry carry the same
+      Given, When and Then steps.
+    terms: [Scenario, Registry, step]
+
+  - template: 'the engine spawned the test runner "{program}"'
+    block: then
+    means: >-
+      The engine started the project's test runner through the named
+      program at least once during the run, even if that start then failed.
+    terms: [engine, test runner]
+
+  - template: 'the engine spawned a test runner with arguments matching {expected:pattern}'
+    block: then
+    means: >-
+      At least one test runner the engine started during the run carried
+      arguments that, joined by single spaces, have a match for the
+      pattern: proof of which tests the engine asked it to run.
+    terms: [engine, test runner, pattern]
+
+  - template: 'the engine spawned exactly {count:number} test runner[s]'
+    block: then
+    means: >-
+      The engine started the project's test runner exactly that many times
+      during the run.
+    terms: [engine, test runner]
+
+  - template: 'the engine spawned no test runner[s]'
+    block: then
+    means: >-
+      The engine never started the project's test runner during the run,
+      as when the command refuses to start.
+    terms: [engine, test runner]
+
   - template: 'the engine dispatched {turns:number} AI turn[s]'
     block: then
     means: >-
       The engine sent exactly that many AI turns during the run; "no"
       means none, so the run cost no model call.
     terms: [engine, AI turn]
+
+  - template: 'the shell command "{shell_command}" run in "{dir}" exits with code {code:number}'
+    block: then
+    means: >-
+      Once the command has ended, the shell command run in the named
+      directory of the project tree reports that exit status: an outcome
+      checked apart from the engine, such as the project's own tests
+      passing in the tree the command left.
+    terms: [shell command, project tree]
