@@ -13,9 +13,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 )
 
-// StoryCommonDeps is the field set both `us create` and `us refine` need at
-// the command boundary. CreateDeps embeds this plus EpicLoader; RefineDeps
-// embeds this plus StoryLoader — keeping runStoryCommand container-agnostic.
+// StoryCommonDeps is the field set `us refine` needs at the command
+// boundary besides its StoryLoader; RefineDeps embeds it, keeping
+// runStoryCommand container-agnostic.
 type StoryCommonDeps struct {
 	ChecklistLoader    *checklist.ChecklistLoader
 	DocResolver        *docs.Resolver
@@ -35,15 +35,13 @@ type storyLoadItemsFactory func(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context) ([]*story.Story, error)
 
-// runStoryCommand is the shared body of `us create` and `us refine`: both
-// wire the engine identically given a LoadItems factory, a "writeNew vs
-// update" toggle and an optional narrower id rule, so entry points stay tiny.
+// runStoryCommand wires the engine for a Story walk given a LoadItems
+// factory, so the command entry point stays tiny.
 func runStoryCommand(
 	ctx context.Context,
 	deps StoryCommonDeps,
 	storyNumber, name, checklistName string,
-	fix, writeNew bool,
-	storyIDRule func(string) error,
+	fix bool,
 	loadItems storyLoadItemsFactory,
 ) error {
 	versionMgr := fs.NewStoryVersionManager(deps.RunDir, storyNumber)
@@ -52,12 +50,11 @@ func runStoryCommand(
 		Name:          name,
 		ChecklistName: checklistName,
 		StoryNumber:   storyNumber,
-		StoryIDRule:   storyIDRule,
 		Fix:           fix,
 
 		LoadItems:  loadItems(versionMgr),
 		PostFix:    runner.StoryPostFix(versionMgr),
-		Finalize:   runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix, writeNew),
+		Finalize:   runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix),
 		GetSubject: runner.StorySubject,
 
 		Evaluator:    deps.Evaluator,

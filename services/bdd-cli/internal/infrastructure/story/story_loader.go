@@ -71,6 +71,16 @@ func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
 		return nil, fmt.Errorf("parse story YAML failed: %w", pkgerrors.ErrParseStoryYAMLFailed(storyFile, err))
 	}
 
+	if storyDoc.Story.ID != storyNumber {
+		slog.Error("Story file declares another id",
+			"story_number", storyNumber, "file", storyFile, "declared_id", storyDoc.Story.ID)
+
+		return nil, fmt.Errorf(
+			"story id mismatch: %w",
+			pkgerrors.ErrStoryIDMismatchError(storyNumber, storyFile, storyDoc.Story.ID),
+		)
+	}
+
 	// Info, not Debug: this path is the subject side of every check the
 	// run performs, and the report names it when explaining what a turn
 	// was comparing against what.

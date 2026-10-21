@@ -12,7 +12,6 @@ import (
 // scanner falls back to these when the host config is missing, invalid,
 // or leaves a key blank — it degrades, never fails.
 const (
-	defaultEpicsDir         = "docs/product/epics"
 	defaultStoriesDir       = "docs/product/stories"
 	defaultChecklistsDir    = "true-bdd/checklists"
 	defaultProductPath      = "docs/product/product.yaml"
@@ -28,7 +27,6 @@ const (
 // an `invalid` chip with canonical-default paths rather than aborting.
 type rawConfig struct {
 	Paths struct {
-		EpicsDir      string `yaml:"epics_dir"`
 		StoriesDir    string `yaml:"stories_dir"`
 		ChecklistsDir string `yaml:"checklists_dir"`
 	} `yaml:"paths"`
@@ -46,7 +44,6 @@ type resolvedConfig struct {
 	configStatus string
 	configError  string
 
-	epicsRel      string
 	storiesRel    string
 	checklistsRel string
 	productRel    string
@@ -61,7 +58,6 @@ type resolvedConfig struct {
 func resolveConfig(folder string) resolvedConfig {
 	defaults := resolvedConfig{
 		configStatus:    StatusMissing,
-		epicsRel:        defaultEpicsDir,
 		storiesRel:      defaultStoriesDir,
 		checklistsRel:   defaultChecklistsDir,
 		productRel:      defaultProductPath,
@@ -92,7 +88,6 @@ func resolveConfig(folder string) resolvedConfig {
 // mirrored not fixed).
 func applyConfig(base resolvedConfig, raw rawConfig) resolvedConfig {
 	base.configStatus = StatusPresent
-	base.epicsRel = defaultRel(raw.Paths.EpicsDir, defaultEpicsDir)
 	base.storiesRel = defaultRel(raw.Paths.StoriesDir, defaultStoriesDir)
 	base.checklistsRel = defaultRel(raw.Paths.ChecklistsDir, defaultChecklistsDir)
 	base.productRel = defaultRel(raw.Documents.Product, defaultProductPath)

@@ -188,7 +188,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 }
 
 // applyResultYAML is the confirmation block the fix-applier templates ask
-// for. Applied is a POINTER: nil (no `applied:` key, as us create/refine's
+// for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
 	Applied *bool  `yaml:"applied"`
@@ -247,7 +247,7 @@ func checkFixAppliedFallback(content string) error {
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that is
-// not one — a story body from us create/refine, or prose — reports ok=false
+// not one — a story body from us refine, or prose — reports ok=false
 // rather than an error: not being a confirmation block is normal here.
 func parseApplyResult(content string) (applyResultYAML, bool) {
 	var result applyResultYAML

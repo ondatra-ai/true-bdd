@@ -45,7 +45,7 @@ target: services/frontend/app/page.tsx
 summary: "Created the home page."`,
 		},
 		{
-			// us create / us refine emit a story body with no `applied:`
+			// us refine emits a story body with no `applied:`
 			// key at all. Absent must not read as false.
 			name: "story body with no applied key",
 			content: `id: "99.1"
