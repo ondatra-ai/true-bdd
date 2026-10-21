@@ -11,8 +11,7 @@ noProgress: true
 config:
   default: true
 
-  # Long lines are the house style. CLAUDE.md is the one 80-column file, and
-  # it is out of this gate's scope entirely — alint owns it.
+  # Long lines are the house style.
   MD013: false
 
   # Table pipe spacing: the corpus is 58 compact to 3 aligned. Reflowing a

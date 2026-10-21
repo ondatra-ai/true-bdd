@@ -133,8 +133,7 @@ func logSpawn(argv []string, dir string) {
 }
 
 // logExit pairs logSpawn: intent alone cannot tell "ran and failed" from
-// "never found", so the exit facts are recorded too. NOT `duration_ms` —
-// scripts/report reads that key as "I am a report leaf" (record.go:31).
+// "never found", so the exit facts are recorded too.
 func logExit(argv []string, result Result, elapsed time.Duration) {
 	slog.Debug("Subprocess returned",
 		"binary", argv[0],

@@ -2,7 +2,7 @@
 // alint runs, once per file it matched.
 //
 // It is an INBOUND protocol, which is what puts it here rather than beside the
-// outbound half in pkg/cli/alint (docs/adr/0006). Everything in pkg/cli/<tool>
+// outbound half in pkg/cli/alint. Everything in pkg/cli/<tool>
 // is this repository's argv for a binary it starts; this is a foreign runner
 // starting us, and its whole contract — which environment carries the matched
 // file, that --fix in the rule's argv is how a run is told it may rewrite,
@@ -70,7 +70,7 @@ type Gate func(req AlintLintParams, log *slog.Logger) error
 // AlintLint is the whole of being a `kind: command` child: bind the log, enter
 // the repository, build the request, ask gate, write what it found.
 //
-//	tool     names the writer in the Task's shared log
+//	tool     names the writer in each log record
 //	taskLog  where that log lives — pkg/ may not import the scripts/ package
 //	         that names it, so only the caller can say
 func AlintLint(tool, taskLog string, args []string, gate Gate) {

@@ -36,7 +36,7 @@ type PostToolUseFunc func(params PostToolUseParams, log *slog.Logger) error
 // PostToolUse is the whole of being one: bind the log, enter the project
 // directory, read the event off stdin, ask answer, write the verdict.
 //
-//	tool     names the writer in the Task's shared log
+//	tool     names the writer in each log record
 //	taskLog  where that log lives — pkg/ may not import the scripts/ package
 //	         that names it, so only the caller can say
 func PostToolUse(tool, taskLog string, answer PostToolUseFunc) {

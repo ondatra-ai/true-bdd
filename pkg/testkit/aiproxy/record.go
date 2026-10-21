@@ -80,7 +80,7 @@ func record(cfg config, name string, argv []string) (int, error) {
 
 	// stdin is normalized too: the fix-generator writes the NEXT turn's prompt,
 	// and a model may resolve a path itself, so an absolute path reaches stdin
-	// that no template contains (scripts/commit's recording sweep catches it).
+	// that no template contains (the Recordings gate catches it).
 	stdin := []byte(normalizeText(string(result.Stdin), cwd))
 
 	err = writeCassette(dir, manifest, stdin, stdout, stderr, changes)

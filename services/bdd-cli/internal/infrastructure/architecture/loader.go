@@ -47,7 +47,7 @@ type SuiteCommands struct {
 
 // Testing is `architecture.testing:` — how this repository runs its
 // tests, stated once. There is no per-suite entry: which service a test
-// belongs to and which file it lives in are the scenario's (ADR 0009).
+// belongs to and which file it lives in are the scenario's.
 type Testing struct {
 	Framework string `yaml:"framework"`
 	// ConfigFile is the framework's config file. Its directory is where

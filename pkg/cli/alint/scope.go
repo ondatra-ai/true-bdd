@@ -9,8 +9,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// scopeDir is where a run's manifest lives. CLAUDE.md keeps session-temporary
-// files here, and it is gitignored, which alint does not mind: the walker's
+// scopeDir is where a run's manifest lives: the session-temporary tmp/. It is
+// gitignored, which alint does not mind: the walker's
 // gitignore handling does not reach a manifest named by a rule.
 const scopeDir = "tmp"
 

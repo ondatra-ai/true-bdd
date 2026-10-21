@@ -6,7 +6,7 @@ import (
 )
 
 // Pins the reconstruction against the deleted SDK transport's flag order
-// (ADR 0010). These args are history, not a mirror of live argv.
+// These args are history, not a mirror of live argv.
 func TestReconstructedClaudeInvocation(t *testing.T) {
 	turn := &Turn{
 		CLI:             cliClaude,

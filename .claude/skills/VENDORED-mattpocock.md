@@ -1,64 +1,35 @@
-# Vendored skills — mattpocock/skills
+# Vendored skills: mattpocock/skills
 
-The 24 skill directories listed below are copied from
-<https://github.com/mattpocock/skills> (`skills/engineering/` and
-`skills/productivity/`), MIT licensed, Copyright (c) 2026 Matt Pocock.
+The 35 `mpc_*` skill directories are copied from
+<https://github.com/mattpocock/skills> at commit `b0618bc` (all of `skills/engineering/`,
+`skills/productivity/`, `skills/in-progress/` and `skills/misc/`), by way of `boarlabsxyz/ovchynme`, which
+took 38: this repository leaves out `mpc_writing-beats`, `mpc_writing-fragments` and `mpc_writing-shape`. MIT licensed, Copyright (c) 2026 Matt Pocock;
+see `LICENSE-mattpocock`.
 
-They are **project-scoped on purpose**: they live in this repository's
-`.claude/skills/`, so they apply to work in this repo and nowhere else.
-Installing via `claude plugins install mattpocock-skills` or
-`npx skills add` would have put them on every project instead.
+Local changes against upstream:
 
-Not taken: `setup-matt-pocock-skills` — it configures the upstream author's
-issue-tracker and domain conventions, which are not this repo's. The one
-artifact it would have produced, `docs/agents/issue-tracker.md`, is written
-for this repo instead, so `code-review`'s "tell the user to run
-`/setup-matt-pocock-skills`" branch never fires.
+- Every skill is renamed `mpc_<name>`: the directory, the frontmatter `name:`, and every reference one
+  skill makes to another (`/name`, `"name"` in Skill-tool calls, `` `name` `` where it means the skill).
+  Backticked words that are labels or ticket types rather than skills (`wayfinder:<type>` values in
+  `mpc_wayfinder/SKILL.md` and `mpc_setup-matt-pocock-skills/issue-tracker-*.md`, the `prototype` path
+  hint in `mpc_prototype/UI.md`) are left as-is.
+- Each skill's `agents/openai.yaml` is dropped. It is the Codex half of upstream's packaging and
+  Claude Code doesn't read it.
+- Bundled `.sh` and `.cjs` files carry a `.tmpl` suffix, and the links to them in each SKILL.md follow:
+  this repository's `.alint.yml` allows no shell and fences JS (`template.sh.tmpl`,
+  `hitl-loop.template.sh.tmpl`, `block-dangerous-git.sh.tmpl`, `dependency-cruiser.config.cjs.tmpl`).
+- `mpc_grilling` is rewritten to ask one question per turn, as plain chat text rather than through
+  AskUserQuestion, and to research the environment and the web before each question. Research alone
+  settles only facts and consequences an earlier answer forces; every decision is asked, and no ADR is
+  written for an unanswered one. Upstream asks the whole frontier in one round. The lines that
+  describe grilling in rounds in `mpc_loop-me`, `mpc_triage` and `mpc_ask-matt` now say one question
+  at a time.
+- `mpc_grilling` also writes a Q&A log of each session to `docs/qna/<UTC-ts>-<slug>.yaml`, in the
+  format of `.claude/qna.example.yaml` (a "Log it" step in the per-turn loop and a "The Q&A log"
+  section). Upstream keeps no log. The `mpc_grill-me` entry in `mpc_ask-matt` no longer calls it
+  stateless and says the Q&A log is its only trail.
 
-Also stripped: each skill's `agents/openai.yaml`. Upstream ships every skill
-for Codex as well as Claude Code, and that file is the Codex half — a
-`display_name`, a `short_description` and an `allow_implicit_invocation`
-policy. Claude Code reads none of it and no SKILL.md references it. The
-companion `.md` and `.sh` files were kept: every one of them IS referenced
-by its own SKILL.md, so removing them would break the skill.
-
-Consequence to know when re-syncing from upstream: these deletions make a
-straight diff against the source repo noisy. Re-take the skill directories
-wholesale and strip `agents/` again rather than merging file by file.
-
-Taken deliberately despite a clash: `code-review` **shadows Claude Code's
-built-in skill of the same name**, so `/code-review` now runs Matt's version
-and the built-in `ultra` / `--fix` / `--comment` behaviour is unavailable in
-this repo.
-
-Engineering: ask-matt, code-review, codebase-design, diagnosing-bugs,
-domain-modeling, grill-with-docs, implement, improve-codebase-architecture,
-prototype, research, resolving-merge-conflicts, tdd, to-spec, to-tickets,
-triage, wayfinder, wizard.
-
-Productivity: grill-me, grilling, handoff, teach, to-questionnaire,
-wait-what, writing-for-agents.
-
-## Licence
-
-MIT License
-
-Copyright (c) 2026 Matt Pocock
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+To re-sync, re-take the directories wholesale from upstream and repeat the rename and the drop, rather
+than merging file by file. Then restore the local `mpc_grilling/SKILL.md` and the four one-line edits
+(three for one question at a time, one for the `mpc_grill-me` trail), folding in anything new from
+upstream's `grilling`.

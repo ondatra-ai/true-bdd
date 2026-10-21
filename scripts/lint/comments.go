@@ -228,7 +228,7 @@ func reportComments(out io.Writer, found []finding) error {
 lint-comments: %d comment(s) over budget (%d prose, %d block).
 Cut argument, keep the fact. A fact worth its line names where it was
 learned (PR #, comment id) and sits at the line it guards, once — the
-narrative goes to docs/for_further/.
+narrative goes to a document under docs/.
 `, len(found), maxProse, maxBlock)
 
 	return ErrFailed

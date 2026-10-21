@@ -7,16 +7,9 @@
 // a program whose stdout another program parses binds Stderr, so a log line
 // can never corrupt the parsed channel.
 //
-// Every scripts/ program also appends to one shared log per Task, under
-// docs/history/task_logs/, each record naming its writer in `tool` and its
-// process in `run`. Concurrent writers are safe because this package emits one
-// disk.Append per record and pkg/disk holds the parent directory for it.
-//
-// `run` is what makes that shared file parseable: scripts/report folds one
-// run's tree out of it, and merge's fix agents spawn `go run
-// ./scripts/cmd/gates run` as a separate process appending to the same file.
-// Without filtering to one `run` first, the interleaving corrupts the tree
-// rather than merely cluttering it.
+// Every scripts/ program stamps each record with its writer in `tool` and its
+// process in `run`. A JSON log file, when one is named, takes one disk.Append
+// per record, and pkg/disk holds the parent directory for it.
 //
 // THE MESSAGE STRINGS AND ATTRIBUTE KEYS ARE A WIRE CONTRACT.
 // pkg/testkit/reporter/engine_log.go folds a run into turns on seven exact

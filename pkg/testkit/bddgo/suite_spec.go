@@ -16,7 +16,7 @@ var ErrSuiteNotDeclared = errors.New("architecture declares no service by that n
 
 // SuiteSpec is what the test binary needs to know about itself: the
 // service whose scenarios it owns, and the tree its step definitions
-// live under. There are no suites in the document (docs/adr/0009).
+// live under. There are no suites in the document.
 type SuiteSpec struct {
 	Name      string
 	Service   string

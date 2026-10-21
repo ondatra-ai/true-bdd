@@ -11,13 +11,12 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/claude/hooks"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/alint"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
-	"github.com/ondatra-ai/true-bdd/scripts/history"
-	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 // advice names the edit as the TRIGGER, never as the location: a Go gate lints
@@ -31,11 +30,11 @@ what follows needs a real edit.
 
 %s`
 
-// tool names this program in the Task's shared log.
+// tool names this program in its log records.
 const tool = "alint-hook"
 
 func main() {
-	hooks.PostToolUse(tool, state.TaskLog(history.RepoRoot()), judge)
+	hooks.PostToolUse(tool, "", judge)
 }
 
 // judge answers for the file the tool just wrote. Everything unjudgeable — no
@@ -60,7 +59,37 @@ func judge(params hooks.PostToolUseParams, log *slog.Logger) error {
 		return nil
 	}
 
+	if redStep(left) {
+		log.Info("package does not compile yet — a red TDD step; the gates check it at commit",
+			"path", relative)
+
+		return nil
+	}
+
 	return fmt.Errorf(advice, relative, findings(left)) //nolint:err113 // the reason IS the message.
+}
+
+// tallyRE is one of golangci-lint's per-linter tally lines, `* typecheck: 3`.
+var tallyRE = regexp.MustCompile(`(?m)^\* (\S+): \d+$`)
+
+// redStep reports whether every finding is the Go lint failing only because
+// the package does not compile: mpc_tdd writes the test before the code it
+// calls. Any other finding still blocks.
+func redStep(left []alint.Finding) bool {
+	for _, found := range left {
+		tallies := tallyRE.FindAllStringSubmatch(found.Message, -1)
+		if found.RuleID != "go-lint-scoped" || len(tallies) == 0 {
+			return false
+		}
+
+		for _, tally := range tallies {
+			if tally[1] != "typecheck" {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // findings is one line per thing still standing. Deduplicated by message:

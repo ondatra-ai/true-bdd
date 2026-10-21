@@ -104,6 +104,13 @@ var (
 			},
 			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob},
 		},
+		{
+			// Committed recordings must not carry the recording machine's identity.
+			Name:    "Recordings",
+			Command: []string{goBin, runVerb, "./scripts/cmd/gates", "recordings"},
+			Run:     ScanRecordings,
+			Globs:   []string{"tests/bdd-cli/fixtures/**"},
+		},
 	}
 )
 

@@ -89,7 +89,7 @@ const MODE_TITLES = {
 // sessions recorded before the split and mean both callers at once.
 const CALLERS = ['services', 'tests'];
 
-// This caller was spelled `target` until ADR 0010 renamed it, and the
+// This caller was spelled `target` until it was renamed, and the
 // recorded sessions that say so are history rather than a mistake — so the
 // old name reads forever, or 43 stored runs render as '?'.
 const CALLER_ALIASES = { target: 'services' };

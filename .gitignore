@@ -1,5 +1,11 @@
 # Binaries
 /bin/
+# `go build` of one command without -o writes it to the current directory.
+/alint
+/alint_hook
+/gates
+/linters
+/bdd-cli
 *.exe
 *.test
 *.out
@@ -10,7 +16,7 @@
 /dist/
 /node_modules/
 
-# Conversation history captured by scripts/cmd/history
+# Local session history left by the removed history hook
 /docs/history/
 coverage.txt
 coverage.out

@@ -2,10 +2,8 @@
 
 > Interactive companion: [`roadmap.html`](./roadmap.html) — same content, with the pipeline drawn out; open it in a browser.
 >
-> Transcribed from the **"Idea"** whiteboard —
-> <https://app.clickup.com/90151491867/v/wb/2kyq568v-17355> — as it stood on 2026-08-21.
-> The board is the source; this file is the readable copy. When the two disagree, the board
-> is not automatically right — say which one moved.
+> Transcribed from the **"Idea"** whiteboard as it stood on 2026-08-21. This file is now the
+> source.
 
 ## The goal, in one sentence per step
 
@@ -138,7 +136,7 @@ records the current position.
 
 That number is now zero: every step of all 55 registry scenarios binds, and `build tests`
 on this repository dispatches no AI turn at all.
-Step coverage itself stopped being a test in ADR 0012 — the engine reads the `steps/` packages
+Step coverage itself stopped being a test — the engine reads the `steps/` packages
 directly, so there is no step-coverage gate to join.
 
 ## Decision log

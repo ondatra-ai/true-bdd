@@ -16,15 +16,13 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/alint"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
-	"github.com/ondatra-ai/true-bdd/scripts/history"
-	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
-// tool names this program in the Task's shared log.
+// tool names this program in its log records.
 const tool = "alint"
 
 func main() {
-	logging.Install(logging.Stderr, state.TaskLog(history.RepoRoot()), tool)
+	logging.Install(logging.Stderr, "", tool)
 
 	report, err := run(os.Args[1:])
 	if err != nil {
