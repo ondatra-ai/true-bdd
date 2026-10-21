@@ -17,7 +17,8 @@ product  ⟷  user stories  ⟷  scenarios
 
 - **product document** (`docs/product/product.yaml`) sits at the top: the product's roles,
   vocabulary and glossary, which the story checks read, and its step-phrase catalogue, the shape
-  every step of a claimed Scenario must take (`D: step-phrases`).
+  every step of a claimed Scenario must take (`D: step-phrases`), each term of which the glossary
+  must define exactly once (`D: declared-terms`).
 - A **story is written directly**, by hand, out of a discussion of a Feature, into its own file
   under `docs/product/stories/` — no command creates one, and no larger document seeds it. The
   pipeline starts at `us refine <id>`, which grows the story in place.
