@@ -14,7 +14,7 @@ story:
     feature: scen-check
     title: Close a Scenario's words with scen check --fix, recording each answer where the word is defined
     as_a: Quality Engineer
-    i_want: scen check --fix to answer each failed term-closure check of a Scenario a Story claims with me, asking first what a step, a word or a phrase means, then writing the catalogue entry, glossary definition, word mapping or phrase meaning I apply to the product or the architecture document, and a step or description that misuses those words to that Scenario's Registry entry, until the re-walk passes
+    i_want: scen check --fix to answer each failed term-closure check of a Scenario a Story claims with me, asking first what a step, a word or a phrase means, and to write the catalogue entry, glossary definition, word mapping or phrase meaning I apply to the product or the architecture document and a step that misuses its phrase to that Scenario's Registry entry, the whole shipped checklist fixing in turn every Prompt the Scenario fails, until the re-walk passes
     so_that: a word is clarified once, in the document that defines it, and serves every Scenario that uses it, so the step definitions follow from the documents rather than from one Scenario's wording
     status: IMPLEMENTED
     acceptance_criteria:
