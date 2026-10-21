@@ -1010,6 +1010,24 @@ scenarios:
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
         - and: stdout does not match Hit max apply attempts
+  E2E-060:
+    description: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-lineage-key-test-names" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: the file "tests/mcp/mcp_test.go" matches func TestMcpEndpoint001InitializeOk\(t \*testing\.T\)
+        - and: the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "mcp-endpoint-001-initialize-ok"\)
+        - and: the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" and "tests" changed
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli
