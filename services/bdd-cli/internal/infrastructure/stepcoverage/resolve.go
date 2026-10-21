@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
 
@@ -16,8 +17,8 @@ var ErrAmbiguousStep = errors.New("step matches more than one definition")
 // gapsFor reports the scenario's steps that bind to no definition,
 // mirroring the suite's own resolver: a model-run step binds by
 // construction, one match binds, and two refuse the whole answer.
-func gapsFor(scenario *registry.RegistryScenario, defs []definition) ([]string, error) {
-	var gaps []string
+func gapsFor(scenario *registry.RegistryScenario, defs []definition) ([]catalogue.Step, error) {
+	var gaps []catalogue.Step
 
 	for _, statement := range scenario.Statements {
 		if statement.Mode != registry.ModeDeterministic {
@@ -31,7 +32,7 @@ func gapsFor(scenario *registry.RegistryScenario, defs []definition) ([]string, 
 
 		switch {
 		case len(matched) == 0:
-			gaps = append(gaps, statement.Keyword+" "+text)
+			gaps = append(gaps, catalogue.Step{Block: statement.Block, Text: text})
 
 		case len(matched) > 1:
 			return nil, fmt.Errorf("%s: %q: %w (%s)",

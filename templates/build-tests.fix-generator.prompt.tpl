@@ -31,6 +31,52 @@ exists to prevent.
 ### Steps
 {{.Subject.FormatSteps}}
 
+{{ if .Subject.Spec.Declared -}}
+## What the spec says these steps mean
+
+The product document's catalogue phrases this suite's steps, and a
+definition follows from the spec, not from a step's wording alone. A
+phrase says what a step of its shape means. Each word a meaning relies
+on has a glossary entry saying what it is, and an entry in the
+architecture's word mapping saying what it is in the implementation and
+how a step definition sets it up or observes it. A definition observes
+each word exactly as its mapping says: the address, the request, the
+header or the record the mapping names, failing the way it says. Where
+the mapping and the code you read disagree, the mapping wins; where the
+spec says nothing of a word, ask rather than guess.
+
+### This scenario's unbound steps
+{{ range .Subject.Spec.Steps }}
+- {{ .Block }} step "{{ .Text }}"
+{{- if eq (len .Templates) 1 }} matches the phrase `{{ index .Templates 0 }}`
+{{- else if eq (len .Templates) 0 }} matches no phrase of the catalogue
+{{- else }} matches {{ len .Templates }} phrases:{{ range $i, $template := .Templates }}{{ if $i }};{{ end }} `{{ $template }}`{{ end }}
+{{- end }}
+{{- end }}
+
+### Phrases
+
+Every phrase an unbound step of this suite matches alone, this
+scenario's first: bind a neighbour's step from its phrase the same way.
+{{ range .Subject.Spec.Phrases }}
+- `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
+  Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
+{{- end }}
+
+### Words
+{{ range .Subject.Spec.Words }}
+#### {{ .Term }}
+
+{{ if .Means }}{{ range .Means }}- Means: {{ . }}
+{{ end }}{{ else }}- The glossary does not define it.
+{{ end }}
+{{- range .Mappings }}- In the implementation: {{ .Technical }}
+- Observed by: {{ .ObservedBy }}
+{{ else }}- The architecture's word mapping does not map it.
+{{ end }}
+{{- end }}
+
+{{ end -}}
 ## Validation Failure
 
 The following check failed and needs to be fixed:
@@ -105,6 +151,11 @@ can execute. It may Write a new file or Edit an existing one under
   error naming what it expected and what it got.
 - Never weaken an existing definition so this step matches it.
 - Never modify the scenario registry.
+{{- if .Subject.Spec.Declared }}
+- Observe each word exactly as its mapping under "What the spec says
+  these steps mean" says. A definition observing it some other way may
+  pass the scenario while testing something the spec never said.
+{{- end }}
 
 === FILE_START: {{.ResultPath}} ===
 # Fix Prompt for Scenario {{.SubjectID}}: {{.Subject.Description}}

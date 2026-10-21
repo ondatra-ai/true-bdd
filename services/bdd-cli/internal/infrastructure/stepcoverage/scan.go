@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
 
@@ -42,11 +43,11 @@ const stepsDir = "steps"
 var ErrTwoRootsForOneService = errors.New("a service's scenarios name two suite roots")
 
 // Answer is what the scan found: which scenarios it examined, and which
-// of them have a step that binds to nothing. Kept apart because an empty
-// gap list alone means nothing — a scenario nobody examined has one too.
+// of them have a step (block and text) that binds to nothing. Kept apart:
+// an empty gap list alone means nothing — an unexamined scenario has one too.
 type Answer struct {
 	Examined map[string]bool
-	Gaps     map[string][]string
+	Gaps     map[string][]catalogue.Step
 }
 
 // Scan reports which of these scenarios' steps bind to no definition.
@@ -63,7 +64,7 @@ func Scan(scenarios []*registry.RegistryScenario, repoRoot string) (*Answer, err
 
 	answer := &Answer{
 		Examined: make(map[string]bool, len(scenarios)),
-		Gaps:     map[string][]string{},
+		Gaps:     map[string][]catalogue.Step{},
 	}
 
 	for _, scenario := range scenarios {
