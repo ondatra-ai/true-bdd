@@ -16,35 +16,10 @@
       "Bash(go test:*)",
       "Bash(golangci-lint run:*)"
     ],
-    "deny": [
-      "Bash(git checkout -b:*)",
-      "Bash(git checkout -B:*)",
-      "Bash(git switch -c:*)",
-      "Bash(git switch -C:*)"
-    ],
+    "deny": [],
     "ask": []
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Reminder: never offer commits, commit breakdowns, or ready-to-commit narration unless the user has explicitly asked to commit. Wait for an explicit commit/push/merge instruction before invoking pr-commit/pr-merge skills.\"}}'"
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/history prompt-submit",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -52,20 +27,8 @@
           {
             "type": "command",
             "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/alint_hook",
-            "timeout": 120,
+            "timeout": 300,
             "statusMessage": "Linting the file just written"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "go -C \"${CLAUDE_PROJECT_DIR}\" run ./scripts/cmd/history prompt-submit",
-            "timeout": 15
           }
         ]
       }
@@ -73,7 +36,6 @@
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": false,
-    "go-bdd-lsp@true-bdd-local": true
+    "gopls-lsp@claude-plugins-official": false
   }
 }

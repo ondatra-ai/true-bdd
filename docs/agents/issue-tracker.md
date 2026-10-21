@@ -1,47 +1,46 @@
-# Issue tracker
+# Issue tracker: GitHub
 
-How an agent resolves a reference to the work item behind a change. Required
-by `.claude/skills/code-review` and `.claude/skills/triage`, both vendored
-from `mattpocock/skills`, whose preambles assume this file exists and tell the
-user to run `/setup-matt-pocock-skills` when it does not.
+Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-## Two trackers, and they are not interchangeable
+## Conventions
 
-**ClickUp is where work is planned.** List `901523097822` holds every Ticket:
-what to change, why, how to verify it, and the fields
-`.claude/skills/task-handle/ticket-schema.yaml` requires of anything an agent
-may take unattended. A Ticket is the **spec** — when a review asks "what did
-this change set out to do", the answer is a Ticket body.
+- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
+- **Read an issue**: `gh issue view <number> --json number,title,body,labels,comments`.
+- **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
+- **Make an issue a sub-issue of a parent**: `gh issue create --parent <parent> ...`, or `gh issue edit <parent> --add-sub-issue <child>` afterwards (`gh` 2.94+). Older `gh`: `gh api --method POST repos/<owner>/<repo>/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>` (database id, as in **Blocking** below). Without sub-issues, put `Part of #<parent>` at the top of the child body.
+- **Comment on an issue**: `gh issue comment <number> --body "..."`
+- **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
+- **Close**: `gh issue close <number> --comment "..."`
 
-**GitHub issues are not used for planning.** The repository is
-`ondatra-ai/true-bdd`; it has pull requests and CI, and the occasional issue,
-but the backlog does not live there. A bare `#42` in a commit message is a
-**pull request**, not an issue, unless the surrounding text says otherwise.
+Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
-## Resolving a reference
+## Pull requests as a triage surface
 
-| what you have | how to resolve it |
-| --- | --- |
-| a ClickUp id (`86cb8hjf7`) or an `app.clickup.com/t/...` URL | `mcp__claude_ai_ClickUP__getTask` — returns the untruncated description |
-| `#42` in a commit message or PR body | `gh pr view 42` first; `gh issue view 42` only if that misses |
-| a branch name | `gh pr list --head <branch> --json number,title,body` |
-| nothing at all | the spec was passed as an argument, or there is none — see below |
+**PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/mpc_triage` reads this flag.)_
 
-The PR body is the bridge: `pr-update` and `task-handle` both put the ClickUp
-URL there, so a PR resolves to its Ticket without guessing.
+When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
 
-## When a skill is run unattended
+- **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for the diff.
+- **List external PRs for triage**: `gh api --paginate 'repos/{owner}/{repo}/pulls?state=open' --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR") | not) | {number, title, author: .user.login, author_association, labels: [.labels[].name]}'`.
+- **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
 
-`task-handle` passes the fixed point (`main`) and the spec (the Ticket body)
-to `code-review` as arguments, precisely so neither lookup above is reached
-and neither of that skill's two "ask the user" branches can fire. If you are
-reading this during an automatic run and still do not have a spec, that is a
-**decline**, not a question — the run has `AskUserQuestion` removed.
+GitHub shares one number space across issues and PRs, so a bare `#42` may be either: resolve with `gh pr view 42` and fall back to `gh issue view 42`.
 
-## What is not a spec
+## When a skill says "publish to the issue tracker"
 
-`docs/scenarios.yaml` is the BDD registry and `docs/product/`,
-`docs/architecture/` are the engine's specification documents. They describe
-the product, not the change under review. Do not substitute one for a missing
-Ticket: a review measured against the wrong spec is worse than one that
-reports having none.
+Create a GitHub issue.
+
+## When a skill says "fetch the relevant ticket"
+
+Read it as in **Read an issue** above.
+
+## Wayfinding operations
+
+Used by `/mpc_wayfinder`. The **map** is a single issue with **child** issues as tickets.
+
+- **Map**: a single issue labelled `wayfinder:map`, holding the Notes / Decisions-so-far / Fog body. `gh issue create --label wayfinder:map`.
+- **Child ticket**: an issue linked to the map as a GitHub sub-issue (see **Make an issue a sub-issue of a parent**). Where sub-issues aren't enabled, add the child to a task list in the map body and put `Part of #<map>` at the top of the child body. Labels: `wayfinder:<type>` (`research`/`prototype`/`grilling`/`task`). Once claimed, the ticket is assigned to the driving dev.
+- **Blocking**: GitHub's **native issue dependencies**, the canonical, UI-visible representation. Add an edge with `gh api --method POST repos/<owner>/<repo>/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`, where `<blocker-db-id>` is the blocker's numeric **database id** (`gh api repos/<owner>/<repo>/issues/<n> --jq .id`, _not_ the `#number` or `node_id`). GitHub reports `issue_dependencies_summary.blocked_by` (open blockers only, the live gate). Where dependencies aren't available, fall back to a `Blocked by: #<n>, #<n>` line at the top of the child body. A ticket is unblocked when every blocker is closed.
+- **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
+- **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
+- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.

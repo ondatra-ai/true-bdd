@@ -10,8 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
-// The argv scripts/internal/claudecli built before this package existed. Its
-// 14 callers depend on the order, so it is pinned rather than reviewed.
+// Callers depend on the argv order, so it is pinned rather than reviewed.
 func TestArgsOrder(t *testing.T) {
 	t.Parallel()
 

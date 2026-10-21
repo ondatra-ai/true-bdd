@@ -3,7 +3,7 @@
 //
 // It is the fourth channel. pkg/console owns terminal bytes, pkg/disk owns
 // files, pkg/logging owns records; spawning was the one kind of IO nobody
-// owned, and it showed: scripts/taskhandle, scripts/merge and scripts/commit
+// owned, and it showed: three packages under scripts/
 // each carried a copy of the same 25-line sh(), down to identical comments,
 // and the three disagreed about whether a failure stops the process. Exit-code
 // extraction was written four times, LookPath eleven.

@@ -8,7 +8,7 @@ import (
 
 // Prefixes marking a step no regexp can settle. Mirrors bddgo's own
 // vocabulary rather than importing it: pkg/testkit reaches the roots,
-// never the other way round (ADR 0008).
+// never the other way round.
 const (
 	// PrefixAct marks a step a model PERFORMS. Legal in given:/when: only.
 	PrefixAct = "llm:"

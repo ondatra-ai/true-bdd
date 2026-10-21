@@ -57,7 +57,7 @@ rules:
 
   # Four roots and no fifth: product code, what exercises it, the tooling, and
   # what all three share. pkg/ is the fourth because Go's internal/ rule made a
-  # shared package impossible otherwise (docs/adr/0003). A fifth is code adrift.
+  # shared package impossible otherwise. A fifth is code adrift.
   - id: go-known-roots
     kind: file_absent
     level: error
@@ -92,7 +92,7 @@ rules:
       for makes its file invisible to every Go gate. Add it to
       run.build-tags in .golangci.yaml, then to this rule.
 
-  # ADR 0003 admitted pkg/ for three IO channels, 0005 for spawning and its
+  # pkg/ was admitted for three IO channels, then for spawning and its
   # wrappers; enginelog arrived with nothing to announce it. The allowlist IS
   # the decision record, so a fourth root cannot become a parking lot.
   - id: pkg-is-the-declared-channels
@@ -115,12 +115,12 @@ rules:
       A new package under pkg/. pkg/ is the floor every root may import, not
       somewhere to park code: it holds the four IO channels, pkg/cli's typed
       wrappers over the fourth, enginelog, and the inbound protocols — what
-      spawns US, against pkg/cli's what we spawn (docs/adr/0006). Write the
+      spawns US, against pkg/cli's what we spawn. Write the
       ADR and add it here, or put it in the root that owns it.
 
   # golangci-lint reaches the bdd tree (run.build-tags) but `generated: lax`
   # skips the generated tests; alint is tag-blind and text-level, so this is
-  # the backstop for exactly those files. ADR 0005.
+  # the backstop for exactly those files.
   - id: go-spawn-through-shell
     kind: import_gate
     level: error
@@ -250,39 +250,6 @@ rules:
       A manifest or lockfile means a second build system. This repository
       authors none; only a fixture tree may carry one.
 
-  # CLAUDE.md is a cache of the repository loaded into every session, so its
-  # cost is paid constantly and its growth is invisible one commit at a time.
-  - id: claude-md-budget
-    kind: file_max_lines
-    level: error
-    paths: "CLAUDE.md"
-    max_lines: 214
-    message: >-
-      CLAUDE.md is over budget. Free lines before adding: prefer the point of
-      use — a package doc comment, a script header, README.md, a config
-      file's comments, docs/for_further/.
-
-  # The mirrored block opens the file: CLAUDE.md is read top-down and a
-  # preamble above the guidelines would outrank them. Stricter than the shell
-  # check it replaces, which tolerated blank lines above the marker.
-  - id: claude-md-opens-with-mirror
-    kind: file_header
-    level: error
-    paths: "CLAUDE.md"
-    lines: 1
-    pattern: "^<!-- KARPATHY:BEGIN"
-    message: "CLAUDE.md must open with the KARPATHY:BEGIN marker."
-
-  # Shelled out because alint cannot express either: line_max_width has no
-  # per-line exemption and the mirror needs a live upstream fetch. The command
-  # is the whole rule; its exit code and stderr are the verdict.
-  - id: claude-md-width-and-mirror
-    kind: command
-    level: error
-    paths: "CLAUDE.md"
-    command: ["go", "run", "./scripts/cmd/linters", "claude-md"]
-    timeout: 60
-
   # The five below fire only under a scope: alint_hook names one file and these
   # paths pick the checks. Unscoped they match nothing — `lint-all` is the
   # whole-tree half, and the gate table has one row, which runs this file.
@@ -310,7 +277,7 @@ rules:
     timeout: 120
     paths:
       include: ["**/*.md"]
-      exclude: ["CLAUDE.md", "tests/bdd-cli/fixtures/**", "**/testdata/**"]
+      exclude: ["tests/bdd-cli/fixtures/**", "**/testdata/**"]
     scope_filter:
       include_manifest_paths:
         source: "{{env.TRUEBDD_SCOPE | default('tmp/no-scope.txt')}}"
@@ -365,8 +332,7 @@ rules:
     command: ["go", "run", "./scripts/cmd/linters", "all"]
 
   # crush merges every config it finds walking up from its cwd, so one here
-  # silently blocks every fixture's apply turn. Documented in CLAUDE.md and,
-  # until now, enforced by nothing.
+  # silently blocks every fixture's apply turn.
   - id: no-root-crush-config
     kind: file_absent
     level: error

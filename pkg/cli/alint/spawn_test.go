@@ -48,7 +48,7 @@ func TestFixScopesToTheNamedPaths(t *testing.T) {
 	}
 }
 
-// The invariant ADR 0006 rests on: a checking run carries no scope, so the
+// The invariant the scoped split rests on: a checking run carries no scope, so the
 // rules that fix cannot fire under it.
 func TestCheckCarriesNoScope(t *testing.T) {
 	fakeRepo(t)

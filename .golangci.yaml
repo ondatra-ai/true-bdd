@@ -149,7 +149,7 @@ linters:
       rules:
         # pkg/ is the floor: every root imports it, it imports none. The
         # negations: `**/pkg/**` also matches internal/pkg/, not the floor;
-        # pkg/testkit/ is the harness, which exists to reach roots (ADR 0008).
+        # pkg/testkit/ is the harness, which exists to reach roots.
         root-pkg-floor:
           files:
             - "**/pkg/**"
@@ -194,7 +194,7 @@ linters:
               desc: 'a port names domain types only — never its own implementation'
             - pkg: "github.com/ondatra-ai/true-bdd/services/bdd-cli/cmd"
               desc: 'the domain defines; it does not reach outward'
-        # Spawning is the fourth channel (ADR 0005). _test.go is exempt: several
+        # Spawning is the fourth channel. _test.go is exempt: several
         # tests exist to synthesise the raw behaviour shell abstracts — a real
         # *exec.ExitError, a Start with no Wait.
         spawn-exec:

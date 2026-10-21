@@ -84,7 +84,7 @@ func Scan(scenarios []*registry.RegistryScenario, repoRoot string) (*Answer, err
 
 // serviceRoots maps each service to the directory holding its tests —
 // path.Dir of a scenario's own path:, never the service's name, which
-// names no directory (ADR 0009).
+// names no directory.
 func serviceRoots(scenarios []*registry.RegistryScenario) (map[string]string, error) {
 	roots := map[string]string{}
 

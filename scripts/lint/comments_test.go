@@ -164,19 +164,5 @@ func TestRunAtEndOfFileIsFlushed(t *testing.T) {
 	}
 }
 
-func TestVendoredSkillsReadsBothProseRuns(t *testing.T) {
-	t.Parallel()
-
-	manifest := "Preamble text.\n\nEngineering: ask-matt, code-review,\ntdd, wizard.\n\n" +
-		"Some other paragraph.\n\nProductivity: grill-me,\nwait-what.\n\nTrailer.\n"
-
-	got := strings.Join(lint.VendoredSkills(manifest), ",")
-
-	want := "ask-matt,code-review,tdd,wizard,grill-me,wait-what"
-	if got != want {
-		t.Errorf("want %q, got %q", want, got)
-	}
-}
-
 // MaxProsePlusTwo is comfortably over the cap without naming a bare number.
 const MaxProsePlusTwo = lint.MaxProse + 2

@@ -41,7 +41,7 @@ type ScenCheckDeps struct {
 
 // RunScenCheck drives `scen check`: walks registry scenarios against the
 // scen-check checklist, one cell per (scenario, prompt). Advisory — a
-// failed walk still exits 0, per docs/adr/0001.
+// failed walk still exits 0.
 func RunScenCheck(
 	ctx context.Context,
 	deps ScenCheckDeps,

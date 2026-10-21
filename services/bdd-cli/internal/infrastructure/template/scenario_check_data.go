@@ -14,7 +14,7 @@ type StoryRef struct {
 
 // ScenarioCheckData carries one registry scenario through the scen-check
 // evaluator: one instance per (scenario, prompt) cell input. It holds the
-// scenario's own fields and no path to the registry — see docs/adr/0001.
+// scenario's own fields and no path to the registry.
 type ScenarioCheckData struct {
 	ID          string      // e.g. "E2E-015"
 	Description string      // verbatim registry description

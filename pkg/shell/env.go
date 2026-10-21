@@ -7,7 +7,7 @@ import (
 )
 
 // Env builds the child's environment; the zero value inherits the parent's.
-// Blank leaves a key present and empty, Strip removes it: claudecli/run.go:71-73
+// Blank leaves a key present and empty, Strip removes it: pkg/cli/claude
 // strips CLAUDECODE so a nested `claude -p` looks unlaunched-from-a-session.
 type Env struct {
 	blank []string

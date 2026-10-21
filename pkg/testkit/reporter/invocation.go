@@ -46,7 +46,7 @@ func quoteArg(arg string) string {
 	return "'" + strings.ReplaceAll(arg, "'", `'\''`) + "'"
 }
 
-// Base flags the deleted SDK transport passed (ADR 0010). Frozen history:
+// Base flags the deleted SDK transport passed. Frozen history:
 // they reconstruct a command line for logs written before argv recording.
 // Do not track pkg/cli/claude's argv here.
 func claudeBaseArgs() []string {

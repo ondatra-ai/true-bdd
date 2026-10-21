@@ -49,7 +49,7 @@ scenario:
   description: str()
   # Must name a service declared in architecture.yaml. It is also the
   # join that decides which tests own the scenario: they live in
-  # `tests/<service>/`, mirroring `services/<service>/` (ADR 0009).
+  # `tests/<service>/`, mirroring `services/<service>/`.
   service: str()
   # Generated test file this scenario is written into, repo-relative.
   # Several scenarios may share one file (emitted in id order). Required,

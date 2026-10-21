@@ -314,7 +314,7 @@ func Execute(
 	args := strings.Fields(fixture.Cmd)
 
 	// Stripped, not blanked: the engine under test must look entirely
-	// unlaunched-from-a-session, as claudecli's own child does.
+	// unlaunched-from-a-session, as pkg/cli/claude's own child does.
 	options := cli.Options{
 		Dir:     tmpDir,
 		Env:     cli.Inherit().Strip("CLAUDECODE").Set(extraEnv...),

@@ -5,12 +5,10 @@
 // under services/bdd-cli/claudecode used to run the engine's turns over a
 // bidirectional stream-json protocol; it was deleted once it was measured,
 // because the engine only ever sent one prompt per spawn and the second
-// path was where an un-isolated child leaked in (docs/adr/0010).
+// path was where an un-isolated child leaked in.
 //
-// Cost accounting stays with the caller: pkg/ may import no root, so the
-// report.Leaf that every scripts/ turn is measured by lives in
-// scripts/internal/claudecli. The envelope's own totals ride back on Answer,
-// which is plain JSON and imports nothing.
+// Cost accounting stays with the caller: the envelope's own totals ride back
+// on Answer, which is plain JSON and imports nothing.
 package claude
 
 import (
@@ -84,7 +82,7 @@ type Options struct {
 // operator's advisorModel and enabledPlugins live; project stays, because the
 // workspace's own settings carry the permissions the turn must run under.
 func isolation() []string {
-	// Not --bare: it also skips CLAUDE.md and forces API-key auth (ADR 0010).
+	// Not --bare: it also skips CLAUDE.md and forces API-key auth.
 	return []string{
 		"--setting-sources", "project",
 		"--strict-mcp-config",
@@ -93,7 +91,7 @@ func isolation() []string {
 
 // AdvisorOff is the only gate there is: the advisor is a SERVER-side tool, so
 // --disallowed-tools cannot reach it and naming it there does nothing. Every
-// spawner of a claude binary sets it — see ADR 0010.
+// spawner of a claude binary sets it.
 const AdvisorOff = "CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1"
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
@@ -273,8 +271,7 @@ func isEmptyJSON(raw json.RawMessage) bool {
 	return text == "" || text == "null" || text == "{}"
 }
 
-// truncate caps a diagnostic. scripts/internal/textutil does this for the
-// tooling, but pkg/ may not import it.
+// truncate caps a diagnostic.
 func truncate(text string, limit int) string {
 	if len(text) <= limit {
 		return text

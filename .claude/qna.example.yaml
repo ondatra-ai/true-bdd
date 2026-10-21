@@ -1,0 +1,48 @@
+# Q&A log of one grilling session (mpc_grilling, mpc_grill-me, mpc_grill-with-docs).
+# One file per session; an entry is appended after each answer is folded in.
+
+intent: |
+  What the session is sharpening, in one or two sentences, as the user stated it.
+  Example: save every grilling question, its answer and the reasoning behind it
+  to a YAML file, so decisions can be reviewed after the session.
+
+log:
+  - decision_trace:
+      research: # facts gathered before asking, with sources
+        - mpc_grilling asks one question per turn, so an entry can be written once per turn.
+        - docs/history/ already logs the full chat as Markdown, but not as structured Q&A.
+      recommendation: |
+        One file per session under docs/qna/, committed to git, so decisions travel with the repo.
+      settled: | # what the answer decided, in your own words
+        Logs go to docs/qna/ and are committed.
+    question: |
+      Q1 - Where do the logs live: should they be committed to git or gitignored like docs/history/?
+    answer: |
+      Commit them, they are part of the project's decisions.
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Write the entry right after the answer, not at the end of the session,
+        so an interrupted session keeps what was already decided.
+      settled: |
+        Append after every answer.
+    question: |
+      Q2 - When is an entry written: after each answer, or once when the session ends?
+    answer: |
+      yes
+
+  # A frontier question that research settled as a fact: never asked, so no Q<n>,
+  # and the answer is Claude's own, marked as such.
+  - decision_trace:
+      research:
+        - PyYAML's safe_load parses `|` block scalars, so multi-line answers need no quoting.
+      recommendation: |
+        Use `|` block scalars for all free text.
+      settled: |
+        Free text is written as `|` block scalars.
+    question: |
+      How should multi-line answers be quoted in the YAML?
+    answer: |
+      Claude, no question asked: write all free text as `|` block scalars.

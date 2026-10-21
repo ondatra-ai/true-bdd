@@ -8,8 +8,8 @@
 #
 # The four that were dropped threshold over a set (AC count 3-7, at least
 # one happy path, at least two error scenarios, at least 80% convertible)
-# and have no reading here. Why that is deliberate rather than an
-# oversight: docs/adr/0001-scen-check-is-advisory-and-per-scenario.md.
+# and have no reading here, deliberately: scen check is advisory and
+# per scenario.
 #
 # No prompt carries an `F:`. The command registers `--fix` and refuses it
 # at startup, because a fix loop over the registry is a different command

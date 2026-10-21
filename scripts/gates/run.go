@@ -10,7 +10,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
-	"github.com/ondatra-ai/true-bdd/scripts/report"
 )
 
 var (
@@ -61,12 +60,12 @@ func Run(selected []Gate) error {
 		if err != nil {
 			// Reported before the return: a red gate is the one whose duration
 			// a reader most wants, and the stop above would swallow it.
-			report.Leaf(gate.Name, started, "command", command, report.KeyStatus, report.StatusFailed)
+			slog.Error(gate.Name, "duration_ms", time.Since(started).Milliseconds(), "command", command)
 
 			return fmt.Errorf("%w: %s: %w", errGateFailed, gate.Name, err)
 		}
 
-		report.Leaf(gate.Name, started, "command", command)
+		slog.Info(gate.Name, "duration_ms", time.Since(started).Milliseconds(), "command", command)
 	}
 
 	return nil

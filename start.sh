@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Start Claude Code with this repository's secrets loaded.
 #
-# The merge tooling reads CODERABBIT_API_KEY (and CLICKUP_API_TOKEN, when
-# set) from the environment rather than from a config file, so they have to
-# be exported before the session starts — a key sourced inside a subshell
-# during the session does not reach the scripts the agent runs.
+# Keys are read from the environment rather than from a config file, so
+# .env has to be exported before the session starts — a key sourced inside a
+# subshell during the session does not reach the scripts the agent runs.
 set -euo pipefail
 cd "$(dirname "$0")"
+
+# Every commit runs the gates its staged change needs (.githooks/pre-commit).
+git config core.hooksPath .githooks
 
 if [[ ! -f .env ]]; then
   echo "Missing .env — copy .env.example and fill in values." >&2

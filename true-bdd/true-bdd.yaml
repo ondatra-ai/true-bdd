@@ -71,12 +71,12 @@ documents:
 
 # Models for scripts/ turns, which reach `claude` directly and never the
 # engine's router. Most specific wins: command, then script, then default.
-# Plain model ids — this tooling has exactly one CLI (docs/adr/0010).
+# Plain model ids — this tooling has exactly one CLI.
 scripts:
   models:
     # What these turns ran before isolation cut the operator's user `model`.
     default: "opus[1m]"
-    # Keyed by scripts/cmd/<name>: commit, merge, clickup, task-handle, ...
+    # Keyed by scripts/cmd/<name>: commit, pr-update, codex, ...
     per_script: {}
-    # Keyed by the Role a call site passes: commit-msg, merge-fix, ...
+    # Keyed by the Role a call site passes: branch-name, commit-msg, ...
     per_command: {}

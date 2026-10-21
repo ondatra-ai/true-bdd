@@ -15,7 +15,7 @@
 
 architecture:
   # How this repository runs its tests, stated once. No suites: a test's
-  # service and file are the scenario's own (docs/adr/0009).
+  # service and file are the scenario's own.
   testing:
     framework: go-test
     # Gated behind //go:build bdd with a -mode flag naming a mode per

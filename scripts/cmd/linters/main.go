@@ -22,9 +22,7 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/alint"
 	clialint "github.com/ondatra-ai/true-bdd/pkg/cli/alint"
-	"github.com/ondatra-ai/true-bdd/scripts/history"
 	"github.com/ondatra-ai/true-bdd/scripts/lint"
-	"github.com/ondatra-ai/true-bdd/scripts/state"
 )
 
 // allGate is the whole-tree run: every leaf once, which is what a gate wants
@@ -40,11 +38,11 @@ type finding string
 
 func (f finding) Error() string { return string(f) }
 
-// tool names this program in the Task's shared log.
+// tool names this program in its log records.
 const tool = "linters"
 
 func main() {
-	alint.AlintLint(tool, state.TaskLog(history.RepoRoot()), os.Args[1:], gate)
+	alint.AlintLint(tool, "", os.Args[1:], gate)
 }
 
 // gate is the one closure: it picks the check the first argument names and
@@ -70,8 +68,6 @@ func gate(req alint.AlintLintParams, log *slog.Logger) error {
 			return lint.Schemas(out, files)
 		case "markdown":
 			return lint.Markdown(out, files)
-		case "claude-md":
-			return lint.ClaudeMD(out)
 		case "golint":
 			return lint.GoPackage(out, packages(req, rest), req.Fix)
 		default:

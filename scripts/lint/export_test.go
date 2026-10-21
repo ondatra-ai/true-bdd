@@ -20,8 +20,6 @@ func ScanComments(path, src string, isGo bool) []Finding {
 	return out
 }
 
-func VendoredSkills(manifest string) []string { return vendoredSkills(manifest) }
-
 const (
 	MaxProse = maxProse
 	MaxBlock = maxBlock

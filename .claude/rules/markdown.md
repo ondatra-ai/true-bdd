@@ -12,9 +12,7 @@ and again in the gates and CI, so a breach surfaces at the edit that made it.
 
 **Write long lines.** `MD013` is off: prose runs to whatever length the
 sentence wants, and hand-wrapping at 80 columns is churn the gate will not
-thank you for. `CLAUDE.md` is out of this gate's scope entirely — `.alint.yml`
-owns its line budget, its opening block, its width and its mirror. `MD060` is
-off too: the corpus is 58 compact table pipes to 3 aligned, and reflowing a
+thank you for. `MD060` is off too: the corpus is 58 compact table pipes to 3 aligned, and reflowing a
 table that already reads fine is what Surgical Changes forbids.
 
 **Give every file a top-level heading.** `MD041` is ON — except for the file
@@ -35,9 +33,9 @@ committed `.markdownlint.yaml` or `.markdownlint-cli2.yaml` in any
 subdirectory changes that subtree's rules with nothing to announce it — the
 same trap as a root `crush.json`. One config, at the root.
 
-**Out of scope, and not yours to fix.** The 24 directories named in
-`.claude/skills/VENDORED-mattpocock.md` are MIT copies of
-`mattpocock/skills`; the gate parses that manifest and skips them, because a
-fix here turns the next re-sync from a copy into a three-way merge. Also
+**Out of scope, and not yours to fix.** The `.claude/skills/mpc_*` directories
+are MIT copies of `mattpocock/skills` (manifest:
+`.claude/skills/VENDORED-mattpocock.md`); the gate skips them by that prefix,
+because a fix here turns the next re-sync from a copy into a three-way merge. Also
 skipped: `*/testdata/` goldens and `proto-product-snapshot.md`, where the
 bytes are machine output rather than prose.
