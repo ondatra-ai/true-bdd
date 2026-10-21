@@ -90,7 +90,7 @@ func TestE2E004(t *testing.T) {
 func TestE2E005(t *testing.T) {
 	s := scenarios.New(t, "E2E-005")
 	s.Given(`the "build-code-fix-named-test" project tree`)
-	s.And(`the System Architect answers "1" to every prompt`)
+	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Running tests" framework=go-test`)
@@ -104,7 +104,7 @@ func TestE2E005(t *testing.T) {
 	s.But(`the file "tests/suite/add_test.go" is unchanged`)
 	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
-	s.And(`the command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
 	s.Done()
 }
 
@@ -188,7 +188,7 @@ func TestE2E011(t *testing.T) {
 	s := scenarios.New(t, "E2E-011")
 	s.Given(`the "build-code-playwright-nextjs" project tree`)
 	s.And(`the project's browser test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every prompt`)
+	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Running tests" framework=playwright`)
@@ -199,7 +199,7 @@ func TestE2E011(t *testing.T) {
 	s.And(`the file "tests/integration/frontend-home.spec.ts" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.And(`no file outside "tmp" and "services/frontend" changed`)
-	s.And(`the command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
+	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
 	s.And(`judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server`)
 	s.And(`judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server`)
 	s.Done()

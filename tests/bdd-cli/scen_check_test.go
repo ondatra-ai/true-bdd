@@ -237,7 +237,7 @@ func TestE2E096(t *testing.T) {
 func TestE2E097(t *testing.T) {
 	s := scenarios.New(t, "E2E-097")
 	s.Given(`the "scen-check-fix-records-phrase" project tree`)
-	s.And(`the Quality Engineer answers "1" to every prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)

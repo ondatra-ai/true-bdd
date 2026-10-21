@@ -107,7 +107,7 @@ scenarios:
     merged_steps:
       given:
         - the "build-code-fix-named-test" project tree
-        - the System Architect answers "1" to every prompt
+        - the System Architect answers "1" to every question
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -126,7 +126,7 @@ scenarios:
         # Independent outcome check: the harness runs the suite itself in
         # the tree the fix loop left. Last, so the run it appends to
         # suite-runs.log lands after the line-count clause and both snapshots.
-        - and: the command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   E2E-006:
     description: A spec the loader cannot decode must be refused with the file named
     service: bdd-cli
@@ -227,7 +227,7 @@ scenarios:
       given:
         - the "build-code-playwright-nextjs" project tree
         - and: the project's browser test dependencies are installed
-        - the System Architect answers "1" to every prompt
+        - the System Architect answers "1" to every question
       when:
         - the System Architect runs "build code --fix"
       then:
@@ -243,7 +243,7 @@ scenarios:
         # THE assertion this scenario exists for: the harness runs the
         # declared browser suite itself, against the app the loop produced.
         # Every file clause above is a proxy for this one.
-        - and: the command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
+        - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
         - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
         - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
   E2E-012:
@@ -308,7 +308,7 @@ scenarios:
     merged_steps:
       given:
         - the "build-tests-fix-happy-path" project tree
-        - the System Architect answers "1" to every prompt
+        - the System Architect answers "1" to every question
       when:
         - the System Architect runs "build tests --fix"
       then:
@@ -399,7 +399,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-duplicate-collapse" project tree
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us apply 95.1 --fix"
       then:
@@ -468,7 +468,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-relocated-registry" project tree
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us apply 95.2 --fix"
       then:
@@ -497,7 +497,7 @@ scenarios:
       given:
         - the "us-apply-rewalk-converges" project tree
         - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us apply 99.3 --fix"
       then:
@@ -570,7 +570,7 @@ scenarios:
       given:
         - the "us-refine-fix-desc-qualifier" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine 96.6 --fix"
       then:
@@ -595,7 +595,7 @@ scenarios:
       given:
         - the "us-refine-fix-descriptions" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine 96.2 --fix"
       then:
@@ -621,7 +621,7 @@ scenarios:
       given:
         - the "us-refine-fix-forbidden-verb" project tree
         - and: the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine 96.8 --fix"
       then:
@@ -646,7 +646,7 @@ scenarios:
       given:
         - the "us-refine-fix-step-qualifier" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine 96.7 --fix"
       then:
@@ -671,7 +671,7 @@ scenarios:
       given:
         - the "us-refine-fix-steps" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine 96.5 --fix"
       then:
@@ -837,7 +837,7 @@ scenarios:
       given:
         - the "us-refine-fix-keeps-feature" project tree
         - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us refine doc-summary --fix"
       then:
@@ -972,7 +972,7 @@ scenarios:
     merged_steps:
       given:
         - the "us-apply-reordered-criteria" project tree
-        - the Product Owner answers "1" to every prompt
+        - the Product Owner answers "1" to every question
       when:
         - the Product Owner runs "us apply mcp-endpoint --fix"
       then:
@@ -1249,7 +1249,7 @@ scenarios:
     merged_steps:
       given:
         - the "scen-check-fix-records-phrase" project tree
-        - the Quality Engineer answers "1" to every prompt
+        - the Quality Engineer answers "1" to every question
       when:
         - the Quality Engineer runs "scen check --fix"
       then:

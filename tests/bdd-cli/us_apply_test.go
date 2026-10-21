@@ -26,7 +26,7 @@ import (
 func TestE2E021(t *testing.T) {
 	s := scenarios.New(t, "E2E-021")
 	s.Given(`the "us-apply-duplicate-collapse" project tree`)
-	s.And(`the Product Owner answers "1" to every prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply 95.1 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=1`)
@@ -85,7 +85,7 @@ func TestE2E023(t *testing.T) {
 func TestE2E024(t *testing.T) {
 	s := scenarios.New(t, "E2E-024")
 	s.Given(`the "us-apply-relocated-registry" project tree`)
-	s.And(`the Product Owner answers "1" to every prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply 95.2 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=1`)
@@ -110,7 +110,7 @@ func TestE2E025(t *testing.T) {
 	s := scenarios.New(t, "E2E-025")
 	s.Given(`the "us-apply-rewalk-converges" project tree`)
 	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
-	s.And(`the Product Owner answers "1" to every prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply 99.3 --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=2`)
@@ -168,7 +168,7 @@ func TestE2E061(t *testing.T) {
 func TestE2E062(t *testing.T) {
 	s := scenarios.New(t, "E2E-062")
 	s.Given(`the "us-apply-reordered-criteria" project tree`)
-	s.And(`the Product Owner answers "1" to every prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply mcp-endpoint --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405`)

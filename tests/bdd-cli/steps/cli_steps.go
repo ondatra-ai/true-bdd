@@ -24,8 +24,8 @@ func Register(suite *bddgo.Suite[State]) {
 	// during tmpdir assembly: the dependency install (`prep:`) and the
 	// interactive answers piped to the fix loop. Implemented below.
 	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every prompt$`,
-		assertAnswersEveryPrompt)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+		assertAnswersEveryQuestion)
 	// A Given precondition that a checklist is narrowed to one named prompt;
 	// the fixture selects it via `checklist_prompts:`, and this step verifies
 	// the selection is real and singular.
@@ -109,10 +109,10 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
-	// The independent outcome check: the harness itself runs a command the
+	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
-	suite.Step(`^the command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
@@ -332,22 +332,22 @@ func assertDependenciesInstalled(state *State, args []string) error {
 	return nil
 }
 
-// everyPromptAnswers is how many copies of the answer the step feeds the
+// everyQuestionAnswers is how many copies of the answer the step feeds the
 // fix loop; picked generously since surplus lines are harmless (EOF exits
 // the CLI cleanly).
-const everyPromptAnswers = 64
+const everyQuestionAnswers = 64
 
-// assertAnswersEveryPrompt sets the fixture's stdin to the given answer,
+// assertAnswersEveryQuestion sets the fixture's stdin to the given answer,
 // repeated, before the When step runs the CLI and pipes it to the
 // subprocess. The captured role is discarded — validated by the pattern.
-func assertAnswersEveryPrompt(state *State, args []string) error {
+func assertAnswersEveryQuestion(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
 	answer := args[1]
 
-	state.Fixture.Stdin = []byte(strings.Repeat(answer+"\n", everyPromptAnswers))
+	state.Fixture.Stdin = []byte(strings.Repeat(answer+"\n", everyQuestionAnswers))
 
 	return nil
 }

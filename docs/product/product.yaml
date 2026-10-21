@@ -150,7 +150,7 @@ catalogue:
       wants the behaviour; it changes nothing in what the command does.
     terms: [engine, command, project tree]
 
-  - template: 'the {actor:role} answers "{answer}" to every prompt'
+  - template: 'the {actor:role} answers "{answer}" to every question'
     block: given
     means: >-
       Every question the command asks on the terminal during its fix
