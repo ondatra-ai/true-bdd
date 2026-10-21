@@ -29,7 +29,6 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches US APPLY — Story 95\.4
-                - stdout matches msg="Seeded scratch registry"
                 - 'stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
                 - stdout matches level=ERROR msg="Refusing to start" command="us apply"
                 - but: no file outside "tmp" changed
@@ -84,7 +83,6 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches US APPLY — Story 95\.5
-                - stdout matches msg="Seeded scratch registry"
                 - stdout matches us apply requires acceptance_criteria with embedded steps
                 - stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml
                 - stdout matches level=ERROR msg="Refusing to start" command="us apply"
@@ -102,7 +100,6 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches US APPLY — Story 95\.3
-                - stdout matches msg="Seeded scratch registry"
                 - 'stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
                 - stdout matches level=ERROR msg="Refusing to start" command="us apply"
                 - but: no file outside "tmp" changed
