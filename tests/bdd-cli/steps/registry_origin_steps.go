@@ -226,6 +226,37 @@ func assertRegistryScenarioCitesStory(state *State, args []string) error {
 		entryID, criterion, registryRel, story, cited)
 }
 
+// assertRegistryScenarioKeyed pins the Registry key of the single entry
+// descending from a criterion: `us apply` keys it by that lineage (ADR 0014),
+// never by a number it picked.
+func assertRegistryScenarioKeyed(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	criterion := args[0]
+	registryRel := args[1]
+	want := args[2]
+
+	entries, err := loadRegistryScenarios(state, registryRel)
+	if err != nil {
+		return err
+	}
+
+	entryID, _, err := uniqueScenarioFromCriterion(state, entries, registryRel, criterion)
+	if err != nil {
+		return err
+	}
+
+	if entryID != want {
+		return state.fail(
+			"expected the scenario from acceptance criterion %q in %q to be keyed %q, but it is keyed %q",
+			criterion, registryRel, want, entryID)
+	}
+
+	return nil
+}
+
 // assertRegistryScenarioMatches pins that the single entry descending
 // from a criterion, re-serialized to YAML, matches a regexp — proof the
 // collapse preserved behaviour, not merely the entry id.

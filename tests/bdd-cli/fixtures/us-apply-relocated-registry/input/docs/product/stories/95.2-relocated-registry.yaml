@@ -21,7 +21,7 @@ story:
     so_that: the BDD harness can assert us apply reads and writes the registry location declared in true-bdd.yaml
     status: PLANNED
     acceptance_criteria:
-        - id: AC-1
+        - id: 001-health-ok
           description: The MCP server must respond with a 200 status and a JSON body reporting the service as healthy when a Claude User sends a GET request to the /health endpoint.
           steps:
             - given:

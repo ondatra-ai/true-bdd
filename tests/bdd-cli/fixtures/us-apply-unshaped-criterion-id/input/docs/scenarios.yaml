@@ -1,0 +1,29 @@
+# Decoy registry for `us-apply-unshaped-criterion-id`.
+#
+# Present, configured, valid and non-empty, so the only thing that can
+# stop the run is the story's legacy criterion id. Nothing here references
+# the story under test. It is the control: after a refusal it must come
+# back byte-identical.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Non-empty decoy registry for the us-apply refusal fixtures"
+
+scenarios:
+  90.1-001-banner:
+    description: "The home page renders a welcome banner"
+    service: "web-service"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/90.1-unrelated.yaml"
+        scenario_id: "90.1-001-banner"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - "the web app is running"
+      when:
+        - "the Claude User navigates to the home page"
+      then:
+        - "the home page renders a welcome banner"

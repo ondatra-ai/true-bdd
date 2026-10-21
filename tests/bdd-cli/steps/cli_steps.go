@@ -96,6 +96,8 @@ func Register(suite *bddgo.Suite[State]) {
 		assertRegistryScenarioCount)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
 		assertRegistryScenarioCitesStory)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
+		assertRegistryScenarioKeyed)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
 		assertRegistryScenarioMatches)
 	// The duplicate-collapse invariant stated positively: no two registry

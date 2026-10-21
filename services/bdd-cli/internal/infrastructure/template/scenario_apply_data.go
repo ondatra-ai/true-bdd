@@ -17,10 +17,10 @@ type MergedSteps struct {
 // through the apply-checklist evaluator, fix-prompt generator, and
 // fix-applier templates: one instance per (scenario, prompt) cell input.
 type ScenarioApplyData struct {
-	StoryID                 string      // e.g. "4.1"
-	StoryPath               string      // e.g. "docs/product/stories/4.1-shared-document-editing.yaml"
-	ACID                    string      // e.g. "AC-1"
-	LineageScenarioID       string      // e.g. "4.1-001" — matches user_stories[].scenario_id
+	StoryID                 string      // e.g. "shared-editing"
+	StoryPath               string      // e.g. "docs/product/stories/shared-editing-documents.yaml"
+	ACID                    string      // e.g. "001-two-editors-merge"
+	LineageScenarioID       string      // e.g. "shared-editing-001-two-editors-merge": the Registry key, and scenario_id
 	Description             string      // verbatim AC description
 	Steps                   MergedSteps // Given / When / Then flattened from AC steps
 	RequirementsScratchPath string      // tmp copy of docs/scenarios.yaml the run mutates
