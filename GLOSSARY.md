@@ -4,6 +4,10 @@ The engine that drives Claude-mediated checklists over a host project's specific
 
 ## Language
 
+**Host project**:
+The project whose specification documents the engine walks and whose code it builds. This repository is its own Host project: the engine's next version is specified and built by its previous one, while for anyone else the Host project is their own application.
+_Avoid_: host application, host product, target project
+
 **Registry**:
 The single YAML file holding every Scenario, resolved from `documents.scenarios_yaml` (conventionally `docs/scenarios.yaml`).
 _Avoid_: requirements file, scenarios file, spec file
@@ -12,16 +16,24 @@ _Avoid_: requirements file, scenarios file, spec file
 One entry in the Registry, keyed by id, carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from.
 _Avoid_: test case, requirement, feature
 
+**Story**:
+One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document.
+_Avoid_: epic story, ticket, requirement
+
+**Feature**:
+A named group of Stories that together deliver one product capability. A label a Story carries, not a document of its own.
+_Avoid_: epic, theme, module
+
 **Acceptance Criterion**:
 One testable condition inside a refined user story, before it is merged into the Registry. An AC becomes a Scenario; the two are the same shape and different lifecycle stages.
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
-Whatever a single command walks one of at a time — a Story for `us create`/`us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`.
+Whatever a single command walks one of at a time — a Story for `us refine`, an Acceptance Criterion for `us apply`, a Scenario for `scen check`.
 _Avoid_: subject, entity, record
 
 **Prompt**:
-One validation question in a Checklist — the `Q:` block, its rationale, its declared reference documents and its optional `F:` fix template. Never the rendered text sent to a model; that is the rendered prompt for a Cell.
+One validation question in a Checklist, with its rationale, its declared reference documents and its optional `F:` fix template. A model answers a `Q:` Prompt; the engine's own code answers a `D:` Prompt, which names one of the engine's built-in checks, and an Item's `D:` Prompts are answered before any of its `Q:` Prompts. Never the rendered text sent to a model; that is the rendered prompt for a Cell.
 _Avoid_: check, question, validation item
 
 **Cell**:

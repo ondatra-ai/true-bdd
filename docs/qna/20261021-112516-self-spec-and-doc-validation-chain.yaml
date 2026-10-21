@@ -1,0 +1,1093 @@
+# Q&A log of one grilling session (mpc_grill-with-docs).
+
+intent: |
+  Write a full specification and documentation for TrueBDD itself, complete enough
+  that the project can be rebuilt from scratch: from the user stories and the
+  scenarios in docs/scenarios.yaml, `build tests` and `build code` produce new
+  working code. For that the registry must be fully understandable to the system:
+  every term it uses must be present in the architecture and product documents
+  (the document universe), and each stage of the pipeline must validate the next
+  piece of documentation against the ones before it, an idea not necessarily
+  implemented today.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          The spine product -> epic -> story -> scenario is empty for TrueBDD itself: no
+          epics, no stories, all 55 scenarios carry `user_stories: []`; product.yaml has
+          empty goals/targets/not_goals, still describes the web app deleted in #123, and
+          its vocabulary keeps "opens the run report".
+        - |
+          No check asks whether a step's terms ("AI turn", "test runner", "project tree")
+          are defined in any document; they live only in the regexps of tests/bdd-cli/steps/.
+          scen check sees one scenario at a time by design; us-refine still cites the
+          vocabulary from the "architecture reference".
+        - |
+          Replay verifies sha256 over the normalized argv + stdin of every AI call
+          (pkg/testkit/aiproxy/normalize.go:72), so a regenerated engine replays only if
+          it sends byte-identical prompts.
+        - |
+          Scale: services/bdd-cli ~21.7K lines, pkg/ ~19K, steps/ ~3K; 55 scenarios,
+          56 fixtures.
+      recommendation: |
+        (b): regenerate services/bdd-cli plus the generated tests and steps/; keep docs,
+        true-bdd/, templates/, fixtures with cassettes and pkg/testkit as the source.
+      settled: |
+        The regenerated code is every service architecture.yaml declares under services[]
+        (today only bdd-cli). steps/ is generated once, committed, and stays stable across
+        builds; it is never regenerated. Fixtures and cassettes are committed and never
+        regenerated per build. Generated test files are re-rendered deterministically from
+        the registry and steps/. Rejects the steps/ half of the recommendation. Opened:
+        what keeps the cassettes valid against a rebuilt engine (the user asked for
+        research), and whether pkg/ counts as code or as source.
+    question: |
+      Q1 - What "rebuild from scratch" deletes and regenerates, and what stays as the
+      source: (a) only services/bdd-cli/; (b) services/bdd-cli/ plus the generated tests
+      and tests/bdd-cli/steps/, fixtures, cassettes and pkg/testkit kept; (c) everything
+      except docs/.
+    answer: |
+      Слушай, ответ на этот вопрос на самом деле лежит где-то в файле architecture.yaml, потому что вот он же должен генерировать как бы все сервисы, ну то есть вот там совсем все сервисы с нуля. В данный момент, я так понимаю, у нас BDD CLI, но сам конкретно этот плюс, по всей видимости, должен быть взятым из BDD, из Architecture YAML. Если я правильно понимаю текущую архитектуру, потому что я мог ее забыть. Ты предлагаешь опцию B плюс сгенерированные тесты. Смотри, я как вижу, что вот steps это как бы сохраняется в репозитории между билдами. Степсы не регенерируются. А вот, скорее всего, сами тесты, которые... Там же есть еще тоже командочка, как сгенерировать тесты. Ну, короче, как-то. Вот сами тесты могут генерироваться автоматически. Ну, точнее, генерируются автоматически, потому что это быстро. Вопрос возникает в том, что делать с фикстурами и кассетами. Вот там самая большая проблема для меня. И я бы еще ресерчил вот этот вопрос с тестами. С тестами вопрос, наверное, открытый. Надо еще раз его делать. В идеале хотелось бы, чтобы... Ну, короче, это достаточно очевидно, что фикстуры и кассеты должны храниться в репозитории и не регенериться каждый раз, потому что если же они будут каждый раз регенериться, то, ну, это бред. Потому что основная суть проекта в том, что тесты, они создают такой, как бы, столб, на котором все держится. То есть, если мы будем регенерировать, если тесты будут вести себя по-разному между билдами, то, соответственно, и код будет вести себя по-разному. Поэтому тесты точно должны вести себя одинаково. Вот. Поэтому steps и так далее, да, это исключительно, ну, то есть не регенерирующаяся часть. Ее нужно сгенерировать, то есть один раз, и она должна, ну, как бы минимально меняться между билдами, ну, вообще, в принципе, да, то есть она должна коммититься в репозитории и не меняться между билдами. А вот сами тесты, они регенерируются сейчас, я так понимаю, достаточно детерминистическим способом. То есть просто есть набор steps и набор сценариев в сценарии с YAML, и из этого набора вполне себе однозначно детерминистически при помощи, ну, там, короче, какой-то кусок кода у нас написанный, оно все генерится.
+  - decision_trace:
+      research:
+        - |
+          Docker cagent advises "When agent instructions change significantly, delete the
+          cassette and re-record" (https://www.docker.com/blog/deterministic-ai-testing-with-session-recording-in-cagent/);
+          tomiko's `--stale` re-records only what changed (https://github.com/Tomiko-M/tomiko).
+      recommendation: |
+        Rule re-recording on rebuild out.
+      settled: |
+        Forced by Q1 (fixtures and cassettes are committed and never regenerated per
+        build): a rebuilt engine is never validated by re-recording its cassettes.
+        Re-recording stays legal only when a source document changes (a template, a
+        checklist, a fixture input), never when only code does.
+    question: |
+      May a rebuild re-record the cassettes it fails to replay?
+    answer: |
+      Claude, no question asked: no. Q1 keeps cassettes fixed across builds, so a build
+      that changes only code must replay the committed cassettes as they are.
+  - decision_trace:
+      research:
+        - |
+          The request hash covers the whole CLI call: flags and tool lists from
+          pkg/cli/claude/claude.go:87, system and user prompts rendered from templates/,
+          plus three pieces owned by services/bdd-cli (the answer JSON schema in
+          adapters/ai/result_schema.go, result-file naming in checklist_evaluator.go:134,
+          the YAML re-serialization of the story).
+        - |
+          On a mismatch replay names only the cassette dir (pkg/testkit/aiproxy/replay.go:56).
+        - |
+          LLM recorders mostly hash exactly (inspect-ai, promptfoo, Goose); LLMTivo names
+          both traps; Pact is strict on requests (https://docs.pact.io/getting_started/matching);
+          Böckeler got different code per regeneration from one Tessl spec
+          (https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html).
+      recommendation: |
+        (A): request bytes are a persistent contract, the hash stays strict, every byte
+        must follow from source documents, and replay prints a request diff on mismatch.
+      settled: |
+        (A), as it is today: a rebuilt engine must reproduce the earlier prompts byte for
+        byte. The end state is: delete the code, run `build code --fix`, which runs the
+        suite in replay mode, and the code rebuilds. Cassettes are out of scope for this
+        session. The task is reverse engineering: the built code exists, and the source
+        documents it would be built from (product, architecture, scenario registry) must
+        be recovered by asking about roles, what they do, frameworks, architecture and
+        how the parts communicate.
+    question: |
+      Q2 - How does a cassette check the request of a rebuilt engine: (A) request bytes
+      as a persistent contract, strict hash, everything derivable from source, diff on
+      mismatch; (B) match on a semantic key (binary, order, command, role, cell, tier),
+      bytes unchecked; (C) hybrid: strict key plus a structural must-contain list per
+      call, byte hash demoted to a drift warning.
+    answer: |
+      Стой, подожди. Пересобранный движок должен точно повторять промпты, которые были до этого. В том-то же как бы суть. Поэтому это, скорее всего, A. Ну, то есть, типа, вот как сейчас, так оно и будет. Вопрос в том, а зачем ты задаешь эти вопросы? Потому что они как будто не должны были бы привести к тому, о чем мы работаем. То есть мы должны сфокусироваться на том, что тесты, если мы тесты запустим в replay моде, то они все должны проходить. То есть мы должны удалить код и попробовать запустить код, фикс этого кода в replay моде. Да, то есть build code минус минус fix должен запускать тесты в replay моде. И оно должно билдить. Сейчас вопрос не в этом. Сейчас вопрос в том, чтобы начать делать предыдущие шаги. То есть для того, чтобы создать такой набор из трех документов, который будет приводить вот к тому, чтобы мы могли билдить этот код. То есть мы сейчас считаем, что код, то есть смотри, в идеальной ситуации, то есть мы сейчас занимаемся reverse engineering, у нас уже есть билдженный код и вся вот эта фигня, а мы должны восстановить те сорсы, то есть те YAML-файлы, из которых этот код сбилджен. Параллельно, задавая вопросы, какие у нас есть роли, чем они занимаются, ну, то есть, как бы, вот какие-то такие вещи, которых, то есть, какие фреймворки используем, ну, то есть, что-то такое, да, как делаем архитектуру, как она там общается или не общается, ну, то есть, что-то такое. Вот, то есть, текущая задача на про реверс-инжиниринг, она не про кассеты и так далее.
+  - decision_trace:
+      research:
+        - |
+          docs/doc-universe.md names five documents: product -> epics -> stories -> registry,
+          plus architecture; `us apply` is the registry's only writer and stamps lineage
+          `<story-id>-NNN`.
+        - |
+          No epics or stories exist in this repo; all 55 scenarios carry `user_stories: []`.
+        - |
+          `build tests` and `build code` read only the registry and architecture; product
+          is read by `us create`, `us refine` and `scen check`, never by the build.
+        - |
+          Steps name two roles: Product Owner (34 steps) and System Architect (32); the
+          Quality Engineer of product.yaml appears in none.
+      recommendation: |
+        (b): five documents, so every scenario carries lineage to a story and the
+        validation chain runs the whole hierarchy.
+      settled: |
+        (a), tentatively: three documents, product, architecture and the registry; the
+        registry and architecture form the code. The user leans toward epics and stories
+        ceasing to exist as concepts. Intended flow: the Product Owner discusses a feature
+        idea, the result lands in the product file (and possibly in some story form),
+        reaches the registry, the System Architect adds what the architecture needs, and
+        the build follows. Open: what carries a feature discussion from product to the
+        registry, and whether the engine's own epics/stories commands survive.
+    question: |
+      Q3 - Which document set is recovered: (a) three (product, architecture, registry),
+      scenarios keep `user_stories: []`; (b) five (product -> epics -> stories ->
+      registry, plus architecture), scenarios gain lineage to stories.
+    answer: |
+      Смотри, здесь, скорее всего, продукт, архитектура. Черт, я не помню уже. То есть там была логика в том, что вот этот сценарий с YAML, который здесь в регистре, да, он нужен для формирования кода. И архитектура нужна для формирования кода. Блин, слушай, мне надо, чтобы ты мне напомнил продукт Universe, как там это все дело сделано. И вообще такое впечатление, что Apex и Stories должно перестать существовать как концепт. То есть его как будто бы, они как будто становятся сейчас лишним. То есть процесс должен быть приблизительно такой. Я как продукт оунер, у меня есть идея новой фичи. Я беру и обсуждаю новую фичу. Результаты этого обсуждения сохраняются в продукт файле и в виде, по всей видимости, все-таки каких-то сторисов. Ну, короче, не могу понять, как это все дело сделать. Потому что, в конце концов, вся эта вещь должна попасть в реестр сценариев, правильно, в сценарий с YAML. Это должен обработать архитектор и что-то позаписывать в архитектуру, и дальше вот это должно пойти. То есть, по идее, вот у нас три файла, как будет удобно делать с этими эпиками и сторисами, блин, я пока не знаю. Поэтому здесь, скорее всего, как будто A должен быть, как будто A.
+  - decision_trace:
+      research:
+        - |
+          The engine handles a host's epics and stories in 26 of 55 scenarios: us create 9,
+          us refine 11, us apply 6, plus their checklists, schemas and templates. The other
+          29: build code 13, build tests 9, scen check 6, --help 1.
+      recommendation: |
+        (a): describe the engine as it is, us commands included; removing epics and
+        stories is a later feature run through the restored pipeline.
+      settled: |
+        (a): the recovered registry and architecture describe the current engine as it is.
+        Overrides Q3 in part: user stories stay as a document of TrueBDD's own spec, epics
+        go. A story combines a goal statement with the list of scenarios that define it.
+        The user expects stories to disappear in a couple of months, leaving scenarios
+        grouped some other way. Open: whether "epics go" applies to TrueBDD's own
+        documents only or to the engine too, which (a) would contradict.
+    question: |
+      Q4 - What does the recovered registry describe: (a) the engine as it is, us create /
+      us refine / us apply over epics and stories included, removing them is a later
+      feature; (b) an engine without epics and stories, dropping the us commands, their
+      26 scenarios and their code now.
+    answer: |
+      Давай все-таки user stories мы оставим. То есть попробуем убрать эпики и оставить user story. Как комбинацию вообще-то двух вещей, просто определенной цели и еще чего-то, чего еще нужно было бы. Ну, короче, user story, да, это вот описание user story правильное. И описание списка сценариев, которые эту юзер-сторию должны были бы определять. Давай пока попробуем с ними. Но я уверен, что через там, пару месяцев от юзер-сторий избавимся, останутся только сценарии, каким-то образом сгруппированные. Вот. Короче, давай все-таки пойдем A. И да, пойдем по пути A.
+  - decision_trace:
+      research:
+        - |
+          No schema for epics or stories exists in true-bdd/; only product, architecture and
+          scenarios have one. `us create <id>` is the one command that reads an epic.
+      recommendation: |
+        (a): no epic files in TrueBDD's own documents, the engine keeps reading epics for
+        host projects, as Q4 (a) requires.
+      settled: |
+        (b): epics leave the whole pipeline, the engine included. Overrides Q4 (a) for the
+        epic part; the rest of the engine is still recovered as it is. The user thinks
+        the product is made of features and a feature of user stories, so a feature may
+        replace the epic, and `us create` would read features. The user asked for options
+        with their consequences, and wants to start producing something soon to check the
+        approach against real results.
+    question: |
+      Q5 - Where does "drop epics" apply: (a) only in TrueBDD's own documents, the engine
+      keeps `us create` from an epic for host projects; (b) in the engine too, `us create`
+      stops reading epics, a code and scenario change now, against Q4 (a).
+    answer: |
+      Короче, давай мы пока пойдем вот из четырех смотри, у нас все равно нет функции, которая делает эпики. То есть я бы убрал эпики из всего пайплайна, каким-то, может быть, попробовал первым шагом, потому что я все равно не знаю, как их сейчас описать, эти эпики. Вот. У меня как будто код должен состоять не из эпиков, а из фич, а фича состоит из юзер-старей. Вот. Возможно, нам вместо эпик нужно фичи. Давай мы просто... Короче, блин, я вот тут я не знаю. Вот тут я хотел бы, чтобы ты предложил несколько вариантов. Точнее, чтобы ты не просто предложил несколько вариантов, а подумал вариантов с последствиями. Вот, то есть, по всей видимости, нам нужно что-то типа B, да, и тогда мы переписываем ее предыдущие решение вот. Но и тогда us create начинает читать фичи, и вот как к этому подойти. Мне очень хочется что-то попробовать начать делать побыстрее, для того, чтобы начать уже сверяться с результатом, потому что так получается, как будто бы гадание на кофейной гуще, с непонятным результатом.
+  - decision_trace:
+      research:
+        - |
+          Epics hold up 17 files in services/bdd-cli (loader, model, inventory scanner), the
+          `paths.epics_dir` key and the `<epic>.<story>` story id (`99.1`); 9 us create
+          scenarios, four of them epic-specific refusals; 3 fixtures with 27 recorded turns.
+          The other 46 scenarios and product/architecture do not depend on the choice.
+      recommendation: |
+        (4): remove `us create`; stories are written in a discussion outside the engine,
+        straight into docs/product/stories/; the pipeline starts at `us refine`; a feature
+        is a field of the story. Fastest: no recording, no new design.
+      settled: |
+        (4): `us create`, its checklist and the epic code go; stories are written by hand
+        or in a discussion session; the pipeline starts at `us refine`; a feature is a
+        label a story carries. The user's condition: no check on acceptance criteria or
+        scenarios may be lost, because scenarios are now the most important part.
+    question: |
+      Q6 - What replaces the epic: (1) a feature as a renamed epic file; (2) features
+      inside product.yaml; (3) `us create` writes a story from an idea, a feature is a
+      story field; (4) remove `us create`, stories are written outside the engine, the
+      pipeline starts at `us refine`, a feature is a story field.
+    answer: |
+      Давай пойдем по четвертому, да, пути.
+
+      (sent while Claude was working) там важный момент, что если мы идем по четвертому пути, то мы не можем просто выкинуть use-create, особенно в тех местах, где оно относится к сценариям. Ну, короче, acceptance-критерии, если сценарием или requirements, я вот не помню, что там. Вот. То есть, потому что важно сохранить проверку сценариев, сценарии сейчас самое важная часть.
+  - decision_trace:
+      research:
+        - |
+          true-bdd/checklists/us-create.yaml has four sections, format, who, what and why,
+          nine prompts in all, and every one reads only the story statement (as_a, i_want,
+          so_that). None reads an acceptance criterion or a scenario.
+        - |
+          Acceptance-criterion checks live in us-refine.yaml (12 prompts), scenario checks in
+          scen-check.yaml (8 prompts) and us-apply.yaml (2 prompts).
+      recommendation: |
+        Removing `us create` costs no acceptance-criterion or scenario check.
+      settled: |
+        Fact: removing `us create` loses only the nine story-statement checks, which Q6
+        already accepted as lost until moved into `us refine`; every check on acceptance
+        criteria and scenarios stays.
+    question: |
+      Does removing `us create` lose any check on acceptance criteria or scenarios?
+    answer: |
+      Claude, no question asked: no. All nine us-create prompts read only as_a, i_want and
+      so_that; the acceptance-criterion and scenario checks live in us-refine, scen-check
+      and us-apply.
+  - decision_trace:
+      research:
+        - |
+          The registry holds about 50 distinct step shapes; 162 of ~600 Then steps are
+          `stdout matches <regexp>`.
+        - |
+          product.yaml `vocabulary.actions` names three When actions ("runs <command>",
+          "answers the prompt", the stale "opens the run report"); nothing describes Given
+          or Then; `glossary: []`. "AI turn", "test runner", "project tree", "engine",
+          "step definition", "checklist" are defined in no spec document, only in steps/
+          regexps and the repo GLOSSARY.md, which the engine does not read.
+      recommendation: |
+        (c): a catalogue of step phrases (template plus `means:`) for Given, When and Then,
+        every step matching exactly one entry, plus a glossary for the words the `means:`
+        rely on.
+      settled: |
+        (c), provisionally: the closure unit is both the step phrase (a catalogue entry
+        with a template and its meaning) and the word (a glossary entry). The user expects
+        the exact shape to become clear only once real documents are being written.
+    question: |
+      Q7 - What does "every scenario term is defined" check: (a) words, each domain word
+      defined in a glossary; (b) step phrases, the vocabulary grows into a catalogue of
+      every step shape with `means:`, each step matching one entry; (c) both.
+    answer: |
+      Я все-таки думаю, что это Си, но это та вещь, определить которую мы, скорее всего, сможем, когда реально начнем что-то делать, тогда станет понятнее. Сейчас пока что это приблизительно Си.
+  - decision_trace:
+      research:
+        - |
+          `scen check` has 6 scenarios (E2E-291..296), all run by the System Architect: happy
+          path, failed check, --fix refused, unknown id, empty registry, id filter. Six ACs
+          fit us-refine's 3-7 rule, its happy-path and two-error-scenario checks; `build
+          code`'s 13 do not fit one story.
+      recommendation: |
+        (a): one vertical slice now, the `scen check` story, judged by running `us refine`
+        on it, with the open branches resolved on live material.
+      settled: |
+        (b): walk the whole design tree first, then write the documents.
+    question: |
+      Q8 - Start now with one vertical slice (the `scen check` story: story file, lineage
+      in six registry entries, catalogue and glossary entries, then `us refine` on it), or
+      first walk the whole design tree and write everything after?
+    answer: |
+      Ладно, слушай, давай пройдемся по всему дереву все-таки вопросов.
+  - decision_trace:
+      research:
+        - |
+          The chain after Q6: discussion writes the story; `us refine` checks its ACs against
+          product (12 model prompts); `us apply` merges into the registry (2 prompts);
+          `build tests` checks deterministically that every step binds to exactly one step
+          definition and refuses a `service:` architecture does not declare
+          (services/bdd-cli/internal/infrastructure/architecture/loader.go:31); `build code`
+          runs the tests in replay. No stage checks term closure; `scen check` is advisory.
+        - |
+          The engine never parses product.yaml; it reaches checklists as prompt text
+          (true-bdd/product-schema.yaml:4), so a deterministic check would be the first
+          time the engine reads product as data.
+      recommendation: |
+        (d): closure is checked twice, as a fixable model prompt in `us refine` and as a
+        deterministic gate over the whole registry in `build tests`.
+      settled: |
+        (d), provisionally. New branch opened by the user: a dedicated command (working
+        name `scen verify`) whose only focus is verification, walking the registry scenario
+        by scenario, checking every scenario against the terms, clarifying each unclear term
+        with the user step by step and recording the answers; it would be run until every
+        scenario has been reworked. Its reason: `us refine` and `build tests` change
+        documents, they do not only check them. The user asked for research on it.
+    question: |
+      Q9 - At which stage is term closure checked: (a) only `us refine`, a model prompt
+      with a fix; (b) only at the registry entrance, `us apply`; (c) only `build tests`, a
+      deterministic gate over the whole registry; (d) both `us refine` and `build tests`.
+    answer: |
+      Ну, как будто ты прав, как будто это ди, но давай попробуем эту всю вещь. Но ты можешь еще поресерчить такую интересную идею, что смотри. Нам, наверное, хорошо было бы проверять эти вещи чуть ли не на каждом шаге. То есть, вот, наверное, ну, у меня тоже была такая идея, что мы могли бы создать вообще отдельную команду, которая бы проверяла, например, сценарий. Вот, ну, там, по-моему, сейчас так и есть, да, какая-то команда, которая бы проверяла сценарий на соответствие этим всем терминам и проходилась как бы сценарий со сценарием и кларифицировала бы все эти термины с юзером, вот там как бы шаг за шагом записывать. И чтобы такая команда была, знаешь, там типа verify, то есть которая бы еще отдельно все это дело собирала и проверяла, и ее фокус был бы именно проверить, потому что, смотри, UAS Refine и Build Tests, да, они что-то делают, они не просто проверяют, да, они вот что-то делают. Хотелось бы, чтобы... то есть не то, что хотелось бы, да, а есть идея, что нам сейчас скорее нужно было бы создать хорошую новую команду сцен Verify, или как она там называется, вот, и с ней пойти и ранить до тех пор, пока мы не переделаем все тесты, все сценарии.
+  - decision_trace:
+      research:
+        - |
+          `scen check` already walks the registry one cell per (scenario, prompt) through the
+          shared runner.Spec; the fix loop offers "[2] Refine the fix prompt (provide
+          feedback)" (services/bdd-cli/internal/infrastructure/input/user_input_collector.go:97);
+          `scen check --fix` is refused only because no prompt carries an `F:`.
+        - |
+          Prior art separates checking from writing (gofmt -l/-w, prettier --check/--write,
+          terraform validate/apply); interactivity lives in the writing mode (codespell -i
+          needs -w). GitHub Spec Kit: /analyze never writes, /clarify asks at most 5
+          questions, one at a time, with a recommended answer, and records them
+          (https://raw.githubusercontent.com/github/spec-kit/main/templates/commands/clarify.md).
+          No tool found that checks steps against a phrase catalogue before step definitions
+          exist; CucumberStudio action words come closest.
+      recommendation: |
+        (a): `scen check` grows into the verifier; bare it only checks (closure plus the 8
+        quality prompts) and its exit code becomes a gate; `--fix` is the clarification
+        loop writing answers into the glossary or catalogue.
+      settled: |
+        (a): `scen check` keeps its name and becomes the verifier on the existing mechanism;
+        `scen check --fix` must work as the clarification loop. Bare runs gate by exit code
+        (changes E2E-292, which today exits 0).
+    question: |
+      Q10 - What shape does the verifier take: (a) `scen check` grows into it, bare runs
+      check and gate, `--fix` clarifies and records; (b) two commands, `scen check` stays
+      advisory beside a new `scen verify`; (c) Spec Kit style, a check-only `scen verify`
+      plus a separate writing `scen clarify`.
+    answer: |
+      Слушай, а мы можем остается скан-чек, ну, отлично. Ну, сцен-чек, да. Работает. Минус-минус-фикс. Ну да, тоже должен там проходить. И работать. То есть хотелось бы использовать уже существующий механизм. Я чтобы не переименовывать. То есть я не очень понял своего посыла, как она называется сейчас. Сцен-чек, да? Вот пусть так и называется.
+      [Request interrupted by user]
+      Продолжай работу.
+  - decision_trace:
+      research:
+        - |
+          A fix restarts the current item's prompts from the first; the cap is 5 fixes per
+          prompt (services/bdd-cli/internal/app/engine/walker.go); any fix in a walk makes
+          the engine re-walk every item (services/bdd-cli/internal/app/runner/runner.go:283).
+        - |
+          A full `scen check` walk over 55 scenarios is 55 x 8 = 440 model turns, about
+          6.5 hours at the measured ~53s per turn; a clarification session needs at least
+          two walks.
+        - |
+          `build tests` finds gaps deterministically first and sends only those to the
+          model, so a converged registry costs 0 turns.
+        - |
+          Models struggle to tell clear specs from underspecified ones
+          (https://arxiv.org/abs/2502.13069), so a model verdict is an unstable gate.
+      recommendation: |
+        (a): deterministic; the engine parses the catalogue, every step matches exactly one
+        template, every entry's `terms:` exist in the glossary, and the model is called only
+        in `--fix` to propose a definition for a gap.
+      settled: |
+        Neither pure option: a checklist mixes deterministic and model-judged elements.
+        Every command is a checklist walk, so the engine gains checklist elements run by
+        code beside the `Q:` prompts run by a model; the deterministic ones run first, as a
+        preliminary pass, because model-only would take too long. Some closure elements are
+        deterministic, others are judged by the model. Sequencing, accepted by the user:
+        first build this into the engine for `scen check` (code, scenarios, tests) and tune
+        it, and only then start reworking the terms and scenarios.
+    question: |
+      Q11 - How does `scen check` check term closure: (a) deterministically, the engine
+      parses the catalogue, steps match templates, `terms:` exist in the glossary, the
+      model only proposes fixes; (b) by model prompts beside the 8 existing ones; (c)
+      hybrid, deterministic phrase match plus one model cell per catalogue entry for its
+      `means:`.
+    answer: |
+      Смотри, я все-таки за то, чтобы моделью, потому что как будто нужно спрашивать. В общем, я пока не знаю. То есть я хотел бы по всей видимости, видел бы так, что какое-то предварительный тест должен быть детерминированный, но какой-то могут бы быть детерминированы, но какой-то какие-то элементы должны быть парсятся моделью. Смотри, там же есть чек-лист, да, и мы вообще-то чек-лист прогоняем, То есть каждая команда у нас, да, это чек-лист. И вот мне просто хотелось бы, чтобы какой-то элемент этого чек-листа был, например, детерминирован. Я это вижу так. Тогда мы сейчас можем сделать... То есть чек-лист, это обязательно нужно там сделать, чтобы это был детерминированный плюс недетерминированный, иначе, да, будет очень долго. И получается так, что здесь нужно сделать еще вот эту фичу, как будто бы добавить в сам существующий код. Команды. Да, и ее нужно будет сделать и начинать проверять. И вот здесь проблема, потому что нам нужно сперва нужно сделать вот этот send-чек, дотюнить его, сделать это просто в коде, дописать до него тесты, а потом начать переделывать термины. То есть получается вот такая вот сложная вещь, что мы к самой задаче переходим уже после того, как были внесены еще несколько изменений в сами код и в сам тесты. Но это, я считаю, вполне нормально.
+  - decision_trace:
+      research:
+        - |
+          build tests already has a deterministic element, hardwired in the command rather
+          than declared in its checklist: stepcoverage.Scan finds gaps without a model and
+          scenarios without gaps never enter the walk
+          (services/bdd-cli/internal/app/commands/build_tests.go:200,
+          `answered_deterministically`); build-tests.yaml's `Q:` asks the model the same
+          question for the rest only.
+        - |
+          For `scen check` the deterministic closure check and the 8 quality prompts ask
+          different questions, so passing one cannot skip the other; time is saved only by
+          ordering and skipping.
+      recommendation: |
+        (a): a cell run by code, named as a built-in Go check of the engine, with the same
+        pass/fail and context lines as a model cell, optionally carrying `F:`; code cells
+        run first in each item and a failure skips that item's model prompts until fixed.
+      settled: |
+        (a): a deterministic checklist element is a cell run by engine code, picked from a
+        predefined list the engine holds. The user delegated the syntax (a `D:` key in
+        place of `Q:`, or a tag on Q/F) to Claude after research.
+    question: |
+      Q12 - What is a deterministic checklist element: (a) a cell run by a named built-in
+      Go check, first in each item, its failure skipping the item's model prompts; (b) an
+      item filter declared in the checklist, as build tests does today, with no cell of its
+      own; (c) an external command per cell, its exit code deciding.
+    answer: |
+      Ну да, смотри, нам нужен некий подход к клетке, которая выполняет код, ну там из какого-нибудь предефайненного списка, который, ну, у нас есть где-то в движке BDD. Или как он там, BDD CLI. То есть это IA, я здесь скорее написал про, ну, как бы смотри, это может быть вот либо на уровне QF тегов, или это может быть вместо QF какой-то один другой, и тогда выбор идет, если там, например, D, да, D две точки. Если это D две точки, тогда мы идем по сценарию поиска детерминированного подхода и передаем туда там какие-то параметры, которые в зависимости от того, что мы выбрали. Если Q, тогда идем по ветке с этой всей штукой. Вот. То есть я здесь хотел бы, чтобы ты сам поресерчил и принял решение, какой способ лучше. Но это точно A, я здесь больше про реализацию говорю.
+  - decision_trace:
+      research:
+        - |
+          A checklist prompt is parsed from a map by key (`Q`, `F`, `rationale`, `docs`,
+          `model`, `fix_model`, `apply_model`, `skip`)
+          (services/bdd-cli/internal/domain/models/checklist/prompt.go:35).
+        - |
+          GitHub Actions selects a step's kind by mutually exclusive keys, `uses:` or `run:`,
+          and passes inputs under `with:`
+          (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
+        - |
+          The engine already runs a clarification loop inside `--fix`: the fix generator may
+          return questions (id, question, context, options), the engine asks the user and
+          folds the answers into the next generation call
+          (services/bdd-cli/internal/app/engine/cell_handler.go:60,
+          services/bdd-cli/internal/domain/models/checklist/clarification.go).
+      recommendation: |
+        `D: <check-name>` as a key mutually exclusive with `Q:`, parameters under `with:`.
+      settled: |
+        A deterministic element is written `D: <check-name>`, mutually exclusive with `Q:`;
+        a prompt carrying both or neither is a startup refusal. The name picks a built-in
+        Go check from the engine's list; an unknown name is a startup refusal, like an
+        unconfigured model tier. Check-specific parameters go under `with:`. `rationale`,
+        `docs` (the document keys the check reads) and `F:` keep their meaning; `model:` is
+        refused on a `D:` element, since no validation turn exists, while `fix_model` and
+        `apply_model` stay. A `D:` cell returns the same verdict shape as a model cell (pass
+        or fail plus context lines), so reports and the fix loop, clarification questions
+        included, treat it alike. Within an item the engine runs every `D:` cell first, in
+        file order, then the `Q:` cells; a failed `D:` cell skips that item's `Q:` cells.
+    question: |
+      How is a deterministic element written in a checklist?
+    answer: |
+      Claude, delegated in Q12: `D: <check-name>` in place of `Q:`, parameters under
+      `with:`, the same verdict shape as a model cell, `D:` cells first in each item.
+  - decision_trace:
+      research:
+        - |
+          The fix loop already asks clarifying questions: the fix generator may return
+          questions with options (services/bdd-cli/internal/domain/models/checklist/clarification.go),
+          the engine asks the user and folds the answers into the next attempt
+          (services/bdd-cli/internal/app/engine/cell_handler.go:60); scen-check fix-generator
+          templates already exist in templates/.
+        - |
+          product.yaml holds `vocabulary` (3 actions, forbidden qualifiers and verbs) and
+          `glossary: []`; us-refine prompts look for forbidden words in the "architecture
+          reference", scen-check in product; doc-universe.md allows vocabulary in
+          architecture and the fixtures keep it there. The Product Owner works inside the
+          product vocabulary; the System Architect owns architecture.yaml.
+      recommendation: |
+        (b): split by owner; product holds role actions and domain words, architecture
+        holds observation and setup phrases and technical words, each tied to what
+        architecture declares (dependencies, testing, fixtures).
+      settled: |
+        (b), provisionally: part of the language goes to product, part to architecture.
+        The user holds that everything in given/when/then is about the product, and that
+        steps should probably not carry some technical things; unsure where domain words
+        belong. The implementation details are not yet clear to the user, who would settle
+        them in practice. Open: the user's "all of given/when/then is product" against (b)
+        putting observation phrases in architecture.
+    question: |
+      Q13 - Where do the phrase catalogue and the glossary live: (a) all in product.yaml;
+      (b) split by owner, role actions and domain words in product, observation and setup
+      phrases and technical words in architecture; (c) a new docs/vocabulary.yaml.
+    answer: |
+      Я бы сказал, что это B, да, то есть что-то уходит в продукт, и вы посмотрите, все сценарии точно работают. Вообще, на самом деле, все, что есть в given, when, then, это точно про продукт. По идее, у нас там не должно быть каких-то вещей. Доменные слова, сценарии... Вот тут я не знаю. Я не могу точно сказать. То есть, по идее, там не должны быть каких-то... Сейчас. Я думаю, что это все-таки B, но детали реализации, которые я написал, мне не до конца понятны. Я бы пробовал уже на практике. Вот.
+  - decision_trace:
+      research:
+        - |
+          61 of the 162 `stdout matches` steps pin structured-log fields
+          (`msg="Cannot run suite" framework=go-test`, `level=ERROR msg="Refusing to start"`);
+          other steps name "AI turns" and "test runner".
+        - |
+          scen-check's observability prompt counts a CLI's exit code, stdout, created or
+          changed files and spawned subprocesses as behaviour, not implementation.
+        - |
+          GLOSSARY.md calls the engine's log messages and keys a wire contract that
+          pkg/testkit/reporter reads.
+      recommendation: |
+        (a): every phrase in product, architecture defines only the technical words their
+        `means:` rely on; steps stay as they are for now.
+      settled: |
+        (a), provisionally. Step phrases are product language, and by the rule steps should
+        consist only of product words: calling Claude is a product integration of the same
+        order as integrating with Stripe, its words merely look technical. Product explains
+        what each word means for the product and why it matters; architecture explains how
+        each product word turns into the technical implementation, step definitions in
+        particular. Also from this answer: the model-judged closure prompts read both
+        documents as well; the user doubts a deterministic check can tell whether the
+        needed words are present or understand a `means:`, fears it would fail on almost
+        every step, and wants that tried in practice.
+    question: |
+      Q14 - Are all step phrases product language: (a) phrases in product, architecture
+      defines the technical words their meanings rely on, steps unchanged; (b) steps carry
+      only product words, the rework rewrites steps exposing internals (61 log-field
+      patterns, AI turns, test runner) and steps/ maps them; (c) keep Q13 (b) as stated,
+      observation phrases in architecture.
+    answer: |
+      Я еще хотел бы сказать, что скорее всего, что вот эта детерминированная проверка, да, да, она читает оба документа, но там может быть недетерминированная проверка через prompt, и она тоже должна читать оба документа. И важный момент, что хорошо было бы разобраться, что там не просто есть нужные слова. Кстати, опять же, еще один хороший вопрос. А как детерминированная проверка будет разбираться, есть ли там нужные слова или нет? Я вот, то есть вот этот means, да, детерминированная проверка, я с трудом себе представляю, как она прям может разбираться, да, там, что это такое. Вот, поэтому у меня есть скептиз по поводу того, что детерминированная проверка вообще в принципе тут будет работать. Иначе она будет падать на любом, практически любом шаге. Ну, короче, я не знаю, я не уверен. Это реально прям надо проверить и начать что-то с этим делать. И по ходу станет понятно, какие из этих вариантов правильные. Что касается Q14 сейчас, все фразы шагов — это язык продукта. Слушай, вот опять же, вот не уверен. По идее, да. Все фразы шагов — это язык продукта. То, что у нас, вот то, что мы сейчас описываем продукт, который работает с Клодом и вызывает какие-то команды, ну, так это то же самое, что есть продукты, которые интегрированы, с, например, со Stripe, да, и они должны как бы переходить, например, на Stripe. То есть для нас вызвать Claude и перейти в другом продукте на Stripe — это одного порядка вещи. Просто вот у нас эти термины выглядят более технически. Поэтому по правилам, вообще говоря, шаги должны бы состоять только из продуктовых слов. Вот. И уже переделка в степ должна брать элементы и какое-то дополнительное понимание, как строить эти продуктовые слова в технические. То есть получается приблизительно так, что продукт объясняет продуктовость и ценность слов, а архитектура должна объяснять, как эти продуктовые слова переходят в ну вот в техническую реализацию и конкретно в steps. Я не уверен, какой вариант здесь был бы, это ближе к A.
+  - decision_trace:
+      research:
+        - |
+          About 600 steps collapse to about 50 shapes once quoted strings and numbers become
+          slots; all 55 Given `the "…" project tree` steps are one shape. A deterministic
+          check can establish structure (one template matched, declared terms present,
+          a mapping in architecture), never meaning; `stdout matches <pattern>` always
+          matches its template.
+      recommendation: |
+        (1): spike the catalogue format by hand with a throwaway matcher first, then build
+        `D:` and the closure prompts into `scen check`, then remove `us create`, then rework
+        the terms across the registry.
+      settled: |
+        The user prefers the most dramatic changes first: clean everything up, change
+        everything, then build the new thing on what results, judging that breaking and
+        rebuilding suits an AI executor better than a careful human path. The user cares
+        only about the final result (filled, working scenarios and product documents),
+        handed the ordering to Claude, and suggested validating it with Codex.
+    question: |
+      Q15 - Where does the work start after the interview: (1) a hand spike of the
+      catalogue with a throwaway matcher, then the engine feature, then removing `us
+      create`, then the rework; (2) the engine feature first on a guessed format; (3) the
+      cleanup first, then (1).
+    answer: |
+      Ой, подожди. Короче, смотри. Я не смогу тебе сейчас сказать, что лучше, да. Я бы начинал вот с максимально драматичных изменений. То есть наоборот. Все удалял бы, все, короче говоря, переделывал бы. То есть там переделывал бы, короче, делал бы все. Удалял бы US Create. Не знаю, короче, я не могу точно сказать, как здесь подойти. Здесь точно нужна какая-то фаза. Сперва все почистить полностью. Вот. И, то есть, короче, условно говоря, мне кажется, что сначала спайк без изменения движка не то чтобы хорошая идея. Я бы попробовал наоборот. Я бы сперва поменял все, что есть, а потом уже вот на том, что получилось бы, пытался бы выстроить новую штуку. Используя и, то есть, если бы, конечно, это делал человек, то я бы точно делал бы с первым подходом, но поскольку это делает AI, мне кажется, что все сразу поломать и потом начать переделывать, это для AI более удобный путь. Поэтому я не уверен, какой из механизмов, ну, какую из опций я тебе сейчас сказал. Но мое видение такое. Но ты можешь профилитировать, опять же, с кодексом и, опять же, через призму именно того, что это будет делать AI, а не человек. И поскольку это будешь делать ты, мне важен только конечный результат. То есть, в конце концов, у нас должно получиться вот наполненные, работающие сценарии, наполненные работающие продуктовые всякие, ну, продукт, вещи и так далее.
+  - decision_trace:
+      research:
+        - |
+          Codex second opinion (codex-cli 0.162.1, read-only): recommends cleanup first, then a
+          small catalogue spike, then the engine feature, then the content, each phase ending
+          on a green checkpoint, because across context windows an unexplained red suite
+          makes intended changes and regressions indistinguishable. It suggests a durable
+          execution ledger, never re-recording to bless code-only drift, and budgets a clean
+          `scen check` walk over the 46 surviving scenarios at about 5.4 hours (46 x 8 x ~53s).
+      recommendation: |
+        Cleanup first, as the user prefers, but as one coherent removal that ends green.
+      settled: |
+        Phase 0, baseline: full replay and gates green, failures named before any change.
+        Phase 1, cleanup: remove `us create`, epics, the epic-bound story-id rule and stale
+        content in one coherent change; ends with build, lint, gates and every surviving
+        scenario green in replay. Phase 2, catalogue spike: a throwaway matcher over the
+        surviving steps fixes the catalogue format and matching rules; no engine change.
+        Phase 3, engine feature: `D:` cells, closure `D:` and `Q:` prompts and `F:` in
+        `scen check`, `--fix` clarification, the exit-code gate, with scenarios and
+        recordings; ends green. Phase 4, content: product, stories, lineage, catalogue,
+        glossary and architecture mapping, reworked in bounded groups with `scen check
+        --fix`; ends with the whole registry clean in `scen check`, `build tests` and full
+        replay. No phase starts on a red suite.
+    question: |
+      In what order is the work done?
+    answer: |
+      Claude, delegated in Q15: cleanup first, then a catalogue spike, then the engine
+      feature, then the content, each phase ending green, after a Codex second opinion.
+  - decision_trace:
+      research:
+        - |
+          E2E-029 (`--fix` refused when a walked prompt has no `F:`) and E2E-032 (a prompt may
+          only cite a document the engine can hand it) test engine-wide behaviour, but only
+          through `us create` fixtures; E2E-293 tests the `F:`-less `--fix` refusal through
+          `scen check`, which Q10 makes fixable.
+      recommendation: |
+        Re-home the engine-wide behaviour those scenarios carry onto a surviving command.
+      settled: |
+        Forced by Q1 and Q4 (the registry must specify the engine as it is, so a rebuild
+        reproduces it): when `us create` scenarios are deleted, any engine-wide behaviour
+        they alone cover (E2E-029, E2E-032, and E2E-293 once `scen check --fix` works) gets
+        a replacement scenario on a surviving command in the same phase.
+    question: |
+      May engine-wide behaviour lose its only scenario when `us create` is deleted?
+    answer: |
+      Claude, no question asked: no. A behaviour with no scenario is unspecified, and a
+      rebuild from the spec would be free to drop it.
+  - decision_trace:
+      research:
+        - |
+          validateStoryNumber requires `^\d+\.\d+$` for every story-based command, us refine
+          and us apply included (services/bdd-cli/internal/app/runner/runner.go:164); only a
+          us create scenario tests the "expected <epic>.<story>" refusal.
+        - |
+          Surviving scenarios use ids 95.1-95.5, 96.1-96.9 and 99.3. The story id enters the
+          hashed prompts (`id: "96.2"` in the body, the result-file name
+          `01-96.2-checklist-…`), so renaming fixture ids re-records the us refine and us
+          apply cassettes. Lineage is derived as `<story-id>-NNN`.
+      recommendation: |
+        (b): any safe slug (`^[a-z0-9][a-z0-9.-]*$`); old `96.2` ids stay valid, cassettes
+        untouched, TrueBDD's own stories get readable ids, lineage `scen-check-001`.
+      settled: |
+        (b): a story id is a slug, so `96.2` stays valid and TrueBDD's own stories take
+        readable ids such as `scen-check`, with lineage `scen-check-001`. The user liked (c)
+        and is not worried about lineage breaking on a rename, and wants each numbered
+        scenario identifier to also carry a meaningful slug of what it tests
+        (`scen-check-001-<slug>`), because bare numbers are unreadable when reviewing
+        results. Open: which identifier carries that slug.
+    question: |
+      Q16 - What is a story id without epics: (a) keep `<N>.<M>` with no meaning; (b) any
+      safe slug, old ids valid, lineage `<slug>-NNN`; (c) `<feature>.<N>`.
+    answer: |
+      Мне не принципиально, как устроен story без эпика. Пусть это будет... Ну, короче, давай пусть это будет би пока что. Вообще, мне очень нравится вариант си, но да, там ломается lineage, но так ли это важно? То есть, если бы вариант си, то... короче... мне хочется, знаешь, чтобы это было имя команды, наверное, имя 001. Короче, мне больше нравится 001. Короче, мне нравится B, но... Вот мне больше нравится B в том виде, в каком lineage будет send check минус 001. Но здесь надо еще подумать о том, что мне очень хотелось бы еще, чтобы там был какой-то Slack, про что этот 001. То есть там типа 001, и я бы еще добавил тире, и какой-то meaningful Slack, что там тестируется все-таки. Иначе оно, ну, когда разбираю результаты глазами, совершенно непонятно, что это такое. Поэтому я как будто за что-то между B и C, вот вторая часть B или C, C, плюс дополнительная информация о том, что там в этом сценарии.
+  - decision_trace:
+      research:
+        - |
+          A scenario carries four identifiers today: the registry key (`E2E-294`, which names
+          the test `TestE2E294`, `-run` and the `go test` output line), the lineage id in
+          `user_stories[].scenario_id` (`96.2-001`, registry-internal), the fixture name
+          (`scen-check-unknown-id`, already readable, names the run dirs) and the AC id
+          (`AC-1`). The `E2E-`/`INT-` prefix no longer means anything; `service:` picks the
+          suite.
+        - |
+          The generator keeps only letters and digits of the key
+          (services/bdd-cli/internal/app/generators/scenariogen/plan.go:370) and refuses a key
+          starting lower-case, since `go test` never runs `Testscen…` (plan.go:347); a slug key
+          needs CamelCase. `us apply` picks "the next free E2E-NNN" in its `F:` text, so a new
+          id scheme re-records the us apply cassettes, about 25 turns.
+      recommendation: |
+        (b): the registry key equals the lineage id, `scen-check-001-unknown-id`, test
+        `TestScenCheck001UnknownId`; one identifier from story to test output.
+      settled: |
+        (b): a scenario's registry key is its lineage id, `<story-id>-<NNN>-<slug>`, and its
+        generated test is named from it in CamelCase; `E2E-NNN` numbering retires; `us apply`
+        derives the key; its cassettes are re-recorded, ideally in phase 3 where recordings
+        happen anyway. Open: where the number and the slug come from.
+    question: |
+      Q17 - Which identifier carries the readable slug: (a) only the lineage id, registry
+      keys stay `E2E-NNN`; (b) the registry key equals the lineage id
+      `scen-check-001-unknown-id`, test `TestScenCheck001UnknownId`; (c) a separate `slug:`
+      field, keys and lineage unchanged.
+    answer: |
+      B - окей
+  - decision_trace:
+      research:
+        - |
+          `us apply` derives the lineage id `<story-id>-%03d` from the AC's position
+          (services/bdd-cli/internal/infrastructure/story/story_scenario_parser.go:18), so
+          reordering ACs renumbers every later one. Every fixture AC id is `AC-N`; us refine
+          stories enter the hashed prompt whole, so their AC ids cannot change without
+          re-recording.
+      recommendation: |
+        (a): the author writes `<NNN>-<slug>` as the AC's `id:`; the key is
+        `<story-id>-<ac-id>`, stable under reordering and deterministic.
+      settled: |
+        (a): an AC's `id:` is `<NNN>-<slug>`, written by the author; the registry key is
+        `<story-id>-<ac-id>`, e.g. `scen-check-001-unknown-id-refused`; legacy `AC-N` ids in
+        us refine fixtures stay, since us refine derives no key.
+    question: |
+      Q18 - Where do `NNN` and the slug come from: (a) the author writes both in the AC's
+      `id:`; (b) the number is the AC's position, the slug is its `id:`; (c) the number is
+      the position and the model invents the slug in us apply's `F:`.
+    answer: |
+      А
+  - decision_trace:
+      research:
+        - |
+          The BDD harness (pkg/testkit plus tests/bdd-cli) imports pkg/cli, pkg/cli/claude,
+          pkg/cli/spec, pkg/console, pkg/disk, pkg/enginelog, pkg/logging and pkg/shell
+          (`go list -deps`); the judge runs through pkg/cli/claude.
+      recommendation: |
+        Every pkg/ package the harness imports stays source.
+      settled: |
+        Forced by Q1 (tests behave the same across builds, so the harness is never
+        regenerated): pkg/testkit and every pkg/ package it or tests/bdd-cli imports stay
+        source and are never regenerated with the engine.
+    question: |
+      Is the part of pkg/ the BDD harness uses regenerated with the engine?
+    answer: |
+      Claude, no question asked: no. Regenerating a package the harness imports would let
+      the tests change between builds, which Q1 rules out.
+  - decision_trace:
+      research:
+        - |
+          Four pkg/ packages are imported only by the engine: pkg/cli/codex (104 lines),
+          pkg/cli/crush (93), pkg/cli/ps (99), pkg/cli/truebdd (157); neither the harness nor
+          scripts/ import them. AGENTS.md calls pkg/ "the IO channels the three roots share",
+          and a new pkg/ package needs an ADR. The exact argv for claude, crush and codex is
+          assembled in pkg/cli/*.
+      recommendation: |
+        (a): all of pkg/ stays source; architecture declares the pkg/ channels the service
+        must use; the argv bytes Q2 pins stay in source code.
+      settled: |
+        (b): pkg/cli/codex, pkg/cli/crush, pkg/cli/ps and pkg/cli/truebdd move into
+        services/bdd-cli and are regenerated with it; they leave pkg/. Since no other root
+        uses them they are part of the engine, not a shared package. The move is one task of
+        this work.
+    question: |
+      Q19 - Are the four engine-only pkg/ packages regenerated with the engine or kept as
+      source: (a) all of pkg/ stays source, architecture declares the channels; (b) they
+      become part of the service and are regenerated with it.
+    answer: |
+      Да, выглядит так, как будто эти 4 пакета должны быть перенесены в код движка, ну, то есть туда. И должны бы, ну, тоже быть, ну, перегенерироваться. Ну, то есть, по идее, это да, по идее, они должны тоже перегенерироваться просто. Там есть еще гипотеза, что, ну, точнее, там есть еще такая ситуация, когда, например, эти вещи должны рассматриваться как внешний пэкэдж. Но конкретно в нашем случае, насколько я вижу, поскольку эти пэкэджи больше никто не использует, это прям часть движка, а не отдельный пэкэдж. Поэтому я думаю, что они должны быть перенесены, теперь-то они уже точно должны быть перенесены в движок, и тоже их тоже нужно было бы перегенерировать, и, соответственно, отсюда как будто бы их нужно удалить. То есть получается так, что одна из частей вот этой комплексной задачи — это вот задача по переносу этого внутрь, этих пакетов внутрь движка.
+  - decision_trace:
+      research:
+        - |
+          The us-refine fix fixtures record crush turns (`crush-001`), whose request hash
+          covers crush's argv, now assembled in code that Q19 regenerates.
+      recommendation: |
+        The spec states the crush and codex invocation exactly.
+      settled: |
+        Forced by Q2 (a rebuilt engine reproduces every request byte for byte) and Q19
+        (the crush and codex wrappers are regenerated): the spec must determine the exact
+        crush and codex invocations; which document carries them is open.
+    question: |
+      Must the spec pin the crush and codex invocations once their wrappers are
+      regenerated?
+    answer: |
+      Claude, no question asked: yes. Otherwise a rebuilt wrapper sends different argv and
+      every crush or codex cassette goes stale.
+  - decision_trace:
+      research:
+        - |
+          55 scenarios stand against ~21.7K lines of engine code; behaviour no scenario
+          covers is free to be dropped by a rebuild.
+        - |
+          Go collects coverage from a binary run as a subprocess (`go build -cover`,
+          GOCOVERDIR, `go tool covdata`, https://go.dev/doc/build-cover); the harness builds
+          the engine itself (tests/bdd-cli/scenarios/scenarios.go). pkg/testkit/cmd/coverage
+          measures checklist-branch coverage by fixtures, not code coverage.
+      recommendation: |
+        (a): build the engine with -cover, run the whole replay suite, and treat every
+        uncovered block of services/bdd-cli as behaviour without a scenario, to be given a
+        scenario or deleted as dead code.
+      settled: |
+        Neither (b) nor (c); something of the (a) family, measured rather than judged, with
+        coverage welcome. The user puts steps first: what must be measured above all is that
+        step definitions can be built from the spec (the registry and architecture, maybe
+        product), since generated tests are deterministic and of little interest. The exact
+        measure stays open until the process has been run a few times. The user also asked
+        how steps are built today.
+    question: |
+      Q20 - How do we know the recovered spec is complete: (a) measure, engine built with
+      -cover, every uncovered block gets a scenario or is deleted; (b) read the code module
+      by module and write scenarios for what matters; (c) do not measure, what is unspecified
+      may be lost.
+    answer: |
+      Там еще такой момент, что поскольку эти пакеты, они являются, они генерят какую-то CLI-тул, в движке этот CLI-тул не нужен, он может вызывать эти вещи напрямую, если я правильно понимаю, то как будто бы нам не надо делать больше вот наш собственный краш как обертку над крашем. Ну, если ты понял, о чем я. Если, опять же, это если я прав. Смотри, на вопрос, как понять, что восстановленная спека полная. То есть я бы тут поресерчил и поспрашивал код, потому что, честно, у меня пока нету особых идей. Я точно знаю, что C не вариант. Я, скорее всего, B это тоже не вариант, потому что у нас же как раз таки суть в том, чтобы мы отвязались от кода и привязывались именно к поведению. Поэтому нам нужно что-то связанное с A. И что-то связанное с A. То есть нам нужна как будто какая-то вещь, которая бы мерила, что из спеки все-таки собираются каким-то образом, я пока не понимаю хорошо, как каким-то образом, но все-таки из спеки собираются степсы. Потому что, смотри, наша задача, да, это вот, что из спеки должны хорошенечко собираться в первую очередь степсы. Эти степсы должны чему-то отвечать. Чему, мне пока непонятно, и если честно, пока мы не попробуем хотя бы несколько раз прогнать вот этот процесс и посмотреть, что будет в спеках, я не уверен, что я прям отвечу на этот вопрос. Но пока мы не посмотрим на степсы, я не уверен, что мы ответим на вопрос, как именно мерить. Что-то с cover, но было бы хорошо, да. Вот. То есть, смотри, почему я сейчас про эти степсы, потому что получается так, что вообще-то build tests, они должны в большей степени сгенерить степсы, а build code, он должен из степсов сгенерить, из степсов и еще вот этих вещей сгенерить, автоматически, короче, сгенерить тесты и начать их гонять. Потому что тесты, они генерятся детерминистически. Вот. То есть, если ты посмотришь, как сейчас генерятся тесты, там есть достаточно детерминистический процесс, в котором мы ему кидаем список сценариев, он по ним просто генерит тесты через, ну, через обычный Golang код. Поэтому вот эта часть генерации тестов, она не очень нас интересует, она детерминистическая, она либо работает, либо нет, мы там с ними посмотрим. А второе это, ну, а степсы это более сложная интересная штука, и вот нам бы его подумать, как из сценариев архитектуры файла архитектуры и файла products. Я не уверен, что на этом этапе нужен файл products, но вот как минимум из двух файлов будут собираться именно степсы. Кстати, надо еще поресерчить, как они собираются сейчас, потому что я не помню.
+  - decision_trace:
+      research:
+        - |
+          pkg/cli/crush, pkg/cli/codex and pkg/cli/ps are typed Go wrappers that assemble the
+          argv and spawn the external binary (`Bin is the binary this package spawns`);
+          pkg/cli/truebdd spawns the engine's own binary for its hidden verbs, `crush-guard`
+          among them, the PreToolUse hook crush needs because it has no permission gate.
+      recommendation: |
+        Nothing to change: the wrappers are the direct call.
+      settled: |
+        Fact: these packages build no CLI tool of their own; they are the code that calls
+        crush, codex and ps directly. Moved into the engine they simply become its own
+        calling code; only `crush-guard`, a hidden verb of the engine itself, stays a
+        separate spawn, because crush can enforce permissions only through a hook.
+    question: |
+      Do the four pkg/ wrappers build a CLI tool of our own around crush that the engine
+      could drop?
+    answer: |
+      Claude, no question asked: no. They are argv builders that spawn crush, codex, ps and
+      the engine itself directly; there is no wrapper binary.
+  - decision_trace:
+      research:
+        - |
+          Today step definitions are written by build-tests.yaml's `F:`, only for scenarios
+          stepcoverage.Scan finds unbound: the model reads architecture (where the suite
+          lives), the existing steps/ (state type, helpers to reuse), the scenario and about
+          ten registry neighbours of the same service, and registers one anchored
+          `suite.Step` per unbound step with slots for quoted runs and numbers. Product, a
+          catalogue or any `means:` never reach the prompt.
+        - |
+          tests/bdd-cli/steps/ holds 40 registrations (cli_steps.go 38, registry_steps.go 2),
+          close to the ~50 step shapes: steps/ already is the catalogue, written in code.
+      recommendation: |
+        (c): a static D: check that catalogue entries and step definitions correspond one to
+        one, as a gate on every `scen check`, plus a steps regeneration drill (delete the
+        step-registration files, `build tests --fix` from the spec, full replay green) as a
+        milestone per phase-4 group and as final acceptance; `-cover` from replay plays the
+        same role for `build code`.
+      settled: |
+        (c), revisable once the work starts; the user expects some interaction with them
+        while the task is being executed.
+    question: |
+      Q21 - How do we measure that step definitions build from the spec: (a) a steps
+      regeneration drill in a scratch worktree, replay green; (b) only a static one-to-one
+      check between catalogue entries and step definitions; (c) both, the static check as a
+      gate, the drill as a milestone.
+    answer: |
+      Давай си, но когда мы пойдем что-то делать, мы можем пересмотреть это решение. То есть мне кажется, что здесь нужен будет какой-то кусочек интеракции во время решения задачи.
+  - decision_trace:
+      research:
+        - |
+          Decisions marked provisional, to settle in practice: Q7, Q9, Q11, Q13, Q14, Q21.
+          Five phases (0-4), each ending green. Codex advised a durable execution ledger:
+          phase, verification commands, results, next action.
+      recommendation: |
+        (a): a short report at the end of every phase plus an unscheduled stop whenever
+        practice contradicts a provisional decision; no questions inside a phase; an
+        execution ledger beside this log.
+      settled: |
+        Not every phase boundary is a checkpoint. The checkpoint that matters is steps: as
+        soon as the spec yields the first couple of steps, Claude shows them to the user and
+        asks whether they fit, and the work moves on from the answer. Beyond that, Claude
+        asks whenever a question about how something should work comes up during execution,
+        which the user expects to happen often in a task this complex.
+    question: |
+      Q22 - Where does the executor stop to check with the user: (a) at every phase
+      boundary and whenever practice contradicts a provisional decision; (b) only after the
+      format spike and at the end; (c) at every content group of phase 4.
+    answer: |
+      Смотри, наверное, в этой задаче было бы интересно подойти я не уверен, что все нужно. Я почему-то думаю, что нам, скорее всего, нужна вот эта валидация по steps. Мне хотелось бы, чтобы ты как-то что-то сделал. Возможно, мы получили какие-то парочку степсов, и после этого ты просто взял и спросил меня, смотри, что, Петр, это подходит, не подходит. Да, там. И мы дальше попробуем двигаться дальше. То есть мне кажется, что как раз все предыдущие, они, ну, на практике, я имел в виду, что ты даже сам, когда будешь выполнять задачи, ты очень сильно удивишься, как, ну, у тебя будет очень много вопросов, как именно это должно работать, потому что, ну, там же сложная задача, комплексная.
+  - decision_trace:
+      research:
+        - |
+          GLOSSARY.md's "Language" section defines the domain words TrueBDD's scenarios use
+          (Registry, Scenario, Story, Feature, Acceptance Criterion, Item, Prompt, Cell, Walk,
+          Step coverage, Services); its "Repository vocabulary" section holds repository
+          words (Console, Log, Run, Disk access, Hold) that never reach a host project.
+        - |
+          product.yaml carries `glossary: []`, entries `{term, means}`
+          (true-bdd/product-schema.yaml:59); the engine reads only that document. Ten vendored
+          mpc_* skills read or write GLOSSARY.md and cannot be edited.
+      recommendation: |
+        (c): product.yaml is the source; GLOSSARY.md's Language section is generated from it
+        by a script in scripts/ and a gate checks they agree; Repository vocabulary stays
+        hand-written.
+      settled: |
+        Two documents for two readers: product.yaml's glossary serves the engine,
+        GLOSSARY.md serves the skills. product.yaml leans toward being the source of product
+        words, but it will hold many internal and technical terms the skills do not need, so
+        the overlap is partial, not identical. GLOSSARY.md also holds words about working on
+        the whole application that product.yaml may not, such as what a host project is,
+        since the engine is its own host project here and another application (a Next.js app,
+        as in the fixtures) elsewhere. The two are kept in sync by judgement, not by
+        mechanical generation; how, and how large the overlap, is to be found in practice.
+        Rejects the mechanical generation and gate of (c).
+    question: |
+      Q23 - How do GLOSSARY.md and product.yaml's glossary relate: (a) product.yaml is the
+      source, GLOSSARY.md shrinks to Repository vocabulary; (b) GLOSSARY.md is the source,
+      declared under `documents:` and parsed by the engine; (c) product.yaml is the source,
+      GLOSSARY.md's Language section is generated from it and a gate checks they agree.
+    answer: |
+      Я думаю, что это разные вещи. То есть мне кажется, что в общем, как будто бы это A. То есть смотри. То есть как будто глоссари это то, что мы определяем здесь и сейчас. Короче. Возможно, глоссари – это часть продукта. Слушай, мне тяжело ответить на этот вопрос. Я бы сказал, что все-таки источник YAML, а файл глоссари генерируется из продукт YAML. Да, то есть тут что-то на фоне C. Но, опять же, как будто, знаешь, нужно провалидировать, а будет ли это действенный метод, потому что я думаю, что мы в продукт YAML мы будем держать гораздо больше терминов внутренних, технических и так далее, которые не будут нужны скиллам. То есть мне действительно тяжело ответить, я не могу сказать, как это будет работать. Мне тяжело предсказать, как это будет работать в будущем. Тут же самое главное, да, это ответить, как это будет работать в будущем, а не выбрать какое-то решение. И глоссари будет пользоваться скиллами, а продукт YAML будет пользоваться движком. Очевидно, что у них будет какое-то пересечение, но насколько оно должно быть большое и должно ли оно быть абсолютно идентичным, мне пока непонятно. То есть, если это будет полное пересечение, то не будут ли скиллы быть чересчур перегружены информацией из продукт YAML? Вот. Я бы сказал, и вот у меня есть определенное разделение, что в глоссари, скорее всего, нужно какое-то определение, что такое хост-продукт, да, что такое хост-приложение и так далее. Потому что, смотри, у нас же вот эта мета-проблема, что мы сейчас собираемся писать новые фичи движка, используя предыдущую версию движка, да, то есть у нас хост-приложением этого движка является сам движок. А в других кейсах это будет другое приложение. Например, какое-нибудь Next.js приложение, как у нас описано в тестах. Да, там. И вот такие термины как будто точно должны быть в глоссари. Но должны ли они быть в продукт YAML или нет, я не уверен, потому что это уже специфика работы над всем приложением. И как будто там должна быть какая-то синхронизация, но она должна быть интеллектуальная.
+  - decision_trace:
+      research:
+        - |
+          After the cleanup 46 scenarios remain; a full `scen check` walk is 46 x 8 = 368
+          model turns, about 5.4 hours, before closure prompts or fixes. A failed `D:` skips
+          that scenario's `Q:` cells (Q12), so early walks over unreworked scenarios are cheap.
+          `scen check <id…>` already narrows a walk. A cached verdict is a model call that
+          never happens, so the cassette sequence would depend on cache state.
+      recommendation: |
+        (a): rework in groups with `scen check <id…>`, then one final full walk in the
+        background; no new mechanism; a verdict cache only if (a) proves too slow.
+      settled: |
+        (a): group walks by id during phase 4 and one full walk at the end; no verdict cache
+        unless measured practice shows (a) too slow.
+    question: |
+      Q24 - How does `scen check --fix` over the registry avoid taking a day: (a) group walks
+      by id plus one final full walk; (b) a verdict cache in the engine keyed by scenario and
+      prompt hashes; (c) an implicit walk over scenarios changed since the last clean commit.
+    answer: |
+      Хорошо, пусть будет «A».
+  - decision_trace:
+      research:
+        - |
+          product.yaml roles: Product Owner (us create, us refine, us apply), System Architect
+          (owns architecture.yaml, build tests, build code), Quality Engineer (accountable
+          for the scenario set being complete and executable; primary use case us refine).
+          Scenarios: the Product Owner runs us create/us refine/us apply (26), the System
+          Architect runs build code/build tests/scen check (29); the Quality Engineer appears
+          in no scenario. Roles appear in no template or engine code, so who runs a command
+          changes only step text, no cassette.
+      recommendation: |
+        (a): three roles; Product Owner discusses features, writes stories, runs us refine
+        and us apply; System Architect owns architecture, build tests, build code; Quality
+        Engineer runs scen check and scen check --fix.
+      settled: |
+        (a): the Product Owner discusses features, writes stories and runs `us refine` and
+        `us apply`; the System Architect owns architecture and runs `build tests` and `build
+        code`; the Quality Engineer runs `scen check` and `scen check --fix`. The six scen
+        check scenarios change "the System Architect runs" to "the Quality Engineer runs".
+    question: |
+      Q25 - Which roles does TrueBDD have and who owns which command: (a) three roles, scen
+      check moves to the Quality Engineer; (b) two roles, the Quality Engineer is dropped;
+      (c) three roles, scen check goes to the Product Owner.
+    answer: |
+      Да, давай, эй.
+  - decision_trace:
+      research:
+        - |
+          product.yaml's `summary` and `problem` match the README, but `summary` still
+          describes the stateless web app deleted in #123; `goals`, `targets` and `not_goals`
+          are empty, which the schema allows only as a recorded decision
+          (true-bdd/product-schema.yaml:10).
+      recommendation: |
+        A draft built from this session's decisions: goals about rebuilding a Host project
+        from its registry and architecture, term closure, steps following from the spec and
+        decisions landing in the registry; targets of rebuilding TrueBDD and a second Host
+        project; not_goals of byte-identical code, hand edits, replacing spec review and a
+        browser UI.
+      settled: |
+        Rejected. Product goals are market goals, not engine capabilities, and "a Host
+        project's code" does not belong in them. The problem TrueBDD solves is developers as
+        the delivery bottleneck: code review is the pain point, and the goal is to leave only
+        test review, since steps are far less code than the codebase and change far less; the
+        spec is the source of truth. The target is bringing TrueBDD to market, possible once
+        changes to TrueBDD itself are made through TrueBDD. The user would rather drop
+        not_goals, unsure how to count them. Vision: become the only engine on the market,
+        for example 30% of the harness market. Claude is to redraft and the user will look
+        again.
+    question: |
+      Q26 - Accept this draft of the product goals, targets and not_goals (summary without
+      the web app sentence; goals of rebuild-from-spec, term closure, steps from the spec,
+      decisions in the registry; targets of rebuilding TrueBDD and a second Host project;
+      not_goals of byte-identical code, hand edits, replacing spec review, a browser UI)?
+    answer: |
+      Ёлки, вот тут я не понял, а почему мы меняем цели продукта? Неужели они были изменены? То есть, нет, я не согласен. То есть, если мы говорим про наш продукт, то почему host project's code? Goal host project code. Нет. А как это сейчас сделано? То есть у нас же нет цели, чтобы это все было. Смотри, на самом деле мы решаем другие проблемы. Мы решаем bottleneck, то есть вот наличие девелоперов как bottleneck. То есть нам не нужно ревьювить код. То есть наша задача сделать так, чтобы нам в конце концов нужно было ревьювить намного меньше кода, чем это происходит сейчас при написании вот этих всех вещей. Поэтому цель это не просто сделать сценарий, да, вот source of truth, как там SS, ну, то есть сценарий как source of truth, а не код как source of truth. Спект, то есть действительно сделать вот этот спект, спек is source, да, вот. И задача именно уменьшить количество работы, которые, то есть вообще задача всей этой вещи, это убрать девелоперов как bottleneck, если ты понимаешь, о чем я. Если ты сейчас посмотришь в интернете, сколько теншена вокруг code review, да, то мы пытаемся убрать code review, и мы оставляем вот только тест review, потому что, смотри, review ведь надо steps, а сравни, насколько меньше кода в steps и насколько меньше этот код будет меняться по сравнению с общей кодовой базой. Это первое. Targets. Я бы сказал, что нам не delete вот эти все вещи, а у нас таргет вывести это на рынок. А на рынок можно будет вывести тогда, когда мы скажем, что смотрите, мы способны вносить изменения в текущую систему, мы способны вносить изменения в текущую систему в работе над самой же этой системой. Ну, то есть, типа, через эту же самую систему, то есть вносить новые изменения через not goals. Я не знаю, откуда это взялось. Сейчас я посмотрю. То есть not goals, вот. Ну, то есть я бы, наверное, просто убрал бы not goals из... То есть все, что не goals, не является goals'ами. В данном конкретном случае, ну, типа... Короче, мне пока тяжело сказать, как это считать. Мне как-то хотелось бы, чтобы ты эти цели продукта, тогда, исходя из того, что я только что написал, только что надиктовал передел, и я еще раз посмотрю. Вот. Короче, смотри, когда мы пишем цели продукта, мы же пишем маркетинг цели. Если я правильно понимаю, посмотри, как бы, вот, если делать product vision, какой product vision должен быть, да, то есть я хочу, мой product vision, условно говоря, да, это стать единственным на рынке движком, да, то есть вот рыночная школа такой, занять там 30% рынка харнесов.
+  - decision_trace:
+      research:
+        - |
+          Secondary reporting (blogs citing LinearB and Faros, primary reports unverified): with
+          AI, developers merge ~98% more PRs while PR review time rose ~91%; median PR grew
+          from 44 to 72 lines; the bottleneck moved from writing code to verifying it
+          (https://blog.codacy.com/ai-breaking-code-review-how-engineering-teams-survive-pr-bottleneck,
+          https://dev.to/alexcloudstar/ai-code-review-is-the-new-bottleneck-why-faster-code-is-not-reaching-production-faster-416a,
+          https://addyosmani.com/blog/agentic-code-review/).
+      recommendation: |
+        Accept the redraft: summary without the web app and epics; goals of removing the
+        developer bottleneck, reviewing far less code (scenarios and step definitions only),
+        the spec as the source of truth; targets of TrueBDD changed through TrueBDD, public
+        release after it, 30% of the coding-harness market; `not_goals: []`.
+      settled: |
+        Not accepted yet. The user wants the text validated by Codex and several other models
+        (through OpenRouter): is it well written, clear, are these product goals at all;
+        perhaps goals split into strategic goals and the goals of a specific version, a further
+        layer of ambiguity in the system. While the reviews ran, the user said they do not
+        clearly see the difference between a goal and a target, and asked for the sections to
+        be thought through with Fable from what they said and from the market strategy.
+    question: |
+      Q27 - Accept the redrafted goals: summary without the web app and epics; goals of
+      removing the developer bottleneck, reviewing far less code, the spec as the source of
+      truth; targets of TrueBDD changed through TrueBDD, public release, 30% of the
+      coding-harness market; `not_goals: []`?
+    answer: |
+      Это, наверное, та история, когда я прямо очень сильно хотел бы, чтобы ты весь этот текст пошел, провалидировал код с кодексом, с open router, с разными моделями, хорошо ли это все написано, понятно ли это все дело, является ли это продуктовыми целями или продуктовыми не целями. Возможно, нам нужно разделить цели и версии, типа цели как бы стратегические, цели какой-то конкретной версии. То есть здесь как будто мы подобрались к еще одному пласту проблемы и неоднозначности, которые есть в системе.
+
+      (sent while Claude was working) Вообще, в чем разница между Go и Target? Я вот сейчас тоже понимаю, что типа я не очень хорошо понимаю разницу в этой всей терминологии. В общем, иди смотри с фейблом и пытайся хорошенечко продумать, что должно быть в этих секциях, исходя из того, что я сказал, исходя из рыночной стратегии и так далее.
+  - decision_trace:
+      research:
+        - |
+          Reviews by Codex, GPT-6.1, Gemini-4, Grok-4.7 and Kimi-K3 (via OpenRouter) agree:
+          split vision, strategic goals and release goals with measurable exit criteria; the
+          second draft goal duplicated the first; "TrueBDD is changed through TrueBDD" is a
+          1.0 exit criterion, not a market target; 30% without denominator and horizon is an
+          ambition; most advise filling not_goals. They flagged a contradiction with
+          `problem` (a test is also code, yet step definitions stay under review).
+        - |
+          Fable's synthesis (Pichler's Product Vision Board and GO roadmap, OKR objectives and
+          key results, Amazon PR-FAQ, Shape Up no-gos): vision says why, a goal where to, a
+          target how we know we arrived (number or yes/no, measure, date), a metric what we
+          watch, a release goal the next step, a not-goal where we do not turn. It resolves
+          the contradiction: the test is rendered from the scenario, and the step definition
+          is the only test code with human judgement in it, short and stable.
+        - |
+          No checklist prompt checks goals, targets or not_goals; us refine and scen check hand
+          the whole product document to the model as context.
+      recommendation: |
+        Yes: `vision` (context only), `goals: [{id, outcome, measure}]` (outcome citable),
+        `releases: [{version, goal, due, targets: [{id, statement, measure}]}]` (context
+        only), `not_goals` kept and citable; the top-level `targets` goes and
+        product-schema.yaml changes to match.
+      settled: |
+        The structure is accepted. Its content (the vision, the goals, and rather than a list
+        of releases the next release or milestone within reach) is a separate task, to be
+        grilled in its own session; this session does not fill it.
+    question: |
+      Q28 - Do we accept this document structure: `vision`; `goals` with id, outcome and
+      measure; `releases` with version, goal, due and nested targets; `not_goals` kept; the
+      top-level `targets` removed and the schema changed to match?
+    answer: |
+      Слушай, ну давай попробуем. Я согласен со структурой, но конкретные наполнения этой структуры для меня это как будто отдельная задача. Я бы это абсолютно отдельно начал бы грилить. Вот что такое, ну какой у нас вижен, какие у нас голосы, какие релизы. Причем даже не какие релизы, а какой next релиз или там next milestone, да, который мы могли бы достичь.
+  - decision_trace:
+      research:
+        - |
+          true-bdd/architecture_yaml-schema.yaml already allows per service `patterns` (named
+          patterns with rules), `design_system` and `quality_gate.code[]` (lint configs that
+          gate code); this repo's architecture.yaml fills only name, type, path, language,
+          frameworks, dependencies and testing.
+        - |
+          Decisions so far put in architecture: the product-word to technical mapping (Q14),
+          the exact crush and codex invocations (Q2 with Q19), the pkg/ channels the service
+          must use (Q19). 61 steps pin log lines, so the log format and messages are a
+          contract too. Code structure is held today by gates (.golangci.yaml, .alint.yml),
+          not documents. README: the implementation between the two contracts is free to drift.
+      recommendation: |
+        (a): boundary and contracts only (services, dependencies, testing, the word mapping,
+        exact third-party invocations, the console and log contract, required pkg/ channels,
+        the documents the engine reads); internals free, structure rules only through
+        `quality_gate.code[]` pointing at the gates.
+      settled: |
+        architecture.yaml keeps services, dependencies and testing as they are; everything
+        else is added as the content work reveals a bottleneck, the first such additions
+        being the ones earlier answers already require (Q14's mapping, the crush and codex
+        invocations). Its purpose: remove inconsistency between builds in architecture and
+        technical decisions; external endpoints and sets of architectural patterns may belong
+        there later. Module maps, folder layout and architecture-pattern checklists are not
+        defined in the first release, since TrueBDD is a single CLI service and its code is
+        meant to be deleted.
+    question: |
+      Q29 - What does architecture.yaml describe: (a) the service boundary and contracts
+      only, internals free; (b) (a) plus a module map of bdd-cli in `patterns`; (c) only
+      its shape here, its content in a separate session.
+    answer: |
+      Ой, не знаю, что описывает архитектур. Я точно вижу, что сервисы dependency testing — это то, что я уже видел. А дальше, смотри, я бы делал это, опять же, по мере наполнения. То есть мы постепенно будем видеть, какие bottleneck'и происходят вот из архитектуры. То есть Go, то есть смотри, цель файла architecture YAML — это, ну, как бы убрать несоответствие между билдами в плане архитектуры и технических решений. То есть там, скорее всего, должны быть какие-то внешние эндпоинты еще, внешние наборы архитектурных паттернов. Я просто еще не знаю, как это описать, потому что мы сейчас описываем относительно простую систему, которая фактически состоит только лишь из одного сервиса, да, который по факту вот просто работает как CLI tool, да, то есть это даже еще упрощенный сервис, по сути. Вот. Поэтому на текущий момент точно не видно, какие должны быть модули, вообще что в нем должно быть. Что мне еще кажется, хотелось бы хранить в архитектуре, да, это какие-то архитектурные, ну, как бы, например, разбиение кода по папочкам, как он должен раскладываться по папочкам. Я не знаю, правда, зачем это надо, потому что если мы этот код будем удалять, то в конце концов, то может оно и не надо. Именно про это я и говорю, что вроде бы как нам надо было бы здесь иметь вот эти чек-листы на соответствие архитектурным паттернам, но не факт, что надо. Поэтому чем дальше, я бы это в первом релизе не определял бы.
+  - decision_trace:
+      research:
+        - |
+          46 surviving scenarios: build code 13 (spec refusals 006-009, command refusals 002,
+          004, 012, 014, run and fix 001, 003, 005, 010, 011), us refine 11 (refusals 036, 043,
+          044; fix loop 037-041; verdicts 042, 045, 046), build tests 9 (refusals 015, 017,
+          018, 019, 297; step binding and authoring 016, 298-300), us apply 6, scen check 6,
+          --help 1 plus the re-homed engine-wide E2E-029 and E2E-032. us refine wants 3-7 ACs
+          per story; the story id prefixes every scenario key (Q17, Q18).
+      recommendation: |
+        (a): per command, split along behaviour seams, about 11 stories of 3-7 ACs, plus one
+        cross-cutting `engine` story; the feature label is the command name, `engine` for the
+        cross-cutting one.
+      settled: |
+        (a), with the exact cut delegated to Claude.
+    question: |
+      Q30 - How are TrueBDD's own stories sliced: (a) per command, split along behaviour
+      seams into about 11 stories of 3-7 ACs plus an `engine` story; (b) per command with no
+      split, relaxing the 3-7 rule; (c) per role goal.
+    answer: |
+      На текущий момент это я делегировал бы тебе. Вот как тебе будет удобнее сейчас, так и нарезай. Пусть будет A, ну A так A, ну в общем я тебе делегирую.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        The stories listed under Q30 (a).
+      settled: |
+        Stories: build-code-spec, build-code-commands, build-code-run, build-tests-refusals,
+        build-tests-steps, us-refine-refusals, us-refine-fix, us-refine-verdicts, us-apply,
+        scen-check, engine. Each holds 3-7 ACs; features are the command names plus `engine`.
+        Claude may move a scenario between stories in phase 4 when the cut proves awkward,
+        reporting each move.
+    question: |
+      What exactly are the stories and their features?
+    answer: |
+      Claude, delegated in Q30: eleven stories cut per command along behaviour seams, the
+      feature label being the command name, `engine` for cross-cutting behaviour; adjustable
+      in phase 4 with each move reported.
+  - decision_trace:
+      research:
+        - |
+          No build tests fixture carries a catalogue, so a build tests gate must apply only when
+          the product document declares one, or all 9 build tests scenarios fail. Any change to
+          the us-refine checklist text changes its hashed prompts and re-records the us refine
+          cassettes (fixtures of 5-12 turns). A bare `scen check` runs 8 model prompts per
+          scenario that passes its `D:` cells, so it is no cheap CI gate.
+      recommendation: |
+        (a): only `scen check` in this task; the us refine prompt and the build tests gate
+        follow as separate tasks once the catalogue format is proven.
+      settled: |
+        Delegated, with the user's preference stated: if `us refine` and `build tests` can
+        both be done within this task, they are.
+    question: |
+      Q31 - Does term closure in `us refine` and `build tests` belong to this task: (a) only
+      `scen check`, the other two later; (b) `scen check` plus a build tests gate reusing the
+      `D:` check; (c) all three, as Q9 (d) has it.
+    answer: |
+      Я это тебе делегирую. То есть, если можно сделать и US-refine и build-test, то да, давай делать это в рамках этой задачи.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        All three within this task, sequenced after the format is proven.
+      settled: |
+        All three closure points are in this task, in order: `scen check` first (phase 3);
+        then, once phase 4's first groups have proven the catalogue format, the build tests
+        gate reusing the same `D:` check, applied only when the product document declares a
+        catalogue; then the us refine prompt with its `F:`, its cassettes re-recorded in the
+        same change. The us-refine prompts that cite the vocabulary from the "architecture
+        reference" are corrected to product in that change, as Q13 and Q14 require.
+    question: |
+      How and when are the us refine and build tests closure checks done?
+    answer: |
+      Claude, delegated in Q31: all three in this task; scen check first, then the build
+      tests gate (only when a catalogue is declared), then the us refine prompt, after the
+      catalogue format is proven.
+  - decision_trace:
+      research:
+        - |
+          #126 deleted the old docs/adr/ (0001-0012) today, while the AGENTS.md written in the
+          same commit still says "ADRs in docs/adr/" and mpc_domain-modeling creates the
+          directory lazily. Three decisions of this session meet all three ADR criteria (hard
+          to reverse, surprising without context, a real trade-off): epics and `us create`
+          leave the pipeline (Q5, Q6); a scenario's registry key is its lineage
+          `<story-id>-<NNN>-<slug>` with the AC id authored (Q17, Q18); checklists mix `D:`
+          cells run by engine code with `Q:` model cells, `D:` first (Q11, Q12).
+      recommendation: |
+        (a): three short ADRs in docs/adr/ in the skill's format, citing this log's Q<n>.
+      settled: |
+        (a): write the three ADRs. The Q&A log stays committed and the ADRs reference it.
+        The agent instructions change so that every future ADR references the Q&A log entry
+        that decided it.
+    question: |
+      Q32 - Do we write these three ADRs: (a) yes, three short ADRs in docs/adr/ citing this
+      log's Q<n>; (b) no, the committed Q&A log is the record and docs/adr/ stays uncreated?
+    answer: |
+      Да, пиши 3. И закомиченный QE-лог пускай остается, пусть они как будто бы ссылаются на QE-лог и как будто, знаешь, нужно поправить как-то скрипт вот эти агенты, так чтобы эта эра ссылались на QE-лог.
