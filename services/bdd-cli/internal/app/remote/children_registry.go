@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/ps"
 )
 
 // childEntry is one line in the remote's children pids file (JSONL): PGID is

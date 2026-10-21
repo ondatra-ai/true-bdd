@@ -67,6 +67,40 @@ dependency:
   name: str()
   protocol: str()
   scope: enum('internal', 'self_hosted', 'third_party')
+  # How the service spawns a `protocol: cli` dependency, when a rebuild must
+  # send exactly the same request: replay hashes argv and stdin.
+  invocation: include('invocation', required=False)
+
+---
+# One spawn of a CLI dependency, stated byte for byte. A `{name}` token
+# anywhere in it stands for the entry `values` defines under that name.
+invocation:
+  # The executable, found on PATH. A cassette records it as `binary`.
+  binary: str()
+  # Every argument after the binary, in order. A cassette records them as
+  # `argv`. A map entry is a run of arguments sent only when `when` holds.
+  args: list(any(str(), include('conditional_args')), min=1)
+  # What the child reads on stdin, then EOF. `with_system` applies when the
+  # turn has a system prompt, `without_system` when it has none.
+  stdin: include('stdin')
+  # What each `{name}` token stands for.
+  values: map(str(), min=1)
+  # The child's working directory.
+  dir: str()
+  # Environment entries set on top of the inherited environment.
+  env: map(str(), required=False)
+  # Facts about the binary that shaped this invocation.
+  notes: list(str(), required=False)
+
+---
+conditional_args:
+  when: str()
+  args: list(str(), min=1)
+
+---
+stdin:
+  with_system: str()
+  without_system: str()
 
 ---
 pattern:

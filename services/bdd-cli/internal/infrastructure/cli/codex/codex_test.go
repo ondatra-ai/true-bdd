@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/codex"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/codex"
 )
 
 // answerPath is the -o file every turn in these tests writes to.

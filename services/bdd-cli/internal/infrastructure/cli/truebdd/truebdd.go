@@ -1,5 +1,6 @@
-// Package truebdd is this repository's own binary spawned as a child of
-// itself, and is one of the typed wrappers pkg/shell may be reached through.
+// Package truebdd is the engine's own binary spawned as a child of itself for
+// its hidden verbs, and is one of the four engine wrappers that alone may reach
+// pkg/shell from inside the engine.
 //
 // Self names no path. Every production caller passed `os.Executable()` anyway
 // — resolved once in remote's agent and threaded through three structs to
@@ -22,8 +23,7 @@ import (
 )
 
 // The hidden verbs. They live here, with the spawn that writes them, and the
-// dispatch that answers them reads them back — services may import pkg, so one
-// source of truth is reachable in the only direction the layering allows.
+// dispatch that answers them reads them back, so one source of truth holds both.
 const (
 	// SupervisorSubcommand runs the resident gated group-leader launcher.
 	SupervisorSubcommand = "remote-supervisor"

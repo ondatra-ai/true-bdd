@@ -3,7 +3,7 @@ package remote
 import (
 	"bytes"
 	"context"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 	"io"
 	"os"
 	"os/exec"

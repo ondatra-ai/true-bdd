@@ -26,6 +26,7 @@ The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per
 
 ## Package notes
 
+- `internal/infrastructure/cli/{codex,crush,ps,truebdd}` are the spawn wrappers only the engine uses, so they live here rather than in `pkg/cli/` and a rebuild regenerates them; they are the only engine packages the lint rules let import `pkg/shell`. The crush and codex argv and stdin they produce are stated in `docs/architecture/architecture.yaml` (`dependencies[].invocation`), because replay hashes both: change the wrapper and that statement together, and a crush change re-records every crush cassette.
 - `internal/app/generators/scenariogen/` renders registry → Go test. `BuildPlan` refuses the whole registry before writing a byte; `Render` always runs `format.Source`; `Write` refuses a target without the generated marker. Its template is `//go:embed`ed (it must compile against bddgo's API), not under `templates/`.
 - `internal/infrastructure/stepcoverage/` parses each suite's `steps/` package and resolves which registry steps bind to nothing. Its mirror of bddgo's resolver is checked by running both: with the suites green, engine and runtime must agree on every scenario.
 - `internal/infrastructure/architecture/loader.go` decodes ONLY `testing:` (`framework`, `config`, `commands`) and each service's `name`/`path`/`language`; everything else under `architecture:` stays undecoded — only `go run ./scripts/cmd/linters schemas` would notice a typo there.

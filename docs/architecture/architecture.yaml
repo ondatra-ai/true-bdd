@@ -44,10 +44,118 @@ architecture:
         - name: claude
           protocol: cli
           scope: third_party
+        # crush and codex are spawned by wrappers the engine owns, so a rebuild
+        # regenerates them; replay hashes their argv and stdin, so each states
+        # its invocation exactly (docs/qna Q2, Q19).
         - name: crush
           protocol: cli
           scope: third_party
+          # binary and args match every crush cassette's `binary` and `argv`.
+          invocation:
+            binary: crush
+            args: [run, --quiet, -m, "{model}", --cwd, "{work_dir}"]
+            # Neither CLI has a system-prompt flag, so the system prompt is
+            # folded into stdin when it is not blank after trimming whitespace.
+            stdin: &folded-prompt
+              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
+              without_system: "{user_prompt}"
+            values:
+              model: &model >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `zhipu-coding/glm-5.2` in every crush cassette.
+              work_dir: &work-dir >-
+                The directory true-bdd was started in, as an absolute path: the
+                host project root. Cassettes record it as `{{CWD}}`.
+              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
+              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
+              run_dir: &run-dir >-
+                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
+                created at startup.
+            dir: "{work_dir}"
+            env:
+              CRUSH_GLOBAL_CONFIG: >-
+                A new `{run_dir}/crush-config-<random>` directory per turn holding
+                the generated `crush.json`: `options.data_directory` under that
+                directory, `permissions.allowed_tools` for the turn's mode, and
+                one `PreToolUse` hook named `true-bdd-guard` whose command is
+                this executable's path in single quotes, a space and
+                `crush-guard`, with a 15-second timeout.
+              TRUE_BDD_CRUSH_POLICY: >-
+                The JSON write policy `crush-guard` enforces: the turn's write
+                roots and whether it may run bash.
+            notes:
+              - >-
+                crush has no permission gate of its own and runs a tool when its
+                hook cannot run, so the engine probes `crush-guard` before every
+                turn and refuses the turn unless the probe is denied.
+              - >-
+                crush silently ignores a model it does not know when the model is
+                named in config, so the model travels only as `-m`.
+              - >-
+                A grandchild of crush's embedded shell can hold stdout open past
+                the exit, so the turn runs as its own process group, killed as
+                one, with a 10-second bound on the wait after the exit.
+              - >-
+                stdout and stderr merge into one transcript; a non-zero exit
+                fails the turn.
         - name: codex
           protocol: cli
           scope: third_party
+          # No codex cassette exists, so this is stated from the wrapper.
+          invocation:
+            binary: codex
+            args:
+              - exec
+              - -s
+              - "{sandbox}"
+              - --ephemeral
+              - --skip-git-repo-check
+              - --color
+              - never
+              - -C
+              - "{work_dir}"
+              - -m
+              - "{model}"
+              - when: >-
+                  The turn carries a result schema, as every codex turn does
+                  except an apply turn.
+                args: [--output-schema, "{schema_path}"]
+              - -o
+              - "{answer_path}"
+              - "-"
+            stdin: *folded-prompt
+            values:
+              sandbox: >-
+                `workspace-write` when the turn may write a project tree outside
+                the run directory (the apply turn of `build code --fix` and
+                `build tests --fix`, which hold write roots); `read-only` for
+                every other turn. codex has no level between the two.
+              model: *model
+              work_dir: *work-dir
+              system_prompt: *system-prompt
+              user_prompt: *user-prompt
+              run_dir: *run-dir
+              label: >-
+                `codex-turn<NNN>`: NNN is this turn's number, from 1 and
+                zero-padded to three digits, among every AI turn the run
+                dispatched, whichever CLI ran it.
+              schema_path: >-
+                `{run_dir}/{label}-codex-schema.json`, written before the spawn
+                with the JSON Schema the answer must satisfy.
+              answer_path: >-
+                `{run_dir}/{label}-codex-answer.md`, where codex writes its final
+                message; the engine reads the answer there, never from stdout.
+            dir: "{work_dir}"
+            notes:
+              - >-
+                `-s` is mandatory: without a sandbox level `codex exec` blocks on
+                an approval prompt and hangs forever.
+              - The trailing `-` makes codex read the prompt from stdin.
+              - >-
+                `--skip-git-repo-check`: a BDD fixture's run directory is no git
+                repository, and codex refuses to run outside one without it.
+              - >-
+                The environment is inherited unchanged. Process group, wait bound
+                and merged output are as for crush.
 
