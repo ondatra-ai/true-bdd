@@ -267,6 +267,22 @@ func TestE2E098(t *testing.T) {
 	s.Done()
 }
 
+// E2E-100: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
+func TestE2E100(t *testing.T) {
+	s := scenarios.New(t, "E2E-100")
+	s.Given(`the "scen-check-term-undefined" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"the service answers \\"\{reply\}\\"\\" declares \\"reply\\", which the glossary does not define\]"`)
+	s.But(`stdout does not match the service restarts`)
+	s.And(`stdout matches scen-check/term_closure +D: declared-terms +fail +FAIL`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")

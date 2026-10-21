@@ -150,6 +150,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-phrase-unclaimed":             overrideChecks,
 		"scen-check-phrase-no-catalogue":          overrideChecks,
 		"scen-check-fix-records-phrase":           overrideChecks,
+		"scen-check-term-undefined":               overrideChecks,
 	}
 }
 

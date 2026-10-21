@@ -1,6 +1,8 @@
 // Package catalogue is the product document's step-phrase catalogue: the
 // shapes a Scenario's steps may take, each with what it means. A template
 // compiles to one regular expression, and a step must match exactly one.
+// The terms an entry declares are the glossary words its meaning relies
+// on, and each must be defined exactly once.
 package catalogue
 
 // The blocks a step sits in, as the Registry and a catalogue entry spell them.

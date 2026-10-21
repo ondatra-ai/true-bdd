@@ -1281,6 +1281,25 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  E2E-100:
+    description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-term-undefined" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"the service answers \\"\{reply\}\\"\\" declares \\"reply\\", which the glossary does not define\]"'
+        - but: stdout does not match the service restarts
+        - and: 'stdout matches scen-check/term_closure +D: declared-terms +fail +FAIL'
+        - and: stdout matches Validation failed
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli
