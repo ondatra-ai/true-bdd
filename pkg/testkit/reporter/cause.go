@@ -27,7 +27,7 @@ func (t *Turn) CellRoleKey() string {
 
 // seatKey is CellRoleKey plus the prompt index, and it is what attempts are
 // counted on — unlike CellRoleKey, since a section can hold several
-// prompts (us-create's `format` holds two) that are different questions, not retries of one.
+// prompts (us-refine's `acceptance_criteria` holds twelve) that are different questions, not retries of one.
 func (t *Turn) seatKey() string {
 	return t.CellRoleKey() + "\x1f" + strconv.Itoa(t.PromptIdx)
 }

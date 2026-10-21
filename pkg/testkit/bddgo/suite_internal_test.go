@@ -202,7 +202,7 @@ func TestUndefinedReportSuggestsAPattern(t *testing.T) {
 
 	report := undefinedReport(
 		Scenario{ID: firstScenario, Description: "one"},
-		[]Step{{Keyword: KeywordGiven, Text: `the "us-create-happy-path" project tree`}},
+		[]Step{{Keyword: KeywordGiven, Text: `the "us-refine-happy-path" project tree`}},
 	)
 
 	want := "^the \"([^\"]*)\" project tree$"
