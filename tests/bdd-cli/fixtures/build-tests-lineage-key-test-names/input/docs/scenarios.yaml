@@ -1,0 +1,48 @@
+# Seed registry for the `build-tests-lineage-key-test-names` BDD fixture.
+#
+# Two scenarios whose every step already binds to a definition in
+# tests/mcp/steps/, so `build tests --fix` only renders the generated test
+# file and dispatches no AI turn. What the fixture pins is the NAME each
+# key renders (ADR 0014):
+#
+#   - `mcp-endpoint-001-initialize-ok` is a lineage key, `<story-id>-<ac-id>`,
+#     lower-case. Rendered letters-and-digits only it would be
+#     `Testmcpendpoint001initializeok`, which `go test` compiles and never
+#     runs; CamelCase renders `TestMcpEndpoint001InitializeOk`.
+#   - `E2E-900` is a legacy key, which keeps its upper-case run and renders
+#     `TestE2E900`, the name it always had.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Seed for build-tests-lineage-key-test-names fixture"
+
+scenarios:
+  mcp-endpoint-001-initialize-ok:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories:
+      - story: "docs/product/stories/mcp-endpoint-requests.yaml"
+        scenario_id: "mcp-endpoint-001-initialize-ok"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"
+
+  E2E-900:
+    description: "MCP /mcp endpoint responds 400 to a malformed POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a malformed JSON-RPC request to /mcp"
+      then:
+        - "the server returns HTTP 400"

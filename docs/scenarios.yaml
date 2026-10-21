@@ -11,6 +11,10 @@
 # Derived once from the tests/bdd-cli fixtures, which already were these
 # scenarios in every respect but name. Hand-owned since; `us apply` is
 # the writer for anything new.
+#
+# A scenario's key is its lineage id, `<story-id>-<ac-id>` (ADR 0014), and
+# its generated test is the key in CamelCase. The `E2E-NNN` keys below
+# predate that and are renamed as each Story of this repository is written.
 
 metadata:
   title: Scenario registry
@@ -405,9 +409,10 @@ scenarios:
         - stdout matches ALL CHECKS PASSED!
         - stdout matches APPLY COMPLETE
         - and: the file "docs/scenarios.yaml" is modified
-        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "95.1-001"
-        - and: the scenario from acceptance criterion "95.1-001" in "docs/scenarios.yaml" cites the story "docs/product/stories/95.1-duplicate-collapse.yaml"
-        - and: the scenario from acceptance criterion "95.1-001" in "docs/scenarios.yaml" matches HTTP 200
+        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "95.1-001-mcp-initialize"
+        - and: the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" is keyed "95.1-001-mcp-initialize"
+        - and: the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" cites the story "docs/product/stories/95.1-duplicate-collapse.yaml"
+        - and: the scenario from acceptance criterion "95.1-001-mcp-initialize" in "docs/scenarios.yaml" matches HTTP 200
         - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"
         - but: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
@@ -474,9 +479,10 @@ scenarios:
         - stdout matches APPLY COMPLETE
         - stdout matches msg="All ACs passed; updated from scratch" file=\./docs/specs/requirements\.yaml
         - and: the file "docs/specs/requirements.yaml" is modified
-        - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001"
-        - and: the scenario from acceptance criterion "95.2-001" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"
-        - and: the scenario from acceptance criterion "95.2-001" in "docs/specs/requirements.yaml" matches /health
+        - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001-health-ok"
+        - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" is keyed "95.2-001-health-ok"
+        - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"
+        - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" matches /health
         - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "90.2-001"
         - but: no file matching "docs/scenarios.yaml" is created
         - and: the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged
@@ -502,8 +508,10 @@ scenarios:
         - stdout matches ALL CHECKS PASSED!
         - stdout matches APPLY COMPLETE
         - and: the file "docs/scenarios.yaml" is modified
-        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "99.3-001"
-        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "99.3-002"
+        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "99.3-001-mcp-initialize"
+        - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "99.3-002-mcp-get-refused"
+        - and: the scenario from acceptance criterion "99.3-001-mcp-initialize" in "docs/scenarios.yaml" is keyed "99.3-001-mcp-initialize"
+        - and: the scenario from acceptance criterion "99.3-002-mcp-get-refused" in "docs/scenarios.yaml" is keyed "99.3-002-mcp-get-refused"
         - and: no two scenarios in "docs/scenarios.yaml" share the same steps
         - but: the file "docs/product/stories/99.3-rewalk-fixture.yaml" is unchanged
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
@@ -919,6 +927,65 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/scen-check-closure.yaml" is unchanged
         - and: the engine dispatched no AI turns
+  E2E-060:
+    description: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-lineage-key-test-names" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: the file "tests/mcp/mcp_test.go" matches func TestMcpEndpoint001InitializeOk\(t \*testing\.T\)
+        - and: the file "tests/mcp/mcp_test.go" matches scenarios\.New\(t, "mcp-endpoint-001-initialize-ok"\)
+        - and: the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" and "tests" changed
+  E2E-061:
+    description: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "us-apply-unshaped-criterion-id" project tree
+      when:
+        - the Product Owner runs "us apply 95.6"
+      then:
+        - the command exits with code 1
+        - 'stdout matches docs/product/stories/95\.6-legacy-criterion-id\.yaml: acceptance criterion 2 has id AC-2'
+        - stdout matches the id must be <NNN>-<slug>
+        - stdout matches level=ERROR msg="Refusing to start" command="us apply"
+        - but: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+  E2E-062:
+    description: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories: []
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "us-apply-reordered-criteria" project tree
+        - the Product Owner answers "1" to every prompt
+      when:
+        - the Product Owner runs "us apply mcp-endpoint --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg=AC index=1 total=2 description="The MCP server must respond with HTTP 405'
+        - stdout matches ALL CHECKS PASSED!
+        - stdout matches APPLY COMPLETE
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the scenario from acceptance criterion "mcp-endpoint-001-initialize-ok" in "docs/scenarios.yaml" is keyed "mcp-endpoint-001-initialize-ok"
+        - and: the scenario from acceptance criterion "mcp-endpoint-002-get-refused" in "docs/scenarios.yaml" is keyed "mcp-endpoint-002-get-refused"
+        - and: the engine dispatched 4 AI turns
+        - but: no file outside "tmp" changed
+        - and: stdout does not match RE-WALK
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli

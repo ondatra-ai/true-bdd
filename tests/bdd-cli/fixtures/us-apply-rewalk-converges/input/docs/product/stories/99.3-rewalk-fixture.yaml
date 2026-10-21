@@ -6,7 +6,7 @@ story:
     so_that: the BDD harness can assert the new --fix re-walk-to-fixpoint behavior end-to-end
     status: PLANNED
     acceptance_criteria:
-        - id: AC-1
+        - id: 001-mcp-initialize
           description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
           steps:
             - given:
@@ -17,7 +17,7 @@ story:
             - then:
                 - the server returns HTTP 200
                 - and: the response body is a well-formed JSON-RPC envelope referencing the request id
-        - id: AC-2
+        - id: 002-mcp-get-refused
           description: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
           steps:
             - given:

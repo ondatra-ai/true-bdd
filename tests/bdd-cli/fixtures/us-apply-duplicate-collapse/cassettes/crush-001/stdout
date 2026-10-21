@@ -1,5 +1,7 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Collapsed duplicate lineage 95.1-001: unioned E2E-901 merged_steps into E2E-900 and deleted E2E-901; E2E-950 untouched"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-iter1-result.yaml ===
+summary: "Deleted duplicate E2E-901 and unioned its steps into 95.1-001-mcp-initialize (2 given / 1 when / 2 then); E2E-950 untouched"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
+```

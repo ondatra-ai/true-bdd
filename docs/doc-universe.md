@@ -57,7 +57,7 @@ host project root
 │                                renders into, and may name its own run `timeout:`)
 ├── services/<service>/          production source — path declared per service in architecture.yaml
 └── tests/<suite>/
-    ├── <family>_test.go         GENERATED — one func Test<Id> per scenario, from its path:
+    ├── <family>_test.go         GENERATED — one func Test<Key> per scenario, from its path:
     └── steps/                   the code a scenario's steps bind to
 ```
 
@@ -88,7 +88,7 @@ flowchart LR
     direction LR
     PRODUCT["docs/product/product.yaml<br/>roles · vocabulary"]
     STORY["docs/product/stories/&lt;id&gt;-&lt;slug&gt;.yaml<br/>acceptance_criteria[] — the scenarios, long form"]
-    REG["docs/scenarios.yaml<br/>INT-NNN | E2E-NNN + lineage"]
+    REG["docs/scenarios.yaml<br/>keyed by lineage &lt;story-id&gt;-&lt;ac-id&gt;"]
     STORY -- "③ us apply" --> REG
   end
 
@@ -125,7 +125,7 @@ would walk carries no `F:` fix template. Against the shipped checklists that ref
 | Command | Reads | Checklist | Writes |
 | --- | --- | --- | --- |
 | `us refine <id>` | the hand-written **story**; **product** roles + vocabulary; **architecture** test suites (for sketches) | us-refine.yaml | the same **story file, in place** — ACs gain steps and rule-based descriptions |
-| `us apply <id>` | every **AC** of the refined story (lineage id `<id>-NNN` per AC position) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
+| `us apply <id>` | every **AC** of the refined story (lineage id `<id>-<ac-id>`, the Scenario's Registry key; an AC id that is not `<NNN>-<slug>` is refused) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:` | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
 | `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself | scen-check.yaml | **nothing**. Advisory: findings are reported and the CLI exits 0, so it cannot gate a commit |
@@ -138,10 +138,10 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | --- | --- | --- | --- |
 | 1 | story as_a | product roles[].name | a story's `as_a: "Claude User"` names one of the product's roles — roles (responsibilities), not personas (invented individuals); no checklist prompt checks the match today |
 | 2 | product vocabulary | AC description + steps | **us refine** rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block may also live in architecture.yaml (the engine's fixtures keep it there), though `product-schema.yaml` requires one in the product document |
-| 3 | AC position in story | user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-%03d` (AC-1 of story 95.1 → `"95.1-001"`) and merges the scenario in |
+| 3 | AC id in story | registry key and user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-<ac-id>` (AC `001-mcp-initialize` of story 95.1 → `"95.1-001-mcp-initialize"`), keys the scenario by it and merges it in; the author writes the AC id as `<NNN>-<slug>`, so reordering a story's ACs changes no key (ADR 0014) |
 | 4 | user_stories[].story | story file path | each registry entry names its source stories: `docs/product/stories/95.1-duplicate-collapse.yaml` |
 | 5 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |
-| 6 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package — except steps prefixed `llm:` (a model performs it) or `judge:` (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the `steps/` package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Id>` that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
+| 6 | scenario steps | step definitions | **build tests** passes only if every Given/When/Then step binds to exactly one ``suite.Step(`regexp`, …)`` in the owning suite's `steps/` package — except steps prefixed `llm:` (a model performs it) or `judge:` (a model rules on it once the scenario has run), which bind to nothing and must never be given a definition. The engine answers that question itself, by parsing the `steps/` package, and walks only the scenarios with gaps, so a converged repository spends no model at all. Separately, the scenario's `path:` names the generated `func Test<Key>` (the key in CamelCase) that runs it — with the steps stated literally, and cross-checked against the registry before any of them run. That file is deterministic codegen rather than a model turn: `--fix` writes it, and without `--fix` the same renderer verifies the tree by regenerating and comparing |
 | 7 | scenario service: | testing.suites[].service | the one join that says which suite owns a scenario, and therefore where its step definitions live. Replaced the id-prefix convention (INT- / E2E-), which lived in prompt prose and in no code |
 | 8 | services[].path | services/&lt;name&gt;/ | `path: services/bdd-cli` tells **build code** where production source lives — any path works; the fixtures use `services/calc` |
 | 9 | failing test | production source | **build code --fix** edits the service's source (its `services[].path`) until the runner's `LastRunPassed` flips to true |

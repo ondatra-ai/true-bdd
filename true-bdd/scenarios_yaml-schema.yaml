@@ -32,7 +32,10 @@
 #     substance. Anything a step definition could assert belongs in one.
 
 metadata: include('metadata')
-scenarios: map(include('scenario'), min=1)
+# A key is its lineage id `<story-id>-<NNN>-<slug>` (ADR 0014), e.g.
+# `scen-check-001-unknown-id-refused`; the retired `E2E-NNN` stays valid
+# until each Story renames its Scenarios.
+scenarios: map(include('scenario'), key=regex('^(E2E-[0-9]{3}|[a-z0-9][a-z0-9.-]*-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*)$'), min=1)
 
 ---
 metadata:

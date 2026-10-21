@@ -250,7 +250,11 @@ The host project's documents live under `docs/`:
   that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
   `build tests` walks, and the test suites RUN: each scenario is a test,
-  its steps bound to code by the suite that owns it.
+  its steps bound to code by the suite that owns it. A scenario is keyed
+  by its lineage, `<story-id>-<ac-id>`, and the author writes each
+  acceptance criterion's id as `<NNN>-<slug>` (ADR 0014), so the key
+  `scen-check-001-unknown-id-refused` survives reordering the story;
+  `us apply` refuses a criterion id of any other shape.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
@@ -319,8 +323,9 @@ go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 ```
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
-architectural spec assigns to it gets one top-level Go test named after
-its id (`TestE2E016`), written into the file the scenario's `path:` names
+architectural spec assigns to it gets one top-level Go test named from
+its key in CamelCase (`TestE2E016`, `TestScenCheck001UnknownIdRefused`),
+written into the file the scenario's `path:` names
 by `true-bdd build tests --fix` and by nothing else. Its steps are bound
 by regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's
 Given step names the fixture tree it drives.

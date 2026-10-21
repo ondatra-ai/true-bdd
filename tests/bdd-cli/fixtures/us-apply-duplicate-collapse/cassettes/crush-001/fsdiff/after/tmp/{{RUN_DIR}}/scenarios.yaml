@@ -4,10 +4,15 @@
 # SHIPPED us-apply checklist and exercises the duplicate branch:
 #
 #   - "present?" PASSES: at least one entry references story
-#     docs/product/stories/95.1-duplicate-collapse.yaml with lineage 95.1-001.
-#   - "duplicate?" FAILS: E2E-900 and E2E-901 BOTH reference lineage
-#     95.1-001. The F: collapses them into a single entry (keep the
-#     lower id, union user_stories and merged_steps, delete the loser).
+#     docs/product/stories/95.1-duplicate-collapse.yaml with lineage
+#     95.1-001-mcp-initialize.
+#   - "duplicate?" FAILS: E2E-901 and 95.1-001-mcp-initialize BOTH
+#     reference that lineage. The F: collapses them into the entry keyed
+#     by the lineage id (ADR 0014), unioning user_stories and merged_steps.
+#
+# E2E-901 is listed first and carries more steps on purpose: keeping the
+# first entry, the richer one or the numbered one would each pick it, so
+# only the key rule leaves 95.1-001-mcp-initialize standing.
 #
 # After the collapse fix the walker restarts, both prompts pass, the
 # outer re-walk confirms the fixpoint, and the scratch registry is
@@ -23,13 +28,13 @@ metadata:
   description: "Duplicate-entry seed for us-apply-duplicate-collapse fixture"
 
 scenarios:
-  E2E-900:
+  95.1-001-mcp-initialize:
     description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
     service: "mcp-service"
     last_updated: "2026-07-25"
     user_stories:
       - story: "docs/product/stories/95.1-duplicate-collapse.yaml"
-        scenario_id: "95.1-001"
+        scenario_id: "95.1-001-mcp-initialize"
         merge_date: "2026-07-25"
     merged_steps:
       given:
