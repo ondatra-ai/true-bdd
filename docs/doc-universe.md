@@ -27,8 +27,10 @@ product  ⟷  user stories  ⟷  scenarios
 - A **story id is a slug**: lower-case letters, digits, dots and hyphens, starting with a letter or
   digit, so `scen-check` and `96.2` both work and the file is `<id>-<slug>.yaml`. `us refine` and
   `us apply` refuse any other id at startup and name it, so a path-like id such as `../x` never
-  reaches the filesystem. Because a file is found by the glob `<id>-*.yaml`, `us refine` also
-  refuses a file whose own `id:` is another story's: `us refine scen` never walks `scen-check`.
+  reaches the filesystem. The glob `<id>-*.yaml` also matches a story whose id starts with
+  `<id>-`, so both commands read the one match whose own `id:` is the asked id: `us refine
+  scen-check` reads `scen-check-verifier.yaml`, never `scen-check-phrases-*.yaml`. When no match
+  declares the id (`us refine scen` never walks `scen-check`), or several do, they refuse.
 - A story may carry a **`feature:` label**, the Feature it belongs to. It is a label, not a document,
   and `us refine` keeps it through every rewrite of the story file, the fix applier's included.
 - A **story consists of scenarios** — its refined ACs with given/when/then steps *are* the
