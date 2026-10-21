@@ -129,8 +129,8 @@ type overridePurpose int
 const (
 	// overrideUnsanctioned is every fixture off the allowlist.
 	overrideUnsanctioned overridePurpose = iota
-	// overrideEmpty walks nothing: E2E-297 pins the refusal of a
-	// checklist with nothing to ask.
+	// overrideEmpty walks nothing: build-tests-refusals-004-empty-checklist-refused
+	// pins the refusal of a checklist with nothing to ask.
 	overrideEmpty
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
