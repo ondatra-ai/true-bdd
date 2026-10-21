@@ -1,27 +1,33 @@
 # Registry seed for `scen-check-happy-path`.
 #
-# One scenario written to satisfy every one of the eight scen-check
-# prompts, so a single un-narrowed walk observes all eight passing: a
-# one-sentence `must` rule, all three step kinds, no forbidden qualifier
-# or action verb, observable behaviour, a measurable threshold, and an
-# outcome a reader decides without taste.
+# One Scenario a Story claims, written to pass every prompt of the
+# shipped scen-check checklist, so one un-narrowed walk observes all of
+# them passing: every step matches one catalogue phrase whose terms the
+# glossary defines and the architecture maps, each phrase's meaning says
+# what is observed and the steps use it in that meaning, and the
+# description is a one-sentence `must` rule with a measurable, binary
+# outcome in the product's vocabulary.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
-  last_updated: "2026-08-25"
-  description: "One scenario that satisfies every scen-check prompt"
+  last_updated: "2026-10-21"
+  description: "One claimed scenario that passes every scen-check prompt"
 
 scenarios:
   E2E-001:
-    description: The service must answer a ping with a pong within 200 milliseconds
-    service: mcp-service
-    path: tests/mcp/ping_test.go
-    user_stories: []
+    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories:
+      - story: docs/product/stories/greet-by-name.yaml
+        scenario_id: greet-by-name-001-prints-greeting
+        merge_date: "2026-10-21"
     merged_steps:
       given:
-        - the mcp service is running
+        - the greeting is configured as "Hello"
       when:
-        - a client sends a ping request
+        - the Operator runs "greet Ada"
       then:
-        - the service returns the body "pong" within 200 milliseconds
+        - the command exits with code 0
+        - and: stdout matches ^Hello Ada$

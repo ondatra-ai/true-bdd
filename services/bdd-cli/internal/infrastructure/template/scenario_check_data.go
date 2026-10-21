@@ -27,9 +27,12 @@ type ScenarioCheckData struct {
 	// Phrases are the same steps as the closure checks read them: each
 	// one's own text, without its and:/but: keyword, beside its block.
 	Phrases []catalogue.Step
-	// TermDocuments are the documents a --fix run may write; empty
+	// TermDocuments are the documents a closure fix may write; empty
 	// without --fix. A fix defines a term there, never in the Scenario.
-	TermDocuments []TermDocument
+	TermDocuments []FixDocument
+	// RegistryDocument is the Registry's working copy under --fix, where
+	// a model Prompt's fix rewrites the Scenario; nil without --fix.
+	RegistryDocument *FixDocument
 	// Registry is every Scenario of the Registry, this one included,
 	// whatever the walk selected: a check relating Scenarios reads it.
 	Registry []*ScenarioCheckData

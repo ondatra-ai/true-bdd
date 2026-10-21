@@ -19,6 +19,7 @@ const (
 	shippedChecklistsDir = "../../../../true-bdd/checklists"
 	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
 	usRefineStem         = "us-refine"
+	scenCheckStem        = "scen-check"
 )
 
 // declaredSelection pins one fixture's checklist_prompts declaration to
@@ -34,15 +35,26 @@ type declaredSelection struct {
 // via checklist_prompts, with the shipped prompt it must select.
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
-		"us-refine-fix-descriptions":        {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
-		"us-refine-fix-steps":               {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
-		"us-refine-fix-desc-qualifier":      {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
-		"us-refine-fix-keeps-feature":       {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
-		"us-refine-fix-step-qualifier":      {Stem: usRefineStem, QShort: "7cfe4b20", RequireF: true},
-		"us-refine-fix-forbidden-verb":      {Stem: usRefineStem, QShort: "bb57188d", RequireF: true},
-		"us-refine-fix-unfixable-checklist": {Stem: usRefineStem, QShort: "895981ea", RequireF: false},
-		"us-apply-rewalk-converges":         {Stem: "us-apply", QShort: "6da54561", RequireF: true},
-		"scen-check-id-filter":              {Stem: "scen-check", QShort: "30469152", RequireF: false},
+		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
+		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
+		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
+		"us-refine-fix-keeps-feature":            {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
+		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "7cfe4b20", RequireF: true},
+		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "bb57188d", RequireF: true},
+		"us-refine-fix-unfixable-checklist":      {Stem: usRefineStem, QShort: "895981ea", RequireF: false},
+		"us-apply-rewalk-converges":              {Stem: "us-apply", QShort: "6da54561", RequireF: true},
+		"scen-check-id-filter":                   {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"scen-check-fix-rewrites-phrase-meaning": {Stem: scenCheckStem, QShort: "3e039823", RequireF: true},
+		"scen-check-fix-rewrites-phrase-use":     {Stem: scenCheckStem, QShort: "5dfd2b61", RequireF: true},
+		"scen-check-fix-adds-missing-step":       {Stem: scenCheckStem, QShort: "45c4a3a0", RequireF: true},
+		"scen-check-fix-rewrites-description-qualifier": {
+			Stem: scenCheckStem, QShort: "6fd4a11c", RequireF: true,
+		},
+		"scen-check-fix-rewrites-step-qualifier":     {Stem: scenCheckStem, QShort: "63aefa89", RequireF: true},
+		"scen-check-fix-rewrites-forbidden-verb":     {Stem: scenCheckStem, QShort: "6d955d38", RequireF: true},
+		"scen-check-fix-rewrites-implementation":     {Stem: scenCheckStem, QShort: "4ca30544", RequireF: true},
+		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: "d92aa73c", RequireF: true},
+		"scen-check-fix-rewrites-subjective-outcome": {Stem: scenCheckStem, QShort: "17ccea8c", RequireF: true},
 	}
 }
 
@@ -165,6 +177,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-definitions-unreadable":       overrideChecks,
 		"scen-check-closure-no-catalogue":         overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
+		"scen-check-fix-merges-phrases":           overrideChecks,
 	}
 }
 

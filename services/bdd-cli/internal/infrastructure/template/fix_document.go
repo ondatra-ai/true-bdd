@@ -1,9 +1,9 @@
 package template
 
-// TermDocument is one document a `scen check` fix may write, through its
+// FixDocument is one document a `scen check` fix may write, through its
 // scratch copy: the applier edits Scratch, and the engine replaces Path
 // with it once it parses. Key is the document's `docs:` key.
-type TermDocument struct {
+type FixDocument struct {
 	Key     string
 	Path    string
 	Scratch string

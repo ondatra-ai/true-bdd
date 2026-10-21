@@ -1554,8 +1554,224 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
         - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
+  E2E-120:
+    description: '`scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario''s entry in the Registry, saying what its description pins, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-adds-missing-step" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario's steps carry all three" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: 'the file "docs/scenarios.yaml" matches (?m)^      then:$'
+  E2E-121:
+    description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-description-qualifier" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario's description contains a vague word" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b'
+  E2E-122:
+    description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-step-qualifier" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps contains a vague" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: 'the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b'
+  E2E-123:
+    description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-forbidden-verb" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether any of this scenario's steps uses an action verb" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+  E2E-124:
+    description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-implementation" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario describes observable behaviour" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+  E2E-125:
+    description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-adds-measurable-criterion" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+  E2E-126:
+    description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-subjective-outcome" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario has a binary pass/fail outcome" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+  E2E-127:
+    description: '`scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-phrase-meaning" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+  E2E-128:
+    description: '`scen check --fix` must rewrite a Scenario''s step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario''s entry in the Registry, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-rewrites-phrase-use" project tree
+        - and: the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: 'the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada'
+  E2E-129:
+    description: '`scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "scen-check-fix-merges-phrases" project tree
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches CHECK FAILED
+        - and: 'stdout matches E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates'
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
   E2E-291:
-    description: A registry scenario that satisfies every walked prompt must pass the walk and report success
+    description: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
@@ -1568,13 +1784,18 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches SCEN CHECK
+        - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
+        - and: stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass
+        - and: stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
+        - and: 'stdout matches PASS: 14 '
         - and: stdout matches ALL CHECKS PASSED!
         - and: stdout matches SCEN CHECK COMPLETE
-        - and: the engine dispatched 8 AI turns
+        - and: the engine dispatched 10 AI turns
         - and: no file outside "tmp" changed
 
   E2E-292:
-    description: A registry scenario that fails a walked prompt must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
+    description: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
@@ -1587,27 +1808,40 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches SCEN CHECK
+        - and: stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
+        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"'
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14
+        - and: 'stdout matches SKIP: 10\n'
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED
-        - and: the engine dispatched 8 AI turns
+        - and: the engine dispatched 10 AI turns
         - and: no file outside "tmp" changed
 
   E2E-293:
-    description: A --fix run must be refused before the walk, because the scen-check checklist ships no fix template for any prompt
+    description: '`scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario''s entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
+    timeout: 40m
     merged_steps:
       given:
-        - the "scen-check-fix-refused" project tree
+        - the "scen-check-fix-rewrites-description" project tree
+        - the Quality Engineer answers "1" to every question
       when:
         - the Quality Engineer runs "scen check --fix"
       then:
-        - the command exits with code 1
-        - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - but: stdout does not match SCEN CHECK
-        - and: no file outside "tmp" changed
-        - and: the engine dispatched no AI turns
+        - the command exits with code 0
+        - stdout matches SCEN CHECK
+        - but: stdout does not match level=ERROR msg="Refusing to start"
+        - and: stdout matches CHECK FAILED
+        - and: stdout matches FIX PROMPT GENERATED
+        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+        - and: stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass
+        - and: 'stdout matches PASS: 14 '
+        - and: stdout matches ALL CHECKS PASSED
+        - but: stdout does not match Hit max apply attempts
+        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
 
   E2E-294:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
@@ -1648,7 +1882,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 10m
     merged_steps:
       given:
         - the "scen-check-id-filter" project tree

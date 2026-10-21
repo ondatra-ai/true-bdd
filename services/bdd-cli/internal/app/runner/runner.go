@@ -440,6 +440,7 @@ func buildFixClosure[I any](
 			Subject:   item,
 			SubjectID: subjectID,
 			FixPrompt: decision.FixPrompt,
+			Check:     latestResult.Check,
 			TmpDir:    spec.TmpDir,
 			Iteration: fixCount,
 			ModelTier: latestResult.ApplyModelTier,
