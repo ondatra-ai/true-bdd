@@ -1,0 +1,37 @@
+# Registry seed for `scen-check-failed-check-skips-questions`.
+#
+# Two scenarios against a checklist whose built-in check sits AFTER its
+# model question in the file. E2E-001 carries all three step kinds: its
+# check passes, so the walk spends one model turn on its question.
+# E2E-002 has no then step: its check fails first, and its question is
+# skipped without a turn. One turn in all proves both the order and the skip.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "One scenario passing the built-in check, one failing it"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong within 200 milliseconds
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping
+      then:
+        - the service answers pong
+  E2E-002:
+    description: The service must reject an unauthenticated request with status 401
+    service: mcp-service
+    path: tests/mcp/auth_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a request with no token

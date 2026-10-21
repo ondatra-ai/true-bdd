@@ -986,6 +986,132 @@ scenarios:
         - and: the engine dispatched 4 AI turns
         - but: no file outside "tmp" changed
         - and: stdout does not match RE-WALK
+  E2E-070:
+    description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-prompt-with-both-kinds" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #2 carries both D: and Q:'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-071:
+    description: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-prompt-with-no-kind" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-072:
+    description: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-unknown-check" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has given-when-then'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-073:
+    description: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-model-on-check" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-074:
+    description: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-unknown-check-parameter" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-075:
+    description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-fix-check-without-f" project tree
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
+        - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  E2E-076:
+    description: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "scen-check-failed-check-skips-questions" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches SCEN CHECK
+        - and: stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass
+        - and: 'stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"'
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1
+        - and: 'stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL'
+        - and: 'stdout matches SKIP: 1\n'
+        - and: stdout matches Validation failed
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the engine dispatched 1 AI turn
+        - and: no file outside "tmp" changed
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli
@@ -1006,7 +1132,7 @@ scenarios:
         - and: no file outside "tmp" changed
 
   E2E-292:
-    description: A registry scenario that fails a walked prompt must be reported as failed and still exit 0, because the command is advisory
+    description: A registry scenario that fails a walked prompt must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
@@ -1017,7 +1143,7 @@ scenarios:
       when:
         - the Quality Engineer runs "scen check"
       then:
-        - the command exits with code 0
+        - the command exits with code 1
         - stdout matches SCEN CHECK
         - and: stdout matches Validation failed
         - but: stdout does not match ALL CHECKS PASSED

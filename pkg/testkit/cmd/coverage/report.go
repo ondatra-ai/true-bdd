@@ -80,10 +80,11 @@ func (r *Reporter) promptLine(prompt UniversePrompt) (string, bool) {
 
 	markers := make([]string, 0, len(kinds))
 	allCovered := true
+	branch := Branch{Checklist: prompt.Checklist, SectionID: prompt.SectionID,
+		Ordinal: prompt.Ordinal, Check: prompt.Check, QHash: prompt.QHash, FHash: prompt.FHash}
 
 	for _, kind := range kinds {
-		branch := Branch{Checklist: prompt.Checklist, SectionID: prompt.SectionID,
-			Ordinal: prompt.Ordinal, QHash: prompt.QHash, FHash: prompt.FHash, Kind: kind}
+		branch.Kind = kind
 
 		pb, isCovered := r.covered(branch.ID())
 		if isCovered {
@@ -96,8 +97,7 @@ func (r *Reporter) promptLine(prompt UniversePrompt) (string, bool) {
 	}
 
 	return fmt.Sprintf("  %-22s %-48q %s",
-		fmt.Sprintf("%s/q%d@%s", prompt.SectionID, prompt.Ordinal, shortHash(prompt.QHash)),
-		prompt.Snippet, strings.Join(markers, "  ")), allCovered
+		branch.locator(), prompt.Snippet, strings.Join(markers, "  ")), allCovered
 }
 
 // renderDiagnostics prints the uncredited-signal summary.

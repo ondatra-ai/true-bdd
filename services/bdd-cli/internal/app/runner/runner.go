@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
@@ -29,10 +30,10 @@ type renderedPrompt struct {
 }
 
 // renderPrompt is the engine's GenerateQFn for every us-* command.
-// Cheap on purpose — the heavy template rendering happens inside the
-// evaluator's Claude call, which has both item and q.
-func renderPrompt(idx int, prompt checklistmodels.PromptWithContext) *renderedPrompt {
-	return &renderedPrompt{Prompt: prompt, Index: idx}
+// The index is the prompt's file position, not its walk position: `D:`
+// prompts walk first, and a Cell's artifacts must not move with them.
+func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *renderedPrompt {
+	return &renderedPrompt{Prompt: prompt, Index: prompt.Index}
 }
 
 // Spec describes one checklist-driven command: its name, the checklist
@@ -75,6 +76,10 @@ type Spec[I any] struct {
 	// it for the "AC N/M: <description>" progress banner. Story-based
 	// commands have one item and typically leave it nil.
 	OnItemStart func(idx, total int, item I)
+
+	// Checks is the built-in checks this command's `D:` prompts may name;
+	// nil leaves it none, so any `D:` is refused at startup.
+	Checks checks.Set[I]
 
 	// Evaluator / FixGenerator / FixApplier form the generator triple: us
 	// refine uses the standard triple, us apply the apply-flavoured
@@ -129,7 +134,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	builder := newReportBuilder()
 	eng := buildSpecEngine(spec, builder, items, maxAttempts)
 
-	result, err := eng.Run(ctx, items, prompts)
+	result, err := eng.Run(ctx, items, walkOrder(prompts))
 	if err != nil {
 		return fmt.Errorf("%s command failed: %w", spec.Name, err)
 	}
@@ -176,6 +181,11 @@ func validateSpec[I any](spec Spec[I]) (
 	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, err)
+	}
+
+	err = validatePrompts(spec.Name, spec.Checks, prompts)
 	if err != nil {
 		return nil, nil, refuseStartup(spec.Name, err)
 	}
@@ -284,7 +294,12 @@ func buildSpecEngine[I any](
 	// Same budget on both loops: max_apply_attempts caps the fixes one
 	// walk may apply as well as the outer re-walks, so a cell that never
 	// converges fails with a named error instead of spinning.
-	walker := &engine.SequentialWalker[I, *renderedPrompt]{Cell: cell, MaxFixes: maxAttempts}
+	walker := &engine.SequentialWalker[I, *renderedPrompt]{
+		Cell:     cell,
+		MaxFixes: maxAttempts,
+		Gate:     isCheckQuery,
+		OnSkip:   recordSkip(spec, builder),
+	}
 
 	return engine.New(
 		renderPrompt, walker,
@@ -348,9 +363,19 @@ func buildQueryClosure[I any](
 	) (bool, error) {
 		subjectID, subjectTitle := spec.GetSubject(item)
 
-		result, err := spec.Evaluator.EvaluateOne(
-			ctx, item, subjectID, query.Prompt, spec.TmpDir, query.Index,
+		var (
+			result checklistmodels.ValidationResult
+			err    error
 		)
+
+		if isCheckQuery(query) {
+			result, err = answerCheck(spec, item, subjectID, query)
+		} else {
+			result, err = spec.Evaluator.EvaluateOne(
+				ctx, item, subjectID, query.Prompt, spec.TmpDir, query.Index,
+			)
+		}
+
 		if err != nil {
 			return false, fmt.Errorf("evaluator failed: %w", err)
 		}
@@ -441,8 +466,8 @@ func headerLine(name, storyNumber string) string {
 }
 
 // flattenChecklistPrompts walks a Checklist's sections and emits the
-// non-skipped prompts with section context attached — mirrors the loop
-// inside ChecklistLoader.Load, so Run can call LoadFull for the config block.
+// non-skipped prompts in file order, each with its section context and
+// its position; pkg/testkit/cmd/coverage mirrors this loop for its census.
 func flattenChecklistPrompts(
 	doc *checklistmodels.Checklist,
 	commandName string,
@@ -462,6 +487,7 @@ func flattenChecklistPrompts(
 				CriterionName: section.Name,
 				DefaultDocs:   doc.DefaultDocs,
 				DefaultModels: doc.Engine,
+				Index:         len(prompts) + 1,
 				Prompt:        prompt,
 			})
 		}

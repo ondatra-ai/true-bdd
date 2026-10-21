@@ -110,18 +110,38 @@ func listFixtures(t *testing.T) []string {
 	return fixtures
 }
 
+// overridePurpose is why a fixture's checklist override IS the behaviour
+// under test, which decides what in it must still copy a shipped prompt.
+type overridePurpose int
+
+const (
+	// overrideUnsanctioned is every fixture off the allowlist.
+	overrideUnsanctioned overridePurpose = iota
+	// overrideEmpty walks nothing: E2E-297 pins the refusal of a
+	// checklist with nothing to ask.
+	overrideEmpty
+	// overrideRefused carries a prompt the engine refuses at startup, so
+	// it walks nothing and nothing in it need be shipped.
+	overrideRefused
+	// overrideChecks adds `D:` prompts no shipped checklist carries yet
+	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
+	overrideChecks
+)
+
 // allowedOverrideFixtures is the explicit allowlist for checked-in
 // checklist overrides. A fixture belongs here only when the override IS
 // the behaviour under test; every other one declares checklist_prompts.
-func allowedOverrideFixtures() map[string]bool {
-	return map[string]bool{"build-tests-empty-checklist": true}
-}
-
-// zeroPromptOverrideFixtures names the fixtures whose override is
-// deliberately empty: E2E-297 measures the refusal of a checklist with
-// nothing to ask, so "would walk nothing" is what it pins.
-func zeroPromptOverrideFixtures() map[string]bool {
-	return map[string]bool{"build-tests-empty-checklist": true}
+func allowedOverrideFixtures() map[string]overridePurpose {
+	return map[string]overridePurpose{
+		"build-tests-empty-checklist":             overrideEmpty,
+		"scen-check-prompt-with-both-kinds":       overrideRefused,
+		"scen-check-prompt-with-no-kind":          overrideRefused,
+		"scen-check-unknown-check":                overrideRefused,
+		"scen-check-model-on-check":               overrideRefused,
+		"scen-check-unknown-check-parameter":      overrideRefused,
+		"scen-check-fix-check-without-f":          overrideRefused,
+		"scen-check-failed-check-skips-questions": overrideChecks,
+	}
 }
 
 // TestNoUnsanctionedChecklistOverrides enforces the no-copied-checklists
@@ -130,7 +150,7 @@ func TestNoUnsanctionedChecklistOverrides(t *testing.T) {
 	t.Parallel()
 
 	for _, override := range discoverOverrides(t) {
-		if !allowedOverrideFixtures()[override.Fixture] {
+		if allowedOverrideFixtures()[override.Fixture] == overrideUnsanctioned {
 			t.Errorf("%s ships a checklist override (%s) — use checklist_prompts instead, "+
 				"or add the fixture to allowedOverrideFixtures deliberately",
 				override.Fixture, override.Path)
@@ -174,6 +194,11 @@ func TestOverridePromptsMatchShipped(t *testing.T) {
 	}
 
 	for _, override := range discoverOverrides(t) {
+		purpose := allowedOverrideFixtures()[override.Fixture]
+		if purpose == overrideRefused {
+			continue
+		}
+
 		prompts, loadErr := loadChecklistPrompts(override.Path, override.Stem)
 		if loadErr != nil {
 			t.Errorf("%s: loading override: %v", override.Fixture, loadErr)
@@ -181,24 +206,38 @@ func TestOverridePromptsMatchShipped(t *testing.T) {
 			continue
 		}
 
-		deliberatelyEmpty := zeroPromptOverrideFixtures()[override.Fixture]
+		assertOverrideCopiesShipped(t, uni, override, purpose, prompts)
+	}
+}
 
-		if len(prompts) == 0 && !deliberatelyEmpty {
-			t.Errorf("%s: override has no active prompts — the fixture would walk nothing; "+
-				"add it to zeroPromptOverrideFixtures if that is the behaviour under test",
-				override.Fixture)
+// assertOverrideCopiesShipped holds one walkable override to its purpose:
+// empty only when sanctioned so, and every prompt but a sanctioned `D:` shipped.
+func assertOverrideCopiesShipped(
+	t *testing.T, uni *Universe, override overrideFile, purpose overridePurpose, prompts []UniversePrompt,
+) {
+	t.Helper()
+
+	deliberatelyEmpty := purpose == overrideEmpty
+
+	if len(prompts) == 0 && !deliberatelyEmpty {
+		t.Errorf("%s: override has no active prompts — the fixture would walk nothing; "+
+			"sanction it as overrideEmpty if that is the behaviour under test",
+			override.Fixture)
+	}
+
+	if len(prompts) > 0 && deliberatelyEmpty {
+		t.Errorf("%s: sanctioned as overrideEmpty but its override has %d prompt(s)",
+			override.Fixture, len(prompts))
+	}
+
+	for _, prompt := range prompts {
+		if prompt.Check && purpose == overrideChecks {
+			continue
 		}
 
-		if len(prompts) > 0 && deliberatelyEmpty {
-			t.Errorf("%s: listed in zeroPromptOverrideFixtures but its override has %d prompt(s)",
-				override.Fixture, len(prompts))
-		}
-
-		for _, prompt := range prompts {
-			if uni.MatchOverride(override.Stem, prompt) == nil {
-				t.Errorf("%s: override prompt %q does not match any shipped %s prompt",
-					override.Fixture, prompt.Snippet, override.Stem)
-			}
+		if uni.MatchOverride(override.Stem, prompt) == nil {
+			t.Errorf("%s: override prompt %q does not match any shipped %s prompt",
+				override.Fixture, prompt.Snippet, override.Stem)
 		}
 	}
 }

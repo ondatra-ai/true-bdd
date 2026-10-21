@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
@@ -26,6 +27,13 @@ var ErrUnknownScenarioID = errors.New("no scenario in the registry has id")
 // otherwise pay for the same scenario twice and report it twice.
 var ErrDuplicateScenarioID = errors.New("scenario id given more than once")
 
+// ErrScenariosFailedCheck is a walk that ended with a Scenario failing,
+// for a non-zero exit; it wraps ErrExpectedNonconvergence, a finding, not a crash.
+var ErrScenariosFailedCheck = fmt.Errorf(
+	"one or more scenarios failed the scen-check checklist: %w",
+	runner.ErrExpectedNonconvergence,
+)
+
 // ScenCheckDeps bundles what `scen check` needs at the command boundary.
 type ScenCheckDeps struct {
 	RegistryLoader              *registry.RegistryLoader
@@ -40,8 +48,8 @@ type ScenCheckDeps struct {
 }
 
 // RunScenCheck drives `scen check`: walks registry scenarios against the
-// scen-check checklist, one cell per (scenario, prompt). Advisory — a
-// failed walk still exits 0.
+// scen-check checklist, one cell per (scenario, prompt), and fails when
+// any scenario does.
 func RunScenCheck(
 	ctx context.Context,
 	deps ScenCheckDeps,
@@ -63,6 +71,7 @@ func RunScenCheck(
 		GetSubject:  scenCheckSubject,
 		OnItemStart: scenCheckOnItemStart,
 
+		Checks:       checks.ForScenarios(),
 		Evaluator:    deps.ScenCheckEvaluator,
 		FixGenerator: deps.ScenCheckFixPromptGenerator,
 		FixApplier:   deps.ScenCheckFixApplier,
@@ -195,13 +204,14 @@ func scenCheckPostFix(
 	return item, nil
 }
 
-// finalizeScenCheck reports the verdict and returns nil for every stop
-// reason: the command is advisory, so a failed walk still exits 0 (ADR
-// 0001). Only build tests/code wrap ErrExpectedNonconvergence.
+// finalizeScenCheck reports the verdict and fails every walk that did not
+// converge, so a bare `scen check` gates by its exit code (Q10).
 func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error {
 	switch result.Reason {
 	case engine.Converged:
 		slog.Info("ALL CHECKS PASSED!")
+
+		return nil
 	case engine.NotFixed:
 		slog.Warn("Validation failed.")
 	case engine.UserExit:
@@ -210,5 +220,5 @@ func finalizeScenCheck(result *engine.Result[*template.ScenarioCheckData]) error
 		slog.Warn("Hit max apply attempts without convergence.")
 	}
 
-	return nil
+	return ErrScenariosFailedCheck
 }

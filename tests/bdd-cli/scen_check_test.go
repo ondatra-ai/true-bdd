@@ -22,6 +22,110 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
+// E2E-070: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
+func TestE2E070(t *testing.T) {
+	s := scenarios.New(t, "E2E-070")
+	s.Given(`the "scen-check-prompt-with-both-kinds" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 carries both D: and Q:`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-071: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
+func TestE2E071(t *testing.T) {
+	s := scenarios.New(t, "E2E-071")
+	s.Given(`the "scen-check-prompt-with-no-kind" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 carries neither D: nor Q:`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-072: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
+func TestE2E072(t *testing.T) {
+	s := scenarios.New(t, "E2E-072")
+	s.Given(`the "scen-check-unknown-check" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has given-when-then`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-073: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
+func TestE2E073(t *testing.T) {
+	s := scenarios.New(t, "E2E-073")
+	s.Given(`the "scen-check-model-on-check" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then carries model:, but no model answers a built-in check`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-074: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
+func TestE2E074(t *testing.T) {
+	s := scenarios.New(t, "E2E-074")
+	s.Given(`the "scen-check-unknown-check-parameter" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: given-when-then has no with: parameter min_steps; it takes none`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-075: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+func TestE2E075(t *testing.T) {
+	s := scenarios.New(t, "E2E-075")
+	s.Given(`the "scen-check-fix-check-without-f" project tree`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply`)
+	s.And(`stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// E2E-076: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
+func TestE2E076(t *testing.T) {
+	s := scenarios.New(t, "E2E-076")
+	s.Given(`the "scen-check-failed-check-skips-questions" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-002 promptIndex=2 answer=fail context="\[E2E-002: missing then step\]"`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=1`)
+	s.And(`stdout matches scen-check/scenario_quality +D: given-when-then +fail +FAIL`)
+	s.And(`stdout matches SKIP: 1\n`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")
@@ -36,12 +140,12 @@ func TestE2E291(t *testing.T) {
 	s.Done()
 }
 
-// E2E-292: A registry scenario that fails a walked prompt must be reported as failed and still exit 0, because the command is advisory
+// E2E-292: A registry scenario that fails a walked prompt must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
 func TestE2E292(t *testing.T) {
 	s := scenarios.New(t, "E2E-292")
 	s.Given(`the "scen-check-validation-fails" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)

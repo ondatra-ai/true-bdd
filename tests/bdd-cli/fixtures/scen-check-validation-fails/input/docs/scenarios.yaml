@@ -13,8 +13,8 @@
 #   7 no measurable criterion anywhere
 #   8 "the response is helpful" cannot be decided without taste
 #
-# The walk reports every failure and the CLI still exits 0 — the command
-# is advisory, per docs/adr/0001-scen-check-is-advisory-and-per-scenario.md.
+# The walk reports every failure and the CLI exits 1, so a bare
+# `scen check` gates a change (Q10 of the #127 grilling log).
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"

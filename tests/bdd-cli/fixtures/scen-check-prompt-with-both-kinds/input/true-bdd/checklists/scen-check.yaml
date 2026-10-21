@@ -1,0 +1,22 @@
+# Fixture checklist for `scen-check-prompt-with-both-kinds`.
+#
+# The second Prompt names a built-in check under `D:` and asks a model a
+# question under `Q:`. The engine must refuse it before the walk: a
+# Prompt is answered by one or the other, never both. The first Prompt
+# is well formed, so the refusal must name the second by its position.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - D: given-when-then
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+
+      - D: given-when-then
+        Q: |
+          Decide whether this scenario's steps carry all three
+          Given/When/Then kinds.
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

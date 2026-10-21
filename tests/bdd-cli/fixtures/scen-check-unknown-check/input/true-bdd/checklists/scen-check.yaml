@@ -1,0 +1,14 @@
+# Fixture checklist for `scen-check-unknown-check`.
+#
+# Its one Prompt names under `D:` a check the engine does not hold.
+# The engine must refuse it before the walk, naming the checks it has.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - D: steps-are-present
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

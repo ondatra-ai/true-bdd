@@ -155,14 +155,14 @@ func validateFixTemplates(
 			continue
 		}
 
-		// The question goes in unquoted: half of them carry double
+		// The label goes in unquoted: half of them carry double
 		// quotes of their own, and %q would render those as \" — an
 		// escaping scheme in a line whose whole job is to be read.
 		offenders = append(offenders, fmt.Sprintf(
 			"%s #%d %s",
 			prompts[idx].GetFullSectionPath(),
-			idx+1,
-			questionFirstLine(prompts[idx].Prompt.Question),
+			prompts[idx].Index,
+			prompts[idx].Prompt.Label(),
 		))
 	}
 
@@ -177,19 +177,6 @@ func validateFixTemplates(
 		len(prompts),
 		strings.Join(offenders, "; "),
 	)
-}
-
-// questionFirstLine returns the first non-blank line of a prompt's Q, so
-// a multi-line question still names its prompt in one line of output.
-func questionFirstLine(question string) string {
-	for line := range strings.SplitSeq(question, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-
-	return ""
 }
 
 // reported wraps an error already diagnosed by the code that produced

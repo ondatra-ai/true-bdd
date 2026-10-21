@@ -1,15 +1,30 @@
 package checklist
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Prompt represents a single validation prompt.
+// Why a prompt cannot be walked whatever checks the engine holds (ADR
+// 0015). Free of regex metacharacters: fixtures pin them with `stdout matches`.
+var (
+	ErrPromptHasBothKinds = errors.New(
+		"carries both D: and Q:, but a built-in check or a model answers a prompt, never both")
+	ErrPromptHasNoKind = errors.New("carries neither D: nor Q:, so nothing would answer it")
+	ErrModelOnCheck    = errors.New("carries model:, but no model answers a built-in check")
+	errWithNotMapping  = errors.New("with: takes a mapping of check parameters")
+)
+
+// Prompt represents a single validation prompt: a model answers its
+// Question (`Q:`), or the built-in check its Check names (`D:`) does.
 type Prompt struct {
-	Question     string   // The validation question (Q in YAML)
-	Rationale    string   // Why this matters
+	Question     string         // The validation question (Q in YAML)
+	Check        string         // The built-in check answering it instead (D in YAML)
+	With         map[string]any // The check's parameters (with in YAML)
+	Rationale    string         // Why this matters
 	Skip         string   // If set, skip this prompt
 	ActionIfYes  string   // Action if answer is yes
 	ActionIfFail string   // Action if validation fails
@@ -33,6 +48,13 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	p.Question = getStringFromMap(raw, "Q")
+	p.Check = getStringFromMap(raw, "D")
+
+	err = p.decodeWith(raw)
+	if err != nil {
+		return err
+	}
+
 	p.Rationale = getStringFromMap(raw, "rationale")
 	p.Skip = getStringFromMap(raw, "skip")
 	p.ActionIfYes = getStringFromMap(raw, "action_if_yes")
@@ -78,6 +100,67 @@ func (p *Prompt) ShouldSkip() bool {
 	return p.Skip != ""
 }
 
+// IsCheck reports whether a built-in check answers the prompt (`D:`)
+// rather than a model (`Q:`).
+func (p *Prompt) IsCheck() bool {
+	return strings.TrimSpace(p.Check) != ""
+}
+
+// ShapeError reports why the prompt cannot be walked whatever checks the
+// engine holds, or nil; which checks exist is the walking command's call.
+func (p *Prompt) ShapeError() error {
+	switch {
+	case p.IsCheck() && p.asksModel():
+		return ErrPromptHasBothKinds
+	case !p.IsCheck() && !p.asksModel():
+		return ErrPromptHasNoKind
+	case p.IsCheck() && p.Model != "":
+		return fmt.Errorf("%s %w", p.Label(), ErrModelOnCheck)
+	}
+
+	return nil
+}
+
+// Label names the prompt in one line: `D: <check>` for a check, else the
+// first non-blank line of its question.
+func (p *Prompt) Label() string {
+	if p.IsCheck() {
+		return "D: " + strings.TrimSpace(p.Check)
+	}
+
+	for line := range strings.SplitSeq(p.Question, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+
+	return ""
+}
+
+// asksModel reports whether the prompt carries a `Q:` question.
+func (p *Prompt) asksModel() bool {
+	return strings.TrimSpace(p.Question) != ""
+}
+
+// decodeWith reads the check parameters: absent leaves With nil, and any
+// shape but a mapping is refused, since dropping it would run the check unparameterised.
+func (p *Prompt) decodeWith(raw map[string]interface{}) error {
+	val, present := raw["with"]
+	if !present || val == nil {
+		return nil
+	}
+
+	mapping, isMapping := val.(map[string]interface{})
+	if !isMapping {
+		return fmt.Errorf("%w, got %T", errWithNotMapping, val)
+	}
+
+	p.With = mapping
+
+	return nil
+}
+
 // PromptWithContext holds a prompt with its section context for evaluation.
 type PromptWithContext struct {
 	SectionID     string       // e.g., "template", "invest", "dependencies_risks"
@@ -86,7 +169,10 @@ type PromptWithContext struct {
 	CriterionName string       // e.g., "Who", "Valuable" (empty if no criterion)
 	DefaultDocs   []string     // Default docs from checklist root level
 	DefaultModels *EngineBlock // Default model tiers from the checklist `engine:` block
-	Prompt        Prompt
+	// Index is the 1-based position in the checklist, in file order: it
+	// names the Cell's artifacts and orders the report, though `D:` walks first.
+	Index  int
+	Prompt Prompt
 }
 
 // GetEffectiveDocs returns the docs to use (prompt-specific or defaults).
