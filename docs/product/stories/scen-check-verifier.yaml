@@ -3,7 +3,8 @@
 # The walk, the id filter and the exit code. The closure checks, the
 # checklist's `D:` refusals and `scen check --fix` are Stories of their own:
 # scen-check-phrases, scen-check-terms, scen-check-mappings,
-# scen-check-step-definitions, checklist-checks and scen-check-fix.
+# scen-check-step-definitions, checklist-checks, scen-check-fix and
+# scen-check-quality-fix.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `scen-check-<id>` (ADR 0014), and its steps are that Scenario's steps.

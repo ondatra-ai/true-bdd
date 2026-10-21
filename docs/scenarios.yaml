@@ -1240,11 +1240,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-097:
+  scen-check-fix-001-unmatched-step-gets-phrase:
     description: '`scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user applies in the product document and never in the Scenario, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-001-unmatched-step-gets-phrase
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
@@ -1350,11 +1353,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-104:
+  scen-check-fix-002-undefined-term-gets-definition:
     description: '`scen check --fix` must propose a definition for a declared term the glossary lacks, asking what it means first, record the definition the user applies in the product glossary and never in the Scenario, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-002-undefined-term-gets-definition
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
@@ -1530,11 +1536,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-119:
+  scen-check-fix-003-unmapped-term-gets-mapping:
     description: '`scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-003-unmapped-term-gets-mapping
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
@@ -1554,11 +1563,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
         - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
-  E2E-120:
+  scen-check-quality-fix-001-missing-step-added:
     description: '`scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario''s entry in the Registry, saying what its description pins, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-001-missing-step-added
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1577,11 +1589,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^      then:$'
         - and: the engine dispatched 5 AI turns
-  E2E-121:
+  scen-check-quality-fix-002-description-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-002-description-qualifier-replaced
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1600,11 +1615,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b'
         - and: the engine dispatched 5 AI turns
-  E2E-122:
+  scen-check-quality-fix-003-step-qualifier-replaced:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-003-step-qualifier-replaced
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1623,11 +1641,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b'
         - and: the engine dispatched 5 AI turns
-  E2E-123:
+  scen-check-quality-fix-004-forbidden-verb-replaced:
     description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-004-forbidden-verb-replaced
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1645,11 +1666,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: the engine dispatched 5 AI turns
-  E2E-124:
+  scen-check-quality-fix-005-implementation-step-rewritten:
     description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-005-implementation-step-rewritten
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1667,11 +1691,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: the engine dispatched 5 AI turns
-  E2E-125:
+  scen-check-quality-fix-006-measurable-criterion-added:
     description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-006-measurable-criterion-added
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1690,11 +1717,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: the engine dispatched 6 AI turns
-  E2E-126:
+  scen-check-quality-fix-007-subjective-outcome-rewritten:
     description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-quality-fix-scenario-rewrites.yaml
+        scenario_id: scen-check-quality-fix-007-subjective-outcome-rewritten
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1713,11 +1743,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: the engine dispatched 6 AI turns
-  E2E-127:
+  scen-check-fix-005-restated-meaning-rewritten:
     description: '`scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-005-restated-meaning-rewritten
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1735,11 +1768,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: the engine dispatched 5 AI turns
-  E2E-128:
+  scen-check-fix-006-misused-phrase-step-rewritten:
     description: '`scen check --fix` must rewrite a Scenario''s step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-006-misused-phrase-step-rewritten
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -1758,11 +1794,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada'
         - and: the engine dispatched 5 AI turns
-  E2E-129:
+  scen-check-fix-004-shared-definition-merges-phrases:
     description: '`scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-004-shared-definition-merges-phrases
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
@@ -1872,11 +1911,14 @@ scenarios:
         - and: the engine dispatched 10 AI turns
         - and: no file outside "tmp" changed
 
-  E2E-293:
+  scen-check-fix-007-whole-checklist-fixes-description:
     description: '`scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario''s entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+        scenario_id: scen-check-fix-007-whole-checklist-fixes-description
+        merge_date: '2026-10-21'
     timeout: 40m
     merged_steps:
       given:
