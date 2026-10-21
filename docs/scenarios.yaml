@@ -306,11 +306,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-015:
-    description: A registry that parses but holds no scenarios must be refused, never walked to a trivial success
+  build-tests-refusals-001-empty-registry-refused:
+    description: A registry file that declares no scenarios must be refused, never walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-001-empty-registry-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-empty-registry" project tree
@@ -344,11 +347,14 @@ scenarios:
         - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
         - but: the file "docs/scenarios.yaml" is unchanged
         - and: no file outside "tmp" and "tests" changed
-  E2E-017:
+  build-tests-refusals-002-misshapen-registry-refused:
     description: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-002-misshapen-registry-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-malformed-registry" project tree
@@ -362,11 +368,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-018:
+  build-tests-refusals-003-undeclared-registry-refused:
     description: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-003-undeclared-registry-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-unconfigured-registry" project tree
@@ -376,8 +385,8 @@ scenarios:
         - the command exits with code 1
         - 'stdout matches level=ERROR msg="Refusing to start'
         - stdout matches documents\.scenarios_yaml
-        - but: no file outside "tmp" changed
-        - and: the file "docs/scenarios.yaml" is unchanged
+        - but: stdout does not match Loaded requirements registry
+        - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   E2E-019:
     description: Multi-provider routing must fail LOUDLY, never quietly
@@ -2112,11 +2121,14 @@ scenarios:
         - but: stdout does not match E2E-003
         - and: no file outside "tmp" changed
 
-  E2E-297:
-    description: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
+  build-tests-refusals-004-empty-checklist-refused:
+    description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-refusals-startup.yaml
+        scenario_id: build-tests-refusals-004-empty-checklist-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-empty-checklist" project tree
