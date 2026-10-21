@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 )
 
 // spawnHelper re-execs THIS test binary as an engineered helper child in

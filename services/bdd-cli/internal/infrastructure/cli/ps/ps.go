@@ -1,7 +1,7 @@
-// Package ps is the `ps` command line, one of the typed wrappers pkg/shell
-// may be reached through.
+// Package ps is the `ps` command line, one of the four engine wrappers that
+// alone may reach pkg/shell from inside the engine.
 //
-// Both questions this repository asks the process table are answered here
+// Both questions the engine asks the process table are answered here
 // rather than by a caller reading columns: `-o` selects fields whose layout
 // is ps's, not ours, and the two callers were each parsing that layout for
 // themselves. What a caller names is a process group or a pid.

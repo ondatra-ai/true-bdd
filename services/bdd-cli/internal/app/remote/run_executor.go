@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
 )
 

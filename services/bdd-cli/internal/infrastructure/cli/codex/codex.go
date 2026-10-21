@@ -1,5 +1,7 @@
-// Package codex is the `codex` command line, one of the typed wrappers
-// pkg/shell may be reached through.
+// Package codex is the `codex` command line, one of the four engine wrappers
+// that alone may reach pkg/shell from inside the engine. Only the engine spawns
+// codex, so the wrapper is engine code and a rebuild regenerates it; the argv
+// it builds is stated in docs/architecture/architecture.yaml.
 //
 // Four facts about the binary shape this package, none documented upstream:
 //

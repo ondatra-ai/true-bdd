@@ -18,10 +18,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/queryserver"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/store"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 )
 
 const (

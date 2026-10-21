@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/crush"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/crush"
 )
 
 // The model MUST arrive as `-m`: crush silently ignores an unknown model

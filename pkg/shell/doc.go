@@ -27,6 +27,10 @@
 // agent CLIs do.
 //
 // Callers reach a binary through pkg/cli/<tool>, never through here directly:
-// depguard denies pkg/shell everywhere except pkg/cli/**, which is what keeps
-// argv construction typed and greppable instead of scattered.
+// depguard denies pkg/shell everywhere except pkg/cli/** and four engine
+// packages, which is what keeps argv construction typed and greppable instead
+// of scattered. Those four are the wrappers only the engine uses (codex,
+// crush, ps and its own binary), so they live in the engine, under
+// services/bdd-cli/internal/infrastructure/cli/, and a rebuild regenerates
+// them with it; each lint rule names them one by one.
 package shell

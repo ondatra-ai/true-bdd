@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/console"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/ps"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 )
 
 // SupervisorSubcommand is the hidden CLI verb that runs the resident gated
-// group-leader launcher (finding 4). Declared by pkg/cli/truebdd, which writes
+// group-leader launcher (finding 4). Declared by the engine's cli/truebdd, which writes
 // it into the argv; re-exported here for the dispatch that answers it.
 const SupervisorSubcommand = truebdd.SupervisorSubcommand
 
