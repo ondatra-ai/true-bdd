@@ -146,24 +146,6 @@ func TestE2E041(t *testing.T) {
 	s.Done()
 }
 
-// E2E-042: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
-func TestE2E042(t *testing.T) {
-	s := scenarios.New(t, "E2E-042")
-	s.Given(`the "us-refine-happy-path" project tree`)
-	s.When(`the Product Owner runs "us refine 96.1"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.1-document-summary-refined.yaml"`)
-	s.And(`the story "docs/product/stories/96.1-document-summary-refined.yaml" has id "96.1"`)
-	s.And(`the story "docs/product/stories/96.1-document-summary-refined.yaml" has 4 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.1-document-summary-refined.yaml" has given, when and then steps`)
-	s.And(`judge: the four acceptance criteria still cover the substance of the seed — a summary of 150 words or fewer for a shared document, the "This document is not shared with your account" message, the "The summary timed out - please try again" message at 30 seconds, and summarising only the first 10000 words — with every exact message and number intact`)
-	s.And(`judge: the as_a, i_want and so_that clauses keep their meaning — a Claude User wanting a short summary of a shared Google Doc on request, so as to decide whether it needs attention without reading it in full`)
-	s.Done()
-}
-
 // E2E-043: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
 func TestE2E043(t *testing.T) {
 	s := scenarios.New(t, "E2E-043")
@@ -198,36 +180,6 @@ func TestE2E044(t *testing.T) {
 	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
 	s.And(`no file matching "docs/product/stories/96.9-*.yaml" is created`)
 	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-045: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
-func TestE2E045(t *testing.T) {
-	s := scenarios.New(t, "E2E-045")
-	s.Given(`the "us-refine-no-happy-path" project tree`)
-	s.When(`the Product Owner runs "us refine 96.4"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
-	s.And(`stdout does not match ALL CHECKS PASSED!`)
-	s.And(`stdout does not match Story saved to:`)
-	s.Done()
-}
-
-// E2E-046: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
-func TestE2E046(t *testing.T) {
-	s := scenarios.New(t, "E2E-046")
-	s.Given(`the "us-refine-validation-fails" project tree`)
-	s.When(`the Product Owner runs "us refine 96.3"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
-	s.And(`stdout does not match ALL CHECKS PASSED!`)
-	s.And(`stdout does not match Story saved to:`)
 	s.Done()
 }
 
@@ -331,5 +283,53 @@ func TestE2E053(t *testing.T) {
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/scen-check-closure.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-verdicts-001-passing-story-saved-in-place: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
+func TestUsRefineVerdicts001PassingStorySavedInPlace(t *testing.T) {
+	s := scenarios.New(t, "us-refine-verdicts-001-passing-story-saved-in-place")
+	s.Given(`the "us-refine-happy-path" project tree`)
+	s.When(`the Product Owner runs "us refine 96.1"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.1-document-summary-refined.yaml"`)
+	s.And(`the story "docs/product/stories/96.1-document-summary-refined.yaml" has id "96.1"`)
+	s.And(`the story "docs/product/stories/96.1-document-summary-refined.yaml" has 4 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.1-document-summary-refined.yaml" has given, when and then steps`)
+	s.And(`judge: the four acceptance criteria still cover the substance of the seed — a summary of 150 words or fewer for a shared document, the "This document is not shared with your account" message, the "The summary timed out - please try again" message at 30 seconds, and summarising only the first 10000 words — with every exact message and number intact`)
+	s.And(`judge: the as_a, i_want and so_that clauses keep their meaning — a Claude User wanting a short summary of a shared Google Doc on request, so as to decide whether it needs attention without reading it in full`)
+	s.Done()
+}
+
+// us-refine-verdicts-002-no-happy-path-fails: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
+func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
+	s := scenarios.New(t, "us-refine-verdicts-002-no-happy-path-fails")
+	s.Given(`the "us-refine-no-happy-path" project tree`)
+	s.When(`the Product Owner runs "us refine 96.4"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
+	s.And(`stdout does not match ALL CHECKS PASSED!`)
+	s.And(`stdout does not match Story saved to:`)
+	s.Done()
+}
+
+// us-refine-verdicts-003-implementation-and-subjective-fail: A story with implementation-level and subjective acceptance criteria must report each failure and leave the story unchanged
+func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
+	s := scenarios.New(t, "us-refine-verdicts-003-implementation-and-subjective-fail")
+	s.Given(`the "us-refine-validation-fails" project tree`)
+	s.When(`the Product Owner runs "us refine 96.3"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
+	s.And(`stdout does not match ALL CHECKS PASSED!`)
+	s.And(`stdout does not match Story saved to:`)
 	s.Done()
 }
