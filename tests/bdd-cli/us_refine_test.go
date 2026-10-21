@@ -315,7 +315,7 @@ func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
-	s.And(`stdout does not match Story saved to:`)
+	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()
 }
 
@@ -330,6 +330,6 @@ func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
-	s.And(`stdout does not match Story saved to:`)
+	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()
 }

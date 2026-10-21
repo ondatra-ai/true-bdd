@@ -213,7 +213,11 @@ architecture:
     - term: exit code
       technical: >-
         The engine process's exit status: 1 when the command returns an error
-        (a refusal, a failed check, an unusable answer), 0 otherwise.
+        (a refusal, an unusable answer, or a walk of `scen check`, `build
+        tests` or `build code` that ends with a check still failing), 0
+        otherwise. The Finalize step of `us refine` and `us apply` returns no
+        error for a walk that ends failing: it logs the verdict, skips the
+        write, and the process exits 0.
       observed_by: >-
         The step reads the number and compares it with the kept exit status; a
         mismatch fails the step and names where the run's evidence lives.
