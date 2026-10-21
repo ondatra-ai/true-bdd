@@ -986,11 +986,14 @@ scenarios:
         - and: the engine dispatched 4 AI turns
         - but: no file outside "tmp" changed
         - and: stdout does not match RE-WALK
-  E2E-070:
+  checklist-checks-002-check-and-question-refused:
     description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-002-check-and-question-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-prompt-with-both-kinds" project tree
@@ -1003,11 +1006,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-071:
+  checklist-checks-003-neither-check-nor-question-refused:
     description: A checklist Prompt carrying neither `D:` nor `Q:` must be refused at startup, naming the Prompt, because nothing would answer it
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-003-neither-check-nor-question-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-prompt-with-no-kind" project tree
@@ -1020,11 +1026,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-072:
+  checklist-checks-004-unknown-check-refused:
     description: A `D:` Prompt naming a check the engine does not hold must be refused at startup, naming the Prompt and the checks the command has
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-004-unknown-check-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-unknown-check" project tree
@@ -1037,11 +1046,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-073:
+  checklist-checks-005-model-on-check-refused:
     description: A `D:` Prompt carrying `model:` must be refused at startup, naming the Prompt, because no model answers a built-in check
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-005-model-on-check-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-model-on-check" project tree
@@ -1054,11 +1066,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-074:
+  checklist-checks-006-unread-parameter-refused:
     description: A `D:` Prompt passing its check a `with:` parameter the check does not read must be refused at startup, naming the parameter, rather than run the check as though it were honoured
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-006-unread-parameter-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-unknown-check-parameter" project tree
@@ -1089,11 +1104,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-076:
+  checklist-checks-001-checks-run-before-questions:
     description: Within a Scenario every `D:` Prompt must run before any `Q:` Prompt, whatever the file order, and a Scenario failing one must be reported failed with its `Q:` Prompts skipped and no AI turn spent on it, while a Scenario passing it walks its `Q:` Prompts
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-001-checks-run-before-questions
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
@@ -1264,11 +1282,14 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: the file "docs/product/product.yaml" matches the service answers within
         - and: the engine dispatched 3 AI turns
-  E2E-098:
+  checklist-checks-007-unlisted-document-refused:
     description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/checklist-checks-deterministic-prompts.yaml
+        scenario_id: checklist-checks-007-unlisted-document-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-docs-unlisted" project tree
