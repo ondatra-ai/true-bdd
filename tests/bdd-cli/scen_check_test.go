@@ -681,43 +681,6 @@ func TestE2E129(t *testing.T) {
 	s.Done()
 }
 
-// E2E-291: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
-func TestE2E291(t *testing.T) {
-	s := scenarios.New(t, "E2E-291")
-	s.Given(`the "scen-check-happy-path" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
-	s.And(`stdout matches PASS: 14 `)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches SCEN CHECK COMPLETE`)
-	s.And(`the engine dispatched 10 AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// E2E-292: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
-func TestE2E292(t *testing.T) {
-	s := scenarios.New(t, "E2E-292")
-	s.Given(`the "scen-check-validation-fails" project tree`)
-	s.When(`the Quality Engineer runs "scen check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches SCEN CHECK`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
-	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"`)
-	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14`)
-	s.And(`stdout matches SKIP: 10\n`)
-	s.And(`stdout matches Validation failed`)
-	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 10 AI turns`)
-	s.And(`no file outside "tmp" changed`)
-	s.Done()
-}
-
 // E2E-293: `scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario's entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads
 func TestE2E293(t *testing.T) {
 	s := scenarios.New(t, "E2E-293")
@@ -740,9 +703,46 @@ func TestE2E293(t *testing.T) {
 	s.Done()
 }
 
-// E2E-294: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
-func TestE2E294(t *testing.T) {
-	s := scenarios.New(t, "E2E-294")
+// scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
+func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
+	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
+	s.Given(`the "scen-check-happy-path" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
+	s.And(`stdout matches PASS: 14 `)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches SCEN CHECK COMPLETE`)
+	s.And(`the engine dispatched 10 AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// scen-check-002-failed-scenario-exits-1: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
+func TestScenCheck002FailedScenarioExits1(t *testing.T) {
+	s := scenarios.New(t, "scen-check-002-failed-scenario-exits-1")
+	s.Given(`the "scen-check-validation-fails" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14`)
+	s.And(`stdout matches SKIP: 10\n`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched 10 AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// scen-check-003-unknown-id-refused: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
+func TestScenCheck003UnknownIdRefused(t *testing.T) {
+	s := scenarios.New(t, "scen-check-003-unknown-id-refused")
 	s.Given(`the "scen-check-unknown-id" project tree`)
 	s.When(`the Quality Engineer runs "scen check E2E-999"`)
 	s.Then(`the command exits with code 1`)
@@ -753,9 +753,9 @@ func TestE2E294(t *testing.T) {
 	s.Done()
 }
 
-// E2E-295: A registry that parses but holds no scenarios must be refused, so the walk never reports success over nothing
-func TestE2E295(t *testing.T) {
-	s := scenarios.New(t, "E2E-295")
+// scen-check-004-empty-registry-refused: A registry file that declares no scenarios must be refused, so the walk never reports success over nothing
+func TestScenCheck004EmptyRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "scen-check-004-empty-registry-refused")
 	s.Given(`the "scen-check-empty-registry" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
@@ -766,9 +766,9 @@ func TestE2E295(t *testing.T) {
 	s.Done()
 }
 
-// E2E-296: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
-func TestE2E296(t *testing.T) {
-	s := scenarios.New(t, "E2E-296")
+// scen-check-005-ids-narrow-the-walk: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
+func TestScenCheck005IdsNarrowTheWalk(t *testing.T) {
+	s := scenarios.New(t, "scen-check-005-ids-narrow-the-walk")
 	s.Given(`the "scen-check-id-filter" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
 	s.When(`the Quality Engineer runs "scen check E2E-002 E2E-001"`)
