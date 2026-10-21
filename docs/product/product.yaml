@@ -76,7 +76,7 @@ roles:
     primary_use_case: "Turning a product goal into registered scenarios — discusses Features, writes stories, runs us refine and us apply"
     characteristics:
       - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
-      - "Works inside the action vocabulary the product document declares"
+      - "Writes steps in the phrases the product document's catalogue declares"
       - "Answers each failed check in the --fix loop: apply, refine, or exit"
       - "May hand the writing to someone else, but keeps the accountability"
 
@@ -103,17 +103,10 @@ roles:
       - "Reads a build tests failure as a sign that a scenario cannot be observed, not just that a test is missing"
       - "Often the same person as the Product Owner; the accountability stays separate"
 
-# The allowed BDD language for stories and scenarios, read by `us refine`:
-# every step needs a declared action, forbidden lists reject vague wording.
-# Preferred home is here; a host may keep it in architecture.yaml instead (the fixtures do).
+# The words `us refine` rejects in stories and scenarios. The phrases a
+# step may use are the `catalogue` below. Preferred home is here; a host
+# may keep it in architecture.yaml instead (the fixtures do).
 vocabulary:
-  # Allowed action verbs with their concrete meaning.
-  actions:
-    - name: "runs <command>"
-      means: "invokes the true-bdd CLI with that subcommand in a terminal"
-    - name: "answers the prompt"
-      means: "types a choice (apply / refine / exit) into the --fix loop"
-
   # Vague words that must not appear in AC descriptions or steps.
   forbidden_qualifiers:
     - properly
@@ -144,3 +137,40 @@ vocabulary:
 # oversight). Fill it when a checklist mis-classifies one of our own words
 # as an "internal implementation term" — listing it here declares it user-world, not implementation.
 glossary: []
+
+# The step-phrase catalogue: the shape each Given, When and Then step may
+# take, and what it means. `D: step-phrases` holds every step of a Scenario
+# a Story claims to exactly one entry; the Scenarios no Story claims wait.
+catalogue:
+  - template: 'the {actor:role} runs "{command}"'
+    block: when
+    means: >-
+      That role runs the engine with the given command in the project
+      tree, once, and the Scenario waits for it to end. The role says who
+      wants the behaviour; it changes nothing in what the command does.
+    terms: [engine, command, project tree]
+
+  - template: 'the {actor:role} answers "{answer}" to every prompt'
+    block: given
+    means: >-
+      Every question the command asks on the terminal during its fix
+      loop is answered with the given text, as that role would type it:
+      "1" picks the first offered choice, which applies the proposed fix.
+      Once the answers run out the command reads end of input, which
+      exits the loop.
+    terms: [fix loop]
+
+  - template: 'the engine dispatched {turns:number} AI turn[s]'
+    block: then
+    means: >-
+      The engine sent exactly that many AI turns during the run; "no"
+      means none, so the run cost no model call.
+    terms: [engine, AI turn]
+
+  - template: 'stdout matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stdout has a match for the pattern
+      somewhere. Stdout carries the command's answer and its log records,
+      so a pattern may name a log record's message or fields.
+    terms: [stdout, log record, pattern]

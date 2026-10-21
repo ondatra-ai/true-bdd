@@ -16,7 +16,8 @@ product  ⟷  user stories  ⟷  scenarios
 ```
 
 - **product document** (`docs/product/product.yaml`) sits at the top: the product's roles,
-  vocabulary and glossary, which the story checks read.
+  vocabulary and glossary, which the story checks read, and its step-phrase catalogue, the shape
+  every step of a claimed Scenario must take (`D: step-phrases`).
 - A **story is written directly**, by hand, out of a discussion of a Feature, into its own file
   under `docs/product/stories/` — no command creates one, and no larger document seeds it. The
   pipeline starts at `us refine <id>`, which grows the story in place.
@@ -50,7 +51,7 @@ host project root
 ├── templates/*.prompt.tpl       prompt templates (shipped by the engine repo)
 ├── docs/
 │   ├── product/
-│   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary
+│   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary + catalogue
 │   │   └── stories/<id>-<slug>.yaml
 │   ├── architecture/architecture.yaml   testing.suites[] + services
 │   └── scenarios.yaml           the central scenario registry (each entry names the test file it
@@ -63,7 +64,7 @@ host project root
 
 | Category | Documents |
 | --- | --- |
-| **Product docs** | product (incl. the BDD vocabulary) — story |
+| **Product docs** | product (incl. the BDD vocabulary and the step-phrase catalogue) — story |
 | **Scenario registry** | the merge target — single source of truth for behavior |
 | **Architecture** | one `testing:` section (the suites and how each runs) plus services (incl. `type` and runtime `dependencies`) |
 | **Code artifacts** | specs, production source |
@@ -86,7 +87,7 @@ and its refined ACs — its scenarios — merge into the registry (`us apply`). 
 flowchart LR
   subgraph spine["hierarchy spine"]
     direction LR
-    PRODUCT["docs/product/product.yaml<br/>roles · vocabulary"]
+    PRODUCT["docs/product/product.yaml<br/>roles · vocabulary · catalogue"]
     STORY["docs/product/stories/&lt;id&gt;-&lt;slug&gt;.yaml<br/>acceptance_criteria[] — the scenarios, long form"]
     REG["docs/scenarios.yaml<br/>keyed by lineage &lt;story-id&gt;-&lt;ac-id&gt;"]
     STORY -- "③ us apply" --> REG

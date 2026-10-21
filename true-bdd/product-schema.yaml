@@ -1,15 +1,17 @@
 # Yamale schema for the product document (path from `documents.product`
 # in true-bdd.yaml, conventionally docs/product/product.yaml).
 #
-# The engine never parses the product document — it reaches the checklists
-# as prompt text — so this schema is the only thing pinning its shape.
+# The engine reads two parts of it as data: `catalogue` and the role
+# names, for the `D: step-phrases` check. The rest reaches the checklists
+# only as prompt text, so this schema is the only thing pinning its shape.
 # Validate it in the host project's lint step, outside the engine:
 #
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
 #
-# Every field is required. Only `roles` and the vocabulary's own lists
-# must carry an entry; `vision` may be an empty string and `goals`,
-# `releases`, `not_goals` and `glossary` empty lists, but the key must be
+# Every field is required but `catalogue`, whose absence is how a host
+# declines it. Only `roles` and the vocabulary's own lists must carry an
+# entry; `vision` may be an empty string and `goals`, `releases`,
+# `not_goals`, `glossary` and `catalogue` empty lists, but the key must be
 # declared rather than omitted, so an empty value reads as a decision on
 # the record instead of an oversight.
 
@@ -18,6 +20,7 @@ description: include('description')
 roles: list(include('role'), min=1)
 vocabulary: include('vocabulary')
 glossary: list(include('glossary_entry'))
+catalogue: list(include('phrase'), required=False)
 
 ---
 # vision: why; goals: where to; releases: the next steps, each target
@@ -61,18 +64,11 @@ role:
   characteristics: list(str(), min=1)
 
 ---
-# The allowed BDD language `us refine` enforces on steps and AC
-# descriptions. Its preferred home is the product document; a host may
-# keep the same block in architecture.yaml instead.
+# The words `us refine` rejects in steps and AC descriptions. The allowed
+# phrases are no longer listed here: the `catalogue` states them.
 vocabulary:
-  actions: list(include('action'), min=1)
   forbidden_qualifiers: list(str(), min=1)
   forbidden_actions: list(include('forbidden_action'), min=1)
-
----
-action:
-  name: str()
-  means: str()
 
 ---
 forbidden_action:
@@ -84,3 +80,12 @@ forbidden_action:
 glossary_entry:
   term: str()
   means: str()
+
+---
+# One step phrase: the shape a step takes, what it means, and the glossary
+# words that meaning relies on. Grammar and matching: the D: checks, not yamale.
+phrase:
+  template: str()
+  block: enum('given', 'when', 'then')
+  means: str()
+  terms: list(str())
