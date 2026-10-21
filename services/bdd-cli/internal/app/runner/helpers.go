@@ -60,22 +60,48 @@ func validateGenerators[I any](spec Spec[I]) error {
 	return fmt.Errorf("%w: %s", errIncompleteGeneratorTriple, strings.Join(missing, ", "))
 }
 
+// storyIDSlug is the shape of every Story id (ADR 0013): `scen-check` and
+// `96.2` both pass, and an id carrying a `/` never reaches the stories glob.
+var storyIDSlug = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*$`)
+
+// errInvalidStoryID is the canonical error returned by validateStoryID.
+var errInvalidStoryID = errors.New("invalid story id")
+
 // errInvalidStoryNumberFormat is the canonical error returned by
-// validateStoryNumber. Wraps the package error so callers can both
+// EpicStoryNumber. Wraps the package error so callers can both
 // errors.Is-match and format a useful message.
 var errInvalidStoryNumberFormat = errors.New("invalid story number format")
 
-// validateStoryNumber rejects anything that isn't `<digit>.<digit>`.
-func validateStoryNumber(storyNumber string) error {
+// validateStoryID refuses a Story id that is not a safe slug, then applies
+// the command's own narrower rule when it has one. Both refusals name the
+// id: this is the user-facing message itself, not one a wrapper elaborates.
+func validateStoryID(storyID string, narrower func(string) error) error {
+	if !storyIDSlug.MatchString(storyID) {
+		return fmt.Errorf("%w %q: expected a slug of lower-case letters, digits, dots and hyphens, "+
+			"starting with a letter or digit", errInvalidStoryID, storyID)
+	}
+
+	if narrower == nil {
+		return nil
+	}
+
+	err := narrower(storyID)
+	if err != nil {
+		return fmt.Errorf("invalid story number: %w", err)
+	}
+
+	return nil
+}
+
+// EpicStoryNumber is `us create`'s StoryIDRule: it addresses a Story by its
+// place in an epic, so it accepts only `<epic>.<story>`.
+func EpicStoryNumber(storyNumber string) error {
 	matched, err := regexp.MatchString(`^\d+\.\d+$`, storyNumber)
 	if err != nil {
 		return fmt.Errorf("regex failed: %w", err)
 	}
 
 	if !matched {
-		// Names the offending value: the bare message alone doesn't say
-		// which input failed, and this is the user-facing refusal itself,
-		// not an internal error a wrapper elaborates later.
 		return fmt.Errorf("%w: expected <epic>.<story>, got %q",
 			errInvalidStoryNumberFormat, storyNumber)
 	}
@@ -404,9 +430,9 @@ func StorySubject(item *story.Story) (string, string) {
 	return item.ID, item.Title
 }
 
-// StoryPostFix returns the PostFix closure for story-based commands: it
-// unmarshals the applier's YAML onto a zero Story, so a partial body
-// zeroes whatever it omits — only the ID is reasserted here as a backstop.
+// StoryPostFix returns the PostFix closure for story-based commands: the
+// applier's YAML lands on a zero Story, zeroing what it omits, so the ID and
+// the Feature label (its template never shows it) are reasserted from the item.
 func StoryPostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context, item *story.Story, applierContent string) (*story.Story, error) {
@@ -419,6 +445,7 @@ func StoryPostFix(
 		}
 
 		updated.ID = item.ID
+		updated.Feature = item.Feature
 
 		_, err = versionMgr.SaveNextVersion(&updated)
 		if err != nil {

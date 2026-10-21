@@ -247,7 +247,9 @@ The host project's documents live under `docs/`:
 - `docs/product/epics/*.yaml` — epic files that `us create` extracts
   stories from.
 - `docs/product/stories/*.yaml` — the stories `us create` writes and
-  `us refine` / `us apply` read.
+  `us refine` / `us apply` read, one `<id>-<slug>.yaml` each. A story id is
+  a slug (`scen-check`, `96.2`), and a story may carry a `feature:` label
+  that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
   `build tests` walks, and the test suites RUN: each scenario is a test,
   its steps bound to code by the suite that owns it.

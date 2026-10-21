@@ -21,6 +21,12 @@ product  ⟷  epics  ⟷  user stories  ⟷  scenarios
   `as_a` / `i_want` / `so_that`, bare acceptance-criteria stubs. No steps.
 - The **long version of a story lives in its own file** under `docs/product/stories/`, created from
   the epic seed by `us create <id>` and grown in place by `us refine <id>`.
+- A **story id is a slug**: lower-case letters, digits, dots and hyphens, starting with a letter or
+  digit, so `scen-check` and `96.2` both work and the file is `<id>-<slug>.yaml`. `us refine` and
+  `us apply` refuse any other id at startup and name it, so a path-like id such as `../x` never
+  reaches the filesystem; only `us create` still insists on `<epic>.<story>`, its place in an epic.
+- A story may carry a **`feature:` label**, the Feature it belongs to. It is a label, not a document,
+  and `us refine` keeps it through every rewrite of the story file, the fix applier's included.
 - A **story consists of scenarios** — its refined ACs with given/when/then steps *are* the
   scenarios, long form, living inside the story file.
 - **Then the gap**: scenarios fall into the central registry `docs/scenarios.yaml` only when

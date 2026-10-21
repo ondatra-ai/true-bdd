@@ -26,6 +26,7 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix boo
 	return runStoryCommand(
 		ctx, deps.StoryCommonDeps,
 		storyNumber, "us refine", "us-refine", fix, false,
+		nil,
 		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*story.Story, error) {
 			return loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
 		},

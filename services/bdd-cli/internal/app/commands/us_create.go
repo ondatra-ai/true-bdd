@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/epic"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
@@ -25,6 +26,7 @@ func RunCreate(ctx context.Context, deps CreateDeps, storyNumber string, fix boo
 	return runStoryCommand(
 		ctx, deps.StoryCommonDeps,
 		storyNumber, "us create", "us-create", fix, true,
+		runner.EpicStoryNumber,
 		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*story.Story, error) {
 			return loadStoryFromEpic(deps.EpicLoader, storyNumber, versionMgr)
 		},

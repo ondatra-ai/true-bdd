@@ -45,8 +45,12 @@ type Spec[I any] struct {
 	// ChecklistName is the checklist YAML stem (e.g. "us-create").
 	// Resolved by ChecklistLoader.
 	ChecklistName string
-	// StoryNumber is the positional CLI argument (`4.1`).
+	// StoryNumber is the positional CLI argument, the Story id: a slug
+	// (`scen-check`, `96.2`), refused at startup when it is not one.
 	StoryNumber string
+	// StoryIDRule, if non-nil, narrows StoryNumber past the slug. Only us
+	// create has one, EpicStoryNumber, since it addresses a Story in an epic.
+	StoryIDRule func(storyID string) error
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
@@ -161,9 +165,9 @@ func validateSpec[I any](spec Spec[I]) (
 	}
 
 	if spec.StoryNumber != "" {
-		err = validateStoryNumber(spec.StoryNumber)
+		err = validateStoryID(spec.StoryNumber, spec.StoryIDRule)
 		if err != nil {
-			return nil, nil, refuseStartup(spec.Name, fmt.Errorf("invalid story number: %w", err))
+			return nil, nil, refuseStartup(spec.Name, err)
 		}
 	}
 

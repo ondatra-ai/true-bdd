@@ -52,8 +52,8 @@ func RunScenCheck(
 	err := runner.Run(ctx, runner.Spec[*template.ScenarioCheckData]{
 		Name:          "scen check",
 		ChecklistName: "scen-check",
-		// Stays empty: validateStoryNumber expects the `4.1` shape and
-		// would reject a scenario id. Ids travel in LoadItems instead.
+		// Stays empty: it is a Story id, validated as a slug, and a
+		// scenario id is not one. Ids travel in LoadItems instead.
 		StoryNumber: "",
 		Fix:         fix,
 

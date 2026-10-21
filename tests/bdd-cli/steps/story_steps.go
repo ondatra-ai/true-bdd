@@ -15,7 +15,8 @@ import (
 // its id, criteria shape, and that a clause avoids forbidden vocabulary.
 // Filenames are the fix loop's to choose, so steps resolve them by glob.
 //	story:
-//	  id: "99.1"
+//	  id: "99.1"                 (a slug: `scen-check` as well)
+//	  feature: document-summaries (optional label)
 //	  as_a / i_want / so_that: …
 //	  acceptance_criteria: [{id, description, steps}, …]
 
@@ -33,6 +34,7 @@ type storyCriterion struct {
 // so an arbitrarily-named one (as_a, i_want, so_that) can be looked up.
 type storyData struct {
 	ID       string
+	Feature  string
 	Criteria []storyCriterion
 	Clauses  map[string]yaml.Node
 }
@@ -94,6 +96,7 @@ func loadStory(state *State, glob string) (storyData, error) {
 
 	var typed struct {
 		ID       string           `yaml:"id"`
+		Feature  string           `yaml:"feature"`
 		Criteria []storyCriterion `yaml:"acceptance_criteria"`
 	}
 
@@ -109,7 +112,7 @@ func loadStory(state *State, glob string) (storyData, error) {
 		return storyData{}, state.fail("decoding the clauses of story %q: %w", glob, decodeErr)
 	}
 
-	return storyData{ID: typed.ID, Criteria: typed.Criteria, Clauses: clauses}, nil
+	return storyData{ID: typed.ID, Feature: typed.Feature, Criteria: typed.Criteria, Clauses: clauses}, nil
 }
 
 // missingStepKeywords returns which of given/when/then a criterion has no
@@ -212,6 +215,23 @@ func assertStoryID(state *State, args []string) error {
 
 	if story.ID != want {
 		return state.fail("expected story %q to have id %q, but it has %q", args[0], want, story.ID)
+	}
+
+	return nil
+}
+
+// assertStoryFeature pins the Feature label the story carries: a rewrite
+// that drops the label leaves it empty, which fails here by name.
+func assertStoryFeature(state *State, args []string) error {
+	story, err := loadStory(state, args[0])
+	if err != nil {
+		return err
+	}
+
+	want := args[1]
+
+	if story.Feature != want {
+		return state.fail("expected story %q to have feature %q, but it has %q", args[0], want, story.Feature)
 	}
 
 	return nil
