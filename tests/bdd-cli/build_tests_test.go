@@ -22,20 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-015: A registry that parses but holds no scenarios must be refused, never walked to a trivial success
-func TestE2E015(t *testing.T) {
-	s := scenarios.New(t, "E2E-015")
-	s.Given(`the "build-tests-empty-registry" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches BUILD TESTS`)
-	s.And(`stdout matches docs/scenarios\.yaml: requirements registry has no scenarios to walk`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-016: A registry scenario with no test must get a generated test file and a step definition for every step it declares
 func TestE2E016(t *testing.T) {
 	s := scenarios.New(t, "E2E-016")
@@ -50,35 +36,6 @@ func TestE2E016(t *testing.T) {
 	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
 	s.But(`the file "docs/scenarios.yaml" is unchanged`)
 	s.And(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
-// E2E-017: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
-func TestE2E017(t *testing.T) {
-	s := scenarios.New(t, "E2E-017")
-	s.Given(`the "build-tests-malformed-registry" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches BUILD TESTS`)
-	s.And(`stdout matches cannot unmarshal !!seq into map\[string\]`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-018: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
-func TestE2E018(t *testing.T) {
-	s := scenarios.New(t, "E2E-018")
-	s.Given(`the "build-tests-unconfigured-registry" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches documents\.scenarios_yaml`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
@@ -139,19 +96,6 @@ func TestE2E131(t *testing.T) {
 	s.Done()
 }
 
-// E2E-297: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
-func TestE2E297(t *testing.T) {
-	s := scenarios.New(t, "E2E-297")
-	s.Given(`the "build-tests-empty-checklist" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`stdout does not match BUILD TESTS`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-298: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
 func TestE2E298(t *testing.T) {
 	s := scenarios.New(t, "E2E-298")
@@ -189,6 +133,62 @@ func TestE2E300(t *testing.T) {
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
 	s.And(`stdout matches step matches more than one definition`)
 	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
+func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
+	s.Given(`the "build-tests-empty-registry" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches BUILD TESTS`)
+	s.And(`stdout matches docs/scenarios\.yaml: requirements registry has no scenarios to walk`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-002-misshapen-registry-refused: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
+func TestBuildTestsRefusals002MisshapenRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-002-misshapen-registry-refused")
+	s.Given(`the "build-tests-malformed-registry" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches BUILD TESTS`)
+	s.And(`stdout matches cannot unmarshal !!seq into map\[string\]`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-003-undeclared-registry-refused: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
+func TestBuildTestsRefusals003UndeclaredRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-003-undeclared-registry-refused")
+	s.Given(`the "build-tests-unconfigured-registry" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match Loaded requirements registry`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-004-empty-checklist-refused: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
+func TestBuildTestsRefusals004EmptyChecklistRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-004-empty-checklist-refused")
+	s.Given(`the "build-tests-empty-checklist" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
