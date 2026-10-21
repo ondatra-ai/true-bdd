@@ -1,0 +1,25 @@
+# One of two Stories in `us-apply-story-id-mismatch`; its id is `scen-check`.
+#
+# `us apply scen` globs `scen-*.yaml`, which matches this file and its
+# sibling `scen-check-phrases-tag.yaml`, and neither declares the id
+# `scen`. The run must refuse both, naming each file and the id it
+# declares, before any walk, rather than apply either Story under `scen`.
+
+story:
+    id: scen-check
+    title: Check A Claimed Scenario Against Its Spec
+    as_a: Quality Engineer
+    i_want: to check that a claimed Scenario keeps to the spec its Story declares
+    so_that: a Scenario that drifted from the spec is caught before it ships
+    status: PLANNED
+    acceptance_criteria:
+        - id: 001-claimed-scenario-passes
+          description: A claimed Scenario that keeps to every prompt of the checklist must pass the walk.
+          steps:
+            - given:
+                - a Registry holding one claimed Scenario that keeps to the spec
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 0
+                - and: the command prints ALL CHECKS PASSED
