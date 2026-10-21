@@ -1,0 +1,17 @@
+# Fixture checklist for `scen-check-unknown-check-parameter`.
+#
+# Its one Prompt passes the check a `with:` parameter the check does
+# not read. The engine must refuse it before the walk, rather than run
+# the check as though the parameter had been honoured.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - D: given-when-then
+        with:
+          min_steps: 2
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

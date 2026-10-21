@@ -1,0 +1,15 @@
+# Fixture checklist for `scen-check-model-on-check`.
+#
+# Its one Prompt names a built-in check and pins a model tier, but no
+# model answers a check. The engine must refuse it before the walk.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - D: given-when-then
+        model: high
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

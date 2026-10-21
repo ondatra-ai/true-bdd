@@ -22,6 +22,19 @@ type SequentialWalker[I, Q any] struct {
 	// defaultMaxApplyAttempts) — per query because repeat-failing the
 	// SAME check is the stuck symptom; see the check below for the +1.
 	MaxFixes int
+	// Gate, if non-nil, marks the queries whose failure skips the item's
+	// other queries until a fix restarts it: a `D:` Prompt's Cells.
+	Gate func(q Q) bool
+	// OnSkip, if non-nil, is told of every query a failed gate skipped.
+	OnSkip func(item I, q Q)
+}
+
+// itemWalk is one Walk's progress over one item's queries.
+type itemWalk[I any] struct {
+	out          ItemRun[I]
+	idx          int
+	gateFailed   bool
+	fixesByQuery map[int]int
 }
 
 // Walk runs one item across all queries.
@@ -30,47 +43,81 @@ func (w *SequentialWalker[I, Q]) Walk(
 	item I,
 	queries []Q,
 ) (ItemRun[I], error) {
-	out := ItemRun[I]{Item: item, Passed: true}
-
-	maxFixes := w.MaxFixes
-	if maxFixes <= 0 {
-		maxFixes = defaultMaxApplyAttempts
+	walk := &itemWalk[I]{
+		out:          ItemRun[I]{Item: item, Passed: true},
+		fixesByQuery: make(map[int]int, len(queries)),
 	}
 
-	fixesByQuery := make(map[int]int, len(queries))
+	for walk.idx < len(queries) {
+		query := queries[walk.idx]
 
-	idx := 0
-	for idx < len(queries) {
-		result, err := w.Cell.Handle(ctx, out.Item, queries[idx])
-		if err != nil {
-			return out, err
-		}
-
-		switch result.Outcome {
-		case CellPassed:
-			idx++
-		case CellFailedNoFix:
-			out.Passed = false
-			idx++
-		case CellFixed:
-			fixesByQuery[idx]++
-			out.Item = result.Item
-			out.FixApplied = true
-
-			// Strictly greater, not >=: MaxFixes fixes are allowed and
-			// each gets re-validated by the restart below, so failing on
-			// the last one would reject a fix that actually worked.
-			if fixesByQuery[idx] > maxFixes {
-				return out, pkgerrors.ErrFixLoopNotConverging(fixesByQuery[idx])
+		if walk.gateFailed && !w.isGate(query) {
+			if w.OnSkip != nil {
+				w.OnSkip(walk.out.Item, query)
 			}
 
-			idx = 0
-		case CellUserExited:
-			out.UserExited = true
+			walk.idx++
 
-			return out, nil
+			continue
+		}
+
+		result, err := w.Cell.Handle(ctx, walk.out.Item, query)
+		if err != nil {
+			return walk.out, err
+		}
+
+		done, err := w.advance(walk, result, w.isGate(query))
+		if err != nil || done {
+			return walk.out, err
 		}
 	}
 
-	return out, nil
+	return walk.out, nil
+}
+
+// advance applies one Cell's outcome to the walk, reporting whether the
+// item's walk is over.
+func (w *SequentialWalker[I, Q]) advance(walk *itemWalk[I], result CellResult[I], gate bool) (bool, error) {
+	switch result.Outcome {
+	case CellPassed:
+		walk.idx++
+	case CellFailedNoFix:
+		walk.out.Passed = false
+		walk.gateFailed = walk.gateFailed || gate
+		walk.idx++
+	case CellFixed:
+		walk.fixesByQuery[walk.idx]++
+		walk.out.Item = result.Item
+		walk.out.FixApplied = true
+
+		// Strictly greater, not >=: MaxFixes fixes are allowed and
+		// each gets re-validated by the restart below, so failing on
+		// the last one would reject a fix that actually worked.
+		if walk.fixesByQuery[walk.idx] > w.maxFixes() {
+			return true, pkgerrors.ErrFixLoopNotConverging(walk.fixesByQuery[walk.idx])
+		}
+
+		walk.idx = 0
+		walk.gateFailed = false
+	case CellUserExited:
+		walk.out.UserExited = true
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// isGate reports whether a failure of the query skips the item's others.
+func (w *SequentialWalker[I, Q]) isGate(query Q) bool {
+	return w.Gate != nil && w.Gate(query)
+}
+
+// maxFixes is MaxFixes, defaulted.
+func (w *SequentialWalker[I, Q]) maxFixes() int {
+	if w.MaxFixes <= 0 {
+		return defaultMaxApplyAttempts
+	}
+
+	return w.MaxFixes
 }

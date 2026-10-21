@@ -3,7 +3,6 @@ package validate
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -130,9 +129,7 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 
 	// Build result file path for FILE_START/FILE_END pattern
 	sectionPath := promptCtx.GetFullSectionPath()
-	safeSectionPath := sanitizeID(sectionPath)
-	resultPath := fmt.Sprintf("%s/%02d-%s-checklist-%s-result.yaml",
-		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath)
+	resultPath := cellArtifactPath(e.tmpDir, promptIndex, e.subjectID, sectionPath, "result.yaml")
 
 	e.logResolvedDocs(promptIndex, sectionPath, requestedDocs)
 
@@ -453,10 +450,7 @@ func (e *ChecklistEvaluator) savePromptFile(sectionPath string, promptIndex int,
 		return
 	}
 
-	// Flatten section path and subject id into safe filename segments.
-	safeSectionPath := sanitizeID(sectionPath)
-	filePath := fmt.Sprintf("%s/%02d-%s-checklist-%s-%s.txt",
-		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath, suffix)
+	filePath := cellArtifactPath(e.tmpDir, promptIndex, e.subjectID, sectionPath, suffix+".txt")
 
 	err := disk.Write(filePath, []byte(content), disk.Shared)
 	if err != nil {

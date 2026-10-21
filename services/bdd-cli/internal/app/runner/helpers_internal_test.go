@@ -289,6 +289,16 @@ func promptFixing(section, question, fixTemplate string) checklistmodels.PromptW
 	}
 }
 
+// inFileOrder numbers prompts by position, as flattenChecklistPrompts
+// does, since a refusal names each prompt by that number.
+func inFileOrder(prompts ...checklistmodels.PromptWithContext) []checklistmodels.PromptWithContext {
+	for idx := range prompts {
+		prompts[idx].Index = idx + 1
+	}
+
+	return prompts
+}
+
 // TestValidateFixTemplatesAcceptsFullyFixableChecklist is the green
 // path: every prompt carries an F:, so --fix can apply at every cell.
 // us-apply, build-code and build-tests all ship this shape.
@@ -306,9 +316,9 @@ func TestValidateFixTemplatesAcceptsFullyFixableChecklist(t *testing.T) {
 // this check exists for: without an F: the fix turn would run with
 // nothing to say, so the refusal must name the checklist and prompt.
 func TestValidateFixTemplatesRejectsMissingFixTemplate(t *testing.T) {
-	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+	err := validateFixTemplates(true, testChecklistName, inFileOrder(
 		promptFixing("who", "Does the as_a clause use a known role?\nRead the product doc.", ""),
-	})
+	))
 	if !errors.Is(err, errChecklistNotFixable) {
 		t.Fatalf("error = %v, want errChecklistNotFixable", err)
 	}
@@ -328,11 +338,11 @@ func TestValidateFixTemplatesRejectsMissingFixTemplate(t *testing.T) {
 // unfixable prompt rather than stopping at the first, and leaves the
 // fixable one out of the list.
 func TestValidateFixTemplatesReportsAllMissing(t *testing.T) {
-	err := validateFixTemplates(true, testChecklistName, []checklistmodels.PromptWithContext{
+	err := validateFixTemplates(true, testChecklistName, inFileOrder(
 		promptFixing("format", "Q one", ""),
 		promptFixing("format", "Q two", "Fix it."),
 		promptFixing("why", "Q three", ""),
-	})
+	))
 	if err == nil {
 		t.Fatal("expected an error, got nil")
 	}
