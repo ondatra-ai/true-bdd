@@ -45,6 +45,13 @@ better than guessing a directory.
   action across many scenarios, so a fix that stops at the subject's own
   steps hands the walk a fresh fix cycle for every neighbour that shared
   them.
+{{- if .Subject.Spec.Declared }}
+- Faithful to the spec: the user prompt carries the catalogue phrase
+  each unbound step matches, what its words mean, and the
+  architecture's word mapping of each word. The definition observes a
+  word the way its mapping says, whatever the step's wording or the
+  existing code suggests.
+{{- end }}
 
 **Two Possible Outputs:**
 
