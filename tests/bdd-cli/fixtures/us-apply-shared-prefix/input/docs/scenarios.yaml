@@ -1,0 +1,32 @@
+# Decoy registry for `us-apply-shared-prefix`.
+#
+# Present, configured, valid and NON-EMPTY on purpose. `us apply`
+# resolves and stats the registry before the runner is entered, so it
+# has to exist at all; making it non-empty keeps the refusal about the
+# Story the run picked, never about an empty registry.
+#
+# Nothing here references either Story. It is the control: after the
+# refusal it must come back byte-identical.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-16"
+  description: "Non-empty decoy registry for the us-apply refusal fixtures"
+
+scenarios:
+  INT-950:
+    description: "MCP /health endpoint responds 200 to a GET request"
+    service: "mcp-service"
+    last_updated: "2026-08-16"
+    user_stories:
+      - story: "docs/product/stories/90.1-unrelated.yaml"
+        scenario_id: "90.1-001"
+        merge_date: "2026-08-16"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"

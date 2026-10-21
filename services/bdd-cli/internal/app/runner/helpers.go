@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
+	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -244,20 +244,19 @@ func displayFixPrompt(fixPrompt string) {
 var errStoryFileGone = errors.New("the story file the walk loaded is gone")
 
 // updateStoryFile replaces the story file `us refine` loaded, in place,
-// after the walk converges.
+// after the walk converges: the file storyinfra.FindStoryFile resolves the
+// id to, as the load did.
 func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir string) (string, error) {
-	pattern := filepath.Join(storiesDir, storyNumber+"-*.yaml")
+	storyFile, err := storyinfra.FindStoryFile(storiesDir, storyNumber)
+	if errors.Is(err, pkgerrors.ErrStoryFileNotFound) {
+		return "", pkgerrors.ErrWriteStoryFileFailed(fmt.Errorf("%w: %w", errStoryFileGone, err))
+	}
 
-	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
 
-	if len(matches) == 0 {
-		return "", pkgerrors.ErrWriteStoryFileFailed(fmt.Errorf("%w: nothing matches %s", errStoryFileGone, pattern))
-	}
-
-	filePath := matches[0]
+	filePath := storyFile.Path
 
 	wrapper := struct {
 		Story story.Story `yaml:"story"`

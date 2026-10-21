@@ -1,0 +1,81 @@
+# Story `build-code-spec`: `build code` refusals of a malformed architectural spec.
+#
+# The architecture document is undecodable, declares no services, never
+# says how its tests run, or omits the command the suite runs in replay:
+# each is refused at startup, before a test runner is spawned or an AI
+# turn dispatched. A suite command that is declared but cannot be run as
+# written is the Story build-code-commands; running the declared suite and
+# the fix loop is build-code-run.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-code-spec-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: build-code-spec
+    feature: build-code
+    title: Refuse an architectural spec that declares nothing build code can build or run
+    as_a: System Architect
+    i_want: build code to refuse an architecture document it cannot read, one that declares no services, one that never says how its tests run, and a suite that never says how it runs in replay, before it spawns a test runner or dispatches an AI turn
+    so_that: a spec that declares nothing to build or to test is never walked to a trivial success, and the refusal tells me which part of the architecture document to write
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-malformed-spec-refused
+          description: A spec the loader cannot decode must be refused with the file named
+          steps:
+            - given:
+                - the "build-code-malformed-spec" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches failed to parse architecture file
+                - stdout matches docs/architecture/architecture\.yaml
+                - but: no file outside "tmp" changed
+                - and: the file "docs/architecture/architecture.yaml" is unchanged
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 002-no-services-refused
+          description: An architectural spec that declares no services at all must be refused, not walked to a trivial success
+          steps:
+            - given:
+                - the "build-code-no-services" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches no services to walk
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 003-no-test-suite-refused
+          description: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
+          steps:
+            - given:
+                - the "build-code-no-suites" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches declares no testing framework
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 004-no-replay-command-refused
+          description: A test suite that does not say how to run itself must be refused, not run some other way
+          steps:
+            - given:
+                - the "build-code-missing-suite-command" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches commands\.replay
+                - stdout matches architecture\.testing\[go-test\]
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns

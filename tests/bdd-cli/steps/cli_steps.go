@@ -404,7 +404,9 @@ func assertExitCode(state *State, args []string) error {
 	// Carried onto the fixture so the run's manifest snapshot — and
 	// therefore the report's expected-vs-actual column — states what this
 	// run was actually held to.
-	state.Fixture.ExpectedExitCode = want
+	if state.Fixture != nil {
+		state.Fixture.ExpectedExitCode = want
+	}
 
 	err = runner.CheckExitCode(state.Result.ExitCode, want)
 	if err != nil {
@@ -426,7 +428,9 @@ func assertStdout(state *State, args []string) error {
 		return state.fail("stdout pattern %q does not compile: %w", args[0], err)
 	}
 
-	state.Fixture.StdoutRegexes = append(state.Fixture.StdoutRegexes, pattern)
+	if state.Fixture != nil {
+		state.Fixture.StdoutRegexes = append(state.Fixture.StdoutRegexes, pattern)
+	}
 
 	err = runner.CheckStdout(state.Result.Stdout, pattern)
 	if err != nil {
