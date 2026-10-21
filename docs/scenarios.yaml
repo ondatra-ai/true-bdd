@@ -560,11 +560,14 @@ scenarios:
         - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
         - and: the file "docs/product/stories/96.9-document-summary-v2.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-037:
+  us-refine-fix-001-vague-description-made-measurable:
     description: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-001-vague-description-made-measurable
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -585,11 +588,14 @@ scenarios:
         - and: the description of acceptance criterion "AC-3" of the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" does not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b
         - and: stdout does not match Hit max apply attempts
         - and: 'judge: the four acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, and the first-10000-words notice — with every exact message and numeric threshold intact'
-  E2E-038:
+  us-refine-fix-002-gherkin-description-states-a-rule:
     description: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-002-gherkin-description-states-a-rule
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -611,11 +617,14 @@ scenarios:
         - and: the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" does not match (?i)\bwhen\b.*\bthen\b
         - and: stdout does not match Hit max apply attempts
         - and: 'judge: the five acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, the first-10000-words notice, and the section-heading outline — with every exact message and numeric threshold intact'
-  E2E-039:
+  us-refine-fix-003-forbidden-verb-made-observable:
     description: A forbidden action verb in a step must drive the fix loop until the step names an observable action
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-003-forbidden-verb-made-observable
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -636,11 +645,14 @@ scenarios:
         - and: the steps of acceptance criterion "AC-1" of the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" do not match (?i)\b(handle|handles|process|parse)\b
         - and: stdout does not match Hit max apply attempts
         - and: 'judge: AC-1''s then step now states a concrete observable action in place of the forbidden verb, and keeps the 150-word threshold; the four criteria still cover the substance of the seed with every exact message intact'
-  E2E-040:
+  us-refine-fix-004-vague-step-made-measurable:
     description: A vague qualifier in a step must drive the fix loop until the step is measurable
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-004-vague-step-made-measurable
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -661,11 +673,14 @@ scenarios:
         - and: the steps of acceptance criterion "AC-4" of the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" do not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b
         - and: stdout does not match Hit max apply attempts
         - and: 'judge: AC-4''s then step still states the first-10000-words notice as an observable outcome, and the four criteria still cover the substance of the seed with every exact message and numeric threshold intact'
-  E2E-041:
+  us-refine-fix-005-missing-steps-written:
     description: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-005-missing-steps-written
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -827,11 +842,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/x-outside-stories.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-049:
+  us-refine-fix-006-feature-label-survives:
     description: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-fix-loop.yaml
+        scenario_id: us-refine-fix-006-feature-label-survives
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:

@@ -41,111 +41,6 @@ func TestE2E036(t *testing.T) {
 	s.Done()
 }
 
-// E2E-037: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
-func TestE2E037(t *testing.T) {
-	s := scenarios.New(t, "E2E-037")
-	s.Given(`the "us-refine-fix-desc-qualifier" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine 96.6 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.6-document-summary-desc-qualifier.yaml"`)
-	s.And(`the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has id "96.6"`)
-	s.And(`the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has 4 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has given, when and then steps`)
-	s.And(`the description of acceptance criterion "AC-3" of the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" does not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: the four acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, and the first-10000-words notice — with every exact message and numeric threshold intact`)
-	s.Done()
-}
-
-// E2E-038: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
-func TestE2E038(t *testing.T) {
-	s := scenarios.New(t, "E2E-038")
-	s.Given(`the "us-refine-fix-descriptions" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine 96.2 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.2-document-summary-descriptions.yaml"`)
-	s.And(`the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has id "96.2"`)
-	s.And(`the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has 5 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has given, when and then steps`)
-	s.And(`the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" matches (?i)\b(must|should)\b`)
-	s.And(`the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" does not match (?i)\bwhen\b.*\bthen\b`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: the five acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, the first-10000-words notice, and the section-heading outline — with every exact message and numeric threshold intact`)
-	s.Done()
-}
-
-// E2E-039: A forbidden action verb in a step must drive the fix loop until the step names an observable action
-func TestE2E039(t *testing.T) {
-	s := scenarios.New(t, "E2E-039")
-	s.Given(`the "us-refine-fix-forbidden-verb" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine 96.8 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.8-document-summary-forbidden-verb.yaml"`)
-	s.And(`the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has id "96.8"`)
-	s.And(`the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has 4 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has given, when and then steps`)
-	s.And(`the steps of acceptance criterion "AC-1" of the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" do not match (?i)\b(handle|handles|process|parse)\b`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: AC-1's then step now states a concrete observable action in place of the forbidden verb, and keeps the 150-word threshold; the four criteria still cover the substance of the seed with every exact message intact`)
-	s.Done()
-}
-
-// E2E-040: A vague qualifier in a step must drive the fix loop until the step is measurable
-func TestE2E040(t *testing.T) {
-	s := scenarios.New(t, "E2E-040")
-	s.Given(`the "us-refine-fix-step-qualifier" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine 96.7 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.7-document-summary-step-qualifier.yaml"`)
-	s.And(`the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has id "96.7"`)
-	s.And(`the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has 4 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has given, when and then steps`)
-	s.And(`the steps of acceptance criterion "AC-4" of the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" do not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: AC-4's then step still states the first-10000-words notice as an observable outcome, and the four criteria still cover the substance of the seed with every exact message and numeric threshold intact`)
-	s.Done()
-}
-
-// E2E-041: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
-func TestE2E041(t *testing.T) {
-	s := scenarios.New(t, "E2E-041")
-	s.Given(`the "us-refine-fix-steps" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine 96.5 --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.5-document-summary-steps.yaml"`)
-	s.And(`the story "docs/product/stories/96.5-document-summary-steps.yaml" has id "96.5"`)
-	s.And(`the story "docs/product/stories/96.5-document-summary-steps.yaml" has 5 acceptance criteria`)
-	s.And(`every acceptance criterion in the story "docs/product/stories/96.5-document-summary-steps.yaml" has given, when and then steps`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.And(`judge: AC-2's new given, when and then steps are derived from its own description, and the five criteria still cover the substance of the seed with every exact message and numeric threshold intact`)
-	s.Done()
-}
-
 // E2E-042: A story whose acceptance criteria already pass every check must converge on the first walk and be rewritten in place
 func TestE2E042(t *testing.T) {
 	s := scenarios.New(t, "E2E-042")
@@ -264,26 +159,6 @@ func TestE2E048(t *testing.T) {
 	s.Done()
 }
 
-// E2E-049: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
-func TestE2E049(t *testing.T) {
-	s := scenarios.New(t, "E2E-049")
-	s.Given(`the "us-refine-fix-keeps-feature" project tree`)
-	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
-	s.And(`the Product Owner answers "1" to every question`)
-	s.When(`the Product Owner runs "us refine doc-summary --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Fix applied; re-running validation"`)
-	s.And(`stdout matches ALL CHECKS PASSED!`)
-	s.And(`stdout matches msg="Story saved"`)
-	s.And(`stdout matches REFINE COMPLETE`)
-	s.And(`the only file changed outside "tmp" is "docs/product/stories/doc-summary-keeps-feature.yaml"`)
-	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has id "doc-summary"`)
-	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"`)
-	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria`)
-	s.And(`stdout does not match Hit max apply attempts`)
-	s.Done()
-}
-
 // E2E-051: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
 func TestE2E051(t *testing.T) {
 	s := scenarios.New(t, "E2E-051")
@@ -331,5 +206,130 @@ func TestE2E053(t *testing.T) {
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/scen-check-closure.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-fix-001-vague-description-made-measurable: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
+func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-001-vague-description-made-measurable")
+	s.Given(`the "us-refine-fix-desc-qualifier" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 96.6 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.6-document-summary-desc-qualifier.yaml"`)
+	s.And(`the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has id "96.6"`)
+	s.And(`the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has 4 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has given, when and then steps`)
+	s.And(`the description of acceptance criterion "AC-3" of the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" does not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: the four acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, and the first-10000-words notice — with every exact message and numeric threshold intact`)
+	s.Done()
+}
+
+// us-refine-fix-002-gherkin-description-states-a-rule: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
+func TestUsRefineFix002GherkinDescriptionStatesARule(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-002-gherkin-description-states-a-rule")
+	s.Given(`the "us-refine-fix-descriptions" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 96.2 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.2-document-summary-descriptions.yaml"`)
+	s.And(`the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has id "96.2"`)
+	s.And(`the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has 5 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has given, when and then steps`)
+	s.And(`the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" matches (?i)\b(must|should)\b`)
+	s.And(`the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" does not match (?i)\bwhen\b.*\bthen\b`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: the five acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, the first-10000-words notice, and the section-heading outline — with every exact message and numeric threshold intact`)
+	s.Done()
+}
+
+// us-refine-fix-003-forbidden-verb-made-observable: A forbidden action verb in a step must drive the fix loop until the step names an observable action
+func TestUsRefineFix003ForbiddenVerbMadeObservable(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-003-forbidden-verb-made-observable")
+	s.Given(`the "us-refine-fix-forbidden-verb" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 96.8 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.8-document-summary-forbidden-verb.yaml"`)
+	s.And(`the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has id "96.8"`)
+	s.And(`the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has 4 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has given, when and then steps`)
+	s.And(`the steps of acceptance criterion "AC-1" of the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" do not match (?i)\b(handle|handles|process|parse)\b`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: AC-1's then step now states a concrete observable action in place of the forbidden verb, and keeps the 150-word threshold; the four criteria still cover the substance of the seed with every exact message intact`)
+	s.Done()
+}
+
+// us-refine-fix-004-vague-step-made-measurable: A vague qualifier in a step must drive the fix loop until the step is measurable
+func TestUsRefineFix004VagueStepMadeMeasurable(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-004-vague-step-made-measurable")
+	s.Given(`the "us-refine-fix-step-qualifier" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 96.7 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.7-document-summary-step-qualifier.yaml"`)
+	s.And(`the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has id "96.7"`)
+	s.And(`the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has 4 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has given, when and then steps`)
+	s.And(`the steps of acceptance criterion "AC-4" of the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" do not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: AC-4's then step still states the first-10000-words notice as an observable outcome, and the four criteria still cover the substance of the seed with every exact message and numeric threshold intact`)
+	s.Done()
+}
+
+// us-refine-fix-005-missing-steps-written: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
+func TestUsRefineFix005MissingStepsWritten(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-005-missing-steps-written")
+	s.Given(`the "us-refine-fix-steps" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 96.5 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/96.5-document-summary-steps.yaml"`)
+	s.And(`the story "docs/product/stories/96.5-document-summary-steps.yaml" has id "96.5"`)
+	s.And(`the story "docs/product/stories/96.5-document-summary-steps.yaml" has 5 acceptance criteria`)
+	s.And(`every acceptance criterion in the story "docs/product/stories/96.5-document-summary-steps.yaml" has given, when and then steps`)
+	s.And(`stdout does not match Hit max apply attempts`)
+	s.And(`judge: AC-2's new given, when and then steps are derived from its own description, and the five criteria still cover the substance of the seed with every exact message and numeric threshold intact`)
+	s.Done()
+}
+
+// us-refine-fix-006-feature-label-survives: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
+func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-006-feature-label-survives")
+	s.Given(`the "us-refine-fix-keeps-feature" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine doc-summary --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Fix applied; re-running validation"`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`the only file changed outside "tmp" is "docs/product/stories/doc-summary-keeps-feature.yaml"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has id "doc-summary"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"`)
+	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria`)
+	s.And(`stdout does not match Hit max apply attempts`)
 	s.Done()
 }
