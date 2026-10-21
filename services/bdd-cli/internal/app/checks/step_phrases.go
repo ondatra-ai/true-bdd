@@ -34,7 +34,7 @@ func stepPhrases() Check[*template.ScenarioCheckData] {
 				return verdict, nil
 			}
 
-			return reviewPhrases(item.ID, item.Phrases, source), nil
+			return ReviewPhrases(item.ID, item.Phrases, source), nil
 		},
 	}
 }
@@ -74,9 +74,10 @@ func prefixed(subjectID string, findings []string) []string {
 	return context
 }
 
-// reviewPhrases holds one Item's steps to the catalogue: a malformed
+// ReviewPhrases holds one Item's steps to the catalogue: a malformed
 // template fails every checked Item, since no step can be held to it.
-func reviewPhrases(subjectID string, steps []catalogue.Step, source product.Catalogue) Verdict {
+// `build tests` holds every Registry Scenario to it the same way.
+func ReviewPhrases(subjectID string, steps []catalogue.Step, source product.Catalogue) Verdict {
 	compiled, malformed := catalogue.Compile(source.Entries, source.Roles)
 	if len(malformed) > 0 {
 		lines := make([]string, 0, len(malformed))

@@ -24,23 +24,15 @@ func productDocument(resolver *docs.Resolver) string {
 }
 
 // specify reads what the spec says about each Scenario's unbound steps,
-// by Scenario id. Only under --fix, since only a step-authoring turn
-// reads it, and only from a product document declaring a catalogue.
+// by Scenario id: only under --fix, where a step-authoring turn reads it,
+// and only from a declared catalogue, source, every step already matched.
 func (p *buildTestsPrep) specify(
+	source product.Catalogue,
 	scenarios []*registry.RegistryScenario,
 	answer *stepcoverage.Answer,
 ) (map[string]catalogue.Specification, error) {
 	specs := make(map[string]catalogue.Specification, len(answer.Gaps))
-	if !p.fix || len(answer.Gaps) == 0 {
-		return specs, nil
-	}
-
-	source, err := product.LoadCatalogue(p.productFile)
-	if err != nil {
-		return nil, fmt.Errorf("read the catalogue: %w", err)
-	}
-
-	if !source.Declared {
+	if !p.fix || len(answer.Gaps) == 0 || !source.Declared {
 		return specs, nil
 	}
 
@@ -54,8 +46,7 @@ func (p *buildTestsPrep) specify(
 		return nil, fmt.Errorf("read the word mapping: %w", err)
 	}
 
-	// A template the grammar refuses phrases nothing here; the
-	// step-phrases check is what reports it.
+	// No template here is malformed: holdToCatalogue refused the run if one was.
 	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 	sweeps := unboundBySuite(scenarios, answer)
 

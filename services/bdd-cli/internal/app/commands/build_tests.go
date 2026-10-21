@@ -148,6 +148,13 @@ func (p *buildTestsPrep) run(
 		return nil, err
 	}
 
+	// Before codegen and any AI turn: a step the declared catalogue does
+	// not phrase, or a catalogue it cannot read, refuses untouched.
+	source, err := p.holdToCatalogue(scenarios)
+	if err != nil {
+		return nil, err
+	}
+
 	// Before codegen: the scan reads steps/, which codegen never writes,
 	// so a pattern it cannot resolve refuses before a byte is written.
 	answer, err := p.scanSuites(scenarios)
@@ -156,7 +163,7 @@ func (p *buildTestsPrep) run(
 	}
 
 	// Before codegen too: a document it cannot read refuses untouched.
-	specs, err := p.specify(scenarios, answer)
+	specs, err := p.specify(source, scenarios, answer)
 	if err != nil {
 		return nil, err
 	}
