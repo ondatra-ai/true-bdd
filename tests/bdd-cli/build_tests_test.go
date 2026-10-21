@@ -40,7 +40,7 @@ func TestE2E015(t *testing.T) {
 func TestE2E016(t *testing.T) {
 	s := scenarios.New(t, "E2E-016")
 	s.Given(`the "build-tests-fix-happy-path" project tree`)
-	s.And(`the System Architect answers "1" to every prompt`)
+	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`the file "tests/mcp/mcp_test.go" is created`)
