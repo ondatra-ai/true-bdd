@@ -1819,11 +1819,14 @@ scenarios:
         - and: 'stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases'
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
-  E2E-291:
+  scen-check-001-claimed-scenario-passes:
     description: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-001-claimed-scenario-passes
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -1843,11 +1846,14 @@ scenarios:
         - and: the engine dispatched 10 AI turns
         - and: no file outside "tmp" changed
 
-  E2E-292:
+  scen-check-002-failed-scenario-exits-1:
     description: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-002-failed-scenario-exits-1
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -1893,11 +1899,14 @@ scenarios:
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
         - and: the engine dispatched 25 AI turns
 
-  E2E-294:
+  scen-check-003-unknown-id-refused:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-003-unknown-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-unknown-id" project tree
@@ -1910,11 +1919,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
-  E2E-295:
+  scen-check-004-empty-registry-refused:
     description: A registry that parses but holds no scenarios must be refused, so the walk never reports success over nothing
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-004-empty-registry-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-empty-registry" project tree
@@ -1927,11 +1939,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
-  E2E-296:
+  scen-check-005-ids-narrow-the-walk:
     description: Ids given on the command line must narrow the walk to exactly those scenarios, in ascending id order whatever order they were typed
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-005-ids-narrow-the-walk
+        merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
