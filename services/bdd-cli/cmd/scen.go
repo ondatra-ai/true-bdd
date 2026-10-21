@@ -46,10 +46,12 @@ scenarios, in ascending id order whatever order they are typed. An id
 naming no entry, or given twice, is refused before the first turn.
 
 The CLI exits 1 when any scenario fails a check, so scen check can gate
-a change. --fix is refused at startup while a prompt it would walk
-carries no fix template, as every shipped scen-check prompt does. A fix
-defines what a failed check found undefined in the product document, or
-maps it in the architecture document, never in the scenario.
+a change. --fix walks the same checklist, every shipped prompt of which
+carries a fix template, and is refused at startup while a prompt it
+would walk carries none. A failed D: check's fix defines what it found
+undefined in the product document, or maps it in the architecture
+document, never in the scenario; a failed Q: prompt's fix rewrites the
+scenario's own registry entry, or the meaning of a catalogue phrase.
 
 Example:
   true-bdd scen check

@@ -4,7 +4,7 @@
 
 A host project hands TrueBDD four kinds of YAML document under `docs/` plus an engine configuration
 directory. Five CLI commands walk them in order — each one reads some documents, validates
-against a checklist, and writes exactly one thing, except `scen check`, which writes nothing. Every arrow below is a real cross-reference
+against a checklist, and writes exactly one thing, except `scen check`, which writes nothing unless run with `--fix`. Every arrow below is a real cross-reference
 you can grep for.
 
 ## The hierarchy
@@ -123,8 +123,8 @@ The pipeline runs left to right through the map: each command consumes the previ
 output. Every command validates its subject against its own checklist, and with `--fix` drives a
 Claude-mediated loop until the walk is clean — but `--fix` refuses at startup when any prompt it
 would walk carries no `F:` fix template. Against the shipped checklists that refuses
-`us refine --fix` and `scen check --fix`; only `us apply`, `build tests` and `build code` carry an
-`F:` on every prompt.
+`us refine --fix`; `us apply`, `build tests`, `build code` and `scen check` carry an `F:` on every
+prompt.
 
 | Command | Reads | Checklist | Writes |
 | --- | --- | --- | --- |
@@ -132,7 +132,7 @@ would walk carries no `F:` fix template. Against the shipped checklists that ref
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-<ac-id>`, the Scenario's Registry key; an AC id that is not `<NNN>-<slug>` is refused) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:`; with `--fix`, when the **product** declares a catalogue, the phrase each unbound step matches, the **glossary** words it relies on and their **architecture** word mapping, embedded in the step-authoring prompt | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
-| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself; its `D:` checks also read the **product** catalogue and glossary, the **architecture** word mapping, and the suite's **step definitions**, related over the steps of every claimed Scenario of that suite | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change. With `--fix`, only the **product** or **architecture** document, through a scratch copy, never the Scenario |
+| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself; its `D:` checks also read the **product** catalogue and glossary, the **architecture** word mapping, and the suite's **step definitions**, related over the steps of every claimed Scenario of that suite | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change. With `--fix`, through a scratch copy: a failed `D:` check's fix writes only the **product** or **architecture** document, never the Scenario; a failed model question's fix writes the meaning of a **product** catalogue phrase, or the Scenario's own entry in **scenarios.yaml** (its description or steps) |
 
 ## Every cross-reference, with real values
 

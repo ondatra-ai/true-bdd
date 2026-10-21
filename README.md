@@ -97,12 +97,13 @@ until those tests pass.
 Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
 refines, or exits. `--fix` is refused at startup when a prompt the walk
-would visit carries no `F:` fix template, which today refuses
-`scen check --fix` on the shipped checklist: no shipped `scen-check`
-prompt carries one. With a checklist whose prompts all do, a
-`scen check` fix defines the missing term in the product document, or
-maps it in the architecture document, never in the Scenario (see "The
-step-phrase catalogue" below).
+would visit carries no `F:` fix template; every prompt of the shipped
+`scen-check` checklist carries one. A `scen check` fix for a failed
+closure check defines the missing term in the product document, or maps
+it in the architecture document, never in the Scenario; a fix for a
+failed model question rewrites the Scenario's own registry entry, or the
+meaning of the catalogue phrase it uses (see "The step-phrase catalogue"
+below).
 `build tests` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
@@ -180,8 +181,8 @@ command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
 `docs:` does not list a document its check reads. `scen check` holds five
 checks, `given-when-then`, `step-phrases`, `declared-terms`,
-`term-mappings` and `step-definitions` (below); no shipped checklist uses
-any of them yet.
+`term-mappings` and `step-definitions` (below); the shipped `scen-check`
+checklist walks the last four.
 
 ### The step-phrase catalogue
 
@@ -260,6 +261,22 @@ clarification loop, and the fix is written to a scratch copy of the
 product or architecture document in the run directory, which the engine
 puts in place of the document once it parses: the Scenario and the step
 definitions are never edited.
+
+What no check can settle, a model answers. The shipped `scen-check`
+checklist follows the four closure checks with two `Q:` prompts that
+read the product and the architecture document: whether the meaning of
+each phrase a Scenario's steps use says what is set up or observed (a
+pattern slot's phrase must say which output its pattern is held
+against: an answer line, or a log record's message or fields), and
+whether the Scenario uses each phrase in that meaning. They pass a
+Scenario no Story claims, or a product with no catalogue, as "not
+checked", and they cost a turn each, so a Scenario failing a closure
+check skips them. Its eight quality questions follow, on the
+description and the steps. Under `--fix` a model question's fix
+rewrites the meaning in the product document, or the Scenario's own
+entry in a scratch copy of the registry, which the engine puts in place
+once it loads with the same Scenarios; the walk then restarts on the
+Scenario as it now reads, and `build tests --fix` re-renders its test.
 
 ### Model tiers
 

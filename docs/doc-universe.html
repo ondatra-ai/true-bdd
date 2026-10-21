@@ -283,7 +283,8 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
       A host project hands TrueBDD four kinds of YAML document under <code>docs/</code> plus an engine
       configuration directory. Five CLI commands walk them in order — each one reads some documents,
       validates against a checklist, and writes exactly one thing, except <code>scen check</code>,
-      which writes nothing. Every arrow below is a real cross-reference you can grep for.
+      which writes nothing unless run with <code>--fix</code>. Every arrow below is a real
+      cross-reference you can grep for.
     </p>
   </div>
 </header>
@@ -511,10 +512,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
     command's output. Every command validates its subject against its own checklist, and with
     <code>--fix</code> drives a Claude-mediated loop until the walk is clean — but
     <code>--fix</code> refuses at startup when any prompt it would walk carries no <code>F:</code>
-    fix template. Against the shipped checklists that refuses <code>us refine --fix</code> and
-    <code>scen check --fix</code>; only <code>us apply</code>,
-    <code>build tests</code> and <code>build code</code> carry an <code>F:</code> on every
-    prompt.</p>
+    fix template. Against the shipped checklists that refuses <code>us refine --fix</code>;
+    <code>us apply</code>, <code>build tests</code>, <code>build code</code> and
+    <code>scen check</code> carry an <code>F:</code> on every prompt.</p>
     <div class="tbl-scroll" tabindex="0" role="region" aria-label="Command reads and writes">
       <table>
         <thead><tr><th>Command</th><th>Reads</th><th>Checklist</th><th>Writes</th></tr></thead>
@@ -547,7 +547,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <td><span class="cmd">scen check [id...]</span></td>
             <td>one <strong>registry scenario</strong> at a time — its own description, <code>service:</code>, <code>path:</code>, lineage and steps, and never the registry file itself</td>
             <td><span class="cl">scen-check.yaml</span></td>
-            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change</td>
+            <td><strong>nothing</strong>. It exits 1 when any scenario fails, so it can gate a change. With <code>--fix</code>, through a scratch copy: a failed <code>D:</code> check's fix writes only the <strong>product</strong> or <strong>architecture</strong> document, never the Scenario; a failed model question's fix writes the meaning of a <strong>product</strong> catalogue phrase, or the Scenario's own entry in <strong>scenarios.yaml</strong></td>
           </tr>
         </tbody>
       </table>
