@@ -401,10 +401,10 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row hl" id="a-product-vocab"><span class="k">vocabulary:</span> <span class="v">the words us refine rejects</span></div>
             <div class="row ind1"><span class="k">forbidden_qualifiers[]:</span> <span class="v">"properly", "fast", …</span></div>
             <div class="row ind1"><span class="k">forbidden_actions[]:</span> <span class="v">"handle" + replacement</span></div>
-            <div class="row"><span class="k">glossary[]:</span> <span class="v">terms of the user's world (may be empty)</span></div>
+            <div class="row"><span class="k">glossary[]:</span> <span class="v">term · means, one per word a catalogue entry declares (may be empty)</span></div>
             <div class="row"><span class="k">catalogue[]:</span> <span class="v">template · block · means · terms, one per step phrase</span></div>
           </div>
-          <div class="note">Embedded verbatim into prompts, except <code>catalogue[]</code> and the role names, which the engine reads as data for <code>D: step-phrases</code>. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
+          <div class="note">Embedded verbatim into prompts, except <code>catalogue[]</code> and the role names, which the engine reads as data for <code>D: step-phrases</code>, and <code>glossary[]</code>, which it reads for <code>D: declared-terms</code>. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
         </div>
 
         <!-- col 3 · story -->

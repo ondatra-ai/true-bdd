@@ -110,7 +110,8 @@ func commitTermDocument(document template.TermDocument) (bool, error) {
 }
 
 // readableTermDocument holds an edited copy to what its readers need: a
-// YAML mapping, and for the product document a catalogue the checks load.
+// YAML mapping, and for the product document a catalogue and a glossary
+// the checks load.
 func readableTermDocument(key, scratch string, content []byte) error {
 	var mapping map[string]any
 
@@ -126,6 +127,11 @@ func readableTermDocument(key, scratch string, content []byte) error {
 	_, err = product.LoadCatalogue(scratch)
 	if err != nil {
 		return fmt.Errorf("load the catalogue: %w", err)
+	}
+
+	_, err = product.LoadGlossary(scratch)
+	if err != nil {
+		return fmt.Errorf("load the glossary: %w", err)
 	}
 
 	return nil

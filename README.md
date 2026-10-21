@@ -177,9 +177,9 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds two
-checks, `given-when-then` and `step-phrases` (below); no shipped
-checklist uses either yet.
+`docs:` does not list a document its check reads. `scen check` holds three
+checks, `given-when-then`, `step-phrases` and `declared-terms` (below); no
+shipped checklist uses any of them yet.
 
 ### The step-phrase catalogue
 
@@ -208,6 +208,15 @@ step matching none or several, or one declared for another block, fails
 its Scenario with a context line naming the step and the templates; a
 template the grammar refuses fails every checked Scenario. Steps opening
 with `llm:` or `judge:` are exempt, since a model runs them.
+
+`D: declared-terms` (also `docs: [product]`) holds the words those
+meanings rely on to the product document's `glossary:`, each entry a
+`term` and what it `means`. Every term the one template a step matches
+declares must be defined exactly once, spelled exactly as the catalogue
+spells it: a term the glossary lacks fails the Scenario naming the
+template and the term, and a term defined twice fails it naming the
+count. A term only an unmatched template declares is no failure of the
+Scenario.
 
 Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
 passes "not checked: the product document declares no catalogue". With
@@ -311,7 +320,7 @@ The host project's documents live under `docs/`:
   (allowed action verbs, forbidden action verbs, forbidden qualifiers)
   cited by the `us refine` checks.
 - `docs/product/product.yaml` — the product document, including its
-  `roles:` and its step-phrase `catalogue:`. These are roles (responsibilities), not personas (invented
+  `roles:`, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
   individuals) — one person commonly holds two of them.
 - `docs/product/stories/*.yaml` — the stories, written by hand out of a
   discussion of a Feature, that `us refine` / `us apply` read, one

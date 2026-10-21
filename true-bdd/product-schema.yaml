@@ -1,9 +1,10 @@
 # Yamale schema for the product document (path from `documents.product`
 # in true-bdd.yaml, conventionally docs/product/product.yaml).
 #
-# The engine reads two parts of it as data: `catalogue` and the role
-# names, for the `D: step-phrases` check. The rest reaches the checklists
-# only as prompt text, so this schema is the only thing pinning its shape.
+# The engine reads three parts of it as data: `catalogue` and the role
+# names, for the `D: step-phrases` check, and `glossary`, for the
+# `D: declared-terms` check. The rest reaches the checklists only as
+# prompt text, so this schema is the only thing pinning its shape.
 # Validate it in the host project's lint step, outside the engine:
 #
 #   yamale -s true-bdd/product-schema.yaml docs/product/product.yaml
@@ -77,6 +78,8 @@ forbidden_action:
   replacement: str()
 
 ---
+# One product word: `term` spelled exactly as the catalogue entries
+# declaring it spell it, and defined once (the D: checks hold both).
 glossary_entry:
   term: str()
   means: str()

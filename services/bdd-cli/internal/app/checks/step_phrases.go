@@ -10,7 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
 
-// Why a Scenario passes the step-phrase check unchecked.
+// Why a Scenario passes every closure check unchecked.
 const (
 	notCheckedNoCatalogue = "the product document declares no catalogue"
 	notCheckedUnclaimed   = "no Story claims this Scenario yet"
@@ -29,17 +29,27 @@ func stepPhrases() Check[*template.ScenarioCheckData] {
 				return Verdict{}, fmt.Errorf("read the catalogue: %w", err)
 			}
 
-			if !source.Declared {
-				return notChecked(item.ID, notCheckedNoCatalogue), nil
-			}
-
-			if len(item.UserStories) == 0 {
-				return notChecked(item.ID, notCheckedUnclaimed), nil
+			verdict, unchecked := activation(item, source)
+			if unchecked {
+				return verdict, nil
 			}
 
 			return reviewPhrases(item.ID, item.Phrases, source), nil
 		},
 	}
+}
+
+// activation is the verdict of an Item every closure check leaves
+// unchecked, and true, or false when the check must read the Item.
+func activation(item *template.ScenarioCheckData, source product.Catalogue) (Verdict, bool) {
+	switch {
+	case !source.Declared:
+		return notChecked(item.ID, notCheckedNoCatalogue), true
+	case len(item.UserStories) == 0:
+		return notChecked(item.ID, notCheckedUnclaimed), true
+	}
+
+	return Verdict{}, false
 }
 
 // notChecked passes an Item the activation contract leaves unchecked,
@@ -48,27 +58,32 @@ func notChecked(subjectID, reason string) Verdict {
 	return Verdict{Pass: true, Context: []string{subjectID + ": not checked: " + reason}}
 }
 
+// prefixed heads each finding with the Item's id, as a context line reads.
+func prefixed(subjectID string, findings []string) []string {
+	context := make([]string, 0, len(findings))
+	for _, finding := range findings {
+		context = append(context, subjectID+": "+finding)
+	}
+
+	return context
+}
+
 // reviewPhrases holds one Item's steps to the catalogue: a malformed
 // template fails every checked Item, since no step can be held to it.
 func reviewPhrases(subjectID string, steps []catalogue.Step, source product.Catalogue) Verdict {
 	compiled, malformed := catalogue.Compile(source.Entries, source.Roles)
 	if len(malformed) > 0 {
-		context := make([]string, 0, len(malformed))
+		lines := make([]string, 0, len(malformed))
 		for _, malformation := range malformed {
-			context = append(context, subjectID+": "+malformation.Line())
+			lines = append(lines, malformation.Line())
 		}
 
-		return Verdict{Pass: false, Context: context}
+		return Verdict{Pass: false, Context: prefixed(subjectID, lines)}
 	}
 
 	review := compiled.Review(steps)
 	if len(review.Findings) > 0 {
-		context := make([]string, 0, len(review.Findings))
-		for _, finding := range review.Findings {
-			context = append(context, subjectID+": "+finding)
-		}
-
-		return Verdict{Pass: false, Context: context}
+		return Verdict{Pass: false, Context: prefixed(subjectID, review.Findings)}
 	}
 
 	return Verdict{Pass: true, Context: []string{subjectID + ": " + passLine(review)}}

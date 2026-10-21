@@ -1,0 +1,23 @@
+# Product document for `scen-check-terms-no-catalogue`.
+#
+# A glossary, but no `catalogue:` key: this host has not adopted the
+# catalogue, so no step declares a term and no Scenario is checked.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+glossary:
+  - term: mcp service
+    means: >-
+      The service this project builds: it takes a message from a client
+      and answers it. What every Scenario of the project observes.
