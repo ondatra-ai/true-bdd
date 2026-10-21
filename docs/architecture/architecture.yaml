@@ -163,7 +163,7 @@ architecture:
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
-  # It grows as Stories claim Scenarios.
+  # It maps every word the catalogue declares, one entry per word.
   terms:
     - term: engine
       technical: >-
@@ -286,3 +286,174 @@ architecture:
       observed_by: >-
         Count the "Dispatching AI turn" records in the run's JSON log file;
         "no" is zero, and a missing log file fails instead of counting zero.
+
+    - term: fix loop
+      technical: >-
+        The engine's interactive answer to a failed Prompt under `--fix`. A
+        clarifying question prints its suggested answers numbered from 1,
+        plus `0) Other`, then reads one line of stdin as the answer, a number
+        picking that suggestion. The proposed
+        fix is then followed by `[1] Apply this fix to working copy`, `[2]
+        Refine the fix prompt` and `[3] Exit without applying`, and one line
+        is read: `1` or `apply` applies the fix, `2` or `refine` reads
+        feedback lines up to an empty one, and anything else exits. End of
+        input reads as an empty line, so it exits.
+      observed_by: >-
+        Set up by the Given step: it fails when no Given step prepared a
+        project tree, and otherwise makes the command's stdin the answer and
+        a newline, 64 times over, enough for every question one walk asks.
+        Lines left over are never read. Nothing runs yet: the When step pipes
+        them in.
+
+    - term: test dependencies
+      technical: >-
+        The fixture's optional `prep.sh`, beside `input/`: one shell script
+        run in the run directory after the directory is assembled and before
+        the snapshot the run's file changes are counted from, on a budget of
+        its own of 15 minutes. A blank script counts as absent.
+      observed_by: >-
+        The Given step installs nothing itself, since the run directory does
+        not exist yet. It fails when no Given step prepared a project tree,
+        or when the fixture ships no `prep.sh`, naming the dependencies the
+        step named.
+
+    - term: glob
+      technical: >-
+        A path pattern over paths relative to the run directory: `*` matches
+        any run of characters but `/`, `?` one such character, and `[…]` one
+        character of a set.
+      observed_by: >-
+        Matched against the path of every file the run's diff marks created,
+        never modified or deleted ones, and the matches are counted. A glob
+        that is not well formed fails the step rather than matching nothing.
+
+    - term: Story
+      technical: >-
+        A YAML file under `paths.stories_dir` (`docs/product/stories/`),
+        named `<id>-<slug>.yaml`, whose top-level `story:` holds `id`,
+        `feature`, `title`, `as_a`, `i_want`, `so_that`, `status` and
+        `acceptance_criteria`.
+      observed_by: >-
+        After the run, the quoted path is taken as a glob inside the run
+        directory and must match exactly one file: none, several, or one
+        reached through a link out of the run directory fail the step. The
+        file must parse and hold a top-level `story:` mapping; its `id` is
+        compared as written.
+
+    - term: Feature
+      technical: >-
+        The Story's `feature:` value, a slug such as `scen-check`.
+      observed_by: >-
+        Compared as written; a Story without `feature:` has an empty one.
+
+    - term: Acceptance Criterion
+      technical: >-
+        One element of the Story's `acceptance_criteria:` list: `id`
+        (`<NNN>-<slug>`; legacy Stories use `AC-<n>`), `description`, and
+        `steps`, a list of one-key `given:`, `when:` and `then:` blocks each
+        holding steps. Its lineage id is `<story id>-<id>`.
+      observed_by: >-
+        Counted as the elements of that list. Found by its `id` as written,
+        and a Story without one with that id fails the step; its
+        description is matched as one string.
+
+    - term: step
+      technical: >-
+        One string, or a one-key `and:` or `but:` mapping holding the
+        string, in a `given:`, `when:` or `then:` list. The key is for
+        reading only and not part of the text; a text opening with `judge:`
+        or `llm:` is run by a model rather than by a step definition.
+      observed_by: >-
+        Read from the YAML file after the run. A block counts as present
+        only when it holds at least one step. A criterion's step texts are
+        matched one by one, mapping keys dropped, and a criterion with no
+        steps fails. Two Scenarios share the same steps when their
+        `merged_steps` read back as identical YAML; a Scenario without
+        `merged_steps` shares nothing.
+
+    - term: Scenario
+      technical: >-
+        One entry under the Registry's `scenarios:`, keyed by its Scenario
+        key: `description`, `service`, `path` (the test file it is
+        generated into), an optional `timeout`, `user_stories` (its lineage)
+        and `merged_steps` (its Given, When and Then steps).
+      observed_by: >-
+        Read from the Registry the run left behind, after the command has
+        ended, and found by its key or by its lineage. A Scenario the
+        Registry does not declare fails the step that names it.
+
+    - term: Registry
+      technical: >-
+        The YAML file `documents.scenarios_yaml` names in the project's
+        `true-bdd/true-bdd.yaml`, conventionally `docs/scenarios.yaml`; a
+        step names it by its path relative to the run directory.
+      observed_by: >-
+        Read and parsed after the run. A path leading out of the run
+        directory, a file that cannot be read or parsed, or one declaring no
+        Scenario fails the step.
+
+    - term: lineage
+      technical: >-
+        A Scenario's `user_stories:` list, written by `us apply`. Each
+        element names `story` (the Story file's path from the project root),
+        `scenario_id` (the Acceptance Criterion's lineage id) and
+        `merge_date`; an empty list means no Story claims the Scenario yet.
+      observed_by: >-
+        The Scenarios coming from a criterion are those with an element
+        whose `scenario_id` equals the quoted id. A count step counts them;
+        every other step requires exactly one and names them all when none
+        or several are found. It then compares their `story` values with
+        the quoted path as written, or matches the pattern against the whole
+        entry written back out as YAML.
+
+    - term: Scenario key
+      technical: >-
+        The key of the Scenario's entry under `scenarios:`,
+        `<story-id>-<NNN>-<slug>` once a Story claims it; legacy `E2E-NNN`
+        keys, and other keys in fixture projects, stay until renamed. The
+        generated test is named `Test` plus the key in CamelCase.
+      observed_by: >-
+        Compared as written with the key the entry sits under, and used as
+        written to find a Scenario in the Registry.
+
+    - term: step definition
+      technical: >-
+        A registration in the Go package `steps/` beside a Scenario's test
+        file: a regular expression, written as a string literal, paired with
+        the code run for every step whose whole text it matches.
+      observed_by: >-
+        The step reads the source of every `.go` file directly in the quoted
+        directory, inside the run directory, without building it, and takes
+        each registration's string literal that compiles as a regular
+        expression. Each step of the named Scenario must match exactly one;
+        model-run steps are skipped. A file that does not parse fails the
+        step, and the failure names every step that matched none or several.
+
+    - term: test runner
+      technical: >-
+        A subprocess the engine starts from the suite command the
+        architecture document declares under `testing.commands` (`replay`
+        for `build code`), split into arguments by shell quoting rules, with
+        a filter of the engine's own appended when it re-runs one test after
+        a fix. Before each start it writes one log record, msg="Spawning
+        test runner", with the program in `binary` and its arguments in
+        `args`.
+      observed_by: >-
+        Read the "Spawning test runner" records in the run's JSON log file:
+        count them, compare `binary` with the quoted program, or match the
+        `args` joined by single spaces against the pattern. A missing log
+        file fails instead of counting zero.
+
+    - term: shell command
+      technical: >-
+        The quoted text split on whitespace, with no shell and no quoting,
+        and run as a subprocess in the quoted directory, relative to the run
+        directory. It inherits the test's environment without `CLAUDECODE`,
+        and it is capped at 10 minutes.
+      observed_by: >-
+        Run by the Then step itself after the command has ended, so it sits
+        last among a Scenario's Then steps: a re-run may change files that
+        earlier steps read. A directory leading out of the run directory, an
+        empty command, or one that cannot start fails the step, as does an
+        exit status other than the quoted one, printing the shell command's
+        stdout and stderr.
