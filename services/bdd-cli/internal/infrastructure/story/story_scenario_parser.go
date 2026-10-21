@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"regexp"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -124,26 +122,23 @@ type rawStoryFile struct {
 	} `yaml:"scenarios"`
 }
 
-// ParseStoryScenarios resolves docs/product/stories/<storyNumber>-*.yaml,
-// validates the canonical AC-with-steps shape, and returns one
-// ScenarioApplyData per AC plus the resolved story path.
+// ParseStoryScenarios reads the Story file FindStoryFile resolves
+// storyNumber to, validates the canonical AC-with-steps shape, and returns
+// one ScenarioApplyData per AC plus the resolved story path.
 func (p *StoryScenarioParser) ParseStoryScenarios(
 	storyNumber string,
 	requirementsScratchPath string,
 ) ([]*template.ScenarioApplyData, string, error) {
-	storyPath, err := p.resolveStoryPath(storyNumber)
+	storyFile, err := FindStoryFile(p.storiesDir, storyNumber)
 	if err != nil {
 		return nil, "", err
 	}
 
-	data, err := disk.Read(storyPath)
-	if err != nil {
-		return nil, storyPath, pkgerrors.ErrReadStoryFileFailed(storyPath, err)
-	}
+	storyPath := storyFile.Path
 
 	var raw rawStoryFile
 
-	err = yaml.Unmarshal(data, &raw)
+	err = yaml.Unmarshal(storyFile.Data, &raw)
 	if err != nil {
 		return nil, storyPath, pkgerrors.ErrParseStoryYAMLFailed(storyPath, err)
 	}
@@ -156,10 +151,8 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 		return nil, storyPath, fmt.Errorf("%s: %w", storyPath, ErrNoAcceptanceCriteria)
 	}
 
+	// FindStoryFile picked this file because it declares storyNumber.
 	storyID := raw.Story.ID
-	if storyID == "" {
-		storyID = storyNumber
-	}
 
 	scenarios := make([]*template.ScenarioApplyData, 0, len(raw.Story.AcceptanceCriteria))
 
@@ -194,27 +187,6 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 	)
 
 	return scenarios, storyPath, nil
-}
-
-// resolveStoryPath finds docs/product/stories/<storyNumber>-*.yaml. Mirrors the
-// resolution logic in StoryLoader to keep behavior consistent.
-func (p *StoryScenarioParser) resolveStoryPath(storyNumber string) (string, error) {
-	pattern := filepath.Join(p.storiesDir, storyNumber+"-*.yaml")
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return "", pkgerrors.ErrFindStoryFileFailed(err)
-	}
-
-	if len(matches) == 0 {
-		return "", pkgerrors.ErrStoryFileNotFoundError(storyNumber, p.storiesDir, storyNumber)
-	}
-
-	if len(matches) > 1 {
-		return "", pkgerrors.ErrMultipleStoryFilesError(storyNumber, matches)
-	}
-
-	return matches[0], nil
 }
 
 // flattenACSteps walks an AC's steps list and returns the Given/When/Then
