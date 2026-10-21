@@ -22,9 +22,9 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-024: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
-func TestE2E024(t *testing.T) {
-	s := scenarios.New(t, "E2E-024")
+// engine-003-locations-come-from-config: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
+func TestEngine003LocationsComeFromConfig(t *testing.T) {
+	s := scenarios.New(t, "engine-003-locations-come-from-config")
 	s.Given(`the "us-apply-relocated-registry" project tree`)
 	s.And(`the Product Owner answers "1" to every question`)
 	s.When(`the Product Owner runs "us apply 95.2 --fix"`)

@@ -22,18 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-019: Multi-provider routing must fail LOUDLY, never quietly
-func TestE2E019(t *testing.T) {
-	s := scenarios.New(t, "E2E-019")
-	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
 func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
@@ -190,5 +178,17 @@ func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
 	s.And(`the engine dispatched no AI turns`)
 	s.But(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-004-unknown-model-cli-refused: Multi-provider routing must fail LOUDLY, never quietly
+func TestEngine004UnknownModelCliRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-004-unknown-model-cli-refused")
+	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
