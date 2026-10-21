@@ -50,7 +50,7 @@ story:
                 - but: stdout does not match \bcreate\b
                 - and: no file outside "tmp" changed
         - id: 003-locations-come-from-config
-          description: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
+          description: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
           steps:
             - given:
                 - the "us-apply-relocated-registry" project tree

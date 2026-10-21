@@ -466,7 +466,7 @@ scenarios:
         - and: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
         - and: the engine dispatched no AI turns
   engine-003-locations-come-from-config:
-    description: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
+    description: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
     user_stories:

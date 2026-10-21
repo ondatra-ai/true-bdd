@@ -159,7 +159,7 @@ func TestE2E062(t *testing.T) {
 	s.Done()
 }
 
-// engine-003-locations-come-from-config: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
+// engine-003-locations-come-from-config: Every location a host project uses must come from `true-bdd.yaml` — never a hardcoded path
 func TestEngine003LocationsComeFromConfig(t *testing.T) {
 	s := scenarios.New(t, "engine-003-locations-come-from-config")
 	s.Given(`the "us-apply-relocated-registry" project tree`)
