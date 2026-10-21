@@ -299,11 +299,14 @@ scenarios:
         - stdout matches level=ERROR msg="Refusing to start" command="build tests"
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-016:
+  build-tests-steps-001-unbound-scenario-gets-test-and-steps:
     description: A registry scenario with no test must get a generated test file and a step definition for every step it declares
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-001-unbound-scenario-gets-test-and-steps
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -927,11 +930,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/scen-check-closure.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-060:
+  build-tests-steps-002-test-named-after-key:
     description: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-002-test-named-after-key
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-lineage-key-test-names" project tree
@@ -1782,11 +1788,14 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
         - and: the engine dispatched 2 AI turns
-  E2E-130:
+  build-tests-steps-006-steps-authored-from-spec:
     description: '`build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture''s mapping of that word, so the step definition observes what the mapping says'
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-006-steps-authored-from-spec
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -1803,11 +1812,14 @@ scenarios:
         - and: every step of scenario "INT-902" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
         - and: 'judge: the step definitions created under tests/mcp/steps observe each word the way the word mapping says: the server''s address comes from the MCP_PORT environment variable, 7411 when it is unset, and the server counts as running once GET /healthz answers 200; a session is opened by POSTing a JSON-RPC request whose method is initialize to /mcp; the ticket is the reply''s X-Session-Ticket header, which must be 32 lowercase hexadecimal characters; and the protocol version is the reply''s X-MCP-Protocol header, a date in YYYY-MM-DD form'
         - but: no file outside "tmp" and "tests" changed
-  E2E-131:
+  build-tests-steps-007-unreadable-catalogue-refused:
     description: '`build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-007-unreadable-catalogue-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-fix-unreadable-catalogue" project tree
@@ -1979,11 +1991,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
-  E2E-298:
+  build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-003-only-unbound-scenarios-walked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-coverage-in-process" project tree
@@ -1997,11 +2012,14 @@ scenarios:
         - and: the file "tests/mcp/mcp_test.go" is created
         - but: no file outside "tmp" and "tests" changed
 
-  E2E-299:
+  build-tests-steps-004-unfoldable-pattern-refused:
     description: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-004-unfoldable-pattern-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-coverage-computed-pattern" project tree
@@ -2015,11 +2033,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
-  E2E-300:
+  build-tests-steps-005-double-bound-step-refused:
     description: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-tests-steps-binding.yaml
+        scenario_id: build-tests-steps-005-double-bound-step-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-coverage-ambiguous-step" project tree
