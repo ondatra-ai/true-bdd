@@ -60,7 +60,6 @@ templates:
 paths:
   tmp_dir: "./tmp"
   tmp_glob: "./tmp/**"
-  epics_dir: "./docs/product/epics"
   # DELTA vs the seed: relocated. `us apply` globs
   # <stories_dir>/<number>-*.yaml, so a hardcoded docs/product/stories would
   # fail to find the story at all.

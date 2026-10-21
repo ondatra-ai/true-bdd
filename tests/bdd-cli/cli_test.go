@@ -38,3 +38,17 @@ func TestE2E020(t *testing.T) {
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
+
+// E2E-050: `us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`
+func TestE2E050(t *testing.T) {
+	s := scenarios.New(t, "E2E-050")
+	s.Given(`the "us-help-flag" project tree`)
+	s.When(`the Product Owner runs "us --help"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches Available Commands:`)
+	s.And(`stdout matches \brefine\b`)
+	s.And(`stdout matches \bapply\b`)
+	s.But(`stdout does not match \bcreate\b`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
