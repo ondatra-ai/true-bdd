@@ -1293,11 +1293,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-100:
+  scen-check-terms-001-undefined-term-fails:
     description: A term that the catalogue template a step matches declares, and that the product glossary does not define, must fail the Scenario a Story claims, naming the template and the term, while a term only an unmatched template declares is no failure of that Scenario
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-001-undefined-term-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-undefined" project tree
@@ -1312,11 +1315,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-101:
+  scen-check-terms-002-defined-terms-pass:
     description: A Scenario a Story claims must pass the declared-term check when the glossary defines every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-002-defined-terms-pass
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-defined" project tree
@@ -1330,11 +1336,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-102:
+  scen-check-terms-003-term-defined-twice-fails:
     description: A term the glossary defines more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is defined, because a word with two meanings has none a reader can rely on
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-003-term-defined-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-term-defined-twice" project tree
@@ -1346,11 +1355,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-103:
+  scen-check-terms-004-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the declared-term check, saying so, whatever its glossary holds
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-terms-glossary-closure.yaml
+        scenario_id: scen-check-terms-004-no-catalogue-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-terms-no-catalogue" project tree
