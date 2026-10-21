@@ -116,9 +116,19 @@ func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
 	}
 
 	checked := parseGeneratedChecklist(t, tmpDir, "scen-check")
-	if len(checked.Sections) != 1 || len(checked.Sections[0].ValidationPrompts) < 2 {
+	if checked.promptCount() < 2 {
 		t.Errorf("scen-check.yaml must stay unfiltered, got %+v", checked.Sections)
 	}
+}
+
+// promptCount counts the prompts of every section of the checklist.
+func (c loadedChecklist) promptCount() int {
+	count := 0
+	for _, section := range c.Sections {
+		count += len(section.ValidationPrompts)
+	}
+
+	return count
 }
 
 // TestPrepareRunDirWithoutFilterLeavesChecklistIdentical pins the

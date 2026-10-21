@@ -1,0 +1,117 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Scenario Editor applying an approved fix to the
+working copy of one document: the scenario registry, where a
+Scenario's description or steps are rewritten, or the product
+document, where a catalogue entry's meaning is.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: replace the current text the fix gives with
+  its new text, inside the one entry the fix names.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch another Scenario's entry, a generated test file or a
+  step definition, and never add or remove a Scenario.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The greeter must print the configured greeting followed by the name it is given
+
+### Steps
+Given:
+  - the greeting is configured as "Hello"
+When:
+  - the Operator runs "greet Ada"
+Then:
+  - the formatGreeting function is called with "Hello" and "Ada"
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given
+
+## Target
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry's `means` changes, and no other document, scenario, generated test or step definition is touched.
+
+## Why
+The scen-check finding is about exactly one step: the `then` step asserts that an internal Go function is invoked with given arguments, which is implementation, not something a person can watch from outside the program. The description already states observable behaviour ("must print the configured greeting followed by the name it is given") and must be left alone. The behaviour being specified — with the greeting configured as "Hello", running `greet Ada` prints `Hello Ada` — is preserved exactly, now stated as what the Operator reads on standard output.
+
+The replacement step fills the existing catalogue template `stdout matches {expected:pattern}` (block: `then`). Per the catalogue, `{expected:pattern}` is the rest of the step verbatim and is read as a regular expression, so the pattern is written unquoted; adding surrounding quotation marks would make them literal characters of the regex and the assertion would no longer match the printed line.
+
+## Required Changes
+
+### Change #1: Replace the implementation-naming `then` step with the printed line the Operator observes
+**Document:** scenarios_yaml
+**Field:** merged_steps.then (the single `then` step of scenario `E2E-001`)
+**Current text:**
+```
+the formatGreeting function is called with "Hello" and "Ada"
+```
+**New text:**
+```
+stdout matches ^Hello Ada$
+```
+
+## Must not change
+- The scenario's `description`: `The greeter must print the configured greeting followed by the name it is given` — it names observable behaviour and no finding objects to it.
+- The `given` step `the greeting is configured as "Hello"` and the `when` step `the Operator runs "greet Ada"` — both already match catalogue templates and are untouched.
+- `E2E-001`'s `id`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories:` (empty), and every other scenario in the registry.
+- `docs/product/product.yaml`, including every catalogue `means`.
+- `tests/greeter/greet_test.go` and every step definition. The generated test is re-rendered later by `true-bdd build tests --fix`; do not hand-edit it here.
+- Do not add any further assertion (for example an exit-code step). The scenario asserts one observable fact; adding or dropping assertions would re-specify it.
+
+---
+
+## Where to write
+
+Each document a fix may change has a working copy in this run's tmp
+directory. Edit the working copy of the document the fix prompt names,
+never the document itself:
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`, the scenario registry
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, and the registry only while it still holds the
+same Scenarios, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt names. In
+   the registry, find the `E2E-001:` entry under `scenarios:`;
+   in the product document, the catalogue entry the fix names.
+2. Apply each change with the Edit tool on that working copy: replace
+   the current text the fix prompt gives with its new text, inside that
+   entry only.
+3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`
+   key and its list indentation, and a value carrying `: ` or `#`, or
+   opening with a quote or a bracket, stays quoted.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, every other Scenario's entry, a generated test file and
+   a step definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

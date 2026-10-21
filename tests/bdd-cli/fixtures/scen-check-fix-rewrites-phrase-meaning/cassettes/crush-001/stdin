@@ -1,0 +1,147 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Scenario Editor applying an approved fix to the
+working copy of one document: the scenario registry, where a
+Scenario's description or steps are rewritten, or the product
+document, where a catalogue entry's meaning is.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: replace the current text the fix gives with
+  its new text, inside the one entry the fix names.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch another Scenario's entry, a generated test file or a
+  step definition, and never add or remove a Scenario.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The greeter must print the configured greeting followed by the name it is given, and exit with code 0
+
+### Steps
+Given:
+  - the greeting is configured as "Hello"
+When:
+  - the Operator runs "greet Ada"
+Then:
+  - the command exits with code 0
+  - and stdout matches ^Hello Ada$
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0
+
+## Target
+The `product` document (`docs/product/product.yaml`), the `means` of the single catalogue entry the finding names: `'stdout matches {expected:pattern}'`.
+
+Nothing else changes. Do NOT touch the Scenario `E2E-001` in the scenario registry (its description, steps, id, `service:`, `path:` or `user_stories:` all stay exactly as they are), do NOT touch any catalogue `template:`, `block:` or `terms:`, do NOT touch any other catalogue entry (the other three entries were judged `ok`), and do NOT touch the generated test `tests/greeter/greet_test.go` or any step definition. `true-bdd build tests --fix` re-renders generated tests; this fix does not.
+
+## Why
+The finding on `scen-check/term_closure` is: the entry's meaning only restates its template's words, names nothing a person could observe from outside the product, never says which product output a pattern-slot template holds the pattern against, and leans on `stdout`, which the glossary does not define — the glossary's term is `standard output`.
+
+The replacement below is drawn from the documents already in the repository, so it adds no new decision:
+- `product.yaml` `glossary:` → `standard output`: "The lines the command prints for its user, its answer and its log records alike. It is the greeter's only visible output."
+- `product.yaml` `glossary:` → `command`: "One command line a user types to run the greeter, its arguments included."
+- `architecture.yaml` `architecture.terms:` → `standard output`, `technical`: "What the greeter binary writes to file descriptor 1: its answer line, then its log records in logfmt, one per line."
+- `architecture.yaml` `architecture.terms:` → `standard output`, `observed_by`: "Hold the kept standard output, line by line, against the step's regular expression; any matching line passes."
+
+So the meaning must say: one line of the command's standard output — the answer line, or one of the log records after it — matches the regular expression the step carries; and it must name that output in the glossary's words (`standard output`), while making clear this is what the template's `stdout` refers to.
+
+## Required Changes
+
+### Change #1: State what the pattern is held against, in the glossary's words
+**Document:** product (`docs/product/product.yaml`)
+**Field:** the `means` of catalogue entry `'stdout matches {expected:pattern}'`
+
+**Current text** (the whole `means:` line of that entry, exactly as it stands in the file):
+```
+    means: Stdout matches the pattern.
+```
+
+**New text** (replace that one line with these lines; keep the surrounding `- template:`, `block:` and `terms:` lines of the entry untouched, and keep the 4-space / 6-space indentation shown):
+```
+    means: >-
+      One of the lines the command printed to its standard output — the
+      answer line the greeter writes for its user, or one of the log
+      records that follow it — matches the regular expression the step
+      ends with; "stdout" in the step names that standard output. The
+      Operator sets this up by running the command in a terminal and
+      observes it by reading the lines it printed before it exited.
+```
+
+## Resulting entry, for the applier to check against
+After the edit, the entry must read exactly:
+```
+  - template: 'stdout matches {expected:pattern}'
+    block: then
+    means: >-
+      One of the lines the command printed to its standard output — the
+      answer line the greeter writes for its user, or one of the log
+      records that follow it — matches the regular expression the step
+      ends with; "stdout" in the step names that standard output. The
+      Operator sets this up by running the command in a terminal and
+      observes it by reading the lines it printed before it exited.
+    terms: [command, standard output]
+```
+
+## Checks after the edit
+- `docs/product/product.yaml` still parses as YAML, and the `catalogue:` list still has four entries with their original templates and blocks.
+- The Scenario `E2E-001` in the scenario registry is byte-for-byte unchanged, so its step `stdout matches ^Hello Ada$` still matches the catalogue template `'stdout matches {expected:pattern}'` exactly as before.
+- No file other than `docs/product/product.yaml` is modified.
+
+---
+
+## Where to write
+
+Each document a fix may change has a working copy in this run's tmp
+directory. Edit the working copy of the document the fix prompt names,
+never the document itself:
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`, the scenario registry
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, and the registry only while it still holds the
+same Scenarios, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt names. In
+   the registry, find the `E2E-001:` entry under `scenarios:`;
+   in the product document, the catalogue entry the fix names.
+2. Apply each change with the Edit tool on that working copy: replace
+   the current text the fix prompt gives with its new text, inside that
+   entry only.
+3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`
+   key and its list indentation, and a value carrying `: ` or `#`, or
+   opening with a quote or a bracket, stays quoted.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, every other Scenario's entry, a generated test file and
+   a step definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

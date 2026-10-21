@@ -103,8 +103,7 @@ type Container struct {
 	BuildCodeFixPromptGenerator *validate.FixPromptGenerator
 	BuildCodeFixApplier         *validate.FixApplier
 	// Scen-check triple drives `scen check`. Templates live under
-	// templates.prompts.scen_check_* and the fix pair is wired but
-	// unreachable: the checklist ships no F, so --fix refuses at startup.
+	// templates.prompts.scen_check_*; every shipped prompt carries an F.
 	ScenCheckEvaluator          *validate.ChecklistEvaluator
 	ScenCheckFixPromptGenerator *validate.FixPromptGenerator
 	ScenCheckFixApplier         *validate.FixApplier
@@ -266,8 +265,8 @@ func newTriples(
 		fixApplierSystem:   "templates.prompts.scen_check_fix_applier_system",
 		fixApplier:         "templates.prompts.scen_check_fix_applier",
 	})
-	// EditMode reaches tmp only: a fix edits the term documents' scratch
-	// copies, which the engine commits once they parse.
+	// EditMode reaches tmp only: a fix edits the scratch copies of the term
+	// documents and the Registry, which the engine commits once they parse.
 	scenCheckTrip.fixApplier.UseEditMode()
 
 	return triples{

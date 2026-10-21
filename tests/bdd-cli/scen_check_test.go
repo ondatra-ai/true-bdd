@@ -493,44 +493,250 @@ func TestE2E119(t *testing.T) {
 	s.Done()
 }
 
-// E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
+// E2E-120: `scen check --fix` must add the given, when or then step a Scenario lacks to that Scenario's entry in the Registry, saying what its description pins, and pass the re-walk
+func TestE2E120(t *testing.T) {
+	s := scenarios.New(t, "E2E-120")
+	s.Given(`the "scen-check-fix-adds-missing-step" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's steps carry all three" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" matches (?m)^      then:$`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-121: `scen check --fix` must replace a forbidden qualifier in a Scenario's description with the measurable criterion its steps state, in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E121(t *testing.T) {
+	s := scenarios.New(t, "E2E-121")
+	s.Given(`the "scen-check-fix-rewrites-description-qualifier" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description contains a vague word" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-122: `scen check --fix` must replace a forbidden qualifier in a Scenario's step with the measurable criterion its description states, in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E122(t *testing.T) {
+	s := scenarios.New(t, "E2E-122")
+	s.Given(`the "scen-check-fix-rewrites-step-qualifier" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether any of this scenario's steps contains a vague" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-123: `scen check --fix` must rewrite a Scenario's step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E123(t *testing.T) {
+	s := scenarios.New(t, "E2E-123")
+	s.Given(`the "scen-check-fix-rewrites-forbidden-verb" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether any of this scenario's steps uses an action verb" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-124: `scen check --fix` must rewrite a Scenario's step that names an implementation detail as the output a user observes, in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E124(t *testing.T) {
+	s := scenarios.New(t, "E2E-124")
+	s.Given(`the "scen-check-fix-rewrites-implementation" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario describes observable behaviour" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-125: `scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E125(t *testing.T) {
+	s := scenarios.New(t, "E2E-125")
+	s.Given(`the "scen-check-fix-adds-measurable-criterion" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// E2E-126: `scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E126(t *testing.T) {
+	s := scenarios.New(t, "E2E-126")
+	s.Given(`the "scen-check-fix-rewrites-subjective-outcome" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario has a binary pass/fail outcome" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// E2E-127: `scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk
+func TestE2E127(t *testing.T) {
+	s := scenarios.New(t, "E2E-127")
+	s.Given(`the "scen-check-fix-rewrites-phrase-meaning" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether each catalogue phrase this scenario's steps use" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-128: `scen check --fix` must rewrite a Scenario's step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario's entry in the Registry, and pass the re-walk
+func TestE2E128(t *testing.T) {
+	s := scenarios.New(t, "E2E-128")
+	s.Given(`the "scen-check-fix-rewrites-phrase-use" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario uses each catalogue phrase" prompt`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.Done()
+}
+
+// E2E-129: `scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk
+func TestE2E129(t *testing.T) {
+	s := scenarios.New(t, "E2E-129")
+	s.Given(`the "scen-check-fix-merges-phrases" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
+// E2E-291: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")
 	s.Given(`the "scen-check-happy-path" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=declared-terms subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=3 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
+	s.And(`stdout matches PASS: 14 `)
 	s.And(`stdout matches ALL CHECKS PASSED!`)
 	s.And(`stdout matches SCEN CHECK COMPLETE`)
-	s.And(`the engine dispatched 8 AI turns`)
+	s.And(`the engine dispatched 10 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
-// E2E-292: A registry scenario that fails a walked prompt must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
+// E2E-292: A registry scenario that fails a walked prompt of the shipped checklist, a model question or a closure check, must be reported as failed and make the command exit 1, so a bare `scen check` can gate a change
 func TestE2E292(t *testing.T) {
 	s := scenarios.New(t, "E2E-292")
 	s.Given(`the "scen-check-validation-fails" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: then step \\"the greeter prints \\"Hello Ada\\" on one line\\" matches no template\]"`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-002 promptIndex=14`)
+	s.And(`stdout matches SKIP: 10\n`)
 	s.And(`stdout matches Validation failed`)
 	s.But(`stdout does not match ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 8 AI turns`)
+	s.And(`the engine dispatched 10 AI turns`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
 
-// E2E-293: A --fix run must be refused before the walk, because the scen-check checklist ships no fix template for any prompt
+// E2E-293: `scen check --fix` over the shipped checklist, every prompt of which carries a fix, must rewrite a description that states no rule in that Scenario's entry in the Registry, and pass the re-walk of every prompt about the Scenario as it now reads
 func TestE2E293(t *testing.T) {
 	s := scenarios.New(t, "E2E-293")
-	s.Given(`the "scen-check-fix-refused" project tree`)
+	s.Given(`the "scen-check-fix-rewrites-description" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
 	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.But(`stdout does not match SCEN CHECK`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.But(`stdout does not match level=ERROR msg="Refusing to start"`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=4 answer=pass`)
+	s.And(`stdout matches PASS: 14 `)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.But(`stdout does not match Hit max apply attempts`)
+	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b`)
+	s.And(`the engine dispatched 25 AI turns`)
 	s.Done()
 }
 

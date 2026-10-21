@@ -66,7 +66,7 @@ func RunScenCheck(
 		Fix:         fix,
 
 		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix),
-		PostFix:     scenCheckPostFix,
+		PostFix:     scenCheckPostFix(deps, requirementsFile),
 		Finalize:    finalizeScenCheck,
 		GetSubject:  scenCheckSubject,
 		OnItemStart: scenCheckOnItemStart,
@@ -112,31 +112,50 @@ func loadCheckScenarios(
 			return nil, err
 		}
 
-		termDocuments := []template.TermDocument(nil)
+		items := checkItems(scenarios, selected)
 
 		if fix {
-			termDocuments, err = seedTermDocuments(deps.DocResolver, deps.RunDir.GetTmpOutPath())
+			err = seedFixDocuments(deps, requirementsFile, items)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		return checkItems(scenarios, selected, termDocuments), nil
+		return items, nil
 	}
+}
+
+// seedFixDocuments gives every item the working copies a fix edits: the
+// term documents the host has, and the Registry the walk loaded.
+func seedFixDocuments(deps ScenCheckDeps, requirementsFile string, items []*template.ScenarioCheckData) error {
+	tmpDir := deps.RunDir.GetTmpOutPath()
+
+	termDocuments, err := seedTermDocuments(deps.DocResolver, tmpDir)
+	if err != nil {
+		return err
+	}
+
+	registryDocument, err := seedFixDocument(docs.KeyScenariosYAML, requirementsFile, tmpDir)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		item.TermDocuments = termDocuments
+		item.RegistryDocument = &registryDocument
+	}
+
+	return nil
 }
 
 // checkItems projects every loaded scenario onto a subject that knows
 // the whole Registry, and returns the selected ones, in the loader's order.
-func checkItems(
-	scenarios, selected []*registry.RegistryScenario,
-	termDocuments []template.TermDocument,
-) []*template.ScenarioCheckData {
+func checkItems(scenarios, selected []*registry.RegistryScenario) []*template.ScenarioCheckData {
 	all := make([]*template.ScenarioCheckData, 0, len(scenarios))
 	byID := make(map[string]*template.ScenarioCheckData, len(scenarios))
 
 	for _, scenario := range scenarios {
 		item := newScenarioCheckData(scenario)
-		item.TermDocuments = termDocuments
 		all = append(all, item)
 		byID[item.ID] = item
 	}
@@ -197,6 +216,15 @@ func selectByID(
 // the prompts see: the scenario's own fields, and no path to the file
 // they came from.
 func newScenarioCheckData(scenario *registry.RegistryScenario) *template.ScenarioCheckData {
+	item := &template.ScenarioCheckData{}
+	refreshScenario(item, scenario)
+
+	return item
+}
+
+// refreshScenario sets the subject's own fields from a loaded registry
+// entry, leaving what the walk attached to it (documents, Registry) alone.
+func refreshScenario(item *template.ScenarioCheckData, scenario *registry.RegistryScenario) {
 	stories := make([]template.StoryRef, 0, len(scenario.UserStories))
 	for _, ref := range scenario.UserStories {
 		stories = append(stories, template.StoryRef{
@@ -205,15 +233,13 @@ func newScenarioCheckData(scenario *registry.RegistryScenario) *template.Scenari
 		})
 	}
 
-	return &template.ScenarioCheckData{
-		ID:          scenario.ID,
-		Description: scenario.Description,
-		Service:     scenario.Service,
-		Path:        scenario.Path,
-		UserStories: stories,
-		Steps:       scenario.Steps,
-		Phrases:     scenario.Phrases(),
-	}
+	item.ID = scenario.ID
+	item.Description = scenario.Description
+	item.Service = scenario.Service
+	item.Path = scenario.Path
+	item.UserStories = stories
+	item.Steps = scenario.Steps
+	item.Phrases = scenario.Phrases()
 }
 
 // scenCheckSubject is the GetSubject implementation: the scenario id
@@ -228,20 +254,62 @@ func scenCheckOnItemStart(idx, total int, item *template.ScenarioCheckData) {
 	slog.Info("Scenario", "index", idx+1, "total", total, "id", item.ID)
 }
 
-// scenCheckPostFix commits the term documents the applier edited. The
-// Scenario itself never changes, so the item returns as it was; the
-// checks re-read the documents at their next Cell.
+// scenCheckPostFix commits the documents the applier edited. A fix that
+// rewrote the Registry reloads it, so the restarted walk asks about the
+// Scenario as it now reads; the checks re-read the term documents themselves.
 func scenCheckPostFix(
-	_ context.Context,
-	item *template.ScenarioCheckData,
-	_ string,
-) (*template.ScenarioCheckData, error) {
-	err := commitTermDocuments(item.TermDocuments)
+	deps ScenCheckDeps,
+	requirementsFile string,
+) func(context.Context, *template.ScenarioCheckData, string) (*template.ScenarioCheckData, error) {
+	return func(
+		_ context.Context,
+		item *template.ScenarioCheckData,
+		_ string,
+	) (*template.ScenarioCheckData, error) {
+		registryChanged, err := commitFixDocuments(item)
+		if err != nil {
+			return nil, err
+		}
+
+		if registryChanged {
+			err = reloadScenarios(deps.RegistryLoader, requirementsFile, item.Registry)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return item, nil
+	}
+}
+
+// reloadScenarios refreshes every subject of the walk in place from the
+// committed Registry, so each item, and every check relating Scenarios,
+// reads it as it now stands; the fix kept the ids (readableRegistry).
+func reloadScenarios(
+	loader *registry.RegistryLoader,
+	requirementsFile string,
+	subjects []*template.ScenarioCheckData,
+) error {
+	scenarios, err := loader.Load(requirementsFile)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("reload the registry: %w", err)
 	}
 
-	return item, nil
+	byID := make(map[string]*registry.RegistryScenario, len(scenarios))
+	for _, scenario := range scenarios {
+		byID[scenario.ID] = scenario
+	}
+
+	for _, subject := range subjects {
+		scenario, found := byID[subject.ID]
+		if !found {
+			return fmt.Errorf("reload the registry: %w %s", ErrUnknownScenarioID, subject.ID)
+		}
+
+		refreshScenario(subject, scenario)
+	}
+
+	return nil
 }
 
 // finalizeScenCheck reports the verdict and fails every walk that did not

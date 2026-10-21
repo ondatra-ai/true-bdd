@@ -1,6 +1,6 @@
 # Fixture checklist for `scen-check-failed-check-skips-questions`.
 #
-# The shipped checklist's first question, verbatim, followed by the
+# The shipped checklist's first quality question, verbatim, followed by the
 # built-in check that a scenario carries all three step kinds. The check
 # comes second in the file on purpose: the engine must still run it
 # first, and skip the question for any scenario that fails it.
@@ -28,6 +28,7 @@ sections:
             - "<scenario id>: ok"
             - "<scenario id>: <violation> — <quoted offending phrase>"
         rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
 
       - D: given-when-then
         rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

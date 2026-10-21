@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-merges-phrases",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 1040,
+      "sha256": "9bf181c42810b595b954ab7306bd800b91d9a7b4273e9497d85105896c16b467",
+      "text": "# Product document for `scen-check-fix-merges-phrases`.\n#\n# Two templates say the service answers, in two words; the suite binds\n# both with one step definition. The fix merges them into one entry.\n\ntitle: \"Fixture host project\"\n\ndescription:\n  summary: \u003e-\n    A single MCP service, used by the bdd-cli fixtures as the host\n    project a scenario registry describes.\n\nroles:\n  - name: Operator\n    definition: Runs the MCP service and watches what it answers.\n  - name: Client Developer\n    definition: Writes the clients that send the MCP service its requests.\n\nglossary: []\n\ncatalogue:\n  - template: 'the mcp service is running'\n    block: given\n    means: The MCP service has started and accepts requests.\n    terms: []\n  - template: 'the {actor:role} sends \"{message}\"'\n    block: when\n    means: That role sends the quoted message to the MCP service, once.\n    terms: []\n  - template: 'the service [answers|replies] \"{reply}\"'\n    block: then\n    means: The MCP service's reply to the message is exactly the quoted text.\n    terms: []\n"
+    }
+  ]
+}
