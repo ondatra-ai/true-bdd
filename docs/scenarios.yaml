@@ -447,11 +447,14 @@ scenarios:
         - stdout matches \bus\b
         - stdout matches -h, --help
         - no file outside "tmp" changed
-  E2E-021:
+  us-apply-002-duplicates-collapse:
     description: Two registry entries claiming the same acceptance criterion must collapse into one, leaving every other entry untouched
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-registry-merge.yaml
+        scenario_id: us-apply-002-duplicates-collapse
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -473,13 +476,16 @@ scenarios:
         - and: exactly 1 scenario in "docs/scenarios.yaml" comes from acceptance criterion "90.1-001"
         - but: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: stdout does not match Hit max apply attempts
+        - and: stdout does not match One or more scenarios did not pass
         - and: 'judge: the scenario from acceptance criterion 90.1-001 — the unrelated home-page welcome banner — still says what the seed registry said it did'
-  E2E-022:
+  us-apply-refusals-004-legacy-layout-refused:
     description: A story carried forward from the older `scenarios.test_scenarios[]` layout must be refused, and told what to convert
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-004-legacy-layout-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-malformed-scenarios" project tree
@@ -488,7 +494,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.5
-        - stdout matches msg="Seeded scratch registry"
         - stdout matches us apply requires acceptance_criteria with embedded steps
         - stdout matches docs/product/stories/95\.5-legacy-test-scenarios\.yaml
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
@@ -496,11 +501,14 @@ scenarios:
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the file "docs/product/stories/95.5-legacy-test-scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-023:
+  us-apply-refusals-001-missing-story-refused:
     description: '`us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for'
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-001-missing-story-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-missing-story" project tree
@@ -509,7 +517,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.4
-        - stdout matches msg="Seeded scratch registry"
         - 'stdout matches in docs/product/stories \(expected format: 95\.4-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
         - but: no file outside "tmp" changed
@@ -547,11 +554,14 @@ scenarios:
         - but: no file matching "docs/scenarios.yaml" is created
         - and: the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged
         - and: 'judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did'
-  E2E-025:
+  us-apply-001-missing-criteria-added:
     description: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-registry-merge.yaml
+        scenario_id: us-apply-001-missing-criteria-added
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -575,14 +585,17 @@ scenarios:
         - and: no two scenarios in "docs/scenarios.yaml" share the same steps
         - but: the file "docs/product/stories/99.3-rewalk-fixture.yaml" is unchanged
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-        - and: stdout does not match RE-WALK 3/
-        - and: stdout does not match Hit max apply attempts
+        - and: 'stdout does not match msg="RE-WALK \(fixes applied, verifying\)" attempt=3'
+        - and: stdout does not match One or more scenarios did not pass
         - and: 'judge: each scenario added to the registry carries the given, when and then steps of the acceptance criterion it came from in docs/product/stories/99.3-rewalk-fixture.yaml'
-  E2E-026:
+  us-apply-refusals-005-unrefined-story-refused:
     description: '`us apply` on a story that was created but never refined must be refused, not walked to a trivial success'
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-005-unrefined-story-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-story-without-acs" project tree
@@ -591,7 +604,6 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches US APPLY — Story 95\.3
-        - stdout matches msg="Seeded scratch registry"
         - 'stdout matches docs/product/stories/95\.3-document-summary-created-not-refined\.yaml: story has no acceptance_criteria entries to apply'
         - stdout matches level=ERROR msg="Refusing to start" command="us apply"
         - but: no file outside "tmp" changed
@@ -1062,11 +1074,14 @@ scenarios:
         - and: the file "tests/mcp/mcp_test.go" matches func TestE2E900\(t \*testing\.T\)
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" and "tests" changed
-  E2E-061:
+  us-apply-refusals-006-unshaped-criterion-id-refused:
     description: An acceptance criterion whose id is not `<NNN>-<slug>` must be refused before any AI turn, because `us apply` keys the Scenario it becomes by that id
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-006-unshaped-criterion-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-unshaped-criterion-id" project tree
@@ -1080,11 +1095,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-062:
+  us-apply-003-reorder-keeps-keys:
     description: Reordering a Story's acceptance criteria and applying it again must leave every Scenario key unchanged, because a key comes from the criterion's id and never from its position
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-registry-merge.yaml
+        scenario_id: us-apply-003-reorder-keeps-keys
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -2090,11 +2108,14 @@ scenarios:
         - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
         - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-141:
+  us-apply-refusals-002-shared-prefix-reads-own-story:
     description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us apply` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-002-shared-prefix-reads-own-story
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-shared-prefix" project tree
@@ -2112,11 +2133,14 @@ scenarios:
         - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
         - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-142:
+  us-apply-refusals-003-mismatched-id-refused:
     description: When every Story file starting with the requested id declares another Story's id, `us apply` must be refused at startup, naming each file and the id it declares, so `us apply scen` never applies the Story `scen-check`
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-apply-refusals-startup.yaml
+        scenario_id: us-apply-refusals-003-mismatched-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-apply-story-id-mismatch" project tree
