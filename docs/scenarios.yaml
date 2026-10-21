@@ -1471,11 +1471,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-113:
+  scen-check-step-definitions-001-template-binds-twice-fails:
     description: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
+        scenario_id: scen-check-step-definitions-001-template-binds-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-template-binds-twice" project tree
@@ -1489,11 +1492,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-114:
+  scen-check-step-definitions-002-definition-reached-twice-fails:
     description: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
+        scenario_id: scen-check-step-definitions-002-definition-reached-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-definition-reached-twice" project tree
@@ -1506,11 +1512,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-115:
+  scen-check-step-definitions-003-step-binds-twice-fails:
     description: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
+        scenario_id: scen-check-step-definitions-003-step-binds-twice-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-step-binds-twice" project tree
@@ -1522,11 +1531,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-116:
+  scen-check-step-definitions-004-one-to-one-passes:
     description: A Scenario a Story claims must pass the step-definition check when each template its steps match binds to one step definition of its suite that no other template reaches, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims passes unchecked
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
+        scenario_id: scen-check-step-definitions-004-one-to-one-passes
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-definitions-correspond" project tree
@@ -1540,11 +1552,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-117:
+  scen-check-step-definitions-005-unreadable-pattern-exits-1:
     description: A suite whose step definitions register a pattern that does not fold to a constant must stop the step-definition check at the first Scenario a Story claims, naming the check, the file and line of the pattern, and exit 1, because a definition the check cannot read would leave the steps it binds unchecked
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-step-definitions-correspondence.yaml
+        scenario_id: scen-check-step-definitions-005-unreadable-pattern-exits-1
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-definitions-unreadable" project tree
