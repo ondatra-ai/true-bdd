@@ -1160,11 +1160,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
-  E2E-090:
+  scen-check-phrases-002-unmatched-step-fails:
     description: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-002-unmatched-step-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-unmatched" project tree
@@ -1180,11 +1183,14 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-091:
+  scen-check-phrases-003-ambiguous-step-fails:
     description: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-003-ambiguous-step-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-ambiguous" project tree
@@ -1196,11 +1202,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-092:
+  scen-check-phrases-004-wrong-block-step-fails:
     description: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-004-wrong-block-step-fails
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-wrong-block" project tree
@@ -1212,11 +1221,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-093:
+  scen-check-phrases-005-malformed-template-fails-every-scenario:
     description: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-005-malformed-template-fails-every-scenario
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-malformed" project tree
@@ -1239,11 +1251,14 @@ scenarios:
         - and: stdout matches Validation failed
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-094:
+  scen-check-phrases-001-matched-steps-pass:
     description: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-001-matched-steps-pass
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-closed" project tree
@@ -1255,11 +1270,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-095:
+  scen-check-phrases-006-unclaimed-scenario-unchecked:
     description: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-006-unclaimed-scenario-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-unclaimed" project tree
@@ -1272,11 +1290,14 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
-  E2E-096:
+  scen-check-phrases-007-no-catalogue-unchecked:
     description: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/scen-check-phrases-step-phrase-closure.yaml
+        scenario_id: scen-check-phrases-007-no-catalogue-unchecked
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-phrase-no-catalogue" project tree
