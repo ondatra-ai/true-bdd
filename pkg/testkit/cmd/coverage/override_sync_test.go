@@ -141,6 +141,13 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-unknown-check-parameter":      overrideRefused,
 		"scen-check-fix-check-without-f":          overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
+		"scen-check-phrase-unmatched":             overrideChecks,
+		"scen-check-phrase-ambiguous":             overrideChecks,
+		"scen-check-phrase-wrong-block":           overrideChecks,
+		"scen-check-phrase-malformed":             overrideChecks,
+		"scen-check-phrase-closed":                overrideChecks,
+		"scen-check-phrase-unclaimed":             overrideChecks,
+		"scen-check-phrase-no-catalogue":          overrideChecks,
 	}
 }
 

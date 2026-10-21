@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
 
@@ -52,6 +53,9 @@ const (
 // separate methods, so "and"/"but" must stay a keyword, not plain text.
 type Statement struct {
 	Keyword string
+	// Block is the given/when/then list the step sits in, which an
+	// And/But keyword no longer says.
+	Block string
 	// Mode says who executes the step, resolved against the BLOCK's
 	// keyword. Text keeps any `llm:`/`judge:` prefix verbatim: the
 	// generated test quotes Text and bddgo strips the prefix there.
@@ -106,6 +110,21 @@ func (s *RegistryScenario) FormatSteps() string {
 	}
 
 	return result.String()
+}
+
+// Phrases is every step as the closure checks read it: its own text,
+// trimmed, without its and:/but: keyword, beside the block it sits in.
+func (s *RegistryScenario) Phrases() []catalogue.Step {
+	steps := make([]catalogue.Step, 0, len(s.Statements))
+
+	for _, statement := range s.Statements {
+		steps = append(steps, catalogue.Step{
+			Block: statement.Block,
+			Text:  strings.TrimSpace(statement.Text),
+		})
+	}
+
+	return steps
 }
 
 // rawStatement decodes either a plain string or an `{and|but: "..."}`
@@ -192,11 +211,12 @@ func (r rawMergedSteps) statements() ([]Statement, error) {
 
 	blocks := []struct {
 		keyword string
+		name    string
 		steps   []rawStatement
 	}{
-		{KeywordGiven, r.Given},
-		{KeywordWhen, r.When},
-		{KeywordThen, r.Then},
+		{KeywordGiven, catalogue.BlockGiven, r.Given},
+		{KeywordWhen, catalogue.BlockWhen, r.When},
+		{KeywordThen, catalogue.BlockThen, r.Then},
 	}
 
 	for _, block := range blocks {
@@ -208,6 +228,7 @@ func (r rawMergedSteps) statements() ([]Statement, error) {
 
 			out = append(out, Statement{
 				Keyword: statementKeyword(step, block.keyword, index),
+				Block:   block.name,
 				Mode:    mode,
 				Text:    step.text,
 			})

@@ -178,6 +178,7 @@ func newScenarioCheckData(scenario *registry.RegistryScenario) *template.Scenari
 		Path:        scenario.Path,
 		UserStories: stories,
 		Steps:       scenario.Steps,
+		Phrases:     scenario.Phrases(),
 	}
 }
 

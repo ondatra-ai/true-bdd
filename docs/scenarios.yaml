@@ -1112,6 +1112,134 @@ scenarios:
         - but: stdout does not match ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
+  E2E-090:
+    description: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-unmatched" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers within 200 milliseconds\\" matches no template\]"'
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-001 promptIndex=2
+        - and: 'stdout matches scen-check/term_closure +D: step-phrases +fail +FAIL'
+        - and: 'stdout matches SKIP: 1\n'
+        - and: stdout matches Validation failed
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-091:
+    description: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-ambiguous" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers 200\\" matches 2 templates: \\"the service answers \{code:number\}\\"; \\"the service answers 200\\"\]"'
+        - and: stdout matches Validation failed
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-092:
+    description: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-wrong-block" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the mcp service is running\\" matches \\"the mcp service is running\\", declared for given\]"'
+        - and: stdout matches Validation failed
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-093:
+    description: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-malformed" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail
+        - and: 'stdout matches E2E-001: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template'
+        - and: 'stdout matches E2E-001: catalogue template \\"the service answers \{reply\}\\" is malformed: text slot \{reply\} is not between double quotes'
+        - and: 'stdout matches E2E-001: catalogue template \\"the service waits \{delay:seconds\}\\" is malformed: slot \{delay:seconds\} has an unknown kind; a slot is text, number, role or pattern'
+        - and: 'stdout matches E2E-001: catalogue template \\"the reply matches \{expected:pattern\} exactly\\" is malformed: pattern slot \{expected:pattern\} is not the last token'
+        - and: 'stdout matches E2E-001: catalogue template \\"the reply matches\{expected:pattern\}\\" is malformed: pattern slot \{expected:pattern\} does not follow a space'
+        - and: 'stdout matches is malformed: slot name \\"name\\" is used twice'
+        - and: 'stdout matches E2E-001: catalogue template \\"the \{actor:role\} sends \\"\{message\}\\"\\" is malformed: role slot \{actor:role\}, but the product document declares no roles'
+        - and: 'stdout matches is malformed: brackets \[answers\|\\"replies\\"\] hold a slot, a quote or another bracket'
+        - and: 'stdout matches E2E-001: catalogue template \\"the service is \{up\\" is malformed: a \{ is never closed'
+        - and: 'stdout matches E2E-001: catalogue template \\"the service \[answers\\" is malformed: a \[ is never closed'
+        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template'
+        - and: stdout matches Validation failed
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-094:
+    description: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-closed" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 7 steps match one template each, 2 model-run steps exempt\]"'
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-095:
+    description: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-unclaimed" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 3 steps match one template each\]"'
+        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"'
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
+  E2E-096:
+    description: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "scen-check-phrase-no-catalogue" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"'
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the engine dispatched no AI turns
+        - and: no file outside "tmp" changed
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli

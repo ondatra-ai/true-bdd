@@ -126,6 +126,113 @@ func TestE2E076(t *testing.T) {
 	s.Done()
 }
 
+// E2E-090: A step of a Scenario a Story claims that matches no catalogue phrase must fail that Scenario, naming the step and its block, with the Scenario's `Q:` Prompts skipped and no AI turn spent on them
+func TestE2E090(t *testing.T) {
+	s := scenarios.New(t, "E2E-090")
+	s.Given(`the "scen-check-phrase-unmatched" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers within 200 milliseconds\\" matches no template\]"`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=E2E-001 promptIndex=2`)
+	s.And(`stdout matches scen-check/term_closure +D: step-phrases +fail +FAIL`)
+	s.And(`stdout matches SKIP: 1\n`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-091: A step of a Scenario a Story claims that two catalogue templates match must fail that Scenario, naming both templates, because a step means one thing or nothing
+func TestE2E091(t *testing.T) {
+	s := scenarios.New(t, "E2E-091")
+	s.Given(`the "scen-check-phrase-ambiguous" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the service answers 200\\" matches 2 templates: \\"the service answers \{code:number\}\\"; \\"the service answers 200\\"\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-092: A step of a Scenario a Story claims must fail that Scenario when the one template it matches is declared for another block, naming that block
+func TestE2E092(t *testing.T) {
+	s := scenarios.New(t, "E2E-092")
+	s.Given(`the "scen-check-phrase-wrong-block" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: then step \\"the mcp service is running\\" matches \\"the mcp service is running\\", declared for given\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-093: A catalogue template the grammar refuses must fail every Scenario a Story claims, naming the template and the rule it breaks, because no step can be held to it
+func TestE2E093(t *testing.T) {
+	s := scenarios.New(t, "E2E-093")
+	s.Given(`the "scen-check-phrase-malformed" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=fail`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the service answers \{reply\}\\" is malformed: text slot \{reply\} is not between double quotes`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the service waits \{delay:seconds\}\\" is malformed: slot \{delay:seconds\} has an unknown kind; a slot is text, number, role or pattern`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the reply matches \{expected:pattern\} exactly\\" is malformed: pattern slot \{expected:pattern\} is not the last token`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the reply matches\{expected:pattern\}\\" is malformed: pattern slot \{expected:pattern\} does not follow a space`)
+	s.And(`stdout matches is malformed: slot name \\"name\\" is used twice`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the \{actor:role\} sends \\"\{message\}\\"\\" is malformed: role slot \{actor:role\}, but the product document declares no roles`)
+	s.And(`stdout matches is malformed: brackets \[answers\|\\"replies\\"\] hold a slot, a quote or another bracket`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the service is \{up\\" is malformed: a \{ is never closed`)
+	s.And(`stdout matches E2E-001: catalogue template \\"the service \[answers\\" is malformed: a \[ is never closed`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: catalogue template \\"the mcp service is running\\" is malformed: another entry declares the same template`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-094: A Scenario a Story claims must pass the step-phrase check when each of its steps matches exactly one catalogue template declared for its block, whatever slots the templates use, and the `llm:` and `judge:` steps a model runs must be exempt
+func TestE2E094(t *testing.T) {
+	s := scenarios.New(t, "E2E-094")
+	s.Given(`the "scen-check-phrase-closed" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 7 steps match one template each, 2 model-run steps exempt\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-095: A Scenario no Story claims must pass the step-phrase check unchecked, saying so, while a Scenario a Story claims is checked beside it
+func TestE2E095(t *testing.T) {
+	s := scenarios.New(t, "E2E-095")
+	s.Given(`the "scen-check-phrase-unclaimed" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: 3 steps match one template each\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-096: A product document that declares no catalogue must leave every Scenario unchecked by the step-phrase check, saying so, because a host adopts the catalogue by writing one
+func TestE2E096(t *testing.T) {
+	s := scenarios.New(t, "E2E-096")
+	s.Given(`the "scen-check-phrase-no-catalogue" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // E2E-291: A registry scenario that satisfies every walked prompt must pass the walk and report success
 func TestE2E291(t *testing.T) {
 	s := scenarios.New(t, "E2E-291")
