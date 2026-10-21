@@ -1,0 +1,135 @@
+# Story `engine`: what every command shares, whichever role runs it.
+#
+# The help on the command tree, the locations and model routing read from
+# `true-bdd.yaml`, and the checklist refusals every command makes at
+# startup: a `--fix` run over a Prompt with no `F:`, and a Prompt citing a
+# document the engine cannot hand it. What one command alone does belongs
+# to that command's Stories.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: engine
+    feature: engine
+    title: Configure the engine once in true-bdd.yaml and have every command refuse at startup what it cannot run as configured
+    as_a: System Architect
+    i_want: every command to print its command tree on --help, to take each location and each model from true-bdd.yaml, and to refuse at startup, before any AI turn, a model routing, a fix run or a cited document it cannot honour
+    so_that: the engine runs on a host's own layout and models with no hardcoded path or provider, and a misconfiguration stops a run that has spent nothing instead of being quietly worked around
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-help-prints-command-tree
+          description: --help must print the command tree and change nothing on disk
+          steps:
+            - given:
+                - the "help-flag" project tree
+            - when:
+                - the System Architect runs "--help"
+            - then:
+                - the command exits with code 0
+                - stdout matches TrueBDD CLI
+                - 'stdout matches Usage:'
+                - stdout matches true-bdd \[command\]
+                - 'stdout matches Available Commands:'
+                - stdout matches \bbuild\b
+                - stdout matches \bus\b
+                - stdout matches -h, --help
+                - no file outside "tmp" changed
+        - id: 002-us-help-lists-story-commands
+          description: '`us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`'
+          steps:
+            - given:
+                - the "us-help-flag" project tree
+            - when:
+                - the Product Owner runs "us --help"
+            - then:
+                - the command exits with code 0
+                - 'stdout matches Available Commands:'
+                - stdout matches \brefine\b
+                - stdout matches \bapply\b
+                - but: stdout does not match \bcreate\b
+                - and: no file outside "tmp" changed
+        - id: 003-locations-come-from-config
+          description: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
+          steps:
+            - given:
+                - the "us-apply-relocated-registry" project tree
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us apply 95.2 --fix"
+            - then:
+                - the command exits with code 0
+                - 'stdout matches msg=AC index=1 total=1'
+                - 'stdout matches msg="RE-WALK \(fixes applied, verifying\)" attempt=2'
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches APPLY COMPLETE
+                - stdout matches msg="All ACs passed; updated from scratch" file=\./docs/specs/requirements\.yaml
+                - and: the file "docs/specs/requirements.yaml" is modified
+                - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "95.2-001-health-ok"
+                - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" is keyed "95.2-001-health-ok"
+                - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" cites the story "docs/product/stories/95.2-relocated-registry.yaml"
+                - and: the scenario from acceptance criterion "95.2-001-health-ok" in "docs/specs/requirements.yaml" matches /health
+                - and: exactly 1 scenario in "docs/specs/requirements.yaml" comes from acceptance criterion "90.2-001"
+                - but: no file matching "docs/scenarios.yaml" is created
+                - and: the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged
+                - and: 'judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did'
+        - id: 004-unknown-model-cli-refused
+          description: Multi-provider routing must fail LOUDLY, never quietly
+          steps:
+            - given:
+                - the "build-tests-unknown-cli-tier" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 005-prompt-without-fix-refused
+          description: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
+          steps:
+            - given:
+                - the "us-refine-fix-unfixable-checklist" project tree
+                - and: the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt
+            - when:
+                - the Product Owner runs "us refine 96.1 --fix"
+            - then:
+                - the command exits with code 1
+                - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
+                - 'stdout matches us-refine has 1 of 1 — us-refine/acceptance_criteria #1 Count the total number of acceptance criteria in the story'
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match US REFINE — Story
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 006-check-without-fix-refused
+          description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
+          steps:
+            - given:
+                - the "scen-check-fix-check-without-f" project tree
+            - when:
+                - the Quality Engineer runs "scen check --fix"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - stdout matches checklist has prompts with no F fix template, so --fix has nothing to apply
+                - 'stdout matches scen-check has 1 of 2 — scen-check/scenario_quality #2 D: given-when-then"'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 007-missing-document-refused
+          description: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
+          steps:
+            - given:
+                - the "us-refine-missing-document" project tree
+            - when:
+                - the Product Owner runs "us refine 96.1"
+            - then:
+                - the command exits with code 1
+                - stdout matches document file does not exist
+                - stdout matches docs/product/product\.yaml
+                - 'stdout matches level=ERROR msg="Refusing to start: checklist documents unsatisfiable" command="us refine" checklist=us-refine'
+                - but: stdout does not match US REFINE — Story
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+                - and: the engine dispatched no AI turns

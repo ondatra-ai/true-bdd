@@ -355,11 +355,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-019:
+  engine-004-unknown-model-cli-refused:
     description: Multi-provider routing must fail LOUDLY, never quietly
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-004-unknown-model-cli-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-tests-unknown-cli-tier" project tree
@@ -370,11 +373,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-020:
+  engine-001-help-prints-command-tree:
     description: --help must print the command tree and change nothing on disk
     service: bdd-cli
     path: tests/bdd-cli/cli_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-001-help-prints-command-tree
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "help-flag" project tree
@@ -459,11 +465,14 @@ scenarios:
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the file "docs/product/stories/95.1-duplicate-collapse.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-024:
+  engine-003-locations-come-from-config:
     description: Every location a host project uses is supposed to come from `true-bdd.yaml` — never a hardcoded path
     service: bdd-cli
     path: tests/bdd-cli/us_apply_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-003-locations-come-from-config
+        merge_date: '2026-10-21'
     timeout: 20m
     merged_steps:
       given:
@@ -851,11 +860,14 @@ scenarios:
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
         - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
         - and: stdout does not match Hit max apply attempts
-  E2E-050:
+  engine-002-us-help-lists-story-commands:
     description: '`us --help` must list the Story commands the pipeline has, which start at `us refine`, and no `us create`'
     service: bdd-cli
     path: tests/bdd-cli/cli_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-002-us-help-lists-story-commands
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-help-flag" project tree
@@ -868,11 +880,14 @@ scenarios:
         - stdout matches \bapply\b
         - but: stdout does not match \bcreate\b
         - and: no file outside "tmp" changed
-  E2E-051:
+  engine-005-prompt-without-fix-refused:
     description: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-005-prompt-without-fix-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-fix-unfixable-checklist" project tree
@@ -888,11 +903,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-052:
+  engine-007-missing-document-refused:
     description: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-007-missing-document-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-missing-document" project tree
@@ -1071,11 +1089,14 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
-  E2E-075:
+  engine-006-check-without-fix-refused:
     description: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/engine-configured-commands.yaml
+        scenario_id: engine-006-check-without-fix-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "scen-check-fix-check-without-f" project tree

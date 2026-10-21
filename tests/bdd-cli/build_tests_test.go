@@ -82,18 +82,6 @@ func TestE2E018(t *testing.T) {
 	s.Done()
 }
 
-// E2E-019: Multi-provider routing must fail LOUDLY, never quietly
-func TestE2E019(t *testing.T) {
-	s := scenarios.New(t, "E2E-019")
-	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-060: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
 func TestE2E060(t *testing.T) {
 	s := scenarios.New(t, "E2E-060")
@@ -189,6 +177,18 @@ func TestE2E300(t *testing.T) {
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
 	s.And(`stdout matches step matches more than one definition`)
 	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-004-unknown-model-cli-refused: Multi-provider routing must fail LOUDLY, never quietly
+func TestEngine004UnknownModelCliRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-004-unknown-model-cli-refused")
+	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }

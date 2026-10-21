@@ -284,9 +284,26 @@ func TestE2E049(t *testing.T) {
 	s.Done()
 }
 
-// E2E-051: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
-func TestE2E051(t *testing.T) {
-	s := scenarios.New(t, "E2E-051")
+// E2E-053: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
+func TestE2E053(t *testing.T) {
+	s := scenarios.New(t, "E2E-053")
+	s.Given(`the "us-refine-story-id-mismatch" project tree`)
+	s.When(`the Product Owner runs "us refine scen"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story scen`)
+	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-closure\.yaml declared_id=scen-check`)
+	s.And(`stdout matches story file docs/product/stories/scen-check-closure\.yaml declares id scen-check, not scen`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match msg="Story loaded"`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/scen-check-closure.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-005-prompt-without-fix-refused: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
+func TestEngine005PromptWithoutFixRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-005-prompt-without-fix-refused")
 	s.Given(`the "us-refine-fix-unfixable-checklist" project tree`)
 	s.And(`the "us-refine" checklist is narrowed to its "Count the total number of acceptance criteria" prompt`)
 	s.When(`the Product Owner runs "us refine 96.1 --fix"`)
@@ -301,9 +318,9 @@ func TestE2E051(t *testing.T) {
 	s.Done()
 }
 
-// E2E-052: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
-func TestE2E052(t *testing.T) {
-	s := scenarios.New(t, "E2E-052")
+// engine-007-missing-document-refused: A `us refine` run must be refused at startup when a prompt it would walk cites a document the engine cannot hand it, naming the missing document
+func TestEngine007MissingDocumentRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-007-missing-document-refused")
 	s.Given(`the "us-refine-missing-document" project tree`)
 	s.When(`the Product Owner runs "us refine 96.1"`)
 	s.Then(`the command exits with code 1`)
@@ -313,23 +330,6 @@ func TestE2E052(t *testing.T) {
 	s.But(`stdout does not match US REFINE — Story`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-053: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
-func TestE2E053(t *testing.T) {
-	s := scenarios.New(t, "E2E-053")
-	s.Given(`the "us-refine-story-id-mismatch" project tree`)
-	s.When(`the Product Owner runs "us refine scen"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story scen`)
-	s.And(`stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-closure\.yaml declared_id=scen-check`)
-	s.And(`stdout matches story file docs/product/stories/scen-check-closure\.yaml declares id scen-check, not scen`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match msg="Story loaded"`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/scen-check-closure.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
