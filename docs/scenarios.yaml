@@ -1554,6 +1554,43 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/architecture/architecture.yaml"
         - and: 'the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$'
         - and: the engine dispatched 3 AI turns
+  E2E-130:
+    description: '`build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture''s mapping of that word, so the step definition observes what the mapping says'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "build-tests-fix-from-spec" project tree
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: stdout matches msg="Unbound steps specified" subjectID=INT-901 steps=3 phrases=4 terms=4
+        - and: stdout matches msg="Unbound steps specified" subjectID=INT-902 steps=3 phrases=4 terms=4
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: every step of scenario "INT-901" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+        - and: every step of scenario "INT-902" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+        - and: 'judge: the step definitions created under tests/mcp/steps observe each word the way the word mapping says: the server''s address comes from the MCP_PORT environment variable, 7411 when it is unset, and the server counts as running once GET /healthz answers 200; a session is opened by POSTing a JSON-RPC request whose method is initialize to /mcp; the ticket is the reply''s X-Session-Ticket header, which must be 32 lowercase hexadecimal characters; and the protocol version is the reply''s X-MCP-Protocol header, a date in YYYY-MM-DD form'
+        - but: no file outside "tmp" and "tests" changed
+  E2E-131:
+    description: '`build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "build-tests-fix-unreadable-catalogue" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases'
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed
   E2E-291:
     description: A registry scenario that satisfies every walked prompt must pass the walk and report success
     service: bdd-cli

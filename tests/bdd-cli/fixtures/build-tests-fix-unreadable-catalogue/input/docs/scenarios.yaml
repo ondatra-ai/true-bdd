@@ -1,0 +1,27 @@
+# Seed registry for the `build-tests-fix-unreadable-catalogue` BDD fixture.
+#
+# One scenario whose steps bind to nothing, so `build tests --fix` must
+# read what the spec says about them, from a product document whose
+# `catalogue:` is not a list. The run is refused before codegen and
+# before any AI turn.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Seed for build-tests-fix-unreadable-catalogue fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-21"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket"
