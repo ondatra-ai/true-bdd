@@ -1,0 +1,14 @@
+# The Story `us apply scen-check` asks for, in `us-apply-shared-prefix`.
+#
+# Its sibling `scen-check-phrases-tag.yaml` also matches the glob
+# `scen-check-*.yaml`; this file is the one whose own id is `scen-check`.
+# A first draft with no acceptance criteria yet, so the run refuses it
+# before any AI turn: the refusal names the file the engine picked.
+
+story:
+    id: scen-check
+    title: Check A Claimed Scenario Against Its Spec
+    as_a: Quality Engineer
+    i_want: to check that a claimed Scenario keeps to the spec its Story declares
+    so_that: a Scenario that drifted from the spec is caught before it ships
+    status: PLANNED
