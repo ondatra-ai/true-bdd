@@ -127,11 +127,14 @@ scenarios:
         # the tree the fix loop left. Last, so the run it appends to
         # suite-runs.log lands after the line-count clause and both snapshots.
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
-  E2E-006:
+  build-code-spec-001-malformed-spec-refused:
     description: A spec the loader cannot decode must be refused with the file named
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-001-malformed-spec-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-malformed-spec" project tree
@@ -146,11 +149,14 @@ scenarios:
         - and: the file "docs/architecture/architecture.yaml" is unchanged
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-007:
+  build-code-spec-004-no-replay-command-refused:
     description: A test suite that does not say how to run itself must be refused, not run some other way
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-004-no-replay-command-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-missing-suite-command" project tree
@@ -164,11 +170,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-008:
+  build-code-spec-002-no-services-refused:
     description: An architectural spec that declares no services at all must be refused, not walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-002-no-services-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-no-services" project tree
@@ -181,11 +190,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-009:
+  build-code-spec-003-no-test-suite-refused:
     description: An architectural spec that never says how its tests run must be refused, not walked to a trivial success
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-spec-refusals.yaml
+        scenario_id: build-code-spec-003-no-test-suite-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-no-suites" project tree
