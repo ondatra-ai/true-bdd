@@ -1,0 +1,146 @@
+# Story `us-refine-fix`: the `us refine --fix` loop.
+#
+# Each criterion seeds a Story with one defect a us-refine check fails on,
+# narrows the walk to that check, answers every question the fix loop asks,
+# and pins that the loop rewrites the Story until the check passes and saves
+# it in place. The refusals of a Story `us refine` cannot walk and the
+# verdicts it gives without `--fix` are Stories of their own:
+# us-refine-refusals and us-refine-verdicts.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `us-refine-fix-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: us-refine-fix
+    feature: us-refine
+    title: Drive a failing Story check to a pass with us refine --fix
+    as_a: Product Owner
+    i_want: us refine --fix to rewrite every acceptance criterion a walked us-refine check fails, for a vague qualifier, a forbidden action verb, a description written as Given/When/Then prose or a criterion with no steps, taking my answers to its questions, until every walked check passes, and to save the Story in place with its id and its feature label as I wrote them
+    so_that: a Story reaches us apply with measurable, rule-based criteria without my rewriting each one by hand, and nothing the fix loop rewrites drops what the Story already said
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-vague-description-made-measurable
+          description: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
+          steps:
+            - given:
+                - the "us-refine-fix-desc-qualifier" project tree
+                - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 96.6 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/96.6-document-summary-desc-qualifier.yaml"
+                - and: the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has id "96.6"
+                - and: the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has 4 acceptance criteria
+                - and: every acceptance criterion in the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" has given, when and then steps
+                - and: the description of acceptance criterion "AC-3" of the story "docs/product/stories/96.6-document-summary-desc-qualifier.yaml" does not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b
+                - and: stdout does not match Hit max apply attempts
+                - and: 'judge: the four acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, and the first-10000-words notice — with every exact message and numeric threshold intact'
+        - id: 002-gherkin-description-states-a-rule
+          description: An acceptance criterion described in Given/When/Then prose must drive the fix loop until it states a rule
+          steps:
+            - given:
+                - the "us-refine-fix-descriptions" project tree
+                - and: the "us-refine" checklist is narrowed to its "whether its description field follows the rule-based format" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 96.2 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/96.2-document-summary-descriptions.yaml"
+                - and: the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has id "96.2"
+                - and: the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has 5 acceptance criteria
+                - and: every acceptance criterion in the story "docs/product/stories/96.2-document-summary-descriptions.yaml" has given, when and then steps
+                - and: the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" matches (?i)\b(must|should)\b
+                - and: the description of acceptance criterion "AC-1" of the story "docs/product/stories/96.2-document-summary-descriptions.yaml" does not match (?i)\bwhen\b.*\bthen\b
+                - and: stdout does not match Hit max apply attempts
+                - and: 'judge: the five acceptance criteria still cover the substance of the seed — a 150-word summary, the unshared-document message, the timeout message, the first-10000-words notice, and the section-heading outline — with every exact message and numeric threshold intact'
+        - id: 003-forbidden-verb-made-observable
+          description: A forbidden action verb in a step must drive the fix loop until the step names an observable action
+          steps:
+            - given:
+                - the "us-refine-fix-forbidden-verb" project tree
+                - and: the "us-refine" checklist is narrowed to its "use action verbs from the forbidden_actions list" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 96.8 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/96.8-document-summary-forbidden-verb.yaml"
+                - and: the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has id "96.8"
+                - and: the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has 4 acceptance criteria
+                - and: every acceptance criterion in the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" has given, when and then steps
+                - and: the steps of acceptance criterion "AC-1" of the story "docs/product/stories/96.8-document-summary-forbidden-verb.yaml" do not match (?i)\b(handle|handles|process|parse)\b
+                - and: stdout does not match Hit max apply attempts
+                - and: 'judge: AC-1''s then step now states a concrete observable action in place of the forbidden verb, and keeps the 150-word threshold; the four criteria still cover the substance of the seed with every exact message intact'
+        - id: 004-vague-step-made-measurable
+          description: A vague qualifier in a step must drive the fix loop until the step is measurable
+          steps:
+            - given:
+                - the "us-refine-fix-step-qualifier" project tree
+                - and: the "us-refine" checklist is narrowed to its "whether its steps field contains a vague word" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 96.7 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/96.7-document-summary-step-qualifier.yaml"
+                - and: the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has id "96.7"
+                - and: the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has 4 acceptance criteria
+                - and: every acceptance criterion in the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" has given, when and then steps
+                - and: the steps of acceptance criterion "AC-4" of the story "docs/product/stories/96.7-document-summary-step-qualifier.yaml" do not match (?i)\b(properly|correctly|appropriate|user-friendly|fast|quickly|easily|seamless|intuitive)\b
+                - and: stdout does not match Hit max apply attempts
+                - and: 'judge: AC-4''s then step still states the first-10000-words notice as an observable outcome, and the four criteria still cover the substance of the seed with every exact message and numeric threshold intact'
+        - id: 005-missing-steps-written
+          description: An acceptance criterion with no steps must drive the fix loop until it carries Given/When/Then
+          steps:
+            - given:
+                - the "us-refine-fix-steps" project tree
+                - and: the "us-refine" checklist is narrowed to its "whether its steps field follows the Given/When/Then format" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 96.5 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/96.5-document-summary-steps.yaml"
+                - and: the story "docs/product/stories/96.5-document-summary-steps.yaml" has id "96.5"
+                - and: the story "docs/product/stories/96.5-document-summary-steps.yaml" has 5 acceptance criteria
+                - and: every acceptance criterion in the story "docs/product/stories/96.5-document-summary-steps.yaml" has given, when and then steps
+                - and: stdout does not match Hit max apply attempts
+                - and: 'judge: AC-2''s new given, when and then steps are derived from its own description, and the five criteria still cover the substance of the seed with every exact message and numeric threshold intact'
+        - id: 006-feature-label-survives
+          description: A Story's `feature:` label must survive `us refine` rewriting the story, through the fix the applier writes and the final save alike
+          steps:
+            - given:
+                - the "us-refine-fix-keeps-feature" project tree
+                - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine doc-summary --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Fix applied; re-running validation"
+                - stdout matches ALL CHECKS PASSED!
+                - stdout matches msg="Story saved"
+                - stdout matches REFINE COMPLETE
+                - and: the only file changed outside "tmp" is "docs/product/stories/doc-summary-keeps-feature.yaml"
+                - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has id "doc-summary"
+                - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
+                - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
+                - and: stdout does not match Hit max apply attempts

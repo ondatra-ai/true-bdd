@@ -1,0 +1,119 @@
+# Story `build-code-run`: `build code` running the declared suite and driving the fix loop.
+#
+# The suite command the architecture declares runs, a runner that cannot
+# start or a test still failing ends the run with exit code 1, and `--fix`
+# re-runs only the test each fix was for until the suite passes. Refusals
+# of a malformed architecture or of a suite command the engine cannot run
+# as declared are the Stories build-code-spec and build-code-commands.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-code-run-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: build-code-run
+    feature: build-code
+    title: Run the declared test suite with build code and drive the fix loop until it passes
+    as_a: System Architect
+    i_want: build code to run the replay command the architecture declares for the suite, exit 1 when that command's program cannot start or a test is still failing when the walk ends, and under --fix re-run only the test each applied fix was for until the suite passes, a browser suite included
+    so_that: the services can be rebuilt from the specification, with the suite's own exit status rather than a person's reading deciding when they behave
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-runs-declared-replay-command
+          description: '`build code` must run the command its architectural spec declares — and specifically the `replay` one'
+          steps:
+            - given:
+                - the "build-code-commands-from-spec" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Running tests" framework=go-test
+                - stdout matches msg="Suite failures" failures=0 framework=go-test
+                - 'stdout matches msg="Total failing tests across architecture" failures=0'
+                - stdout matches BUILD CODE COMPLETE
+                - but: no file outside "tmp" changed
+                - and: the engine spawned a test runner with arguments matching -run \^TestGreen\$
+                - and: the engine spawned exactly 1 test runner
+                - and: the engine dispatched no AI turns
+        - id: 002-unstartable-runner-exits-1
+          description: A suite command the architecture declares whose program the machine cannot start must end the run with exit code 1 and name that program on stdout
+          steps:
+            - given:
+                - the "build-code-command-not-executable" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches msg="Cannot run suite" framework=go-test'
+                - stdout matches true-bdd-no-such-runner
+                - stdout matches discovery failed
+                - but: no file outside "tmp" changed
+                - and: the engine spawned the test runner "true-bdd-no-such-runner"
+                - and: the engine spawned exactly 1 test runner
+                - and: the engine dispatched no AI turns
+        - id: 003-failing-test-exits-1
+          description: A walk that ends with a test still failing must exit non-zero
+          steps:
+            - given:
+                - the "build-code-nonconvergence" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="Running tests" framework=go-test
+                - stdout matches msg="Suite failures" failures=1 framework=go-test
+                - 'stdout matches msg="Total failing tests across architecture" failures=1'
+                - stdout matches BUILD CODE COMPLETE
+                - but: no file outside "tmp" changed
+                - and: the engine spawned the test runner "go"
+                - and: the engine dispatched 1 AI turn
+        - id: 004-fix-reruns-fixed-test
+          description: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
+          steps:
+            - given:
+                - the "build-code-fix-named-test" project tree
+                - the System Architect answers "1" to every question
+            - when:
+                - the System Architect runs "build code --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Running tests" framework=go-test
+                - stdout matches msg="Suite failures" failures=1 framework=go-test
+                - 'stdout matches msg="Total failing tests across architecture" failures=1'
+                - stdout matches msg="Fix applied; re-running this test in isolation"
+                - stdout matches BUILD CODE COMPLETE
+                - and: the file "services/calc/calc.go" is modified
+                - and: the file "tests/suite/suite-runs.log" has exactly 1 line
+                - and: the engine spawned a test runner with arguments matching TestAddSumsItsArguments
+                - but: the file "tests/suite/add_test.go" is unchanged
+                - and: the file "tests/suite/canary_test.go" is unchanged
+                - and: the file "docs/architecture/architecture.yaml" is unchanged
+                # Independent outcome check: the harness runs the suite itself in
+                # the tree the fix loop left. Last, so the run it appends to
+                # suite-runs.log lands after the line-count clause and both snapshots.
+                - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - id: 005-playwright-fix-loop-converges
+          description: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
+          steps:
+            - given:
+                - the "build-code-playwright-nextjs" project tree
+                - and: the project's browser test dependencies are installed
+                - the System Architect answers "1" to every question
+            - when:
+                - the System Architect runs "build code --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Running tests" framework=playwright
+                - stdout matches BUILD CODE COMPLETE
+                - and: the file "services/frontend/Dockerfile" is created
+                - and: the file "services/frontend/package.json" is created
+                - but: the file "docker-compose.yaml" is unchanged
+                - and: the file "tests/integration/frontend-home.spec.ts" is unchanged
+                - and: the file "docs/architecture/architecture.yaml" is unchanged
+                - and: no file outside "tmp" and "services/frontend" changed
+                # THE assertion this scenario exists for: the harness runs the
+                # declared browser suite itself, against the app the loop produced.
+                # Every file clause above is a proxy for this one.
+                - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
+                - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
+                - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'

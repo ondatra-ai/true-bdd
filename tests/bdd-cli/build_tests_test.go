@@ -22,9 +22,21 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-015: A registry that parses but holds no scenarios must be refused, never walked to a trivial success
-func TestE2E015(t *testing.T) {
-	s := scenarios.New(t, "E2E-015")
+// E2E-019: Multi-provider routing must fail LOUDLY, never quietly
+func TestE2E019(t *testing.T) {
+	s := scenarios.New(t, "E2E-019")
+	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
+func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
 	s.Given(`the "build-tests-empty-registry" project tree`)
 	s.When(`the System Architect runs "build tests"`)
 	s.Then(`the command exits with code 1`)
@@ -36,9 +48,51 @@ func TestE2E015(t *testing.T) {
 	s.Done()
 }
 
-// E2E-016: A registry scenario with no test must get a generated test file and a step definition for every step it declares
-func TestE2E016(t *testing.T) {
-	s := scenarios.New(t, "E2E-016")
+// build-tests-refusals-002-misshapen-registry-refused: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
+func TestBuildTestsRefusals002MisshapenRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-002-misshapen-registry-refused")
+	s.Given(`the "build-tests-malformed-registry" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches BUILD TESTS`)
+	s.And(`stdout matches cannot unmarshal !!seq into map\[string\]`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-003-undeclared-registry-refused: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
+func TestBuildTestsRefusals003UndeclaredRegistryRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-003-undeclared-registry-refused")
+	s.Given(`the "build-tests-unconfigured-registry" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match Loaded requirements registry`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-refusals-004-empty-checklist-refused: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
+func TestBuildTestsRefusals004EmptyChecklistRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-refusals-004-empty-checklist-refused")
+	s.Given(`the "build-tests-empty-checklist" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
+func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")
 	s.Given(`the "build-tests-fix-happy-path" project tree`)
 	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build tests --fix"`)
@@ -53,50 +107,9 @@ func TestE2E016(t *testing.T) {
 	s.Done()
 }
 
-// E2E-017: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
-func TestE2E017(t *testing.T) {
-	s := scenarios.New(t, "E2E-017")
-	s.Given(`the "build-tests-malformed-registry" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches BUILD TESTS`)
-	s.And(`stdout matches cannot unmarshal !!seq into map\[string\]`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-018: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
-func TestE2E018(t *testing.T) {
-	s := scenarios.New(t, "E2E-018")
-	s.Given(`the "build-tests-unconfigured-registry" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start`)
-	s.And(`stdout matches documents\.scenarios_yaml`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-019: Multi-provider routing must fail LOUDLY, never quietly
-func TestE2E019(t *testing.T) {
-	s := scenarios.New(t, "E2E-019")
-	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/scenarios.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-060: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
-func TestE2E060(t *testing.T) {
-	s := scenarios.New(t, "E2E-060")
+// build-tests-steps-002-test-named-after-key: A Scenario keyed by its lower-case lineage must get a CamelCase test name that `go test` runs, while a legacy `E2E-NNN` key keeps the name it always had
+func TestBuildTestsSteps002TestNamedAfterKey(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-002-test-named-after-key")
 	s.Given(`the "build-tests-lineage-key-test-names" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 0`)
@@ -109,9 +122,50 @@ func TestE2E060(t *testing.T) {
 	s.Done()
 }
 
-// E2E-130: `build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture's mapping of that word, so the step definition observes what the mapping says
-func TestE2E130(t *testing.T) {
-	s := scenarios.New(t, "E2E-130")
+// build-tests-steps-003-only-unbound-scenarios-walked: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
+func TestBuildTestsSteps003OnlyUnboundScenariosWalked(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-003-only-unbound-scenarios-walked")
+	s.Given(`the "build-tests-coverage-in-process" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches 2 of 2 scenario\(s\) already bind every step; walking 0\.`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`the engine spawned no test runners`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-tests-steps-004-unfoldable-pattern-refused: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
+func TestBuildTestsSteps004UnfoldablePatternRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-004-unfoldable-pattern-refused")
+	s.Given(`the "build-tests-coverage-computed-pattern" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches step pattern is not a constant expression`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-steps-005-double-bound-step-refused: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
+func TestBuildTestsSteps005DoubleBoundStepRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-005-double-bound-step-refused")
+	s.Given(`the "build-tests-coverage-ambiguous-step" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches step matches more than one definition`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-steps-006-steps-authored-from-spec: `build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture's mapping of that word, so the step definition observes what the mapping says
+func TestBuildTestsSteps006StepsAuthoredFromSpec(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-006-steps-authored-from-spec")
 	s.Given(`the "build-tests-fix-from-spec" project tree`)
 	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build tests --fix"`)
@@ -126,9 +180,9 @@ func TestE2E130(t *testing.T) {
 	s.Done()
 }
 
-// E2E-131: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
-func TestE2E131(t *testing.T) {
-	s := scenarios.New(t, "E2E-131")
+// build-tests-steps-007-unreadable-catalogue-refused: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
+func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-steps-007-unreadable-catalogue-refused")
 	s.Given(`the "build-tests-fix-unreadable-catalogue" project tree`)
 	s.When(`the System Architect runs "build tests --fix"`)
 	s.Then(`the command exits with code 1`)
@@ -136,59 +190,5 @@ func TestE2E131(t *testing.T) {
 	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
 	s.And(`the engine dispatched no AI turns`)
 	s.But(`no file outside "tmp" changed`)
-	s.Done()
-}
-
-// E2E-297: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
-func TestE2E297(t *testing.T) {
-	s := scenarios.New(t, "E2E-297")
-	s.Given(`the "build-tests-empty-checklist" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.But(`stdout does not match BUILD TESTS`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-298: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
-func TestE2E298(t *testing.T) {
-	s := scenarios.New(t, "E2E-298")
-	s.Given(`the "build-tests-coverage-in-process" project tree`)
-	s.When(`the System Architect runs "build tests --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches 2 of 2 scenario\(s\) already bind every step; walking 0\.`)
-	s.And(`the engine dispatched no AI turns`)
-	s.And(`the engine spawned no test runners`)
-	s.And(`the file "tests/mcp/mcp_test.go" is created`)
-	s.But(`no file outside "tmp" and "tests" changed`)
-	s.Done()
-}
-
-// E2E-299: A step pattern the engine cannot resolve to a constant must be refused by name, never skipped, because a skipped pattern reports a bound step as unbound
-func TestE2E299(t *testing.T) {
-	s := scenarios.New(t, "E2E-299")
-	s.Given(`the "build-tests-coverage-computed-pattern" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches step pattern is not a constant expression`)
-	s.And(`stdout matches tests/mcp/steps/steps\.go`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-300: A step matched by two definitions must be refused rather than reported as a gap, because which one runs depends on registration order and a third would paper over it
-func TestE2E300(t *testing.T) {
-	s := scenarios.New(t, "E2E-300")
-	s.Given(`the "build-tests-coverage-ambiguous-step" project tree`)
-	s.When(`the System Architect runs "build tests"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches step matches more than one definition`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
