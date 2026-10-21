@@ -67,11 +67,12 @@ func RunBuildTests(
 
 	prep := &buildTestsPrep{
 		architectureFile: architectureFile,
+		productFile:      productDocument(deps.DocResolver),
 		registryFile:     requirementsFile,
 		fix:              fix,
 	}
 
-	err := runner.Run(ctx, runner.Spec[*registry.RegistryScenario]{
+	err := runner.Run(ctx, runner.Spec[*BuildTestsItem]{
 		Name:          "build tests",
 		ChecklistName: "build-tests",
 		StoryNumber:   "",
@@ -81,7 +82,7 @@ func RunBuildTests(
 		Prepare:     prep.run,
 		PostFix:     buildTestsPostFix,
 		Finalize:    finalizeBuildTests,
-		GetSubject:  registry.Subject,
+		GetSubject:  buildTestsSubject,
 		OnItemStart: buildTestsOnItemStart,
 
 		Evaluator:    deps.BuildTestsEvaluator,
@@ -110,8 +111,10 @@ func RunBuildTests(
 // the post-walk re-check can reuse the plan rather than rebuild it.
 type buildTestsPrep struct {
 	architectureFile string
-	registryFile     string
-	fix              bool
+	// productFile is "" for a host without a product document.
+	productFile  string
+	registryFile string
+	fix          bool
 
 	repoRoot string
 	plan     *scenariogen.Plan
@@ -121,13 +124,15 @@ type buildTestsPrep struct {
 	walking bool
 }
 
-// run is the Prepare hook: it resolves which steps bind, renders the
-// generated tests, then narrows the walk to the scenarios with a gap —
-// all three answerable without a model.
+// run is the Prepare hook: it resolves which steps bind, reads what the
+// spec says about the unbound ones, renders the generated tests, then
+// narrows the walk to the scenarios with a gap — all without a model.
 func (p *buildTestsPrep) run(
 	_ context.Context,
-	scenarios []*registry.RegistryScenario,
-) ([]*registry.RegistryScenario, error) {
+	items []*BuildTestsItem,
+) ([]*BuildTestsItem, error) {
+	scenarios := registryScenarios(items)
+
 	arch, err := architecture.Load(p.architectureFile)
 	if err != nil {
 		return nil, err
@@ -150,6 +155,12 @@ func (p *buildTestsPrep) run(
 		return nil, err
 	}
 
+	// Before codegen too: a document it cannot read refuses untouched.
+	specs, err := p.specify(scenarios, answer)
+	if err != nil {
+		return nil, err
+	}
+
 	err = p.renderTests()
 	if err != nil {
 		return nil, err
@@ -157,7 +168,12 @@ func (p *buildTestsPrep) run(
 
 	p.walking = true
 
-	return scenariosWithGaps(scenarios, answer), nil
+	walked := scenariosWithGaps(items, answer)
+	for _, item := range walked {
+		item.Spec = specs[item.ID]
+	}
+
+	return walked, nil
 }
 
 // renderTests writes the generated files under --fix, and refuses a run
@@ -192,10 +208,10 @@ func (p *buildTestsPrep) renderTests() error {
 
 // scenariosWithGaps keeps only the scenarios needing a fix turn.
 func scenariosWithGaps(
-	scenarios []*registry.RegistryScenario,
+	scenarios []*BuildTestsItem,
 	answer *stepcoverage.Answer,
-) []*registry.RegistryScenario {
-	selected := make([]*registry.RegistryScenario, 0, len(scenarios))
+) []*BuildTestsItem {
+	selected := make([]*BuildTestsItem, 0, len(scenarios))
 
 	for _, scenario := range scenarios {
 		// Gated on EXAMINED, not merely on having no gap: a scenario the
@@ -276,21 +292,21 @@ func (p *buildTestsPrep) checkGeneratedTestsSurvived() error {
 func loadRegistryScenarios(
 	deps BuildTestsDeps,
 	requirementsFile string,
-) func(ctx context.Context) ([]*registry.RegistryScenario, error) {
-	return func(_ context.Context) ([]*registry.RegistryScenario, error) {
+) func(ctx context.Context) ([]*BuildTestsItem, error) {
+	return func(_ context.Context) ([]*BuildTestsItem, error) {
 		scenarios, err := deps.RegistryLoader.Load(requirementsFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load requirements registry: %w", err)
 		}
 
-		return scenarios, nil
+		return buildTestsItems(scenarios), nil
 	}
 }
 
 // buildTestsOnItemStart prints the "scenario N/M: <id> — <description>"
 // banner before each item walk. The id is included so per-scenario
 // progress is grep-friendly in long runs.
-func buildTestsOnItemStart(idx, total int, item *registry.RegistryScenario) {
+func buildTestsOnItemStart(idx, total int, item *BuildTestsItem) {
 	slog.Info("scenario",
 		"index", idx+1, "total", total, "id", item.ID, "description", item.Description)
 }
@@ -300,9 +316,9 @@ func buildTestsOnItemStart(idx, total int, item *registry.RegistryScenario) {
 // unchanged; Run's next Query iteration re-reads the test trees from disk.
 func buildTestsPostFix(
 	_ context.Context,
-	item *registry.RegistryScenario,
+	item *BuildTestsItem,
 	_ string,
-) (*registry.RegistryScenario, error) {
+) (*BuildTestsItem, error) {
 	slog.Info("Fix applied; re-running test-coverage check")
 
 	return item, nil
@@ -311,7 +327,7 @@ func buildTestsPostFix(
 // finalizeBuildTests is the Finalize closure for `build tests`. Returns
 // a non-nil error iff the walk did not converge so the CLI exits
 // non-zero on any uncovered scenario.
-func finalizeBuildTests(result *engine.Result[*registry.RegistryScenario]) error {
+func finalizeBuildTests(result *engine.Result[*BuildTestsItem]) error {
 	if result.Reason == engine.Converged {
 		return nil
 	}

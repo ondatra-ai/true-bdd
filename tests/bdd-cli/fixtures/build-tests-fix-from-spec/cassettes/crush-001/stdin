@@ -1,0 +1,480 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
+
+**Your Task:**
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** INT-901
+**Description:** A Claude User opening a session at the MCP server is granted a ticket
+**Service:** mcp-service
+
+### Steps
+Given:
+  - the MCP server is running
+When:
+  - the Claude User opens a session
+Then:
+  - the session is granted a ticket
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario INT-901: A Claude User opening a session at the MCP server is granted a ticket
+
+## Target
+
+Suite resolved from `docs/architecture/architecture.yaml`: the scenario's
+`service:` is `mcp-service`, and the only `tests/<service>/` tree is
+`tests/mcp` (the architecture's `testing.commands` drive `./tests/mcp/...`).
+The suite's steps package is therefore:
+
+    tests/mcp/steps/
+
+It does **not exist yet** — `tests/mcp/` holds only the generated
+`mcp_test.go`. So there is no sibling state type to reuse: this fix
+establishes the suite's state type, its `Register` function and the whole
+step vocabulary of the suite in one pass.
+
+Write **only** under `tests/mcp/steps/`. Do not touch
+`docs/scenarios.yaml`, `docs/product/`, `docs/architecture/`, `true-bdd/`,
+or `tests/mcp/mcp_test.go`.
+
+## Vocabulary this fix must bind (subject + neighbour, one pass)
+
+Four definitions, covering every unbound step of INT-901 **and** INT-902:
+
+| pattern | block | catalogue phrase |
+|---|---|---|
+| `^the MCP server is running$` | given | `the MCP server is running` |
+| `^the (.+) opens a session$` | when | `the {actor:role} opens a session` (capture group stands in for `{actor:role}`) |
+| `^the session is granted a ticket$` | then | `the session is granted a ticket` |
+| `^the server names its protocol version$` | then | `the server names its protocol version` (INT-902's unbound Then) |
+
+Each observes its words exactly as the architecture's word mapping says:
+address from `MCP_PORT` (7411 when unset) on 127.0.0.1 polled at
+`GET /healthz` until 200 for at most 5s; the session opened by one
+`POST /mcp` of `{"jsonrpc":"2.0","id":1,"method":"initialize"}` with
+`Content-Type: application/json`, whose status and headers are kept; the
+ticket read from `X-Session-Ticket` (32 lowercase hex, on a 200 reply);
+the protocol version read from `X-MCP-Protocol` (a YYYY-MM-DD date). A
+Then step that finds no kept reply fails rather than passes.
+
+Only the role in the When step varies, so only it gets a capture group —
+the other three phrases carry no placeholder, and their patterns are
+anchored literals of the *catalogue phrase*, not of a scenario line.
+
+## Required Changes
+
+### Change #1: the suite's shared state and its observation helpers
+
+**File:** `tests/mcp/steps/state.go`
+**Action:** Use the **Write** tool (new file).
+**Content:**
+```go
+// Package steps binds the registry steps of the `mcp` suite to code.
+//
+// The suite's state is the MCP server address the Given step resolved
+// and the reply to the session's opening the When step kept; every Then
+// step reads that reply.
+package steps
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+)
+
+const (
+	// portEnv and defaultPort are the architecture's address mapping:
+	// 127.0.0.1 at MCP_PORT, 7411 when it is unset.
+	portEnv     = "MCP_PORT"
+	defaultPort = "7411"
+	localHost   = "127.0.0.1"
+)
+
+const (
+	healthTimeout       = 5 * time.Second
+	healthPollInterval  = 50 * time.Millisecond
+	healthReqTimeout    = time.Second
+	openSessionTimeout  = 10 * time.Second
+	initializeRequest   = `{"jsonrpc":"2.0","id":1,"method":"initialize"}`
+)
+
+// Reply is what a Then step may read of the session's opening: the
+// status code and the headers of the server's reply to initialize.
+type Reply struct {
+	Status int
+	Header http.Header
+}
+
+// State is the state the suite's step definitions share.
+type State struct {
+	addr  string
+	reply *Reply
+}
+
+// New returns the state one scenario's steps run against.
+func New() *State {
+	return &State{}
+}
+
+// Addr is the MCP server address the Given step resolved.
+func (s *State) Addr() string {
+	return s.addr
+}
+
+// openedSession returns the reply the When step kept. A Then step that
+// finds none fails instead of passing.
+func (s *State) openedSession() (*Reply, error) {
+	if s.reply == nil {
+		return nil, fmt.Errorf(
+			"no session was opened: expected the When step to POST initialize to %s/mcp and keep the reply, but no reply was kept",
+			s.serverAddrForMessage(),
+		)
+	}
+
+	return s.reply, nil
+}
+
+func (s *State) serverAddrForMessage() string {
+	if s.addr == "" {
+		return "(no server address resolved)"
+	}
+
+	return s.addr
+}
+
+// serverAddr resolves the MCP server's address from MCP_PORT, 7411 when
+// it is unset.
+func serverAddr() string {
+	port := os.Getenv(portEnv)
+	if port == "" {
+		port = defaultPort
+	}
+
+	return "http://" + localHost + ":" + port
+}
+
+// waitHealthy polls GET /healthz until it answers 200, for at most
+// healthTimeout, and names the address it polled when it never does.
+func waitHealthy(addr string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), healthTimeout)
+	defer cancel()
+
+	client := &http.Client{Timeout: healthReqTimeout}
+	last := "no attempt completed"
+
+	for ctx.Err() == nil {
+		status, err := getHealth(ctx, client, addr)
+		if err == nil && status == http.StatusOK {
+			return nil
+		}
+
+		if err != nil {
+			last = err.Error()
+		} else {
+			last = fmt.Sprintf("status %d", status)
+		}
+
+		time.Sleep(healthPollInterval)
+	}
+
+	return fmt.Errorf(
+		"the MCP server is not running: expected GET %s/healthz to answer 200 within %s, last attempt gave %s",
+		addr, healthTimeout, last,
+	)
+}
+
+func getHealth(ctx context.Context, client *http.Client, addr string) (int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr+"/healthz", nil)
+	if err != nil {
+		return 0, fmt.Errorf("building GET %s/healthz: %w", addr, err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("GET %s/healthz failed: %w", addr, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	return resp.StatusCode, nil
+}
+
+// openSession POSTs the initialize request to /mcp and keeps the reply's
+// status code and headers.
+func openSession(addr string) (*Reply, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), openSessionTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, addr+"/mcp", strings.NewReader(initializeRequest),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("building POST %s/mcp: %w", addr, err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("POST %s/mcp with %s failed: %w", addr, initializeRequest, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	return &Reply{Status: resp.StatusCode, Header: resp.Header.Clone()}, nil
+}
+```
+
+### Change #2: the suite's `Register` function and its four step definitions
+
+**File:** `tests/mcp/steps/steps.go`
+**Action:** Use the **Write** tool (new file).
+**Content:**
+```go
+package steps
+
+import (
+	"fmt"
+	"net/http"
+	"regexp"
+	"time"
+)
+
+const (
+	ticketHeader   = "X-Session-Ticket"
+	protocolHeader = "X-MCP-Protocol"
+
+	// ticketPattern and protocolLayout are the architecture's shapes for
+	// the two headers of the session's opening.
+	ticketPattern  = `^[0-9a-f]{32}$`
+	protocolLayout = "2006-01-02"
+)
+
+// Suite is what a step definition is registered with: the runner, which
+// matches a step's text and calls the definition with the pattern's
+// capture groups.
+type Suite interface {
+	Step(pattern string, fn func(state *State, args []string) error)
+}
+
+// Register binds every step of the `mcp` suite; one call site lists
+// everything the suite binds.
+func Register(suite Suite) {
+	suite.Step(`^the MCP server is running$`, serverIsRunning)
+	suite.Step(`^the (.+) opens a session$`, opensSession)
+	suite.Step(`^the session is granted a ticket$`, sessionIsGrantedTicket)
+	suite.Step(`^the server names its protocol version$`, serverNamesProtocolVersion)
+}
+
+// serverIsRunning resolves the server's address and waits until it
+// answers GET /healthz with 200.
+func serverIsRunning(state *State, _ []string) error {
+	addr := serverAddr()
+	if err := waitHealthy(addr); err != nil {
+		return err
+	}
+
+	state.addr = addr
+	state.reply = nil
+
+	return nil
+}
+
+// opensSession asks the MCP server for a new session once, and keeps the
+// reply for the steps that follow.
+func opensSession(state *State, args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("expected the step pattern to capture the role, got %d capture group(s)", len(args))
+	}
+
+	role := args[0]
+
+	if state.addr == "" {
+		return fmt.Errorf(
+			"the %s cannot open a session: no MCP server address was resolved, so the Given step %q must run first",
+			role, "the MCP server is running",
+		)
+	}
+
+	if state.reply != nil {
+		return fmt.Errorf(
+			"the %s already opened a session (reply status %d): this step opens exactly one session",
+			role, state.reply.Status,
+		)
+	}
+
+	reply, err := openSession(state.addr)
+	if err != nil {
+		return fmt.Errorf("the %s could not open a session: %w", role, err)
+	}
+
+	state.reply = reply
+
+	return nil
+}
+
+// sessionIsGrantedTicket asserts the reply to initialize carries a
+// ticket: 32 lowercase hexadecimal characters, on a 200.
+func sessionIsGrantedTicket(state *State, _ []string) error {
+	reply, err := state.openedSession()
+	if err != nil {
+		return err
+	}
+
+	ticket := reply.Header.Get(ticketHeader)
+
+	if reply.Status != http.StatusOK {
+		return fmt.Errorf(
+			"the session was not granted a ticket: expected status 200 with a %s header of 32 lowercase hexadecimal characters, got status %d with %s: %q",
+			ticketHeader, reply.Status, ticketHeader, ticket,
+		)
+	}
+
+	if !regexp.MustCompile(ticketPattern).MatchString(ticket) {
+		return fmt.Errorf(
+			"the session was not granted a ticket: expected the %s header of the 200 reply to be 32 lowercase hexadecimal characters, got %q",
+			ticketHeader, ticket,
+		)
+	}
+
+	return nil
+}
+
+// serverNamesProtocolVersion asserts the reply to initialize names the
+// protocol version as a YYYY-MM-DD date.
+func serverNamesProtocolVersion(state *State, _ []string) error {
+	reply, err := state.openedSession()
+	if err != nil {
+		return err
+	}
+
+	version := reply.Header.Get(protocolHeader)
+	if _, perr := time.Parse(protocolLayout, version); perr != nil {
+		return fmt.Errorf(
+			"the server did not name its protocol version: expected the %s header of the session's opening to be a date in YYYY-MM-DD form, got %q (reply status %d)",
+			protocolHeader, version, reply.Status,
+		)
+	}
+
+	return nil
+}
+```
+
+## Constraints on applying this
+
+- Create both files with **Write**; they are new. If `tests/mcp/steps/`
+  already holds Go files from an earlier pass, do **not** overwrite them:
+  Read them, add only the missing `suite.Step(...)` lines to the existing
+  `Register` function with **Edit**, and reuse the state type already
+  there instead of introducing `State` a second time.
+- Every one of the four definitions is registered in the single
+  `Register` function — do not add a second registration function.
+- Do not relax any pattern, do not add a definition for a step opening
+  with `llm:` or `judge:` (this suite has none), and do not modify
+  `docs/scenarios.yaml` or any file outside `tests/mcp/steps/`.
+- Do not create `tests/mcp/scenarios/` or edit the generated
+  `tests/mcp/mcp_test.go`; they are outside this fix's write root.
+
+## Verification after applying
+
+`tests/mcp/steps/` must now bind, by anchored pattern:
+
+- `the MCP server is running` → `^the MCP server is running$`
+- `the Claude User opens a session` → `^the (.+) opens a session$`
+- `the session is granted a ticket` → `^the session is granted a ticket$`
+- `the server names its protocol version` → `^the server names its protocol version$` (INT-902)
+
+Verdict for INT-901 and INT-902 alike: executable, 0 steps unbound.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===

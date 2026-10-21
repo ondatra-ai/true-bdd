@@ -109,6 +109,36 @@ func TestE2E060(t *testing.T) {
 	s.Done()
 }
 
+// E2E-130: `build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture's mapping of that word, so the step definition observes what the mapping says
+func TestE2E130(t *testing.T) {
+	s := scenarios.New(t, "E2E-130")
+	s.Given(`the "build-tests-fix-from-spec" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Unbound steps specified" subjectID=INT-901 steps=3 phrases=4 terms=4`)
+	s.And(`stdout matches msg="Unbound steps specified" subjectID=INT-902 steps=3 phrases=4 terms=4`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`every step of scenario "INT-901" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
+	s.And(`every step of scenario "INT-902" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
+	s.And(`judge: the step definitions created under tests/mcp/steps observe each word the way the word mapping says: the server's address comes from the MCP_PORT environment variable, 7411 when it is unset, and the server counts as running once GET /healthz answers 200; a session is opened by POSTing a JSON-RPC request whose method is initialize to /mcp; the ticket is the reply's X-Session-Ticket header, which must be 32 lowercase hexadecimal characters; and the protocol version is the reply's X-MCP-Protocol header, a date in YYYY-MM-DD form`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// E2E-131: `build tests --fix` must refuse a product document whose catalogue it cannot read, before it writes a generated test and before any AI turn, rather than author steps blind to the spec the host declared
+func TestE2E131(t *testing.T) {
+	s := scenarios.New(t, "E2E-131")
+	s.Given(`the "build-tests-fix-unreadable-catalogue" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches read the catalogue: product document \./docs/product/product\.yaml: catalogue: must hold a list of phrases`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // E2E-297: A checklist that parses but holds no prompts must be refused before the walk, never converge on an item nothing checked
 func TestE2E297(t *testing.T) {
 	s := scenarios.New(t, "E2E-297")
