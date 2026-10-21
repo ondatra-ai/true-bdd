@@ -1091,3 +1091,24 @@ log:
       log's Q<n>; (b) no, the committed Q&A log is the record and docs/adr/ stays uncreated?
     answer: |
       Да, пиши 3. И закомиченный QE-лог пускай остается, пусть они как будто бы ссылаются на QE-лог и как будто, знаешь, нужно поправить как-то скрипт вот эти агенты, так чтобы эта эра ссылались на QE-лог.
+  - decision_trace:
+      research:
+        - |
+          Codex (gpt-6.1-sol, reasoning ultra, read-only) reviewing the ticket breakdown found
+          that relocating the wrappers cannot end green: `spawn-shell` (.golangci.yaml:212)
+          and `go-shell-through-cli` (.alint.yml:140) let only pkg/cli/** import pkg/shell,
+          and AGENTS.md lets those two files change only with the user's permission.
+      recommendation: |
+        (a): permit one exemption in each rule for the engine's wrapper directory, mirroring
+        today's pkg/cli exemption, so the layering rule keeps its substance.
+      settled: |
+        (a), on a condition: the lint rules must say plainly that nothing else is allowed,
+        only exactly these four wrappers inside the engine (codex, crush, the process table,
+        the engine's own binary) may import pkg/shell. Each rule names the four packages,
+        not a broad glob, with a comment saying why.
+    question: |
+      Q33 - May .golangci.yaml and .alint.yml change for the wrapper move (Q19): (a) yes,
+      one exemption per rule for the engine's wrapper directory; (b) no, revisit Q19 and
+      keep the four wrappers in pkg/cli?
+    answer: |
+      Да, я разрешаю, но я хотел бы, чтобы это было четко объяснено, что короче говоря, чтобы в этих штуках было в линтере, чтобы указали, что не что угодно можно, а именно 4 этих штуки доступны для внутри того короче, внутри движка. Вот.
