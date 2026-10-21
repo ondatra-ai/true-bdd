@@ -1,11 +1,12 @@
 package inventory_test
 
-// Size-discipline goldens (plan §1a/§4 "Go"): the request-budget degrade
-// ladder, the always-fit FLOOR, the below-floor cannot-fit state, and
-// whole-file decoding parity for oversized epics. t.Setenv forbids t.Parallel.
+// Size-discipline goldens (plan §1a/§4 "Go"): a snapshot that fits is
+// carried whole, one that does not collapses to the always-fit FLOOR, and a
+// budget below the floor is the cannot-fit state. t.Setenv forbids t.Parallel.
 
 import (
-	"fmt"
+	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -14,130 +15,80 @@ import (
 
 const budgetEnvVar = "TRUE_BDD_INVENTORY_BUDGET_BYTES"
 
-// bigStoryFolder builds one canonical epic declaring `n` stories, each
-// backed by a story file whose ~20 KiB description makes the full snapshot
-// far exceed any small budget — forcing the degrade ladder.
-func bigStoryFolder(t *testing.T, storyCount int) (string, int) {
+// longPathFolder configures a ~4 KiB architecture path, an unbounded string
+// the full snapshot carries and the floor drops, so the full snapshot is far
+// larger than its document-chip floor.
+func longPathFolder(t *testing.T) string {
 	t.Helper()
 
-	files := map[string]string{}
+	config := "documents:\n  architecture_yaml: \"docs/" + strings.Repeat("x", 4096) + "/architecture.yaml\"\n"
 
-	epic := &strings.Builder{}
-	epic.WriteString("epic:\n  id: 70\n  name: Big Epic\nstories:\n")
-
-	body := strings.Repeat("word ", 4096) // ~20 KiB per story description
-
-	for index := 1; index <= storyCount; index++ {
-		id := fmt.Sprintf("70.%d", index)
-		fmt.Fprintf(epic, "  - id: %q\n", id)
-		files[fmt.Sprintf("docs/product/stories/%s-big.yaml", id)] = fmt.Sprintf(
-			"story:\n  id: %q\n  title: Big %d\n  as_a: user\n  i_want: x\n  so_that: y\n"+
-				"  acceptance_criteria:\n    - id: AC-1\n      description: %q\n",
-			id, index, body,
-		)
-	}
-
-	files["docs/product/epics/epic-70-big.yaml"] = epic.String()
-
-	return honestyTree(t, files), storyCount
+	return honestyTree(t, map[string]string{"true-bdd/true-bdd.yaml": config})
 }
 
-func TestGoldenDegradeOrderRawBeforeContent(t *testing.T) {
-	folder, _ := bigStoryFolder(t, 8)
-	// A very small budget forces heavy degradation.
-	t.Setenv(budgetEnvVar, "2000")
+// serialized is the JSON length the remote would upload for a snapshot.
+func serialized(t *testing.T, snap inventory.Snapshot) int {
+	t.Helper()
 
-	snap := scanJSON(t, folder)
-
-	if !snap.SnapshotTruncated {
-		t.Fatal("snapshot_truncated = false under a tiny budget, want true")
+	data, err := json.Marshal(snap)
+	if err != nil {
+		t.Fatalf("marshal snapshot: %v", err)
 	}
 
-	// Degrade ORDER invariant: raw is dropped before content, so no story is
-	// ever content_omitted while still carrying its raw.
-	for _, epic := range snap.Epics {
-		for _, story := range epic.Stories {
-			if story.ContentOmitted && !story.RawOmitted {
-				t.Fatalf("story %s dropped content before raw (violates raw→content order)", story.CreateID)
-			}
-		}
+	return len(data)
+}
+
+func TestGoldenUnlimitedBudgetKeepsWholeSnapshot(t *testing.T) {
+	snap := inventory.Scan(longPathFolder(t))
+
+	if snap.SnapshotTruncated || snap.Unavailable != "" {
+		t.Fatalf("unlimited scan degraded: truncated=%v unavailable=%q", snap.SnapshotTruncated, snap.Unavailable)
+	}
+
+	if !strings.HasSuffix(snap.ConfiguredArchitecturePath, "/architecture.yaml") {
+		t.Fatalf("unlimited scan dropped the configured architecture path, got %q", snap.ConfiguredArchitecturePath)
 	}
 }
 
-func TestGoldenDegradeFloorDropsPerEpicEntries(t *testing.T) {
-	folder, stories := bigStoryFolder(t, 8)
-	// A budget below what any per-epic entry needs collapses to the FLOOR:
-	// document chips + GLOBAL counts only, NO per-epic entries.
-	t.Setenv(budgetEnvVar, "400")
+func TestGoldenOverBudgetCollapsesToFloor(t *testing.T) {
+	folder := longPathFolder(t)
+	budget := inventory.MinInventoryFloor + 64
+	t.Setenv(budgetEnvVar, strconv.Itoa(budget))
 
-	snap := scanJSON(t, folder)
+	snap := inventory.Scan(folder)
 
 	if !snap.SnapshotTruncated {
-		t.Fatal("floor snapshot_truncated = false, want true")
+		t.Fatal("over-budget snapshot_truncated = false, want true")
 	}
 
-	if len(snap.Epics) != 0 {
-		t.Fatalf("floor retains %d epic entries, want 0 (fixed-size floor)", len(snap.Epics))
+	if snap.ConfiguredArchitecturePath != "" {
+		t.Fatal("floor retains the configured architecture path, an unbounded string")
 	}
 
-	if snap.Totals.Epics != 1 {
-		t.Fatalf("floor totals.epics = %d, want 1", snap.Totals.Epics)
+	if !snap.ArchitecturePathMismatch {
+		t.Fatal("floor dropped architecture_path_mismatch, a bounded flag it must keep")
 	}
 
-	if snap.Totals.DeclaredStories != stories {
-		t.Fatalf("floor totals.declared_stories = %d, want %d", snap.Totals.DeclaredStories, stories)
+	wantDoc(t, snap, "config", inventory.StatusPresent)
+
+	if got := serialized(t, snap); got > budget {
+		t.Fatalf("floor serializes to %d bytes, over the %d budget", got, budget)
 	}
 }
 
 func TestGoldenBelowFloorIsCannotFit(t *testing.T) {
-	folder, _ := bigStoryFolder(t, 8)
+	folder := longPathFolder(t)
 	// A budget below MIN_INVENTORY_FLOOR (the envelope + floor worst case) is
 	// a TERMINAL cannot-fit — reported honestly, never halved forever.
 	t.Setenv(budgetEnvVar, "1")
 
-	snap := scanJSON(t, folder)
+	snap := inventory.Scan(folder)
 
 	if snap.Unavailable != "limit_too_small" {
 		t.Fatalf("below-floor unavailable = %q, want limit_too_small", snap.Unavailable)
 	}
 
-	if len(snap.Epics) != 0 {
-		t.Fatalf("cannot-fit snapshot retains %d epics, want 0", len(snap.Epics))
-	}
-}
-
-func TestGoldenOversizedEpicDecodingParity(t *testing.T) {
-	// The 256 KiB cap applies only to retained story raw (see
-	// retainedRawCap); decoding is always over the whole file, so an
-	// oversized-but-valid epic still decodes and an invalid one still fails.
-	pad := strings.Repeat("x", 300*1024) // > 256 KiB of valid content
-
-	validOversized := "epic:\n  id: 70\n  name: Oversized Epic\n  context: \"" + pad + "\"\n" +
-		"stories:\n  - id: \"70.1\"\n    title: Declared\n    as_a: user\n    i_want: want text\n    so_that: y\n" +
-		"    acceptance_criteria:\n      - id: AC-1\n        description: rule\n"
-
-	invalidTail := "epic:\n  id: 71\n  name: Oversized Broken\n  context: \"" + pad + "\"\nstories:\n  - id: [unclosed\n"
-
-	folder := honestyTree(t, map[string]string{
-		"docs/product/epics/epic-70-oversized.yaml":     validOversized,
-		"docs/product/epics/epic-71-oversized-bad.yaml": invalidTail,
-	})
-
-	snap := scanJSON(t, folder)
-
-	good := gEpicOf(t, snap, "epic-70-oversized.yaml")
-	if good.Status != inventory.EpicParseable {
-		t.Fatalf("valid oversized epic status = %q, want parseable (whole-file decode)", good.Status)
-	}
-
-	// NEW: the declared story's content is extracted from the full document.
-	story := gStoryOf(t, snap, "70.1")
-	if story.DeclaredContent == nil || story.DeclaredContent.Statement.IWant != "want text" {
-		t.Fatal("declared_content must be extracted from an oversized (>256 KiB) epic")
-	}
-
-	bad := gEpicOf(t, snap, "epic-71-oversized-bad.yaml")
-	if bad.Status != inventory.EpicInvalid {
-		t.Fatalf("invalid-tail oversized epic status = %q, want invalid", bad.Status)
+	if snap.Documents != nil {
+		t.Fatalf("cannot-fit snapshot retains %d document chips, want none", len(snap.Documents))
 	}
 }

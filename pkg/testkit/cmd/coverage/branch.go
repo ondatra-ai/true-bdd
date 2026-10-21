@@ -31,7 +31,7 @@ type Branch struct {
 	Snippet   string // first characters of the collapsed Q, for humans
 }
 
-// ID renders the display identity, e.g. "us-create/format/q1@75797b9f#pass".
+// ID renders the display identity, e.g. "us-refine/acceptance_criteria/q1@895981ea#pass".
 // The locator part (section/ordinal) is display-only; machine matching
 // uses the full hashes.
 func (b Branch) ID() string {

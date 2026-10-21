@@ -11,9 +11,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Story-shape assertions read a story a `us create … --fix` run authored:
+// Story-shape assertions read a story a `us refine … --fix` run rewrote:
 // its id, criteria shape, and that a clause avoids forbidden vocabulary.
-// Filenames are the fix loop's to choose, so steps resolve them by glob.
+// Steps resolve the story file by glob.
 //	story:
 //	  id: "99.1"                 (a slug: `scen-check` as well)
 //	  feature: document-summaries (optional label)
@@ -237,32 +237,8 @@ func assertStoryFeature(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaCount pins a lower bound on acceptance criteria —
-// "at least", since the fix loop may add or polish criteria and the
-// scenario pins only the floor it must clear.
-func assertStoryCriteriaCount(state *State, args []string) error {
-	story, err := loadStory(state, args[0])
-	if err != nil {
-		return err
-	}
-
-	want, err := strconv.Atoi(args[1])
-	if err != nil {
-		return state.fail("acceptance-criteria count %q is not a number: %w", args[1], err)
-	}
-
-	if got := len(story.Criteria); got < want {
-		return state.fail(
-			"expected story %q to have at least %d acceptance criteria, but it has %d",
-			args[0], want, got)
-	}
-
-	return nil
-}
-
-// assertStoryCriteriaExactCount pins the EXACT criteria count — the
-// tighter twin of assertStoryCriteriaCount's "at least", proving a fix
-// loop that rewrote the story neither dropped nor added one.
+// assertStoryCriteriaExactCount pins the EXACT criteria count, proving
+// a fix loop that rewrote the story neither dropped nor added one.
 func assertStoryCriteriaExactCount(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
@@ -278,49 +254,6 @@ func assertStoryCriteriaExactCount(state *State, args []string) error {
 		return state.fail(
 			"expected story %q to have exactly %d acceptance criteria, but it has %d",
 			args[0], want, got)
-	}
-
-	return nil
-}
-
-// assertStoryCriteriaWellFormed pins that EVERY criterion has an id
-// matching a regexp and a non-empty description; a story with no
-// criteria fails rather than passing vacuously.
-func assertStoryCriteriaWellFormed(state *State, args []string) error {
-	story, err := loadStory(state, args[0])
-	if err != nil {
-		return err
-	}
-
-	idPattern, err := regexp.Compile(args[1])
-	if err != nil {
-		return state.fail("criterion-id pattern %q does not compile: %w", args[1], err)
-	}
-
-	if len(story.Criteria) == 0 {
-		return state.fail(
-			"expected every acceptance criterion in story %q to have an id matching %q and a "+
-				"non-empty description, but the story has no criteria", args[0], args[1])
-	}
-
-	var problems []string
-
-	for index, criterion := range story.Criteria {
-		if !idPattern.MatchString(criterion.ID) {
-			problems = append(problems, fmt.Sprintf(
-				"criterion %d has id %q, which does not match %q", index+1, criterion.ID, args[1]))
-		}
-
-		if strings.TrimSpace(criterion.Description) == "" {
-			problems = append(problems, fmt.Sprintf(
-				"criterion %d (id %q) has an empty description", index+1, criterion.ID))
-		}
-	}
-
-	if len(problems) > 0 {
-		return state.fail(
-			"expected every acceptance criterion in story %q to have an id matching %q and a "+
-				"non-empty description, but: %s", args[0], args[1], strings.Join(problems, "; "))
 	}
 
 	return nil

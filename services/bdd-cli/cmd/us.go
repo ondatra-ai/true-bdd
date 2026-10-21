@@ -28,7 +28,6 @@ func NewUSCommand(provide containerProvider) *cobra.Command {
 		Short: "User story commands",
 	}
 
-	usCmd.AddCommand(newUSCreateCmd(provide))
 	usCmd.AddCommand(newUSRefineCmd(provide))
 	usCmd.AddCommand(newUSApplyCmd(provide))
 
@@ -73,26 +72,6 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 	return cmd
 }
 
-func newUSCreateCmd(provide containerProvider) *cobra.Command {
-	return buildStoryCmd(
-		"create [story-number]",
-		"Create and validate a user story",
-		`Extract a story from its epic and validate it against the us-create
-checklist. The story is saved to docs/product/stories/ upon passing all checks.
-
-Example:
-  true-bdd us create 4.1
-  true-bdd us create 4.1 --fix`,
-		provide,
-		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
-			return commands.RunCreate(ctx, commands.CreateDeps{
-				StoryCommonDeps: storyCommonFromContainer(container),
-				EpicLoader:      container.EpicLoader,
-			}, storyNumber, fix)
-		},
-	)
-}
-
 func newUSRefineCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
 		"refine [story-number]",
@@ -114,8 +93,8 @@ Example:
 }
 
 // storyCommonFromContainer projects the bootstrap container into the
-// fields shared by us create and us refine. Keeps the per-command
-// cobra handlers tiny.
+// fields us refine shares with the story runner. Keeps the cobra
+// handler tiny.
 func storyCommonFromContainer(container *bootstrap.Container) commands.StoryCommonDeps {
 	return commands.StoryCommonDeps{
 		ChecklistLoader:    container.ChecklistLoader,

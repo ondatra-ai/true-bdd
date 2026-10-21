@@ -16,19 +16,19 @@ func turn(section, subject, role string) *reporter.Turn {
 	}
 }
 
-// happyPath is the real shape of us-create-happy-path: nine turns over
-// four cells, several of them retries.
+// happyPath is a walk of nine turns over four cells, several of them
+// retries — the shape a multi-section checklist walk takes.
 func happyPath() []*reporter.Turn {
 	return []*reporter.Turn{
-		turn("us-create-format", "99.1", "prompt"),
-		turn("us-create-format", "99.1", "prompt"),
-		turn("us-create-who", "99.1", "prompt"),
-		turn("us-create-what", "99.1", "prompt"),
-		turn("us-create-what", "99.1", "prompt"),
-		turn("us-create-why", "99.1", "prompt"),
-		turn("us-create-why", "99.1", "prompt"),
-		turn("us-create-why", "99.1", "prompt"),
-		turn("us-create-why", "99.1", "prompt"),
+		turn("us-refine-format", "99.1", "prompt"),
+		turn("us-refine-format", "99.1", "prompt"),
+		turn("us-refine-who", "99.1", "prompt"),
+		turn("us-refine-what", "99.1", "prompt"),
+		turn("us-refine-what", "99.1", "prompt"),
+		turn("us-refine-why", "99.1", "prompt"),
+		turn("us-refine-why", "99.1", "prompt"),
+		turn("us-refine-why", "99.1", "prompt"),
+		turn("us-refine-why", "99.1", "prompt"),
 	}
 }
 
@@ -67,7 +67,7 @@ func TestExtraRetryIsOneInsert(t *testing.T) {
 	right := happyPath()
 	// Insert a third `format` attempt at position 2.
 	right = append(right[:2],
-		append([]*reporter.Turn{turn("us-create-format", "99.1", "prompt")}, right[2:]...)...)
+		append([]*reporter.Turn{turn("us-refine-format", "99.1", "prompt")}, right[2:]...)...)
 
 	rows := compareTurns(nil, nil, left, right)
 
@@ -133,8 +133,8 @@ func TestRolesDoNotCollapse(t *testing.T) {
 func TestEveryElementAppearsExactlyOnce(t *testing.T) {
 	left := happyPath()
 	right := []*reporter.Turn{
-		turn("us-create-format", "99.1", "prompt"),
-		turn("us-create-why", "99.1", "prompt"),
+		turn("us-refine-format", "99.1", "prompt"),
+		turn("us-refine-why", "99.1", "prompt"),
 		turn("us-refine-shape", "99.2", "fix"),
 	}
 
@@ -302,7 +302,7 @@ func TestOneOversizedLineCannotBlowTheCap(t *testing.T) {
 // TestComparisonSurvivesAnAbsentManifest pins manifestSource's nil guard
 // (see its doc): one bad fixture must not panic the whole matrix response.
 func TestComparisonSurvivesAnAbsentManifest(t *testing.T) {
-	loaded := &reporter.Manifest{Command: "us create 99.1", Source: reporter.ManifestSnapshot}
+	loaded := &reporter.Manifest{Command: "us refine 99.1", Source: reporter.ManifestSnapshot}
 
 	expected := compareExpected(nil, loaded)
 	if expected.SourceLeft != string(reporter.ManifestAbsent) {

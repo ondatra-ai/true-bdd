@@ -23,7 +23,7 @@ const (
 
 	// testChecklistName is the stem validateFixTemplates must name in
 	// its refusal, so the reader knows which YAML to open.
-	testChecklistName = "us-create"
+	testChecklistName = "us-refine"
 )
 
 // seedVersionManager builds a StoryVersionManager with one saved version
@@ -54,41 +54,41 @@ func TestStoryFinalizeSurfacesWriteFailure(t *testing.T) {
 
 	versionMgr := seedVersionManager(t)
 
-	// A regular file occupies the parent of the stories dir, so
-	// os.MkdirAll inside writeNewStoryFile fails deterministically.
-	blocker := filepath.Join(t.TempDir(), "blocker")
+	// The story file the walk loaded is gone, so there is nothing to
+	// rewrite in place and the write fails deterministically.
+	storiesDir := t.TempDir()
+	finalize := StoryFinalize(storiesDir, "4.1", versionMgr, true)
 
-	err := disk.Write(blocker, []byte("not a dir"), disk.Shared)
-	if err != nil {
-		t.Fatalf("write blocker: %v", err)
-	}
-
-	storiesDir := filepath.Join(blocker, "stories")
-	finalize := StoryFinalize(storiesDir, "4.1", versionMgr, true, true)
-
-	err = finalize(&engine.Result[*story.Story]{Reason: engine.Converged})
-	if err == nil {
-		t.Fatal("expected finalize to surface the story-write failure")
+	err := finalize(&engine.Result[*story.Story]{Reason: engine.Converged})
+	if !errors.Is(err, errStoryFileGone) {
+		t.Fatalf("expected finalize to surface the story-write failure, got %v", err)
 	}
 }
 
-// TestStoryFinalizeConvergedWritesFile proves the happy path still writes
-// the converged story and reports success.
+// TestStoryFinalizeConvergedWritesFile proves the happy path rewrites the
+// story file in place and reports success.
 func TestStoryFinalizeConvergedWritesFile(t *testing.T) {
 	t.Parallel()
 
 	versionMgr := seedVersionManager(t)
-	storiesDir := filepath.Join(t.TempDir(), "stories")
-	finalize := StoryFinalize(storiesDir, "4.1", versionMgr, true, true)
+	storiesDir := t.TempDir()
+	storyPath := filepath.Join(storiesDir, "4.1-seed-story.yaml")
 
-	err := finalize(&engine.Result[*story.Story]{Reason: engine.Converged})
+	err := disk.Write(storyPath, []byte("story:\n  id: \"4.1\"\n"), disk.Shared)
+	if err != nil {
+		t.Fatalf("write story: %v", err)
+	}
+
+	finalize := StoryFinalize(storiesDir, "4.1", versionMgr, true)
+
+	err = finalize(&engine.Result[*story.Story]{Reason: engine.Converged})
 	if err != nil {
 		t.Fatalf("finalize returned error: %v", err)
 	}
 
-	matches, err := filepath.Glob(filepath.Join(storiesDir, "4.1-*.yaml"))
-	if err != nil || len(matches) != 1 {
-		t.Fatalf("expected one written story file, got %v (err=%v)", matches, err)
+	written, err := disk.Read(storyPath)
+	if err != nil || !strings.Contains(string(written), "Seed Story") {
+		t.Fatalf("expected the converged story written over %s, got %q (err=%v)", storyPath, written, err)
 	}
 }
 
@@ -98,7 +98,7 @@ func TestStoryFinalizeNonConvergedIsClean(t *testing.T) {
 	t.Parallel()
 
 	versionMgr := seedVersionManager(t)
-	finalize := StoryFinalize(t.TempDir(), "4.1", versionMgr, true, true)
+	finalize := StoryFinalize(t.TempDir(), "4.1", versionMgr, true)
 
 	err := finalize(&engine.Result[*story.Story]{Reason: engine.UserExit})
 	if err != nil {
@@ -315,7 +315,7 @@ func TestValidateFixTemplatesRejectsMissingFixTemplate(t *testing.T) {
 
 	for _, want := range []string{
 		testChecklistName,
-		"us-create/who #1",
+		"us-refine/who #1",
 		"Does the as_a clause use a known role?",
 	} {
 		if !strings.Contains(err.Error(), want) {
@@ -337,7 +337,7 @@ func TestValidateFixTemplatesReportsAllMissing(t *testing.T) {
 		t.Fatal("expected an error, got nil")
 	}
 
-	for _, want := range []string{"us-create/format #1", "us-create/why #3"} {
+	for _, want := range []string{"us-refine/format #1", "us-refine/why #3"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("refusal must name %q, got %q", want, err)
 		}
@@ -372,7 +372,7 @@ func TestValidateFixTemplatesAllowsEmptyPromptList(t *testing.T) {
 
 // TestValidateFixTemplatesIsInertWithoutTheFlag is the other half of
 // the contract: a checklist with no F: anywhere still walks fine
-// without --fix — us-create/us-refine are exactly this shape.
+// without --fix — the shipped us-refine is mostly this shape.
 func TestValidateFixTemplatesIsInertWithoutTheFlag(t *testing.T) {
 	err := validateFixTemplates(false, testChecklistName, []checklistmodels.PromptWithContext{
 		promptFixing("format", "Q one", ""),
