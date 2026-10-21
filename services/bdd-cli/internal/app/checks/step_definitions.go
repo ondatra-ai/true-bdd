@@ -76,7 +76,7 @@ func suiteSteps(item *template.ScenarioCheckData) []catalogue.Step {
 	steps := make([]catalogue.Step, 0)
 
 	for _, scenario := range item.Registry {
-		if len(scenario.UserStories) == 0 || stepcoverage.StepsDir(scenario.Path) != dir {
+		if !claimed(scenario) || stepcoverage.StepsDir(scenario.Path) != dir {
 			continue
 		}
 
