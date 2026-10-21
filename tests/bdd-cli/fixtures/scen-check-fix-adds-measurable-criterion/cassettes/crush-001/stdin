@@ -1,0 +1,149 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Scenario Editor applying an approved fix to the
+working copy of one document: the scenario registry, where a
+Scenario's description or steps are rewritten, or the product
+document, where a catalogue entry's meaning is.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: replace the current text the fix gives with
+  its new text, inside the one entry the fix names.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch another Scenario's entry, a generated test file or a
+  step definition, and never add or remove a Scenario.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The greeter must greet the person whose name it is given
+
+### Steps
+Given:
+  - the greeting is configured
+When:
+  - the Operator runs the greeter with a name
+Then:
+  - the greeter greets that person
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given
+
+## Target
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
+`docs/scenarios.yaml`). No other document, Scenario or field changes.
+
+## Context the applier needs
+- The finding (`scen-check/scenario_quality`, `E2E-001: not measurable`) is that
+  no step and no part of the description names an exact message, count, code or
+  threshold. The reviewer's fix template asks for exactly one measurable
+  criterion, added to the step that asserts the outcome: the single `then` step.
+- The user chose the criterion: the exact output line, asserted as a stdout
+  pattern — greeting "Hello", name "Alice", so the line read for is
+  `Hello Alice`.
+- The wording is taken from the `product` document's catalogue entry
+  `stdout matches {expected:pattern}` (block: `then`), whose `means` is "A line
+  the command printed to its standard output matches the pattern, a regular
+  expression". The `{expected:pattern}` slot takes the rest of the step verbatim,
+  so it is filled with `^Hello Alice$`. The catalogue entry itself is correct and
+  is **not** edited.
+- Do **not** touch `tests/greeter/greet_test.go`; `true-bdd build tests --fix`
+  re-renders it from the registry after this edit. Do **not** touch any step
+  definition.
+
+## Required Changes
+
+### Change #1: give the outcome step an exact expected output line
+**Document:** scenarios_yaml (`docs/scenarios.yaml`)
+**Field:** `scenarios.E2E-001.merged_steps.then`
+**Current text:**
+```
+      then:
+        - the greeter greets that person
+```
+**New text:**
+```
+      then:
+        - stdout matches ^Hello Alice$
+```
+
+That is the whole fix: one step, replaced in place, in the same `then` block.
+
+## What must stay exactly as it is
+- `scenarios.E2E-001.description`: `The greeter must greet the person whose name it is given` — unchanged.
+- `scenarios.E2E-001.service`: `greeter` — unchanged.
+- `scenarios.E2E-001.path`: `tests/greeter/greet_test.go` — unchanged.
+- `scenarios.E2E-001.user_stories`: `[]` — unchanged.
+- `scenarios.E2E-001.merged_steps.given`: `- the greeting is configured` — unchanged (the fix template forbids changing another step; the `given` is outside this finding).
+- `scenarios.E2E-001.merged_steps.when`: `- the Operator runs the greeter with a name` — unchanged, for the same reason.
+- The registry `metadata:` block, the comment header, every other Scenario, and the whole `product` document (its `catalogue:`, `glossary:`, `vocabulary:`, `roles:`) — unchanged.
+
+## Why the behaviour is preserved
+Before, the Scenario asserted that the greeter greets the named person, without
+saying what that looks like. After, it asserts the same behaviour at the one
+point a step definition can settle it: the greeter's standard output carries the
+line `Hello Alice` — the configured greeting followed by the given name. Nothing
+is dropped; the outcome is now stated as something a run can check.
+
+## Done when
+- `scenarios.E2E-001.merged_steps.then` reads `- stdout matches ^Hello Alice$` and holds exactly one step.
+- No other key of `docs/scenarios.yaml` differs from its current text.
+- `docs/product/product.yaml` is byte-identical to its current state.
+- `tests/greeter/greet_test.go` is left for `true-bdd build tests --fix` to re-render.
+
+---
+
+## Where to write
+
+Each document a fix may change has a working copy in this run's tmp
+directory. Edit the working copy of the document the fix prompt names,
+never the document itself:
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`, the scenario registry
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, and the registry only while it still holds the
+same Scenarios, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt names. In
+   the registry, find the `E2E-001:` entry under `scenarios:`;
+   in the product document, the catalogue entry the fix names.
+2. Apply each change with the Edit tool on that working copy: replace
+   the current text the fix prompt gives with its new text, inside that
+   entry only.
+3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`
+   key and its list indentation, and a value carrying `: ` or `#`, or
+   opening with a quote or a bracket, stays quoted.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, every other Scenario's entry, a generated test file and
+   a step definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

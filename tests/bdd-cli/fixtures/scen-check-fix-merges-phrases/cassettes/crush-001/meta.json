@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 30285,
+  "request_hash": "sha256:a111dc7c533b2810cd82ef74782dd0ed518f2669cd041dc4a6bc6639bd993746",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "tmp/{{RUN_DIR}}/product.yaml"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-21T20:12:27Z"
+}

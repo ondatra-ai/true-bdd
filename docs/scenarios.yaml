@@ -1559,7 +1559,7 @@ scenarios:
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-adds-missing-step" project tree
@@ -1576,12 +1576,13 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^      then:$'
+        - and: the engine dispatched 5 AI turns
   E2E-121:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s description with the measurable criterion its steps state, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-description-qualifier" project tree
@@ -1598,12 +1599,13 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b'
+        - and: the engine dispatched 5 AI turns
   E2E-122:
     description: '`scen check --fix` must replace a forbidden qualifier in a Scenario''s step with the measurable criterion its description states, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-step-qualifier" project tree
@@ -1620,12 +1622,13 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b'
+        - and: the engine dispatched 5 AI turns
   E2E-123:
     description: '`scen check --fix` must rewrite a Scenario''s step that uses a forbidden action verb with the observable action the product document gives in its place, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-forbidden-verb" project tree
@@ -1641,12 +1644,13 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: the engine dispatched 5 AI turns
   E2E-124:
     description: '`scen check --fix` must rewrite a Scenario''s step that names an implementation detail as the output a user observes, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-implementation" project tree
@@ -1662,12 +1666,13 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: the engine dispatched 5 AI turns
   E2E-125:
     description: '`scen check --fix` must ask which measurable criterion a Scenario lacking one asserts, add the criterion the user picks to that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-adds-measurable-criterion" project tree
@@ -1678,17 +1683,19 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches CHECK FAILED
+        - and: stdout matches msg="AI needs clarification"
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: the engine dispatched 6 AI turns
   E2E-126:
     description: '`scen check --fix` must ask what counts as correct for a Scenario whose outcome is a matter of taste, rewrite the outcome as one a reviewer decides without judgement in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-subjective-outcome" project tree
@@ -1699,17 +1706,19 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches CHECK FAILED
+        - and: stdout matches msg="AI needs clarification"
         - and: stdout matches FIX PROMPT GENERATED
         - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - and: the engine dispatched 6 AI turns
   E2E-127:
     description: '`scen check --fix` must rewrite the meaning of a catalogue phrase that only restates its template, a model having judged it, in the product document and never in the Scenario, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-phrase-meaning" project tree
@@ -1725,12 +1734,13 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+        - and: the engine dispatched 5 AI turns
   E2E-128:
     description: '`scen check --fix` must rewrite a Scenario''s step whose pattern a model judged to name no observable output, as the output its description pins, in that Scenario''s entry in the Registry, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 15m
     merged_steps:
       given:
         - the "scen-check-fix-rewrites-phrase-use" project tree
@@ -1747,12 +1757,13 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada'
+        - and: the engine dispatched 5 AI turns
   E2E-129:
     description: '`scen check --fix` must merge two catalogue entries whose steps one step definition binds into one entry, in the product document and never in a Scenario or a step definition, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories: []
-    timeout: 20m
+    timeout: 10m
     merged_steps:
       given:
         - the "scen-check-fix-merges-phrases" project tree
@@ -1770,6 +1781,7 @@ scenarios:
         - and: stdout matches ALL CHECKS PASSED
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+        - and: the engine dispatched 2 AI turns
   E2E-130:
     description: '`build tests --fix` must author an unbound step from the spec: its step-authoring prompt carries the catalogue phrase the step matches, the glossary meaning of each word that phrase relies on and the architecture''s mapping of that word, so the step definition observes what the mapping says'
     service: bdd-cli
@@ -1879,6 +1891,7 @@ scenarios:
         - but: stdout does not match Hit max apply attempts
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - and: 'the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b'
+        - and: the engine dispatched 25 AI turns
 
   E2E-294:
     description: An id naming no scenario in the registry must be refused before the first prompt, never walked as an empty selection

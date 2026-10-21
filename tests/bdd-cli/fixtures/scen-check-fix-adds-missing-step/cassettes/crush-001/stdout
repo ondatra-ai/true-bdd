@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
+summary: "Added missing then block to E2E-001 merged_steps asserting stdout matches Hello Ada and exit code 0"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

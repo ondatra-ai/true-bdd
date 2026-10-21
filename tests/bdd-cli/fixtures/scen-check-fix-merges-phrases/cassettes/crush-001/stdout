@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/product.yaml"
+summary: "Merged the two then-block entries into one catalogue entry with template 'the service [answers|replies] \"{reply}\"'; catalogue now has 3 entries, everything else untouched."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

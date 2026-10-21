@@ -508,6 +508,7 @@ func TestE2E120(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^      then:$`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -526,6 +527,7 @@ func TestE2E121(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b100\b`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -544,6 +546,7 @@ func TestE2E122(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^ +- [^\n]*exits with code 0[^\n]*\b100\b`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -561,6 +564,7 @@ func TestE2E123(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -578,6 +582,7 @@ func TestE2E124(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -590,11 +595,13 @@ func TestE2E125(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches msg="AI needs clarification"`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
@@ -607,11 +614,13 @@ func TestE2E126(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches msg="AI needs clarification"`)
 	s.And(`stdout matches FIX PROMPT GENERATED`)
 	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
+	s.And(`the engine dispatched 6 AI turns`)
 	s.Done()
 }
 
@@ -629,6 +638,7 @@ func TestE2E127(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -647,6 +657,7 @@ func TestE2E128(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)stdout matches [^\n]*Hello Ada`)
+	s.And(`the engine dispatched 5 AI turns`)
 	s.Done()
 }
 
@@ -666,6 +677,7 @@ func TestE2E129(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the engine dispatched 2 AI turns`)
 	s.Done()
 }
 
@@ -724,6 +736,7 @@ func TestE2E293(t *testing.T) {
 	s.But(`stdout does not match Hit max apply attempts`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.And(`the file "docs/scenarios.yaml" matches (?m)^    description: [^\n]*\b(must|should)\b`)
+	s.And(`the engine dispatched 25 AI turns`)
 	s.Done()
 }
 

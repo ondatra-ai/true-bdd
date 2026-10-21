@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
+summary: "Replaced E2E-001's then step 'the greeter greets that person' with the measurable criterion 'stdout matches ^Hello Alice$'; no other keys changed."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
