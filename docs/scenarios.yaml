@@ -538,11 +538,14 @@ scenarios:
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the file "docs/product/stories/95.3-document-summary-created-not-refined.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-036:
+  us-refine-refusals-004-two-files-one-id-refused:
     description: Two files claiming the same story id must be refused, not silently resolved by picking one
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-004-two-files-one-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-ambiguous-story" project tree
@@ -707,11 +710,14 @@ scenarios:
         - and: every acceptance criterion in the story "docs/product/stories/96.1-document-summary-refined.yaml" has given, when and then steps
         - and: 'judge: the four acceptance criteria still cover the substance of the seed — a summary of 150 words or fewer for a shared document, the "This document is not shared with your account" message, the "The summary timed out - please try again" message at 30 seconds, and summarising only the first 10000 words — with every exact message and number intact'
         - and: 'judge: the as_a, i_want and so_that clauses keep their meaning — a Claude User wanting a short summary of a shared Google Doc on request, so as to decide whether it needs attention without reading it in full'
-  E2E-043:
+  us-refine-refusals-006-invalid-yaml-refused:
     description: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-006-invalid-yaml-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-malformed-story" project tree
@@ -727,11 +733,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-044:
+  us-refine-refusals-001-missing-story-refused:
     description: '`us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes'
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-001-missing-story-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-missing-story" project tree
@@ -788,11 +797,14 @@ scenarios:
         - and: the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match Story saved to:'
-  E2E-047:
+  us-refine-refusals-002-slug-id-accepted:
     description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-002-slug-id-accepted
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-slug-id-missing-story" project tree
@@ -809,11 +821,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-048:
+  us-refine-refusals-003-path-like-id-refused:
     description: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-003-path-like-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-path-like-story-id" project tree
@@ -907,11 +922,14 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: the engine dispatched no AI turns
-  E2E-053:
+  us-refine-refusals-005-other-id-refused:
     description: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
     service: bdd-cli
     path: tests/bdd-cli/us_refine_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/us-refine-refusals-unwalkable-story.yaml
+        scenario_id: us-refine-refusals-005-other-id-refused
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "us-refine-story-id-mismatch" project tree
