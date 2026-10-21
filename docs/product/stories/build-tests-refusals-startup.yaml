@@ -1,0 +1,77 @@
+# Story `build-tests-refusals`: `build tests` refuses at startup a Registry
+# or a checklist it cannot walk.
+#
+# What `build tests` holds its inputs to before the first Cell. Binding steps
+# to definitions and authoring them from the spec is the Story
+# build-tests-steps; model routing, which every command shares, is the Story
+# engine.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-tests-refusals-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: build-tests-refusals
+    feature: build-tests
+    title: Refuse a build tests run whose Registry or checklist it cannot walk
+    as_a: System Architect
+    i_want: build tests to refuse at startup, naming what is wrong, a Registry the host never declared, a Registry whose YAML is not a Registry's shape, a Registry that declares no scenarios, and a checklist that declares no prompts
+    so_that: a misconfigured host never sees its generated tests reported complete over nothing, and the refusal costs no AI turn and changes no file
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-empty-registry-refused
+          description: A registry file that declares no scenarios must be refused, never walked to a trivial success
+          steps:
+            - given:
+                - the "build-tests-empty-registry" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches BUILD TESTS
+                - 'stdout matches docs/scenarios\.yaml: requirements registry has no scenarios to walk'
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 002-misshapen-registry-refused
+          description: A registry that is valid YAML but the wrong SHAPE must be refused with the decoder's own complaint, not a generic parse failure
+          steps:
+            - given:
+                - the "build-tests-malformed-registry" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches BUILD TESTS
+                - stdout matches cannot unmarshal !!seq into map\[string\]
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 003-undeclared-registry-refused
+          description: A host that never declared where its scenario registry lives must be refused, never quietly served the conventional path
+          steps:
+            - given:
+                - the "build-tests-unconfigured-registry" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches documents\.scenarios_yaml
+                - but: stdout does not match Loaded requirements registry
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 004-empty-checklist-refused
+          description: A checklist file that declares no prompts must be refused before the walk, never converge on an item nothing checked
+          steps:
+            - given:
+                - the "build-tests-empty-checklist" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - but: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
