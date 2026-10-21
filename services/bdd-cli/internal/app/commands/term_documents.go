@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/product"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
@@ -20,9 +21,10 @@ import (
 var ErrTermDocumentUnparseable = errors.New("the fix left the document unreadable, so it is unchanged")
 
 // termDocumentKeys are the documents a `scen check` fix may write: the
-// catalogue and the glossary both live in the product document.
+// catalogue and the glossary live in the product document, the word
+// mapping in the architecture document.
 func termDocumentKeys() []string {
-	return []string{docs.KeyProduct}
+	return []string{docs.KeyProduct, docs.KeyArchitectureYAML}
 }
 
 // seedTermDocuments copies each term document the host has into the run's
@@ -110,8 +112,7 @@ func commitTermDocument(document template.TermDocument) (bool, error) {
 }
 
 // readableTermDocument holds an edited copy to what its readers need: a
-// YAML mapping, and for the product document a catalogue and a glossary
-// the checks load.
+// YAML mapping, and the parts of it the checks load.
 func readableTermDocument(key, scratch string, content []byte) error {
 	var mapping map[string]any
 
@@ -120,11 +121,23 @@ func readableTermDocument(key, scratch string, content []byte) error {
 		return fmt.Errorf("parse: %w", err)
 	}
 
-	if key != docs.KeyProduct {
-		return nil
+	switch key {
+	case docs.KeyProduct:
+		return readableProductDocument(scratch)
+	case docs.KeyArchitectureYAML:
+		_, err = architecture.LoadTermMappings(scratch)
+		if err != nil {
+			return fmt.Errorf("load the word mapping: %w", err)
+		}
 	}
 
-	_, err = product.LoadCatalogue(scratch)
+	return nil
+}
+
+// readableProductDocument holds an edited product document to a catalogue
+// and a glossary the checks load.
+func readableProductDocument(scratch string) error {
+	_, err := product.LoadCatalogue(scratch)
 	if err != nil {
 		return fmt.Errorf("load the catalogue: %w", err)
 	}

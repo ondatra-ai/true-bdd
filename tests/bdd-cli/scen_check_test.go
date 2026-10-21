@@ -57,7 +57,7 @@ func TestE2E072(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-phrases`)
+	s.And(`stdout matches scen-check/scenario_quality #1 D: steps-are-present names no built-in check of scen check, which has declared-terms, given-when-then, step-definitions, step-phrases, term-mappings`)
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
@@ -340,6 +340,155 @@ func TestE2E104(t *testing.T) {
 	s.And(`stdout matches ALL CHECKS PASSED`)
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
 	s.And(`the file "docs/product/product.yaml" matches (?m)^ +- term: .?reply.?$`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// E2E-110: A term that the catalogue template a step matches declares, and that the architecture's word mapping does not map, must fail the Scenario a Story claims, naming the term
+func TestE2E110(t *testing.T) {
+	s := scenarios.New(t, "E2E-110")
+	s.Given(`the "scen-check-term-unmapped" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: \\"reply\\" has no mapping in the architecture\]"`)
+	s.And(`stdout matches scen-check/term_closure +D: term-mappings +fail +FAIL`)
+	s.And(`stdout matches Validation failed`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-111: A Scenario a Story claims must pass the term-mapping check when the architecture maps every term the templates its steps match declare, naming those terms, while a Scenario no Story claims passes unchecked and one whose templates declare no term passes saying so
+func TestE2E111(t *testing.T) {
+	s := scenarios.New(t, "E2E-111")
+	s.Given(`the "scen-check-terms-mapped" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: not checked: no Story claims this Scenario yet\]"`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: no matched template declares a term\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-112: A term the architecture maps more than once must fail every Scenario a Story claims that relies on it, naming the term and how many times it is mapped, because a word built two ways has no one way a step definition can follow
+func TestE2E112(t *testing.T) {
+	s := scenarios.New(t, "E2E-112")
+	s.Given(`the "scen-check-term-mapped-twice" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: the architecture maps \\"reply\\" 2 times\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-113: A catalogue template whose steps, across every Scenario a Story claims that shares one suite, bind to two different step definitions must fail each of those Scenarios using it, naming the template and both definitions with where each is written, while a Scenario no Story claims neither counts nor is checked
+func TestE2E113(t *testing.T) {
+	s := scenarios.New(t, "E2E-113")
+	s.Given(`the "scen-check-template-binds-twice" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: template \\"the service answers \\"\{reply\}\\"\\" binds to 2 step definitions in tests/mcp/steps: \^the service answers \\"pong\\"\$ \(mcp_steps\.go:24\); \^the service answers \\"hello\\"\$ \(mcp_steps\.go:25\)\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-114: A step definition that the steps of two catalogue templates bind, across the Scenarios a Story claims that share one suite, must fail each of those Scenarios, naming the definition with where it is written and both templates
+func TestE2E114(t *testing.T) {
+	s := scenarios.New(t, "E2E-114")
+	s.Given(`the "scen-check-definition-reached-twice" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=fail context="\[E2E-002: step definition \^the service \(\?:answers\|replies\) \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:24\) is reached by 2 templates: \\"the service answers \\"\{reply\}\\"\\"; \\"the service replies \\"\{reply\}\\"\\"\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-115: A step of a Scenario a Story claims that two step definitions of its suite bind must fail that Scenario, naming the step and both definitions with where each is written, because which one runs depends on the order they were registered in
+func TestE2E115(t *testing.T) {
+	s := scenarios.New(t, "E2E-115")
+	s.Given(`the "scen-check-step-binds-twice" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=fail context="\[E2E-001: when step \\"the Operator sends \\"ping\\"\\" binds to 2 step definitions: \^the \(Operator\|Client Developer\) sends \\"\(\[\^\\"\]\+\)\\"\$ \(mcp_steps\.go:23\); \^the Operator sends \\"ping\\"\$ \(mcp_steps\.go:24\)\]"`)
+	s.And(`stdout matches Validation failed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-116: A Scenario a Story claims must pass the step-definition check when each template its steps match binds to one step definition of its suite that no other template reaches, naming the suite, while a step no definition binds yet is reported as a gap rather than a failure, a step a model runs is exempt, and a Scenario no Story claims passes unchecked
+func TestE2E116(t *testing.T) {
+	s := scenarios.New(t, "E2E-116")
+	s.Given(`the "scen-check-definitions-correspond" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: each template binds to one step definition in tests/mcp/steps\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-002 promptIndex=1 answer=pass context="\[E2E-002: each template binds to one step definition in tests/mcp/steps; 1 step unbound yet E2E-002: then step \\"the service logs \\"greeted\\"\\" binds to no step definition yet\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-003 promptIndex=1 answer=pass context="\[E2E-003: not checked: no Story claims this Scenario yet\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-117: A suite whose step definitions register a pattern that does not fold to a constant must stop the step-definition check at the first Scenario a Story claims, naming the check, the file and line of the pattern, and exit 1, because a definition the check cannot read would leave the steps it binds unchecked
+func TestE2E117(t *testing.T) {
+	s := scenarios.New(t, "E2E-117")
+	s.Given(`the "scen-check-definitions-unreadable" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=step-definitions subjectID=E2E-001 promptIndex=1`)
+	s.And(`stdout matches step pattern is not a constant expression`)
+	s.And(`stdout matches tests/mcp/steps/mcp_steps\.go:26`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-118: A product document that declares no catalogue must leave every Scenario unchecked by the term-mapping and step-definition checks, saying so, whatever the architecture maps
+func TestE2E118(t *testing.T) {
+	s := scenarios.New(t, "E2E-118")
+	s.Given(`the "scen-check-closure-no-catalogue" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
+	s.And(`stdout matches msg="Check answered" check=step-definitions subjectID=E2E-001 promptIndex=2 answer=pass context="\[E2E-001: not checked: the product document declares no catalogue\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// E2E-119: `scen check --fix` must propose a mapping for a declared term the architecture does not map, asking how it is built and observed first, record the mapping the user applies in the architecture document and never in the Scenario or the product document, and pass the re-walk
+func TestE2E119(t *testing.T) {
+	s := scenarios.New(t, "E2E-119")
+	s.Given(`the "scen-check-fix-records-mapping" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches CHECK FAILED`)
+	s.And(`stdout matches E2E-001: "reply" has no mapping in the architecture`)
+	s.And(`stdout matches msg="AI needs clarification"`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=architecture_yaml`)
+	s.And(`stdout matches msg="Check answered" check=term-mappings subjectID=E2E-001 promptIndex=1 answer=pass context="\[E2E-001: every declared term is mapped: mcp service, message, reply\]"`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/architecture/architecture.yaml"`)
+	s.And(`the file "docs/architecture/architecture.yaml" matches (?m)^ +- term: .?reply.?$`)
 	s.And(`the engine dispatched 3 AI turns`)
 	s.Done()
 }

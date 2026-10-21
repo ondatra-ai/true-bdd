@@ -311,7 +311,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="trow"><span class="nm t-story">product.yaml</span><span class="cm">product ref + roles + BDD vocabulary + glossary</span></div>
               <div class="trow"><span class="nm">stories/<span class="t-story">&lt;id&gt;-&lt;slug&gt;.yaml</span></span></div>
             </div>
-            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">testing.suites[] + services</span></div>
+            <div class="trow"><span class="nm">architecture/<span class="t-arch">architecture.yaml</span></span><span class="cm">testing.suites[] + services + terms (word mapping)</span></div>
             <div class="trow"><span class="nm t-reg">scenarios.yaml</span><span class="cm">the central scenario registry</span></div>
           </div>
           <div class="trow"><span class="nm t-code">services/&lt;service&gt;/</span><span class="cm">production source — path declared per service in architecture.yaml</span></div>
@@ -404,7 +404,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
             <div class="row"><span class="k">glossary[]:</span> <span class="v">term · means, one per word a catalogue entry declares (may be empty)</span></div>
             <div class="row"><span class="k">catalogue[]:</span> <span class="v">template · block · means · terms, one per step phrase</span></div>
           </div>
-          <div class="note">Embedded verbatim into prompts, except <code>catalogue[]</code> and the role names, which the engine reads as data for <code>D: step-phrases</code>, and <code>glossary[]</code>, which it reads for <code>D: declared-terms</code>. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
+          <div class="note">Embedded verbatim into prompts, except <code>catalogue[]</code> and the role names, which the engine reads as data for <code>D: step-phrases</code>, and <code>glossary[]</code>, which it reads for <code>D: declared-terms</code>; <code>D: term-mappings</code> holds the same terms to architecture.yaml's <code>terms[]</code>, and <code>D: step-definitions</code> holds the catalogue to the suite's step definitions. Vocabulary's home is here — <code>product-schema.yaml</code> requires the block; architecture.yaml may carry one instead, which is what the engine fixtures do today.</div>
         </div>
 
         <!-- col 3 · story -->
@@ -476,7 +476,7 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
 
         <!-- row 3 · architecture -->
         <div class="card c-arch wide" id="card-arch" tabindex="0" style="grid-area:3/2/4/6">
-          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services</small></header>
+          <header><i class="sw"></i><span class="p">docs/architecture/architecture.yaml</span><small>testing suites + services + word mapping</small></header>
           <div class="body">
             <div>
               <div class="row"><span class="k">testing.suites[]:</span></div>
@@ -490,6 +490,9 @@ footer { padding: 40px 0 60px; font-size: 14px; color: var(--text-muted); border
               <div class="row ind1"><span class="k">design_system.path</span> <span class="v">(optional)</span></div>
               <div class="row ind1"><span class="k">dependencies[]:</span> <span class="v">name · protocol · scope</span></div>
               <div class="row ind1"><span class="v">quality_gate.code[] · patterns · dependencies[] (optional)</span></div>
+            </div>
+            <div>
+              <div class="row"><span class="k">terms[]:</span> <span class="v">term · technical · observed_by, one per product word a catalogue entry declares (optional)</span></div>
             </div>
           </div>
           <div class="note">Runtime <code>dependencies</code>: <code>protocol</code> = cli / http / redis / …; <code>scope</code> = <code>internal</code> (a service declared here) / <code>self_hosted</code> (we run the instance) / <code>third_party</code> (a vendor's service behind it, wherever the binary lives). Scope drives build-time mocking: <code>third_party</code> gets record/replay doubles, everything else runs live.</div>

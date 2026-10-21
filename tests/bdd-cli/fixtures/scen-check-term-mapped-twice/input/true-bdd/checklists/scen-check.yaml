@@ -1,0 +1,18 @@
+# Fixture checklist for `scen-check-term-mapped-twice`.
+#
+# The term-mapping check alone, so the walk spends no model turn.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every term a matched catalogue phrase declares must be mapped in the architecture."
+    validation_prompts:
+      - D: term-mappings
+        rationale: "A product word the architecture never maps says nothing of how a step definition builds or observes it, so the definition cannot follow from the spec."
+        docs:
+          - product
+          - architecture_yaml
+        F: "Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario."

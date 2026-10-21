@@ -18,7 +18,9 @@ product  ⟷  user stories  ⟷  scenarios
 - **product document** (`docs/product/product.yaml`) sits at the top: the product's roles,
   vocabulary and glossary, which the story checks read, and its step-phrase catalogue, the shape
   every step of a claimed Scenario must take (`D: step-phrases`), each term of which the glossary
-  must define exactly once (`D: declared-terms`).
+  must define exactly once (`D: declared-terms`) and the architecture's word mapping must map
+  exactly once (`D: term-mappings`), and each template of which must bind one step definition of
+  the Scenario's suite that no other template reaches (`D: step-definitions`).
 - A **story is written directly**, by hand, out of a discussion of a Feature, into its own file
   under `docs/product/stories/` — no command creates one, and no larger document seeds it. The
   pipeline starts at `us refine <id>`, which grows the story in place.
@@ -54,7 +56,7 @@ host project root
 │   ├── product/
 │   │   ├── product.yaml         product ref + roles + BDD vocabulary + glossary + catalogue
 │   │   └── stories/<id>-<slug>.yaml
-│   ├── architecture/architecture.yaml   testing.suites[] + services
+│   ├── architecture/architecture.yaml   testing.suites[] + services + terms (word mapping)
 │   └── scenarios.yaml           the central scenario registry (each entry names the test file it
 │                                renders into, and may name its own run `timeout:`)
 ├── services/<service>/          production source — path declared per service in architecture.yaml
@@ -130,7 +132,7 @@ would walk carries no `F:` fix template. Against the shipped checklists that ref
 | `us apply <id>` | every **AC** of the refined story (lineage id `<id>-<ac-id>`, the Scenario's Registry key; an AC id that is not `<NNN>-<slug>` is refused) | us-apply.yaml | merges into **scenarios.yaml** via a scratch copy; re-walks to a fixpoint (≤ `max_apply_attempts`), then commits it over the registry |
 | `build tests` | every **registry scenario**; the suite that owns it, and the step definitions under that suite's `path:` | build-tests.yaml | with `--fix` only: the **generated test file** each scenario's `path:` names, rendered deterministically, and the missing **step definition** in that suite. Without `--fix` nothing is written — the same renderer verifies the tree by regenerating and comparing. The registry is never modified either way |
 | `build code` | every **suite** under `architecture.testing.suites[]`; discovers failing tests by running the suite's own declared `commands.replay` | build-code.yaml | with `--fix`: **production source** under the declared service paths only — tests and registry are never touched |
-| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change |
+| `scen check [id...]` | one **registry scenario** at a time — its own description, `service:`, `path:`, lineage and steps, and never the registry file itself; its `D:` checks also read the **product** catalogue and glossary, the **architecture** word mapping, and the suite's **step definitions**, related over the steps of every claimed Scenario of that suite | scen-check.yaml | **nothing**. It exits 1 when any scenario fails, so it can gate a change. With `--fix`, only the **product** or **architecture** document, through a scratch copy, never the Scenario |
 
 ## Every cross-reference, with real values
 

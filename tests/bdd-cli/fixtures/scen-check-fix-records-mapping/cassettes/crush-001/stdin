@@ -1,0 +1,154 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Term Document Editor applying an approved fix to the working
+copy of one term document: the product document's step-phrase catalogue
+or glossary, or the architecture document's word mapping.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: append an entry at the end of its list, at the
+  list's own indentation, or replace an old_string verbatim.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch the scenario registry, a generated test file or a step
+  definition. A term is defined where every Scenario reads it, never in
+  the Scenario that lacked it.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The service must answer a ping with a pong
+
+### Steps
+Given:
+  - the mcp service is running
+When:
+  - the Operator sends "ping"
+Then:
+  - the service answers "pong"
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
+
+## Target
+The `architecture_yaml` document: `./docs/architecture/architecture.yaml`, its `architecture.terms:` list, and nothing else.
+
+## Context the applier does not need to re-derive
+- The product catalogue entry `the service answers "{reply}"` (block `then`, means "The MCP service's reply to the message is exactly the quoted text.") declares the terms `mcp service` and `reply`.
+- `mcp service` and `message` are already mapped in `architecture.terms:`. `reply` is not mapped at all — that is the whole finding (`E2E-001: "reply" has no mapping in the architecture`).
+- The glossary defines `reply` as: "What the MCP service sends back for one message. A client waits on it, so its content is behaviour."
+- The user has already decided the meaning: the reply is the string value of the `result` object's text field in the JSON-RPC response for that message; the observing step reuses the response the sending step kept and compares that text for exact equality; only a successful response is a reply, an error response makes the observation fail.
+
+## Required Changes
+
+### Change #1: map the term `reply`
+**Document:** architecture_yaml (`./docs/architecture/architecture.yaml`)
+**Action:** Append one entry to the end of the existing `architecture.terms:` list, directly after the `message` entry. Do this as an exact string replacement so the surrounding lines are untouched.
+
+**old_string** (the last existing entry, verbatim):
+```
+    - term: message
+      technical: >-
+        One JSON-RPC request whose params carry the text, posted to /mcp.
+      observed_by: >-
+        Post the request to /mcp and keep the response for the steps after.
+```
+
+**new_string**:
+```
+    - term: message
+      technical: >-
+        One JSON-RPC request whose params carry the text, posted to /mcp.
+      observed_by: >-
+        Post the request to /mcp and keep the response for the steps after.
+    - term: reply
+      technical: >-
+        The text field of the result object in the JSON-RPC response the
+        service returns for one message; the reply is that field's string
+        value. Only a successful response carries a reply: a response that
+        comes back with an error instead of a result has none.
+      observed_by: >-
+        Take the response the sending step kept, read the reply text out of
+        its result object, and compare that text to the expected text for
+        exact equality. A response carrying an error instead of a result,
+        or a result without that text field, fails the observation.
+```
+
+**Resulting YAML of the new entry, for reference (copy it, do not recompose it):**
+```yaml
+    - term: reply
+      technical: >-
+        The text field of the result object in the JSON-RPC response the
+        service returns for one message; the reply is that field's string
+        value. Only a successful response carries a reply: a response that
+        comes back with an error instead of a result has none.
+      observed_by: >-
+        Take the response the sending step kept, read the reply text out of
+        its result object, and compare that text to the expected text for
+        exact equality. A response carrying an error instead of a result,
+        or a result without that text field, fails the observation.
+```
+
+## Constraints
+- Add exactly this one entry. Do not touch the `mcp service` or `message` mappings, `architecture.testing:`, `architecture.services:`, or the document's header comment.
+- Keep the file's existing style: four-space indentation for list items under `terms:`, six spaces for the entry's fields, `>-` folded block scalars, lines wrapped at roughly the same width as the neighbouring entries.
+- Spell the term exactly `reply`, lower-case, as the catalogue entry `the service answers "{reply}"` declares it. A different spelling is not found by lookup and the check still fails.
+- Do NOT edit `./docs/product/product.yaml` (the catalogue, the glossary and the roles stay exactly as they are), the Scenario in `docs/scenarios.yaml`, the Story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, or any step definition. The Scenario's step `the service answers "pong"` must remain word for word as written — the mapping is what makes it implementable.
+
+## Done when
+`architecture.terms:` holds three entries — `mcp service`, `message`, `reply` — each mapped exactly once, and no other file in the repository differs.
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+- `architecture_yaml`: edit `tmp/{{RUN_DIR}}/architecture_yaml.yaml`, the working copy of `./docs/architecture/architecture.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`catalogue:` or
+   `glossary:` in the product document, `architecture.terms:` in the
+   architecture document).
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of its list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
+   template single-quoted: it carries `{`, `[` and `"` of its own.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, the scenario registry, a generated test file and a step
+   definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

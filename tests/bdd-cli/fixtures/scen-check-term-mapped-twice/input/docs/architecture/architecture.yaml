@@ -1,0 +1,42 @@
+# Architectural spec for `scen-check-term-mapped-twice`.
+#
+# The word mapping maps every term E2E-001 relies on, and "reply" twice,
+# in two ways a step definition could not both follow.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/mcp/... -mode=record
+      replay: go test -json -count=1 ./tests/mcp/... -mode=replay
+      live: go test -json -count=1 ./tests/mcp/...
+  services:
+    - name: mcp-service
+      path: services/mcp-service
+      language: go
+  terms:
+    - term: mcp service
+      technical: >-
+        The mcp-service binary, serving JSON-RPC over HTTP on the port its
+        config names.
+      observed_by: >-
+        Start the binary in the run directory and wait until its port
+        accepts a connection.
+    - term: message
+      technical: >-
+        One JSON-RPC request whose params carry the text, posted to /mcp.
+      observed_by: >-
+        Post the request to /mcp and keep the response for the steps after.
+    - term: reply
+      technical: >-
+        The text field of the JSON-RPC result the service returns for one
+        request.
+      observed_by: >-
+        Decode the kept response and compare its result text to the
+        quoted text, byte for byte.
+    - term: reply
+      technical: >-
+        The line the service writes to its own log after it answers.
+      observed_by: >-
+        Read the service's log file and find the quoted text on its last
+        line.

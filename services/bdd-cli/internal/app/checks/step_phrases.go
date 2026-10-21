@@ -45,11 +45,17 @@ func activation(item *template.ScenarioCheckData, source product.Catalogue) (Ver
 	switch {
 	case !source.Declared:
 		return notChecked(item.ID, notCheckedNoCatalogue), true
-	case len(item.UserStories) == 0:
+	case !claimed(item):
 		return notChecked(item.ID, notCheckedUnclaimed), true
 	}
 
 	return Verdict{}, false
+}
+
+// claimed reports whether a Story claims the Scenario, which is what puts
+// it under the closure checks once a catalogue is declared.
+func claimed(item *template.ScenarioCheckData) bool {
+	return len(item.UserStories) > 0
 }
 
 // notChecked passes an Item the activation contract leaves unchecked,

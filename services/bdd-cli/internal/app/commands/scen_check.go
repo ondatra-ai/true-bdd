@@ -121,15 +121,37 @@ func loadCheckScenarios(
 			}
 		}
 
-		items := make([]*template.ScenarioCheckData, 0, len(selected))
-		for _, scenario := range selected {
-			item := newScenarioCheckData(scenario)
-			item.TermDocuments = termDocuments
-			items = append(items, item)
-		}
-
-		return items, nil
+		return checkItems(scenarios, selected, termDocuments), nil
 	}
+}
+
+// checkItems projects every loaded scenario onto a subject that knows
+// the whole Registry, and returns the selected ones, in the loader's order.
+func checkItems(
+	scenarios, selected []*registry.RegistryScenario,
+	termDocuments []template.TermDocument,
+) []*template.ScenarioCheckData {
+	all := make([]*template.ScenarioCheckData, 0, len(scenarios))
+	byID := make(map[string]*template.ScenarioCheckData, len(scenarios))
+
+	for _, scenario := range scenarios {
+		item := newScenarioCheckData(scenario)
+		item.TermDocuments = termDocuments
+		all = append(all, item)
+		byID[item.ID] = item
+	}
+
+	items := make([]*template.ScenarioCheckData, 0, len(selected))
+
+	for _, item := range all {
+		item.Registry = all
+	}
+
+	for _, scenario := range selected {
+		items = append(items, byID[scenario.ID])
+	}
+
+	return items
 }
 
 // selectByID narrows the loaded scenarios to the ids given on the command

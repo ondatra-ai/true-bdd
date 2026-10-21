@@ -1,0 +1,17 @@
+# Fixture checklist for `scen-check-definitions-correspond`.
+#
+# The step-definition check alone, so the walk spends no model turn.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every catalogue template a claimed Scenario's steps match must bind to one step definition, and every such definition be reached by one template."
+    validation_prompts:
+      - D: step-definitions
+        rationale: "A template bound to two step definitions, or a definition two templates reach, means the catalogue and the steps disagree on what a phrase is, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Split or merge catalogue entries so each template binds to one step definition and each definition is reached by one template, asking what the phrases mean first. Write it to the product document's catalogue, never to the Scenario or a step definition."

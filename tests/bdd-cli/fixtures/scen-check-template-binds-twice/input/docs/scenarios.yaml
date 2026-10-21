@@ -1,0 +1,55 @@
+# Registry seed for `scen-check-template-binds-twice`.
+#
+# Two claimed Scenarios whose answer steps match one template and bind
+# two step definitions between them, and an unclaimed one whose answer
+# binds a third, which the relation must not count.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "One template the claimed scenarios bind to two step definitions"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-001-answers-pong
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "ping"
+      then:
+        - the service answers "pong"
+  E2E-002:
+    description: The service must answer a greeting with a greeting
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-002-answers-greeting
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Client Developer sends "hi"
+      then:
+        - the service answers "hello"
+  E2E-003:
+    description: The service must answer a farewell with a farewell
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "quit"
+      then:
+        - the service answers "bye"

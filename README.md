@@ -100,8 +100,9 @@ refines, or exits. `--fix` is refused at startup when a prompt the walk
 would visit carries no `F:` fix template, which today refuses
 `scen check --fix` on the shipped checklist: no shipped `scen-check`
 prompt carries one. With a checklist whose prompts all do, a
-`scen check` fix defines the missing term in the product document,
-never in the Scenario (see "The step-phrase catalogue" below).
+`scen check` fix defines the missing term in the product document, or
+maps it in the architecture document, never in the Scenario (see "The
+step-phrase catalogue" below).
 `build tests` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
@@ -177,9 +178,10 @@ model's shape (pass or fail plus context lines), and under `--fix` its
 carrying both `D:` and `Q:` or neither, a `D:` naming a check the
 command does not hold, a `with:` parameter the check does not read, and
 `model:` on a `D:` prompt, since no model answers it, and a `D:` whose
-`docs:` does not list a document its check reads. `scen check` holds three
-checks, `given-when-then`, `step-phrases` and `declared-terms` (below); no
-shipped checklist uses any of them yet.
+`docs:` does not list a document its check reads. `scen check` holds five
+checks, `given-when-then`, `step-phrases`, `declared-terms`,
+`term-mappings` and `step-definitions` (below); no shipped checklist uses
+any of them yet.
 
 ### The step-phrase catalogue
 
@@ -218,14 +220,46 @@ template and the term, and a term defined twice fails it naming the
 count. A term only an unmatched template declares is no failure of the
 Scenario.
 
+`D: term-mappings` (`docs: [product, architecture_yaml]`) holds the same
+terms to the architecture document's word mapping, `architecture.terms:`,
+which says how each product word is built and how a step definition
+observes it, in words that name no code identifier:
+
+```yaml
+architecture:
+  terms:
+    - term: AI turn
+      technical: >-
+        One request through the engine's AI router to claude, crush or
+        codex, logged once as msg="Dispatching AI turn".
+      observed_by: >-
+        Count the "Dispatching AI turn" records in the run's JSON log file.
+```
+
+Every term must be mapped exactly once: an unmapped term fails the
+Scenario naming the term, and a term mapped twice fails it naming the
+count.
+
+`D: step-definitions` (`docs: [product]`) holds the catalogue to the
+suite's step definitions, the `steps/` package beside the Scenario's test
+file, read without running it as `build tests` reads it. Over the steps
+of every Scenario a Story claims in that suite, whatever ids the walk
+selected, the two must correspond one to one: a template whose steps bind
+two definitions, a definition two templates reach, and a step two
+definitions bind each fail the Scenario, naming the definitions by
+pattern, file and line. A step no definition binds yet is a gap `build
+tests --fix` authors, reported but not failed. A pattern that does not
+fold to a constant stops the walk with `msg="Check could not answer"`.
+
 Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
 passes "not checked: the product document declares no catalogue". With
 one, a Scenario is checked once a Story claims it (a non-empty
 `user_stories`); until then it passes "not checked: no Story claims this
 Scenario yet". Under `--fix` a failed check's `F:` drives the usual
 clarification loop, and the fix is written to a scratch copy of the
-product document in the run directory, which the engine puts in place of
-the document once it parses: the Scenario is never edited.
+product or architecture document in the run directory, which the engine
+puts in place of the document once it parses: the Scenario and the step
+definitions are never edited.
 
 ### Model tiers
 
@@ -316,9 +350,10 @@ The host project's documents live under `docs/`:
 - `docs/architecture/architecture.yaml` — the architectural spec that
   scopes `build code` (which test suites get walked, and how each one
   runs — see below), tells `build tests` which suite owns a scenario,
-  and carries the BDD `vocabulary:`
+  carries the BDD `vocabulary:`
   (allowed action verbs, forbidden action verbs, forbidden qualifiers)
-  cited by the `us refine` checks.
+  cited by the `us refine` checks, and maps each product word onto the
+  implementation under `terms:`.
 - `docs/product/product.yaml` — the product document, including its
   `roles:`, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
   individuals) — one person commonly holds two of them.

@@ -30,6 +30,21 @@ type ScenarioCheckData struct {
 	// TermDocuments are the documents a --fix run may write; empty
 	// without --fix. A fix defines a term there, never in the Scenario.
 	TermDocuments []TermDocument
+	// Registry is every Scenario of the Registry, this one included,
+	// whatever the walk selected: a check relating Scenarios reads it.
+	Registry []*ScenarioCheckData
+}
+
+// Writes reports whether a fix in this run may write the term document
+// of that key, so a template describes only the working copies it has.
+func (d *ScenarioCheckData) Writes(key string) bool {
+	for _, document := range d.TermDocuments {
+		if document.Key == key {
+			return true
+		}
+	}
+
+	return false
 }
 
 // FormatSteps renders the scenario's Given / When / Then for the
