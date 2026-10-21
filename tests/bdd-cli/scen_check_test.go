@@ -753,7 +753,7 @@ func TestScenCheck003UnknownIdRefused(t *testing.T) {
 	s.Done()
 }
 
-// scen-check-004-empty-registry-refused: A registry that parses but holds no scenarios must be refused, so the walk never reports success over nothing
+// scen-check-004-empty-registry-refused: A registry file that declares no scenarios must be refused, so the walk never reports success over nothing
 func TestScenCheck004EmptyRegistryRefused(t *testing.T) {
 	s := scenarios.New(t, "scen-check-004-empty-registry-refused")
 	s.Given(`the "scen-check-empty-registry" project tree`)

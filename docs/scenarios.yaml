@@ -1920,7 +1920,7 @@ scenarios:
         - and: the engine dispatched no AI turns
 
   scen-check-004-empty-registry-refused:
-    description: A registry that parses but holds no scenarios must be refused, so the walk never reports success over nothing
+    description: A registry file that declares no scenarios must be refused, so the walk never reports success over nothing
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
