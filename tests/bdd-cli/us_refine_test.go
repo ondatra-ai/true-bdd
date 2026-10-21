@@ -228,25 +228,6 @@ func TestE2E052(t *testing.T) {
 	s.Done()
 }
 
-// E2E-140: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
-func TestE2E140(t *testing.T) {
-	s := scenarios.New(t, "E2E-140")
-	s.Given(`the "us-refine-shared-prefix" project tree`)
-	s.When(`the Product Owner runs "us refine scen-check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story scen-check`)
-	s.And(`stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml`)
-	s.And(`stdout matches invalid modifier type: or`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match multiple story files`)
-	s.And(`stdout does not match scen-check-phrases`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/scen-check-verifier.yaml" is unchanged`)
-	s.And(`the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // us-refine-refusals-001-missing-story-refused: `us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes
 func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
 	s := scenarios.New(t, "us-refine-refusals-001-missing-story-refused")
@@ -349,6 +330,25 @@ func TestUsRefineRefusals006InvalidYamlRefused(t *testing.T) {
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.9-document-summary.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-007-shared-prefix-reads-own-file: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-007-shared-prefix-reads-own-file")
+	s.Given(`the "us-refine-shared-prefix" project tree`)
+	s.When(`the Product Owner runs "us refine scen-check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story scen-check`)
+	s.And(`stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml`)
+	s.And(`stdout matches invalid modifier type: or`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match multiple story files`)
+	s.And(`stdout does not match scen-check-phrases`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/scen-check-verifier.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }

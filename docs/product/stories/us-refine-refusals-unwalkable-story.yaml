@@ -3,8 +3,11 @@
 # A Story id shaped like a path, and a Story file that is missing, that two
 # files claim, that declares another Story's id or that is not valid YAML:
 # each is refused at startup, naming the id or the file, with no AI turn
-# spent and no file changed. The fix loop and the verdicts on a Story it can
-# walk are Stories of their own: us-refine-fix and us-refine-verdicts.
+# spent and no file changed. Among the files whose names start with the id,
+# the one that declares it is the Story read, so a Story whose id prefixes
+# another's is never confused with it. The fix loop and the verdicts on a
+# Story it can walk are Stories of their own: us-refine-fix and
+# us-refine-verdicts.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `us-refine-refusals-<id>` (ADR 0014), and its steps are that Scenario's steps.
@@ -14,7 +17,7 @@ story:
     feature: us-refine
     title: Refuse a Story us refine cannot walk before it spends an AI turn
     as_a: Product Owner
-    i_want: us refine to refuse at startup a Story it cannot walk, one whose file is missing, is claimed by two files, declares another Story's id or is not valid YAML, or one I name by a path rather than a Story id, and to name the id or the file at fault
+    i_want: us refine to refuse at startup a Story it cannot walk, one whose file is missing, is claimed by two files, declares another Story's id or is not valid YAML, or one I name by a path rather than a Story id, and to name the id or the file at fault, which is the file declaring the id I named even when another Story's file starts with that id too
     so_that: I correct the Story file the refusal names, instead of paying for AI turns spent on the wrong Story or on none
     status: IMPLEMENTED
     acceptance_criteria:
@@ -123,4 +126,23 @@ story:
                 - stdout matches level=ERROR msg="Refusing to start" command="us refine"
                 - but: no file outside "tmp" changed
                 - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 007-shared-prefix-reads-own-file
+          description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+          steps:
+            - given:
+                - the "us-refine-shared-prefix" project tree
+            - when:
+                - the Product Owner runs "us refine scen-check"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story scen-check
+                - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml
+                - 'stdout matches invalid modifier type: or'
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match multiple story files
+                - and: stdout does not match scen-check-phrases
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+                - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
                 - and: the engine dispatched no AI turns
