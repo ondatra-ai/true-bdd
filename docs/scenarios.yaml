@@ -22,11 +22,14 @@ metadata:
   last_updated: '2026-08-16'
   description: Every behaviour the TrueBDD engine is held to, one entry per scenario. Derived once from the tests/bdd-cli fixtures; hand-owned since, with `us apply` as the writer for new entries.
 scenarios:
-  E2E-001:
-    description: A command the spec states correctly but the machine cannot run must fail loudly, and on stdout
+  build-code-run-002-unstartable-runner-exits-1:
+    description: A suite command the architecture declares whose program the machine cannot start must end the run with exit code 1 and name that program on stdout
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-run-fix-loop.yaml
+        scenario_id: build-code-run-002-unstartable-runner-exits-1
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-command-not-executable" project tree
@@ -63,11 +66,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-003:
+  build-code-run-001-runs-declared-replay-command:
     description: '`build code` must run the command its architectural spec declares — and specifically the `replay` one'
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-run-fix-loop.yaml
+        scenario_id: build-code-run-001-runs-declared-replay-command
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-commands-from-spec" project tree
@@ -104,11 +110,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-005:
+  build-code-run-004-fix-reruns-fixed-test:
     description: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-run-fix-loop.yaml
+        scenario_id: build-code-run-004-fix-reruns-fixed-test
+        merge_date: '2026-10-21'
     timeout: 15m
     merged_steps:
       given:
@@ -216,11 +225,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
-  E2E-010:
+  build-code-run-003-failing-test-exits-1:
     description: A walk that ends with a test still failing must exit non-zero
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-run-fix-loop.yaml
+        scenario_id: build-code-run-003-failing-test-exits-1
+        merge_date: '2026-10-21'
     merged_steps:
       given:
         - the "build-code-nonconvergence" project tree
@@ -235,11 +247,14 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned the test runner "go"
         - and: the engine dispatched 1 AI turn
-  E2E-011:
+  build-code-run-005-playwright-fix-loop-converges:
     description: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
-    user_stories: []
+    user_stories:
+      - story: docs/product/stories/build-code-run-fix-loop.yaml
+        scenario_id: build-code-run-005-playwright-fix-loop-converges
+        merge_date: '2026-10-21'
     timeout: 25m
     merged_steps:
       given:

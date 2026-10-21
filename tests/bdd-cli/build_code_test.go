@@ -22,99 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-001: A command the spec states correctly but the machine cannot run must fail loudly, and on stdout
-func TestE2E001(t *testing.T) {
-	s := scenarios.New(t, "E2E-001")
-	s.Given(`the "build-code-command-not-executable" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Cannot run suite" framework=go-test`)
-	s.And(`stdout matches true-bdd-no-such-runner`)
-	s.And(`stdout matches discovery failed`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned the test runner "true-bdd-no-such-runner"`)
-	s.And(`the engine spawned exactly 1 test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-003: `build code` must run the command its architectural spec declares — and specifically the `replay` one
-func TestE2E003(t *testing.T) {
-	s := scenarios.New(t, "E2E-003")
-	s.Given(`the "build-code-commands-from-spec" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Running tests" framework=go-test`)
-	s.And(`stdout matches msg="Suite failures" failures=0 framework=go-test`)
-	s.And(`stdout matches msg="Total failing tests across architecture" failures=0`)
-	s.And(`stdout matches BUILD CODE COMPLETE`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned a test runner with arguments matching -run \^TestGreen\$`)
-	s.And(`the engine spawned exactly 1 test runner`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-005: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
-func TestE2E005(t *testing.T) {
-	s := scenarios.New(t, "E2E-005")
-	s.Given(`the "build-code-fix-named-test" project tree`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build code --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Running tests" framework=go-test`)
-	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
-	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
-	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
-	s.And(`stdout matches BUILD CODE COMPLETE`)
-	s.And(`the file "services/calc/calc.go" is modified`)
-	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
-	s.And(`the engine spawned a test runner with arguments matching TestAddSumsItsArguments`)
-	s.But(`the file "tests/suite/add_test.go" is unchanged`)
-	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
-	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
-	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
-	s.Done()
-}
-
-// E2E-010: A walk that ends with a test still failing must exit non-zero
-func TestE2E010(t *testing.T) {
-	s := scenarios.New(t, "E2E-010")
-	s.Given(`the "build-code-nonconvergence" project tree`)
-	s.When(`the System Architect runs "build code"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="Running tests" framework=go-test`)
-	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
-	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
-	s.And(`stdout matches BUILD CODE COMPLETE`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the engine spawned the test runner "go"`)
-	s.And(`the engine dispatched 1 AI turn`)
-	s.Done()
-}
-
-// E2E-011: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
-func TestE2E011(t *testing.T) {
-	s := scenarios.New(t, "E2E-011")
-	s.Given(`the "build-code-playwright-nextjs" project tree`)
-	s.And(`the project's browser test dependencies are installed`)
-	s.And(`the System Architect answers "1" to every question`)
-	s.When(`the System Architect runs "build code --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches msg="Running tests" framework=playwright`)
-	s.And(`stdout matches BUILD CODE COMPLETE`)
-	s.And(`the file "services/frontend/Dockerfile" is created`)
-	s.And(`the file "services/frontend/package.json" is created`)
-	s.But(`the file "docker-compose.yaml" is unchanged`)
-	s.And(`the file "tests/integration/frontend-home.spec.ts" is unchanged`)
-	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
-	s.And(`no file outside "tmp" and "services/frontend" changed`)
-	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
-	s.And(`judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server`)
-	s.And(`judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server`)
-	s.Done()
-}
-
 // build-code-commands-001-unknown-framework-refused: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
 func TestBuildCodeCommands001UnknownFrameworkRefused(t *testing.T) {
 	s := scenarios.New(t, "build-code-commands-001-unknown-framework-refused")
@@ -173,6 +80,99 @@ func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runner`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
+func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")
+	s.Given(`the "build-code-commands-from-spec" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Running tests" framework=go-test`)
+	s.And(`stdout matches msg="Suite failures" failures=0 framework=go-test`)
+	s.And(`stdout matches msg="Total failing tests across architecture" failures=0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned a test runner with arguments matching -run \^TestGreen\$`)
+	s.And(`the engine spawned exactly 1 test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-run-002-unstartable-runner-exits-1: A suite command the architecture declares whose program the machine cannot start must end the run with exit code 1 and name that program on stdout
+func TestBuildCodeRun002UnstartableRunnerExits1(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-002-unstartable-runner-exits-1")
+	s.Given(`the "build-code-command-not-executable" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Cannot run suite" framework=go-test`)
+	s.And(`stdout matches true-bdd-no-such-runner`)
+	s.And(`stdout matches discovery failed`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned the test runner "true-bdd-no-such-runner"`)
+	s.And(`the engine spawned exactly 1 test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-run-003-failing-test-exits-1: A walk that ends with a test still failing must exit non-zero
+func TestBuildCodeRun003FailingTestExits1(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-003-failing-test-exits-1")
+	s.Given(`the "build-code-nonconvergence" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Running tests" framework=go-test`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
+	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned the test runner "go"`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.Done()
+}
+
+// build-code-run-004-fix-reruns-fixed-test: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
+func TestBuildCodeRun004FixRerunsFixedTest(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-004-fix-reruns-fixed-test")
+	s.Given(`the "build-code-fix-named-test" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Running tests" framework=go-test`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
+	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/calc/calc.go" is modified`)
+	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
+	s.And(`the engine spawned a test runner with arguments matching TestAddSumsItsArguments`)
+	s.But(`the file "tests/suite/add_test.go" is unchanged`)
+	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-run-005-playwright-fix-loop-converges: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
+func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-005-playwright-fix-loop-converges")
+	s.Given(`the "build-code-playwright-nextjs" project tree`)
+	s.And(`the project's browser test dependencies are installed`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Running tests" framework=playwright`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/frontend/Dockerfile" is created`)
+	s.And(`the file "services/frontend/package.json" is created`)
+	s.But(`the file "docker-compose.yaml" is unchanged`)
+	s.And(`the file "tests/integration/frontend-home.spec.ts" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`no file outside "tmp" and "services/frontend" changed`)
+	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
+	s.And(`judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server`)
+	s.And(`judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server`)
 	s.Done()
 }
 
