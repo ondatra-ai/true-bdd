@@ -133,22 +133,90 @@ vocabulary:
       reason: "Describes internal mechanics, not user-observable behavior."
       replacement: "Describe the visible result of reading the input."
 
-# Product glossary — empty on purpose (a recorded decision, not an
-# oversight). Fill it when a checklist mis-classifies one of our own words
-# as an "internal implementation term" — listing it here declares it user-world, not implementation.
-glossary: []
+# The product's words: what each word a catalogue entry declares is, and
+# why it matters. `D: declared-terms` holds every term a claimed Scenario's
+# phrases declare to exactly one entry here.
+glossary:
+  - term: engine
+    means: >-
+      TrueBDD's own program, `true-bdd`. It walks a project's documents
+      through checklists and sends AI turns to the models; it is neither
+      the project's own code nor the AI CLIs it drives, so a Scenario can
+      say what TrueBDD itself did.
+
+  - term: command
+    means: >-
+      One `true-bdd` subcommand with its arguments, as a person types it
+      after `true-bdd`, such as `scen check --fix`. It is what a role runs,
+      and the unit whose exit code, stdout and file changes a Scenario
+      observes.
+
+  - term: project tree
+    means: >-
+      The files of the project a command works on (its specification
+      documents, the engine's configuration and checklists, its code and
+      tests) as a Scenario starts from them. Named, so a Scenario says
+      exactly which starting point its behaviour depends on.
+
+  - term: exit code
+    means: >-
+      The number a finished command reports: 0 for success, anything else
+      for a refusal or a failure. It is what a script or a CI gate reads to
+      decide whether to go on.
+
+  - term: stdout
+    means: >-
+      Everything a command prints on its standard output: its answer lines
+      and its log records. It is what a person watching the terminal, or a
+      script reading it, sees.
+
+  - term: log record
+    means: >-
+      One line the engine prints about its own run: a level, a message and
+      named fields, such as `level=ERROR msg="Refusing to start"
+      command="scen check"`. Its message and field names are product
+      output that people and tools rely on.
+
+  - term: pattern
+    means: >-
+      A regular expression a step uses to say what text must or must not
+      appear; it matches anywhere in the text unless it anchors itself.
+
+  - term: file change
+    means: >-
+      A file of the project tree that a run created, modified or deleted,
+      compared with the tree as the run found it. What a command leaves
+      behind is its lasting effect.
+
+  - term: checklist
+    means: >-
+      The ordered Prompts a command asks about each Story or Scenario it
+      walks, one checklist per command, read from the project tree. It
+      decides which questions a run asks.
+
+  - term: Prompt
+    means: >-
+      One question of a checklist, answered by a model (`Q:`) or by the
+      engine's own code (`D:`), with its rationale, the documents it reads
+      and an optional fix. A walk's verdicts and its AI turns are counted
+      per Prompt.
+
+  - term: AI turn
+    means: >-
+      One request the engine sends to an AI model and waits on. It is the
+      unit of model cost and time: a run that needs none costs nothing.
 
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
 catalogue:
-  - template: 'the {actor:role} runs "{command}"'
-    block: when
+  - template: 'the "{tree}" project tree'
+    block: given
     means: >-
-      That role runs the engine with the given command in the project
-      tree, once, and the Scenario waits for it to end. The role says who
-      wants the behaviour; it changes nothing in what the command does.
-    terms: [engine, command, project tree]
+      The run starts from the named project tree: a fresh copy of that
+      project's files becomes the directory the command runs in, so
+      nothing an earlier run changed is visible in it.
+    terms: [project tree, command]
 
   - template: 'the {actor:role} answers "{answer}" to every question'
     block: given
@@ -160,12 +228,28 @@ catalogue:
       exits the loop.
     terms: [fix loop]
 
-  - template: 'the engine dispatched {turns:number} AI turn[s]'
+  - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
+    block: given
+    means: >-
+      The named checklist, as the command reads it from the project tree,
+      holds only the one Prompt whose question contains the quoted text,
+      so the run asks that Prompt and no other of that checklist.
+    terms: [checklist, Prompt, command, project tree]
+
+  - template: 'the {actor:role} runs "{command}"'
+    block: when
+    means: >-
+      That role runs the engine with the given command in the project
+      tree, once, and the Scenario waits for it to end. The role says who
+      wants the behaviour; it changes nothing in what the command does.
+    terms: [engine, command, project tree]
+
+  - template: 'the command exits with code {code:number}'
     block: then
     means: >-
-      The engine sent exactly that many AI turns during the run; "no"
-      means none, so the run cost no model call.
-    terms: [engine, AI turn]
+      The command the role ran ended with this exit code: 0 when it
+      succeeded, non-zero when it refused to start or a check failed.
+    terms: [command, exit code]
 
   - template: 'stdout matches {expected:pattern}'
     block: then
@@ -174,3 +258,25 @@ catalogue:
       somewhere. Stdout carries the command's answer and its log records,
       so a pattern may name a log record's message or fields.
     terms: [stdout, log record, pattern]
+
+  - template: 'stdout does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      Nothing the command printed on stdout, neither an answer line nor a
+      log record's message or fields, has a match for the pattern: proof
+      that a message, a banner or a log record never appeared.
+    terms: [command, stdout, log record, pattern]
+
+  - template: 'no file outside "{dir}" changed'
+    block: then
+    means: >-
+      Every file change the run made lies under the named directory of
+      the project tree; every file outside it is as the run found it.
+    terms: [file change, project tree]
+
+  - template: 'the engine dispatched {turns:number} AI turn[s]'
+    block: then
+    means: >-
+      The engine sent exactly that many AI turns during the run; "no"
+      means none, so the run cost no model call.
+    terms: [engine, AI turn]

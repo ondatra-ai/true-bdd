@@ -165,6 +165,119 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It grows as Stories claim Scenarios.
   terms:
+    - term: engine
+      technical: >-
+        The `true-bdd` binary, built from `services/bdd-cli` once per test
+        session. Every log record it writes goes out twice: as text on stdout,
+        and as one JSON line in `tmp/true-bdd.log.json` under the directory
+        the command runs in.
+      observed_by: >-
+        A step about what the engine did reads that JSON log file after the
+        run, never stdout; a run that left no log file fails the step instead
+        of counting nothing.
+
+    - term: command
+      technical: >-
+        The quoted text, split into arguments by shell quoting rules and run
+        as the engine binary's arguments in a subprocess. Its working
+        directory is the run directory assembled from the project tree, its
+        stdin carries the answers a Given step set (nothing otherwise), and
+        the AI CLIs it finds on its PATH are the harness's record or replay
+        stand-ins for the session's mode.
+      observed_by: >-
+        Run once by the When step, which fails when no Given step prepared a
+        project tree. The fixture is handed the command first, so it can
+        refuse an empty one or a checklist narrowing the command does not
+        read. The run is capped by the Scenario's `timeout:`, five minutes
+        when absent; its exit code, stdout, stderr and file changes are kept
+        for the Then steps, and a run that could not complete fails the step,
+        naming the run directory it left behind.
+
+    - term: project tree
+      technical: >-
+        A fixture directory `tests/bdd-cli/fixtures/<name>/`. Its `input/` is
+        laid over this repository's `true-bdd/` and `templates/` in a fresh
+        run directory `tmp/test_run/<session>/<name>/`, the command's working
+        directory. Beside `input/` sit `cassettes/` (the recorded AI turns and
+        the recorded outcome) and the optional `prep.sh`, `teardown.sh` and
+        `checklist-prompts.yaml`.
+      observed_by: >-
+        Set up by the Given step naming the tree: it loads that fixture, and
+        decides per caller where the run's AI turns come from (the fixture's
+        cassettes in replay, refusing a fixture with no cassettes or no
+        recorded outcome; a staging directory in record; the real CLIs live).
+        Nothing runs yet: the run directory is assembled when the When step
+        runs the command.
+
+    - term: exit code
+      technical: >-
+        The engine process's exit status: 1 when the command returns an error
+        (a refusal, a failed check, an unusable answer), 0 otherwise.
+      observed_by: >-
+        The step reads the number and compares it with the kept exit status; a
+        mismatch fails the step and names where the run's evidence lives.
+
+    - term: stdout
+      technical: >-
+        The engine's standard output: console answer lines (banners such as
+        `SCEN CHECK`, the report table, `ALL CHECKS PASSED!`) and every log
+        record in text form, `time=… level=… msg="…" key=value`.
+      observed_by: >-
+        The kept stdout, as one string, is asked for a match of the step's
+        pattern anywhere in it, or for none; a failed match prints the tail of
+        stdout beside the pattern.
+
+    - term: log record
+      technical: >-
+        One record of the engine's structured log: a level, a message and
+        named fields. Message strings and field names are a wire contract the
+        BDD report also reads, so a step may pin them.
+      observed_by: >-
+        Through stdout, by a pattern naming its text form, such as
+        `level=ERROR msg="Refusing to start" command="scen check"`; in the
+        JSON log file, by its exact message (see engine and AI turn).
+
+    - term: pattern
+      technical: >-
+        An RE2 regular expression: the step's text after its fixed words,
+        verbatim to the end of the step, quotes included.
+      observed_by: >-
+        Compiled by the step that holds it; one that does not compile fails
+        the step rather than matching nothing.
+
+    - term: file change
+      technical: >-
+        One entry of the run's structural diff of the run directory, taken
+        between a snapshot after the directory is assembled and prepared and
+        one after the command ends: created, modified or deleted, with its
+        path relative to the run directory. Noise directories such as `.git`
+        and `node_modules/` are left out of both snapshots.
+      observed_by: >-
+        A step reads the kept diff. A path lies outside a directory unless it
+        is that directory or starts with it plus a slash, so `tmp-x.yaml` is
+        outside `tmp`; the step lists every change outside it.
+
+    - term: checklist
+      technical: >-
+        `true-bdd/checklists/<command stem>.yaml` in the run directory (`scen
+        check` reads `scen-check.yaml`): sections of Prompts the command reads
+        at startup.
+      observed_by: >-
+        A fixture narrows a checklist in `checklist-prompts.yaml` at its root,
+        mapping a checklist's stem to snippets of its Prompts' questions; the
+        harness rewrites the run's copy to keep only the matching Prompts. The
+        step checks the fixture declares exactly the one quoted snippet for the
+        quoted checklist, and fails when it declares none, several or another.
+
+    - term: Prompt
+      technical: >-
+        One element of a checklist section's `validation_prompts`: a `Q:`
+        question or a `D:` check name, its `rationale`, the `docs` it reads
+        and an optional `F:` fix.
+      observed_by: >-
+        Selected by a snippet of its `Q:` text, which must match exactly one
+        Prompt of the checklist.
+
     - term: AI turn
       technical: >-
         One request through the engine's AI router to claude, crush or codex,
