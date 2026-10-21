@@ -22,25 +22,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// E2E-036: Two files claiming the same story id must be refused, not silently resolved by picking one
-func TestE2E036(t *testing.T) {
-	s := scenarios.New(t, "E2E-036")
-	s.Given(`the "us-refine-ambiguous-story" project tree`)
-	s.When(`the Product Owner runs "us refine 96.9"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story 96\.9`)
-	s.And(`stdout matches level=ERROR msg="Multiple story files found" story_number=96\.9 count=2`)
-	s.And(`stdout matches multiple story files found for story 96\.9`)
-	s.And(`stdout matches 96\.9-document-summary\.yaml`)
-	s.And(`stdout matches 96\.9-document-summary-v2\.yaml`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.9-document-summary.yaml" is unchanged`)
-	s.And(`the file "docs/product/stories/96.9-document-summary-v2.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-037: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
 func TestE2E037(t *testing.T) {
 	s := scenarios.New(t, "E2E-037")
@@ -164,43 +145,6 @@ func TestE2E042(t *testing.T) {
 	s.Done()
 }
 
-// E2E-043: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
-func TestE2E043(t *testing.T) {
-	s := scenarios.New(t, "E2E-043")
-	s.Given(`the "us-refine-malformed-story" project tree`)
-	s.When(`the Product Owner runs "us refine 96.9"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story 96\.9`)
-	s.And(`stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml`)
-	s.And(`stdout matches failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml`)
-	s.And(`stdout matches mapping values are not allowed in this context`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.9-document-summary.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-044: `us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes
-func TestE2E044(t *testing.T) {
-	s := scenarios.New(t, "E2E-044")
-	s.Given(`the "us-refine-missing-story" project tree`)
-	s.When(`the Product Owner runs "us refine 96.9"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story 96\.9`)
-	s.And(`stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml`)
-	s.And(`stdout matches story file not found — write the Story file first`)
-	s.And(`stdout matches no story file found for story 96\.9 in docs/product/stories`)
-	s.And(`stdout matches \(expected format: 96\.9-<slug>\.yaml\)`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match us create`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
-	s.And(`no file matching "docs/product/stories/96.9-*.yaml" is created`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
 // E2E-045: A story whose acceptance criteria are all error scenarios must fail the happy-path check and pass the rest
 func TestE2E045(t *testing.T) {
 	s := scenarios.New(t, "E2E-045")
@@ -228,39 +172,6 @@ func TestE2E046(t *testing.T) {
 	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match Story saved to:`)
-	s.Done()
-}
-
-// E2E-047: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
-func TestE2E047(t *testing.T) {
-	s := scenarios.New(t, "E2E-047")
-	s.Given(`the "us-refine-slug-id-missing-story" project tree`)
-	s.When(`the Product Owner runs "us refine scen-check"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches US REFINE — Story scen-check`)
-	s.And(`stdout matches level=ERROR msg="No story file found" story_number=scen-check pattern=docs/product/stories/scen-check-\*\.yaml`)
-	s.And(`stdout matches no story file found for story scen-check in docs/product/stories`)
-	s.And(`stdout matches \(expected format: scen-check-<slug>\.yaml\)`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match invalid story`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
-	s.Done()
-}
-
-// E2E-048: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
-func TestE2E048(t *testing.T) {
-	s := scenarios.New(t, "E2E-048")
-	s.Given(`the "us-refine-path-like-story-id" project tree`)
-	s.When(`the Product Owner runs "us refine ../x"`)
-	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches invalid story id \\"\.\./x\\"`)
-	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match US REFINE — Story`)
-	s.And(`no file outside "tmp" changed`)
-	s.And(`the file "docs/product/x-outside-stories.yaml" is unchanged`)
-	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
@@ -317,9 +228,81 @@ func TestE2E052(t *testing.T) {
 	s.Done()
 }
 
-// E2E-053: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
-func TestE2E053(t *testing.T) {
-	s := scenarios.New(t, "E2E-053")
+// us-refine-refusals-001-missing-story-refused: `us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes
+func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-001-missing-story-refused")
+	s.Given(`the "us-refine-missing-story" project tree`)
+	s.When(`the Product Owner runs "us refine 96.9"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story 96\.9`)
+	s.And(`stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml`)
+	s.And(`stdout matches story file not found — write the Story file first`)
+	s.And(`stdout matches no story file found for story 96\.9 in docs/product/stories`)
+	s.And(`stdout matches \(expected format: 96\.9-<slug>\.yaml\)`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match us create`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
+	s.And(`no file matching "docs/product/stories/96.9-*.yaml" is created`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-002-slug-id-accepted: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+func TestUsRefineRefusals002SlugIdAccepted(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-002-slug-id-accepted")
+	s.Given(`the "us-refine-slug-id-missing-story" project tree`)
+	s.When(`the Product Owner runs "us refine scen-check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story scen-check`)
+	s.And(`stdout matches level=ERROR msg="No story file found" story_number=scen-check pattern=docs/product/stories/scen-check-\*\.yaml`)
+	s.And(`stdout matches no story file found for story scen-check in docs/product/stories`)
+	s.And(`stdout matches \(expected format: scen-check-<slug>\.yaml\)`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match invalid story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-003-path-like-id-refused: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
+func TestUsRefineRefusals003PathLikeIdRefused(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-003-path-like-id-refused")
+	s.Given(`the "us-refine-path-like-story-id" project tree`)
+	s.When(`the Product Owner runs "us refine ../x"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches invalid story id \\"\.\./x\\"`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`stdout does not match US REFINE — Story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/x-outside-stories.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-004-two-files-one-id-refused: Two files claiming the same story id must be refused, not silently resolved by picking one
+func TestUsRefineRefusals004TwoFilesOneIdRefused(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-004-two-files-one-id-refused")
+	s.Given(`the "us-refine-ambiguous-story" project tree`)
+	s.When(`the Product Owner runs "us refine 96.9"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story 96\.9`)
+	s.And(`stdout matches level=ERROR msg="Multiple story files found" story_number=96\.9 count=2`)
+	s.And(`stdout matches multiple story files found for story 96\.9`)
+	s.And(`stdout matches 96\.9-document-summary\.yaml`)
+	s.And(`stdout matches 96\.9-document-summary-v2\.yaml`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.9-document-summary.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/96.9-document-summary-v2.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-005-other-id-refused: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
+func TestUsRefineRefusals005OtherIdRefused(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-005-other-id-refused")
 	s.Given(`the "us-refine-story-id-mismatch" project tree`)
 	s.When(`the Product Owner runs "us refine scen"`)
 	s.Then(`the command exits with code 1`)
@@ -334,9 +317,26 @@ func TestE2E053(t *testing.T) {
 	s.Done()
 }
 
-// E2E-140: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
-func TestE2E140(t *testing.T) {
-	s := scenarios.New(t, "E2E-140")
+// us-refine-refusals-006-invalid-yaml-refused: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
+func TestUsRefineRefusals006InvalidYamlRefused(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-006-invalid-yaml-refused")
+	s.Given(`the "us-refine-malformed-story" project tree`)
+	s.When(`the Product Owner runs "us refine 96.9"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches US REFINE — Story 96\.9`)
+	s.And(`stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml`)
+	s.And(`stdout matches failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml`)
+	s.And(`stdout matches mapping values are not allowed in this context`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/96.9-document-summary.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// us-refine-refusals-007-shared-prefix-reads-own-file: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+func TestUsRefineRefusals007SharedPrefixReadsOwnFile(t *testing.T) {
+	s := scenarios.New(t, "us-refine-refusals-007-shared-prefix-reads-own-file")
 	s.Given(`the "us-refine-shared-prefix" project tree`)
 	s.When(`the Product Owner runs "us refine scen-check"`)
 	s.Then(`the command exits with code 1`)
