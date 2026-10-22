@@ -1,5 +1,5 @@
 // The Corner Shop's web front: one page, served on the port PORT names.
-// Its heading is the store's name, which is what the home page suite asserts.
+// The heading carries the store's name, which the home page suite asserts.
 const http = require('node:http');
 
 const page = `<!doctype html>

@@ -90,39 +90,22 @@ Received: [31m"Welcome"[39m
 # Fix Prompt for Failing Test /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 
 ## Target
-Apply the change(s) under `services/*` only. The test at
-`tests/integration/home.spec.ts` is the contract; do NOT modify it, and do NOT
-touch `tests/`, `docs/`, or `true-bdd/`.
+Apply the change under `services/*` only. The test at `tests/integration/home.spec.ts` is the contract; do NOT modify it (or anything under `tests/`, `docs/`, `*_test.go`, or `services/*/__tests__/`).
 
 ## Root Cause
-`tests/integration/home.spec.ts:9` asserts the home page's single `<h1>` reads
-exactly `Corner Shop`:
+`tests/integration/home.spec.ts:9` asserts the page's `h1` text is exactly `"Corner Shop"`:
 
 ```ts
 expect(await page.locator('h1').textContent()).toBe('Corner Shop');
 ```
 
-The only production source for that page is the inline HTML string in
-`services/web/server.js` (served for every request; Playwright boots it via
-`webServer.command: 'node ../services/web/server.js'` in
-`tests/playwright.config.ts`). Line 10 of that file renders `<h1>Welcome</h1>`,
-so `textContent()` returns `"Welcome"` — exactly the received value in the
-failure output. This is the planted production defect that the file's own header
-comment describes.
-
-The sibling assertion at line 14 (`a[href]` === `/hours`) already passes and
-must keep passing, so the `<a href="/hours">Opening hours</a>` element must be
-left untouched.
+The production page served by `services/web/server.js` hardcodes `<h1>Welcome</h1>` (the planted defect, flagged in that file's own header comment), so the heading reads `"Welcome"`. The sibling test (`a[href]` → `/hours`) already passes and must keep passing, so the anchor markup must stay byte-identical.
 
 ## Required Changes
 
-### Change #1: Render the store name as the home page heading
+### Change #1: Make the home page heading the store name
 **File:** `services/web/server.js`
-**Action:** Use the Edit tool on this existing file. Replace the `<h1>` line
-with the store name. The replacement text must be exactly `<h1>Corner Shop</h1>`
-with no leading/trailing whitespace inside the element — `textContent()` is
-compared with `toBe`, so any extra space or newline inside the tag would still
-fail.
+**Action:** Use the Edit tool (existing file).
 
 **old_string:**
 ```
@@ -134,13 +117,9 @@ fail.
     <h1>Corner Shop</h1>
 ```
 
-### Change #2: Correct the now-stale header comment (same file)
+### Change #2: Drop the now-stale "planted defect" comment
 **File:** `services/web/server.js`
-**Action:** Use the Edit tool. The file's top comment asserts the heading says
-`"Welcome"` where the store name belongs; after Change #1 that statement is
-false and would mislead the next reader. Replace the comment block so it
-describes the corrected behaviour. This is a comment-only edit and does not
-affect the served HTML.
+**Action:** Use the Edit tool (existing file). This is a comment-only cleanup so the file no longer claims a defect that has been fixed; it does not affect behaviour. Apply it after Change #1.
 
 **old_string:**
 ```
@@ -152,32 +131,20 @@ affect the served HTML.
 **new_string:**
 ```
 // The Corner Shop's web front: one page, served on the port PORT names.
-// Its heading is the store's name, which is what the home page suite asserts.
+// The heading carries the store's name, which the home page suite asserts.
 ```
 
-## Expected Result After the Fix
-`services/web/server.js` serves:
-
+## Constraints / Verification
+- Do not touch `tests/integration/home.spec.ts`, `tests/playwright.config.ts`, or any other file outside `services/web/`.
+- Do not change the `<a href="/hours">Opening hours</a>` line — the second test asserts `href === '/hours'`.
+- Keep exactly one `h1` on the page; `page.locator('h1')` would fail on a strict-mode violation if a second heading were added.
+- The heading text must be exactly `Corner Shop` with no surrounding whitespace inside the `<h1>` element, because `textContent()` is compared with `toBe` (no trimming).
+- After the edit the page body should read:
 ```
-<!doctype html>
-<html>
-  <head><title>Corner Shop</title></head>
-  <body>
     <h1>Corner Shop</h1>
     <a href="/hours">Opening hours</a>
-  </body>
-</html>
 ```
-
-- `home page > shows the store name as its heading` → `h1` textContent is
-  `"Corner Shop"`, assertion passes.
-- `home page > links to the opening hours` → unchanged `<a href="/hours">`,
-  still passes.
-
-## Constraints Recap
-- Only `services/web/server.js` is edited. No new files are needed.
-- No test file is modified; no assertion is weakened, skipped, or removed.
-- `tests/`, `docs/architecture/architecture.yaml`, and `true-bdd/` are untouched.
+- No server/config/port changes are needed: Playwright starts the service itself via `webServer:` in `tests/playwright.config.ts`.
 
 ---
 

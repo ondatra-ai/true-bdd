@@ -80,8 +80,7 @@ Received: "Hello, undefined!"
 # Fix Prompt for Failing Test /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
 
 ## Target
-Apply the change(s) under `services/*` only. The test at
-`tests/unit/greeting.test.js` is the contract; do NOT modify it.
+Apply the change under `services/*` only. The test at `tests/unit/greeting.test.js` is the contract; do NOT modify it (or anything under `tests/`, `*_test.go`, `services/*/__tests__/`, or `docs/`).
 
 ## Root Cause
 `tests/unit/greeting.test.js` asserts:
@@ -90,20 +89,13 @@ Apply the change(s) under `services/*` only. The test at
 expect(greet()).toBe('Hello, world!');
 ```
 
-`greet` is called with no argument, so in `services/greeter/greeting.js` the
-parameter `name` is `undefined` and `'Hello, ' + name + '!'` evaluates to
-`"Hello, undefined!"`. The function's own doc comment states the intended
-contract ("greets a person by name, and the world when no name is given")
-but the default is missing. The smallest production change is to default
-`name` to `'world'`, which keeps the named-greeting behaviour
-(`greet('Ada')` → `"Hello, Ada!"`) intact.
+but `services/greeter/greeting.js` defines `greet(name)` with no default, so calling `greet()` leaves `name === undefined` and string concatenation yields `"Hello, undefined!"`. The planted defect is the missing default value for `name`. The named-argument behaviour (`greet('Ada') === 'Hello, Ada!'`) must be preserved.
 
 ## Required Changes
 
-### Change #1: Default `name` to `'world'` in `greet`
+### Change #1: Default the `name` parameter to `'world'`
 **File:** `services/greeter/greeting.js`
-**Action:** Use the Edit tool (existing file). Replace the `old_string`
-below with the `new_string` below, verbatim.
+**Action:** Use the Edit tool on this existing file. Replace the `old_string` below with the `new_string` below, verbatim.
 
 **old_string:**
 ```
@@ -115,7 +107,7 @@ function greet(name) {
 }
 ```
 
-**new_string (Content):**
+**new_string:**
 ```
 // greet greets a person by name, and the world when no name is given.
 function greet(name = 'world') {
@@ -123,19 +115,14 @@ function greet(name = 'world') {
 }
 ```
 
-## Notes for the applier
-- Do not create any new file; this is a single in-place edit.
-- Do not touch `tests/unit/greeting.test.js`, `tests/jest.config.js`, any
-  other file under `tests/`, `docs/architecture/architecture.yaml`, or
-  anything under `docs/` or `true-bdd/`.
-- Do not weaken, skip, or remove any assertion.
-- `module.exports = { greet };` at the bottom of the file stays unchanged.
+## Notes for the Applier
+- Do not change `module.exports = { greet };` — the test imports `{ greet }` from `../../services/greeter/greeting`.
+- Do not touch `tests/unit/greeting.test.js` or any other test file; no assertion may be weakened, skipped, or removed.
+- No other production file needs to change; `services/greeter/greeting.js` is the only source file in the service.
 
 ## Expected Result
-`greet()` returns `'Hello, world!'`, so
-`tests/unit/greeting.test.js::greet greets the world when no name is given`
-passes, and any named-argument behaviour (`greet('Ada')` →
-`'Hello, Ada!'`) is preserved.
+- `greet()` → `'Hello, world!'` (satisfies the failing assertion).
+- `greet('Ada')` → `'Hello, Ada!'` (existing behaviour unchanged).
 
 ---
 
