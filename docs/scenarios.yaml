@@ -342,6 +342,32 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
+  build-code-frameworks-001-jest-failing-test-exits-1:
+    description: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
+        scenario_id: build-code-frameworks-001-jest-failing-test-exits-1
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "build-code-jest-failing-test" project tree
+        - and: the project's test dependencies are installed
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - stdout matches msg="Running tests" framework=jest
+        - stdout matches msg="Suite failures" failures=1 framework=jest
+        - 'stdout matches msg="Total failing tests across architecture" failures=1'
+        - stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given
+        - stdout matches BUILD CODE COMPLETE
+        - but: no file outside "tmp" changed
+        - and: the engine spawned the test runner "npx"
+        - and: the engine spawned exactly 1 test runner
+        - and: the engine dispatched 1 AI turn
   build-tests-refusals-001-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, never walked to a trivial success
     service: bdd-cli

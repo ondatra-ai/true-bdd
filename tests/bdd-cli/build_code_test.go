@@ -98,6 +98,25 @@ func TestBuildCodeCommands005JestWithoutJsonRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-code-frameworks-001-jest-failing-test-exits-1: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
+func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-001-jest-failing-test-exits-1")
+	s.Given(`the "build-code-jest-failing-test" project tree`)
+	s.And(`the project's test dependencies are installed`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Running tests" framework=jest`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
+	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned the test runner "npx"`)
+	s.And(`the engine spawned exactly 1 test runner`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")

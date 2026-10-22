@@ -1,0 +1,44 @@
+# Story `build-code-frameworks`: `build code` running a Jest, a Playwright
+# or a go test suite, and re-running a failing test the way its framework
+# selects one.
+#
+# Each framework's report names the failing tests; a Go package that does
+# not compile is one failure. Under `--fix` the test a fix was for runs
+# again through the framework's own filter: Jest's --testNamePattern,
+# Playwright's --grep, and for a package that did not compile the whole
+# command, unfiltered. Refusing a suite command is the Story
+# build-code-commands; the fix loop on a failing go test and a Playwright
+# app that does not start yet are the Story build-code-run.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-code-frameworks-<id>` (ADR 0014), and its steps are that
+# Scenario's steps.
+
+story:
+    id: build-code-frameworks
+    feature: build-code
+    title: Run Jest, Playwright and go test suites with build code and re-run each failing test the way its framework selects it
+    as_a: System Architect
+    i_want: build code to count the failing tests of a Jest, a Playwright or a go test suite from the framework's own report, a Go package that does not compile as one failure, and under --fix to re-run only the test a fix was for through that framework's name filter, or the whole package when it did not compile
+    so_that: whichever framework a project's suite is written in, the fix loop stops on that suite's own verdict on the test it was fixing
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-jest-failing-test-exits-1
+          description: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
+          steps:
+            - given:
+                - the "build-code-jest-failing-test" project tree
+                - and: the project's test dependencies are installed
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="Running tests" framework=jest
+                - stdout matches msg="Suite failures" failures=1 framework=jest
+                - 'stdout matches msg="Total failing tests across architecture" failures=1'
+                - stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given
+                - stdout matches BUILD CODE COMPLETE
+                - but: no file outside "tmp" changed
+                - and: the engine spawned the test runner "npx"
+                - and: the engine spawned exactly 1 test runner
+                - and: the engine dispatched 1 AI turn
