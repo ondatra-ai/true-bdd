@@ -293,6 +293,84 @@ func TestBuildTestsRefusals006NoCatalogueWalksUnrefused(t *testing.T) {
 	s.Done()
 }
 
+// build-tests-renderable-001-undeclared-service-refused: A Scenario whose `service:` the architecture document does not declare must refuse `build tests`, naming the Scenario and the service
+func TestBuildTestsRenderable001UndeclaredServiceRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-001-undeclared-service-refused")
+	s.Given(`the "build-tests-undeclared-service" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: service \\"payments-service\\": no test suite declares this scenario's service`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-002-framework-without-renderer-refused: An architecture whose testing framework `build tests` cannot generate tests for must refuse `build tests`, naming the framework, rather than leave its Scenarios without a test
+func TestBuildTestsRenderable002FrameworkWithoutRendererRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-002-framework-without-renderer-refused")
+	s.Given(`the "build-tests-framework-without-renderer" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: no test generator for this suite's framework: \\"jest\\"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-003-colliding-test-names-refused: Two Scenario keys that render the same Go test name must refuse `build tests`, naming both keys and that name
+func TestBuildTestsRenderable003CollidingTestNamesRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-003-colliding-test-names-refused")
+	s.Given(`the "build-tests-colliding-test-names" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901 and INT901: two scenario ids render the same Go test name \(TestINT901\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-004-unrunnable-test-name-refused: A Scenario key whose Go test name `go test` would compile but never run must refuse `build tests`, naming the key and the test name it renders
+func TestBuildTestsRenderable004UnrunnableTestNameRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-004-unrunnable-test-name-refused")
+	s.Given(`the "build-tests-unrunnable-test-name" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And("stdout matches \\\\\"ß-901\\\\\": scenario id renders a name `go test` will not run: it renders \\\\\"Testß901\\\\\"")
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-005-scenario-without-steps-refused: A Scenario with no steps must refuse `build tests`, naming the Scenario, rather than render a test that passes without checking anything
+func TestBuildTestsRenderable005ScenarioWithoutStepsRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-005-scenario-without-steps-refused")
+	s.Given(`the "build-tests-scenario-without-steps" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: scenario has no steps, so its test would pass trivially`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-006-suite-without-module-refused: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, since no import path for its generated test follows from it
+func TestBuildTestsRenderable006SuiteWithoutModuleRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-006-suite-without-module-refused")
+	s.Given(`the "build-tests-suite-without-module" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/mcp_test\.go: \S+/build-tests-suite-without-module/go\.mod: no module directive`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
 func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")
