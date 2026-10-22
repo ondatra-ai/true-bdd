@@ -2556,6 +2556,219 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  engine-entry-001-version-runs-without-config:
+    description: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+    service: bdd-cli
+    path: tests/bdd-cli/cli_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-001-version-runs-without-config
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "version-without-config" project tree
+        - and: the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+        - the System Architect runs "version"
+      then:
+        - the command exits with code 0
+        - stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$
+        - and: no file outside "tmp" changed
+
+  engine-entry-002-stray-argument-prints-usage:
+    description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-002-stray-argument-prints-usage
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-stray-argument" project tree
+      when:
+        - the System Architect runs "build tests docs/scenarios.yaml"
+      then:
+        - the command exits with code 1
+        - stderr matches unknown command "docs/scenarios\.yaml" for "true-bdd build tests"
+        - and: 'stderr matches Usage:\n  true-bdd build tests \[flags\]'
+        - and: stderr matches --requirements string
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+
+  engine-documents-001-absolute-requirements-overrides-config:
+    description: '`build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test''s header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-001-absolute-requirements-overrides-config
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-absolute-requirements" project tree
+      when:
+        - the System Architect runs "build tests --requirements {{CWD}}/docs/specs/requirements.yaml"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Loaded requirements registry" file=/\S+/docs/specs/requirements\.yaml count=1
+        - and: stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.
+        - and: stdout matches BUILD TESTS COMPLETE
+        - but: stdout does not match Refusing to start
+        - and: the file "tests/mcp/mcp_test.go" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  engine-entry-003-missing-config-refused:
+    description: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-003-missing-config-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-without-config" project tree
+        - and: the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stderr matches Error: initialize container'
+        - and: 'stderr matches open \./true-bdd/true-bdd\.yaml: no such file or directory'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+
+  engine-documents-002-missing-architecture-flag-refused:
+    description: '`build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists'
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-002-missing-architecture-flag-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-code-missing-architecture-flag" project tree
+      when:
+        - the System Architect runs "build code --architecture docs/architecture/absent.yaml"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build code"
+        - and: stdout matches failed to read architecture file docs/architecture/absent\.yaml
+        - but: no file outside "tmp" changed
+        - and: the engine spawned no test runner
+        - and: the engine dispatched no AI turns
+
+  engine-documents-003-undeclared-architecture-refused:
+    description: A host whose `true-bdd.yaml` declares no architectural spec must have `build tests` refused before it walks, naming the missing `documents.architecture_yaml` key, never served the spec at its conventional path
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-003-undeclared-architecture-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-undeclared-architecture" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build tests" document="architectural spec"'
+        - and: stdout matches documents\.architecture_yaml
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  engine-documents-004-undeclared-registry-refused-by-us-apply:
+    description: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-004-undeclared-registry-refused-by-us-apply
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "us-apply-undeclared-registry" project tree
+      when:
+        - the Product Owner runs "us apply 95.1"
+      then:
+        - the command exits with code 1
+        - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="us apply" document="scenario registry"'
+        - and: stdout matches documents\.scenarios_yaml
+        - but: stdout does not match US APPLY — Story
+        - and: no file outside "tmp" changed
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: the file "docs/product/stories/95.1-undeclared-registry.yaml" is unchanged
+        - and: the engine dispatched no AI turns
+
+  engine-documents-005-undeclared-registry-refused-by-scen-check:
+    description: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-005-undeclared-registry-refused-by-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-undeclared-registry" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="scen check" document="scenario registry"'
+        - and: stdout matches documents\.scenarios_yaml
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  engine-documents-006-directory-document-refused:
+    description: A document path declared in `true-bdd.yaml` that names a directory must be refused at startup, naming the path, rather than read as the file inside it
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/engine-documents-flags-and-declarations.yaml
+        scenario_id: engine-documents-006-directory-document-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-code-directory-architecture" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build code" document="architectural spec"'
+        - and: stdout matches document path is not a regular file
+        - and: stdout matches -> \./docs/architecture"
+        - but: no file outside "tmp" changed
+        - and: the engine spawned no test runner
+        - and: the engine dispatched no AI turns
+
+  scen-check-006-duplicate-id-refused:
+    description: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/scen-check-verifier.yaml
+        scenario_id: scen-check-006-duplicate-id-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-duplicate-id" project tree
+      when:
+        - the Quality Engineer runs "scen check E2E-001 E2E-001"
+      then:
+        - the command exits with code 1
+        - stdout matches SCEN CHECK
+        - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches scenario id given more than once: E2E-001'
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
   engine-routes-001-codex-sandbox-per-turn:
     description: '`build code --fix` with every tier naming codex must send each validation, fix and apply turn to codex, the validation and fix turns in its read-only sandbox and the apply turn in workspace-write, where codex corrects the service code until its failing test passes'
     service: bdd-cli

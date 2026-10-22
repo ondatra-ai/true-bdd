@@ -46,6 +46,22 @@ func TestEngine003LocationsComeFromConfig(t *testing.T) {
 	s.Done()
 }
 
+// engine-documents-004-undeclared-registry-refused-by-us-apply: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
+func TestEngineDocuments004UndeclaredRegistryRefusedByUsApply(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-004-undeclared-registry-refused-by-us-apply")
+	s.Given(`the "us-apply-undeclared-registry" project tree`)
+	s.When(`the Product Owner runs "us apply 95.1"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="us apply" document="scenario registry"`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match US APPLY — Story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/95.1-undeclared-registry.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // us-apply-001-missing-criteria-added: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
 func TestUsApply001MissingCriteriaAdded(t *testing.T) {
 	s := scenarios.New(t, "us-apply-001-missing-criteria-added")

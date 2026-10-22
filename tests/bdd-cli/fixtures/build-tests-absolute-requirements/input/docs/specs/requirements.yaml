@@ -1,0 +1,31 @@
+# The Registry `build-tests-absolute-requirements` reads, named on the
+# command line by an absolute path rather than by true-bdd.yaml.
+#
+# One scenario a Story claims, every step of which binds to a definition
+# already in tests/mcp/steps/. Its test is already rendered, from this
+# file named by its path relative to the project, so the header quotes
+# docs/specs/requirements.yaml; the run must find no drift in it.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-absolute-requirements fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket promptly"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-22"
+    user_stories:
+      - story: "docs/product/stories/99.5-fixture.yaml"
+        scenario_id: "99.5-001"
+        merge_date: "2026-10-22"
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

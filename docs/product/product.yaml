@@ -174,6 +174,14 @@ glossary:
       and its log records. It is what a person watching the terminal, or a
       script reading it, sees.
 
+  - term: stderr
+    means: >-
+      Everything a command prints on its standard error: the error that
+      stopped it, followed by the command's usage when it was given an
+      argument it does not take. A command that cannot read its
+      configuration says so only there, since it never starts the log it
+      would print on stdout.
+
   - term: log record
     means: >-
       One line the engine prints about its own run: a level, a message and
@@ -347,6 +355,15 @@ catalogue:
       so the run asks that Prompt and no other of that checklist.
     terms: [checklist, Prompt, command, project tree]
 
+  - template: 'the project tree has no "{file}"'
+    block: given
+    means: >-
+      The project tree the run starts from lacks the named file, even one
+      the engine's own configuration and checklists would bring into it,
+      such as `true-bdd/true-bdd.yaml`, so the run shows what a command
+      does without that file.
+    terms: [project tree]
+
   - template: "the project's browser test dependencies are installed"
     block: given
     means: >-
@@ -389,6 +406,15 @@ catalogue:
       log record's message or fields, has a match for the pattern: proof
       that a message, a banner or a log record never appeared.
     terms: [command, stdout, log record, pattern]
+
+  - template: 'stderr matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stderr has a match for the pattern
+      somewhere. Stderr carries the error that stopped the command, so a
+      pattern may name a mistyped argument, the usage printed after it, or
+      a missing configuration.
+    terms: [stderr, pattern]
 
   - template: 'no file outside "{dir}" changed'
     block: then

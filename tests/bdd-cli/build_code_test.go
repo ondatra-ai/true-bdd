@@ -235,6 +235,35 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-documents-002-missing-architecture-flag-refused: `build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists
+func TestEngineDocuments002MissingArchitectureFlagRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-002-missing-architecture-flag-refused")
+	s.Given(`the "build-code-missing-architecture-flag" project tree`)
+	s.When(`the System Architect runs "build code --architecture docs/architecture/absent.yaml"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build code"`)
+	s.And(`stdout matches failed to read architecture file docs/architecture/absent\.yaml`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-documents-006-directory-document-refused: A document path declared in `true-bdd.yaml` that names a directory must be refused at startup, naming the path, rather than read as the file inside it
+func TestEngineDocuments006DirectoryDocumentRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-006-directory-document-refused")
+	s.Given(`the "build-code-directory-architecture" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build code" document="architectural spec"`)
+	s.And(`stdout matches document path is not a regular file`)
+	s.And(`stdout matches -> \./docs/architecture"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-routes-001-codex-sandbox-per-turn: `build code --fix` with every tier naming codex must send each validation, fix and apply turn to codex, the validation and fix turns in its read-only sandbox and the apply turn in workspace-write, where codex corrects the service code until its failing test passes
 func TestEngineRoutes001CodexSandboxPerTurn(t *testing.T) {
 	s := scenarios.New(t, "engine-routes-001-codex-sandbox-per-turn")

@@ -191,7 +191,9 @@ architecture:
       technical: >-
         The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
-        arguments in a subprocess. Its working
+        arguments in a subprocess; `{{CWD}}` in an argument stands for the
+        run directory's absolute path, so a command can name a file of the
+        project tree by one. Its working
         directory is the run directory assembled from the project tree, its
         stdin carries the answers a Given step set (nothing otherwise), and
         the AI CLIs it finds on its PATH are the harness's record or replay
@@ -219,7 +221,11 @@ architecture:
         cassettes in replay, refusing a fixture with no cassettes or no
         recorded outcome; a staging directory in record; the real CLIs live).
         Nothing runs yet: the run directory is assembled when the When step
-        runs the command.
+        runs the command. A Given step saying the tree has no file records
+        that path, and the assembled run directory has it deleted before
+        `prep.sh` and the snapshot; a path leading out of the run directory,
+        or one the assembled directory does not hold, fails the run rather
+        than proving nothing.
 
     - term: exit code
       technical: >-
@@ -242,6 +248,19 @@ architecture:
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of
         stdout beside the pattern.
+
+    - term: stderr
+      technical: >-
+        The engine's standard error. When a command returns an error, the
+        command-line library prints `Error: ` and the error's text there; the
+        text of an argument a command does not take carries the command's
+        usage after it. A failure before the log is set up, such as a missing
+        `true-bdd/true-bdd.yaml`, also prints its log record there, as
+        `<date> <time> ERROR <msg> key=value`.
+      observed_by: >-
+        The kept stderr, as one string, is asked for a match of the step's
+        pattern anywhere in it; a failed match prints stderr beside the
+        pattern.
 
     - term: log record
       technical: >-
