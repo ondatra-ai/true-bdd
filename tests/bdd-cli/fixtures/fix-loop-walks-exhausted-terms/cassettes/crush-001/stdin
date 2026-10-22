@@ -52,32 +52,43 @@ Then:
 # Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
 
 ## Target
-The `product` document: `docs/product/product.yaml`, its `catalogue:` list.
+The `product` document (`docs/product/product.yaml`): its `catalogue:` list.
 
-Do not touch anything else. Specifically: do NOT edit `docs/scenarios.yaml`, the Scenario E2E-001, the generated test `tests/mcp/ping_test.go`, any step definition, the `roles:` list, or the `glossary:` list. The only edit is one new entry appended to `catalogue:`.
+Do **not** touch the Scenario `E2E-001`, the generated test
+`tests/mcp/ping_test.go`, any step definition, the `roles:` list, the
+`glossary:` list, or any other document. The only edit is one appended
+catalogue entry.
 
 ## Why
-scen-check/term_closure (D: step-phrases) reported:
+scen-check/term_closure (D: step-phrases) reports:
 
-- E2E-001: then step "the service answers within 200 milliseconds" matches no template
+- `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
 
-The catalogue already phrases the other three steps of E2E-001:
-
-- `the mcp service is running` (given) — matches the given step.
-- `the {actor:role} sends "{message}"` (when) — matches `the Operator sends "ping"`.
-- `the service answers "{reply}"` (then) — matches `the service answers "pong"`.
-
-Only the timing step has no entry. One new `then` entry closes the finding. The step's `200` becomes a `{limit:number}` slot so later Scenarios can state any bound; `the service answers within` and `milliseconds` stay literal because they carry the meaning. The new template cannot also match `the service answers "pong"`, because that step's text after `answers ` begins with a double quote and contains no ` within `/` milliseconds` literal run — and the existing quoted-reply template cannot match the timing step, because it requires literal double quotes the timing step does not have. Both glossary terms the meaning relies on already exist and are spelled exactly: `mcp service` and `reply` (whose definition already states that a reply's delay is behaviour), so no glossary entry is needed.
+The catalogue already phrases the three other steps of E2E-001
+(`the mcp service is running`, `the {actor:role} sends "{message}"`,
+`the service answers "{reply}"`). Only the timing step has no entry.
+The `reply` glossary term already states that a reply is "What the MCP
+service sends back for one message, **and how long it took to arrive** …
+its content and its delay are both behaviour", so the meaning of the
+timing step is already stated in the documents; it just has no
+catalogue entry. The number `200` becomes a `{limit:number}` slot so
+other Scenarios reusing the phrase with a different budget match the
+same entry; the words carrying the meaning (`the service answers
+within`, `milliseconds`) stay literal.
 
 ## Required Changes
 
-### Change #1: add the catalogue entry for the reply-deadline step
+### Change #1: Add the catalogue entry for the timing step
 
 **Document:** `docs/product/product.yaml`
 
-**Action:** Append this entry to the end of the `catalogue:` list, after the `the service answers "{reply}"` entry. Keep the existing two-space list indentation.
+**Action:** Append this entry to the end of the `catalogue:` list (it
+becomes the fourth and last entry, after the
+`the service answers "{reply}"` entry). Keep the existing two-space
+list indentation.
 
 **YAML:**
+
 ```yaml
   - template: 'the service answers within {limit:number} milliseconds'
     block: then
@@ -87,9 +98,8 @@ Only the timing step has no entry. One new `then` entry closes the finding. The 
     terms: [mcp service, reply]
 ```
 
-**Apply it as this exact replacement:**
+**Exact edit** — replace this `old_string`:
 
-old_string:
 ```
   - template: 'the service answers "{reply}"'
     block: then
@@ -97,7 +107,8 @@ old_string:
     terms: [mcp service, reply]
 ```
 
-new_string:
+with this `new_string`:
+
 ```
   - template: 'the service answers "{reply}"'
     block: then
@@ -111,16 +122,33 @@ new_string:
     terms: [mcp service, reply]
 ```
 
-## After applying
+(If the file ends without a trailing newline after the replaced block,
+keep the file's existing final-newline convention.)
 
-Every step of E2E-001 matches exactly one catalogue template, in its own block:
-
-- given `the mcp service is running` → `the mcp service is running` (given)
-- when `the Operator sends "ping"` → `the {actor:role} sends "{message}"` (when); `Operator` is a `roles[].name`
-- then `the service answers "pong"` → `the service answers "{reply}"` (then)
-- then `the service answers within 200 milliseconds` → the new entry (then); `200` fills `{limit:number}`
-
-No previously matching step changes its match, and no step becomes ambiguous.
+## Checks the applier must leave true
+- `template` is single-quoted exactly as given, so the `{limit:number}`
+  braces are literal YAML text and not a flow mapping.
+- `block: then` — the step sits in the Then block of E2E-001 (the
+  leading `and ` of `and the service answers within 200 milliseconds`
+  is the block's continuation marker, not part of the step text, which
+  is why the finding quotes the step without it). The template must not
+  include `and `.
+- No collision: the new template requires the literal words `within`
+  and `milliseconds` and a `{limit:number}` slot (digits, or the word
+  `no`), whereas `the service answers "{reply}"` requires a
+  double-quoted run immediately after `answers`. No step can match
+  both, and no other existing entry starts with `the service answers
+  within`. Every step of E2E-001 still matches exactly one template:
+  - `the mcp service is running` → `'the mcp service is running'` (given)
+  - `the Operator sends "ping"` → `'the {actor:role} sends "{message}"'` (when; `Operator` is a `roles[].name`)
+  - `the service answers "pong"` → `'the service answers "{reply}"'` (then)
+  - `the service answers within 200 milliseconds` → the new entry (then)
+- Both `terms` entries are spelled exactly as the glossary spells them:
+  `mcp service` and `reply`. Do not add, rename or re-word any glossary
+  term — both already exist.
+- Nothing else in `docs/product/product.yaml` changes: same `title`,
+  `description`, `roles`, `glossary`, and the first three catalogue
+  entries byte-for-byte.
 
 ---
 
