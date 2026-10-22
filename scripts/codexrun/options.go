@@ -14,6 +14,7 @@ const (
 	agentCrush    = "crush"
 	agentCodex    = "codex"
 	statusRunning = "running"
+	statusDone    = "done"
 	maxAttempts   = 2
 )
 

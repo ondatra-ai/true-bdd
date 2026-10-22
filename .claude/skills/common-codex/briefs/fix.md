@@ -19,6 +19,8 @@ Fix {{accepted findings, failed checks or conflict}} for {{issue #N}} in TrueBDD
 
 Change nothing beyond that scope. `## This run` names the code run's worktree, branch and the tip this fix must add a commit to. Stay there. Use plain local Git commits ending with `Refs #N`; never push, open or merge a PR, write to GitHub, amend, force-push or change lint configs. Leave vendored skills unchanged.
 
+Run every command in the foreground. No `nohup`, `setsid`, `&` or detached drivers: all command work must finish before you report the run's end.
+
 ## Done when
 
 - {{Criteria for each accepted finding or failed check.}}

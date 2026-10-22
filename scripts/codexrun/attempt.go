@@ -53,7 +53,7 @@ func (r Runner) attempt(ctx context.Context, record Record, note string) (Record
 		return r.finish(record, codex.FailureStatus(err), err.Error(), result.Code)
 	}
 
-	return r.completed(ctx, record, result.Code)
+	return r.completed(record, result.Code)
 }
 
 func (r Runner) prompt(record Record, note string) (string, error) {
@@ -168,7 +168,7 @@ func (r Runner) takeover(
 		Output: logWriter{path: record.Log}, Report: logWriter{path: record.Final}, Watchdog: r.remaining(began)})
 }
 
-func (r Runner) completed(ctx context.Context, record Record, code int) (Record, error) {
+func (r Runner) completed(record Record, code int) (Record, error) {
 	if record.CodexStatus != "" && !record.writer() {
 		return r.finish(record, "unavailable", "Codex ended "+record.CodexStatus+"; Claude does the reading", code)
 	}
@@ -182,12 +182,5 @@ func (r Runner) completed(ctx context.Context, record Record, code int) (Record,
 		return r.finish(record, "failed", "agent left no final message", code)
 	}
 
-	if record.writer() {
-		problem := r.repository(record.Worktree).CompletionProblem(ctx, record.Branch, record.Since)
-		if problem != "" {
-			return r.finish(record, "incomplete", problem, code)
-		}
-	}
-
-	return r.finish(record, "done", "", code)
+	return r.finish(record, statusDone, "", code)
 }

@@ -18,6 +18,8 @@ Implement {{issue #N or described change}} in TrueBDD, alone and to the end. Nob
 
 The engine's code belongs in `services/bdd-cli/`, tooling in `scripts/`, tests in `tests/bdd-cli/`; `pkg/` holds declared shared channels and typed CLI wrappers. Scripts do not import the engine. Read `CLAUDE.md` for the complete contracts.
 
+Run every command in the foreground. No `nohup`, `setsid`, `&` or detached drivers: all command work must finish before you report the run's end.
+
 ## Done when
 
 - {{Task-specific acceptance criteria.}}
