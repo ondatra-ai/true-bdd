@@ -304,11 +304,14 @@ architecture:
         feedback lines up to an empty one, and anything else exits. End of
         input reads as an empty line, so it exits.
       observed_by: >-
-        Set up by the Given step: it fails when no Given step prepared a
-        project tree, and otherwise makes the command's stdin the answer and
-        a newline, 64 times over, enough for every question one walk asks.
-        Lines left over are never read. Nothing runs yet: the When step pipes
-        them in.
+        Set up by a Given step, which fails when no Given step prepared a
+        project tree; nothing runs yet, the When step pipes the lines in. The
+        every-question step makes the command's stdin the answer and a
+        newline, 64 times over, enough for every question one walk asks, and
+        lines left over are never read. The line-by-line step splits its
+        quoted text at each `/`, trims each piece, and makes stdin those
+        pieces, one per line in order and nothing after, so an empty piece is
+        an empty line.
 
     - term: test dependencies
       technical: >-
