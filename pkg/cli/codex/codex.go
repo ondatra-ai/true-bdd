@@ -12,12 +12,13 @@ import (
 
 // Options describes one delegated turn, preserving policy on resume.
 type Options struct {
-	Dir      string
-	Final    string
-	Writer   bool
-	Search   bool
-	Output   io.Writer
-	Watchdog shell.Watchdog
+	RunMarker string
+	Dir       string
+	Final     string
+	Writer    bool
+	Search    bool
+	Output    io.Writer
+	Watchdog  shell.Watchdog
 }
 
 // Result is the CLI's exit code and signal.
@@ -63,7 +64,8 @@ func execute(ctx context.Context, session, prompt string, opt Options) (Result, 
 	}
 
 	return shell.Watch(ctx, append([]string{"codex"}, opt.args(session)...),
-		shell.Options{Dir: opt.Dir, Stdin: strings.NewReader(prompt), Output: output}, opt.Watchdog)
+		shell.Options{Dir: opt.Dir, Stdin: strings.NewReader(prompt), Output: output,
+			Env: shell.Inherit().Set("TRUE_BDD_CODEX_RUN=" + opt.RunMarker)}, opt.Watchdog)
 }
 
 func (o Options) args(session string) []string {

@@ -50,6 +50,7 @@ if [ "$1" = login ]; then
  case "$LOGIN" in silent) sleep 5;; out) echo 'Not logged in'; exit 1;; *) echo 'Logged in using ChatGPT';; esac
  exit 0
 fi
+printf '%s\n' "$TRUE_BDD_CODEX_RUN" > "$CAPTURE.marker"
 printf '%s\n' "$@" > "$CAPTURE.args"
 cat > "$CAPTURE.stdin"
 echo 'session id: session-175'
@@ -64,6 +65,7 @@ fi
 printf 'finished report' > "$report"
 `,
 		crushAgent: `#!/bin/sh
+printf '%s\n' "$TRUE_BDD_CODEX_RUN" > "$CAPTURE.marker"
 printf '%s\n' "$@" > "$CAPTURE.crush"
 cat > "$CAPTURE.stdin"
 [ "$CRUSH_CLIENT_SERVER" = false ] || exit 3
