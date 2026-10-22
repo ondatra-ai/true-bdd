@@ -174,6 +174,14 @@ glossary:
       and its log records. It is what a person watching the terminal, or a
       script reading it, sees.
 
+  - term: stderr
+    means: >-
+      Everything a command prints on its standard error: the error that
+      stopped it, followed by the command's usage when it was given an
+      argument it does not take. A command that cannot read its
+      configuration says so only there, since it never starts the log it
+      would print on stdout.
+
   - term: log record
     means: >-
       One line the engine prints about its own run: a level, a message and
@@ -222,7 +230,8 @@ glossary:
   - term: test dependencies
     means: >-
       The packages and tools a project's own tests need before they can
-      start, such as the browser and the npm packages of browser tests.
+      start, such as the npm packages of a Jest suite, or the browser and
+      the npm packages of browser tests.
       They are installed into the project tree from outside it; no command
       writes them, so a Scenario states them as a starting condition.
 
@@ -330,6 +339,18 @@ catalogue:
       exits the loop.
     terms: [fix loop]
 
+  - template: 'the {actor:role} answers "{lines}" line by line'
+    block: given
+    means: >-
+      The quoted text, split at each "/", is what that role types on the
+      terminal during the fix loop, one piece per line in that order: the
+      first piece answers whatever the command asks first, the next piece
+      what it asks next. An empty piece is an empty line, which ends a
+      multi-line answer such as the feedback that refines a proposed fix.
+      Once the lines run out the command reads end of input, which exits
+      the loop.
+    terms: [fix loop]
+
   - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
     block: given
     means: >-
@@ -338,13 +359,23 @@ catalogue:
       so the run asks that Prompt and no other of that checklist.
     terms: [checklist, Prompt, command, project tree]
 
-  - template: "the project's browser test dependencies are installed"
+  - template: 'the project tree has no "{file}"'
     block: given
     means: >-
-      The test dependencies the project's browser tests need are installed
-      into the project tree before the command runs, so those tests can
-      start. The installation happens before the run, so the files it adds
-      are no file change of the run.
+      The project tree the run starts from lacks the named file, even one
+      the engine's own configuration and checklists would bring into it,
+      such as `true-bdd/true-bdd.yaml`, so the run shows what a command
+      does without that file.
+    terms: [project tree]
+
+  - template: "the project's [browser ]test dependencies are installed"
+    block: given
+    means: >-
+      The test dependencies the project's tests need, or with "browser"
+      those its browser tests need, are installed into the project tree
+      before the command runs, so those tests can start. The installation
+      happens before the run, so the files it adds are no file change of
+      the run.
     terms: [test dependencies, project tree, file change]
 
   - template: 'the {actor:role} runs "{command}"'
@@ -380,6 +411,15 @@ catalogue:
       log record's message or fields, has a match for the pattern: proof
       that a message, a banner or a log record never appeared.
     terms: [command, stdout, log record, pattern]
+
+  - template: 'stderr matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stderr has a match for the pattern
+      somewhere. Stderr carries the error that stopped the command, so a
+      pattern may name a mistyped argument, the usage printed after it, or
+      a missing configuration.
+    terms: [stderr, pattern]
 
   - template: 'no file outside "{dir}" changed'
     block: then

@@ -1,0 +1,35 @@
+# Fixture checklist for `fix-loop-unsettled`.
+#
+# The shipped vague-word-in-description prompt, its fix waiting on a number
+# only the person can give: an answer that names none is asked again.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: acceptance_criteria
+    name: "Acceptance Criteria Quality"
+    description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
+    source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
+    validation_prompts:
+      - Q: |
+          For every AC, decide whether its description field contains a vague
+          word from the forbidden_qualifiers list in the architecture reference
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when no AC description contains forbidden qualifiers.
+          Fail when one or more AC descriptions contain them.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: contains '<word>'[, '<word2>'...]"
+        rationale: "Vague words in AC descriptions cannot be tested objectively."
+        docs:
+          - product
+          - architecture_yaml
+        F: |
+          Ask the Claude User how many seconds without a summary count as the
+          timeout that replaces the vague word, offering 10, 30 and 60 seconds
+          as options. Propose a fix only once an answer names a number of
+          seconds; while the answers name none, ask again, since only the
+          Claude User can set the limit.

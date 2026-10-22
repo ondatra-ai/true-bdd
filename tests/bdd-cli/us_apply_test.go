@@ -46,6 +46,42 @@ func TestEngine003LocationsComeFromConfig(t *testing.T) {
 	s.Done()
 }
 
+// engine-documents-004-undeclared-registry-refused-by-us-apply: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
+func TestEngineDocuments004UndeclaredRegistryRefusedByUsApply(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-004-undeclared-registry-refused-by-us-apply")
+	s.Given(`the "us-apply-undeclared-registry" project tree`)
+	s.When(`the Product Owner runs "us apply 95.1"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="us apply" document="scenario registry"`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match US APPLY — Story`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`the file "docs/product/stories/95.1-undeclared-registry.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-004-exit-keeps-registry: Choosing to exit a `us apply --fix` run's fix loop must leave the Registry exactly as it was and walk no further acceptance criterion, reporting the failed Prompt with the fix it carries
+func TestFixLoopChoices004ExitKeepsRegistry(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-004-exit-keeps-registry")
+	s.Given(`the "fix-loop-exit-registry" project tree`)
+	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
+	s.And(`the Product Owner answers "3" to every question`)
+	s.When(`the Product Owner runs "us apply 98.1 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg=AC index=1 total=2`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: us-apply/merge`)
+	s.And(`stdout matches APPLY COMPLETE`)
+	s.And(`stdout matches One or more scenarios did not pass; the canonical file is unchanged`)
+	s.But(`stdout does not match msg=AC index=2`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // us-apply-001-missing-criteria-added: A story whose acceptance criteria are all missing from the registry must re-walk after the merge and end at a fixpoint
 func TestUsApply001MissingCriteriaAdded(t *testing.T) {
 	s := scenarios.New(t, "us-apply-001-missing-criteria-added")

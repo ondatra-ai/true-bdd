@@ -24,14 +24,14 @@ type sectionDoc struct {
 }
 
 // promptDoc is one validation prompt, decoded with production parity
-// (map-based unmarshal accepts only string values — see TestSkipParity
-// in universe_test.go for the skip: false quirk this preserves).
+// (map-based unmarshal; see TestSkipParity in universe_test.go for which
+// `skip:` values park a prompt).
 type promptDoc struct {
 	Question    string
 	Check       string         // the built-in check a `D:` prompt names
 	With        map[string]any // that check's parameters
 	Rationale   string
-	Skip        string
+	Skip        bool // only `skip: true` parks; production refuses a non-boolean
 	FixTemplate string
 	Docs        []string
 }
@@ -63,7 +63,7 @@ func (p *promptDoc) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	p.Rationale = stringFromMap(raw, "rationale")
-	p.Skip = stringFromMap(raw, "skip")
+	p.Skip = raw["skip"] == true
 	p.FixTemplate = stringFromMap(raw, "F")
 	p.Docs = stringSliceFromMap(raw, "docs")
 

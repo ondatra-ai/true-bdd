@@ -14,4 +14,10 @@ type GoTestEvent struct {
 	Test    string  `json:"Test"`
 	Output  string  `json:"Output"`
 	Elapsed float64 `json:"Elapsed"`
+	// ImportPath names the package a `build-output` event's compiler
+	// line belongs to; such events carry no Package.
+	ImportPath string `json:"ImportPath"`
+	// FailedBuild, on a package's `fail` event, is the ImportPath of the
+	// build that failed and kept its tests from running.
+	FailedBuild string `json:"FailedBuild"`
 }

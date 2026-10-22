@@ -1,0 +1,166 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
+**Service:** 
+**Suite:** jest
+**Framework:** jest
+**Test Name:** tests/unit/greeting.test.js::greet greets the world when no name is given
+**Source File:** tests/unit/greeting.test.js
+
+### Last Failure Output
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "Hello, world!"
+Received: "Hello, undefined!"
+    at Object.<anonymous> ({{CWD}}/tests/unit/greeting.test.js:7:21)
+```
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
+
+## Target
+Apply the change(s) under `services/*` only. The test at
+`tests/unit/greeting.test.js` is the contract; do NOT modify it.
+
+## Root Cause
+`tests/unit/greeting.test.js` asserts:
+
+```js
+expect(greet()).toBe('Hello, world!');
+```
+
+`greet` is called with no argument, so in `services/greeter/greeting.js` the
+parameter `name` is `undefined` and `'Hello, ' + name + '!'` evaluates to
+`"Hello, undefined!"`. The function's own doc comment states the intended
+contract ("greets a person by name, and the world when no name is given")
+but the default is missing. The smallest production change is to default
+`name` to `'world'`, which keeps the named-greeting behaviour
+(`greet('Ada')` → `"Hello, Ada!"`) intact.
+
+## Required Changes
+
+### Change #1: Default `name` to `'world'` in `greet`
+**File:** `services/greeter/greeting.js`
+**Action:** Use the Edit tool (existing file). Replace the `old_string`
+below with the `new_string` below, verbatim.
+
+**old_string:**
+```
+// greet greets a person by name, and the world when no name is given.
+// It does not do the second: the missing default is the planted defect,
+// in PRODUCTION source, which is what the fix loop has to correct.
+function greet(name) {
+  return 'Hello, ' + name + '!';
+}
+```
+
+**new_string (Content):**
+```
+// greet greets a person by name, and the world when no name is given.
+function greet(name = 'world') {
+  return 'Hello, ' + name + '!';
+}
+```
+
+## Notes for the applier
+- Do not create any new file; this is a single in-place edit.
+- Do not touch `tests/unit/greeting.test.js`, `tests/jest.config.js`, any
+  other file under `tests/`, `docs/architecture/architecture.yaml`, or
+  anything under `docs/` or `true-bdd/`.
+- Do not weaken, skip, or remove any assertion.
+- `module.exports = { greet };` at the bottom of the file stays unchanged.
+
+## Expected Result
+`greet()` returns `'Hello, world!'`, so
+`tests/unit/greeting.test.js::greet greets the world when no name is given`
+passes, and any named-argument behaviour (`greet('Ada')` →
+`'Hello, Ada!'`) is preserved.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===

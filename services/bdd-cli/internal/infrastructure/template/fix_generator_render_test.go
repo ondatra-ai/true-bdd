@@ -20,10 +20,14 @@ type fixSubject struct {
 	AcceptanceCriteria []story.AcceptanceCriterion
 }
 
+// Check names the `D:` check that failed; empty renders a model Prompt's fix.
 type failedCheck struct {
 	SectionPath  string
 	Question     string
+	Check        string
+	Rationale    string
 	ActualAnswer string
+	Context      []string
 	FixPrompt    string
 }
 
@@ -43,6 +47,15 @@ func statement(text string) []story.StepStatement {
 }
 
 func render(t *testing.T) string {
+	t.Helper()
+
+	return renderFailed(t, failedCheck{
+		SectionPath: "acceptance_criteria", Question: "does every AC have steps?",
+		ActualAnswer: "fail", FixPrompt: "add the missing steps",
+	})
+}
+
+func renderFailed(t *testing.T, failed failedCheck) string {
 	t.Helper()
 
 	loader := template.NewTemplateLoader[fixData](
@@ -65,11 +78,8 @@ func render(t *testing.T) string {
 				{ID: "AC-2", Description: "Claude must display an error when the doc is not shared"},
 			},
 		},
-		FailedCheck: failedCheck{
-			SectionPath: "acceptance_criteria", Question: "does every AC have steps?",
-			ActualAnswer: "fail", FixPrompt: "add the missing steps",
-		},
-		ResultPath: "tmp/fix.md",
+		FailedCheck: failed,
+		ResultPath:  "tmp/fix.md",
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
@@ -110,5 +120,31 @@ func TestFixGeneratorPromptDemandsUntouchedCriteriaSurvive(t *testing.T) {
 		if !strings.Contains(out, phrase) {
 			t.Errorf("the prompt never says %q", phrase)
 		}
+	}
+}
+
+// A `D:` finding reaches the model only through FailedCheck.Context
+// (spike #133, trap 1), and its fix phrases the step in the catalogue.
+func TestClosureFixPromptNamesTheStepAndSparesTheStory(t *testing.T) {
+	t.Parallel()
+
+	out := renderFailed(t, failedCheck{
+		SectionPath: "us-refine/term_closure", Question: "D: step-phrases", Check: "step-phrases",
+		ActualAnswer: "fail", FixPrompt: "Propose one catalogue entry for each failing step.",
+		Context: []string{`AC-2: then step "Claude offers a summary" matches no template`},
+	})
+
+	for _, phrase := range []string{
+		`AC-2: then step "Claude offers a summary" matches no template`,
+		"step-phrase catalogue",
+		"The Story itself is never edited by this fix",
+	} {
+		if !strings.Contains(out, phrase) {
+			t.Errorf("the closure fix prompt never says %q", phrase)
+		}
+	}
+
+	if strings.Contains(out, "an omitted criterion is a deleted criterion") {
+		t.Error("the closure fix prompt asks for a Story rewrite")
 	}
 }

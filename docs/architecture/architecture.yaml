@@ -180,7 +180,9 @@ architecture:
       technical: >-
         The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
-        arguments in a subprocess. Its working
+        arguments in a subprocess; `{{CWD}}` in an argument stands for the
+        run directory's absolute path, so a command can name a file of the
+        project tree by one. Its working
         directory is the run directory assembled from the project tree, its
         stdin carries the answers a Given step set (nothing otherwise), and
         the AI CLIs it finds on its PATH are the harness's record or replay
@@ -208,7 +210,11 @@ architecture:
         cassettes in replay, refusing a fixture with no cassettes or no
         recorded outcome; a staging directory in record; the real CLIs live).
         Nothing runs yet: the run directory is assembled when the When step
-        runs the command.
+        runs the command. A Given step saying the tree has no file records
+        that path, and the assembled run directory has it deleted before
+        `prep.sh` and the snapshot; a path leading out of the run directory,
+        or one the assembled directory does not hold, fails the run rather
+        than proving nothing.
 
     - term: exit code
       technical: >-
@@ -231,6 +237,19 @@ architecture:
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of
         stdout beside the pattern.
+
+    - term: stderr
+      technical: >-
+        The engine's standard error. When a command returns an error, the
+        command-line library prints `Error: ` and the error's text there; the
+        text of an argument a command does not take carries the command's
+        usage after it. A failure before the log is set up, such as a missing
+        `true-bdd/true-bdd.yaml`, also prints its log record there, as
+        `<date> <time> ERROR <msg> key=value`.
+      observed_by: >-
+        The kept stderr, as one string, is asked for a match of the step's
+        pattern anywhere in it; a failed match prints stderr beside the
+        pattern.
 
     - term: log record
       technical: >-
@@ -304,11 +323,14 @@ architecture:
         feedback lines up to an empty one, and anything else exits. End of
         input reads as an empty line, so it exits.
       observed_by: >-
-        Set up by the Given step: it fails when no Given step prepared a
-        project tree, and otherwise makes the command's stdin the answer and
-        a newline, 64 times over, enough for every question one walk asks.
-        Lines left over are never read. Nothing runs yet: the When step pipes
-        them in.
+        Set up by a Given step, which fails when no Given step prepared a
+        project tree; nothing runs yet, the When step pipes the lines in. The
+        every-question step makes the command's stdin the answer and a
+        newline, 64 times over, enough for every question one walk asks, and
+        lines left over are never read. The line-by-line step splits its
+        quoted text at each `/`, trims each piece, and makes stdin those
+        pieces, one per line in order and nothing after, so an empty piece is
+        an empty line.
 
     - term: test dependencies
       technical: >-

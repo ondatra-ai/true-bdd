@@ -1,0 +1,27 @@
+# Decoy registry for `us-apply-undeclared-registry`: valid and non-empty,
+# at the conventional path true-bdd.yaml does not declare. A run that
+# read it anyway would walk the Story into it; after the refusal it must
+# come back byte-identical.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-16"
+  description: "Non-empty decoy registry for the us-apply refusal fixtures"
+
+scenarios:
+  INT-950:
+    description: "MCP /health endpoint responds 200 to a GET request"
+    service: "mcp-service"
+    last_updated: "2026-08-16"
+    user_stories:
+      - story: "docs/product/stories/90.1-unrelated.yaml"
+        scenario_id: "90.1-001"
+        merge_date: "2026-08-16"
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User sends a GET request to /health"
+      then:
+        - "the server returns HTTP 200"

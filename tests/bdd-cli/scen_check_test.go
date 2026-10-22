@@ -125,6 +125,50 @@ func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// checklist-skip-001-skipped-prompt-not-walked: A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist's other Prompts, with `skip: false` or no `skip:`, are walked as before
+func TestChecklistSkip001SkippedPromptNotWalked(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-001-skipped-prompt-not-walked")
+	s.Given(`the "scen-check-skipped-prompt" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches scen-check/scenario_quality +Decide whether this scenario has a binary pass/fail.* +pass +PASS`)
+	s.But(`stdout does not match description follows the`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// checklist-skip-002-non-boolean-skip-refused: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-002-non-boolean-skip-refused")
+	s.Given(`the "scen-check-skip-not-boolean" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 Decide whether this scenario includes at least one specific carries skip: \\"false\\", but skip: takes true or false`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// checklist-skip-003-every-prompt-skipped-refused: A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success
+func TestChecklistSkip003EveryPromptSkippedRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-003-every-prompt-skipped-refused")
+	s.Given(`the "scen-check-every-prompt-skipped" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check: checklist has no prompts, so every item would pass without being checked`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
 func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-006-check-without-fix-refused")
@@ -137,6 +181,88 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.But(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-documents-005-undeclared-registry-refused-by-scen-check: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
+func TestEngineDocuments005UndeclaredRegistryRefusedByScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-005-undeclared-registry-refused-by-scen-check")
+	s.Given(`the "scen-check-undeclared-registry" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="scen check" document="scenario registry"`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-entry-003-missing-config-refused: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
+func TestEngineEntry003MissingConfigRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-entry-003-missing-config-refused")
+	s.Given(`the "scen-check-without-config" project tree`)
+	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stderr matches Error: initialize container`)
+	s.And(`stderr matches open \./true-bdd/true-bdd\.yaml: no such file or directory`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// fix-loop-choices-001-refine-reshapes-fix: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
+func TestFixLoopChoices001RefineReshapesFix(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-001-refine-reshapes-fix")
+	s.Given(`the "fix-loop-refine-feedback" project tree`)
+	s.And(`the Quality Engineer answers "2 / Call the number slot of the new template budget / / 1" line by line`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=2 action=refine`)
+	s.And(`stdout matches msg="User provided refinement feedback" feedbackLength=47 feedback="Call the number slot of the new template budget"`)
+	s.And(`stdout matches (?s)FIX PROMPT GENERATED.*REFINE FIX PROMPT.*FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches \{budget:number\}`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-002-own-words-answer-kept: A clarifying question answered in the person's own words rather than by an option's number must reach the fix as typed, so the fix applied carries those words
+func TestFixLoopChoices002OwnWordsAnswerKept(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-002-own-words-answer-kept")
+	s.Given(`the "fix-loop-own-words" project tree`)
+	s.And(`the Quality Engineer answers "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="AI needs clarification" questionCount=1`)
+	s.And(`stdout matches msg="User answered clarification question" questionID=q1 question=.* answer="It means the round trip from sending the message to receiving its reply takes at most that many milliseconds"`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches round trip from sending the message to receiving its reply takes\s+at most`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-005-exit-keeps-term-documents: Choosing to exit a `scen check --fix` run's fix loop must leave the term documents and the Registry exactly as they were, report the failed Prompt with its fix, and exit 1
+func TestFixLoopChoices005ExitKeepsTermDocuments(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-005-exit-keeps-term-documents")
+	s.Given(`the "fix-loop-exit-terms" project tree`)
+	s.And(`the Quality Engineer answers "3" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches msg=Exiting\.`)
+	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: scen-check/term_closure.*Propose one catalogue entry`)
+	s.But(`stdout does not match msg="Fix recorded in the document"`)
+	s.And(`the file "docs/product/product.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 1 AI turn`)
 	s.Done()
 }
 
@@ -215,6 +341,20 @@ func TestScenCheck005IdsNarrowTheWalk(t *testing.T) {
 	s.And(`the engine dispatched 2 AI turns`)
 	s.But(`stdout does not match E2E-003`)
 	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// scen-check-006-duplicate-id-refused: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
+func TestScenCheck006DuplicateIdRefused(t *testing.T) {
+	s := scenarios.New(t, "scen-check-006-duplicate-id-refused")
+	s.Given(`the "scen-check-duplicate-id" project tree`)
+	s.When(`the Quality Engineer runs "scen check E2E-001 E2E-001"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scenario id given more than once: E2E-001`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 
