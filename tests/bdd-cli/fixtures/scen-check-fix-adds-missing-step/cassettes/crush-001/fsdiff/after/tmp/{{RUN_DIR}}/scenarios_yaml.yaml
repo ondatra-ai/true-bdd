@@ -22,5 +22,5 @@ scenarios:
       when:
         - the Operator runs "greet Ada"
       then:
-        - stdout matches Hello Ada
+        - stdout matches ^Hello Ada$
         - the command exits with code 0

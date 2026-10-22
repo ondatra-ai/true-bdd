@@ -5,9 +5,9 @@
     {
       "path": "docs/scenarios.yaml",
       "kind": "modified",
-      "size": 942,
-      "sha256": "27cf5c404e65915abac13aa1f9dc1e2bd8d723bbf6d328e2fa0b8758fe82b4ae",
-      "text": "# Registry seed for `scen-check-fix-rewrites-description-qualifier`.\n#\n# One Scenario whose description says \"quickly\", a forbidden qualifier,\n# where its then step states the measurable criterion: 100 milliseconds.\n# The fix rewrites the description in this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
+      "size": 929,
+      "sha256": "752b43ecb16a49db07c1c88ecda3ab9f26ae17d56cf3c9e69f1694eb1b90ff9a",
+      "text": "# Registry seed for `scen-check-fix-rewrites-description-qualifier`.\n#\n# One Scenario whose description says \"quickly\", a forbidden qualifier,\n# where its then step states the measurable criterion: 100 milliseconds.\n# The fix rewrites the description in this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a vague word in its description\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0 within 100 milliseconds\n        - and: stdout matches ^Hello Ada$\n"
     }
   ]
 }
