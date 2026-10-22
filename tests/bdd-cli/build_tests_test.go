@@ -225,3 +225,17 @@ func TestEngine004UnknownModelCliRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-config-001-empty-model-table-refused: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
+func TestEngineConfig001EmptyModelTableRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-001-empty-model-table-refused")
+	s.Given(`the "build-tests-empty-model-table" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.models is empty: configure at least one tier`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}

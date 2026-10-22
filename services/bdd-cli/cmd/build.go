@@ -65,9 +65,9 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 		// globally and argsWithUsage restores it only for that one case.
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			container, err := provide()
+			container, err := containerFor(cmd, provide)
 			if err != nil {
-				return fmt.Errorf("initialize container: %w", err)
+				return err
 			}
 
 			ctx, stop := signal.NotifyContext(context.Background(),

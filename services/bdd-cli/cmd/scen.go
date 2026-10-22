@@ -77,9 +77,9 @@ Example:
 // runScenCheck is newScenCheckCmd's RunE body, lifted out so the cobra
 // shell above stays a declaration.
 func runScenCheck(cmd *cobra.Command, args []string, provide containerProvider) error {
-	container, err := provide()
+	container, err := containerFor(cmd, provide)
 	if err != nil {
-		return fmt.Errorf("initialize container: %w", err)
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(),

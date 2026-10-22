@@ -2432,3 +2432,23 @@ scenarios:
         - and: stdout matches step matches more than one definition
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  engine-config-001-empty-model-table-refused:
+    description: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-001-empty-model-table-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-empty-model-table" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.models is empty: configure at least one tier'
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

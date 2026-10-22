@@ -1,0 +1,37 @@
+# Story `engine-config`: what true-bdd.yaml's model table and write roots
+# must hold for a command to run.
+#
+# The refusals of a model table a host edited by hand: an empty one,
+# entries the engine cannot parse, role defaults it cannot resolve, and a
+# Prompt or checklist naming a tier the table does not configure. Also the
+# roots `build tests --fix` authors into when true-bdd.yaml names none. A
+# model reference naming an unknown CLI is the Story engine's
+# (`engine-004`); the checklists and term documents the engine cannot read
+# are the Story engine-documents.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-config-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: engine-config
+    feature: engine
+    title: Refuse at startup a model table that cannot route every turn, and author tests under the default write roots
+    as_a: System Architect
+    i_want: every command to refuse at startup, before any AI turn, an engine.models table that binds no tier, holds an entry it cannot parse, leaves a role default unresolved, or omits a tier a Prompt or checklist names, naming every fault and the tiers it does configure, and build tests --fix to author step definitions under the tests tree when true-bdd.yaml names no write roots
+    so_that: a hand edit to true-bdd.yaml that breaks model routing stops a run that has spent nothing, with every fault named at once, and a host that leaves the write roots unset still gets its missing step definitions written where tests live
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-empty-model-table-refused
+          description: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
+          steps:
+            - given:
+                - the "build-tests-empty-model-table" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches engine\.models is empty: configure at least one tier'
+                - but: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
