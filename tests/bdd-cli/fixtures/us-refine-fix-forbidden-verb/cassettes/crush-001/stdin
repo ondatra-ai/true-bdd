@@ -96,10 +96,19 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 # Fix Prompt for Story 96.8: Document Summary On Demand
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
+
+This fix addresses the failed check `us-refine/acceptance_criteria` (forbidden action verbs from the product document's `vocabulary.forbidden_actions`). Only AC-1 uses a forbidden verb ('handle'). AC-2, AC-3 and AC-4 already use concrete, observable verbs ('displays', 'states', 'does not display') and must be reproduced unchanged.
+
+Per-AC check result:
+- AC-1: forbidden verb 'handle' in then
+- AC-2: ok
+- AC-3: ok
+- AC-4: ok
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -109,22 +118,12 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-1 is faulted by the failed check (`us-refine/acceptance_criteria` — forbidden action verbs). AC-2, AC-3 and AC-4 are reproduced word for word: their steps name only observable actions (`displays`, `does not display`, `states`, `does not respond`), none of which appear in the product document's `forbidden_actions` list (`handle`, `process`, `parse`). Do not edit them.
+Change ONLY what the failed check requires. AC-2, AC-3 and AC-4 are reproduced exactly as they stand — same description, same steps, word for word.
 
 ### Change #1: AC-1
-**Before (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-
-**Before (steps):**
-```yaml
-- given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-- when: "the Claude User asks Claude to summarize the document"
-- then: "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
-```
-
-**Issue:** The Then step uses the forbidden action verb `handle` ("Claude **handles** the summary request and displays ..."). Per `./docs/product/product.yaml`, `handle` "hides what the system observably does with the input"; the replacement guidance is "Name the observable action: displays, returns, lists, rejects." The "handles the summary request" clause is redundant with the display outcome that follows it, so the fix is to drop that clause and leave only the observable action.
-
-**After (description):** unchanged — Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-
+**Before (then step):** "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
+**Issue:** The `then` step uses the forbidden action verb 'handle'. Per the product document, 'handle' "Hides what the system observably does with the input." The replacement guidance is: "Name the observable action: displays, returns, lists, rejects." The step already names the observable action ('displays a summary of 150 words or fewer in the conversation'), so the abstract 'handles the summary request and' clause is removed, leaving only the observable outcome.
+**After (description):** unchanged — "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
 **After (steps):**
 ```yaml
 - given:
@@ -135,15 +134,13 @@ Only AC-1 is faulted by the failed check (`us-refine/acceptance_criteria` — fo
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-The role wording stays exactly "Claude User", as in the story's `as_a` clause. No new ACs are added, none are merged, and none are removed.
+### No change: AC-2, AC-3, AC-4
+All steps use concrete, user-observable verbs. Do not reword them, do not drop the 'does not display any content from the document' step, and do not drop the second `given` on AC-3.
 
-### Re-scan result
-After the rewrite, every Given/When/Then step across AC-1 through AC-4 was re-scanned for the forbidden actions `handle`, `process` and `parse`: none remain, and the rewrite introduced none.
+No new acceptance criteria are added and none are merged or removed — the four ACs cover four distinct behaviours (happy path, no access, timeout, oversized document).
 
-- AC-1: ok
-- AC-2: ok
-- AC-3: ok
-- AC-4: ok
+Do not introduce 'handle', 'process', or 'parse' in any step.
+Keep the role wording exactly as the story's `as_a` clause — "Claude User" — in all Given/When/Then steps.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -191,6 +188,8 @@ After the rewrite, every Given/When/Then step across AC-1 through AC-4 was re-sc
         - "Claude displays a summary of the first 10000 words"
         - "Claude states that only the first 10000 words were summarized"
 ```
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 
 ---
 
