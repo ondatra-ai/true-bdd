@@ -140,6 +140,20 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-checklists-001-missing-checklist-refused: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
+func TestEngineChecklists001MissingChecklistRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-001-missing-checklist-refused")
+	s.Given(`the "scen-check-checklist-missing" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches failed to read checklist true-bdd/host-checklists/scen-check\.yaml: .*no such file or directory`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
 func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-config-004-prompt-tier-unconfigured-refused")

@@ -1,0 +1,36 @@
+# Story `engine-checklists`: a checklist the engine cannot read.
+#
+# A host edits its checklists by hand. A command whose checklist is not
+# where `paths.checklists_dir` says, is not valid YAML, or passes a `D:`
+# check a `with:` that is not a mapping, is refused at startup, naming
+# the file, before it walks anything. A checklist the engine reads but
+# whose Prompts it cannot walk is the Story checklist-checks; a Prompt
+# naming a model tier `engine.models` lacks is the Story engine-config.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-checklists-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: engine-checklists
+    feature: engine
+    title: Refuse at startup a checklist the engine cannot read, naming the file
+    as_a: Quality Engineer
+    i_want: every command to refuse at startup, before any AI turn, a checklist that is not where true-bdd.yaml says, is not valid YAML, or gives a built-in check parameters that are not a mapping, naming the checklist file and what is wrong with it
+    so_that: a hand edit that breaks a checklist stops the run before it has spent anything, with the file to fix named, instead of a walk over a checklist the engine guessed at
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-missing-checklist-refused
+          description: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
+          steps:
+            - given:
+                - the "scen-check-checklist-missing" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - and: 'stdout matches failed to read checklist true-bdd/host-checklists/scen-check\.yaml: .*no such file or directory'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
