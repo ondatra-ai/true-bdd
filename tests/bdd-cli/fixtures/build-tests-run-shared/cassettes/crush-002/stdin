@@ -76,54 +76,74 @@ Then:
 
 # Fix Prompt for Scenario calc-001-double: Double a number
 
-## Suite resolution
-- Architectural spec: `docs/architecture/architecture.yaml` (service `calc`).
-- Suite root for service `calc`: `tests/calc/`
-- Only writable tree: `tests/calc/steps/`
+## Resolved suite
+
+Architectural spec: `docs/architecture/architecture.yaml` → service `calc`.
+Suite root: `tests/calc`. The only tree you may write:
+
+    tests/calc/steps/
+
+Do NOT touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
+`tests/calc/scenarios/scenarios.go`, `replay.sh`, or anything outside
+`tests/calc/steps/`.
 
 ## Diagnosis (read before editing)
-All three step texts of the subject scenario already resolve to exactly one
-registered pattern in `tests/calc/steps/steps.go`:
 
-- `the number is 2` -> `^the number is (\d+)$`
-- `the number is doubled` -> `^the number is doubled$`
-- `the result is 4` -> `^the result is (\d+)$`
+Every step of calc-001-double and calc-002-shared already resolves to
+exactly one anchored, parameterised definition in
+`tests/calc/steps/steps.go`:
 
-So **no new registration is required** and `Register` must keep exactly the
-three `suite.Step(...)` calls it has today. The failure is a defect inside the
-Given helper `number`, which is shared by both registry neighbours:
+- `the number is 2` / `the number is 3` -> `^the number is (\d+)$`
+- `the number is doubled`               -> `^the number is doubled$`
+- `the result is 4` / `the result is 3` -> `^the result is (\d+)$`
 
-```go
-value, err := strconv.Atoi(args[0]); state.Value = value + 1; return err
-```
+So **no new registrations are needed** and no pattern may be widened or
+weakened. The two failures are behavioural bugs inside the shared
+definitions, and both are in the vocabulary calc-001-double and
+calc-002-shared share:
 
-It stores `value + 1` instead of `value`, and it writes to `state.Value`
-*before* checking the parse error.
+1. `^the number is doubled$` does `s.Value *= 3`. calc-001-double gets
+   `2 * 3 = 6`, so `Then the result is 4` fails with
+   `expected 4, got 6`. "Doubled" must multiply by 2.
+2. `^the number is (\d+)$` carries a special case
+   `if value == 3 { state.Value++ }`. calc-002-shared's
+   `Given the number is 3` leaves the state at 4, so
+   `Then the result is 3` fails with `expected 3, got 4`. A Given that
+   prepares "the number is N" must leave the state at exactly N for
+   every N; the `== 3` branch is the drift to delete.
 
-Runtime evidence confirms the off-by-one is the single root cause for both
-scenarios that share this definition:
-
-- `calc-001-double`: Given 2 -> state becomes 3; `the number is doubled` -> 6;
-  `the result is 4` fails with `expected 4, got 6`.
-- `calc-002-shared`: Given 3 -> state becomes 4; `the result is 3` fails with
-  `expected 3, got 4`.
-
-With `state.Value = value`, calc-001 yields 2 -> doubled -> 4 (passes) and
-calc-002 yields 3 -> 3 (passes). One edit fixes the subject and its neighbour.
+It also swallows `strconv.Atoi`'s failure into a bare `return err` after
+already assigning the zero value; tighten it so the error names the
+input it could not read.
 
 ## Required Changes
 
-### Change #1: Store the parsed number verbatim and fail honestly on a bad parse
+### Change #1: make "doubled" double, and give it a named function
+
 **File:** `tests/calc/steps/steps.go`
-**Action:** Use the **Edit** tool on the existing file. Replace the body of the
-`number` helper exactly as shown. Do not touch `Register`, the other helpers,
-`tests/calc/steps/state.go`, the scenario registry (`docs/scenarios.yaml`),
-`tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, or `replay.sh`.
+**Action:** Use the **Edit** tool.
+
+**old_string:**
+```
+ suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })
+```
+
+**new_string:**
+```
+ suite.Step(`^the number is doubled$`, double)
+```
+
+### Change #2: repair the Given, and add the `double` When function
+
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the **Edit** tool. This replaces the whole `number`
+function (dropping the `value == 3` special case and reporting a bad
+argument honestly) and adds `double` next to it.
 
 **old_string:**
 ```
 func number(state *State, args []string) error {
- value, err := strconv.Atoi(args[0]); state.Value = value + 1; return err
+ value, err := strconv.Atoi(args[0]); state.Value = value; if value == 3 { state.Value++ }; return err
 }
 ```
 
@@ -131,34 +151,43 @@ func number(state *State, args []string) error {
 ```
 func number(state *State, args []string) error {
  value, err := strconv.Atoi(args[0])
- if err != nil { return fmt.Errorf("expected an integer for the number, got %q", args[0]) }
+ if err != nil { return fmt.Errorf("expected a number, got %q", args[0]) }
  state.Value = value
+ return nil
+}
+func double(state *State, _ []string) error {
+ state.Value *= 2
  return nil
 }
 ```
 
-## Notes / constraints for the applier
-- `fmt` and `strconv` are both already imported in `tests/calc/steps/steps.go`;
-  the import block (`import ("fmt"; "strconv")`) stays exactly as-is and both
-  imports remain used (`fmt` by `number` and `result`, `strconv` by both).
-- Keep the state type `*steps.State` (`State{ Value int }`) and the
-  `Registrar` interface untouched — the sibling definitions and the generated
-  shim depend on them.
-- Do **not** add, remove, broaden or re-anchor any `suite.Step` pattern. In
-  particular do not relax `^the result is (\d+)$` or `^the number is (\d+)$` to
-  make a step pass; the patterns are already anchored with a capture group where
-  the text varies, so they serve every scenario phrasing it that way.
-- `result` already reports expectation vs. actual (`expected %d, got %d`);
-  leave it as the Then assertion.
+## Constraints and invariants
 
-## Verification
-Run the declared replay command from the suite root repo directory:
+- Keep `Register` as the single registration function; do not add a
+  second one and do not reorder or re-word any of the three existing
+  `suite.Step` patterns — they stay anchored with `^…$` and keep their
+  `(\d+)` capture groups so one definition serves every `the number is
+  N` / `the result is N` phrasing.
+- Keep working against the existing state type `*State` from
+  `tests/calc/steps/state.go` (`State{ Value int }`) and the existing
+  `Registrar` interface. Do not introduce a new state type, a new
+  package, or a new file — both edits land in
+  `tests/calc/steps/steps.go`.
+- Leave `result` exactly as it is: it already asserts and already names
+  expected vs. actual (`expected %d, got %d`), which is the failure text
+  a reader gets.
+- The `fmt` and `strconv` imports are already present on line 3
+  (`import ("fmt"; "strconv")`); both remain used, so do not change the
+  import block.
 
-```
-sh replay.sh -json
-```
+## Expected outcome
 
-Both `TestCalc001Double` and `TestCalc002Shared` must pass.
+Re-run the declared replay command (`sh replay.sh -json`). Both
+scenarios must pass:
+
+- calc-001-double: `the number is 2` → 2, `doubled` → 4,
+  `the result is 4` → ok.
+- calc-002-shared: `the number is 3` → 3, `the result is 3` → ok.
 
 ---
 

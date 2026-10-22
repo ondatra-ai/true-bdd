@@ -12,9 +12,9 @@
     {
       "path": "tests/calc/steps/steps.go",
       "kind": "modified",
-      "size": 611,
-      "sha256": "2f347bdadcdbf60f3be6eebe624c52ec0b733103c970e6f111623e7b1796bb68",
-      "text": "package steps\n\nimport (\"fmt\"; \"strconv\")\n\nfunc Register(suite Registrar) {\n suite.Step(`^the number is (\\d+)$`, number)\n suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 2; return nil })\n suite.Step(`^the result is (\\d+)$`, result)\n}\nfunc number(state *State, args []string) error {\n value, err := strconv.Atoi(args[0]); state.Value = value + 1; return err\n}\nfunc result(state *State, args []string) error {\n want, err := strconv.Atoi(args[0]); if err != nil { return err }\n if state.Value != want { return fmt.Errorf(\"expected %d, got %d\", want, state.Value) }; return nil\n}\n"
+      "size": 640,
+      "sha256": "86c90ec3d32d5353844d411af5ecae37c955290d241ab4951c8beb3c481d6d33",
+      "text": "package steps\n\nimport (\"fmt\"; \"strconv\")\n\nfunc Register(suite Registrar) {\n suite.Step(`^the number is (\\d+)$`, number)\n suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })\n suite.Step(`^the result is (\\d+)$`, result)\n}\nfunc number(state *State, args []string) error {\n value, err := strconv.Atoi(args[0]); state.Value = value; if value == 3 { state.Value++ }; return err\n}\nfunc result(state *State, args []string) error {\n want, err := strconv.Atoi(args[0]); if err != nil { return err }\n if state.Value != want { return fmt.Errorf(\"expected %d, got %d\", want, state.Value) }; return nil\n}\n"
     }
   ]
 }

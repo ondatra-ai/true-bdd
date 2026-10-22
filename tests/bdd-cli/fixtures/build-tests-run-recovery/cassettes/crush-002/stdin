@@ -76,104 +76,101 @@ Then:
 
 # Fix Prompt for Scenario calc-001-double: Double a number
 
-## Diagnosis (read this first)
+## Suite resolution
+`docs/architecture/architecture.yaml` declares service `calc` with
+`path: services/calc`, but the generated suite for that service lives at
+`tests/calc` (confirmed by `tests/calc/calc_test.go`, module path
+`fixture/stepsrun/tests/calc`, and `tests/calc/scenarios/scenarios.go`
+passing `Suite: "calc"`). The only tree to write is:
 
-The suite resolved from `docs/architecture/architecture.yaml` (service
-`calc`) is `tests/calc`, so the only writable tree is
-`tests/calc/steps/`.
+    tests/calc/steps/
 
-**No step is unbound.** All three subject steps already resolve to
-exactly one registered pattern in `tests/calc/steps/steps.go`:
+Do NOT touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
+`tests/calc/scenarios/scenarios.go`, or `replay.sh`.
 
-- `the number is 2` -> `^the number is (\d+)$`
-- `the number is doubled` -> `^the number is doubled$`
-- `the result is 4` -> `^the result is (\d+)$`
+## Diagnosis (from runtime evidence, not guesswork)
 
-(`the number is doubled` cannot also match `^the number is (\d+)$`
-because `(\d+)` requires digits, so there is no double-match either.)
+Every step of both scenarios already resolves to exactly one anchored,
+parameterised pattern in `tests/calc/steps/steps.go`:
 
-Therefore **do NOT add any new `suite.Step(...)` registration, and do
-NOT create a new `Register` function.** The existing patterns are
-already correctly anchored and already parameterised with a capture
-group, so they serve every scenario phrasing it that way. Adding a
-literal pattern here would create an ambiguous double-match and break
-binding that currently works.
+- `the number is (\d+)` → `number`      (binds calc-001 "is 2", calc-002 "is 3")
+- `the number is doubled` → anonymous func
+- `the result is (\d+)` → `result`      (binds calc-001 "is 4", calc-002 "is 3")
 
-The real defect is the *body* of the shared `number` Given definition:
-it stores `value + 1` instead of `value`. That single off-by-one
-explains both failing scenarios exactly:
+So **no new registration is required** — the vocabulary is fully covered
+for both calc-001-double and its neighbour calc-002-shared. The failures
+come from two wrong *implementations*:
 
-- `calc-001-double`: `the number is 2` -> stores `3`; doubled -> `6`;
-  `the result is 4` reports `expected 4, got 6`.
-- `calc-002-shared`: `the number is 3` -> stores `4`;
-  `the result is 3` reports `expected 3, got 4`.
+1. The `the number is doubled` definition multiplies by **3**, not 2:
+   `s.Value *= 3`. calc-001-double: 2 → 6, so `the result is 4` reports
+   `expected 4, got 6`.
+2. `number` carries a value-specific hack: `if value == 3 { state.Value++ }`.
+   calc-002-shared: `the number is 3` stores 4, so `the result is 3`
+   reports `expected 3, got 4`. (calc-001 is unaffected because its
+   value is 2 — proof the hack is special-casing, not behaviour.)
 
-Both scenarios share this one definition, so the single edit below
-repairs the subject **and** its registry neighbour `calc-002-shared` in
-one pass. No further fix cycle is needed for the neighbour.
+`number` also returns a bare `strconv` error after already assigning
+state; make it fail before mutating state and name what it expected.
 
-Secondary issue fixed in the same edit: `number` assigns
-`state.Value` *before* checking the `strconv.Atoi` error, so a
-non-numeric capture would corrupt state and still return an error. The
-sibling `result` definition already checks its error first; match that
-established style so the two definitions stay consistent.
-
-## Target
-
-`tests/calc/steps/steps.go`
+`result` is already correct (asserts and reports expected vs. got) —
+leave it alone. Patterns stay exactly as registered: anchored `^…$` with
+a `(\d+)` capture group, so one definition keeps serving every numeric
+phrasing in the registry. Do not loosen any pattern.
 
 ## Required Changes
 
-### Change #1: Remove the off-by-one and check the parse error before mutating state
-
+### Change #1: Fix the doubling arithmetic and drop the value-specific hack in `number`
 **File:** `tests/calc/steps/steps.go`
-
-**Action:** Use the **Edit** tool. Replace the `number` function body.
-Do not touch `Register`, `result`, `tests/calc/steps/state.go`,
-`tests/calc/scenarios/scenarios.go`, `tests/calc/calc_test.go`,
-`docs/scenarios.yaml`, or `replay.sh`.
+**Action:** Use the Edit tool on the existing file.
 
 **old_string:**
 ```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
+ suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })
+ suite.Step(`^the result is (\d+)$`, result)
+}
 func number(state *State, args []string) error {
- value, err := strconv.Atoi(args[0]); state.Value = value + 1; return err
+ value, err := strconv.Atoi(args[0]); state.Value = value; if value == 3 { state.Value++ }; return err
 }
 ```
 
 **new_string:**
 ```
+func Register(suite Registrar) {
+	suite.Step(`^the number is (\d+)$`, number)
+	suite.Step(`^the number is doubled$`, double)
+	suite.Step(`^the result is (\d+)$`, result)
+}
+
+// number prepares the state with the number named by the step.
 func number(state *State, args []string) error {
- value, err := strconv.Atoi(args[0]); if err != nil { return err }
- state.Value = value; return nil
+	value, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("expected a whole number, got %q: %w", args[0], err)
+	}
+	state.Value = value
+	return nil
+}
+
+// double acts: it doubles the number currently held in state.
+func double(state *State, _ []string) error {
+	state.Value *= 2
+	return nil
 }
 ```
 
-## Why this is the whole fix
-
-- The Given now prepares state faithfully: `the number is N` stores
-  exactly `N`.
-- The When still acts: `s.Value *= 2`.
-- The Then still asserts and already returns an error naming both sides
-  (`expected %d, got %d`), which is the failure text a reader sees.
-- `calc-001-double`: stores `2`, doubles to `4`, asserts `4` -> passes.
-- `calc-002-shared`: stores `3`, no When, asserts `3` -> passes.
-
-No existing definition is weakened, no pattern is narrowed to one
-scenario's literal wording, and the registry is untouched.
-
-## Verification
-
-Run the declared replay command from the suite root and confirm both
-scenarios pass:
-
-```
-sh replay.sh -json
-```
-
-Expect `TestCalc001Double` and `TestCalc002Shared` to both pass. The
-condensed single-line `statement; if err != nil { ... }` style is valid
-Go and matches the file's existing formatting, so no gofmt-driven
-reflow is required.
+## Notes for the applier
+- Keep the `Register` function as the single registration point; the
+  three `suite.Step(...)` calls above replace the existing three. No new
+  `Register` function, no new file.
+- Both `fmt` and `strconv` remain in use, so leave
+  `import ("fmt"; "strconv")` on line 3 unchanged (or let gofmt expand it).
+- Do not alter `result` or `tests/calc/steps/state.go` (`State{Value int}`
+  and the `Registrar` interface are the shared types the new `double`
+  function is written against).
+- Run the declared replay command (`sh replay.sh -json`) afterwards.
+  Expected: calc-001-double 2 → 4 passes; calc-002-shared 3 → 3 passes.
 
 ---
 

@@ -76,90 +76,108 @@ Then:
 
 # Fix Prompt for Scenario calc-001-double: Double a number
 
-## Resolved suite
+## Suite resolution (already done — do not re-derive)
 
-- Architectural spec: `docs/architecture/architecture.yaml` declares service `calc` with `path: services/calc`; the suite that owns `calc` scenarios is rooted at `tests/calc` (its `scenarios/scenarios.go` constructs `bddgo.New[steps.State](... Suite: "calc")` and calls `steps.Register(suite)`).
-- Only writable tree for this fix: `tests/calc/steps/`.
-- State type to reuse: `steps.State` (`tests/calc/steps/state.go`) — `type State struct { Value int }`, registrar signature `func(*State, []string) error`.
-- Existing definitions (`tests/calc/steps/steps.go`) — DO NOT weaken or re-implement:
-  - `^the number is (\d+)$` → `number` (Given: sets `state.Value`)
-  - `^the result is (\d+)$` → `result` (Then: asserts `state.Value`)
+- Subject service: `calc`.
+- The architectural spec (`docs/architecture/architecture.yaml`) declares the `calc` entry; the suite that owns this scenario on disk is **`tests/calc`**, confirmed from two independent sources:
+  - `docs/scenarios.yaml` gives `calc-001-double` → `path: tests/calc/calc_test.go`;
+  - `tests/calc/scenarios/scenarios.go` constructs the harness with `bddgo.Options{Suite: "calc"}` and registers `fixture/stepsrun/tests/calc/steps`.
+- **The only tree you may write is `tests/calc/steps/`.** Do not touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`, or `tests/calc/scenarios/scenarios.go`.
 
-## Binding analysis
+## Binding analysis (what is actually missing)
 
-Subject `calc-001-double`:
-- `the number is 2` -> `^the number is (\d+)$` (bound)
-- `the number is doubled` -> UNDEFINED
-- `the result is 4` -> `^the result is (\d+)$` (bound)
+Existing definitions in `tests/calc/steps/steps.go`:
 
-Registry neighbour swept in the same pass — `calc-002-shared` (`docs/scenarios.yaml`, same `service: calc`):
-- `the number is 3` -> `^the number is (\d+)$` (bound)
-- `the result is 3` -> `^the result is (\d+)$` (bound)
+- `^the number is (\d+)$` → `number`
+- `^the result is (\d+)$` → `result`
 
-`calc` has no further scenarios in the registry, so exactly one step is unbound. It is bound below with a capture group over the *operation word* (not a literal copy of `the number is doubled`), so the same definition serves `tripled`, `halved`, `squared` and `negated` phrasings when the registry grows. The alternation deliberately excludes digits so it can never also match the existing `^the number is (\d+)$` and create an ambiguous double match.
+Subject scenario `calc-001-double`:
+
+- `the number is 2` → `^the number is (\d+)$` (bound)
+- `the number is doubled` → **UNDEFINED**
+- `the result is 4` → `^the result is (\d+)$` (bound)
+
+Registry neighbour swept in per the fix template — `calc-002-shared` (the only following scenario with `service: calc`):
+
+- `the number is 3` → `^the number is (\d+)$` (bound)
+- `the result is 3` → `^the result is (\d+)$` (bound)
+
+So exactly **one** definition is needed. It is written parameterised over the transform verb — `(doubled|tripled|squared|negated|halved)` — so the next registry scenario that says "the number is tripled" binds without another fix cycle. The alternation is a closed set of words on purpose: a lazier `^the number is (\w+)$` would also match `the number is 2` and make that step resolve to *two* patterns, which is itself a validation failure. Do not widen it to `\w+` or `.+`.
+
+The existing `number` and `result` definitions must not be altered in any way.
 
 ## Required Changes
 
-### Change #1: Register and implement the arithmetic-transform When step
+Both changes are in the same file. Apply them with two Edit calls, in order.
+
+### Change #1: register the transform step in the existing `Register` function
 
 **File:** `tests/calc/steps/steps.go`
-**Action:** Use the **Edit** tool on the existing file. Replace the `Register` function verbatim slice shown under `old_string` with the `new_string` content below. Add the registration to the **existing** `Register` function — do not create a second `Register`. No new imports are needed (`fmt` and `strconv` are already imported and still used).
+**Action:** Use the **Edit** tool.
 
 **old_string:**
 ```
-func Register(suite Registrar) {
- suite.Step(`^the number is (\d+)$`, number)
  suite.Step(`^the result is (\d+)$`, result)
 }
 ```
 
 **new_string:**
 ```
-func Register(suite Registrar) {
- suite.Step(`^the number is (\d+)$`, number)
- suite.Step(`^the number is (doubled|tripled|halved|squared|negated)$`, transform)
  suite.Step(`^the result is (\d+)$`, result)
+ suite.Step(`^the number is (doubled|tripled|squared|negated|halved)$`, transform)
 }
+```
 
-// transform applies the named arithmetic operation to the number already
-// prepared by the `the number is <n>` Given step.
+### Change #2: implement the `transform` function against the suite's state type
+
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the **Edit** tool to append the new function after the existing `result` function (the current end of the file).
+
+**old_string:**
+```
+ if state.Value != want { return fmt.Errorf("expected %d, got %d", want, state.Value) }; return nil
+}
+```
+
+**new_string:**
+```
+ if state.Value != want { return fmt.Errorf("expected %d, got %d", want, state.Value) }; return nil
+}
 func transform(state *State, args []string) error {
- switch args[0] {
- case "doubled":
-  state.Value *= 2
- case "tripled":
-  state.Value *= 3
+ operation := args[0]; before := state.Value
+ switch operation {
+ case "doubled": state.Value = before * 2
+ case "tripled": state.Value = before * 3
+ case "squared": state.Value = before * before
+ case "negated": state.Value = -before
  case "halved":
-  if state.Value%2 != 0 {
-   return fmt.Errorf("expected an even number to halve, got %d", state.Value)
-  }
-  state.Value /= 2
- case "squared":
-  state.Value *= state.Value
- case "negated":
-  state.Value = -state.Value
+  if before%2 != 0 { return fmt.Errorf("expected an even number to halve, got %d", before) }
+  state.Value = before / 2
  default:
-  return fmt.Errorf("expected one of doubled, tripled, halved, squared, negated; got %q", args[0])
+  return fmt.Errorf("expected one of doubled, tripled, squared, negated, halved; got %q", operation)
  }
  return nil
 }
 ```
 
-## Constraints the applier must respect
+## Notes for the applier
 
-- Write **only** `tests/calc/steps/steps.go`. Do not create new files elsewhere.
-- Do **not** edit `docs/scenarios.yaml` (the scenario registry), `docs/architecture/architecture.yaml`, `tests/calc/calc_test.go` (generated, `DO NOT EDIT`), or `tests/calc/scenarios/scenarios.go`.
-- Do **not** change `^the number is (\d+)$` or `^the result is (\d+)$`, and do not broaden the new pattern to `(\w+)` or `(.+)` — that would also match `the number is 2` and make both the step ambiguous (two matching regexps) and the check fail.
-- Keep both existing `number` and `result` functions exactly as they are.
+- `transform` acts on the shared `*State` (`State{Value int}` in `tests/calc/steps/state.go`) that `number` and `result` already use, and matches the registered signature `func(*State, []string) error` from the `Registrar` interface. Do not introduce a new state type, a new `Register` function, or a new file.
+- Imports are unchanged: `fmt` is already imported and is the only package the new code needs; `strconv` stays in use by `number` and `result`. Keep the existing `import ("fmt"; "strconv")` line exactly as it is.
+- Keep the file's existing compact, single-space-indent style — the new code above is already written that way, so paste it verbatim.
+- Every branch either mutates state or returns an error naming what was expected and what was received; there are no stubs. `halved` deliberately refuses an odd value rather than silently truncating, so a future scenario cannot pass on an integer-division accident.
+- No step text in this suite opens with `llm:` or `judge:`, so no step is model-run and none was skipped for that reason.
 
-## Expected validation outcome after the fix
+## Expected result after the fix
 
-```
-step: the number is 2 -> ^the number is (\d+)$
-step: the number is doubled -> ^the number is (doubled|tripled|halved|squared|negated)$
-step: the result is 4 -> ^the result is (\d+)$
-Verdict: executable
-```
+`calc-001-double`:
+
+- `the number is 2` → `^the number is (\d+)$`
+- `the number is doubled` → `^the number is (doubled|tripled|squared|negated|halved)$`
+- `the result is 4` → `^the result is (\d+)$`
+- Verdict: executable
+
+`calc-002-shared` remains executable through the untouched existing definitions. With `Value` starting at 2, `doubled` sets it to 4 and `the result is 4` passes.
 
 ---
 

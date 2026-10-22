@@ -74,136 +74,160 @@ Then:
 
 ## Fix Prompt to Apply
 
-### Fix Prompt for Scenario calc-001-double: Double a number
+# Fix Prompt for Scenario calc-001-double: Double a number
 
-## Suite resolution
+## Resolved context (already verified — do not re-derive)
 
-The architectural spec (`docs/architecture/architecture.yaml`) declares a single
-service, `calc`. The subject scenario's `service:` is `calc`, and the registry
-(`docs/scenarios.yaml`) places it at `path: tests/calc/calc_test.go`. The suite
-root is therefore `tests/calc`, and the only tree you may write is:
+- Architectural spec: `docs/architecture/architecture.yaml` declares
+  `testing.framework: go-test` and service `name: calc`.
+- Suite root for service `calc`: **`tests/calc/`**
+- The only tree you may write: **`tests/calc/steps/`**
+- Existing files there: `state.go`, `steps.go`
+- Shared state type (`tests/calc/steps/state.go`, do NOT modify):
+  ```go
+  type State struct { Value int }
+  type Registrar interface { Step(string, func(*State, []string) error) }
+  ```
+- Handler signature every definition must have: `func(*State, []string) error`
+- Existing registered patterns (`tests/calc/steps/steps.go`):
+  - `^the number is (\d+)$` -> `number` (Given: parses arg, sets `state.Value`)
+  - `^the result is (\d+)$` -> `result` (Then: compares `state.Value`, errors with expected/got)
+- Assertion channel: `result` asserts on `state.Value`, so the action step
+  MUST write its outcome back into `state.Value`.
 
-    tests/calc/steps/
+## Unbound-step survey (step 3 of the template — already done)
 
-Confirmed by `tests/calc/scenarios/scenarios.go`, which constructs the run with
-`bddgo.New[steps.State](... Suite: "calc")` and calls `steps.Register(suite)`.
+Registry `docs/scenarios.yaml` contains exactly two `service: calc`
+scenarios; here is every step and its binding:
 
-## Binding analysis (do not re-derive; this is settled)
+| Scenario | Step | Binds to |
+|---|---|---|
+| calc-001-double | `the number is 2` | `^the number is (\d+)$` |
+| calc-001-double | `the number is doubled` | **UNDEFINED** |
+| calc-001-double | `the result is 4` | `^the result is (\d+)$` |
+| calc-002-shared | `the number is 3` | `^the number is (\d+)$` |
+| calc-002-shared | `the result is 3` | `^the result is (\d+)$` |
 
-Existing definitions in `tests/calc/steps/steps.go`:
-- `^the number is (\d+)$` → `number`
-- `^the result is (\d+)$` → `result`
+So there is exactly **one** unbound step in the entire `calc` service:
+the action `the number is doubled`. No neighbour leaves any other step
+unbound. Do not invent extra `suite.Step` registrations for steps no
+scenario uses — but DO make the single new definition parameterised over
+the action word, so the next arithmetic scenario the walk adds
+(`tripled`, `halved`, …) needs no new fix cycle.
 
-Subject scenario `calc-001-double`:
-- `the number is 2` → matches `^the number is (\d+)$` — BOUND
-- `the number is doubled` → **UNDEFINED**
-- `the result is 4` → matches `^the result is (\d+)$` — BOUND
+## CRITICAL constraint on the regexp — read before writing it
 
-Registry neighbour sweep — `docs/scenarios.yaml` contains exactly one other
-`service: calc` scenario, `calc-002-shared`:
-- `the number is 3` → matches `^the number is (\d+)$` — BOUND
-- `the result is 3` → matches `^the result is (\d+)$` — BOUND
+The capture group MUST be a **closed alternation of action words**:
 
-So the entire `calc` vocabulary is short by exactly one step definition:
-`the number is doubled`. No neighbour work remains after this change.
+```
+^the number is (doubled|tripled|halved|squared|negated)$
+```
+
+Do **NOT** write `^the number is (.+)$`, `^the number is (\w+)$`, or any
+other wildcard. A wildcard would also match `the number is 3`, so
+`calc-002-shared`'s Given (and `calc-001-double`'s own Given) would match
+**two** registered patterns — which fails the "exactly one regexp matches"
+rule and breaks a scenario that passes today. Digits are not in the
+alternation, so the closed form keeps every existing step resolving to
+exactly one pattern.
+
+Also: do not weaken, re-word, or re-order the two existing patterns, and
+do not touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`, or
+`tests/calc/scenarios/scenarios.go`.
 
 ## Required Changes
 
-### Change #1: Register and implement the `the number is doubled` step
+### Change #1: register the action definition and implement it
 
 **File:** `tests/calc/steps/steps.go`
+**Action:** Use the **Edit** tool. Add the registration to the **existing**
+`Register` function (do not create a second `Register`), and add the
+implementation below it.
 
-**Action:** Use the **Edit** tool twice on this existing file (two separate
-edits, described below). Do NOT create a new file, do NOT add a second
-`Register` function, and do NOT touch `tests/calc/steps/state.go`,
-`tests/calc/scenarios/scenarios.go`, `tests/calc/calc_test.go`, or
-`docs/scenarios.yaml`.
-
----
-
-**Edit 1 — add the registration inside the existing `Register` function.**
-
-`old_string` (verbatim; note the single-space indentation this file uses):
+**old_string:**
 ```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
  suite.Step(`^the result is (\d+)$`, result)
 }
 ```
 
-`new_string`:
+**new_string:**
 ```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
+ suite.Step(`^the number is (doubled|tripled|halved|squared|negated)$`, applyOperation)
  suite.Step(`^the result is (\d+)$`, result)
- suite.Step(`^the number is doubled$`, doubled)
+}
+
+// operations is the action vocabulary the `^the number is (…)$` When
+// definition serves. The regexp alternation above and the keys here are
+// deliberately the same closed set: the pattern must stay a literal so
+// the registry checker can read it, so adding a word means adding it in
+// both places. The set excludes digits on purpose — a wildcard capture
+// would also match the Given step `the number is 3` and leave that step
+// matching two patterns.
+var operations = map[string]func(int) (int, error){
+	"doubled": func(v int) (int, error) { return v * 2, nil },
+	"tripled": func(v int) (int, error) { return v * 3, nil },
+	"squared": func(v int) (int, error) { return v * v, nil },
+	"negated": func(v int) (int, error) { return -v, nil },
+	"halved": func(v int) (int, error) {
+		if v%2 != 0 {
+			return 0, fmt.Errorf("cannot halve %d: expected an even number, got an odd one", v)
+		}
+		return v / 2, nil
+	},
+}
+
+// applyOperation is the When action: it transforms the number currently
+// in the state and writes the outcome back to state.Value, which is the
+// field the `^the result is (\d+)$` Then definition asserts on.
+func applyOperation(state *State, args []string) error {
+	operation, ok := operations[args[0]]
+	if !ok {
+		return fmt.Errorf("expected a known operation on the number, got %q", args[0])
+	}
+	updated, err := operation(state.Value)
+	if err != nil {
+		return err
+	}
+	state.Value = updated
+	return nil
 }
 ```
 
----
+## Notes for the applier
 
-**Edit 2 — append the implementation after the existing `result` function.**
+- **No import changes are needed.** `steps.go` already has
+  `import ("fmt"; "strconv")`; the new code uses `fmt`, and `strconv`
+  remains in use by `number`/`result`. Do not add or remove imports.
+- The `!ok` branch is unreachable while the regexp and the map agree. Keep
+  it: it is the honest error if the two ever drift, and it names both what
+  was expected and what it got.
+- The existing file indents with a single leading space while the new
+  block uses tabs. This is cosmetic and the architectural spec declares no
+  code quality gate. Optionally run `gofmt -w tests/calc/steps/steps.go`
+  afterwards; it is harmless and changes no behaviour.
 
-`old_string` (verbatim — the final function in the file):
-```
-func result(state *State, args []string) error {
- want, err := strconv.Atoi(args[0]); if err != nil { return err }
- if state.Value != want { return fmt.Errorf("expected %d, got %d", want, state.Value) }; return nil
-}
-```
+## Expected result
 
-`new_string`:
-```
-func result(state *State, args []string) error {
- want, err := strconv.Atoi(args[0]); if err != nil { return err }
- if state.Value != want { return fmt.Errorf("expected %d, got %d", want, state.Value) }; return nil
-}
-func doubled(state *State, _ []string) error {
- state.Value *= 2; return nil
-}
-```
-
-## Notes the applier must respect
-
-- **No capture group here, deliberately.** The step text `the number is doubled`
-  has no varying part anywhere in the `calc` registry, and a widened pattern such
-  as `^the number is (.+)$` or `^the number is (\w+)$` would ALSO match
-  `the number is 2` and `the number is 3`. Those steps would then resolve to two
-  registered regexps instead of one, which is a failure of the same check this
-  fix exists to satisfy. The anchored literal is the correct pattern for this
-  step; keep it exactly as written.
-- **Reuse, do not re-implement.** `State` is `type State struct { Value int }`
-  from `tests/calc/steps/state.go`, and `Registrar` is the interface
-  `Step(string, func(*State, []string) error)`. The new function must have the
-  signature `func(*State, []string) error` to satisfy it. `doubled` is a *When*
-  step: it acts on the shared state and nothing else — it must not assert, and
-  it must not re-parse a number, because `number` has already placed the value
-  in `state.Value`.
-- **Imports are unchanged.** `fmt` and `strconv` both remain in use by `result`
-  and `number`; `doubled` needs neither. Do not add or remove imports — an
-  unused import is a compile error in Go.
-- The `args` parameter is named `_` because the pattern captures nothing. Leave
-  it in the signature; the `Registrar` interface requires it.
-- Keep the file's existing compact formatting (single-space indents, semicolon
-  statement joins) so the change reads as a sibling of what is already there.
-
-## Verification after applying
-
-Re-run the binding walk for both `calc` scenarios and expect:
+With this change, every step resolves to exactly one pattern:
 
 ```
-step: the number is 2 -> ^the number is (\d+)$
-step: the number is doubled -> ^the number is doubled$
-step: the result is 4 -> ^the result is (\d+)$
+step: the number is 2        -> ^the number is (\d+)$
+step: the number is doubled  -> ^the number is (doubled|tripled|halved|squared|negated)$
+step: the result is 4        -> ^the result is (\d+)$
+step: the number is 3        -> ^the number is (\d+)$
+step: the result is 3        -> ^the result is (\d+)$
 Verdict: executable
 ```
 
-```
-step: the number is 3 -> ^the number is (\d+)$
-step: the result is 3 -> ^the result is (\d+)$
-Verdict: executable
-```
+Behaviourally: `calc-001-double` sets `Value=2`, doubles it to `4`, and
+`the result is 4` passes. `calc-002-shared` is untouched and still passes.
 
-Behaviourally, `calc-001-double` should now pass end to end: `Given` sets
-`Value = 2`, `When` doubles it to `4`, `Then` compares against `4` and returns
-nil. `calc-002-shared` is untouched — no existing definition was widened or
-weakened.
+Verify with the spec's replay command from the repo root:
+`sh replay.sh -json`
 
 ---
 

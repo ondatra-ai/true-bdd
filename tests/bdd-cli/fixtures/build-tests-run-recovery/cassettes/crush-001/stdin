@@ -76,97 +76,58 @@ Then:
 
 # Fix Prompt for Scenario calc-001-double: Double a number
 
-## Resolved suite
+## Target
+`tests/calc/steps/steps.go` — the suite for service `calc` (architectural
+spec `docs/architecture/architecture.yaml`, service `calc`; its registry
+scenarios live at `tests/calc/calc_test.go`, so the suite root is
+`tests/calc` and its step definitions package is `tests/calc/steps/`).
 
-The architectural spec (`docs/architecture/architecture.yaml`) declares
-one service, `name: calc`. The suite that owns it is the tree
-`tests/calc/`, so the only writable tree for this fix is:
+Do NOT create a new file, a new `Register` function, or touch anything
+outside `tests/calc/steps/`. Do NOT edit `docs/scenarios.yaml`.
 
-    tests/calc/steps/
+## Analysis (do not re-derive, just apply)
+Existing definitions in `tests/calc/steps/steps.go`:
+- `^the number is (\d+)$` -> `number` (Given, sets `state.Value`)
+- `^the result is (\d+)$` -> `result` (Then, asserts `state.Value`)
 
-Do not create a new file. The suite's step package already exists and
-has exactly one registration site; extend it.
+State type shared by the package (`tests/calc/steps/state.go`):
+`type State struct { Value int }`, registered through
+`type Registrar interface { Step(string, func(*State, []string) error) }`.
 
-## What is already there (REUSE IT — do not re-implement)
-
-`tests/calc/steps/state.go`:
-
-```go
-package steps
-
-type State struct { Value int }
-type Registrar interface { Step(string, func(*State, []string) error) }
-```
-
-`tests/calc/steps/steps.go` registers two definitions in a single
-`Register` function and already imports both `fmt` and `strconv`:
-
-```go
-func Register(suite Registrar) {
- suite.Step(`^the number is (\d+)$`, number)
- suite.Step(`^the result is (\d+)$`, result)
-}
-```
-
-Key facts the new code must respect:
-- The step func signature is `func(*State, []string) error`.
-- Capture groups arrive in `args`, in order; `args[0]` is the first.
-- `result` asserts against `state.Value`, so a When step must mutate
-  `state.Value` in place for the Then to observe it.
-- `fmt` is ALREADY imported. The new code needs no new imports —
-  **do not touch the import line.**
-
-## Binding analysis (why only one definition is added)
-
-Subject `calc-001-double`:
+Step binding for the subject and its registry neighbour:
 - `the number is 2` -> `^the number is (\d+)$` (bound)
-- `the number is doubled` -> **UNDEFINED**
+- `the number is doubled` -> UNDEFINED (this is the failure)
 - `the result is 4` -> `^the result is (\d+)$` (bound)
+- calc-002-shared: `the number is 3` / `the result is 3` -> both bound
 
-Registry neighbour sweep: `docs/scenarios.yaml` contains exactly two
-`service: calc` scenarios. The only follower, `calc-002-shared`, has
-steps `the number is 3` and `the result is 3`, and both already bind to
-the existing numeric definitions. No neighbour leaves any further step
-unbound, so this pass adds exactly one definition — the whole of the
-suite's remaining unbound vocabulary.
-
-The new pattern is parameterised over the scaling verb rather than
-copied literally from `the number is doubled`, so the one definition
-also serves `tripled` and `quadrupled` phrasings when the registry
-grows.
-
-No ambiguity is introduced: `(doubled|tripled|quadrupled)` can never
-also match `^the number is (\d+)$`, because that pattern requires
-digits. Every step still resolves to exactly one definition.
+So exactly one new definition is required. It is registered as a
+vocabulary entry for the scaling action (capture group over the operation
+word) rather than as a literal copy of this scenario's line, so the next
+scenario phrasing it `tripled`/`quadrupled` needs no new fix cycle. The
+word alternation can never collide with `^the number is (\d+)$`, because
+that pattern only matches digits.
 
 ## Required Changes
 
-### Change #1: Register the scaling verb in the existing `Register` function
-
+### Change #1: Register the scaling step in the existing `Register` function
 **File:** `tests/calc/steps/steps.go`
-**Action:** Use the **Edit** tool. Add the registration between the two
-existing ones so the block reads in Given/When/Then order. Keep the
-file's existing one-space indentation style.
-
+**Action:** Use the Edit tool.
 **old_string:**
 ```
- suite.Step(`^the number is (\d+)$`, number)
  suite.Step(`^the result is (\d+)$`, result)
+}
 ```
-
 **new_string:**
 ```
- suite.Step(`^the number is (\d+)$`, number)
- suite.Step(`^the number is (doubled|tripled|quadrupled)$`, scaled)
  suite.Step(`^the result is (\d+)$`, result)
+ suite.Step(`^the number is (doubled|tripled|quadrupled)$`, scaled)
+}
 ```
 
-### Change #2: Implement the When function against the suite's State
-
+### Change #2: Implement the `scaled` step function against the shared `*State`
 **File:** `tests/calc/steps/steps.go`
-**Action:** Use the **Edit** tool to append the new function after the
-existing `result` function at the end of the file.
-
+**Action:** Use the Edit tool to append the new function after the
+existing `result` function (end of file).
 **old_string:**
 ```
 func result(state *State, args []string) error {
@@ -174,7 +135,6 @@ func result(state *State, args []string) error {
  if state.Value != want { return fmt.Errorf("expected %d, got %d", want, state.Value) }; return nil
 }
 ```
-
 **new_string:**
 ```
 func result(state *State, args []string) error {
@@ -189,26 +149,16 @@ func scaled(state *State, args []string) error {
 }
 ```
 
-## Constraints for the applier
-
-- Write ONLY `tests/calc/steps/steps.go`. Touch nothing else.
-- Do NOT edit `docs/scenarios.yaml` (the registry).
-- Do NOT edit `tests/calc/calc_test.go` or
-  `tests/calc/scenarios/scenarios.go` — both are generated.
-- Do NOT weaken, rename or re-anchor the existing
-  `^the number is (\d+)$` or `^the result is (\d+)$` definitions.
-- Do NOT add a second `Register` function; the registration goes into
-  the existing one.
-- Do NOT modify the `import ("fmt"; "strconv")` line — both packages
-  are already imported and both remain used.
-
-## Expected result after the fix
-
-`calc-001-double` binds end to end: `the number is 2` sets
-`state.Value = 2`, `the number is doubled` multiplies it to `4`, and
-`the result is 4` asserts `state.Value == 4` and passes.
-`calc-002-shared` is unaffected and still binds through the shared
-numeric definitions. Verdict for both scenarios: executable.
+## Notes for the applier
+- Keep the file's existing compact formatting (single-space indent,
+  semicolon-joined statements) so the diff stays minimal.
+- No import changes are needed: `fmt` and `strconv` are already imported
+  and both remain used.
+- Do not weaken or re-anchor `^the number is (\d+)$` or
+  `^the result is (\d+)$`; they must keep matching calc-001-double's and
+  calc-002-shared's digit steps exactly as they do today.
+- Expected result after the fix: calc-001-double runs
+  `Value=2` -> `Value*=2` -> asserts `4`; calc-002-shared is unaffected.
 
 ---
 

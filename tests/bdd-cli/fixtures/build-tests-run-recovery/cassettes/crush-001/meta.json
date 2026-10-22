@@ -10,8 +10,8 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 18281,
-  "request_hash": "sha256:fbb4f38728e3d70ef7c6dd91b6bf4180dc4c32ea1759fd2e2b5cb6d231b4d16c",
+  "duration_ms": 50824,
+  "request_hash": "sha256:1ebccefeb63ba881d3c922e5019149c6ca6670ae1af1688605d57968085017da",
   "fsdiff": {
     "created": [],
     "modified": [
@@ -19,5 +19,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-22T19:15:09Z"
+  "recorded_at": "2026-10-22T20:23:23Z"
 }
