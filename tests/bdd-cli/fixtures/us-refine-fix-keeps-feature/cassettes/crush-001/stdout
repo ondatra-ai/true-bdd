@@ -1,12 +1,15 @@
+The story file confirms the exact step shape (`and:` continuations nested under `then:`) and includes a `feature` field. Only AC-3's description changes.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===
-id: "doc-summary"
-title: "Document Summary On Demand"
-as_a: "Claude User"
-i_want: "Claude to give me a short summary of a shared Google Doc when I ask for one"
-so_that: "I can decide whether the document needs my attention without reading it in full"
-status: "PLANNED"
+id: doc-summary
+feature: document-summaries
+title: Document Summary On Demand
+as_a: Claude User
+i_want: Claude to give me a short summary of a shared Google Doc when I ask for one
+so_that: I can decide whether the document needs my attention without reading it in full
+status: PLANNED
 acceptance_criteria:
-  - id: "AC-1"
+  - id: AC-1
     description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc."
     steps:
       - given:
@@ -15,8 +18,8 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of 150 words or fewer in the conversation"
-          - "the summary names the document title"
-  - id: "AC-2"
+          - and: "the summary names the document title"
+  - id: AC-2
     description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
     steps:
       - given:
@@ -25,9 +28,9 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize that document"
       - then:
           - "Claude displays the message 'This document is not shared with your account'"
-          - "Claude does not display any content from the document"
-  - id: "AC-3"
-    description: "Claude must display the message 'The summary timed out - please try again' when the summary backend returns no summary within 30 seconds of the Claude User's request."
+          - and: "Claude does not display any content from the document"
+  - id: AC-3
+    description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User asking for a summary."
     steps:
       - given:
           - "a Google Doc is shared with the Claude User's account"
@@ -36,7 +39,7 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays the message 'The summary timed out - please try again'"
-  - id: "AC-4"
+  - id: AC-4
     description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
     steps:
       - given:
@@ -45,5 +48,5 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of the first 10000 words"
-          - "Claude states that only the first 10000 words were summarized"
+          - and: "Claude states that only the first 10000 words were summarized"
 === FILE_END: tmp/{{RUN_DIR}}/apply-doc-summary-iter1-result.yaml ===
