@@ -3,7 +3,6 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -41,18 +40,6 @@ func getCommonTemplateFunctions() template.FuncMap {
 			}
 
 			return string(data)
-		},
-		"nindent": func(spaces int, text string) string {
-			lines := strings.Split(text, "\n")
-			indent := strings.Repeat(" ", spaces)
-
-			for i, line := range lines {
-				if line != "" {
-					lines[i] = indent + line
-				}
-			}
-
-			return strings.Join(lines, "\n")
 		},
 	}
 

@@ -15,10 +15,9 @@
 // is now stated at each call site.
 //
 // TWO TIERS. Run covers the ~30 sites that spawn, wait and read. Start returns
-// a Process for the three that cannot: supervised process groups holding
-// inherited descriptors (internal/app/remote/managed_child.go) and a
-// byte-exact stdio proxy (pkg/testkit/aiproxy). Their needs are single-site
-// and each is documented where it is declared.
+// a Process for the one that cannot: a byte-exact stdio proxy
+// (pkg/testkit/aiproxy). Its needs are single-site and documented where they
+// are declared.
 //
 // THE ENV DISTINCTION IS LOAD-BEARING. Blank sets a key to empty; Strip
 // removes it. Three sites blank CLAUDECODE, because a child should know it is
@@ -27,10 +26,10 @@
 // agent CLIs do.
 //
 // Callers reach a binary through pkg/cli/<tool>, never through here directly:
-// depguard denies pkg/shell everywhere except pkg/cli/** and four engine
+// depguard denies pkg/shell everywhere except pkg/cli/** and three engine
 // packages, which is what keeps argv construction typed and greppable instead
-// of scattered. Those four are the wrappers only the engine uses (codex,
-// crush, ps and its own binary), so they live in the engine, under
+// of scattered. Those three are the wrappers only the engine uses (codex,
+// crush and its own binary), so they live in the engine, under
 // services/bdd-cli/internal/infrastructure/cli/, and a rebuild regenerates
 // them with it; each lint rule names them one by one.
 package shell

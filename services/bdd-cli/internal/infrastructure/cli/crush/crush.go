@@ -1,4 +1,4 @@
-// Package crush is the `crush` command line, one of the four engine wrappers
+// Package crush is the `crush` command line, one of the three engine wrappers
 // that alone may reach pkg/shell from inside the engine. Only the engine spawns
 // crush, so the wrapper is engine code and a rebuild regenerates it; the argv
 // it builds is stated in docs/architecture/architecture.yaml.
