@@ -61,6 +61,11 @@ func Write(path string, data []byte, mode Mode) error {
 // the newline could interleave with a concurrent Append and tear both lines.
 // Not Write — a rename would swap the inode from under a tailer.
 func Append(path string, record []byte, mode Mode) error {
+	return AppendBytes(path, append(record, '\n'), mode)
+}
+
+// AppendBytes appends exactly the bytes supplied, without a record separator.
+func AppendBytes(path string, data []byte, mode Mode) error {
 	err := Dir(filepath.Dir(path), mode)
 	if err != nil {
 		return err
@@ -79,7 +84,7 @@ func Append(path string, record []byte, mode Mode) error {
 
 	defer func() { _ = handle.Close() }()
 
-	_, err = handle.Write(append(record, '\n'))
+	_, err = handle.Write(data)
 	if err != nil {
 		return fmt.Errorf("appending to %s: %w", path, err)
 	}
