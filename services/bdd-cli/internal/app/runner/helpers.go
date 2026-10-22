@@ -246,8 +246,8 @@ var errStoryFileGone = errors.New("the story file the walk loaded is gone")
 // updateStoryFile replaces the story file `us refine` loaded, in place,
 // after the walk converges: the file storyinfra.FindStoryFile resolves the
 // id to, as the load did.
-func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir string) (string, error) {
-	storyFile, err := storyinfra.FindStoryFile(storiesDir, storyNumber)
+func updateStoryFile(storyID string, updatedStory *story.Story, storiesDir string) (string, error) {
+	storyFile, err := storyinfra.FindStoryFile(storiesDir, storyID)
 	if errors.Is(err, pkgerrors.ErrStoryFileNotFound) {
 		return "", pkgerrors.ErrWriteStoryFileFailed(fmt.Errorf("%w: %w", errStoryFileGone, err))
 	}
@@ -326,12 +326,6 @@ func runFixPromptGeneration(
 	return out, nil
 }
 
-// StorySubject is the GetSubject implementation of us refine. Pulls the (id, title) pair the report builder uses
-// for table headings.
-func StorySubject(item *story.Story) (string, string) {
-	return item.ID, item.Title
-}
-
 // StoryPostFix returns the PostFix closure for story-based commands: the
 // applier's YAML lands on a zero Story, zeroing what it omits, so the ID and
 // the Feature label (its template never shows it) are reasserted from the item.
@@ -370,14 +364,14 @@ func StoryPostFix(
 // On Converged it rewrites the story file in place; every other stop
 // reason prints a help message and returns nil.
 func StoryFinalize(
-	storiesDir, storyNumber string,
+	storiesDir, storyID string,
 	versionMgr *fs.StoryVersionManager,
 	fix bool,
 ) func(*engine.Result[*story.Story]) error {
 	return func(result *engine.Result[*story.Story]) error {
 		switch result.Reason {
 		case engine.Converged:
-			return writeConvergedStory(versionMgr, storiesDir, storyNumber)
+			return writeConvergedStory(versionMgr, storiesDir, storyID)
 		case engine.NotFixed:
 			if fix {
 				slog.Warn("Validation failed. No fix was applied.")
@@ -405,7 +399,7 @@ func StoryFinalize(
 // §3.2): a story that never landed no longer reports success.
 func writeConvergedStory(
 	versionMgr *fs.StoryVersionManager,
-	storiesDir, storyNumber string,
+	storiesDir, storyID string,
 ) error {
 	slog.Info("ALL CHECKS PASSED!")
 
@@ -416,7 +410,7 @@ func writeConvergedStory(
 		return fmt.Errorf("load latest story for writing: %w", err)
 	}
 
-	storyPath, err := updateStoryFile(storyNumber, latest, storiesDir)
+	storyPath, err := updateStoryFile(storyID, latest, storiesDir)
 	if err != nil {
 		slog.Error("Could not write story file", "error", err)
 

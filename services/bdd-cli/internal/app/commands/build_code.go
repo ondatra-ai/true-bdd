@@ -52,7 +52,7 @@ func RunBuildCode(
 	err := runner.Run(ctx, runner.Spec[*testrunner.FailingTest]{
 		Name:          "build code",
 		ChecklistName: "build-code",
-		StoryNumber:   "",
+		StoryID:       "",
 		Fix:           fix,
 
 		LoadItems:   loadFailingTests(deps, architectureFile),

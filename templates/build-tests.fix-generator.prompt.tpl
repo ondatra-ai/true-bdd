@@ -64,7 +64,7 @@ scenario's first: bind a neighbour's step from its phrase the same way.
 {{- end }}
 
 ### Words
-{{ range .Subject.Spec.Words }}
+{{ range .Subject.Spec.Terms }}
 #### {{ .Term }}
 
 {{ if .Means }}{{ range .Means }}- Means: {{ . }}

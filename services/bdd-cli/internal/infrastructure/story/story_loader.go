@@ -24,11 +24,11 @@ func NewStoryLoader(cfg *config.ViperConfig) *StoryLoader {
 }
 
 // Load loads the complete story document from the file FindStoryFile
-// resolves storyNumber to.
-func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
-	slog.Debug("Loading story document", "story_number", storyNumber)
+// resolves storyID to.
+func (l *StoryLoader) Load(storyID string) (*story.StoryDocument, error) {
+	slog.Debug("Loading story document", "story_number", storyID)
 
-	storyFile, err := FindStoryFile(l.storiesDir, storyNumber)
+	storyFile, err := FindStoryFile(l.storiesDir, storyID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (l *StoryLoader) Load(storyNumber string) (*story.StoryDocument, error) {
 	// was comparing against what.
 	slog.Info(
 		"Story document loaded",
-		"story_number", storyNumber,
+		"story_number", storyID,
 		"file", storyFile.Path,
 	)
 

@@ -31,9 +31,9 @@ type Spec[I any] struct {
 	// ChecklistName is the checklist YAML stem (e.g. "us-refine").
 	// Resolved by ChecklistLoader.
 	ChecklistName string
-	// StoryNumber is the positional CLI argument, the Story id: a slug
+	// StoryID is the positional CLI argument, the Story id: a slug
 	// (`scen-check`, `96.2`), refused at startup when it is not one.
-	StoryNumber string
+	StoryID string
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
@@ -100,7 +100,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	}
 
 	// Execution phase.
-	slog.Info("Walk starting", "header", headerLine(spec.Name, spec.StoryNumber))
+	slog.Info("Walk starting", "header", headerLine(spec.Name, spec.StoryID))
 
 	items, err := loadAndPrepare(ctx, spec)
 	if err != nil {
@@ -155,8 +155,8 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
-	if spec.StoryNumber != "" {
-		err = validateStoryID(spec.StoryNumber)
+	if spec.StoryID != "" {
+		err = validateStoryID(spec.StoryID)
 		if err != nil {
 			return nil, nil, RefuseStartup(spec.Name, err)
 		}
@@ -417,14 +417,14 @@ func buildFixClosure[I any](
 // headerLine builds the opening banner for one runner.Run. Story-based
 // commands append "— Story <number>"; story-less commands (build-*) get
 // just the upper-cased name.
-func headerLine(name, storyNumber string) string {
+func headerLine(name, storyID string) string {
 	upper := strings.ToUpper(name)
 
-	if storyNumber == "" {
+	if storyID == "" {
 		return upper
 	}
 
-	return upper + " — Story " + storyNumber
+	return upper + " — Story " + storyID
 }
 
 // flattenChecklistPrompts walks a Checklist's sections and emits the

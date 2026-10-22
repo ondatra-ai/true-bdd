@@ -61,8 +61,8 @@ func RunScenCheck(
 		ChecklistName: "scen-check",
 		// Stays empty: it is a Story id, validated as a slug, and a
 		// scenario id is not one. Ids travel in LoadItems instead.
-		StoryNumber: "",
-		Fix:         fix,
+		StoryID: "",
+		Fix:     fix,
 
 		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
 		PostFix:     scenCheckPostFix(deps, requirementsFile),

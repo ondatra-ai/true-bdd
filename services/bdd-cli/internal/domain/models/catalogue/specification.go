@@ -2,12 +2,12 @@ package catalogue
 
 // Specification is what the spec says about the steps one fix binds: the
 // templates each of the Item's own steps matches, the phrases they reach,
-// and their words. Declared is false for a host with no catalogue.
+// and the terms those declare. Declared is false for a host with no catalogue.
 type Specification struct {
 	Declared bool
 	Steps    []PhrasedStep
 	Phrases  []Entry
-	Words    []Word
+	Terms    []TermSpec
 }
 
 // PhrasedStep is one step beside the template of every phrase it
@@ -18,10 +18,10 @@ type PhrasedStep struct {
 	Templates []string
 }
 
-// Word is one term a phrase declares, with what the glossary says it
+// TermSpec is one term a phrase declares, with what the glossary says it
 // means and how the architecture maps it: every definition and mapping
 // naming it, so a term defined twice or never is shown as it is.
-type Word struct {
+type TermSpec struct {
 	Term     string
 	Means    []string
 	Mappings []Mapping
@@ -35,7 +35,7 @@ func (c *Catalogue) Specify(own, sweep []Step, definitions []Definition, mapping
 		Declared: true,
 		Steps:    make([]PhrasedStep, 0, len(own)),
 		Phrases:  make([]Entry, 0),
-		Words:    make([]Word, 0),
+		Terms:    make([]TermSpec, 0),
 	}
 
 	for _, step := range own {
@@ -48,7 +48,7 @@ func (c *Catalogue) Specify(own, sweep []Step, definitions []Definition, mapping
 	}
 
 	spec.Phrases = c.reached(append(append(make([]Step, 0, len(own)+len(sweep)), own...), sweep...))
-	spec.Words = words(spec.Phrases, definitions, mappings)
+	spec.Terms = declaredTerms(spec.Phrases, definitions, mappings)
 
 	return spec
 }
@@ -76,11 +76,11 @@ func (c *Catalogue) reached(steps []Step) []Entry {
 	return phrases
 }
 
-// words lists every term the phrases declare, once, in the order they
-// declare it, beside its glossary definitions and its mappings.
-func words(phrases []Entry, definitions []Definition, mappings []Mapping) []Word {
+// declaredTerms lists every term the phrases declare, once, in the order
+// they declare it, beside its glossary definitions and its mappings.
+func declaredTerms(phrases []Entry, definitions []Definition, mappings []Mapping) []TermSpec {
 	listed := make(map[string]bool)
-	found := make([]Word, 0)
+	found := make([]TermSpec, 0)
 
 	for _, phrase := range phrases {
 		for _, term := range phrase.Terms {
@@ -90,7 +90,7 @@ func words(phrases []Entry, definitions []Definition, mappings []Mapping) []Word
 
 			listed[term] = true
 
-			word := Word{Term: term, Means: make([]string, 0, 1), Mappings: make([]Mapping, 0, 1)}
+			word := TermSpec{Term: term, Means: make([]string, 0, 1), Mappings: make([]Mapping, 0, 1)}
 
 			for _, definition := range definitions {
 				if definition.Term == term {

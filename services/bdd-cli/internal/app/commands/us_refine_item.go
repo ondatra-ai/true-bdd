@@ -16,9 +16,10 @@ func refineItem(loaded *story.Story, termDocuments []template.FixDocument) *temp
 	return &template.StoryRefineData{Story: *loaded, TermDocuments: termDocuments}
 }
 
-// refineSubject is the GetSubject implementation: the Story's id and title.
+// refineSubject is the GetSubject implementation: the Story's id and title,
+// which name its artifacts and head its report table.
 func refineSubject(item *template.StoryRefineData) (string, string) {
-	return runner.StorySubject(&item.Story)
+	return item.ID, item.Title
 }
 
 // refinePostFix takes the Story body a model Prompt's fix wrote as the

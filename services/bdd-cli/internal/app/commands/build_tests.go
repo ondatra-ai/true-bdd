@@ -71,7 +71,7 @@ func RunBuildTests(
 	err := runner.Run(ctx, runner.Spec[*BuildTestsItem]{
 		Name:          "build tests",
 		ChecklistName: "build-tests",
-		StoryNumber:   "",
+		StoryID:       "",
 		Fix:           fix,
 
 		LoadItems:   loadRegistryScenarios(deps, requirementsFile),

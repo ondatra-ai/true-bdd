@@ -124,9 +124,9 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 	// interactive answers piped to the fix loop. Implemented below.
 	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
-		assertAnswersEveryQuestion)
+		answerEveryQuestion)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
-		assertAnswersLineByLine)
+		answerLineByLine)
 	// A Given precondition that a checklist is narrowed to one named prompt;
 	// the fixture selects it via `checklist_prompts:`, and this step verifies
 	// the selection is real and singular.
@@ -377,10 +377,10 @@ func leaveOutOfTree(state *State, args []string) error {
 // the CLI cleanly).
 const everyQuestionAnswers = 64
 
-// assertAnswersEveryQuestion sets the fixture's stdin to the given answer,
+// answerEveryQuestion sets the fixture's stdin to the given answer,
 // repeated, before the When step runs the CLI and pipes it to the
 // subprocess. The captured role is discarded — validated by the pattern.
-func assertAnswersEveryQuestion(state *State, args []string) error {
+func answerEveryQuestion(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}

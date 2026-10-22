@@ -214,13 +214,13 @@ func ErrFindStoryFileFailed(cause error) error {
 	}
 }
 
-func ErrStoryFileNotFoundError(storyNumber, storiesDir, format string) error {
+func ErrStoryFileNotFoundError(storyID, storiesDir, format string) error {
 	return &AppError{
 		Category: CategoryInfrastructure,
 		Code:     "STORY_FILE_NOT_FOUND",
 		Message: fmt.Sprintf(
 			"no story file found for story %s in %s (expected format: %s-<slug>.yaml)",
-			storyNumber,
+			storyID,
 			storiesDir,
 			format,
 		),
@@ -228,11 +228,11 @@ func ErrStoryFileNotFoundError(storyNumber, storiesDir, format string) error {
 	}
 }
 
-func ErrMultipleStoryFilesError(storyNumber string, matches []string) error {
+func ErrMultipleStoryFilesError(storyID string, matches []string) error {
 	return &AppError{
 		Category: CategoryInfrastructure,
 		Code:     "MULTIPLE_STORY_FILES",
-		Message:  fmt.Sprintf("multiple story files found for story %s: %v", storyNumber, matches),
+		Message:  fmt.Sprintf("multiple story files found for story %s: %v", storyID, matches),
 		Cause:    ErrMultipleStoryFiles,
 	}
 }
@@ -256,9 +256,9 @@ func ErrParseStoryYAMLFailed(storyFile string, cause error) error {
 }
 
 // ErrStoryIDMismatchError names a story file the `<id>-*.yaml` glob found
-// for storyNumber whose own `id:` is another Story's: `scen-*.yaml` also
+// for storyID whose own `id:` is another Story's: `scen-*.yaml` also
 // matches `scen-check-x.yaml`, so the glob alone cannot tell them apart.
-func ErrStoryIDMismatchError(storyNumber, storyFile, declaredID string) error {
+func ErrStoryIDMismatchError(storyID, storyFile, declaredID string) error {
 	declared := "id " + declaredID
 	if declaredID == "" {
 		declared = "no id"
@@ -267,7 +267,7 @@ func ErrStoryIDMismatchError(storyNumber, storyFile, declaredID string) error {
 	return &AppError{
 		Category: CategoryParsing,
 		Code:     "STORY_ID_MISMATCH",
-		Message:  fmt.Sprintf("story file %s declares %s, not %s", storyFile, declared, storyNumber),
+		Message:  fmt.Sprintf("story file %s declares %s, not %s", storyFile, declared, storyID),
 		Cause:    ErrStoryIDMismatch,
 	}
 }

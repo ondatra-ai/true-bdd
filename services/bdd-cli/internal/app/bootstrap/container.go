@@ -78,10 +78,11 @@ type Container struct {
 	DocResolver         *docs.Resolver
 	UserInputCollector  *input.UserInputCollector
 	TableRenderer       *runner.TableRenderer
-	// Standard generator triple drives `us refine`.
-	Evaluator    *validate.ChecklistEvaluator
-	FixGenerator *validate.FixPromptGenerator
-	FixApplier   *validate.FixApplier
+	// Refine triple drives `us refine`, the only command on the standard
+	// templates; its fix-applier runs in EditMode for the term documents.
+	RefineEvaluator          *validate.ChecklistEvaluator
+	RefineFixPromptGenerator *validate.FixPromptGenerator
+	RefineFixApplier         *validate.FixApplier
 	// Apply-flavored triple drives `us apply`. Templates live under
 	// templates.prompts.apply_* and the fix-applier is configured with
 	// EditMode so Claude can mutate the scratch registry directly.
@@ -147,9 +148,9 @@ func NewContainer() (*Container, error) {
 		DocResolver:                  docs.NewResolver(cfg),
 		UserInputCollector:           input.NewUserInputCollector(),
 		TableRenderer:                runner.NewTableRenderer(),
-		Evaluator:                    validate.NewChecklistEvaluator(aiClient, cfg, models),
-		FixGenerator:                 validate.NewFixPromptGenerator(aiClient, cfg, models),
-		FixApplier:                   refineFixApplier,
+		RefineEvaluator:              validate.NewChecklistEvaluator(aiClient, cfg, models),
+		RefineFixPromptGenerator:     validate.NewFixPromptGenerator(aiClient, cfg, models),
+		RefineFixApplier:             refineFixApplier,
 		ApplyEvaluator:               trips.apply.evaluator,
 		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
 		ApplyFixApplier:              trips.apply.fixApplier,

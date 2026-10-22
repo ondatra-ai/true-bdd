@@ -18,7 +18,7 @@ const fixFlagDescription = "Enable interactive fix mode to resolve failed checks
 
 // storyRunE is the run shape every `us` subcommand uses after sourcing
 // its lazily-built container, Story id arg, and fix flag.
-type storyRunE func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error
+type storyRunE func(ctx context.Context, container *bootstrap.Container, storyID string, fix bool) error
 
 // NewUSCommand builds the `us` cobra supergroup. The container provider
 // is resolved lazily inside each subcommand's RunE.
@@ -88,30 +88,21 @@ Example:
   true-bdd us refine scen-check
   true-bdd us refine scen-check --fix`,
 		provide,
-		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
+		func(ctx context.Context, container *bootstrap.Container, storyID string, fix bool) error {
 			return commands.RunRefine(ctx, commands.RefineDeps{
-				StoryCommonDeps: storyCommonFromContainer(container),
-				StoryLoader:     container.StoryLoader,
-			}, storyNumber, fix)
+				StoryLoader:        container.StoryLoader,
+				ChecklistLoader:    container.ChecklistLoader,
+				DocResolver:        container.DocResolver,
+				Evaluator:          container.RefineEvaluator,
+				FixGenerator:       container.RefineFixPromptGenerator,
+				FixApplier:         container.RefineFixApplier,
+				UserInputCollector: container.UserInputCollector,
+				TableRenderer:      container.TableRenderer,
+				RunDir:             container.RunDir,
+				StoriesDir:         container.StoriesDir,
+			}, storyID, fix)
 		},
 	)
-}
-
-// storyCommonFromContainer projects the bootstrap container into the
-// fields us refine shares with the story runner. Keeps the cobra
-// handler tiny.
-func storyCommonFromContainer(container *bootstrap.Container) commands.StoryCommonDeps {
-	return commands.StoryCommonDeps{
-		ChecklistLoader:    container.ChecklistLoader,
-		DocResolver:        container.DocResolver,
-		Evaluator:          container.Evaluator,
-		FixGenerator:       container.FixGenerator,
-		FixApplier:         container.FixApplier,
-		UserInputCollector: container.UserInputCollector,
-		TableRenderer:      container.TableRenderer,
-		RunDir:             container.RunDir,
-		StoriesDir:         container.StoriesDir,
-	}
 }
 
 func newUSApplyCmd(provide containerProvider) *cobra.Command {
@@ -133,7 +124,7 @@ Example:
   true-bdd us apply scen-check
   true-bdd us apply scen-check --fix`,
 		provide,
-		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
+		func(ctx context.Context, container *bootstrap.Container, storyID string, fix bool) error {
 			requirementsFile, err := container.DocResolver.Resolve(docs.KeyScenariosYAML)
 			if err != nil {
 				return refuseUnresolvedDoc("us apply", "scenario registry", err)
@@ -149,7 +140,7 @@ Example:
 				UserInputCollector:      container.UserInputCollector,
 				TableRenderer:           container.TableRenderer,
 				RunDir:                  container.RunDir,
-			}, storyNumber, requirementsFile, fix)
+			}, storyID, requirementsFile, fix)
 		},
 	)
 }

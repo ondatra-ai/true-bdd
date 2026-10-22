@@ -49,7 +49,7 @@ type ApplyDeps struct {
 func RunApply(
 	ctx context.Context,
 	deps ApplyDeps,
-	storyNumber string,
+	storyID string,
 	requirementsFile string,
 	fix bool,
 ) error {
@@ -59,10 +59,10 @@ func RunApply(
 	err := runner.Run(ctx, runner.Spec[*template.ScenarioApplyData]{
 		Name:          "us apply",
 		ChecklistName: "us-apply",
-		StoryNumber:   storyNumber,
+		StoryID:       storyID,
 		Fix:           fix,
 
-		LoadItems:   loadScenarios(deps, storyNumber, requirementsFile, scratchPath),
+		LoadItems:   loadScenarios(deps, storyID, requirementsFile, scratchPath),
 		PostFix:     scenarioPostFix,
 		Finalize:    commitApplyWalk(scratchPath, requirementsFile),
 		GetSubject:  scenarioSubject,
@@ -87,7 +87,7 @@ func RunApply(
 // one ScenarioApplyData per AC, and returns them.
 func loadScenarios(
 	deps ApplyDeps,
-	storyNumber, requirementsFile, scratchPath string,
+	storyID, requirementsFile, scratchPath string,
 ) func(ctx context.Context) ([]*template.ScenarioApplyData, error) {
 	return func(_ context.Context) ([]*template.ScenarioApplyData, error) {
 		err := runner.CopyFile(requirementsFile, scratchPath)
@@ -100,7 +100,7 @@ func loadScenarios(
 		// place the target registry path is nameable.
 		slog.Info("Seeded scratch registry", "from", requirementsFile, "to", scratchPath)
 
-		scenarios, _, err := deps.StoryScenarioParser.ParseStoryScenarios(storyNumber, scratchPath)
+		scenarios, _, err := deps.StoryScenarioParser.ParseStoryScenarios(storyID, scratchPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse story scenarios: %w", err)
 		}
