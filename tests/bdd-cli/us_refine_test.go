@@ -180,6 +180,28 @@ func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
 	s.Done()
 }
 
+// us-refine-fix-007-step-outside-catalogue-gets-phrase: `us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk
+func TestUsRefineFix007StepOutsideCatalogueGetsPhrase(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-007-step-outside-catalogue-gets-phrase")
+	s.Given(`the "us-refine-fix-records-phrase" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
+	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`no file outside "tmp" and "docs/product" changed`)
+	s.And(`the file "docs/product/product.yaml" is modified`)
+	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
+	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
+	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
+	s.Done()
+}
+
 // us-refine-refusals-001-missing-story-refused: `us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes
 func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
 	s := scenarios.New(t, "us-refine-refusals-001-missing-story-refused")
@@ -333,6 +355,7 @@ func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
 	s.And(`stdout matches REFINE COMPLETE`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=96\.4 promptIndex=13 answer=pass context="\[96\.4: not checked: the product document declares no catalogue\]"`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()

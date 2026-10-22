@@ -27,7 +27,12 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix boo
 		ctx, deps.StoryCommonDeps,
 		storyNumber, "us refine", "us-refine", fix,
 		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*template.StoryRefineData, error) {
-			return loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
+			load := loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
+			if !fix {
+				return load
+			}
+
+			return seedRefineDocuments(load, deps.DocResolver, deps.RunDir.GetTmpOutPath())
 		},
 	)
 }

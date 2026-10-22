@@ -54,9 +54,10 @@ func runStoryCommand(
 		Fix:           fix,
 
 		LoadItems:  loadItems(versionMgr),
-		PostFix:    refinePostFix(versionMgr),
-		Finalize:   refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix)),
-		GetSubject: refineSubject,
+		PostFix:      refinePostFix(versionMgr),
+		PostCheckFix: refinePostCheckFix,
+		Finalize:     refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix)),
+		GetSubject:   refineSubject,
 
 		Checks:       checks.ForStories(),
 		Evaluator:    deps.Evaluator,

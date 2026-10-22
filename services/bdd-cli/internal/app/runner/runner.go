@@ -65,6 +65,10 @@ type Spec[I any] struct {
 	// unmarshals the new ACs and stores a new version; us apply's mutation
 	// is already on disk via the Edit tool, so it returns the item unchanged.
 	PostFix func(ctx context.Context, item I, applierContent string) (I, error)
+	// PostCheckFix, if non-nil, runs in PostFix's place after the fix of a
+	// failed `D:` Prompt, named by check: us refine's applier then edits a
+	// term document, not the Story, so the Story stays as it reads.
+	PostCheckFix func(ctx context.Context, item I, check string) (I, error)
 	// Finalize handles the post-walk write: us refine updates the story
 	// file in place; us apply atomically renames the scratch registry
 	// over the canonical.
@@ -447,6 +451,10 @@ func buildFixClosure[I any](
 		})
 		if err != nil {
 			return item, fmt.Errorf("fix applier failed: %w", err)
+		}
+
+		if latestResult.Check != "" && spec.PostCheckFix != nil {
+			return spec.PostCheckFix(ctx, item, latestResult.Check)
 		}
 
 		return spec.PostFix(ctx, item, content)

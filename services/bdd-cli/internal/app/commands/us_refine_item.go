@@ -6,6 +6,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
@@ -38,6 +39,47 @@ func refinePostFix(
 		}
 
 		return refineItem(latest, item.TermDocuments), nil
+	}
+}
+
+// refinePostCheckFix commits the term document a closure fix edited. The
+// Story keeps its version: the fix phrased its step in the catalogue.
+func refinePostCheckFix(
+	_ context.Context,
+	item *template.StoryRefineData,
+	_ string,
+) (*template.StoryRefineData, error) {
+	_, err := commitDocuments(item.TermDocuments, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
+}
+
+// seedRefineDocuments gives the loaded Story the working copies a closure
+// fix edits under --fix: one per term document the host has.
+func seedRefineDocuments(
+	load func(context.Context) ([]*template.StoryRefineData, error),
+	resolver *docs.Resolver,
+	tmpDir string,
+) func(context.Context) ([]*template.StoryRefineData, error) {
+	return func(ctx context.Context) ([]*template.StoryRefineData, error) {
+		items, err := load(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		termDocuments, err := seedTermDocuments(resolver, tmpDir)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range items {
+			item.TermDocuments = termDocuments
+		}
+
+		return items, nil
 	}
 }
 

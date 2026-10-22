@@ -12,15 +12,3 @@ type StoryRefineData struct {
 	// without --fix. A fix phrases a step there, never in the Story.
 	TermDocuments []FixDocument `json:"-" yaml:"-"`
 }
-
-// Writes reports whether a fix in this run may write the term document
-// of that key, so a template describes only the working copies it has.
-func (d *StoryRefineData) Writes(key string) bool {
-	for _, document := range d.TermDocuments {
-		if document.Key == key {
-			return true
-		}
-	}
-
-	return false
-}
