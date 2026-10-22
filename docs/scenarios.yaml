@@ -2519,3 +2519,25 @@ scenarios:
         - and: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  engine-config-005-checklist-tiers-unconfigured-refused:
+    description: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the validation, fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-005-checklist-tiers-unconfigured-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-code-fix-tiers-unconfigured" project tree
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build code"
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: prompt turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
+        - but: no file outside "tmp" changed
+        - and: the engine spawned no test runner
+        - and: the engine dispatched no AI turns

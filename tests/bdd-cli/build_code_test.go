@@ -234,3 +234,19 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-config-005-checklist-tiers-unconfigured-refused: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the validation, fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
+func TestEngineConfig005ChecklistTiersUnconfiguredRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-005-checklist-tiers-unconfigured-refused")
+	s.Given(`the "build-code-fix-tiers-unconfigured" project tree`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build code"`)
+	s.And(`stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: prompt turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)`)
+	s.And(`stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)`)
+	s.And(`stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
