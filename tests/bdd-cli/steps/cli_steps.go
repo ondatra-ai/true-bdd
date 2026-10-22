@@ -19,22 +19,7 @@ import (
 // answering what project ran, what it must exit with, print, or leave on
 // disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
-	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
-	// Given preconditions the scenario states and the fixture materialises
-	// during tmpdir assembly: the dependency install (`prep:`) and the
-	// interactive answers piped to the fix loop. Implemented below.
-	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
-		assertAnswersEveryQuestion)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
-		assertAnswersLineByLine)
-	// A Given precondition that a checklist is narrowed to one named prompt;
-	// the fixture selects it via `checklist_prompts:`, and this step verifies
-	// the selection is real and singular.
-	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
-	// A Given precondition that the tree lacks a file, even one the repo
-	// layer brings (the engine's own true-bdd.yaml); the run dir drops it.
-	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
+	registerGivenSteps(suite)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
 	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
@@ -121,6 +106,27 @@ func Register(suite *bddgo.Suite[State]) {
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
 	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+}
+
+// registerGivenSteps binds the Given steps: the tree a scenario starts
+// from and the preconditions the fixture establishes on it.
+func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
+	// Given preconditions the scenario states and the fixture materialises
+	// during tmpdir assembly: the dependency install (`prep:`) and the
+	// interactive answers piped to the fix loop. Implemented below.
+	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+		assertAnswersEveryQuestion)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+		assertAnswersLineByLine)
+	// A Given precondition that a checklist is narrowed to one named prompt;
+	// the fixture selects it via `checklist_prompts:`, and this step verifies
+	// the selection is real and singular.
+	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	// A Given precondition that the tree lacks a file, even one the repo
+	// layer brings (the engine's own true-bdd.yaml); the run dir drops it.
+	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
