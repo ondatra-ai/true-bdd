@@ -11,9 +11,8 @@ import (
 	"time"
 )
 
-// Process is a started command the caller drives itself. It exists for the
-// six sites Run cannot express: a bidirectional JSON protocol, supervised
-// process groups, a byte-exact stdio proxy, and a long-lived server.
+// Process is a started command the caller drives itself. It exists for what
+// Run cannot express: a byte-exact stdio proxy (pkg/testkit/aiproxy).
 type Process struct {
 	// Stdin, Stdout and Stderr are the pipes Options.Output asked for, and
 	// are nil for a stream the sink sent somewhere else.

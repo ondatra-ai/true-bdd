@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,13 +12,7 @@ import (
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
 )
-
-// ErrExpectedNonconvergence marks a legitimately non-converged build
-// tests/code walk (plan §3.2/finding 7): the CLI still exits non-zero,
-// but only build finalizers may wrap it — a genuine write failure must not.
-var ErrExpectedNonconvergence = errors.New("expected nonconvergence")
 
 // renderedPrompt is the Q value the engine passes around. Pairs a
 // PromptWithContext with its 1-based index so per-cell file naming
@@ -146,11 +139,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	// substring of the upper-cased command name.
 	slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
 
-	finErr := spec.Finalize(result)
-
-	emitRunResult(result.Reason, finErr)
-
-	return finErr
+	return spec.Finalize(result)
 }
 
 // validateSpec runs the whole validation phase: everything here must
@@ -239,43 +228,6 @@ func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 	}
 
 	return items, nil
-}
-
-// emitRunResult publishes the terminal result event after finalization
-// (plan §3.2/finding 7): finErr wrapping ErrExpectedNonconvergence
-// reports finalization_ok=true and not_fixed, not a failure.
-func emitRunResult(reason engine.StopReason, finErr error) {
-	expectedNonconvergence := errors.Is(finErr, ErrExpectedNonconvergence)
-	finalizationOK := finErr == nil || expectedNonconvergence
-
-	outcome := outcomeForReason(reason)
-	if expectedNonconvergence && outcome == "error" {
-		outcome = "not_fixed"
-	}
-
-	detail := ""
-	if finErr != nil && !expectedNonconvergence {
-		detail = finErr.Error()
-	}
-
-	events.NewEmitter().EmitResult(outcome, finalizationOK, detail)
-}
-
-// outcomeForReason maps the engine's stop reason to the event-channel
-// outcome vocabulary the harness server understands (plan §3.2/§3.3).
-func outcomeForReason(reason engine.StopReason) string {
-	switch reason {
-	case engine.Converged:
-		return "converged"
-	case engine.UserExit:
-		return "user_exit"
-	case engine.NotFixed:
-		return "not_fixed"
-	case engine.MaxAttemptsExhausted:
-		return "max_attempts"
-	}
-
-	return "error"
 }
 
 // buildSpecEngine wires the four-layer engine with closures driven

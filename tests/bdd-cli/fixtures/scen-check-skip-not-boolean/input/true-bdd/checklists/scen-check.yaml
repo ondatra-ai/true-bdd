@@ -1,0 +1,33 @@
+# Fixture checklist for `scen-check-skip-not-boolean`.
+#
+# The second Prompt carries `skip: "false"`: a string, not a boolean, so
+# whether its author meant to park it or to walk it is a guess. The
+# engine must refuse it before the walk, naming it by its position,
+# rather than skip it the way any non-empty string once did. The first
+# Prompt is well formed and carries no `skip:`.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - D: given-when-then
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+
+      - Q: |
+          Decide whether this scenario includes at least one specific
+          measurable criterion — a status code, an exact message, a
+          timeout, an error code, a named field, a count.
+
+          Pass when at least one such criterion appears in the description
+          or in a step.
+          Fail when none does.
+
+          Context: emit one line.
+            - "<scenario id>: measurable — '<criterion>'"
+            - "<scenario id>: not measurable"
+        skip: "false"
+        rationale: "A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose."
+        F: "Add one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step."

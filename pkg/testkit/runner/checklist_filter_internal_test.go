@@ -361,27 +361,31 @@ func TestFilterChecklistFileRejectsUnsupportedYAML(t *testing.T) {
 }
 
 // TestFilterChecklistFileExcludesSkippedPrompts pins production-parity
-// skip semantics: a string skip hides the prompt from selection, while
-// a boolean skip (which production decodes to "") does not.
+// skip semantics: only `skip: true` hides the prompt from selection;
+// `skip: false` and a non-boolean, which production refuses, do not.
 func TestFilterChecklistFileExcludesSkippedPrompts(t *testing.T) {
 	t.Parallel()
 
 	content := "sections:\n  - id: s\n    validation_prompts:\n" +
-		"      - Q: \"skipped question\"\n        skip: \"flaky\"\n" +
-		"      - Q: \"bool-skip question\"\n        skip: false\n"
+		"      - Q: \"parked question\"\n        skip: true\n" +
+		"      - Q: \"walked question\"\n        skip: false\n" +
+		"      - Q: \"string-skip question\"\n        skip: \"flaky\"\n"
 
 	path := writeTempChecklist(t, content)
 
-	err := FilterChecklistFile(path, []string{"skipped question"})
+	err := FilterChecklistFile(path, []string{"parked question"})
 	if !errors.Is(err, ErrSnippetUnmatched) {
-		t.Errorf("string-skipped prompt must be unselectable, got %v", err)
+		t.Errorf("a skip: true prompt must be unselectable, got %v", err)
 	}
 
-	path = writeTempChecklist(t, content)
+	for _, snippet := range []string{"walked question", "string-skip question"} {
+		path = writeTempChecklist(t, content)
 
-	err = FilterChecklistFile(path, []string{"bool-skip question"})
-	if err != nil {
-		t.Errorf("bool skip decodes to no-skip in production and must stay selectable, got %v", err)
+		err = FilterChecklistFile(path, []string{snippet})
+		if err != nil {
+			t.Errorf("%q: production walks or refuses it, never skips it, so it must stay selectable, got %v",
+				snippet, err)
+		}
 	}
 }
 

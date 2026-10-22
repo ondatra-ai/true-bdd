@@ -137,7 +137,7 @@ func (u *Universe) buildBranches() {
 }
 
 // loadChecklistPrompts parses one checklist file and flattens it with
-// production parity (skip = any non-empty string, order preserved,
+// production parity (skip = `skip: true` only, order preserved,
 // 1-based global index over the filtered list).
 func loadChecklistPrompts(path, stem string) ([]UniversePrompt, error) {
 	data, err := disk.Read(path)
@@ -157,7 +157,7 @@ func loadChecklistPrompts(path, stem string) ([]UniversePrompt, error) {
 		ordinal := 0
 
 		for _, prompt := range section.ValidationPrompts {
-			if prompt.Skip != "" {
+			if prompt.Skip {
 				continue
 			}
 
