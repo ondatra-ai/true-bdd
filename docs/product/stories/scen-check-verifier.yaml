@@ -96,3 +96,17 @@ story:
                 - and: the engine dispatched 2 AI turns
                 - but: stdout does not match E2E-003
                 - and: no file outside "tmp" changed
+        - id: 006-duplicate-id-refused
+          description: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
+          steps:
+            - given:
+                - the "scen-check-duplicate-id" project tree
+            - when:
+                - the Quality Engineer runs "scen check E2E-001 E2E-001"
+            - then:
+                - the command exits with code 1
+                - stdout matches SCEN CHECK
+                - and: stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - and: 'stdout matches scenario id given more than once: E2E-001'
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

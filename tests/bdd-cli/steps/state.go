@@ -84,6 +84,9 @@ type State struct {
 	// cleanup, where it cannot, but the record must still be written.
 	judged       bool
 	judgeVerdict runner.Verdict
+
+	// guardCall is the tool call a crush-guard scenario has crush ask about.
+	guardCall *guardCall
 }
 
 // ProxySetup is one scenario's recording context: where the shim reads

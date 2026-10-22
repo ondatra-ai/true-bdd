@@ -1,0 +1,208 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
+**Service:** 
+**Suite:** playwright
+**Framework:** playwright
+**Test Name:** home.spec.ts::home.spec.ts > home page > shows the store name as its heading
+**Source File:** home.spec.ts
+
+### Last Failure Output
+```
+--- attempt 1: failed ---
+Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32m"Corner Shop"[39m
+Received: [31m"Welcome"[39m
+
+   7 |   test('shows the store name as its heading', async ({ page }) => {
+   8 |     await page.goto('/');
+>  9 |     expect(await page.locator('h1').textContent()).toBe('Corner Shop');
+     |                                                    ^
+  10 |   });
+  11 |
+  12 |   test('links to the opening hours', async ({ page }) => {
+    at {{CWD}}/tests/integration/home.spec.ts:9:52
+
+```
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
+
+## Target
+Apply the change(s) under `services/*` only. The test at
+`tests/integration/home.spec.ts` is the contract; do NOT modify it, and do NOT
+touch `tests/`, `docs/`, or `true-bdd/`.
+
+## Root Cause
+`tests/integration/home.spec.ts:9` asserts the home page's single `<h1>` reads
+exactly `Corner Shop`:
+
+```ts
+expect(await page.locator('h1').textContent()).toBe('Corner Shop');
+```
+
+The only production source for that page is the inline HTML string in
+`services/web/server.js` (served for every request; Playwright boots it via
+`webServer.command: 'node ../services/web/server.js'` in
+`tests/playwright.config.ts`). Line 10 of that file renders `<h1>Welcome</h1>`,
+so `textContent()` returns `"Welcome"` — exactly the received value in the
+failure output. This is the planted production defect that the file's own header
+comment describes.
+
+The sibling assertion at line 14 (`a[href]` === `/hours`) already passes and
+must keep passing, so the `<a href="/hours">Opening hours</a>` element must be
+left untouched.
+
+## Required Changes
+
+### Change #1: Render the store name as the home page heading
+**File:** `services/web/server.js`
+**Action:** Use the Edit tool on this existing file. Replace the `<h1>` line
+with the store name. The replacement text must be exactly `<h1>Corner Shop</h1>`
+with no leading/trailing whitespace inside the element — `textContent()` is
+compared with `toBe`, so any extra space or newline inside the tag would still
+fail.
+
+**old_string:**
+```
+    <h1>Welcome</h1>
+```
+
+**new_string:**
+```
+    <h1>Corner Shop</h1>
+```
+
+### Change #2: Correct the now-stale header comment (same file)
+**File:** `services/web/server.js`
+**Action:** Use the Edit tool. The file's top comment asserts the heading says
+`"Welcome"` where the store name belongs; after Change #1 that statement is
+false and would mislead the next reader. Replace the comment block so it
+describes the corrected behaviour. This is a comment-only edit and does not
+affect the served HTML.
+
+**old_string:**
+```
+// The Corner Shop's web front: one page, served on the port PORT names.
+// Its heading says "Welcome" where the store's name belongs: that is the
+// planted defect, in PRODUCTION source, which the fix loop has to correct.
+```
+
+**new_string:**
+```
+// The Corner Shop's web front: one page, served on the port PORT names.
+// Its heading is the store's name, which is what the home page suite asserts.
+```
+
+## Expected Result After the Fix
+`services/web/server.js` serves:
+
+```
+<!doctype html>
+<html>
+  <head><title>Corner Shop</title></head>
+  <body>
+    <h1>Corner Shop</h1>
+    <a href="/hours">Opening hours</a>
+  </body>
+</html>
+```
+
+- `home page > shows the store name as its heading` → `h1` textContent is
+  `"Corner Shop"`, assertion passes.
+- `home page > links to the opening hours` → unchanged `<a href="/hours">`,
+  still passes.
+
+## Constraints Recap
+- Only `services/web/server.js` is edited. No new files are needed.
+- No test file is modified; no assertion is weakened, skipped, or removed.
+- `tests/`, `docs/architecture/architecture.yaml`, and `true-bdd/` are untouched.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===

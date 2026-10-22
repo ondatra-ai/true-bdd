@@ -1,0 +1,109 @@
+# Story `engine-routes`: each AI turn goes to the AI CLI its tier names.
+#
+# Which of claude, crush and codex answers a Prompt, writes its fix and
+# applies it; the write boundary and the answer shape each CLI is held to;
+# and what a turn whose CLI fails does to the run. A routing the engine
+# refuses at startup is the Story engine.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-routes-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: engine-routes
+    feature: engine
+    title: Send each AI turn to the AI CLI its tier names, and stop the run when that CLI fails
+    as_a: System Architect
+    i_want: each validation, fix and apply turn to go to the claude, crush or codex CLI named by the Prompt's own tier, else its checklist's, else the engine default, each CLI held to the write boundary and answer shape the engine sets for that turn, and a turn whose CLI exits non-zero to stop the command naming that turn
+    so_that: moving a role to another provider is a configuration edit, a CLI that enforces no answer schema or write boundary of its own is still held to one, and a broken CLI never passes for a verdict
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-codex-sandbox-per-turn
+          description: '`build code --fix` with every tier naming codex must send each validation, fix and apply turn to codex, the validation and fix turns in its read-only sandbox and the apply turn in workspace-write, where codex corrects the service code until its failing test passes'
+          steps:
+            - given:
+                - the "build-code-fix-by-codex" project tree
+                - the System Architect answers "1" to every question
+            - when:
+                - the System Architect runs "build code --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches BUILD CODE COMPLETE
+                - and: the engine dispatched 3 validation AI turns to "codex"
+                - and: the engine dispatched 1 fix AI turn to "codex"
+                - and: the engine dispatched 1 apply AI turn to "codex"
+                - and: the engine dispatched 5 AI turns
+                - and: stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only
+                - and: stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only
+                - and: stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write
+                - but: stdout does not match label=codex-turn00[1245] sandbox=workspace-write
+                - and: the file "services/calc/calc.go" is modified
+                - but: the file "tests/suite/add_test.go" is unchanged
+                - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - id: 002-crush-asks-before-fixing
+          description: '`scen check --fix` with every tier naming crush, a CLI that enforces no answer schema, must still read crush''s verdict and its clarifying question, ask that question, record in the Registry the fix crush then writes, and pass the re-walk'
+          steps:
+            - given:
+                - the "scen-check-fix-by-crush" project tree
+                - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
+                - the Quality Engineer answers "1" to every question
+            - when:
+                - the Quality Engineer runs "scen check --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches CHECK FAILED
+                - and: stdout matches msg="AI needs clarification" questionCount=1
+                - and: stdout matches FIX PROMPT GENERATED
+                - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
+                - and: stdout matches ALL CHECKS PASSED
+                - and: the engine dispatched 3 validation AI turns to "crush"
+                - and: the engine dispatched 2 fix AI turns to "crush"
+                - and: the engine dispatched 1 apply AI turn to "crush"
+                - and: the engine dispatched 6 AI turns
+                - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - id: 003-prompt-tiers-win
+          description: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
+          steps:
+            - given:
+                - the "scen-check-prompt-names-its-tiers" project tree
+                - the Quality Engineer answers "1" to every question
+            - when:
+                - the Quality Engineer runs "scen check --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED
+                - and: the engine dispatched 3 validation AI turns to "crush"
+                - and: the engine dispatched 1 fix AI turn to "codex"
+                - and: the engine dispatched 1 apply AI turn to "claude"
+                - but: the engine dispatched no validation AI turns to "claude"
+                - and: the engine dispatched no fix AI turns to "claude"
+                - and: the engine dispatched no apply AI turns to "crush"
+                - and: the engine dispatched 5 AI turns
+                - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
+        - id: 004-failed-claude-turn-stops-run
+          description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+          steps:
+            - given:
+                - the "scen-check-claude-turn-fails" project tree
+                - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model
+                - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+                - and: the engine dispatched 1 AI turn
+                - and: no file outside "tmp" changed
+        - id: 005-failed-crush-turn-stops-run
+          description: A validation turn whose crush CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+          steps:
+            - given:
+                - the "scen-check-crush-turn-fails" project tree
+                - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="AI turn failed" turn=1 label=crush-turn001 role=prompt cli=crush model=zhipu-coding/no-such-model
+                - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+                - and: the engine dispatched 1 AI turn
+                - and: no file outside "tmp" changed

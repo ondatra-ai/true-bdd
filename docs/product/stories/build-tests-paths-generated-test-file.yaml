@@ -1,0 +1,113 @@
+# Story `build-tests-paths`: `build tests` refusing a Registry `path:`
+# that names no file a generated test can be written to.
+#
+# Each Scenario's `path:` names its generated test file, and the file's
+# directory gives the suite's Go package. A test the Registry cannot
+# render for another reason is the Story build-tests-renderable; a step
+# of the wrong shape is the Story build-tests-step-shapes.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-tests-paths-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: build-tests-paths
+    feature: build-tests
+    title: Refuse a Registry path that names no file a generated test can be written to
+    as_a: System Architect
+    i_want: build tests to refuse at startup, naming the Scenario and the path as written, a Scenario with no path, a path with whitespace around it, one that is absolute or climbs out of the project, one that names no _test.go file, one inside the suite's steps directory, one whose directory derives no Go package name, and one service whose paths span two directories
+    so_that: a generated test is never written to a guessed file, outside the project, over a step definition or into a package the suite does not compile, and the refusal leaves the project as it was and costs no AI turn
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-missing-path-refused
+          description: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
+          steps:
+            - given:
+                - the "build-tests-path-missing" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches error="INT-901: scenario declares no path: for its generated test'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 002-path-with-whitespace-refused
+          description: A `path:` with whitespace around it must refuse `build tests`, quoting the path as written, rather than write the test to a file the Registry does not name
+          steps:
+            - given:
+                - the "build-tests-path-with-whitespace" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"tests/mcp/mcp_test\.go \\": path: must be a clean repo-relative path \(surrounding whitespace\)'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 003-path-outside-project-refused
+          description: A `path:` that is absolute or climbs out of the project tree with `..` must refuse `build tests`, naming the Scenario and the path, so no generated test is written outside the project
+          steps:
+            - given:
+                - the "build-tests-path-outside-project" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"\.\./tests/mcp/mcp_test\.go\\": path: must be a clean repo-relative path'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 004-path-not-test-file-refused
+          description: A `path:` that does not end in `_test.go` must refuse `build tests`, naming the Scenario and the path, since Go never runs such a file as a test
+          steps:
+            - given:
+                - the "build-tests-path-not-test-file" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"tests/mcp/mcp\.go\\": path: must name a _test\.go file'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 005-path-in-steps-dir-refused
+          description: A `path:` inside the suite's `steps/` directory must refuse `build tests`, naming the Scenario and the path, so a generated test never takes the place of a step definition
+          steps:
+            - given:
+                - the "build-tests-path-in-steps-dir" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"tests/mcp/steps/mcp_test\.go\\": path: must not be inside the suite''s steps/ tree'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 006-service-in-two-dirs-refused
+          description: Two Scenarios of one service whose `path:` values lie in two directories must refuse `build tests`, naming the second Scenario, its path and the directory the first one already set
+          steps:
+            - given:
+                - the "build-tests-service-in-two-dirs" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-902: \\"tests/mcp/tickets/ticket_test\.go\\": path: must sit directly in the owning suite''s directory'
+                - and: stdout matches \(INT-901 puts mcp-service in \\"tests/mcp\\"\)
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 007-path-derives-no-package-refused
+          description: A `path:` whose suite directory has a name that derives no valid Go package name must refuse `build tests`, naming the path, that suite and the package name it derives
+          steps:
+            - given:
+                - the "build-tests-path-derives-no-package" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches tests/2e2/mcp_test\.go: suite \\"2e2\\": suite name derives an invalid Go package name \(derived \\"2e2_test\\"\)'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

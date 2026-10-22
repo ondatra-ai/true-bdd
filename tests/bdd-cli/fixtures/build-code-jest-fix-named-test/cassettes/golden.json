@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-jest-fix-named-test",
+  "files": [
+    {
+      "path": "services/greeter/greeting.js",
+      "kind": "modified",
+      "size": 168,
+      "sha256": "1bdda631a8c7049797d3e6f538481df23dda7dbb9b24e3f5a1e06514f4727573",
+      "text": "// greet greets a person by name, and the world when no name is given.\nfunction greet(name = 'world') {\n  return 'Hello, ' + name + '!';\n}\n\nmodule.exports = { greet };\n"
+    },
+    {
+      "path": "tests/unit/suite-runs.log",
+      "kind": "created",
+      "size": 10,
+      "sha256": "cd544ed84242df9f2098e2406383b20c8a8266bd430e7a9a4c63728bb3ae931c",
+      "text": "suite ran\n"
+    }
+  ]
+}

@@ -52,3 +52,15 @@ func TestEngine002UsHelpListsStoryCommands(t *testing.T) {
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
+
+// engine-entry-001-version-runs-without-config: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+func TestEngineEntry001VersionRunsWithoutConfig(t *testing.T) {
+	s := scenarios.New(t, "engine-entry-001-version-runs-without-config")
+	s.Given(`the "version-without-config" project tree`)
+	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
+	s.When(`the System Architect runs "version"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}

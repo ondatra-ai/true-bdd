@@ -1,0 +1,36 @@
+# Seed registry for the `build-tests-service-in-two-dirs` BDD fixture.
+#
+# Two scenarios of one service, mcp-service, whose `path:` values sit
+# in two directories: tests/mcp and tests/mcp/tickets.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-service-in-two-dirs fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/session_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"
+  INT-902:
+    description: "A Claude User's ticket is granted within the session's limit"
+    service: "mcp-service"
+    path: "tests/mcp/tickets/ticket_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 5 seconds"

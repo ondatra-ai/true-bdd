@@ -1,0 +1,39 @@
+# Seed registry for the `build-tests-regenerate-stale-test` BDD fixture.
+#
+# Two scenarios, one generated test file each. tests/mcp/session_test.go
+# is what this registry renders; tests/mcp/ticket_test.go was generated
+# from an older registry, when INT-902 allowed 10 seconds. Every step
+# binds, so `build tests --fix` rewrites ticket_test.go alone and walks
+# nothing.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-regenerate-stale-test fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/session_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"
+  INT-902:
+    description: "A Claude User's ticket is granted within the session's limit"
+    service: "mcp-service"
+    path: "tests/mcp/ticket_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 5 seconds"

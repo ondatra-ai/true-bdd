@@ -55,6 +55,80 @@ func TestEngine007MissingDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// fix-loop-bounds-001-one-walk-keeps-story: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
+func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-001-one-walk-keeps-story")
+	s.Given(`the "fix-loop-attempts-exhausted" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 97.2 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Walk attempt started" attempt=1 max_attempts=1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`stdout matches Hit max apply attempts without convergence\.`)
+	s.But(`stdout does not match attempt=2`)
+	s.And(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 4 AI turns`)
+	s.Done()
+}
+
+// fix-loop-bounds-002-refixed-prompt-stops-walk: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+func TestFixLoopBounds002RefixedPromptStopsWalk(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-002-refixed-prompt-stops-walk")
+	s.Given(`the "fix-loop-refix-stops" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 97.3 --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped" command="us refine"`)
+	s.And(`stdout matches gave up after 2 applied fix\(es\) that never made the check pass`)
+	s.And(`stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}`)
+	s.But(`stdout does not match REFINE COMPLETE`)
+	s.And(`the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// fix-loop-bounds-003-unsettled-questions-keep-story: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+func TestFixLoopBounds003UnsettledQuestionsKeepStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-003-unsettled-questions-keep-story")
+	s.Given(`the "fix-loop-unsettled" project tree`)
+	s.And(`the Product Owner answers "I have not decided yet" to every question`)
+	s.When(`the Product Owner runs "us refine 97.4 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User answered clarification question" .* answer="I have not decided yet"`)
+	s.And(`stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true`)
+	s.But(`stdout does not match iteration=6`)
+	s.And(`stdout matches Validation failed\. No fix was applied\.`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.But(`stdout does not match FIX PROMPT GENERATED`)
+	s.And(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-003-exit-keeps-story: Choosing to exit a `us refine --fix` run's fix loop must leave the Story file exactly as it was, saying where the latest version of the Story was kept
+func TestFixLoopChoices003ExitKeepsStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-003-exit-keeps-story")
+	s.Given(`the "fix-loop-exit-story" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "3" to every question`)
+	s.When(`the Product Owner runs "us refine 97.1 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`stdout matches msg=Exiting latest_version=tmp/[^ ]+/story-97\.1-v01\.yaml`)
+	s.But(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.1-document-summary-exit.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // us-refine-fix-001-vague-description-made-measurable: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
 func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-001-vague-description-made-measurable")
@@ -177,6 +251,28 @@ func TestUsRefineFix006FeatureLabelSurvives(t *testing.T) {
 	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"`)
 	s.And(`the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria`)
 	s.And(`stdout does not match Hit max apply attempts`)
+	s.Done()
+}
+
+// us-refine-fix-007-step-outside-catalogue-gets-phrase: `us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk
+func TestUsRefineFix007StepOutsideCatalogueGetsPhrase(t *testing.T) {
+	s := scenarios.New(t, "us-refine-fix-007-step-outside-catalogue-gets-phrase")
+	s.Given(`the "us-refine-fix-records-phrase" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
+	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`no file outside "tmp" and "docs/product" changed`)
+	s.And(`the file "docs/product/product.yaml" is modified`)
+	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
+	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
+	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
 	s.Done()
 }
 
@@ -333,6 +429,7 @@ func TestUsRefineVerdicts002NoHappyPathFails(t *testing.T) {
 	s.And(`stdout matches REFINE COMPLETE`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=96\.4 promptIndex=13 answer=pass context="\[96\.4: not checked: the product document declares no catalogue\]"`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()
@@ -350,5 +447,26 @@ func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
 	s.And(`the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged`)
 	s.And(`stdout does not match ALL CHECKS PASSED!`)
 	s.And(`stdout does not match msg="Story saved"`)
+	s.Done()
+}
+
+// us-refine-verdicts-004-step-outside-catalogue-fails: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
+func TestUsRefineVerdicts004StepOutsideCatalogueFails(t *testing.T) {
+	s := scenarios.New(t, "us-refine-verdicts-004-step-outside-catalogue-fails")
+	s.Given(`the "us-refine-step-outside-catalogue" project tree`)
+	s.When(`the Product Owner runs "us refine doc-outline"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=13 answer=fail`)
+	s.And(`stdout matches AC-1: 3 steps match one template each`)
+	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches AC-3: given step \\"the Claude User asks Claude to outline the document\\" matches \\"the \{actor:role\} asks Claude to outline the document\\", declared for when`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=doc-outline promptIndex=1`)
+	s.And(`stdout matches us-refine/term_closure +D: step-phrases +fail +FAIL`)
+	s.And(`stdout matches SKIP: 12\n`)
+	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
+	s.But(`stdout does not match msg="Story saved"`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }

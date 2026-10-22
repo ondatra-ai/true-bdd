@@ -1,0 +1,19 @@
+# Fixture checklist for `us-refine-fix-records-phrase`.
+#
+# The shipped step-phrase check alone, copied verbatim, with the fix that
+# closes it: a step no catalogue entry phrases gets one, asked about first
+# and written to the product document, never to the Story.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of every acceptance criterion must match exactly one phrase of the product document's catalogue, declared for its block, so the Story speaks the language the product declares."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for each failing step, asking what it means first. Write it to the product document, never to the Story."

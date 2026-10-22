@@ -1,0 +1,111 @@
+# Story `engine-documents`: where a command finds the documents it reads.
+#
+# Each document comes from its `documents.*` key in true-bdd.yaml unless
+# a flag names it: `--requirements` on `build tests` and `scen check`,
+# `--architecture` on `build tests` and `build code`. A flag wins over
+# the key; a document neither names, or a path naming no regular file, is
+# refused at startup. A document a checklist Prompt cites is the Story
+# engine; a Registry `build tests` cannot walk is build-tests-refusals.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-documents-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: engine-documents
+    feature: engine
+    title: Name each document a command reads in true-bdd.yaml or with a flag, and have a command refuse one it cannot resolve
+    as_a: System Architect
+    i_want: each command to read the Registry and the architectural spec from the paths true-bdd.yaml declares, or from the path a --requirements or --architecture flag names instead, and to refuse at startup, naming the key or the path, a document that is not declared, does not exist or is not a file
+    so_that: a command reads only documents I named, and a misplaced or undeclared document stops the run before it writes a file or spends an AI turn instead of being guessed at
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-absolute-requirements-overrides-config
+          description: '`build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test''s header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0'
+          steps:
+            - given:
+                - the "build-tests-absolute-requirements" project tree
+            - when:
+                - the System Architect runs "build tests --requirements {{CWD}}/docs/specs/requirements.yaml"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Loaded requirements registry" file=/\S+/docs/specs/requirements\.yaml count=1
+                - and: stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.
+                - and: stdout matches BUILD TESTS COMPLETE
+                - but: stdout does not match Refusing to start
+                - and: the file "tests/mcp/mcp_test.go" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 002-missing-architecture-flag-refused
+          description: '`build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists'
+          steps:
+            - given:
+                - the "build-code-missing-architecture-flag" project tree
+            - when:
+                - the System Architect runs "build code --architecture docs/architecture/absent.yaml"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build code"
+                - and: stdout matches failed to read architecture file docs/architecture/absent\.yaml
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 003-undeclared-architecture-refused
+          description: A host whose `true-bdd.yaml` declares no architectural spec must have `build tests` refused before it walks, naming the missing `documents.architecture_yaml` key, never served the spec at its conventional path
+          steps:
+            - given:
+                - the "build-tests-undeclared-architecture" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build tests" document="architectural spec"'
+                - and: stdout matches documents\.architecture_yaml
+                - but: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 004-undeclared-registry-refused-by-us-apply
+          description: A host whose `true-bdd.yaml` declares no scenario registry must have `us apply` refused before it walks the Story, naming the missing `documents.scenarios_yaml` key, and must leave the Story and the registry at the conventional path unchanged
+          steps:
+            - given:
+                - the "us-apply-undeclared-registry" project tree
+            - when:
+                - the Product Owner runs "us apply 95.1"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="us apply" document="scenario registry"'
+                - and: stdout matches documents\.scenarios_yaml
+                - but: stdout does not match US APPLY — Story
+                - and: no file outside "tmp" changed
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: the file "docs/product/stories/95.1-undeclared-registry.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 005-undeclared-registry-refused-by-scen-check
+          description: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
+          steps:
+            - given:
+                - the "scen-check-undeclared-registry" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="scen check" document="scenario registry"'
+                - and: stdout matches documents\.scenarios_yaml
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 006-directory-document-refused
+          description: A document path declared in `true-bdd.yaml` that names a directory must be refused at startup, naming the path, rather than read as the file inside it
+          steps:
+            - given:
+                - the "build-code-directory-architecture" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build code" document="architectural spec"'
+                - and: stdout matches document path is not a regular file
+                - and: stdout matches -> \./docs/architecture"
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns

@@ -1,0 +1,24 @@
+# Seed registry for the `build-tests-unrunnable-test-name` BDD fixture.
+#
+# One scenario keyed ß-901. ß has no upper-case form, so its test
+# renders as Testß901, a name `go test` compiles and never runs.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-unrunnable-test-name fixture"
+
+scenarios:
+  ß-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

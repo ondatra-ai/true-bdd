@@ -1,0 +1,47 @@
+=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===
+# Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given
+
+## Target
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario
+registry), and nothing else. The finding is about this Scenario's own
+words, so it is fixed in its own entry; it names no catalogue entry, so
+the `product` document is not touched. No story claims this Scenario
+(`user_stories:` is empty), so the reworded step is not bound to match
+a catalogue template.
+
+## Required Changes
+### Change #1: Make the outcome step assert the exact greeting message
+**Document:** scenarios_yaml
+**Field:** merged_steps.then
+**Current text:**
+```
+the greeter greets that person
+```
+**New text:**
+```
+the greeter outputs the exact message "Hello, <name>!" where <name> is the name given in the When step
+```
+
+## What must not change
+- The Scenario's id `E2E-001`, `service: greeter`, `path:
+  tests/greeter/greet_test.go` and `user_stories: []` stay exactly as
+  they are.
+- The description stays as it is; the criterion lands in the step that
+  asserts the outcome, per the fix template.
+- The Given step `the greeting is configured` and the When step
+  `the Operator runs the greeter with a name` stay exactly as they are;
+  no other step changes.
+- Every other Scenario in the registry stays as it is.
+- The generated test `tests/greeter/greet_test.go` and the step
+  definitions are not edited here; `true-bdd build tests --fix`
+  re-renders the test once this entry reads correctly.
+
+## Why this resolves the finding
+The reviewer's line was `E2E-001: not measurable`: no step named a
+criterion a run could settle. The new Then step names the exact message
+`"Hello, <name>!"`, a verbatim string a step definition can assert on,
+so the check now reads `E2E-001: measurable — '"Hello, <name>!"'`. The
+behaviour is unchanged: greeting the person whose name the greeter is
+given is exactly printing `Hello, <name>!` with that name, and `<name>`
+still refers to the name the When step supplies.
+=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-fix-prompts.md ===

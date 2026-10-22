@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(tests/**)",
+      "Edit(tests/**)",
+      "MultiEdit(tests/**)",
+      "Write(services/**)",
+      "Edit(services/**)",
+      "MultiEdit(services/**)"
+    ]
+  }
+}

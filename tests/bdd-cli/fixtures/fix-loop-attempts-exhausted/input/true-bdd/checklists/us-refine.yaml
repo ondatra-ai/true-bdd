@@ -1,0 +1,40 @@
+# Fixture checklist for `fix-loop-attempts-exhausted`.
+#
+# The shipped vague-word-in-description prompt, verbatim, under a budget of
+# one walk: the fix is applied and re-validated, but the re-walk that would
+# confirm it is the second attempt, which the budget does not allow.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+config:
+  max_apply_attempts: 1
+
+sections:
+  - id: acceptance_criteria
+    name: "Acceptance Criteria Quality"
+    description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
+    source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
+    validation_prompts:
+      - Q: |
+          For every AC, decide whether its description field contains a vague
+          word from the forbidden_qualifiers list of the product document's
+          vocabulary (properly, correctly, appropriate, user-friendly, fast,
+          etc.).
+
+          Pass when no AC description contains forbidden qualifiers.
+          Fail when one or more AC descriptions contain them.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: contains '<word>'[, '<word2>'...]"
+        rationale: "Vague words in AC descriptions cannot be tested objectively."
+        docs:
+          - product
+        F: |
+          Replace each vague word in the description with specific, measurable
+          criteria.
+
+          Use the forbidden_qualifiers list of the product document's
+          vocabulary. Replace each forbidden qualifier with specific,
+          measurable criteria.

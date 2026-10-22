@@ -62,7 +62,7 @@ architecture:
               with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
               without_system: "{user_prompt}"
             values:
-              model: &model >-
+              model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
                 `zhipu-coding/glm-5.2` in every crush cassette.
@@ -73,7 +73,10 @@ architecture:
               user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
               run_dir: &run-dir >-
                 The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
-                created at startup.
+                created at startup. The join is cleaned and stays relative to
+                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
+                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
+                `{{RUN_DIR}}`.
             dir: "{work_dir}"
             env:
               CRUSH_GLOBAL_CONFIG: >-
@@ -104,7 +107,7 @@ architecture:
         - name: codex
           protocol: cli
           scope: third_party
-          # No codex cassette exists, so this is stated from the wrapper.
+          # binary and args match every codex cassette's `binary` and `argv`.
           invocation:
             binary: codex
             args:
@@ -120,8 +123,8 @@ architecture:
               - -m
               - "{model}"
               - when: >-
-                  The turn carries a result schema, as every codex turn does
-                  except an apply turn.
+                  The turn carries a result schema, as every codex validation
+                  and fix turn does; an apply turn carries none.
                 args: [--output-schema, "{schema_path}"]
               - -o
               - "{answer_path}"
@@ -133,7 +136,10 @@ architecture:
                 the run directory (the apply turn of `build code --fix` and
                 `build tests --fix`, which hold write roots); `read-only` for
                 every other turn. codex has no level between the two.
-              model: *model
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `gpt-6.1-sol` in every codex cassette.
               work_dir: *work-dir
               system_prompt: *system-prompt
               user_prompt: *user-prompt
@@ -144,9 +150,11 @@ architecture:
                 dispatched, whichever CLI ran it.
               schema_path: >-
                 `{run_dir}/{label}-codex-schema.json`, written before the spawn
-                with the JSON Schema the answer must satisfy.
+                with the JSON Schema the answer must satisfy, every object's
+                `required` listing all of its properties: codex refuses a
+                schema that leaves one out, which claude accepts.
               answer_path: >-
-                `{run_dir}/{label}-codex-answer.md`, where codex writes its final
+                `{run_dir}/{label}-codex-answer.txt`, where codex writes its final
                 message; the engine reads the answer there, never from stdout.
             dir: "{work_dir}"
             notes:
@@ -160,6 +168,9 @@ architecture:
               - >-
                 The environment is inherited unchanged. Process group, wait bound
                 and merged output are as for crush.
+              - >-
+                Before the spawn the engine logs the turn's sandbox level as
+                msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
@@ -180,7 +191,9 @@ architecture:
       technical: >-
         The quoted text, split into arguments at whitespace (no quoting, so
         an argument cannot hold a space) and run as the engine binary's
-        arguments in a subprocess. Its working
+        arguments in a subprocess; `{{CWD}}` in an argument stands for the
+        run directory's absolute path, so a command can name a file of the
+        project tree by one. Its working
         directory is the run directory assembled from the project tree, its
         stdin carries the answers a Given step set (nothing otherwise), and
         the AI CLIs it finds on its PATH are the harness's record or replay
@@ -208,7 +221,11 @@ architecture:
         cassettes in replay, refusing a fixture with no cassettes or no
         recorded outcome; a staging directory in record; the real CLIs live).
         Nothing runs yet: the run directory is assembled when the When step
-        runs the command.
+        runs the command. A Given step saying the tree has no file records
+        that path, and the assembled run directory has it deleted before
+        `prep.sh` and the snapshot; a path leading out of the run directory,
+        or one the assembled directory does not hold, fails the run rather
+        than proving nothing.
 
     - term: exit code
       technical: >-
@@ -231,6 +248,19 @@ architecture:
         The kept stdout, as one string, is asked for a match of the step's
         pattern anywhere in it, or for none; a failed match prints the tail of
         stdout beside the pattern.
+
+    - term: stderr
+      technical: >-
+        The engine's standard error. When a command returns an error, the
+        command-line library prints `Error: ` and the error's text there; the
+        text of an argument a command does not take carries the command's
+        usage after it. A failure before the log is set up, such as a missing
+        `true-bdd/true-bdd.yaml`, also prints its log record there, as
+        `<date> <time> ERROR <msg> key=value`.
+      observed_by: >-
+        The kept stderr, as one string, is asked for a match of the step's
+        pattern anywhere in it; a failed match prints stderr beside the
+        pattern.
 
     - term: log record
       technical: >-
@@ -292,6 +322,21 @@ architecture:
         Count the "Dispatching AI turn" records in the run's JSON log file;
         "no" is zero, and a missing log file fails instead of counting zero.
 
+    - term: AI CLI
+      technical: >-
+        The binary an AI turn is spawned as, `claude`, `crush` or `codex`
+        (see `dependencies[]` above): the half before the first colon of the
+        `<cli>:<model>` reference the turn's tier resolves to under
+        `engine.models`. The tier is the Prompt's own `model:`, `fix_model:`
+        or `apply_model:` for a validation, fix or apply turn, else its
+        checklist's `engine:` block, else `engine.default_<role>_model`.
+      observed_by: >-
+        Read from the `cli` field of each "Dispatching AI turn" record in the
+        run's JSON log file, its `role` field telling the kind of turn:
+        `prompt` for a validation turn, `fix` for a fix turn, `apply` for an
+        apply turn. The records of that role and CLI are counted; "no" is
+        zero, and a missing log file fails instead of counting zero.
+
     - term: fix loop
       technical: >-
         The engine's interactive answer to a failed Prompt under `--fix`. A
@@ -304,11 +349,14 @@ architecture:
         feedback lines up to an empty one, and anything else exits. End of
         input reads as an empty line, so it exits.
       observed_by: >-
-        Set up by the Given step: it fails when no Given step prepared a
-        project tree, and otherwise makes the command's stdin the answer and
-        a newline, 64 times over, enough for every question one walk asks.
-        Lines left over are never read. Nothing runs yet: the When step pipes
-        them in.
+        Set up by a Given step, which fails when no Given step prepared a
+        project tree; nothing runs yet, the When step pipes the lines in. The
+        every-question step makes the command's stdin the answer and a
+        newline, 64 times over, enough for every question one walk asks, and
+        lines left over are never read. The line-by-line step splits its
+        quoted text at each `/`, trims each piece, and makes stdin those
+        pieces, one per line in order and nothing after, so an empty piece is
+        an empty line.
 
     - term: test dependencies
       technical: >-
@@ -462,3 +510,85 @@ architecture:
         empty command, or one that cannot start fails the step, as does an
         exit status other than the quoted one, printing the shell command's
         stdout and stderr.
+
+    - term: crush
+      technical: >-
+        The `crush` CLI the engine spawns for a turn whose tier names it (the
+        crush dependency above), with a per-turn generated config whose
+        `PreToolUse` hook runs this binary's `crush-guard` subcommand and with
+        the turn's write policy in that hook's environment. Hooks from a host
+        project's own `.crush.json` or `crush.json` run beside it, and a
+        denial from either stops the tool.
+      observed_by: >-
+        A Scenario about the write guard never starts crush: its Given steps
+        record what crush would hand the guard, and its When step runs the
+        guard the way crush does, so it spends no AI turn and needs no CLI.
+
+    - term: write guard
+      technical: >-
+        The engine binary's hidden `crush-guard` subcommand, run with no
+        arguments. It reads the write policy, then the tool call, and exits 0
+        to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
+        stderr for a denial. A missing or unreadable policy denies before the
+        tool call is read. `view`, `ls`, `grep`, `glob`, `sourcegraph`,
+        `diagnostics`, `fetch` and the `context7` MCP tools only read and are
+        allowed; `bash` is allowed only when the policy allows the shell; the
+        file tools `edit`, `write`, `multiedit`, `patch`, `create` and
+        `download` are allowed only for an absolute target inside a write
+        root, with symbolic links resolved on both sides (through the deepest
+        part of the path that exists) and whole path components compared;
+        any other tool is denied as a writer.
+      observed_by: >-
+        Run once by the When step as the engine binary's subprocess in the
+        run directory, under the Scenario's timeout, its exit status, stdout,
+        stderr and file changes kept as a command's are. The allow and deny
+        steps compare the status with 0 and 2, failing with the reason it
+        gave; the reason step matches its pattern anywhere in the kept stderr.
+
+    - term: write policy
+      technical: >-
+        A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
+        `write_roots`, a list of absolute directory paths, and `allow_bash`,
+        true or false. The engine derives it per turn from the turn's write
+        globs, each cut at its first wildcard and made absolute against the
+        project root, and from whether the turn may run the shell.
+      observed_by: >-
+        Built by the Given steps for the When step: each write-under step adds
+        the quoted directory joined to the run directory, the shell step sets
+        `allow_bash`, and with neither the policy grants nothing. The
+        no-policy step leaves the variable blank, which the guard reads as
+        unset, and the unreadable step sets it to text that is not JSON.
+
+    - term: tool call
+      technical: >-
+        The tool's name in `CRUSH_TOOL_NAME` and its target file in
+        `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
+        a blank or unset variable names nothing.
+      observed_by: >-
+        The When step sets both variables and the write policy every time,
+        blank where no Given step named them, so nothing the test process
+        exports reaches the guard. A file of the project tree is joined to
+        the run directory; a path as written passes unchanged.
+
+    - term: hook payload
+      technical: >-
+        The JSON crush pipes to a hook's stdin. The guard reads its
+        `tool_name` for a blank tool name, and its `input.file_path`, else
+        `input.path`, for a blank target; an empty or unparseable payload
+        names nothing.
+      observed_by: >-
+        The When step writes `{"tool_name": <tool>, "input": {"file_path":
+        <the file joined to the run directory>}}` to the guard's stdin; with
+        no payload step the guard's stdin is empty.
+
+    - term: symbolic link
+      technical: >-
+        A filesystem symbolic link holding the target as written, so a
+        relative target resolves from the link's own directory.
+      observed_by: >-
+        The Given step adds a command to the fixture's prep phase that makes
+        the link's directory and the link, after the run directory is
+        assembled and before the snapshot the file changes are counted from.
+        The snapshot refuses a link it walks into, so the link must sit in a
+        directory it leaves out, such as `node_modules`; a link path that is
+        absolute or climbs out of the project tree fails the step.

@@ -174,6 +174,14 @@ glossary:
       and its log records. It is what a person watching the terminal, or a
       script reading it, sees.
 
+  - term: stderr
+    means: >-
+      Everything a command prints on its standard error: the error that
+      stopped it, followed by the command's usage when it was given an
+      argument it does not take. A command that cannot read its
+      configuration says so only there, since it never starts the log it
+      would print on stdout.
+
   - term: log record
     means: >-
       One line the engine prints about its own run: a level, a message and
@@ -210,6 +218,15 @@ glossary:
       One request the engine sends to an AI model and waits on. It is the
       unit of model cost and time: a run that needs none costs nothing.
 
+  - term: AI CLI
+    means: >-
+      The agent command-line program an AI turn runs through: `claude`,
+      `crush` or `codex`. The project's configuration names one per kind of
+      turn, and a single Prompt may name its own, so moving work to another
+      provider is a configuration edit. Each enforces a different answer
+      shape and write boundary, so which one ran a turn decides what that
+      turn could do and what it cost.
+
   - term: fix loop
     means: >-
       What a command run with `--fix` does for each check that fails: it
@@ -222,7 +239,8 @@ glossary:
   - term: test dependencies
     means: >-
       The packages and tools a project's own tests need before they can
-      start, such as the browser and the npm packages of browser tests.
+      start, such as the npm packages of a Jest suite, or the browser and
+      the npm packages of browser tests.
       They are installed into the project tree from outside it; no command
       writes them, so a Scenario states them as a starting condition.
 
@@ -308,6 +326,49 @@ glossary:
       project's own tests, to confirm the outcome the command was driving
       at. It reports its own exit status, 0 for success.
 
+  - term: crush
+    means: >-
+      One of the AI CLIs the engine can send an AI turn to, the one that
+      makes the turns that change files. It has no permission check of its
+      own, so before each tool it wants to run during a turn it asks the
+      engine's write guard, and runs the tool only when the guard allows
+      it.
+
+  - term: write guard
+    means: >-
+      The engine's own check that crush runs before each tool call of a
+      turn. It answers allow or deny, holding the call to the turn's write
+      policy, and gives a reason for a denial. It denies whatever it cannot
+      decide, so a crush turn never changes a file the engine did not let
+      it change.
+
+  - term: write policy
+    means: >-
+      What one crush turn may do beyond reading: the directories of the
+      project tree it may write under, none for a turn that only reads,
+      and whether it may run shell commands, which could write anywhere.
+      The engine derives it from what the command lets that turn change
+      and hands it to crush with the turn.
+
+  - term: tool call
+    means: >-
+      One tool crush wants to run during a turn: the tool's name, such as
+      `view` to read a file, `write` or `edit` to change one, or `bash` to
+      run a shell command, and, for a tool that works on a file, that
+      file's path.
+
+  - term: hook payload
+    means: >-
+      The description of a tool call that crush writes to the write
+      guard's standard input, naming the tool and the file it targets. The
+      guard reads it for whatever crush did not otherwise name.
+
+  - term: symbolic link
+    means: >-
+      A file of the project tree that points at another path: reading or
+      writing through it reaches the path it points at, which may lie
+      outside the directory holding the link.
+
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
@@ -330,6 +391,18 @@ catalogue:
       exits the loop.
     terms: [fix loop]
 
+  - template: 'the {actor:role} answers "{lines}" line by line'
+    block: given
+    means: >-
+      The quoted text, split at each "/", is what that role types on the
+      terminal during the fix loop, one piece per line in that order: the
+      first piece answers whatever the command asks first, the next piece
+      what it asks next. An empty piece is an empty line, which ends a
+      multi-line answer such as the feedback that refines a proposed fix.
+      Once the lines run out the command reads end of input, which exits
+      the loop.
+    terms: [fix loop]
+
   - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
     block: given
     means: >-
@@ -338,13 +411,23 @@ catalogue:
       so the run asks that Prompt and no other of that checklist.
     terms: [checklist, Prompt, command, project tree]
 
-  - template: "the project's browser test dependencies are installed"
+  - template: 'the project tree has no "{file}"'
     block: given
     means: >-
-      The test dependencies the project's browser tests need are installed
-      into the project tree before the command runs, so those tests can
-      start. The installation happens before the run, so the files it adds
-      are no file change of the run.
+      The project tree the run starts from lacks the named file, even one
+      the engine's own configuration and checklists would bring into it,
+      such as `true-bdd/true-bdd.yaml`, so the run shows what a command
+      does without that file.
+    terms: [project tree]
+
+  - template: "the project's [browser ]test dependencies are installed"
+    block: given
+    means: >-
+      The test dependencies the project's tests need, or with "browser"
+      those its browser tests need, are installed into the project tree
+      before the command runs, so those tests can start. The installation
+      happens before the run, so the files it adds are no file change of
+      the run.
     terms: [test dependencies, project tree, file change]
 
   - template: 'the {actor:role} runs "{command}"'
@@ -380,6 +463,15 @@ catalogue:
       log record's message or fields, has a match for the pattern: proof
       that a message, a banner or a log record never appeared.
     terms: [command, stdout, log record, pattern]
+
+  - template: 'stderr matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stderr has a match for the pattern
+      somewhere. Stderr carries the error that stopped the command, so a
+      pattern may name a mistyped argument, the usage printed after it, or
+      a missing configuration.
+    terms: [stderr, pattern]
 
   - template: 'no file outside "{dir}" changed'
     block: then
@@ -594,6 +686,17 @@ catalogue:
       means none, so the run cost no model call.
     terms: [engine, AI turn]
 
+  - template: 'the engine dispatched {turns:number} [validation|fix|apply] AI turn[s] to "{cli}"'
+    block: then
+    means: >-
+      Of the AI turns the engine sent during the run, exactly that many of
+      the named kind went to the named AI CLI; "no" means none. A
+      validation turn answers a Prompt, a fix turn turns a failed Prompt
+      into a proposed fix or clarifying questions, and an apply turn writes
+      the fix. It is how a Scenario observes which AI CLI the configuration
+      routed each kind of turn to.
+    terms: [engine, AI turn, AI CLI, Prompt]
+
   - template: 'the shell command "{shell_command}" run in "{dir}" exits with code {code:number}'
     block: then
     means: >-
@@ -602,3 +705,109 @@ catalogue:
       checked apart from the engine, such as the project's own tests
       passing in the tree the command left.
     terms: [shell command, project tree]
+
+  - template: 'crush''s write policy lets the turn write under "{dir}"'
+    block: given
+    means: >-
+      The write policy crush hands the write guard lets the turn write
+      anywhere under the named directory of the project tree. Each such
+      step adds one directory: without one the turn may write nowhere, and
+      without the shell step it may not run the shell.
+    terms: [crush, write policy, write guard, project tree]
+
+  - template: 'crush''s write policy lets the turn run the shell'
+    block: given
+    means: >-
+      The write policy crush hands the write guard also lets the turn run
+      shell commands, so a tool call to `bash` is allowed, wherever the
+      command might write.
+    terms: [crush, write policy, write guard, tool call]
+
+  - template: 'crush hands the guard no write policy'
+    block: given
+    means: >-
+      crush asks the write guard about a tool call without any write
+      policy, as when crush is started by hand rather than by the engine,
+      so the guard has nothing to hold the call to.
+    terms: [crush, write guard, write policy, tool call]
+
+  - template: 'crush hands the guard an unreadable write policy'
+    block: given
+    means: >-
+      crush hands the write guard a write policy written in a shape the
+      guard cannot read, so the guard cannot tell where the turn may write
+      or whether it may run the shell.
+    terms: [crush, write guard, write policy]
+
+  - template: 'crush names the tool "{tool}"'
+    block: given
+    means: >-
+      The tool call crush asks about runs the named tool, spelled as crush
+      spells it, such as `view`, `write` or `bash`.
+    terms: [crush, tool call]
+
+  - template: 'crush names the file "{file}" of the project tree'
+    block: given
+    means: >-
+      The tool call crush asks about targets the named file of the project
+      tree, which crush names by its absolute path. The file need not exist
+      yet, since a write usually creates it.
+    terms: [crush, tool call, project tree]
+
+  - template: 'crush names the path "{path}" as written'
+    block: given
+    means: >-
+      The tool call crush asks about targets the path exactly as quoted,
+      left relative rather than made absolute, so it does not say which
+      directory it starts from.
+    terms: [crush, tool call]
+
+  - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
+    block: given
+    means: >-
+      crush writes the hook payload for the tool call to the write guard:
+      the named tool, and the named file of the project tree by its
+      absolute path. The guard reads it for whichever of the two crush did
+      not name otherwise.
+    terms: [crush, hook payload, write guard, tool call, project tree]
+
+  - template: 'the project tree''s "{link}" is a symbolic link to "{target}"'
+    block: given
+    means: >-
+      Before the run, the named path of the project tree is a symbolic link
+      pointing at the target, a path relative to the link's own directory,
+      so a write through the link lands at the target instead. Creating it
+      is no file change of the run.
+    terms: [symbolic link, project tree, file change]
+
+  - template: 'crush asks the guard about the tool call'
+    block: when
+    means: >-
+      crush runs the engine's write guard once in the project tree, as it
+      does before running a tool during a turn, with the write policy, the
+      tool call and the hook payload the Given steps set, and the Scenario
+      waits for the guard's answer. No AI turn is sent.
+    terms: [crush, write guard, write policy, tool call, hook payload, project tree, AI turn]
+
+  - template: 'the guard allows the tool call'
+    block: then
+    means: >-
+      The write guard answered that crush may run the tool: it ended with
+      status 0, which crush reads as allow.
+    terms: [write guard, tool call, crush]
+
+  - template: 'the guard denies the tool call'
+    block: then
+    means: >-
+      The write guard answered that crush must not run the tool: it ended
+      with status 2, which crush reads as a denial and reports with the
+      guard's reason, rather than as a guard that failed to answer.
+    terms: [write guard, tool call, crush]
+
+  - template: 'the guard''s reason matches {expected:pattern}'
+    block: then
+    means: >-
+      The reason the write guard gave for its answer, the one line it
+      prints on its standard error for crush to show beside a denied tool,
+      has a match for the pattern somewhere.
+    terms: [write guard, crush, pattern]

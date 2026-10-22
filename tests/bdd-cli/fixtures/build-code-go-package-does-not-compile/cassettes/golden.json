@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-go-package-does-not-compile",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 311,
+      "sha256": "71a0455477d5aac98c1408591e6f49cb3c93ca7cf195d48ac83b30d200bb7dc4",
+      "text": "// Package calc is the fixture host project's production source. The\n// build-code fix loop is allowed to edit exactly this tree.\npackage calc\n\n// Add returns the sum of a and b.\nfunc Add(a, b int) int {\n\treturn a + b\n}\n\n// Multiply returns the product of a and b.\nfunc Multiply(a, b int) int {\n\treturn a * b\n}\n"
+    },
+    {
+      "path": "tests/suite/suite-runs.log",
+      "kind": "created",
+      "size": 10,
+      "sha256": "cd544ed84242df9f2098e2406383b20c8a8266bd430e7a9a4c63728bb3ae931c",
+      "text": "suite ran\n"
+    }
+  ]
+}

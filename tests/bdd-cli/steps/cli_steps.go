@@ -19,17 +19,7 @@ import (
 // answering what project ran, what it must exit with, print, or leave on
 // disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
-	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
-	// Given preconditions the scenario states and the fixture materialises
-	// during tmpdir assembly: the dependency install (`prep:`) and the
-	// interactive answers piped to the fix loop. Implemented below.
-	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
-		assertAnswersEveryQuestion)
-	// A Given precondition that a checklist is narrowed to one named prompt;
-	// the fixture selects it via `checklist_prompts:`, and this step verifies
-	// the selection is real and singular.
-	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	registerGivenSteps(suite)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
 	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
@@ -40,6 +30,9 @@ func Register(suite *bddgo.Suite[State]) {
 	// the fix loop converged before it "Hit max apply attempts". Implemented
 	// below.
 	suite.Step(`^stdout does not match (.+)$`, assertStdoutNoMatch)
+	// What the command line says before the log is up: a stray argument's
+	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
+	suite.Step(`^stderr matches (.+)$`, assertStderr)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -101,18 +94,46 @@ func Register(suite *bddgo.Suite[State]) {
 	// entries carry the same merged_steps. Implemented in
 	// registry_origin_steps.go.
 	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
-	// Engine-behaviour assertions read the CLI's own structured log rather
-	// than its stdout: which framework runners it spawned and how many, and
-	// how many model turns it dispatched. Implemented in engine_log_steps.go.
+	registerEngineLogSteps(suite)
+	// The independent outcome check: the harness itself runs a shell command the
+	// scenario names, in a directory under the run's tmpdir — e.g. the host
+	// suite the fix loop was meant to make pass. See command_steps.go.
+	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	// crush, not a role, runs the write guard. See crush_guard_steps.go.
+	registerCrushGuardSteps(suite)
+}
+
+// registerEngineLogSteps binds the assertions that read the CLI's own
+// structured log rather than its stdout: which test runners it spawned, how
+// many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
+func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
 	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
-	// The independent outcome check: the harness itself runs a shell command the
-	// scenario names, in a directory under the run's tmpdir — e.g. the host
-	// suite the fix loop was meant to make pass. See command_steps.go.
-	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
+}
+
+// registerGivenSteps binds the Given steps: the tree a scenario starts
+// from and the preconditions the fixture establishes on it.
+func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
+	// Given preconditions the scenario states and the fixture materialises
+	// during tmpdir assembly: the dependency install (`prep:`) and the
+	// interactive answers piped to the fix loop. Implemented below.
+	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+		assertAnswersEveryQuestion)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+		assertAnswersLineByLine)
+	// A Given precondition that a checklist is narrowed to one named prompt;
+	// the fixture selects it via `checklist_prompts:`, and this step verifies
+	// the selection is real and singular.
+	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	// A Given precondition that the tree lacks a file, even one the repo
+	// layer brings (the engine's own true-bdd.yaml); the run dir drops it.
+	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
@@ -266,11 +287,15 @@ func asksJudge(scenario bddgo.Scenario) bool {
 // role is discarded — validated by the pattern itself, with nothing else
 // for the harness to do with it.
 func runCLI(state *State, args []string) error {
+	return runEngine(state, args[1])
+}
+
+// runEngine runs the engine once with the given command; extraEnv rides on
+// top of the proxy's environment and wins ties.
+func runEngine(state *State, command string, extraEnv ...string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
-
-	command := args[1]
 
 	err := state.Fixture.UseCommand(command)
 	if err != nil {
@@ -282,8 +307,10 @@ func runCLI(state *State, args []string) error {
 	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
 		command, state.Fixture.Name, timeout)
 
+	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
+
 	result, err := runner.Execute(context.Background(), state.Fixture,
-		state.Harness.BinPath, state.Harness.SessionRoot, timeout, state.Proxy.Env...)
+		state.Harness.BinPath, state.Harness.SessionRoot, timeout, env...)
 
 	// Observed before the branch: a run that errored still has a diff
 	// worth recording, and the tmpdir path is what makes it findable.
@@ -328,6 +355,19 @@ func assertDependenciesInstalled(state *State, args []string) error {
 			"the scenario says the project's %s dependencies are installed, but %w",
 			kind, ErrNoDependencyInstall)
 	}
+
+	return nil
+}
+
+// leaveOutOfTree records a path the run dir must not hold. Nothing is
+// deleted yet: the run dir is assembled when the When step runs, and
+// runner.Execute fails it if the path is outside it or not there to drop.
+func leaveOutOfTree(state *State, args []string) error {
+	if state.Fixture == nil {
+		return state.fail("%w", ErrNoTreePrepared)
+	}
+
+	state.Fixture.Absent = append(state.Fixture.Absent, args[0])
 
 	return nil
 }
@@ -456,6 +496,25 @@ func assertStdoutNoMatch(state *State, args []string) error {
 	if pattern.MatchString(state.Result.Stdout) {
 		return state.fail(
 			"expected stdout not to match %q, but it did:\n%s", args[0], state.Result.Stdout)
+	}
+
+	return nil
+}
+
+// assertStderr is assertStdout's twin over the run's stderr, printed whole
+// on a miss: what lands there is a short error, never a log stream.
+func assertStderr(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if !pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr to match %q, but it did not:\n%s", args[0], state.Result.Stderr)
 	}
 
 	return nil
