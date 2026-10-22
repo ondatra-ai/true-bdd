@@ -1420,3 +1420,41 @@ log:
     answer: |
       Product Owner, dialog during #127's implementation (2026-10-22): "Keep and specify
       it".
+  - decision_trace:
+      research:
+        - |
+          #155's steps regeneration drill on 426c64f1 deleted all 55 step definitions and
+          rebuilt them with `build tests --fix` from the spec, against the 19 Scenarios that
+          together use every catalogue phrase ($30, 33 AI turns). `build tests` over the full
+          Registry is complete; the full replay with the rebuilt definitions passes 196 of 197.
+          The failure, `us-apply-001` (`no two scenarios … share the same steps`), is a coding
+          slip against a precise mapping: the rebuilt code decodes into a `*yaml.Node` that
+          yaml.v3 leaves empty. 46 of 55 patterns came back byte-identical.
+        - |
+          The drill found four spec gaps that fail no Scenario: the template grammar is only in
+          README.md; nothing says the When step hands the run to the harness recorder;
+          link-following for "a path leading out of the run directory" is undecided outside
+          Story files; and one explicit glob case was missed. It also found that `build tests
+          --fix` never runs a definition it writes, and that the engine's claude turns load the
+          project's settings (`CLAUDE.md`, `.claude/rules/`).
+      recommendation: |
+        (b): write the four gaps into the spec now (no cassette changes), file the process gap
+        and minimal-mode claude turns as their own issues, and accept the drill at 196/197 with
+        the explanation on #155.
+      settled: |
+        (b). The four gaps go into the spec documents; #173 (`build tests --fix` runs the step
+        definitions it writes) and #174 (the engine's claude turns run in minimal mode) are
+        filed apart from #127; #155's drill criterion is accepted at 196 of 197, explained on
+        #155.
+    question: |
+      Q46 - The #155 drill replays 196 of 197 with rebuilt step definitions. (a) Close every
+      gap, teach `build tests --fix` to run what it writes, and re-run the drill until green;
+      (b) write the four spec gaps in now, file the process gap and minimal-mode claude turns
+      as their own issues, and accept the drill at 196/197 with the explanation on #155;
+      (c) accept as is and file everything as issues?
+    answer: |
+      (б) Мой вариант.
+
+      * Сейчас дописать четыре дыры в спеку. Это почти бесплатно и кассет не трогает.
+      * «Прогонять пересобранные шаги» и «минимальный режим вызова claude» завести отдельными issues.
+      * Принять дрилл как 196 из 197 с объяснением в #155.
