@@ -6,7 +6,7 @@
 # fail/fix chain):
 #
 #   - AC-3: description contains the forbidden qualifier "properly"
-#     (listed in the fixture's docs/architecture/architecture.yaml
+#     (listed in the fixture's docs/product/product.yaml
 #     forbidden_qualifiers) -> fails the vague-word-in-description
 #     prompt; its F replaces the qualifier with measurable criteria.
 #

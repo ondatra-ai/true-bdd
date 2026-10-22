@@ -82,25 +82,35 @@ func commitFixDocuments(item *template.ScenarioCheckData) (bool, error) {
 		documents = append(documents, *item.RegistryDocument)
 	}
 
-	committed, registryChanged := 0, false
+	changed, err := commitDocuments(documents, registryIDs(item.Registry))
+	if err != nil {
+		return false, err
+	}
+
+	return slices.Contains(changed, docs.KeyScenariosYAML), nil
+}
+
+// commitDocuments commits each working copy the fix changed and lists the
+// keys of those documents; ids are the Registry's, which its copy keeps.
+func commitDocuments(documents []template.FixDocument, ids []string) ([]string, error) {
+	changed := make([]string, 0, len(documents))
 
 	for _, document := range documents {
-		changed, err := commitFixDocument(document, registryIDs(item.Registry))
+		committed, err := commitFixDocument(document, ids)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
-		if changed {
-			committed++
-			registryChanged = registryChanged || document.Key == docs.KeyScenariosYAML
+		if committed {
+			changed = append(changed, document.Key)
 		}
 	}
 
-	if committed == 0 {
+	if len(changed) == 0 {
 		slog.Warn("The fix changed no document")
 	}
 
-	return registryChanged, nil
+	return changed, nil
 }
 
 // commitFixDocument commits one scratch copy, reporting whether it differed.

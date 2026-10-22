@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -26,8 +26,13 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix boo
 	return runStoryCommand(
 		ctx, deps.StoryCommonDeps,
 		storyNumber, "us refine", "us-refine", fix,
-		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*story.Story, error) {
-			return loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
+		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*template.StoryRefineData, error) {
+			load := loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
+			if !fix {
+				return load
+			}
+
+			return seedRefineDocuments(load, deps.DocResolver, deps.RunDir.GetTmpOutPath())
 		},
 	)
 }
@@ -39,8 +44,8 @@ func loadStoryFromFile(
 	loader *storyinfra.StoryLoader,
 	storyNumber string,
 	versionMgr *fs.StoryVersionManager,
-) func(ctx context.Context) ([]*story.Story, error) {
-	return func(_ context.Context) ([]*story.Story, error) {
+) func(ctx context.Context) ([]*template.StoryRefineData, error) {
+	return func(_ context.Context) ([]*template.StoryRefineData, error) {
 		doc, err := loader.Load(storyNumber)
 		if err != nil {
 			// The "write it first" advice applies only when the story is
@@ -61,6 +66,6 @@ func loadStoryFromFile(
 			return nil, fmt.Errorf("failed to save initial story version: %w", err)
 		}
 
-		return []*story.Story{loaded}, nil
+		return []*template.StoryRefineData{refineItem(loaded, nil)}, nil
 	}
 }
