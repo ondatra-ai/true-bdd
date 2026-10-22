@@ -1,3 +1,4 @@
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-97.3-iter1-result.yaml ===
 id: "97.3"
 title: "Document Summary On Demand"
@@ -15,7 +16,7 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of 150 words or fewer in the conversation"
-          - "the summary names the document title"
+          - and: "the summary names the document title"
   - id: "AC-2"
     description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
     steps:
@@ -25,9 +26,9 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize that document"
       - then:
           - "Claude displays the message 'This document is not shared with your account'"
-          - "Claude does not display any content from the document"
+          - and: "Claude does not display any content from the document"
   - id: "AC-3"
-    description: "Claude must display the message 'The summary timed out - please try again' in the conversation and must not display any summary text when the summary backend does not respond within 30 seconds."
+    description: "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one."
     steps:
       - given:
           - "a Google Doc is shared with the Claude User's account"
@@ -35,7 +36,8 @@ acceptance_criteria:
       - when:
           - "the Claude User asks Claude to summarize the document"
       - then:
-          - "Claude displays the message 'The summary timed out - please try again'"
+          - "Claude displays the message 'The summary timed out - please try again' in the conversation"
+          - and: "Claude does not display a document summary"
   - id: "AC-4"
     description: "Claude must quickly state that only the first 10000 words were summarized when the document contains more than 10000 words."
     steps:
@@ -45,5 +47,6 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays a summary of the first 10000 words"
-          - "Claude states that only the first 10000 words were summarized"
+          - and: "Claude states that only the first 10000 words were summarized"
 === FILE_END: tmp/{{RUN_DIR}}/apply-97.3-iter1-result.yaml ===
+```

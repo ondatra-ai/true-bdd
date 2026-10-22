@@ -18,8 +18,9 @@ sections:
     validation_prompts:
       - Q: |
           For every AC, decide whether its description field contains a vague
-          word from the forbidden_qualifiers list in the architecture reference
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
+          word from the forbidden_qualifiers list of the product document's
+          vocabulary (properly, correctly, appropriate, user-friendly, fast,
+          etc.).
 
           Pass when no AC description contains forbidden qualifiers.
           Fail when one or more AC descriptions contain them.
@@ -30,12 +31,11 @@ sections:
         rationale: "Vague words in AC descriptions cannot be tested objectively."
         docs:
           - product
-          - architecture_yaml
         F: |
           Replace the vague word in the description of the FIRST acceptance
           criterion the context names, and only that one, with specific,
           measurable criteria. Leave every other acceptance criterion exactly
           as it is, its vague words included: each gets a fix of its own.
 
-          Use the forbidden_qualifiers list from the architecture reference
-          (docs/architecture/architecture.yaml).
+          Use the forbidden_qualifiers list of the product document's
+          vocabulary.
