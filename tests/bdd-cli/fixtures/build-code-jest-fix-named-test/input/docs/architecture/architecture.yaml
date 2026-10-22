@@ -1,0 +1,20 @@
+# One JavaScript service with one Jest suite. All three commands carry
+# --json, so the startup pre-pass passes and the walk runs the suite.
+#
+# `path: services/greeter` is also the applier's write root: the fix turn
+# may edit production source there and nothing else.
+
+architecture:
+  testing:
+    framework: jest
+    # Run from the directory holding `config:` (here `tests/`), so npx
+    # finds the Jest install under tests/node_modules.
+    config: tests/jest.config.js
+    commands:
+      record: npx jest --json --config jest.config.js
+      replay: npx jest --json --config jest.config.js
+      live: npx jest --json --config jest.config.js
+  services:
+    - name: greeter
+      path: services/greeter
+      language: javascript

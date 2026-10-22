@@ -230,7 +230,8 @@ glossary:
   - term: test dependencies
     means: >-
       The packages and tools a project's own tests need before they can
-      start, such as the browser and the npm packages of browser tests.
+      start, such as the npm packages of a Jest suite, or the browser and
+      the npm packages of browser tests.
       They are installed into the project tree from outside it; no command
       writes them, so a Scenario states them as a starting condition.
 
@@ -355,13 +356,14 @@ catalogue:
       does without that file.
     terms: [project tree]
 
-  - template: "the project's browser test dependencies are installed"
+  - template: "the project's [browser ]test dependencies are installed"
     block: given
     means: >-
-      The test dependencies the project's browser tests need are installed
-      into the project tree before the command runs, so those tests can
-      start. The installation happens before the run, so the files it adds
-      are no file change of the run.
+      The test dependencies the project's tests need, or with "browser"
+      those its browser tests need, are installed into the project tree
+      before the command runs, so those tests can start. The installation
+      happens before the run, so the files it adds are no file change of
+      the run.
     terms: [test dependencies, project tree, file change]
 
   - template: 'the {actor:role} runs "{command}"'

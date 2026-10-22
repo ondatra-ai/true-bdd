@@ -1,0 +1,21 @@
+# One Node web service with one Playwright suite. Playwright starts the
+# service itself (`webServer:` in the config), so the app is up before any
+# test runs, and one assertion then fails against what the page shows.
+#
+# `path: services/web` is also the applier's write root: the fix turn may
+# edit production source there and nothing else.
+
+architecture:
+  testing:
+    framework: playwright
+    # Run from the directory holding `config:` (here `tests/`), so
+    # playwright resolves its testDir relative to that file.
+    config: tests/playwright.config.ts
+    commands:
+      record: npx playwright test --reporter=json --config playwright.config.ts integration
+      replay: npx playwright test --reporter=json --config playwright.config.ts integration
+      live: npx playwright test --reporter=json --config playwright.config.ts integration
+  services:
+    - name: web
+      path: services/web
+      language: javascript

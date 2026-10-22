@@ -83,6 +83,106 @@ func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-code-commands-005-jest-without-json-refused: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
+func TestBuildCodeCommands005JestWithoutJsonRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-005-jest-without-json-refused")
+	s.Given(`the "build-code-jest-command-not-machine-readable" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches must emit machine-readable output`)
+	s.And(`stdout matches jest command .*npx jest --config jest\.config\.js.* is missing --json`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-frameworks-001-jest-failing-test-exits-1: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
+func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-001-jest-failing-test-exits-1")
+	s.Given(`the "build-code-jest-failing-test" project tree`)
+	s.And(`the project's test dependencies are installed`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Running tests" framework=jest`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
+	s.And(`stdout matches msg="Total failing tests across architecture" failures=1`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned the test runner "npx"`)
+	s.And(`the engine spawned exactly 1 test runner`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.Done()
+}
+
+// build-code-frameworks-002-jest-fix-reruns-test-by-name: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
+	s.Given(`the "build-code-jest-fix-named-test" project tree`)
+	s.And(`the project's test dependencies are installed`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/greeter/greeting.js" is modified`)
+	s.And(`the file "tests/unit/suite-runs.log" has exactly 1 line`)
+	s.And(`the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/unit/greeting.test.js" is unchanged`)
+	s.And(`the file "tests/unit/canary.test.js" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0`)
+	s.Done()
+}
+
+// build-code-frameworks-003-playwright-fix-reruns-test-by-grep: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
+func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-003-playwright-fix-reruns-test-by-grep")
+	s.Given(`the "build-code-playwright-failing-assertion" project tree`)
+	s.And(`the project's browser test dependencies are installed`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=playwright`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/playwright/playwright:home\.spec\.ts::home\.spec\.ts_>_home_page_>_shows_the_store_name_as_its_heading`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/web/server.js" is modified`)
+	s.And(`the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/integration/home.spec.ts" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`no file outside "tmp" and "services/web" changed`)
+	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
+	s.Done()
+}
+
+// build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
+func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered")
+	s.Given(`the "build-code-go-package-does-not-compile" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/calc/calc.go" is modified`)
+	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/suite/multiply_test.go" is unchanged`)
+	s.And(`the file "tests/suite/add_test.go" is unchanged`)
+	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")

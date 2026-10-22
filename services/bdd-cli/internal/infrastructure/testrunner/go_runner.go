@@ -113,9 +113,14 @@ func (r *GoTestRunner) RunOne(
 	}
 
 	passed := !events.hasFailureFor(pkg, test)
-	output := events.outputFor(pkg, test)
 
-	return passed, output, nil
+	// A package that now compiles and passes has no failure to show, as a
+	// Jest or Playwright pass has none; its `ok` line's elapsed time varies.
+	if passed && test == goBuildFailureMarker {
+		return true, "", nil
+	}
+
+	return passed, events.outputFor(pkg, test), nil
 }
 
 // exec runs the suite's command with the supplied argv and captures
@@ -175,14 +180,16 @@ func splitGoTestName(name string) (string, string, error) {
 	return pkg, test, nil
 }
 
-// goEventStream is the in-memory aggregation of a `go test -json` run.
-// One key per (package, test) pair; the empty-test entry holds
-// package-level events (build output, summary fail).
+// goEventStream aggregates a `go test -json` run per (package, test);
+// the empty test holds package-level events. Compiler lines are keyed
+// by import path, joined to a package through its fail's FailedBuild.
 type goEventStream struct {
 	testFailed    map[string]bool
 	packageFailed map[string]bool
 	testOutput    map[string]*strings.Builder
 	packageOutput map[string]*strings.Builder
+	buildOutput   map[string]*strings.Builder
+	failedBuild   map[string]string
 }
 
 func newGoEventStream() *goEventStream {
@@ -191,6 +198,8 @@ func newGoEventStream() *goEventStream {
 		packageFailed: make(map[string]bool),
 		testOutput:    make(map[string]*strings.Builder),
 		packageOutput: make(map[string]*strings.Builder),
+		buildOutput:   make(map[string]*strings.Builder),
+		failedBuild:   make(map[string]string),
 	}
 }
 
@@ -225,6 +234,14 @@ func parseGoTestEvents(payload []byte) (*goEventStream, error) {
 // aggregates.
 func (s *goEventStream) absorb(event dto.GoTestEvent) {
 	key := event.Package + "\x00" + event.Test
+
+	if event.Action == "build-output" {
+		appendBuilder(s.buildOutput, event.ImportPath, event.Output)
+	}
+
+	if event.FailedBuild != "" {
+		s.failedBuild[event.Package] = event.FailedBuild
+	}
 
 	if event.Action == "output" {
 		if event.Test != "" {
@@ -266,14 +283,21 @@ func (s *goEventStream) hasFailureFor(pkg, test string) bool {
 }
 
 // outputFor returns the tail-truncated output captured for a
-// (package, test) pair.
+// (package, test) pair. A package's entry leads with the compiler's
+// lines for the build it failed on, which say why it did not compile.
 func (s *goEventStream) outputFor(pkg, test string) string {
 	if test == goBuildFailureMarker {
-		if builder, ok := s.packageOutput[pkg]; ok {
-			return TruncateTail(builder.String(), FailureOutputCap)
+		var output strings.Builder
+
+		if builder, ok := s.buildOutput[s.failedBuild[pkg]]; ok {
+			output.WriteString(builder.String())
 		}
 
-		return ""
+		if builder, ok := s.packageOutput[pkg]; ok {
+			output.WriteString(builder.String())
+		}
+
+		return TruncateTail(output.String(), FailureOutputCap)
 	}
 
 	if builder, ok := s.testOutput[pkg+"\x00"+test]; ok {

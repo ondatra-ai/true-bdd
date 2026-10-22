@@ -66,7 +66,7 @@ func (r *JestRunner) Discover(
 		return nil, fmt.Errorf("jest report parse failed: %w", parseErr)
 	}
 
-	failures := jestReportToFailingTests(report, service, suite, cwd)
+	failures := jestReportToFailingTests(report, service, suite)
 
 	for _, failure := range failures {
 		failure.RunnerConfig = cfg
@@ -116,7 +116,7 @@ func (r *JestRunner) RunOne(
 			ErrRerunSelectedNoTests, pattern, failingTest.TestName)
 	}
 
-	for _, failure := range jestReportToFailingTests(report, "", "", cwd) {
+	for _, failure := range jestReportToFailingTests(report, "", "") {
 		if failure.TestName == failingTest.TestName {
 			return false, failure.FailureOutput, nil
 		}
@@ -190,16 +190,17 @@ func parseJestReport(payload []byte) (*dto.JestReport, error) {
 }
 
 // jestReportToFailingTests walks testResults and collects one FailingTest
-// per failed assertion, tagged with service/suite; the file path is rebased
-// on cwd for repo-relative prompt display. Free function so dto stays passive.
+// per failed assertion, tagged with service/suite; the file path is made
+// repo-relative (see jestRepoRelative). Free function so dto stays passive.
 func jestReportToFailingTests(
 	report *dto.JestReport,
-	service, suite, cwd string,
+	service, suite string,
 ) []*FailingTest {
 	out := make([]*FailingTest, 0)
+	root := workingDir()
 
 	for _, testResult := range report.TestResults {
-		filePath := jestRepoRelative(cwd, testResult.Name)
+		filePath := jestRepoRelative(root, testResult.Name)
 
 		for _, assertion := range testResult.AssertionResults {
 			if assertion.Status != statusFailed {
@@ -222,15 +223,15 @@ func jestReportToFailingTests(
 	return out
 }
 
-// jestRepoRelative rebases Jest's absolute path onto cwd, falling back to
-// absolute if the rebase fails — e.g. a suite with no `config:` has no cwd,
-// and filepath.Rel can't relate an absolute path to a relative one.
-func jestRepoRelative(cwd, absolutePath string) string {
-	if !filepath.IsAbs(absolutePath) {
+// jestRepoRelative rebases Jest's absolute path onto root, the engine's own
+// directory: rebased on the relative config dir it stayed absolute, so the
+// test id carried the checkout's path and changed with it (#167).
+func jestRepoRelative(root, absolutePath string) string {
+	if !filepath.IsAbs(absolutePath) || root == "" {
 		return absolutePath
 	}
 
-	rel, err := filepath.Rel(cwd, absolutePath)
+	rel, err := filepath.Rel(root, absolutePath)
 	if err != nil {
 		return absolutePath
 	}

@@ -1,0 +1,7 @@
+Edit applied successfully; shell execution is blocked in this mode, so the test run is delegated to the caller.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+applied: true
+target: "services/greeter/greeting.js"
+summary: "Default the name parameter of greet to 'world' so greet() returns 'Hello, world!'"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
