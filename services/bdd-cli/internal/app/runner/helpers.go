@@ -181,7 +181,7 @@ func validateFixTemplates(
 
 // reported wraps an error already diagnosed by the code that produced
 // it — Error()/Unwrap() pass straight through, so the marker is
-// invisible to everything except refuseStartup.
+// invisible to everything except RefuseStartup.
 type reported struct{ error }
 
 // Unwrap keeps errors.Is/As working through the marker.
@@ -192,10 +192,10 @@ func (r reported) Unwrap() error { return r.error }
 // "Cannot run <svc>/<layer>:" itself before returning.
 func Reported(err error) error { return reported{err} }
 
-// refuseStartup reports a precondition failure on both stdout and the
+// RefuseStartup reports a precondition failure on both stdout and the
 // log, the way validateRequiredDocs and cmd.refuseUnresolvedDoc do —
 // a bare cobra stderr usage dump reaches neither a harness nor the judge.
-func refuseStartup(command string, err error) error {
+func RefuseStartup(command string, err error) error {
 	var alreadyReported reported
 	if errors.As(err, &alreadyReported) {
 		return err

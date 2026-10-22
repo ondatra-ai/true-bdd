@@ -160,31 +160,31 @@ func validateSpec[I any](spec Spec[I]) (
 ) {
 	err := validateGenerators(spec)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	if spec.StoryNumber != "" {
 		err = validateStoryID(spec.StoryNumber)
 		if err != nil {
-			return nil, nil, refuseStartup(spec.Name, err)
+			return nil, nil, RefuseStartup(spec.Name, err)
 		}
 	}
 
 	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
+		return nil, nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
 	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validatePrompts(spec.Name, spec.Checks, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validateRequiredDocs(prompts, spec.DocResolver)
@@ -206,12 +206,12 @@ func validateSpec[I any](spec Spec[I]) (
 	// turn, rather than discovered one fix at a time.
 	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validateModelTiers(spec, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	return doc, prompts, nil
@@ -223,7 +223,7 @@ func validateSpec[I any](spec Spec[I]) (
 func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 	items, err := spec.LoadItems(ctx)
 	if err != nil {
-		return nil, refuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
+		return nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
 	}
 
 	if spec.Prepare == nil {
@@ -232,7 +232,7 @@ func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 
 	items, err = spec.Prepare(ctx, items)
 	if err != nil {
-		return nil, refuseStartup(spec.Name, err)
+		return nil, RefuseStartup(spec.Name, err)
 	}
 
 	return items, nil
