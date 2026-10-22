@@ -1,7 +1,9 @@
-State confirmed: `tests/mcp/` has no `steps/` package; the three scenario steps are unbound. Creating the file exactly as specified.File written. Verifying it compiles under the `bdd` tag:Shell is hook-blocked in this mode, but the write succeeded and gopls reports the new file clean (0 errors, 0 warnings — the one project warning is the pre-existing `mcp_test.go` package resolution, untouched by this change). Only `tests/mcp/steps/steps.go` was created; nothing else modified.
+State verified: `tests/mcp/steps/` absent, module `fixture/buildtests`. Writing the steps package now.File written. Verifying it compiles with the `bdd` tag:Shell is blocked by the mode's guard; the write itself succeeded and LSP reports 0 errors for the new file (the `mcp_test.go` warning is pre-existing: its `scenarios` runner package is supplied by the engine, and that file is off-limits).
+
+All three INT-900 steps now bind: Given/When/Then patterns registered in the single `Register` in the new `tests/mcp/steps/steps.go`.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's steps package binding INT-900's three steps via one Register: server-running Given, JSON-RPC POST When, HTTP-status Then."
+summary: "Created the mcp suite's steps package with Register binding all three INT-900 steps (server running, JSON-RPC POST, HTTP status) over real TCP/HTTP with shared State"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
