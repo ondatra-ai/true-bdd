@@ -212,15 +212,16 @@ func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
 func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
 	s.Given(`the "scen-check-check-with-not-a-mapping" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters`)
-	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters`)
+	s.But(`stdout does not match interface`)
+	s.And(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()

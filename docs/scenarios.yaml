@@ -4249,7 +4249,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-checklists-003-check-with-not-a-mapping-refused:
-    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
@@ -4264,8 +4264,9 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters'
-        - but: stdout does not match SCEN CHECK
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters'
+        - but: stdout does not match interface
+        - and: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-term-documents-001-glossary-not-a-list-stops-scen-check:

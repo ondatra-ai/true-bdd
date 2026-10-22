@@ -184,12 +184,29 @@ func (p *Prompt) decodeWith(raw map[string]interface{}) error {
 
 	mapping, isMapping := val.(map[string]interface{})
 	if !isMapping {
-		return fmt.Errorf("%w, got %T", errWithNotMapping, val)
+		return fmt.Errorf("%s carries a with: that is %s, but %w", p.Label(), describeShape(val), errWithNotMapping)
 	}
 
 	p.With = mapping
 
 	return nil
+}
+
+// describeShape names a YAML value's kind as a checklist's author wrote
+// it, never the Go type it decoded into.
+func describeShape(val any) string {
+	switch val.(type) {
+	case []interface{}:
+		return "a list"
+	case string:
+		return "a string"
+	case bool:
+		return "a boolean"
+	case int, int64, uint64, float64:
+		return "a number"
+	default:
+		return "not a mapping"
+	}
 }
 
 // PromptWithContext holds a prompt with its section context for evaluation.
