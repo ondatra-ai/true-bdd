@@ -4,7 +4,8 @@
 // The package is gotool and the directory matches it, because `go` is a
 // keyword and cannot name a package. Few operations, because few callers: the
 // gate table runs `go test`/`go vet` as argv-as-data through pkg/cli/spec,
-// and scripts/enginecoverage builds a covered binary and reads its counters.
+// and scripts/enginecoverage builds a covered binary, replays the BDD suite
+// against it and reads its counters.
 package gotool
 
 import (
@@ -63,6 +64,25 @@ func CoverProfile(opt shell.Options, dataDir, profilePath string) error {
 
 	if result.Code != 0 {
 		return fmt.Errorf("go tool covdata textfmt: %w", result.Err())
+	}
+
+	return nil
+}
+
+// ReplayBDD runs every Scenario of the BDD suite pkg in replay, both callers
+// replaying, against the prebuilt engine at engineBin instead of the one the
+// harness builds. A red suite is an error.
+func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
+	result, err := shell.Run(context.Background(), []string{
+		Bin, "test", "-count=1", "-tags", "bdd", pkg,
+		"-mode=services:replay,tests:replay", "-engine-bin=" + engineBin,
+	}, opt)
+	if err != nil {
+		return err
+	}
+
+	if result.Code != 0 {
+		return fmt.Errorf("go test -tags bdd %s: %w", pkg, result.Err())
 	}
 
 	return nil
