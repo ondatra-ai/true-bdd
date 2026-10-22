@@ -1,264 +1,203 @@
-//go:build bdd
-
-// Package steps holds the step definitions for the `mcp` test suite.
-//
-// The suite is resolved from docs/architecture/architecture.yaml: service
-// `mcp-service` owns the tests/mcp tree, so every definition the mcp
-// scenarios bind to lives in this package and is registered from the one
-// Register call below.
 package steps
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// StepFunc is the shape of every step definition in this package: it
-// receives the pattern's capture groups in order and reports failure as an
-// error, because that error IS the test failure a reader gets.
-type StepFunc func(args ...string) error
-
-// Suite is the seam the suite runner satisfies. It is declared here rather
-// than imported so this package carries no dependency on the runner, which
-// lets the runner import these definitions and call Register without an
-// import cycle.
-type Suite interface {
-	Step(pattern string, fn StepFunc)
-}
-
-const (
-	// defaultPort is the configured MCP port when the environment is silent.
-	defaultPort = 8080
-	// portEnvVar overrides defaultPort for a run.
-	portEnvVar = "MCP_PORT"
-
-	dialTimeout  = 2 * time.Second
-	httpTimeout  = 10 * time.Second
-	maxBodyBytes = 64 << 10
-
-	// protocolVersion is the MCP revision the suite advertises when it
-	// initializes, so the request the When step sends is a valid one.
-	protocolVersion = "2025-06-18"
-)
-
-// State is the single piece of mutable state the mcp step definitions
-// share: a Given fills in the server coordinates, a When records the
-// exchange it performed, a Then reads that exchange back.
-type State struct {
-	// BaseURL is the root the When steps post to, e.g. http://127.0.0.1:8080.
-	BaseURL string
-	// Port is the TCP port the Given step found the server listening on.
-	Port int
-	// PortSource names where Port came from, for error messages.
-	PortSource string
-	// LastRequest describes the exchange the most recent When performed.
-	LastRequest string
-	// Status is that exchange's HTTP status code; 0 when none has happened.
-	Status int
-	// Body is that exchange's response payload.
-	Body []byte
-
-	client *http.Client
-}
-
-// NewState returns the shared state with its HTTP client ready.
-func NewState() *State {
-	return &State{client: &http.Client{Timeout: httpTimeout}}
-}
-
-// Register binds the mcp suite's entire step vocabulary. Every definition
-// the suite has is listed here.
+// Register binds the registry's step vocabulary for the mcp-service suite.
+//
+// One definition per distinct wording, anchored so a pattern cannot match a
+// step it was not written for, and parameterised so a scenario naming a
+// different port, JSON-RPC method, request path or status code reuses the
+// definition it already has.
 func Register(suite Suite) {
-	state := NewState()
-
-	// Given: "the MCP server is running on its configured port", and the
-	// same sentence naming a port explicitly ("... on port 8080").
-	suite.Step(`^the MCP server is running on (?:its configured port|port (\d+))$`, func(args ...string) error {
-		return state.serverIsRunning(arg(args, 0))
-	})
-
-	// When: any actor posting any valid JSON-RPC method to any endpoint.
-	suite.Step(`^the (.+) posts a valid JSON-RPC ([A-Za-z][A-Za-z0-9_/.-]*) request to (/\S*)$`, func(args ...string) error {
-		return state.postJSONRPC(arg(args, 0), arg(args, 1), arg(args, 2))
-	})
-
-	// Then: any HTTP status code.
-	suite.Step(`^the server returns HTTP (\d{3})$`, func(args ...string) error {
-		return state.statusIs(arg(args, 0))
-	})
+	suite.Step(`^the MCP server is running on (?:its configured port|port "?([0-9]+)"?)$`, givenMCPServerRunning)
+	suite.Step(`^the Claude User posts a valid JSON-RPC "?([A-Za-z][A-Za-z0-9/._-]*)"? request to "?(/[^"\s]*)"?$`, whenClaudeUserPostsJSONRPC)
+	suite.Step(`^the server returns HTTP ([0-9]{3})$`, thenServerReturnsStatus)
 }
 
-// serverIsRunning resolves the port the scenario means and proves something
-// is accepting connections on it before any When step relies on it.
-func (s *State) serverIsRunning(portArg string) error {
-	port, source, err := resolvePort(portArg)
+// givenMCPServerRunning prepares the scenario against the MCP server the suite
+// has already started: it confirms the host state carries a usable base URL,
+// that the URL's port is the configured one (the step's own capture when it
+// names a port, otherwise MCP_PORT), and that something is really listening
+// there before any request is made.
+func givenMCPServerRunning(state *State, args []string) error {
+	if state == nil {
+		return fmt.Errorf("the MCP server is running on its configured port: expected scenario state, got nil")
+	}
+	base := strings.TrimSpace(state.BaseURL)
+	if base == "" {
+		return fmt.Errorf("the MCP server is running on its configured port: expected the suite to supply State.BaseURL for the MCP server, got an empty string")
+	}
+	endpoint, err := url.Parse(base)
 	if err != nil {
-		return err
+		return fmt.Errorf("the MCP server is running on its configured port: expected State.BaseURL to be a URL, got %q: %w", base, err)
+	}
+	if state.Client == nil {
+		state.Client = &http.Client{Timeout: 10 * time.Second}
 	}
 
-	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
-	conn, err := net.DialTimeout("tcp", addr, dialTimeout)
+	wantPort := firstNumber(args)
+	if wantPort == "" {
+		wantPort = strings.TrimSpace(os.Getenv("MCP_PORT"))
+	}
+	if wantPort == "" {
+		return fmt.Errorf("the MCP server is running on its configured port: expected the configured port in MCP_PORT, got an empty value")
+	}
+	if gotPort := endpoint.Port(); gotPort != wantPort {
+		return fmt.Errorf("the MCP server is running on its configured port: expected the server on port %s, got base URL %q (port %q)", wantPort, base, gotPort)
+	}
+
+	conn, err := net.DialTimeout("tcp", endpoint.Host, 5*time.Second)
 	if err != nil {
-		return fmt.Errorf(
-			"expected the MCP server to be listening on %s (port from %s), but dialling it failed within %s: %v",
-			addr, source, dialTimeout, err)
+		return fmt.Errorf("the MCP server is running on its configured port: expected a listener on %s, got dial error: %w", endpoint.Host, err)
 	}
 	_ = conn.Close()
 
-	s.Port = port
-	s.PortSource = source
-	s.BaseURL = "http://" + addr
-	s.Status = 0
-	s.Body = nil
-	s.LastRequest = ""
+	// A fresh scenario must not inherit a previous response.
+	state.Response = nil
 	return nil
 }
 
-// resolvePort prefers a port named in the step text, then the environment,
-// then the default, and says which it used.
-func resolvePort(portArg string) (port int, source string, err error) {
-	if portArg != "" {
-		port, err = parsePort(portArg)
-		if err != nil {
-			return 0, "", fmt.Errorf("expected the port in the step text to be a number in 1..65535, got %q", portArg)
-		}
-		return port, "the step text", nil
+// whenClaudeUserPostsJSONRPC posts a well-formed JSON-RPC request for the
+// captured method to the captured path on the suite's MCP server and records
+// the response on the shared state for the Then steps to assert against.
+func whenClaudeUserPostsJSONRPC(state *State, args []string) error {
+	if state == nil {
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC request: expected scenario state, got nil")
+	}
+	method := firstWord(args)
+	path := firstPath(args)
+	if method == "" || path == "" {
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC request: expected a JSON-RPC method and a request path captured from the step, got method %q and path %q (captures %q)", method, path, args)
+	}
+	base := strings.TrimSpace(state.BaseURL)
+	if base == "" {
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC %s request to %s: expected State.BaseURL to name the running MCP server, got an empty string", method, path)
+	}
+	if state.Client == nil {
+		state.Client = &http.Client{Timeout: 10 * time.Second}
 	}
 
-	raw, ok := os.LookupEnv(portEnvVar)
-	if !ok || strings.TrimSpace(raw) == "" {
-		return defaultPort, fmt.Sprintf("the default configured port (%s is unset)", portEnvVar), nil
-	}
-	port, err = parsePort(raw)
+	target := strings.TrimSuffix(base, "/") + path
+	payload := fmt.Sprintf(
+		`{"jsonrpc":"2.0","id":1,"method":%q,"params":{"protocolVersion":"2026-10-22","capabilities":{},"clientInfo":{"name":"claude-user","version":"1.0.0"}}}`,
+		method,
+	)
+
+	request, err := http.NewRequest(http.MethodPost, target, bytes.NewBufferString(payload))
 	if err != nil {
-		return 0, "", fmt.Errorf("expected %s to hold a port number in 1..65535, got %q", portEnvVar, raw)
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC %s request to %s: expected to build a POST for %q, got: %w", method, path, target, err)
 	}
-	return port, portEnvVar, nil
-}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json, text/event-stream")
 
-func parsePort(raw string) (int, error) {
-	port, err := strconv.Atoi(strings.TrimSpace(raw))
+	response, err := state.Client.Do(request)
 	if err != nil {
-		return 0, err
-	}
-	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port %d out of range", port)
-	}
-	return port, nil
-}
-
-// postJSONRPC sends a well-formed JSON-RPC request for the named method to
-// the named endpoint and records the response for a Then step to assert on.
-func (s *State) postJSONRPC(actor, method, path string) error {
-	if s.BaseURL == "" {
-		return fmt.Errorf(
-			"cannot post the JSON-RPC %s request: no MCP server address is known yet — the Given step that finds the running server has not run",
-			method)
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC %s request to %s: expected POST %s to reach the MCP server, got transport error: %w", method, path, target, err)
 	}
 
-	payload, err := json.Marshal(jsonRPCRequest(method))
-	if err != nil {
-		return fmt.Errorf("expected to encode the JSON-RPC %s request, but marshalling it failed: %v", method, err)
+	// Drain and re-wrap the body so the connection is released here while a
+	// later assertion can still read what the server sent.
+	raw, readErr := io.ReadAll(response.Body)
+	if closeErr := response.Body.Close(); closeErr != nil && readErr == nil {
+		readErr = closeErr
 	}
-
-	url := strings.TrimSuffix(s.BaseURL, "/") + path
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
-	if err != nil {
-		return fmt.Errorf("expected to build a POST to %s, but constructing the request failed: %v", url, err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	// MCP's streamable HTTP transport requires the client to accept both.
-	req.Header.Set("Accept", "application/json, text/event-stream")
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return fmt.Errorf(
-			"%s posted JSON-RPC %s to %s and expected a response, but the request failed: %v",
-			describeActor(actor), method, url, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes))
-	s.Status = resp.StatusCode
-	s.Body = body
-	s.LastRequest = fmt.Sprintf("POST %s (JSON-RPC %s, as %s)", url, method, describeActor(actor))
 	if readErr != nil {
-		return fmt.Errorf("%s: got HTTP %d but reading the response body failed: %v", s.LastRequest, resp.StatusCode, readErr)
+		return fmt.Errorf("the Claude User posts a valid JSON-RPC %s request to %s: expected to read the response body of POST %s, got: %w", method, path, target, readErr)
 	}
+	response.Body = io.NopCloser(bytes.NewReader(raw))
+
+	state.Response = response
 	return nil
 }
 
-// jsonRPCRequest builds a valid request envelope for method, including the
-// parameters MCP requires for initialize.
-func jsonRPCRequest(method string) map[string]any {
-	req := map[string]any{
-		"jsonrpc": "2.0",
-		"id":      1,
-		"method":  method,
+// thenServerReturnsStatus asserts the recorded response carries the status code
+// the step names.
+func thenServerReturnsStatus(state *State, args []string) error {
+	if state == nil {
+		return fmt.Errorf("the server returns HTTP <status>: expected scenario state, got nil")
 	}
-	if method == "initialize" {
-		req["params"] = map[string]any{
-			"protocolVersion": protocolVersion,
-			"capabilities":    map[string]any{},
-			"clientInfo": map[string]any{
-				"name":    "true-bdd-mcp-suite",
-				"version": "1.0.0",
-			},
-		}
-		return req
+	wanted := firstNumber(args)
+	if wanted == "" {
+		return fmt.Errorf("the server returns HTTP <status>: expected a numeric status code captured from the step, got captures %q", args)
 	}
-	req["params"] = map[string]any{}
-	return req
-}
-
-// statusIs asserts the recorded response carried the expected status code.
-func (s *State) statusIs(want string) error {
-	code, err := strconv.Atoi(want)
+	want, err := strconv.Atoi(wanted)
 	if err != nil {
-		return fmt.Errorf("expected the status code in the step text to be a number, got %q", want)
+		return fmt.Errorf("the server returns HTTP %s: expected the captured status to be a number, got %q: %w", wanted, wanted, err)
 	}
-	if s.Status == 0 {
-		return fmt.Errorf("expected HTTP %d, but no response has been recorded — no When step posted a request", code)
+	if state.Response == nil {
+		return fmt.Errorf("the server returns HTTP %d: expected a recorded HTTP response, got none — a When step must send a request before this assertion", want)
 	}
-	if s.Status != code {
-		return fmt.Errorf("expected HTTP %d from %s, got HTTP %d; response body: %s",
-			code, s.LastRequest, s.Status, bodySnippet(s.Body))
+	if got := state.Response.StatusCode; got != want {
+		return fmt.Errorf("the server returns HTTP %d: expected status %d, got %d (%q)", want, want, got, state.Response.Status)
 	}
 	return nil
 }
 
-// arg returns capture group i, or "" when the group did not participate in
-// the match (an optional alternative, such as the explicit port).
-func arg(args []string, i int) string {
-	if i < 0 || i >= len(args) {
-		return ""
+// --- capture helpers -------------------------------------------------------
+//
+// The harness hands a definition its captures as a []string. These helpers
+// pick a capture out by shape rather than by index, so a non-participating
+// optional group or a leading full-match element cannot shift the meaning of a
+// positional read. A full step line always contains spaces, so it never passes
+// any of these shape checks.
+
+// firstNumber returns the first capture that is a bare run of ASCII digits.
+func firstNumber(args []string) string {
+	for _, arg := range args {
+		candidate := strings.Trim(strings.TrimSpace(arg), `"`)
+		if digitsOnly(candidate) {
+			return candidate
+		}
 	}
-	return strings.TrimSpace(args[i])
+	return ""
 }
 
-func describeActor(actor string) string {
-	if actor == "" {
-		return "the client"
+// firstPath returns the first capture that looks like a request path.
+func firstPath(args []string) string {
+	for _, arg := range args {
+		candidate := strings.Trim(strings.TrimSpace(arg), `"`)
+		if strings.HasPrefix(candidate, "/") && !strings.ContainsAny(candidate, " \t") {
+			return candidate
+		}
 	}
-	return actor
+	return ""
 }
 
-func bodySnippet(body []byte) string {
-	trimmed := strings.TrimSpace(string(body))
-	if trimmed == "" {
-		return "<empty>"
+// firstWord returns the first capture that is a single bare token and not a
+// request path — the JSON-RPC method name.
+func firstWord(args []string) string {
+	for _, arg := range args {
+		candidate := strings.Trim(strings.TrimSpace(arg), `"`)
+		if candidate == "" || strings.HasPrefix(candidate, "/") {
+			continue
+		}
+		if strings.ContainsAny(candidate, " \t") {
+			continue
+		}
+		return candidate
 	}
-	const limit = 300
-	if len(trimmed) > limit {
-		return strconv.Quote(trimmed[:limit]) + " (truncated)"
+	return ""
+}
+
+func digitsOnly(s string) bool {
+	if s == "" {
+		return false
 	}
-	return strconv.Quote(trimmed)
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }

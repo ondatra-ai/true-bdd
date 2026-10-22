@@ -147,6 +147,7 @@ Example:
 			}
 
 			return commands.RunBuildTests(ctx, commands.BuildTestsDeps{
+				TestRunnerDispatcher:         container.TestRunnerDispatcher,
 				RegistryLoader:               container.RegistryLoader,
 				ChecklistLoader:              container.ChecklistLoader,
 				DocResolver:                  container.DocResolver,

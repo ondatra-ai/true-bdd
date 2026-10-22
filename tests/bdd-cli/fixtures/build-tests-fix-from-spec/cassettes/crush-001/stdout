@@ -1,7 +1,7 @@
-`tests/mcp/steps/` doesn't exist and no `Suite`/`State`/`Register` exists anywhere, so I create the three files exactly as specified.All three files written (the suite.go errors were transient — State lives in state.go, written in the same batch). Verifying the build:Shell is denied by the fixture's guard hook, so verification rests on LSP diagnostics: 0 compiler errors across the package after all three files landed (the only remaining warning is the pre-existing `//go:build bdd` tag on `mcp_test.go`, untouched).
+Wiring confirmed (`steps.Register(suite)` awaited in scenarios.go:32). Writing the new definitions file.File written (stale gopls diagnostic expected to clear). Running verification:Shell is blocked by the guard hook; verifying via LSP diagnostics instead:Write applied exactly as specified. Shell and diagnostics tools are blocked by the true-bdd guard hook, so `go vet`/`go test` verification could not be run in this mode (the earlier `undefined: steps.Register` diagnostic predates the file).
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
 applied: true
-target: "tests/mcp/steps/mcp_steps.go"
-summary: "Created the tests/mcp/steps package (suite.go, state.go, mcp_steps.go) with Register binding the four Given/When/Then definitions for INT-901 and INT-902."
+target: "tests/mcp/steps/steps.go"
+summary: "Created steps.go registering all four suite phrases (INT-901 Given/When/Then plus INT-902 Then) with health-poll Given, initialize-POST When, and header-validating Thens"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===

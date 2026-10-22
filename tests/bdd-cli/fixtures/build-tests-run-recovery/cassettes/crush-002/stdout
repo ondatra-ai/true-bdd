@@ -1,0 +1,7 @@
+Edit applied; replay verification was blocked by the environment's shell guard, but the change matches the specified fix exactly (no new registrations needed, off-by-one removed).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Fixed number step: store parsed value without +1 and check Atoi error before mutating state"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

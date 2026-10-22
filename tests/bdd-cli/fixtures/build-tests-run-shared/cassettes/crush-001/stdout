@@ -1,0 +1,7 @@
+The suite files match the fix prompt's description. Applying the edit to `tests/calc/steps/steps.go`:Edit applied. Now running the declared replay command (CLAUDE.md says its first run injects a broken number definition):Shell execution is blocked by the true-bdd guard hook in this mode, so I cannot run replay myself — the harness will run it externally and report feedback for repair. Verifying the final file state:The edit is in place: `Register` now binds all three patterns and `transform` implements the parameterized operation, with `number`/`result` untouched. Note: replay.sh could not be run by me — the true-bdd guard hook blocks shell in this mode; the harness runs it externally, and I'll repair from its expected/actual feedback when reported.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered parameterized transform When-step (^the number is (doubled|tripled|halved|squared|negated)$) in existing Register and added its implementation"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

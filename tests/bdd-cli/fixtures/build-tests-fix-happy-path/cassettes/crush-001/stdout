@@ -1,9 +1,7 @@
-State verified: `tests/mcp/steps/` absent, module `fixture/buildtests`. Writing the steps package now.File written. Verifying it compiles with the `bdd` tag:Shell is blocked by the mode's guard; the write itself succeeded and LSP reports 0 errors for the new file (the `mcp_test.go` warning is pre-existing: its `scenarios` runner package is supplied by the engine, and that file is off-limits).
-
-All three INT-900 steps now bind: Given/When/Then patterns registered in the single `Register` in the new `tests/mcp/steps/steps.go`.
+The `steps` package has only `state.go`; `steps.Register` is undefined (confirmed by diagnostics). Writing `tests/mcp/steps/steps.go` exactly as the fix prompt specifies.Diagnostics look stale; running the fix prompt's verification commands.Shell is blocked by a hook; checking compile state via LSP diagnostics instead.Hook policy blocks shell/LSP in this mode, so verification commands can't run here; the file was written exactly as specified and resolves the `undefined: steps.Register` error (its `Register(suite Suite)` matches the interface in state.go:13).
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/steps.go"
-summary: "Created the mcp suite's steps package with Register binding all three INT-900 steps (server running, JSON-RPC POST, HTTP status) over real TCP/HTTP with shared State"
+summary: "Created steps.go with Register binding the three INT-900 step definitions (server running, JSON-RPC POST, HTTP status assert) to the shared State."
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

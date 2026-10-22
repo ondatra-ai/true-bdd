@@ -1,0 +1,7 @@
+File matches the diagnosis exactly. Applying the edit to the `number` helper:Verifying with the declared replay command:Shell verification is blocked by the true-bdd guard in this mode; the harness runs replay itself. The edit is applied exactly as specified — `Register` and all other definitions untouched.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Fixed number helper to store the parsed value verbatim and return a clear error on bad parse instead of storing value+1"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

@@ -1,0 +1,57 @@
+# Execution after step authoring needs three criteria together.
+# build-tests-steps already has seven; the other build-tests Stories
+# cover startup or file-shape refusals and have at most one free slot.
+
+story:
+  id: build-tests-run
+  feature: build-tests
+  title: Run authored step definitions before completing build tests
+  as_a: System Architect
+  i_want: build tests --fix to run the Scenarios using authored definitions through the declared replay command, repair runtime failures within the attempt bound, and include Scenarios sharing a changed definition
+  so_that: a generated definition is complete only when the Scenarios that use it pass
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-failed-definition-repaired
+    description: After writing a step definition, build tests --fix must run its Scenarios through the declared replay command and repair a definition that fails before reporting COMPLETE
+    steps:
+    - given:
+      - the "build-tests-run-recovery" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - and: stdout matches calc-001-double
+      - and: stdout matches expected 4, got 6
+      - and: the engine spawned a test runner with arguments matching -run
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
+  - id: 002-attempt-bound-reports-failing-step
+    description: A definition still failing after the configured fix attempt bound must end build tests --fix with a nonzero exit naming the Scenario and its failing step
+    steps:
+    - given:
+      - the "build-tests-run-bound" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches authored step definitions still fail after 1 fixes for Scenario calc-001-double
+      - and: stdout matches the result is 4
+      - and: stdout matches expected 4, got 6
+      - but: stdout does not match BUILD TESTS COMPLETE
+      - and: the engine spawned exactly 1 test runner
+  - id: 003-shared-definition-scenarios-run
+    description: A changed step definition must also run a Scenario that already bound every step, using the declared suite with a name filter
+    steps:
+    - given:
+      - the "build-tests-run-shared" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 0
+      - and: stdout matches calc-002-shared
+      - and: stdout matches expected 3, got 4
+      - and: the engine spawned a test runner with arguments matching TestCalc002Shared
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0

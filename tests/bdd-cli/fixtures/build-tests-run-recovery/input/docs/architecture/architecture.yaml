@@ -1,0 +1,11 @@
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: sh replay.sh -json
+      replay: sh replay.sh -json
+      live: sh replay.sh -json
+  services:
+    - name: calc
+      path: services/calc
+      language: go

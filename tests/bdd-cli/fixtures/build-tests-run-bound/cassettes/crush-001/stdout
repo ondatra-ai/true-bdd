@@ -1,0 +1,9 @@
+Both files match the fix prompt's expectations. Applying the two edits:Edits verified against the file — registration added at tests/calc/steps/steps.go:8 and implementation at lines 17-19. Shell execution is blocked by the repo's guard hook, so compilation is confirmed by inspection only (no new imports, signature matches `Registrar`).
+
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered ^the number is doubled$ -> doubled (Value *= 2) in existing Register; no other files touched"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+```

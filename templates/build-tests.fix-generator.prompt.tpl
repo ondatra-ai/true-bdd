@@ -77,6 +77,17 @@ scenario's first: bind a neighbour's step from its phrase the same way.
 {{- end }}
 
 {{ end -}}
+{{ if .Subject.Failures -}}
+## Step execution failures
+
+The declared replay command ran the Scenarios using the changed step
+definitions. Binding alone is insufficient: repair the definitions until
+these Scenarios pass. Preserve the Registry, generated tests and suite
+command. Read every failing step and its expected and actual values.
+{{ range .Subject.Failures }}
+{{ . }}
+{{ end }}
+{{ end -}}
 ## Validation Failure
 
 The following check failed and needs to be fixed:
