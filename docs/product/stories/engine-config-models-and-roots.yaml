@@ -35,3 +35,21 @@ story:
                 - but: stdout does not match BUILD TESTS
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
+        - id: 002-malformed-model-entries-refused
+          description: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI and one with an empty model, and none of the sound entries
+          steps:
+            - given:
+                - the "build-tests-malformed-model-entries" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
+                - and: 'stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"'
+                - and: 'stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"'
+                - and: 'stdout matches engine\.models\.coder: model reference has an empty model: got \\"crush:\\"'
+                - but: stdout does not match engine\.models\.quick
+                - and: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

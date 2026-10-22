@@ -239,3 +239,21 @@ func TestEngineConfig001EmptyModelTableRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-config-002-malformed-model-entries-refused: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI and one with an empty model, and none of the sound entries
+func TestEngineConfig002MalformedModelEntriesRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-002-malformed-model-entries-refused")
+	s.Given(`the "build-tests-malformed-model-entries" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)`)
+	s.And(`stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"`)
+	s.And(`stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"`)
+	s.And(`stdout matches engine\.models\.coder: model reference has an empty model: got \\"crush:\\"`)
+	s.But(`stdout does not match engine\.models\.quick`)
+	s.And(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
