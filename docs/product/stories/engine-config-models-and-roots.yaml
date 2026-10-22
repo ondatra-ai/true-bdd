@@ -6,8 +6,8 @@
 # Prompt or checklist naming a tier the table does not configure. Also the
 # roots `build tests --fix` authors into when true-bdd.yaml names none. A
 # model reference naming an unknown CLI is the Story engine's
-# (`engine-004`); the checklists and term documents the engine cannot read
-# are the Story engine-documents.
+# (`engine-004`); a checklist the engine cannot read is the Story
+# engine-checklists, a term document the Story engine-term-documents.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `engine-config-<id>` (ADR 0014), and its steps are that Scenario's steps.
