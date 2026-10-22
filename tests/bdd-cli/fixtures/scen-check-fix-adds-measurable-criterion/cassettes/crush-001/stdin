@@ -51,66 +51,44 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
-`docs/scenarios.yaml`). No other document, Scenario or field changes.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry) — its `merged_steps.then` list, and nothing else.
 
-## Context the applier needs
-- The finding (`scen-check/scenario_quality`, `E2E-001: not measurable`) is that
-  no step and no part of the description names an exact message, count, code or
-  threshold. The reviewer's fix template asks for exactly one measurable
-  criterion, added to the step that asserts the outcome: the single `then` step.
-- The user chose the criterion: the exact output line, asserted as a stdout
-  pattern — greeting "Hello", name "Alice", so the line read for is
-  `Hello Alice`.
-- The wording is taken from the `product` document's catalogue entry
-  `stdout matches {expected:pattern}` (block: `then`), whose `means` is "A line
-  the command printed to its standard output matches the pattern, a regular
-  expression". The `{expected:pattern}` slot takes the rest of the step verbatim,
-  so it is filled with `^Hello Alice$`. The catalogue entry itself is correct and
-  is **not** edited.
-- Do **not** touch `tests/greeter/greet_test.go`; `true-bdd build tests --fix`
-  re-renders it from the registry after this edit. Do **not** touch any step
-  definition.
+## Why
+The scen-check `scenario_quality` check failed with the finding `E2E-001: not measurable`: no step and no part of the description names an exact message, a count, a code or a threshold, so a step definition has nothing to assert on. The user chose the criterion: the exact printed line, pinned to a concrete greeting and name, asserted through the catalogue's `stdout matches {expected:pattern}` template.
 
 ## Required Changes
 
-### Change #1: give the outcome step an exact expected output line
-**Document:** scenarios_yaml (`docs/scenarios.yaml`)
-**Field:** `scenarios.E2E-001.merged_steps.then`
+### Change #1: Replace the outcome step with the exact printed line
+**Document:** scenarios_yaml
+**Field:** merged_steps.then (the single entry of the `then` list of Scenario `E2E-001`)
 **Current text:**
 ```
-      then:
-        - the greeter greets that person
+the greeter greets that person
 ```
 **New text:**
 ```
-      then:
-        - stdout matches ^Hello Alice$
+stdout matches ^Hello Ada$
 ```
 
-That is the whole fix: one step, replaced in place, in the same `then` block.
+In the registry file this is the one-line edit:
+```yaml
+      then:
+        - stdout matches ^Hello Ada$
+```
+Keep the list a single-item list, keep its indentation as it is, and keep the step a plain (unquoted) YAML scalar, like the other steps in this entry.
 
-## What must stay exactly as it is
-- `scenarios.E2E-001.description`: `The greeter must greet the person whose name it is given` — unchanged.
-- `scenarios.E2E-001.service`: `greeter` — unchanged.
-- `scenarios.E2E-001.path`: `tests/greeter/greet_test.go` — unchanged.
-- `scenarios.E2E-001.user_stories`: `[]` — unchanged.
-- `scenarios.E2E-001.merged_steps.given`: `- the greeting is configured` — unchanged (the fix template forbids changing another step; the `given` is outside this finding).
-- `scenarios.E2E-001.merged_steps.when`: `- the Operator runs the greeter with a name` — unchanged, for the same reason.
-- The registry `metadata:` block, the comment header, every other Scenario, and the whole `product` document (its `catalogue:`, `glossary:`, `vocabulary:`, `roles:`) — unchanged.
+## Constraints
+- Change nothing else in `E2E-001`: leave `description: The greeter must greet the person whose name it is given`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are.
+- Change no other step: `given: the greeting is configured` and `when: the Operator runs the greeter with a name` stay verbatim. The fix template says to change only the step that asserts the outcome, so do not pin the greeting or the name in the Given or When step in this fix.
+- Change no other Scenario, and do not touch `metadata:`.
+- Do not edit the `product` document: no catalogue `means` is named by this finding, and the new step already matches the existing `then`-block catalogue template `stdout matches {expected:pattern}` with the slot filled by `^Hello Ada$`.
+- Do not edit `tests/greeter/greet_test.go` or any step definition. The generated test is re-rendered from the registry by `true-bdd build tests --fix` after this edit lands.
 
-## Why the behaviour is preserved
-Before, the Scenario asserted that the greeter greets the named person, without
-saying what that looks like. After, it asserts the same behaviour at the one
-point a step definition can settle it: the greeter's standard output carries the
-line `Hello Alice` — the configured greeting followed by the given name. Nothing
-is dropped; the outcome is now stated as something a run can check.
+## Behaviour preserved
+The Scenario still asserts that the greeter greets the person whose name it is given; the outcome is now stated as the observable line on standard output (`^Hello Ada$`) instead of the unobservable prose `greets that person`. No assertion is dropped and none is added.
 
 ## Done when
-- `scenarios.E2E-001.merged_steps.then` reads `- stdout matches ^Hello Alice$` and holds exactly one step.
-- No other key of `docs/scenarios.yaml` differs from its current text.
-- `docs/product/product.yaml` is byte-identical to its current state.
-- `tests/greeter/greet_test.go` is left for `true-bdd build tests --fix` to re-render.
+`merged_steps.then` of `E2E-001` reads `stdout matches ^Hello Ada$`, every other field and Scenario in the registry is byte-identical to before, and the scen-check `scenario_quality` check reports `E2E-001: measurable — '^Hello Ada$'`.
 
 ---
 
