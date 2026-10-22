@@ -25,15 +25,15 @@ metadata:
   description: "Empty seed for us-apply re-walk converges fixture"
 
 scenarios:
-  "99.3-001-mcp-initialize":
-    description: "MCP server answers a valid JSON-RPC initialize POST to /mcp with HTTP 200 and a JSON-RPC envelope"
+  99.3-001-mcp-initialize:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize POST to /mcp"
     service: ""
-    path: "tests/mcp/mcp_endpoint_test.go"
-    last_updated: "2026-10-21"
+    path: tests/mcp_test.go
+    last_updated: "2026-10-22"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-001-mcp-initialize"
-        merge_date: "2026-10-21"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-001-mcp-initialize
+        merge_date: "2026-10-22"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -42,4 +42,4 @@ scenarios:
         - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
