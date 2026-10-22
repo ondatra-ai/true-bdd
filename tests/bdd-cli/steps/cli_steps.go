@@ -64,7 +64,6 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
 	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
 		assertStoryCriteriaHaveSteps)
-	suite.Step(`^the "([^"]+)" clause of the story "([^"]+)" does not match (.+)$`, assertStoryClauseNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
 		assertStoryCriterionDescNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
