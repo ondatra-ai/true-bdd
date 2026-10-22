@@ -321,6 +321,27 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
+  build-code-commands-005-jest-without-json-refused:
+    description: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/build-code-commands-refusals.yaml
+        scenario_id: build-code-commands-005-jest-without-json-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-code-jest-command-not-machine-readable" project tree
+      when:
+        - the System Architect runs "build code"
+      then:
+        - the command exits with code 1
+        - 'stdout matches level=ERROR msg="Refusing to start'
+        - stdout matches must emit machine-readable output
+        - stdout matches jest command .*npx jest --config jest\.config\.js.* is missing --json
+        - but: no file outside "tmp" changed
+        - and: the engine spawned no test runner
+        - and: the engine dispatched no AI turns
   build-tests-refusals-001-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, never walked to a trivial success
     service: bdd-cli

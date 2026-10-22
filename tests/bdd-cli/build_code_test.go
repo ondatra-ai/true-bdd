@@ -83,6 +83,21 @@ func TestBuildCodeCommands004NotMachineReadableRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-code-commands-005-jest-without-json-refused: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
+func TestBuildCodeCommands005JestWithoutJsonRefused(t *testing.T) {
+	s := scenarios.New(t, "build-code-commands-005-jest-without-json-refused")
+	s.Given(`the "build-code-jest-command-not-machine-readable" project tree`)
+	s.When(`the System Architect runs "build code"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start`)
+	s.And(`stdout matches must emit machine-readable output`)
+	s.And(`stdout matches jest command .*npx jest --config jest\.config\.js.* is missing --json`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")

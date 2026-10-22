@@ -81,3 +81,18 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine spawned no test runner
                 - and: the engine dispatched no AI turns
+        - id: 005-jest-without-json-refused
+          description: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
+          steps:
+            - given:
+                - the "build-code-jest-command-not-machine-readable" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches must emit machine-readable output
+                - stdout matches jest command .*npx jest --config jest\.config\.js.* is missing --json
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
