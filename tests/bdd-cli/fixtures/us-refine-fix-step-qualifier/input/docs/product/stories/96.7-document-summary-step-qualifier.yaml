@@ -6,7 +6,7 @@
 # fail/fix chain):
 #
 #   - AC-4: the then step contains the forbidden qualifiers "quickly"
-#     and "user-friendly" (listed in the fixture's docs/architecture/architecture.yaml
+#     and "user-friendly" (listed in the fixture's docs/product/product.yaml
 #     forbidden_qualifiers) -> fails the vague-word-in-steps prompt;
 #     its F replaces the qualifiers with measurable criteria.
 #

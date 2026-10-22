@@ -118,7 +118,10 @@ type Fixture struct {
 	// expected-vs-actual column, not read by the judge itself (see Clauses).
 	JudgeSpec string
 	Stdin     []byte   // interactive input, set by the scenario's Given step
-	PrepCmds  []string // from prep.sh, run in the tmpdir before the pre-run snapshot
+	// Absent: run-dir paths a Given step says the tree has no copy of,
+	// deleted once the run dir is assembled (see dropAbsentPaths).
+	Absent   []string
+	PrepCmds []string // from prep.sh, run in the tmpdir before the pre-run snapshot
 	// TeardownCmds: from teardown.sh, run in the tmpdir after the
 	// post-run snapshot whatever the verdict.
 	TeardownCmds []string
@@ -311,7 +314,7 @@ func Execute(
 		return &RunResult{TmpDir: tmpDir}, fmt.Errorf("snapshot pre-run: %w", err)
 	}
 
-	args := strings.Fields(fixture.Cmd)
+	args := commandArgs(fixture.Cmd, tmpDir)
 
 	// Stripped, not blanked: the engine under test must look entirely
 	// unlaunched-from-a-session, as pkg/cli/claude's own child does.
@@ -402,6 +405,11 @@ func prepareRunDir(fixture *Fixture, sessionRoot string) (string, error) {
 	err = disk.CopyTree(tmpDir, filepath.Join(fixture.Dir, fixture.InputPath), disk.Shared)
 	if err != nil {
 		return tmpDir, fmt.Errorf("overlay input tree: %w", err)
+	}
+
+	err = dropAbsentPaths(fixture, tmpDir)
+	if err != nil {
+		return tmpDir, err
 	}
 
 	err = applyChecklistFilters(fixture, tmpDir)

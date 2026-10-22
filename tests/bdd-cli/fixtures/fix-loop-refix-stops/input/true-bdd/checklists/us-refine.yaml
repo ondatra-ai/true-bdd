@@ -1,0 +1,41 @@
+# Fixture checklist for `fix-loop-refix-stops`.
+#
+# The shipped vague-word-in-description prompt, its fix narrowed to one
+# criterion per fix, under a budget of one fix per prompt: the story's two
+# vague criteria need two fixes of the same prompt, and the second stops.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+config:
+  max_apply_attempts: 1
+
+sections:
+  - id: acceptance_criteria
+    name: "Acceptance Criteria Quality"
+    description: "Testable conditions that define 'done' (incorporates Ron Jeffries' Confirmation)"
+    source: "https://www.altexsoft.com/blog/acceptance-criteria-purposes-formats-and-best-practices/"
+    validation_prompts:
+      - Q: |
+          For every AC, decide whether its description field contains a vague
+          word from the forbidden_qualifiers list in the architecture reference
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when no AC description contains forbidden qualifiers.
+          Fail when one or more AC descriptions contain them.
+
+          Context: emit one line per AC.
+            - "<AC-id>: ok"
+            - "<AC-id>: contains '<word>'[, '<word2>'...]"
+        rationale: "Vague words in AC descriptions cannot be tested objectively."
+        docs:
+          - product
+          - architecture_yaml
+        F: |
+          Replace the vague word in the description of the FIRST acceptance
+          criterion the context names, and only that one, with specific,
+          measurable criteria. Leave every other acceptance criterion exactly
+          as it is, its vague words included: each gets a fix of its own.
+
+          Use the forbidden_qualifiers list from the architecture reference
+          (docs/architecture/architecture.yaml).

@@ -1,0 +1,19 @@
+# Fixture checklist for `fix-loop-exit-terms`.
+#
+# The step-phrase check alone, with a fix that proposes its catalogue entry
+# straight away rather than asking first, so the first thing the fix loop
+# asks is whether to apply, refine or exit.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of a Scenario a Story claims must match exactly one catalogue phrase."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for the failing step, without asking first. Write it to the product document, never to the Scenario."

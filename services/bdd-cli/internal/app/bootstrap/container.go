@@ -132,6 +132,11 @@ func NewContainer() (*Container, error) {
 
 	testRunnerDispatcher := newTestRunnerDispatcher(runDir)
 
+	// EditMode reaches tmp only: a closure fix edits the scratch copy of the
+	// product document; a model Prompt's fix still returns the Story body.
+	refineFixApplier := validate.NewFixApplier(aiClient, cfg, models)
+	refineFixApplier.UseEditMode()
+
 	return &Container{
 		Config:                       cfg,
 		RunDir:                       runDir,
@@ -144,7 +149,7 @@ func NewContainer() (*Container, error) {
 		TableRenderer:                runner.NewTableRenderer(),
 		Evaluator:                    validate.NewChecklistEvaluator(aiClient, cfg, models),
 		FixGenerator:                 validate.NewFixPromptGenerator(aiClient, cfg, models),
-		FixApplier:                   validate.NewFixApplier(aiClient, cfg, models),
+		FixApplier:                   refineFixApplier,
 		ApplyEvaluator:               trips.apply.evaluator,
 		ApplyFixPromptGenerator:      trips.apply.fixGenerator,
 		ApplyFixApplier:              trips.apply.fixApplier,

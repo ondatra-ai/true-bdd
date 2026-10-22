@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/product.yaml"
+summary: "Appended the literal 'Claude offers to summarise the document instead' then-block entry to the end of the catalogue list."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===

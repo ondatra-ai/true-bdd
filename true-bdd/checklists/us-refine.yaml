@@ -101,13 +101,16 @@ sections:
             - given:
                 - "<precondition using role from story>"
             - when:
-                - "<role from story> <allowed action verb from the architecture vocabulary> <object>"
+                - "<role from story> <concrete, observable action> <object>"
             - then:
                 - "<observable outcome with measurable criteria>"
                 - and: "<additional outcome if needed>"
           ```
 
           Rules:
+          - When the product document declares a `catalogue:`, write every
+            step as one of its phrases, its slots filled, in the block the
+            phrase is declared for: the catalogue is the product's vocabulary
           - Third person perspective using EXACT role from story's "as_a:" field
           - Active voice ("Claude displays" not "is displayed")
           - Observable outcome (what user sees/experiences)
@@ -126,8 +129,9 @@ sections:
 
       - Q: |
           For every AC, decide whether its description field contains a vague
-          word from the forbidden_qualifiers list in the architecture reference
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
+          word from the forbidden_qualifiers list of the product document's
+          vocabulary (properly, correctly, appropriate, user-friendly, fast,
+          etc.).
 
           Pass when no AC description contains forbidden qualifiers.
           Fail when one or more AC descriptions contain them.
@@ -138,20 +142,19 @@ sections:
         rationale: "Vague words in AC descriptions cannot be tested objectively."
         docs:
           - product
-          - architecture_yaml
         F: |
           Replace each vague word in the description with specific, measurable
           criteria.
 
-          Use the forbidden_qualifiers list from the architecture reference
-          (docs/architecture/architecture.yaml). Replace each forbidden
-          qualifier with specific, measurable criteria.
+          Use the forbidden_qualifiers list of the product document's
+          vocabulary. Replace each forbidden qualifier with specific,
+          measurable criteria.
 
       - Q: |
           For every AC, decide whether its steps field contains a vague word
-          from the forbidden_qualifiers list in the architecture reference
-          (properly, correctly, appropriate, user-friendly, fast, etc.).
-          Check Given, When, and Then steps.
+          from the forbidden_qualifiers list of the product document's
+          vocabulary (properly, correctly, appropriate, user-friendly, fast,
+          etc.). Check Given, When, and Then steps.
 
           Pass when no AC's steps contain forbidden qualifiers.
           Fail when one or more ACs have steps containing them.
@@ -162,19 +165,18 @@ sections:
         rationale: "Vague words in AC steps cannot be tested objectively."
         docs:
           - product
-          - architecture_yaml
         F: |
           Replace each vague word in the steps with specific, measurable
           criteria.
 
-          Use the forbidden_qualifiers list from the architecture reference
-          (docs/architecture/architecture.yaml). Replace each forbidden
-          qualifier with concrete, observable criteria.
+          Use the forbidden_qualifiers list of the product document's
+          vocabulary. Replace each forbidden qualifier with concrete,
+          observable criteria.
 
       - Q: |
           For every AC, decide whether its Given/When/Then steps use action
-          verbs from the forbidden_actions list in the architecture reference
-          (docs/architecture/architecture.yaml).
+          verbs from the forbidden_actions list of the product document's
+          vocabulary.
 
           Pass when no AC uses forbidden action verbs in its steps.
           Fail when one or more ACs use forbidden action verbs.
@@ -186,19 +188,19 @@ sections:
         rationale: "Every step must use concrete, reproducible action verbs. Verbs in the forbidden_actions list do not specify the interaction mechanism and cannot be automated."
         docs:
           - product
-          - architecture_yaml
         F: |
           Rewrite each step that uses a forbidden action verb.
 
-          Use the vocabulary in the architecture reference to select a concrete
-          replacement verb that specifies the interaction mechanism — not just
-          the user's intent.
+          Use the product document to select a concrete replacement that
+          specifies the interaction mechanism — not just the user's intent:
+          the forbidden action's `replacement`, and, when the product
+          document declares a `catalogue:`, one of its phrases.
 
       - Q: |
           For every AC, decide whether it describes implementation (endpoint
           created, database updated, schema migrated, etc.) instead of
-          observable behavior using an allowed action verb from the
-          vocabulary in the architecture reference.
+          observable behavior in the product's own words: the phrases of the
+          product document's catalogue, when it declares one.
 
           Pass when every AC describes observable behavior.
           Fail when one or more ACs describe implementation.
@@ -329,3 +331,16 @@ sections:
         docs:
           - product
           - architecture_yaml
+
+  # Appended, not inserted: `D:` prompts walk first wherever they sit, but
+  # a Cell's artifacts keep its file position, so a prompt above the `Q:`s
+  # would renumber them and re-hash every us-refine cassette.
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of every acceptance criterion must match exactly one phrase of the product document's catalogue, declared for its block, so the Story speaks the language the product declares."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for each failing step, asking what it means first. Write it to the product document, never to the Story."

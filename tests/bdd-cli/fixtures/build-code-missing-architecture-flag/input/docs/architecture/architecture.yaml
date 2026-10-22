@@ -1,0 +1,19 @@
+# Architectural spec for `build-code-missing-architecture-flag`: the one
+# true-bdd.yaml names (documents.architecture_yaml).
+#
+# Valid, with a suite whose replay command passes. The run names
+# docs/architecture/absent.yaml with --architecture instead, which must
+# win: a run that fell back to this file would spawn the suite and exit
+# 0, where the Scenario wants a refusal and no test runner.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/suite/...
+      replay: "go test -json -count=1 -run '^TestGreen$' ./tests/suite/..."
+      live: go test -json -count=1 ./tests/suite/...
+  services:
+    - name: calc
+      path: services/calc
+      language: go

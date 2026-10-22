@@ -225,3 +225,65 @@ func TestEngine004UnknownModelCliRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-documents-001-absolute-requirements-overrides-config: `build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test's header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0
+func TestEngineDocuments001AbsoluteRequirementsOverridesConfig(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-001-absolute-requirements-overrides-config")
+	s.Given(`the "build-tests-absolute-requirements" project tree`)
+	s.When(`the System Architect runs "build tests --requirements {{CWD}}/docs/specs/requirements.yaml"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Loaded requirements registry" file=/\S+/docs/specs/requirements\.yaml count=1`)
+	s.And(`stdout matches 1 of 1 scenario\(s\) already bind every step; walking 0\.`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.But(`stdout does not match Refusing to start`)
+	s.And(`the file "tests/mcp/mcp_test.go" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-documents-003-undeclared-architecture-refused: A host whose `true-bdd.yaml` declares no architectural spec must have `build tests` refused before it walks, naming the missing `documents.architecture_yaml` key, never served the spec at its conventional path
+func TestEngineDocuments003UndeclaredArchitectureRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-003-undeclared-architecture-refused")
+	s.Given(`the "build-tests-undeclared-architecture" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="build tests" document="architectural spec"`)
+	s.And(`stdout matches documents\.architecture_yaml`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-entry-002-stray-argument-prints-usage: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
+func TestEngineEntry002StrayArgumentPrintsUsage(t *testing.T) {
+	s := scenarios.New(t, "engine-entry-002-stray-argument-prints-usage")
+	s.Given(`the "build-tests-stray-argument" project tree`)
+	s.When(`the System Architect runs "build tests docs/scenarios.yaml"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stderr matches unknown command "docs/scenarios\.yaml" for "true-bdd build tests"`)
+	s.And(`stderr matches Usage:\n  true-bdd build tests \[flags\]`)
+	s.And(`stderr matches --requirements string`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// fix-loop-choices-006-exit-fails-build-tests: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+func TestFixLoopChoices006ExitFailsBuildTests(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-tests")
+	s.Given(`the "fix-loop-exit-steps" project tree`)
+	s.And(`the System Architect answers "3" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.But(`no file matching "tests/mcp/steps/*.go" is created`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}

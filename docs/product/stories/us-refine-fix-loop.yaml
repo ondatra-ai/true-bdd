@@ -15,7 +15,7 @@ story:
     feature: us-refine
     title: Drive a failing Story check to a pass with us refine --fix
     as_a: Product Owner
-    i_want: us refine --fix to rewrite every acceptance criterion a walked us-refine check fails, for a vague qualifier, a forbidden action verb, a description written as Given/When/Then prose or a criterion with no steps, taking my answers to its questions, until every walked check passes, and to save the Story in place with its id and its feature label as I wrote them
+    i_want: us refine --fix to rewrite every acceptance criterion a walked us-refine check fails, for a vague qualifier, a forbidden action verb, a description written as Given/When/Then prose or a criterion with no steps, and to phrase a step the product's catalogue lacks as a new catalogue entry in the product document, taking my answers to its questions, until every walked check passes, and to save the Story in place with its id and its feature label as I wrote them
     so_that: a Story reaches us apply with measurable, rule-based criteria without my rewriting each one by hand, and nothing the fix loop rewrites drops what the Story already said
     status: IMPLEMENTED
     acceptance_criteria:
@@ -144,3 +144,25 @@ story:
                 - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has feature "document-summaries"
                 - and: the story "docs/product/stories/doc-summary-keeps-feature.yaml" has 4 acceptance criteria
                 - and: stdout does not match Hit max apply attempts
+        - id: 007-step-outside-catalogue-gets-phrase
+          description: '`us refine --fix` must propose a catalogue entry for a Story step that matches no catalogue phrase, record the entry the user applies in the product document and never in the Story, and pass the re-walk'
+          steps:
+            - given:
+                - the "us-refine-fix-records-phrase" project tree
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine doc-outline --fix"
+            - then:
+                - the command exits with code 0
+                - 'stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail'
+                - and: 'stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template'
+                - and: stdout matches FIX PROMPT GENERATED
+                - and: stdout matches msg="Fix recorded in the document" document=product
+                - and: stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass
+                - and: stdout matches ALL CHECKS PASSED!
+                - and: 'stdout matches msg="Story saved"'
+                - and: no file outside "tmp" and "docs/product" changed
+                - and: the file "docs/product/product.yaml" is modified
+                - and: the file "docs/product/product.yaml" matches Claude offers to
+                - and: the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria
+                - and: the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead

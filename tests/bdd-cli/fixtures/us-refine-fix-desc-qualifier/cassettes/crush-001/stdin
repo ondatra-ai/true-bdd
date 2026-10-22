@@ -110,13 +110,24 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria`, forbidden qualifier). AC-1, AC-2 and AC-4 are reproduced byte for byte — descriptions and steps unchanged. Do not touch them.
+The failed check is `us-refine/acceptance_criteria`: no AC description may contain a forbidden qualifier from the product document's vocabulary (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `easily`, `seamless`, `intuitive`).
+
+Per-AC result:
+- AC-1: ok
+- AC-2: ok
+- AC-3: contains 'properly'
+- AC-4: ok
+
+Only AC-3 changes. AC-1, AC-2 and AC-4 are reproduced word for word, descriptions and steps unchanged.
 
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**Issue:** The description contains the forbidden qualifier 'properly' (see `forbidden_qualifiers` in `docs/architecture/architecture.yaml`). 'Properly' is not observable — the observable outcome is the exact message text, which the description already states.
-**After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-**After (steps):** unchanged — the existing Given/When/Then already names the Claude User role and the exact message, and carries no forbidden qualifier:
+
+**Issue:** The description contains the forbidden qualifier "properly". "Properly" is not observable — it does not say what a correct display looks like. The exact message string and the 30-second threshold are already the measurable criteria, so the qualifier adds nothing and must be dropped.
+
+**After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User asking for a summary.
+
+**After (steps):** unchanged — the existing steps are already observable and already use the exact role "Claude User". Reproduce them as they stand:
 ```yaml
 - given: "a Google Doc is shared with the Claude User's account"
 - given: "the summary backend does not respond within 30 seconds"
@@ -124,7 +135,7 @@ Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria`, forbi
 - then: "Claude displays the message 'The summary timed out - please try again'"
 ```
 
-No new ACs are added and no ACs are merged or removed.
+No new acceptance criteria are added and none are merged or removed: AC-1 (successful summary), AC-2 (document not shared), AC-3 (timeout) and AC-4 (document over 10000 words) each describe a distinct trigger and a distinct observable outcome.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -146,7 +157,7 @@ No new ACs are added and no ACs are merged or removed.
     - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
+  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User asking for a summary."
   steps:
     - given: "a Google Doc is shared with the Claude User's account"
     - given: "the summary backend does not respond within 30 seconds"

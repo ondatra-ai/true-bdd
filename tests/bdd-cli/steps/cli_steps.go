@@ -19,17 +19,7 @@ import (
 // answering what project ran, what it must exit with, print, or leave on
 // disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
-	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
-	// Given preconditions the scenario states and the fixture materialises
-	// during tmpdir assembly: the dependency install (`prep:`) and the
-	// interactive answers piped to the fix loop. Implemented below.
-	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
-		assertAnswersEveryQuestion)
-	// A Given precondition that a checklist is narrowed to one named prompt;
-	// the fixture selects it via `checklist_prompts:`, and this step verifies
-	// the selection is real and singular.
-	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	registerGivenSteps(suite)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
 	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
@@ -40,6 +30,9 @@ func Register(suite *bddgo.Suite[State]) {
 	// the fix loop converged before it "Hit max apply attempts". Implemented
 	// below.
 	suite.Step(`^stdout does not match (.+)$`, assertStdoutNoMatch)
+	// What the command line says before the log is up: a stray argument's
+	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
+	suite.Step(`^stderr matches (.+)$`, assertStderr)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -115,6 +108,27 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
 	// crush, not a role, runs the write guard. See crush_guard_steps.go.
 	registerCrushGuardSteps(suite)
+}
+
+// registerGivenSteps binds the Given steps: the tree a scenario starts
+// from and the preconditions the fixture establishes on it.
+func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
+	// Given preconditions the scenario states and the fixture materialises
+	// during tmpdir assembly: the dependency install (`prep:`) and the
+	// interactive answers piped to the fix loop. Implemented below.
+	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+		assertAnswersEveryQuestion)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+		assertAnswersLineByLine)
+	// A Given precondition that a checklist is narrowed to one named prompt;
+	// the fixture selects it via `checklist_prompts:`, and this step verifies
+	// the selection is real and singular.
+	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	// A Given precondition that the tree lacks a file, even one the repo
+	// layer brings (the engine's own true-bdd.yaml); the run dir drops it.
+	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
@@ -340,6 +354,19 @@ func assertDependenciesInstalled(state *State, args []string) error {
 	return nil
 }
 
+// leaveOutOfTree records a path the run dir must not hold. Nothing is
+// deleted yet: the run dir is assembled when the When step runs, and
+// runner.Execute fails it if the path is outside it or not there to drop.
+func leaveOutOfTree(state *State, args []string) error {
+	if state.Fixture == nil {
+		return state.fail("%w", ErrNoTreePrepared)
+	}
+
+	state.Fixture.Absent = append(state.Fixture.Absent, args[0])
+
+	return nil
+}
+
 // everyQuestionAnswers is how many copies of the answer the step feeds the
 // fix loop; picked generously since surplus lines are harmless (EOF exits
 // the CLI cleanly).
@@ -464,6 +491,25 @@ func assertStdoutNoMatch(state *State, args []string) error {
 	if pattern.MatchString(state.Result.Stdout) {
 		return state.fail(
 			"expected stdout not to match %q, but it did:\n%s", args[0], state.Result.Stdout)
+	}
+
+	return nil
+}
+
+// assertStderr is assertStdout's twin over the run's stderr, printed whole
+// on a miss: what lands there is a short error, never a log stream.
+func assertStderr(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if !pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr to match %q, but it did not:\n%s", args[0], state.Result.Stderr)
 	}
 
 	return nil

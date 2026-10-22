@@ -96,7 +96,6 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 # Fix Prompt for Story 96.8: Document Summary On Demand
 
 ## Instructions
@@ -110,14 +109,22 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Change ONLY what the failed check requires. AC-2, AC-3 and AC-4 already use
-concrete, observable verbs (`displays`, `does not display`, `states`) and are
-reproduced below word for word — do not touch them.
+Only AC-1 is faulted by the failed check (`us-refine/acceptance_criteria` — forbidden action verbs). AC-2, AC-3 and AC-4 are reproduced word for word: their steps name only observable actions (`displays`, `does not display`, `states`, `does not respond`), none of which appear in the product document's `forbidden_actions` list (`handle`, `process`, `parse`). Do not edit them.
 
 ### Change #1: AC-1
-**Before:** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
-**Issue:** The `then` step uses the forbidden action verb `handles` ("Claude handles the summary request and displays ..."). Per `docs/architecture/architecture.yaml` `forbidden_actions`, `handle` hides what the system observably does with the input; the step must name only the observable action (`displays`).
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. (unchanged)
+**Before (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+
+**Before (steps):**
+```yaml
+- given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+- when: "the Claude User asks Claude to summarize the document"
+- then: "Claude handles the summary request and displays a summary of 150 words or fewer in the conversation"
+```
+
+**Issue:** The Then step uses the forbidden action verb `handle` ("Claude **handles** the summary request and displays ..."). Per `./docs/product/product.yaml`, `handle` "hides what the system observably does with the input"; the replacement guidance is "Name the observable action: displays, returns, lists, rejects." The "handles the summary request" clause is redundant with the display outcome that follows it, so the fix is to drop that clause and leave only the observable action.
+
+**After (description):** unchanged — Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc.
+
 **After (steps):**
 ```yaml
 - given:
@@ -128,7 +135,15 @@ reproduced below word for word — do not touch them.
     - "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No acceptance criteria are added, merged or removed.
+The role wording stays exactly "Claude User", as in the story's `as_a` clause. No new ACs are added, none are merged, and none are removed.
+
+### Re-scan result
+After the rewrite, every Given/When/Then step across AC-1 through AC-4 was re-scanned for the forbidden actions `handle`, `process` and `parse`: none remain, and the rewrite introduced none.
+
+- AC-1: ok
+- AC-2: ok
+- AC-3: ok
+- AC-4: ok
 
 ## Complete Fixed Acceptance Criteria
 
@@ -176,8 +191,6 @@ No acceptance criteria are added, merged or removed.
         - "Claude displays a summary of the first 10000 words"
         - "Claude states that only the first 10000 words were summarized"
 ```
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-96.8-fix-prompts.md ===
 
 ---
 

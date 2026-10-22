@@ -20,6 +20,8 @@ const (
 	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
 	usRefineStem         = "us-refine"
 	scenCheckStem        = "scen-check"
+	// vagueDescriptionQ is the us-refine vague-word-in-description prompt.
+	vagueDescriptionQ = "4fa4e82c"
 )
 
 // declaredSelection pins one fixture's checklist_prompts declaration to
@@ -37,12 +39,14 @@ func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
-		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
-		"us-refine-fix-keeps-feature":            {Stem: usRefineStem, QShort: "567e38e7", RequireF: true},
-		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "7cfe4b20", RequireF: true},
-		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "bb57188d", RequireF: true},
+		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"us-refine-fix-keeps-feature":            {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "882442b9", RequireF: true},
+		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
 		"us-refine-fix-unfixable-checklist":      {Stem: usRefineStem, QShort: "895981ea", RequireF: false},
 		"us-apply-rewalk-converges":              {Stem: "us-apply", QShort: "6da54561", RequireF: true},
+		"fix-loop-exit-story":                    {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"fix-loop-exit-registry":                 {Stem: "us-apply", QShort: "6da54561", RequireF: true},
 		"scen-check-id-filter":                   {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"scen-check-fix-rewrites-phrase-meaning": {Stem: scenCheckStem, QShort: "3e039823", RequireF: true},
 		"scen-check-fix-rewrites-phrase-use":     {Stem: scenCheckStem, QShort: "5dfd2b61", RequireF: true},
@@ -130,7 +134,7 @@ const (
 	// overrideUnsanctioned is every fixture off the allowlist.
 	overrideUnsanctioned overridePurpose = iota
 	// overrideEmpty walks nothing: build-tests-refusals-004-empty-checklist-refused
-	// pins the refusal of a checklist with nothing to ask.
+	// and checklist-skip-003 pin the refusal of a checklist with nothing to ask.
 	overrideEmpty
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
@@ -138,6 +142,10 @@ const (
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
+	// overrideFixLoop shapes the fix loop under test (#168): its `F:` decides
+	// what a fix asks or changes and its `config:` may bound the loop, while
+	// each question or check stays a shipped one.
+	overrideFixLoop
 )
 
 // allowedOverrideFixtures is the explicit allowlist for checked-in
@@ -146,6 +154,7 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
 		"build-tests-empty-checklist":             overrideEmpty,
+		"scen-check-every-prompt-skipped":         overrideEmpty,
 		"scen-check-prompt-with-both-kinds":       overrideRefused,
 		"scen-check-prompt-with-no-kind":          overrideRefused,
 		"scen-check-unknown-check":                overrideRefused,
@@ -153,6 +162,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-unknown-check-parameter":      overrideRefused,
 		"scen-check-fix-check-without-f":          overrideRefused,
 		"scen-check-phrase-docs-unlisted":         overrideRefused,
+		"scen-check-skip-not-boolean":             overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
 		"scen-check-phrase-unmatched":             overrideChecks,
 		"scen-check-phrase-ambiguous":             overrideChecks,
@@ -178,6 +188,14 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-closure-no-catalogue":         overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
 		"scen-check-fix-merges-phrases":           overrideChecks,
+		"scen-check-skipped-prompt":               overrideChecks,
+		"us-refine-fix-records-phrase":            overrideChecks,
+		"fix-loop-refine-feedback":                overrideFixLoop,
+		"fix-loop-own-words":                      overrideFixLoop,
+		"fix-loop-exit-terms":                     overrideFixLoop,
+		"fix-loop-attempts-exhausted":             overrideFixLoop,
+		"fix-loop-refix-stops":                    overrideFixLoop,
+		"fix-loop-unsettled":                      overrideFixLoop,
 	}
 }
 
@@ -272,11 +290,32 @@ func assertOverrideCopiesShipped(
 			continue
 		}
 
+		if purpose == overrideFixLoop {
+			assertQuestionShipped(t, uni, override, prompt)
+
+			continue
+		}
+
 		if uni.MatchOverride(override.Stem, prompt) == nil {
 			t.Errorf("%s: override prompt %q does not match any shipped %s prompt",
 				override.Fixture, prompt.Snippet, override.Stem)
 		}
 	}
+}
+
+// assertQuestionShipped holds a fix-loop override's prompt to a shipped
+// question or check of the same checklist, its `F:` free to differ.
+func assertQuestionShipped(t *testing.T, uni *Universe, override overrideFile, prompt UniversePrompt) {
+	t.Helper()
+
+	for _, shipped := range uni.Prompts {
+		if shipped.Checklist == override.Stem && shipped.QHash == prompt.QHash {
+			return
+		}
+	}
+
+	t.Errorf("%s: override prompt %q asks no shipped %s question or check",
+		override.Fixture, prompt.Snippet, override.Stem)
 }
 
 // manifestSelection is a fixture's checklist selection plus where its
@@ -402,6 +441,10 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 	t.Parallel()
 
 	for _, override := range discoverOverrides(t) {
+		if allowedOverrideFixtures()[override.Fixture] == overrideFixLoop {
+			continue
+		}
+
 		shipped := loadConfigBlock(t, filepath.Join(shippedChecklistsDir, override.Stem+".yaml"))
 		overridden := loadConfigBlock(t, override.Path)
 

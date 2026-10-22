@@ -1,0 +1,29 @@
+# Seed registry for `build-tests-undeclared-architecture`.
+#
+# One scenario a Story claims, bound and already rendered: with an
+# architecture declared, a bare `build tests` here walks nothing and
+# exits 0. true-bdd.yaml declares none, so the run must refuse.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-stray-argument fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket promptly"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-22"
+    user_stories:
+      - story: "docs/product/stories/99.5-fixture.yaml"
+        scenario_id: "99.5-001"
+        merge_date: "2026-10-22"
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

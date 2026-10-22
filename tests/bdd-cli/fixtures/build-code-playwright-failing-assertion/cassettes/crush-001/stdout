@@ -1,0 +1,9 @@
+Both edits applied and verified — `services/web/server.js` now serves `<h1>Corner Shop</h1>` and no "Welcome" remains.
+
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+applied: true
+target: "services/web/server.js"
+summary: "Changed home page heading from Welcome to Corner Shop and updated the stale header comment"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+```

@@ -1,6 +1,6 @@
 schema_version: 1
 evidence_quality: reconstructed
-universe_sha256: 4ae1df8c78ddb75b8be4e35b010306b8346a1bb491f8a37538a37dfefbd68244
+universe_sha256: c266a0eb907128db49fb035a59600591295d39c5419dbab872b45308c17c2fa4
 covered:
     - id: build-code/test-passes/q1@b171d92d#fail
       q_sha256: b171d92d889b0bc943942ab0e6d78faa2ecf24fbbabf392ae7dadc6660f54830
@@ -191,44 +191,44 @@ covered:
       f_sha256: 13eb33a850f460ab25fad9754b7a13e771a775673a93e0175f2ab3d730de1102
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#fail
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#fix
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#pass
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
-    - id: us-refine/acceptance_criteria/q4@567e38e7#fail
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q4@567e38e7#fix
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q4@567e38e7#pass
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#fail
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#fix
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#pass
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q6@bb57188d#fail
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q6@bb57188d#fix
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q6@bb57188d#pass
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q7@66806976#fail
-      q_sha256: 66806976b3380f7bfa6e9dd658010ebb1dd6d58477323906f4fdf1c7ed957753
-    - id: us-refine/acceptance_criteria/q7@66806976#pass
-      q_sha256: 66806976b3380f7bfa6e9dd658010ebb1dd6d58477323906f4fdf1c7ed957753
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#fail
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#fix
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#pass
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q5@882442b9#fail
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q5@882442b9#fix
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q5@882442b9#pass
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q6@3929749d#fail
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q6@3929749d#fix
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q6@3929749d#pass
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q7@0372c4be#fail
+      q_sha256: 0372c4bef3086a556e346a23b0cd52641e20f4cf105965bf3162c1ca9fb06365
+    - id: us-refine/acceptance_criteria/q7@0372c4be#pass
+      q_sha256: 0372c4bef3086a556e346a23b0cd52641e20f4cf105965bf3162c1ca9fb06365
     - id: us-refine/acceptance_criteria/q8@5b2f20ef#fail
       q_sha256: 5b2f20ef67b54ce00ccc1a1b71c7476402dc7e5c725f9775824761f5853ed1ca
     - id: us-refine/acceptance_criteria/q8@5b2f20ef#pass
@@ -237,3 +237,12 @@ covered:
       q_sha256: 987d724c09bc361f94381460f831fded198a63cfb653d4ac0522565c90e64f36
     - id: us-refine/acceptance_criteria/q9@987d724c#pass
       q_sha256: 987d724c09bc361f94381460f831fded198a63cfb653d4ac0522565c90e64f36
+    - id: us-refine/term_closure/d1@671e5470#fail
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88
+    - id: us-refine/term_closure/d1@671e5470#fix
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88
+    - id: us-refine/term_closure/d1@671e5470#pass
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88
