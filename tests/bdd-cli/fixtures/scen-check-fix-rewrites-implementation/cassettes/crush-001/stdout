@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Replaced E2E-001's implementation-naming then step with the observable stdout assertion 'stdout matches ^Hello Ada$'"
+summary: "Replaced E2E-001's then step naming the internal formatGreeting call with the observable 'stdout matches ^Hello Ada$'"
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
