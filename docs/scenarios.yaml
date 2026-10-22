@@ -2476,3 +2476,25 @@ scenarios:
         - and: stdout does not match BUILD TESTS
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  engine-config-003-unresolvable-default-tiers-refused:
+    description: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-003-unresolvable-default-tiers-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-unresolvable-default-tiers" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.default_prompt_model: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
+        - and: 'stdout matches engine\.default_apply_model: default model tier names a tier that engine\.models does not configure: \\"coder\\"'
+        - but: stdout does not match engine\.default_fix_model
+        - and: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

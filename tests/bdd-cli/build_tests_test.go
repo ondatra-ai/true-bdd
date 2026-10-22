@@ -257,3 +257,19 @@ func TestEngineConfig002MalformedModelEntriesRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-config-003-unresolvable-default-tiers-refused: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
+func TestEngineConfig003UnresolvableDefaultTiersRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-003-unresolvable-default-tiers-refused")
+	s.Given(`the "build-tests-unresolvable-default-tiers" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.default_prompt_model: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)`)
+	s.And(`stdout matches engine\.default_apply_model: default model tier names a tier that engine\.models does not configure: \\"coder\\"`)
+	s.But(`stdout does not match engine\.default_fix_model`)
+	s.And(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
