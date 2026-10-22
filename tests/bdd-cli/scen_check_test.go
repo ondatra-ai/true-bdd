@@ -154,6 +154,34 @@ func TestEngineChecklists001MissingChecklistRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-checklists-002-checklist-not-yaml-refused: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
+func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-002-checklist-not-yaml-refused")
+	s.Given(`the "scen-check-checklist-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
+	s.Given(`the "scen-check-check-with-not-a-mapping" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
 func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-config-004-prompt-tier-unconfigured-refused")

@@ -1,0 +1,21 @@
+# Fixture checklist for `scen-check-check-with-not-a-mapping`.
+#
+# One `D:` Prompt whose `with:` is a list where a mapping of check
+# parameters belongs. The engine must refuse to start, naming this
+# file and the shape it got, rather than run the check without them.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of a Scenario a Story claims must match one catalogue phrase."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning."
+        docs:
+          - product
+        # DELIBERATELY WRONG: `with:` takes a mapping of parameters.
+        with:
+          - product

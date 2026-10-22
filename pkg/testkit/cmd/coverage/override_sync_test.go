@@ -154,6 +154,8 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-check-without-f":          overrideRefused,
 		"scen-check-phrase-docs-unlisted":         overrideRefused,
 		"scen-check-prompt-tier-unconfigured":     overrideRefused,
+		"scen-check-checklist-not-yaml":           overrideRefused,
+		"scen-check-check-with-not-a-mapping":     overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
 		"scen-check-phrase-unmatched":             overrideChecks,
 		"scen-check-phrase-ambiguous":             overrideChecks,
@@ -403,6 +405,11 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 	t.Parallel()
 
 	for _, override := range discoverOverrides(t) {
+		// No walk reads a refused override, and scen-check-checklist-not-yaml's is not YAML.
+		if allowedOverrideFixtures()[override.Fixture] == overrideRefused {
+			continue
+		}
+
 		shipped := loadConfigBlock(t, filepath.Join(shippedChecklistsDir, override.Stem+".yaml"))
 		overridden := loadConfigBlock(t, override.Path)
 

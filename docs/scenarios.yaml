@@ -2561,3 +2561,43 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  engine-checklists-002-checklist-not-yaml-refused:
+    description: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
+        scenario_id: engine-checklists-002-checklist-not-yaml-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-checklist-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-checklists-003-check-with-not-a-mapping-refused:
+    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
+        scenario_id: engine-checklists-003-check-with-not-a-mapping-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-check-with-not-a-mapping" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
