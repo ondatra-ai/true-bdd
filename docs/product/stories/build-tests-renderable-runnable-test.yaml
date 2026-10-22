@@ -72,7 +72,7 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 005-scenario-without-steps-refused
-          description: A Scenario with no steps must refuse `build tests`, naming the Scenario, rather than render a test that passes without checking anything
+          description: A Scenario with no steps must refuse `build tests`, naming that Scenario by its Registry key, rather than render a test that passes without checking anything
           steps:
             - given:
                 - the "build-tests-scenario-without-steps" project tree
@@ -81,7 +81,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches INT-901: scenario has no steps, so its test would pass trivially'
+                - and: 'stdout matches error="INT-901: scenario has no steps, so its test would pass trivially'
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 006-suite-without-module-refused

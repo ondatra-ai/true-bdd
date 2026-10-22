@@ -112,14 +112,14 @@ func TestBuildTestsFiles006StepFileNotGoRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-paths-001-missing-path-refused: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario, rather than write its generated test to a file it guessed
+// build-tests-paths-001-missing-path-refused: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
 func TestBuildTestsPaths001MissingPathRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-paths-001-missing-path-refused")
 	s.Given(`the "build-tests-path-missing" project tree`)
 	s.When(`the System Architect runs "build tests"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches INT-901: scenario declares no path: for its generated test`)
+	s.And(`stdout matches error="INT-901: scenario declares no path: for its generated test`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
@@ -191,7 +191,7 @@ func TestBuildTestsPaths006ServiceInTwoDirsRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-paths-007-path-derives-no-package-refused: A `path:` whose directory name derives no Go package name must refuse `build tests`, naming the directory and the name it derives
+// build-tests-paths-007-path-derives-no-package-refused: A `path:` whose suite directory has a name that derives no valid Go package name must refuse `build tests`, naming the path, that suite and the package name it derives
 func TestBuildTestsPaths007PathDerivesNoPackageRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-paths-007-path-derives-no-package-refused")
 	s.Given(`the "build-tests-path-derives-no-package" project tree`)
@@ -345,14 +345,14 @@ func TestBuildTestsRenderable004UnrunnableTestNameRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-renderable-005-scenario-without-steps-refused: A Scenario with no steps must refuse `build tests`, naming the Scenario, rather than render a test that passes without checking anything
+// build-tests-renderable-005-scenario-without-steps-refused: A Scenario with no steps must refuse `build tests`, naming that Scenario by its Registry key, rather than render a test that passes without checking anything
 func TestBuildTestsRenderable005ScenarioWithoutStepsRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-renderable-005-scenario-without-steps-refused")
 	s.Given(`the "build-tests-scenario-without-steps" project tree`)
 	s.When(`the System Architect runs "build tests"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches INT-901: scenario has no steps, so its test would pass trivially`)
+	s.And(`stdout matches error="INT-901: scenario has no steps, so its test would pass trivially`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()

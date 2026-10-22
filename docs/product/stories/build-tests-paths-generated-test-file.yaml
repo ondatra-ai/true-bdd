@@ -20,7 +20,7 @@ story:
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-missing-path-refused
-          description: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario, rather than write its generated test to a file it guessed
+          description: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
           steps:
             - given:
                 - the "build-tests-path-missing" project tree
@@ -29,7 +29,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches INT-901: scenario declares no path: for its generated test'
+                - and: 'stdout matches error="INT-901: scenario declares no path: for its generated test'
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 002-path-with-whitespace-refused
@@ -99,7 +99,7 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 007-path-derives-no-package-refused
-          description: A `path:` whose directory name derives no Go package name must refuse `build tests`, naming the directory and the name it derives
+          description: A `path:` whose suite directory has a name that derives no valid Go package name must refuse `build tests`, naming the path, that suite and the package name it derives
           steps:
             - given:
                 - the "build-tests-path-derives-no-package" project tree
