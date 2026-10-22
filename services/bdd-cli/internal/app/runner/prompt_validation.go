@@ -14,6 +14,9 @@ import (
 // validatePrompts, kept free of regex metacharacters for `stdout matches`.
 var errPromptsNotWalkable = errors.New("checklist has prompts the engine cannot walk")
 
+// errTiersUnresolved is validateModelTiers' error, likewise free of them.
+var errTiersUnresolved = errors.New("checklist has prompts whose model tier engine.models cannot resolve")
+
 // Why a well-shaped `D:` prompt still cannot be walked by this command.
 var (
 	errUnknownCheck      = errors.New("names no built-in check of")
@@ -97,6 +100,26 @@ func uncitedDoc(promptCtx *checklistmodels.PromptWithContext, reads []string) er
 	}
 
 	return nil
+}
+
+// validateModelTiers refuses a checklist naming a tier some Cell's turn
+// could not run on, naming each prompt and turn, before the first turn:
+// a Cell resolving it mid-walk fails only after earlier Cells have spent theirs.
+func validateModelTiers[I any](spec Spec[I], prompts []checklistmodels.PromptWithContext) error {
+	offenders := make([]string, 0)
+
+	for idx := range prompts {
+		for _, err := range spec.Evaluator.UnresolvedTiers(&prompts[idx], spec.Fix) {
+			offenders = append(offenders, fmt.Sprintf("%s #%d %s: %v",
+				prompts[idx].GetFullSectionPath(), prompts[idx].Index, prompts[idx].Prompt.Label(), err))
+		}
+	}
+
+	if len(offenders) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s", errTiersUnresolved, strings.Join(offenders, "; "))
 }
 
 // describeParams renders a check's parameter list for a refusal.

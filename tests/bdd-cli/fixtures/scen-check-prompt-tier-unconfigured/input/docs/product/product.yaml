@@ -1,0 +1,62 @@
+# Product document for `scen-check-prompt-tier-unconfigured`.
+#
+# Sound: the catalogue phrases every step of E2E-001 and the glossary
+# defines every word those phrases declare. Nothing in it is why the run
+# is refused.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+glossary:
+  - term: mcp service
+    means: >-
+      The service this project builds: it takes a message from a client
+      and answers it. What every Scenario of the project observes.
+  - term: message
+    means: >-
+      One request a client sends the MCP service, as text. The service
+      answers each message on its own.
+  - term: reply
+    means: >-
+      What the MCP service sends back for one message. A client waits on
+      it, so its content is behaviour.
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: [mcp service]
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: That role sends the quoted message to the MCP service, once.
+    terms: [mcp service, message]
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: [mcp service, reply]
+  - template: 'the service restarts'
+    block: when
+    means: The MCP service stops and starts again, dropping no request.
+    terms: [mcp service, restart]
+  - template: 'nothing is running'
+    block: given
+    means: No process of the project has started.
+    terms: []
+  - template: 'the {actor:role} waits {seconds:number} seconds'
+    block: when
+    means: That role does nothing for that many seconds.
+    terms: []
+  - template: 'nothing is answered'
+    block: then
+    means: No process wrote anything while the role waited.
+    terms: []

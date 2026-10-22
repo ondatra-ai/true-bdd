@@ -140,6 +140,21 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-004-prompt-tier-unconfigured-refused")
+	s.Given(`the "scen-check-prompt-tier-unconfigured" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 Decide whether this scenario's steps carry all three: prompt turn: model tier is not configured under engine\.models: \\"quick\\" \(configured: xhigh, high, coder\)`)
+	s.But(`stdout does not match scen-check/scenario_quality #1`)
+	s.And(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")

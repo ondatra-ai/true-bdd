@@ -212,6 +212,11 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, refuseStartup(spec.Name, err)
 	}
 
+	err = validateModelTiers(spec, prompts)
+	if err != nil {
+		return nil, nil, refuseStartup(spec.Name, err)
+	}
+
 	return doc, prompts, nil
 }
 

@@ -1,0 +1,49 @@
+# Fixture checklist for `scen-check-prompt-tier-unconfigured`.
+#
+# The first two scenario_quality Prompts of the shipped checklist, the
+# second pinned with `model:` to `quick`, a tier this fixture's
+# true-bdd.yaml does not configure. The first Prompt resolves; the walk
+# must still be refused before it asks either.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
+
+      - Q: |
+          Decide whether this scenario's steps carry all three
+          Given/When/Then kinds. A violation is any of:
+          - no given step
+          - no when step
+          - no then step
+
+          Pass when the scenario has at least one step of each kind.
+          Fail when any kind is missing.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: missing <given|when|then> step"
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+        # DELIBERATELY BROKEN: true-bdd.yaml configures no `quick` tier.
+        model: quick
+        F: "Add the missing given, when or then step to this Scenario's registry entry, saying what its description already pins, and asking what the step should set up, do or observe first when the description does not say. Change no other step and not the description."

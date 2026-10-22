@@ -69,3 +69,18 @@ story:
                 - and: stdout does not match BUILD TESTS
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
+        - id: 004-prompt-tier-unconfigured-refused
+          description: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+          steps:
+            - given:
+                - the "scen-check-prompt-tier-unconfigured" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - and: 'stdout matches scen-check/scenario_quality #2 Decide whether this scenario''s steps carry all three: prompt turn: model tier is not configured under engine\.models: \\"quick\\" \(configured: xhigh, high, coder\)'
+                - but: 'stdout does not match scen-check/scenario_quality #1'
+                - and: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
