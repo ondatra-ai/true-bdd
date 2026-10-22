@@ -143,7 +143,7 @@ Example values come from the BDD fixtures. Numbers match the arrows on the map.
 | # | From | To | How it joins |
 | --- | --- | --- | --- |
 | 1 | story as_a | product roles[].name | a story's `as_a: "Claude User"` names one of the product's roles — roles (responsibilities), not personas (invented individuals); no checklist prompt checks the match today |
-| 2 | product vocabulary | AC description + steps | **us refine** rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block may also live in architecture.yaml (the engine's fixtures keep it there), though `product-schema.yaml` requires one in the product document |
+| 2 | product vocabulary | AC description + steps | **us refine** rewrites the story file in place, rejecting forbidden qualifiers ("quickly") and verbs ("handle" → "displays / returns / rejects"); the block lives only in the product document, where `product-schema.yaml` requires it |
 | 3 | AC id in story | registry key and user_stories[].scenario_id | **us apply** bridges the gap between story and registry — it derives the lineage id `<story-id>-<ac-id>` (AC `001-mcp-initialize` of story 95.1 → `"95.1-001-mcp-initialize"`), keys the scenario by it and merges it in; the author writes the AC id as `<NNN>-<slug>`, so reordering a story's ACs changes no key (ADR 0014) |
 | 4 | user_stories[].story | story file path | each registry entry names its source stories: `docs/product/stories/95.1-duplicate-collapse.yaml` |
 | 5 | scenario service: | architecture services[].name | `service: "mcp-service"` must name a declared service |

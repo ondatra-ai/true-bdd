@@ -46,9 +46,9 @@ metadata:
 
 ---
 scenario:
-  # One sentence naming the behaviour, in the product document's action
-  # vocabulary. What a reader sees first in `build tests` output and in
-  # the run report.
+  # One sentence naming the behaviour, free of the words the product
+  # document's `vocabulary:` forbids. The generated test carries it as the
+  # comment above its function.
   description: str()
   # Must name a service declared in architecture.yaml. It is also the
   # join that decides which tests own the scenario: they live in
@@ -60,8 +60,7 @@ scenario:
   path: str()
   # Free-form note on where the behaviour comes from. Optional.
   requirement: str(required=False)
-  # Optional grouping label. Read by the workspace UI, never by the
-  # engine.
+  # Optional grouping label for a human reader; the engine never reads it.
   feature: str(required=False)
   last_updated: str(required=False)
   # Lineage back to the stories this scenario was merged from, written

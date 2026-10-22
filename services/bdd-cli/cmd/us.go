@@ -17,7 +17,7 @@ import (
 const fixFlagDescription = "Enable interactive fix mode to resolve failed checks"
 
 // storyRunE is the run shape every `us` subcommand uses after sourcing
-// its lazily-built container, story-number arg, and fix flag.
+// its lazily-built container, Story id arg, and fix flag.
 type storyRunE func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error
 
 // NewUSCommand builds the `us` cobra supergroup. The container provider
@@ -35,7 +35,7 @@ func NewUSCommand(provide containerProvider) *cobra.Command {
 }
 
 // buildStoryCmd builds the cobra shell shared by every `us` subcommand that
-// takes a story number and an optional --fix flag. The container is
+// takes a Story id and an optional --fix flag. The container is
 // resolved at RunE time only (see containerProvider), never at construction.
 func buildStoryCmd(use, short, long string, provide containerProvider, run storyRunE) *cobra.Command {
 	cmd := &cobra.Command{
@@ -74,14 +74,16 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 
 func newUSRefineCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
-		"refine [story-number]",
+		"refine <story-id>",
 		"Refine a user story",
-		`Load a story from docs/product/stories/ and validate it against the us-refine
-checklist. The story file is updated in place upon passing all checks.
+		`Load the Story whose id is <story-id> from the one <story-id>-*.yaml file in
+paths.stories_dir (conventionally docs/product/stories/) that declares that id,
+and validate it against the us-refine checklist. The Story file is updated in
+place upon passing all checks.
 
 Example:
-  true-bdd us refine 4.1
-  true-bdd us refine 4.1 --fix`,
+  true-bdd us refine scen-check
+  true-bdd us refine scen-check --fix`,
 		provide,
 		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			return commands.RunRefine(ctx, commands.RefineDeps{
@@ -111,9 +113,10 @@ func storyCommonFromContainer(container *bootstrap.Container) commands.StoryComm
 
 func newUSApplyCmd(provide containerProvider) *cobra.Command {
 	return buildStoryCmd(
-		"apply [story-number]",
+		"apply <story-id>",
 		"Apply scenarios from a refined user story into the registry",
-		`Walk every acceptance criterion in docs/product/stories/<story-number>-*.yaml and
+		`Walk every acceptance criterion of the Story whose id is <story-id> (the one
+<story-id>-*.yaml file in paths.stories_dir that declares that id) and
 validate each one against the us-apply checklist. With --fix, every failed
 (AC, prompt) cell drives a Claude-mediated edit on a scratch copy of the
 scenario registry configured at documents.scenarios_yaml (conventionally
@@ -124,8 +127,8 @@ Stories that still use the deprecated scenarios.test_scenarios[] format are
 rejected — convert them to acceptance_criteria with embedded steps first.
 
 Example:
-  true-bdd us apply 4.1
-  true-bdd us apply 4.1 --fix`,
+  true-bdd us apply scen-check
+  true-bdd us apply scen-check --fix`,
 		provide,
 		func(ctx context.Context, container *bootstrap.Container, storyNumber string, fix bool) error {
 			requirementsFile, err := container.DocResolver.Resolve(docs.KeyScenariosYAML)
