@@ -1458,3 +1458,33 @@ log:
       * Сейчас дописать четыре дыры в спеку. Это почти бесплатно и кассет не трогает.
       * «Прогонять пересобранные шаги» и «минимальный режим вызова claude» завести отдельными issues.
       * Принять дрилл как 196 из 197 с объяснением в #155.
+  - decision_trace:
+      research:
+        - |
+          #155 asks for a whole-Registry model `scen check` walk: 10 model Prompts per
+          Scenario, about $2 each, about $390 for 195 Scenarios and many hours. Every Story
+          ticket already walked its own Scenarios with the model until clean. The free walk of
+          the four deterministic closure Prompts (no AI CLI on PATH) over the whole Registry
+          passes 195 of 195 Scenarios, 780 cells, at 426c64f1.
+        - |
+          After their tickets' walks, only the review-fix pass changed Scenarios: seven,
+          which it walked with the model, all clean ($16.26).
+      recommendation: |
+        Instead of the whole-Registry model walk: the free deterministic walk over the whole
+        Registry, plus a model walk of only the Scenarios changed since their own ticket's
+        walk.
+      settled: |
+        No whole-Registry model walk. #155's walk criterion is met by the free deterministic
+        walk over the whole Registry (re-run after the last spec change lands) and the model
+        walk of the seven Scenarios the review pass changed. A later change to a Scenario
+        walks that Scenario with the model.
+    question: |
+      Q47 - #155's whole-Registry model `scen check` walk costs about $390: run it in full;
+      or run the free deterministic walk over the whole Registry plus a model walk of only
+      the Scenarios changed since their ticket's walk; or neither?
+    answer: |
+      Слушай, да, давай пока дешевый прогон попробуем сделать, а потом я посмотрю на
+      результаты и...
+
+      Asked again after the results: "так а что я сказал делать то? Я ж уже ответил разве
+      нет?" (2026-10-22): the cheap variant stands.
