@@ -103,7 +103,6 @@ func newCommand(ctx context.Context, argv []string, opt Options) (*exec.Cmd, err
 	cmd.Dir = opt.Dir
 	cmd.Env = opt.Env.build()
 	cmd.Stdin = opt.Stdin
-	cmd.ExtraFiles = opt.ExtraFiles
 	cmd.WaitDelay = opt.WaitDelay
 
 	if opt.Group {
