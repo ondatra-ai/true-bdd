@@ -371,6 +371,87 @@ func TestBuildTestsRenderable006SuiteWithoutModuleRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-tests-step-shapes-001-two-key-modifier-refused: An `and:` or `but:` step written as one mapping with two keys must refuse `build tests`, naming the Registry line, rather than keep one of the two steps and drop the other
+func TestBuildTestsStepShapes001TwoKeyModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-001-two-key-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-two-keys" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-002-list-modifier-refused: An `and:` or `but:` step holding a list instead of one step's text must refuse `build tests`, naming the keyword and the Registry line
+func TestBuildTestsStepShapes002ListModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-002-list-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-list" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches malformed step modifier: \\"and\\" takes a scalar`)
+	s.And(`stdout matches near line 25`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-003-unknown-modifier-refused: A step mapping keyed by a word other than `and` or `but` must refuse `build tests`, naming that key and the Registry line
+func TestBuildTestsStepShapes003UnknownModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-003-unknown-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-unknown-key" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches malformed step modifier: got \\"or\\" near line 24`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-004-llm-step-in-then-refused: A Then step that opens with `llm:` must refuse `build tests`, naming the Scenario and the step and pointing to `judge:`, since a Then step rules on the run rather than acting in it
+func TestBuildTestsStepShapes004LlmStepInThenRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-004-llm-step-in-then-refused")
+	s.Given(`the "build-tests-llm-step-in-then" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"llm: the session is granted a ticket\\": model-run step prefix is not legal in this block`)
+	s.And(`stdout matches use \\"judge:\\" for a clause to be ruled on`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-005-judge-step-outside-then-refused: A Given or When step that opens with `judge:` must refuse `build tests`, naming the Scenario and the step and pointing to `llm:`, since only a Then step rules on the run
+func TestBuildTestsStepShapes005JudgeStepOutsideThenRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-005-judge-step-outside-then-refused")
+	s.Given(`the "build-tests-judge-step-in-when" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"judge: the Claude User opens a session\\": model-run step prefix is not legal in this block`)
+	s.And(`stdout matches use \\"llm:\\" to make something happen`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-006-empty-model-step-refused: A step that is `llm:` or `judge:` with no text after it must refuse `build tests`, naming the Scenario and the step, rather than hand a model an empty instruction
+func TestBuildTestsStepShapes006EmptyModelStepRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-006-empty-model-step-refused")
+	s.Given(`the "build-tests-empty-model-step" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"llm:\\": model-run step has no text after its prefix`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-steps-001-unbound-scenario-gets-test-and-steps: A registry scenario with no test must get a generated test file and a step definition for every step it declares
 func TestBuildTestsSteps001UnboundScenarioGetsTestAndSteps(t *testing.T) {
 	s := scenarios.New(t, "build-tests-steps-001-unbound-scenario-gets-test-and-steps")

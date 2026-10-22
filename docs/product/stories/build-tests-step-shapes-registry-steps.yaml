@@ -1,0 +1,102 @@
+# Story `build-tests-step-shapes`: `build tests` refusing a Registry step
+# whose shape no generated test can state.
+#
+# A step is one line of text, an `and:` or `but:` mapping holding one
+# line, or a line that opens with `llm:` (Given and When) or `judge:`
+# (Then). Whether a step's words match the catalogue is criterion 005 of
+# the Story build-tests-refusals.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-tests-step-shapes-<id>` (ADR 0014), and its steps are that
+# Scenario's steps.
+
+story:
+    id: build-tests-step-shapes
+    feature: build-tests
+    title: Refuse a Registry step whose shape no generated test can state
+    as_a: System Architect
+    i_want: build tests to refuse at startup, naming the Registry line or the Scenario and step, an and or but step written as a mapping with two keys, holding a list, or keyed by another word, an llm step among the Then steps, a judge step among the Given or When steps, and an llm or judge step with nothing after its prefix
+    so_that: a generated test states every step exactly as the Registry does, never drops one, never renders one the test cannot run and never hands a model an empty instruction, and the refusal leaves the project as it was and costs no AI turn
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-two-key-modifier-refused
+          description: An `and:` or `but:` step written as one mapping with two keys must refuse `build tests`, naming the Registry line, rather than keep one of the two steps and drop the other
+          steps:
+            - given:
+                - the "build-tests-step-modifier-two-keys" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 002-list-modifier-refused
+          description: An `and:` or `but:` step holding a list instead of one step's text must refuse `build tests`, naming the keyword and the Registry line
+          steps:
+            - given:
+                - the "build-tests-step-modifier-list" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches malformed step modifier: \\"and\\" takes a scalar'
+                - and: stdout matches near line 25
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 003-unknown-modifier-refused
+          description: A step mapping keyed by a word other than `and` or `but` must refuse `build tests`, naming that key and the Registry line
+          steps:
+            - given:
+                - the "build-tests-step-modifier-unknown-key" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches malformed step modifier: got \\"or\\" near line 24'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 004-llm-step-in-then-refused
+          description: A Then step that opens with `llm:` must refuse `build tests`, naming the Scenario and the step and pointing to `judge:`, since a Then step rules on the run rather than acting in it
+          steps:
+            - given:
+                - the "build-tests-llm-step-in-then" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"llm: the session is granted a ticket\\": model-run step prefix is not legal in this block'
+                - and: stdout matches use \\"judge:\\" for a clause to be ruled on
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 005-judge-step-outside-then-refused
+          description: A Given or When step that opens with `judge:` must refuse `build tests`, naming the Scenario and the step and pointing to `llm:`, since only a Then step rules on the run
+          steps:
+            - given:
+                - the "build-tests-judge-step-in-when" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"judge: the Claude User opens a session\\": model-run step prefix is not legal in this block'
+                - and: stdout matches use \\"llm:\\" to make something happen
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 006-empty-model-step-refused
+          description: A step that is `llm:` or `judge:` with no text after it must refuse `build tests`, naming the Scenario and the step, rather than hand a model an empty instruction
+          steps:
+            - given:
+                - the "build-tests-empty-model-step" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: \\"llm:\\": model-run step has no text after its prefix'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

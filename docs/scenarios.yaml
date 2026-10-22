@@ -2764,6 +2764,129 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  build-tests-step-shapes-001-two-key-modifier-refused:
+    description: An `and:` or `but:` step written as one mapping with two keys must refuse `build tests`, naming the Registry line, rather than keep one of the two steps and drop the other
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-001-two-key-modifier-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-step-modifier-two-keys" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-step-shapes-002-list-modifier-refused:
+    description: An `and:` or `but:` step holding a list instead of one step's text must refuse `build tests`, naming the keyword and the Registry line
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-002-list-modifier-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-step-modifier-list" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches malformed step modifier: \\"and\\" takes a scalar'
+        - and: stdout matches near line 25
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-step-shapes-003-unknown-modifier-refused:
+    description: A step mapping keyed by a word other than `and` or `but` must refuse `build tests`, naming that key and the Registry line
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-003-unknown-modifier-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-step-modifier-unknown-key" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches malformed step modifier: got \\"or\\" near line 24'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-step-shapes-004-llm-step-in-then-refused:
+    description: A Then step that opens with `llm:` must refuse `build tests`, naming the Scenario and the step and pointing to `judge:`, since a Then step rules on the run rather than acting in it
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-004-llm-step-in-then-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-llm-step-in-then" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"llm: the session is granted a ticket\\": model-run step prefix is not legal in this block'
+        - and: stdout matches use \\"judge:\\" for a clause to be ruled on
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-step-shapes-005-judge-step-outside-then-refused:
+    description: A Given or When step that opens with `judge:` must refuse `build tests`, naming the Scenario and the step and pointing to `llm:`, since only a Then step rules on the run
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-005-judge-step-outside-then-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-judge-step-in-when" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"judge: the Claude User opens a session\\": model-run step prefix is not legal in this block'
+        - and: stdout matches use \\"llm:\\" to make something happen
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-step-shapes-006-empty-model-step-refused:
+    description: A step that is `llm:` or `judge:` with no text after it must refuse `build tests`, naming the Scenario and the step, rather than hand a model an empty instruction
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-step-shapes-registry-steps.yaml
+        scenario_id: build-tests-step-shapes-006-empty-model-step-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-empty-model-step" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"llm:\\": model-run step has no text after its prefix'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
   build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
     service: bdd-cli
