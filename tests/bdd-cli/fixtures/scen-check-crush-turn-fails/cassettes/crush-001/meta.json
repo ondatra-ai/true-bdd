@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/no-such-model",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 1,
+  "duration_ms": 1139,
+  "request_hash": "sha256:7ef50bf420d3a4658830e8ef7ca496a8025d161053566fe9a23cfc36c710a2a1",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-22T05:26:01Z"
+}

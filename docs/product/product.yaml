@@ -210,6 +210,15 @@ glossary:
       One request the engine sends to an AI model and waits on. It is the
       unit of model cost and time: a run that needs none costs nothing.
 
+  - term: AI CLI
+    means: >-
+      The agent command-line program an AI turn runs through: `claude`,
+      `crush` or `codex`. The project's configuration names one per kind of
+      turn, and a single Prompt may name its own, so moving work to another
+      provider is a configuration edit. Each enforces a different answer
+      shape and write boundary, so which one ran a turn decides what that
+      turn could do and what it cost.
+
   - term: fix loop
     means: >-
       What a command run with `--fix` does for each check that fails: it
@@ -593,6 +602,17 @@ catalogue:
       The engine sent exactly that many AI turns during the run; "no"
       means none, so the run cost no model call.
     terms: [engine, AI turn]
+
+  - template: 'the engine dispatched {turns:number} [validation|fix|apply] AI turn[s] to "{cli}"'
+    block: then
+    means: >-
+      Of the AI turns the engine sent during the run, exactly that many of
+      the named kind went to the named AI CLI; "no" means none. A
+      validation turn answers a Prompt, a fix turn turns a failed Prompt
+      into a proposed fix or clarifying questions, and an apply turn writes
+      the fix. It is how a Scenario observes which AI CLI the configuration
+      routed each kind of turn to.
+    terms: [engine, AI turn, AI CLI, Prompt]
 
   - template: 'the shell command "{shell_command}" run in "{dir}" exits with code {code:number}'
     block: then

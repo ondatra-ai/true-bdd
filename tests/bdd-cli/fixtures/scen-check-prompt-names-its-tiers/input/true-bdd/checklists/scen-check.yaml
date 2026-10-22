@@ -1,0 +1,39 @@
+# Fixture checklist for `scen-check-prompt-names-its-tiers`.
+#
+# The shipped checklist's description-qualifier question, verbatim, under
+# an `engine:` block naming high, high and coder (claude, claude, crush in
+# this fixture's true-bdd.yaml). The Prompt names its own tiers, coder,
+# xhigh and high (crush, codex, claude): each of its turns must go to the
+# CLI the Prompt's tier names, never to the checklist's.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+engine:
+  prompt_model: high
+  fix_model: high
+  apply_model: coder
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description contains a vague word
+          from the forbidden_qualifiers list in the product document
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when the description contains no forbidden qualifier.
+          Fail when it contains one or more.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: contains '<word>'[, '<word2>'...]"
+        rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
+        docs:
+          - product
+        F: "Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."
+        model: coder
+        fix_model: xhigh
+        apply_model: high

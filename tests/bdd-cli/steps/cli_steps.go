@@ -109,6 +109,9 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
+	// Which CLI each kind of turn went to, read off the same dispatch
+	// records: how a scenario observes model routing. See engine_log_steps.go.
+	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
 	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.

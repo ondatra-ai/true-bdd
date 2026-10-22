@@ -20,6 +20,9 @@ const (
 	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
 	usRefineStem         = "us-refine"
 	scenCheckStem        = "scen-check"
+	// measurableQShort is the scen-check question several fixtures narrow
+	// to: "whether this scenario includes at least one specific measurable criterion".
+	measurableQShort = "d92aa73c"
 )
 
 // declaredSelection pins one fixture's checklist_prompts declaration to
@@ -53,8 +56,11 @@ func declaredSelections() map[string]declaredSelection {
 		"scen-check-fix-rewrites-step-qualifier":     {Stem: scenCheckStem, QShort: "63aefa89", RequireF: true},
 		"scen-check-fix-rewrites-forbidden-verb":     {Stem: scenCheckStem, QShort: "6d955d38", RequireF: true},
 		"scen-check-fix-rewrites-implementation":     {Stem: scenCheckStem, QShort: "4ca30544", RequireF: true},
-		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: "d92aa73c", RequireF: true},
+		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-fix-rewrites-subjective-outcome": {Stem: scenCheckStem, QShort: "17ccea8c", RequireF: true},
+		"scen-check-fix-by-crush":                    {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
+		"scen-check-claude-turn-fails":               {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
+		"scen-check-crush-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
 	}
 }
 
@@ -138,6 +144,9 @@ const (
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
+	// overrideTiers gives a shipped prompt its own `model:`, `fix_model:`
+	// and `apply_model:`, which the eval key leaves out, so it still copies one.
+	overrideTiers
 )
 
 // allowedOverrideFixtures is the explicit allowlist for checked-in
@@ -178,6 +187,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-closure-no-catalogue":         overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
 		"scen-check-fix-merges-phrases":           overrideChecks,
+		"scen-check-prompt-names-its-tiers":       overrideTiers,
 	}
 }
 
