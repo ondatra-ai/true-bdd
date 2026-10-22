@@ -26,6 +26,8 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
 		assertAnswersEveryQuestion)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+		assertAnswersLineByLine)
 	// A Given precondition that a checklist is narrowed to one named prompt;
 	// the fixture selects it via `checklist_prompts:`, and this step verifies
 	// the selection is real and singular.
