@@ -29,7 +29,7 @@ sections:
         rationale: "r2"
       - Q: |
           Retired prompt about cherries.
-        skip: "superseded"
+        skip: true
 `
 
 // makeRepoRoot builds a synthetic engine layer: true-bdd/ (config +

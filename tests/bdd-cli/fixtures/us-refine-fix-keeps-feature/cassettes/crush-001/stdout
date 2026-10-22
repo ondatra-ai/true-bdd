@@ -27,7 +27,7 @@ acceptance_criteria:
           - "Claude displays the message 'This document is not shared with your account'"
           - "Claude does not display any content from the document"
   - id: "AC-3"
-    description: "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no summary content, when no summary is produced within 30 seconds of the Claude User's request."
+    description: "Claude must display the message 'The summary timed out - please try again' when the summary backend returns no summary within 30 seconds of the Claude User's request."
     steps:
       - given:
           - "a Google Doc is shared with the Claude User's account"
@@ -36,7 +36,6 @@ acceptance_criteria:
           - "the Claude User asks Claude to summarize the document"
       - then:
           - "Claude displays the message 'The summary timed out - please try again'"
-          - "Claude displays no summary content"
   - id: "AC-4"
     description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
     steps:

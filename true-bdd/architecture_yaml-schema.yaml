@@ -19,10 +19,8 @@
 # adding a block to its architectural spec adds it here too.
 
 architecture: include('architecture')
-# The BDD vocabulary `us refine` enforces on steps and AC descriptions.
-# Preferred home is the product document; a host may keep it here instead
-# (the engine's own fixtures do) — optional in both schemas, not just one.
-vocabulary: include('vocabulary', required=False)
+# No `vocabulary:` here: the product document holds it and its catalogue,
+# which `us refine` cites; this document only maps the words (`terms:`).
 
 ---
 # One `testing:` section for the whole repository, beside the services it
@@ -143,23 +141,3 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
-
----
-# Mirrors `vocabulary` in product-schema.yaml (yamale has no cross-file
-# include) but for `actions`, which the product retired for its catalogue
-# and `us refine` still cites here until it reads that catalogue.
-vocabulary:
-  actions: list(include('action'), min=1)
-  forbidden_qualifiers: list(str(), min=1)
-  forbidden_actions: list(include('forbidden_action'), min=1)
-
----
-action:
-  name: str()
-  means: str()
-
----
-forbidden_action:
-  name: str()
-  reason: str()
-  replacement: str()

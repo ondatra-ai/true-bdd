@@ -1,3 +1,4 @@
+{{ if eq .FailedCheck.Check "" -}}
 # Generate Fix Prompt for User Story
 
 ## Reference Documentation
@@ -217,3 +218,219 @@ must be a single JSON object with both keys present:
 Exactly one of the two carries content. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}
+{{ else -}}
+# Generate Fix Prompt for a Story's Step Phrases
+
+## Reference Documentation
+
+Read the following documents before you propose an entry:
+{{- range $key, $path := .DocPaths }}
+- Read(`{{ $path }}`) - {{ $key }}
+{{- end }}
+
+## Where the fix goes
+
+Into the product document's step-phrase catalogue, and nowhere else. A
+step-phrase finding says a step of this Story is not written in the
+language the product declares, so the step has no stated meaning and no
+step definition follows from it. The answer is a catalogue entry,
+written once, where every Story and Scenario using the phrase reads it.
+The Story itself is never edited by this fix: its steps stay word for
+word as the user wrote them.
+
+## Story
+
+**Story ID:** {{.Subject.ID}}
+**Title:** {{.Subject.Title}}
+
+**As a** {{.Subject.AsA}}
+**I want** {{.Subject.IWant}}
+**So that** {{.Subject.SoThat}}
+
+### Acceptance Criteria
+
+Each step is shown as `<block>: <text>`, its text exactly as a catalogue
+template must match it, without its `and:` or `but:` keyword.
+{{- range $i, $ac := .Subject.AcceptanceCriteria }}
+
+{{ add $i 1 }}. **{{ $ac.ID }}:** {{ $ac.Description }}
+```text
+{{- range $step := $ac.Steps }}
+{{- range $g := $step.Given }}
+given: {{ $g.Statement }}
+{{- end }}
+{{- range $w := $step.When }}
+when: {{ $w.Statement }}
+{{- end }}
+{{- range $t := $step.Then }}
+then: {{ $t.Statement }}
+{{- end }}
+{{- end }}
+```
+{{- end }}
+
+## Validation Failure
+
+The following check failed and needs to be fixed:
+
+### Failed Check: {{ .FailedCheck.SectionPath }}
+
+**Check:** {{ .FailedCheck.Question }}
+**Why it matters:** {{ .FailedCheck.Rationale }}
+**Actual:** {{ .FailedCheck.ActualAnswer }}
+
+**Findings** (one line per acceptance criterion, headed by its id):
+{{- range .FailedCheck.Context }}
+- {{ . }}
+{{- end }}
+
+**Fix template:**
+{{ .FailedCheck.FixPrompt }}
+
+## The catalogue
+
+A catalogue entry has four fields:
+
+- `template`: the shape of a step, in the grammar below. It is the
+  entry's identity: no two entries share one.
+- `block`: `given`, `when` or `then`, the one block a step of this shape
+  may sit in.
+- `means`: what a step of this shape means, in product words a reader
+  of the Story understands; it may name the template's slots.
+- `terms`: the glossary terms that meaning relies on, each spelled
+  exactly as the glossary spells it; the list may be empty.
+
+Every step of the Story must match exactly one template in the whole
+catalogue, and that entry's block must be the step's block. A step
+opening with `llm:` or `judge:` is run by a model and exempt.
+
+Template grammar, token by token:
+
+- literal text: itself, exactly, case and whitespace included.
+- `"{name}"`: one or more characters other than `"`; the slot sits
+  between literal double quotes.
+- `{name:number}`: digits, or the word `no` for zero.
+- `{name:role}`: exactly one `roles[].name` of the product document.
+- `{name:pattern}`: the rest of the step, verbatim; only as the
+  template's last token, after a space.
+- `[a|b]`: exactly one of the literal alternatives.
+- `[s]`: `s`, or nothing.
+- `\{`, `\}`, `\[`, `\]`, `\\`: the literal character.
+
+Slot names are lower-case letters and underscores, unique within a
+template. A template matches a step's whole text, never a part of it.
+
+A good entry phrases the step in the shape other Stories will reuse:
+quoted runs and numbers become slots, the words that carry the meaning
+stay literal. It must not also match a step another entry already
+phrases, or that step becomes ambiguous.
+
+{{- if .UserAnswers }}
+
+## User Clarifications (from previous questions)
+
+The user provided the following clarifications:
+{{- range $id, $answer := .UserAnswers }}
+{{- if ne $id "_user_refinement" }}
+- **{{ $id }}**: {{ $answer }}
+{{- end }}
+{{- end }}
+
+Use these answers to generate a confident fix. Do not ask these
+questions again.
+{{- end }}
+
+{{- if index .UserAnswers "_user_refinement" }}
+
+## REFINEMENT MODE — User Feedback (CRITICAL)
+
+The user has reviewed your PREVIOUS fix prompt and is providing
+feedback to CORRECT IT:
+
+> {{ index .UserAnswers "_user_refinement" }}
+
+**CRITICAL INSTRUCTIONS FOR REFINEMENT:**
+1. **DO NOT ask more questions**
+2. **Address the specific issue** — Fix exactly what the user pointed out
+3. **Keep everything else** — Preserve parts of your previous fix that
+   weren't criticized
+4. **Output a fix prompt** — You MUST output FILE_START/FILE_END,
+   NEVER QUESTIONS_START/QUESTIONS_END
+{{- end }}
+
+## Your Task
+
+{{- if index .UserAnswers "_user_refinement" }}
+**REFINEMENT MODE**: Apply user feedback and regenerate the fix prompt.
+DO NOT ask questions.
+{{- else if .UserAnswers }}
+Using the user's clarifications above, generate a complete fix prompt.
+{{- else }}
+Decide whether the Story and the documents already say what each
+failing step means. When the fix template asks you to ask first, or the
+meaning is not plain, ask; otherwise generate the fix.
+{{- end }}
+
+**If you can generate a confident fix**, output a fix prompt the applier
+can execute against the product document. The fix MUST:
+- Add or change only the entries the findings call for: for a step that
+  matches no template, or only a template of another block, one new
+  entry phrasing it in its own block; for a step that matches several,
+  the change that leaves it matching one.
+- Leave every other step of this Story, and every step the other
+  entries phrase, matching exactly one template.
+- Give the exact YAML of each entry, its template single-quoted, so the
+  applier copies it rather than composing it.
+- Never edit the Story or another document.
+
+=== FILE_START: {{.ResultPath}} ===
+# Fix Prompt for Story {{.Subject.ID}}: {{.Subject.Title}}
+
+## Target
+The `product` document: its `catalogue:` list.
+
+## Required Changes
+### Change #N: [description]
+**Document:** product
+**Action:** Append this entry to the end of the `catalogue:` list
+(or: replace old_string with new_string, verbatim).
+**YAML:**
+```yaml
+  - template: '<template>'
+    block: <given|when|then>
+    means: <what a step of this shape means>
+    terms: [<glossary term>, ...]
+```
+=== FILE_END: {{.ResultPath}} ===
+
+**If you need clarification first**, output questions with suggested
+answers: each question offers the options you would accept, the one you
+recommend first.
+
+=== QUESTIONS_START ===
+questions:
+  - id: q1
+    question: "<your question>"
+    context: "<why you need this information>"
+    options:
+      - "<the option you recommend>"
+      - "<another option>"
+=== QUESTIONS_END ===
+
+**Important:**
+- Output EXACTLY ONE block (FILE_START/FILE_END or QUESTIONS_START/QUESTIONS_END)
+- Never output both
+
+{{ if .Structured }}
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with both keys present:
+
+- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` when you are returning a fix prompt.
+
+Exactly one of the two carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
+{{ end }}
+{{ end -}}

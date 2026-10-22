@@ -96,7 +96,6 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-96.7-fix-prompts.md ===
 # Fix Prompt for Story 96.7: Document Summary On Demand
 
 ## Instructions
@@ -110,12 +109,17 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-4 fails the check (`us-refine/acceptance_criteria` — forbidden qualifiers in steps). AC-1, AC-2 and AC-3 contain no forbidden qualifiers and are reproduced word for word, steps unchanged.
+Only AC-4 is faulted by the failed check. AC-1, AC-2 and AC-3 are reproduced exactly as they stand — same description, same steps, word for word.
 
 ### Change #1: AC-4
 **Before:** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
-**Issue:** The `then` step reads "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized". It contains two forbidden qualifiers: 'quickly' (unmeasurable timing) and 'user-friendly' (subjective wording). Neither is observable in a test — there is no bound to assert against and no literal text to match. The description is also outcome-vague ("must state that ...") rather than naming the exact message.
-**After (description):** Claude must display the message 'Only the first 10000 words were summarized' within 30 seconds when the document contains more than 10000 words.
+
+**Issue:** The Then step — "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized" — contains two forbidden qualifiers from the product document's `vocabulary.forbidden_qualifiers` list (./docs/product/product.yaml):
+- `quickly` — no measurable time bound; it hides what an automated check would assert.
+- `user-friendly` — a judgement about the output rather than the output itself; the literal notice text is never stated, so the step is not observable.
+
+**After (description):** Claude must display the message 'Only the first 10000 words of this document were summarized' when the document contains more than 10000 words.
+
 **After (steps):**
 ```yaml
 - given:
@@ -123,15 +127,16 @@ Only AC-4 fails the check (`us-refine/acceptance_criteria` — forbidden qualifi
 - when:
     - "the Claude User asks Claude to summarize the document"
 - then:
-    - "Claude displays the message 'Only the first 10000 words were summarized' within 30 seconds"
+    - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
+    - and: "Claude displays the message within 30 seconds of the Claude User's request"
 ```
 
-Notes on the replacement:
-- 'quickly' → "within 30 seconds", the same measurable bound already used by AC-3, so the two criteria stay consistent.
-- 'user-friendly notice' → the exact literal string `'Only the first 10000 words were summarized'`, matching the literal-message style already used in AC-2 and AC-3.
-- The role stays exactly "Claude User", as in the story's `as_a` clause.
+Notes on the replacements:
+- `user-friendly notice` → the exact literal message text, so the Then step names one observable output string.
+- `quickly` → the measurable bound "within 30 seconds of the Claude User's request", consistent with the 30-second rule already fixed by AC-3.
+- The role stays the exact `Claude User` from the story's as_a clause in every Given/When/Then step.
 
-No new ACs are added, and none are merged or removed.
+No acceptance criteria are added, merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -145,7 +150,7 @@ No new ACs are added, and none are merged or removed.
         - "the Claude User asks Claude to summarize the document"
     - then:
         - "Claude displays a summary of 150 words or fewer in the conversation"
-        - "the summary names the document title"
+        - and: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
@@ -156,7 +161,7 @@ No new ACs are added, and none are merged or removed.
         - "the Claude User asks Claude to summarize that document"
     - then:
         - "Claude displays the message 'This document is not shared with your account'"
-        - "Claude does not display any content from the document"
+        - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
@@ -170,17 +175,16 @@ No new ACs are added, and none are merged or removed.
         - "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
-  description: "Claude must display the message 'Only the first 10000 words were summarized' within 30 seconds when the document contains more than 10000 words."
+  description: "Claude must display the message 'Only the first 10000 words of this document were summarized' when the document contains more than 10000 words."
   steps:
     - given:
         - "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when:
         - "the Claude User asks Claude to summarize the document"
     - then:
-        - "Claude displays the message 'Only the first 10000 words were summarized' within 30 seconds"
+        - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
+        - and: "Claude displays the message within 30 seconds of the Claude User's request"
 ```
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-96.7-fix-prompts.md ===
 
 ---
 

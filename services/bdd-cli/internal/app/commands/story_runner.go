@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
 
 // StoryCommonDeps is the field set `us refine` needs at the command
@@ -33,7 +34,7 @@ type StoryCommonDeps struct {
 // post-fix snapshots.
 type storyLoadItemsFactory func(
 	versionMgr *fs.StoryVersionManager,
-) func(ctx context.Context) ([]*story.Story, error)
+) func(ctx context.Context) ([]*template.StoryRefineData, error)
 
 // runStoryCommand wires the engine for a Story walk given a LoadItems
 // factory, so the command entry point stays tiny.
@@ -46,17 +47,19 @@ func runStoryCommand(
 ) error {
 	versionMgr := fs.NewStoryVersionManager(deps.RunDir, storyNumber)
 
-	err := runner.Run(ctx, runner.Spec[*story.Story]{
+	err := runner.Run(ctx, runner.Spec[*template.StoryRefineData]{
 		Name:          name,
 		ChecklistName: checklistName,
 		StoryNumber:   storyNumber,
 		Fix:           fix,
 
 		LoadItems:  loadItems(versionMgr),
-		PostFix:    runner.StoryPostFix(versionMgr),
-		Finalize:   runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix),
-		GetSubject: runner.StorySubject,
+		PostFix:      refinePostFix(versionMgr),
+		PostCheckFix: refinePostCheckFix,
+		Finalize:     refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix)),
+		GetSubject:   refineSubject,
 
+		Checks:       checks.ForStories(),
 		Evaluator:    deps.Evaluator,
 		FixGenerator: deps.FixGenerator,
 		FixApplier:   deps.FixApplier,
