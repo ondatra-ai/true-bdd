@@ -99,11 +99,10 @@ Claude must list every section heading of a shared Google Doc in the conversatio
 
 ## Fix Prompt to Apply
 
-=== FILE_START: tmp/{{RUN_DIR}}/01-96.2-fix-prompts.md ===
 # Fix Prompt for Story 96.2: Document Summary On Demand
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story.
+Apply the following changes to the acceptance criteria for this story. Only AC-1's `description` changes. AC-1's `steps` and all of AC-2 through AC-5 (descriptions AND steps) must be reproduced exactly as they are today — do not reword, re-order, or "improve" them.
 
 ## Original Acceptance Criteria
 1. AC-1: Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation. [has steps]
@@ -114,87 +113,63 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Change ONLY what the failed check requires. AC-2, AC-3, AC-4 and AC-5 already
-follow the rule-based description format and are reproduced below exactly as
-they stand — same description, same steps, word for word. Only AC-1's
-`description` field changes; AC-1's existing steps are kept byte for byte.
-
 ### Change #1: AC-1
-**Before:** Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation.
+**Before:** "Given a Google Doc is shared with the Claude User's account, when the Claude User asks for a summary, then Claude displays a summary of 150 words or fewer in the conversation."
 
-**Issue:** Contains Gherkin Given/When/Then text in the description (Gherkin belongs in the steps field) and is missing the keyword "must"/"should".
+**Issue:** Contains Gherkin Given/When/Then text in the `description` field (Gherkin belongs in `steps`), and the description carries no "must"/"should" keyword. The behavior is core story functionality (the summary itself), so the rewrite uses "must".
 
-**After (description):** Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a Google Doc shared with their account.
+**After (description):** "Claude must display a summary of 150 words or fewer when the Claude User asks for a summary of a Google Doc shared with their account."
 
-**After (steps):** unchanged from the current story file:
+**After (steps):** unchanged — keep the existing Gherkin exactly as it is. Do not duplicate the Given/When/Then wording into the description.
 ```yaml
-- given:
-    - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-- when:
-    - "the Claude User asks Claude to summarize the document"
-- then:
-    - "Claude displays a summary of 150 words or fewer in the conversation"
+- given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+- when: "the Claude User asks Claude to summarize the document"
+- then: "Claude displays a summary of 150 words or fewer in the conversation"
 ```
 
-No new acceptance criteria are added, and none are merged or removed.
+### No other changes
+AC-2, AC-3, AC-4 and AC-5 already satisfy the rule-based format (one sentence, "must" present, no Gherkin in the description). Leave their descriptions and steps untouched. No ACs are added, merged, or removed.
 
 ## Complete Fixed Acceptance Criteria
 
 ```yaml
 - ac_id: AC-1
-  description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a Google Doc shared with their account."
+  description: "Claude must display a summary of 150 words or fewer when the Claude User asks for a summary of a Google Doc shared with their account."
   steps:
-    - given:
-        - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of 150 words or fewer in the conversation"
+    - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of 150 words or fewer in the conversation"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
   steps:
-    - given:
-        - "a Google Doc exists that is not shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize that document"
-    - then:
-        - "Claude displays the message 'This document is not shared with your account'"
+    - given: "a Google Doc exists that is not shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize that document"
+    - then: "Claude displays the message 'This document is not shared with your account'"
 
 - ac_id: AC-3
   description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
   steps:
-    - given:
-        - "a Google Doc is shared with the Claude User's account"
-        - "the summary backend does not respond within 30 seconds"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays the message 'The summary timed out - please try again'"
+    - given: "a Google Doc is shared with the Claude User's account"
+    - given: "the summary backend does not respond within 30 seconds"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
-    - given:
-        - "a Google Doc with more than 10000 words is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude to summarize the document"
-    - then:
-        - "Claude displays a summary of the first 10000 words"
-        - "Claude states that only the first 10000 words were summarized"
+    - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
+    - when: "the Claude User asks Claude to summarize the document"
+    - then: "Claude displays a summary of the first 10000 words"
+    - then: "Claude states that only the first 10000 words were summarized"
 
 - ac_id: AC-5
   description: "Claude must list every section heading of a shared Google Doc in the conversation when the Claude User asks for the document outline."
   steps:
-    - given:
-        - "a Google Doc with at least three section headings is shared with the Claude User's account"
-    - when:
-        - "the Claude User asks Claude for the document outline"
-    - then:
-        - "Claude displays each section heading in its original order"
+    - given: "a Google Doc with at least three section headings is shared with the Claude User's account"
+    - when: "the Claude User asks Claude for the document outline"
+    - then: "Claude displays each section heading in its original order"
 ```
-
-=== FILE_END: tmp/{{RUN_DIR}}/01-96.2-fix-prompts.md ===
 
 ---
 
