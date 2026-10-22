@@ -266,7 +266,7 @@ func (s *goEventStream) absorb(event dto.GoTestEvent) {
 	}
 
 	if event.Action == "pass" && event.Test != "" {
-		s.testPassed[event.Test] = true
+		s.testPassed[key] = true
 	}
 
 	if event.Action == "fail" {

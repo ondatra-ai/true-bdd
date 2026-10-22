@@ -1,0 +1,7 @@
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered and implemented parameterised transform step (doubled|tripled|halved|negated|squared) to bind calc-001-double's unbound When step"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+```

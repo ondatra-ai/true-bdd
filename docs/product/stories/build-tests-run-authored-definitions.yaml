@@ -55,3 +55,17 @@ story:
       - and: stdout matches expected 3, got 4
       - and: the engine spawned a test runner with arguments matching TestCalc002Shared
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
+  - id: 004-selected-package-must-pass
+    description: A selected Scenario skipped in its owning package must fail build tests --fix even when a same-named test passes in another package
+    steps:
+    - given:
+      - the "build-tests-run-package" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches declared suite did not pass the selected Scenario
+      - and: stdout matches fixture/stepsrun/tests/calc::TestCalc001Double
+      - but: stdout does not match BUILD TESTS COMPLETE
+      - and: the engine spawned exactly 1 test runner

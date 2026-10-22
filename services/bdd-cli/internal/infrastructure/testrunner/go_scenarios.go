@@ -17,7 +17,10 @@ func appendGoScenarioFilter(argv, tests []string) []string {
 
 	escaped := make([]string, 0, len(tests))
 	for _, test := range tests {
-		escaped = append(escaped, regexp.QuoteMeta(test))
+		parts := strings.Split(test, goTestNameSeparator)
+		name := parts[len(parts)-1]
+
+		escaped = append(escaped, regexp.QuoteMeta(name))
 	}
 
 	return append(argv, goTestRunFlag, "^("+strings.Join(escaped, "|")+")$")
@@ -25,7 +28,12 @@ func appendGoScenarioFilter(argv, tests []string) []string {
 
 func (s *goEventStream) requireTests(tests []string) error {
 	for _, test := range tests {
-		if !s.testPassed[test] {
+		pkg, name, err := splitGoTestName(test)
+		if err != nil {
+			return err
+		}
+
+		if !s.testPassed[pkg+"\x00"+name] {
 			return fmt.Errorf("%w: %s", ErrScenarioNotRun, test)
 		}
 	}

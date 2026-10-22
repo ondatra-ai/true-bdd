@@ -22,7 +22,7 @@ const defaultStepFixAttempts = 5
 
 // buildTestsExecution verifies changed steps through the host's replay command.
 // A package's helpers may affect every definition, so a changed steps package
-// selects every bound Registry Scenario in that suite, including initially bound peers.
+// selects every Registry Scenario in that suite, including initially bound peers.
 type buildTestsExecution struct {
 	dispatcher *testrunner.Dispatcher
 	loader     *checklistloader.ChecklistLoader
@@ -87,8 +87,6 @@ func (e *buildTestsExecution) postFix(ctx context.Context, item *BuildTestsItem,
 		return item, err
 	}
 
-	e.failures = nil
-
 	answer, err := stepcoverage.Scan(e.scenarios, e.root)
 	if err != nil {
 		e.failures = []string{fmt.Sprintf("Scenario %s: step definitions cannot run: %s", item.ID, err)}
@@ -122,10 +120,15 @@ func (e *buildTestsExecution) runBound(ctx context.Context, answer *stepcoverage
 
 		ids := make([]string, 0, len(file.Scenarios))
 		for _, scenario := range file.Scenarios {
-			if answer.Examined[scenario.ID] && len(answer.Gaps[scenario.ID]) == 0 {
-				names = append(names, scenario.FuncName)
-				ids = append(ids, scenario.ID)
+			unbound := unboundScenario(answer, scenario.ID)
+			if len(unbound) > 0 {
+				failures = append(failures, unbound...)
+
+				continue
 			}
+
+			names = append(names, strings.TrimSuffix(file.ScenariosPkg, "/scenarios")+"::"+scenario.FuncName)
+			ids = append(ids, scenario.ID)
 		}
 
 		if len(names) == 0 {
@@ -189,6 +192,8 @@ func (e *buildTestsExecution) changedSuites() error {
 		return err
 	}
 
+	// Dirty suites stay selected until the run ends: no prior failure can
+	// disappear without either a replay pass or an explicit binding failure.
 	for suite, hash := range snapshots {
 		if hash != e.snapshots[suite] {
 			e.dirty[suite] = true
@@ -211,4 +216,17 @@ func (e *buildTestsExecution) finish(err error) error {
 	sort.Strings(e.failures)
 
 	return errors.Join(err, fmt.Errorf("%w:\n%s", ErrStepsStillFailing, strings.Join(e.failures, "\n")))
+}
+
+func unboundScenario(answer *stepcoverage.Answer, scenarioID string) []string {
+	if !answer.Examined[scenarioID] {
+		return []string{fmt.Sprintf("Scenario %s: step definitions were not examined", scenarioID)}
+	}
+
+	failures := make([]string, 0, len(answer.Gaps[scenarioID]))
+	for _, step := range answer.Gaps[scenarioID] {
+		failures = append(failures, fmt.Sprintf("Scenario %s: unbound %s step: %s", scenarioID, step.Block, step.Text))
+	}
+
+	return failures
 }

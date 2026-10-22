@@ -65,3 +65,17 @@ func TestBuildTestsRun003SharedDefinitionScenariosRun(t *testing.T) {
 	s.And(`the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0`)
 	s.Done()
 }
+
+// build-tests-run-004-selected-package-must-pass: A selected Scenario skipped in its owning package must fail build tests --fix even when a same-named test passes in another package
+func TestBuildTestsRun004SelectedPackageMustPass(t *testing.T) {
+	s := scenarios.New(t, "build-tests-run-004-selected-package-must-pass")
+	s.Given(`the "build-tests-run-package" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches declared suite did not pass the selected Scenario`)
+	s.And(`stdout matches fixture/stepsrun/tests/calc::TestCalc001Double`)
+	s.But(`stdout does not match BUILD TESTS COMPLETE`)
+	s.And(`the engine spawned exactly 1 test runner`)
+	s.Done()
+}
