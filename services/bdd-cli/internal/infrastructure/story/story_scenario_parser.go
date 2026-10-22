@@ -4,20 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-const (
-	lineageScenarioIDFormat   = "%s-%03d"
-	stepModifierMappingFields = 2
-)
+const stepModifierMappingFields = 2
 
 // ErrDeprecatedStoryFormat is returned when a story file carries the
 // legacy `scenarios.test_scenarios[]` block rather than the canonical
@@ -31,6 +27,18 @@ var ErrDeprecatedStoryFormat = errors.New(
 var ErrNoAcceptanceCriteria = errors.New(
 	"story has no acceptance_criteria entries to apply",
 )
+
+// ErrUnkeyableCriterionID is returned when an acceptance criterion's id is
+// not `<NNN>-<slug>`: the id becomes the Scenario's Registry key (ADR 0014).
+// Free of double quotes, because the refusal reaches stdout as a quoted slog value.
+var ErrUnkeyableCriterionID = errors.New(
+	"the id must be <NNN>-<slug>, three digits then a lower-case slug such as 001-unknown-id-refused, " +
+		"because it becomes the Scenario's Registry key <story-id>-<ac-id>",
+)
+
+// criterionIDShape is `<NNN>-<slug>`: the part of a Registry key the author
+// writes, so it survives reordering the Story's criteria.
+var criterionIDShape = regexp.MustCompile(`^[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*$`)
 
 // ErrMalformedStepModifier signals that a Gherkin step modifier
 // (`{and: ...}` / `{but: ...}`) has the wrong YAML shape.
@@ -114,26 +122,23 @@ type rawStoryFile struct {
 	} `yaml:"scenarios"`
 }
 
-// ParseStoryScenarios resolves docs/product/stories/<storyNumber>-*.yaml,
-// validates the canonical AC-with-steps shape, and returns one
-// ScenarioApplyData per AC plus the resolved story path.
+// ParseStoryScenarios reads the Story file FindStoryFile resolves
+// storyID to (the one declaring that id), validates the canonical AC-with-steps shape, and returns
+// one ScenarioApplyData per AC plus the resolved story path.
 func (p *StoryScenarioParser) ParseStoryScenarios(
-	storyNumber string,
+	storyID string,
 	requirementsScratchPath string,
 ) ([]*template.ScenarioApplyData, string, error) {
-	storyPath, err := p.resolveStoryPath(storyNumber)
+	storyFile, err := FindStoryFile(p.storiesDir, storyID)
 	if err != nil {
 		return nil, "", err
 	}
 
-	data, err := disk.Read(storyPath)
-	if err != nil {
-		return nil, storyPath, pkgerrors.ErrReadStoryFileFailed(storyPath, err)
-	}
+	storyPath := storyFile.Path
 
 	var raw rawStoryFile
 
-	err = yaml.Unmarshal(data, &raw)
+	err = yaml.Unmarshal(storyFile.Data, &raw)
 	if err != nil {
 		return nil, storyPath, pkgerrors.ErrParseStoryYAMLFailed(storyPath, err)
 	}
@@ -146,16 +151,18 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 		return nil, storyPath, fmt.Errorf("%s: %w", storyPath, ErrNoAcceptanceCriteria)
 	}
 
-	storyID := raw.Story.ID
-	if storyID == "" {
-		storyID = storyNumber
-	}
-
 	scenarios := make([]*template.ScenarioApplyData, 0, len(raw.Story.AcceptanceCriteria))
 
 	for index, criterion := range raw.Story.AcceptanceCriteria {
+		if !criterionIDShape.MatchString(criterion.ID) {
+			return nil, storyPath, fmt.Errorf("%s: acceptance criterion %d has id %s: %w",
+				storyPath, index+1, criterion.ID, ErrUnkeyableCriterionID)
+		}
+
 		given, when, then := flattenACSteps(criterion.Steps)
-		lineageID := fmt.Sprintf(lineageScenarioIDFormat, storyID, index+1)
+		// The lineage id is the Scenario's Registry key, `<story-id>-<ac-id>`
+		// (ADR 0014): never the criterion's position, so reordering keeps it.
+		lineageID := storyID + "-" + criterion.ID
 
 		scenarios = append(scenarios, template.NewScenarioApplyData(
 			storyID,
@@ -177,27 +184,6 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 	)
 
 	return scenarios, storyPath, nil
-}
-
-// resolveStoryPath finds docs/product/stories/<storyNumber>-*.yaml. Mirrors the
-// resolution logic in StoryLoader to keep behavior consistent.
-func (p *StoryScenarioParser) resolveStoryPath(storyNumber string) (string, error) {
-	pattern := filepath.Join(p.storiesDir, storyNumber+"-*.yaml")
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return "", pkgerrors.ErrFindStoryFileFailed(err)
-	}
-
-	if len(matches) == 0 {
-		return "", pkgerrors.ErrStoryFileNotFoundError(storyNumber, p.storiesDir, storyNumber)
-	}
-
-	if len(matches) > 1 {
-		return "", pkgerrors.ErrMultipleStoryFilesError(storyNumber, matches)
-	}
-
-	return matches[0], nil
 }
 
 // flattenACSteps walks an AC's steps list and returns the Given/When/Then

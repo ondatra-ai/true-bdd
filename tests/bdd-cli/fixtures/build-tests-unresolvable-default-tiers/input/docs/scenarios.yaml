@@ -1,0 +1,26 @@
+# Seed registry for the `build-tests-unresolvable-default-tiers` BDD fixture.
+#
+# One scenario whose steps bind to nothing, so a `build tests` that got
+# past startup would have a scenario to walk. The run never gets there:
+# true-bdd.yaml names role defaults it cannot resolve.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-unresolvable-default-tiers fixture"
+
+scenarios:
+  INT-900:
+    description: "MCP /mcp endpoint responds 200 to a valid initialize POST"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-22"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running on its configured port"
+      when:
+        - "the Claude User posts a valid JSON-RPC initialize request to /mcp"
+      then:
+        - "the server returns HTTP 200"

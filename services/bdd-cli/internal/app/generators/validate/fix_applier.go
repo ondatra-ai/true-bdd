@@ -24,6 +24,9 @@ type FixApplierData struct {
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
 	ResultPath string // Path for FILE_START/FILE_END output
+	// Check names the `D:` check whose finding the fix closes; empty for
+	// a model's `Q:`, so a template can tell the two kinds of fix apart.
+	Check string
 }
 
 // ApplyParams contains the parameters for one fix application.
@@ -31,6 +34,7 @@ type ApplyParams struct {
 	Subject   any    // Current subject to modify
 	SubjectID string // Subject identifier
 	FixPrompt string // The concrete fix prompt to apply
+	Check     string // The failed `D:` check's name; "" for a `Q:` prompt
 	TmpDir    string // Run artifact directory
 	Iteration int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
@@ -119,6 +123,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		SubjectID:  params.SubjectID,
 		FixPrompt:  params.FixPrompt,
 		ResultPath: resultPath,
+		Check:      params.Check,
 	}
 
 	systemPrompt, err := a.systemLoader.LoadTemplate(promptData)
@@ -188,7 +193,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 }
 
 // applyResultYAML is the confirmation block the fix-applier templates ask
-// for. Applied is a POINTER: nil (no `applied:` key, as us create/refine's
+// for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
 	Applied *bool  `yaml:"applied"`
@@ -247,7 +252,7 @@ func checkFixAppliedFallback(content string) error {
 }
 
 // parseApplyResult decodes an applier confirmation block. Content that is
-// not one — a story body from us create/refine, or prose — reports ok=false
+// not one — a story body from us refine, or prose — reports ok=false
 // rather than an error: not being a confirmation block is normal here.
 func parseApplyResult(content string) (applyResultYAML, bool) {
 	var result applyResultYAML

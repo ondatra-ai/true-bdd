@@ -1,25 +1,42 @@
 package checklist
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Prompt represents a single validation prompt.
+// Why a prompt cannot be walked whatever checks the engine holds (ADR
+// 0015). Free of regex metacharacters: fixtures pin them with `stdout matches`.
+var (
+	ErrPromptHasBothKinds = errors.New(
+		"carries both D: and Q:, but a built-in check or a model answers a prompt, never both")
+	ErrPromptHasNoKind = errors.New("carries neither D: nor Q:, so nothing would answer it")
+	ErrModelOnCheck    = errors.New("carries model:, but no model answers a built-in check")
+	ErrSkipNotBoolean  = errors.New("skip: takes true or false")
+	errWithNotMapping  = errors.New("with: takes a mapping of check parameters")
+)
+
+// Prompt represents a single validation prompt: a model answers its
+// Question (`Q:`), or the built-in check its Check names (`D:`) does.
 type Prompt struct {
-	Question     string   // The validation question (Q in YAML)
-	Rationale    string   // Why this matters
-	Skip         string   // If set, skip this prompt
-	ActionIfYes  string   // Action if answer is yes
-	ActionIfFail string   // Action if validation fails
-	Docs         []string // Document keys to inject into prompt
-	FixTemplate  string   // Template for generating fix prompt when validation fails (F in YAML)
+	Question    string         // The validation question (Q in YAML)
+	Check       string         // The built-in check answering it instead (D in YAML, trimmed)
+	With        map[string]any // The check's parameters (with in YAML)
+	Rationale   string         // Why this matters
+	Skip        bool           // Parks the prompt, left out of the walk (skip: true in YAML)
+	Docs        []string       // Document keys to inject into prompt
+	FixTemplate string         // Template for generating fix prompt when validation fails (F in YAML)
 	// Model tier overrides for this prompt alone, each shadowing the
 	// checklist's EngineBlock. Empty means "inherit".
 	Model      string // Tier for the validation turn (model in YAML)
 	FixModel   string // Tier for the fix-generation turn (fix_model in YAML)
 	ApplyModel string // Tier for the fix-application turn (apply_model in YAML)
+	// skipValue is a `skip:` that is not a boolean, kept for the refusal:
+	// YAML reads "false" and yes as strings, and either reading is a guess.
+	skipValue any
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Prompt.
@@ -33,10 +50,15 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	p.Question = getStringFromMap(raw, "Q")
+	p.Check = strings.TrimSpace(getStringFromMap(raw, "D"))
+
+	err = p.decodeWith(raw)
+	if err != nil {
+		return err
+	}
+
 	p.Rationale = getStringFromMap(raw, "rationale")
-	p.Skip = getStringFromMap(raw, "skip")
-	p.ActionIfYes = getStringFromMap(raw, "action_if_yes")
-	p.ActionIfFail = getStringFromMap(raw, "action_if_fail")
+	p.decodeSkip(raw)
 	p.Docs = getStringSliceFromMap(raw, "docs")
 	p.FixTemplate = getStringFromMap(raw, "F")
 	p.Model = getStringFromMap(raw, "model")
@@ -73,9 +95,118 @@ func getStringSliceFromMap(data map[string]interface{}, key string) []string {
 	return nil
 }
 
-// ShouldSkip returns true if this prompt should be skipped.
+// ShouldSkip reports whether the prompt is parked by `skip: true`; a
+// `skip:` that is not a boolean parks nothing, and ShapeError refuses it.
 func (p *Prompt) ShouldSkip() bool {
-	return p.Skip != ""
+	return p.Skip
+}
+
+// IsCheck reports whether a built-in check answers the prompt (`D:`)
+// rather than a model (`Q:`).
+func (p *Prompt) IsCheck() bool {
+	return p.Check != ""
+}
+
+// ShapeError reports why the prompt cannot be walked whatever checks the
+// engine holds, or nil; which checks exist is the walking command's call.
+func (p *Prompt) ShapeError() error {
+	switch {
+	case p.skipValue != nil:
+		return fmt.Errorf("%s carries skip: %s, but %w", p.Label(), describeValue(p.skipValue), ErrSkipNotBoolean)
+	case p.IsCheck() && p.asksModel():
+		return ErrPromptHasBothKinds
+	case !p.IsCheck() && !p.asksModel():
+		return ErrPromptHasNoKind
+	case p.IsCheck() && p.Model != "":
+		return fmt.Errorf("%s %w", p.Label(), ErrModelOnCheck)
+	}
+
+	return nil
+}
+
+// Label names the prompt in one line: `D: <check>` for a check, else the
+// first non-blank line of its question.
+func (p *Prompt) Label() string {
+	if p.IsCheck() {
+		return "D: " + p.Check
+	}
+
+	for line := range strings.SplitSeq(p.Question, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+
+	return ""
+}
+
+// asksModel reports whether the prompt carries a `Q:` question.
+func (p *Prompt) asksModel() bool {
+	return strings.TrimSpace(p.Question) != ""
+}
+
+// decodeSkip reads `skip:`: absent or null walks the prompt, a boolean
+// says whether to park it, and anything else is kept for ShapeError.
+func (p *Prompt) decodeSkip(raw map[string]interface{}) {
+	val, present := raw["skip"]
+	if !present || val == nil {
+		return
+	}
+
+	flag, isBool := val.(bool)
+	if !isBool {
+		p.skipValue = val
+
+		return
+	}
+
+	p.Skip = flag
+}
+
+// describeValue renders a YAML value for a refusal, quoting a string so
+// `"false"` reads as the string it is.
+func describeValue(val any) string {
+	if text, isString := val.(string); isString {
+		return fmt.Sprintf("%q", text)
+	}
+
+	return fmt.Sprintf("%v", val)
+}
+
+// decodeWith reads the check parameters: absent leaves With nil, and any
+// shape but a mapping is refused, since dropping it would run the check unparameterised.
+func (p *Prompt) decodeWith(raw map[string]interface{}) error {
+	val, present := raw["with"]
+	if !present || val == nil {
+		return nil
+	}
+
+	mapping, isMapping := val.(map[string]interface{})
+	if !isMapping {
+		return fmt.Errorf("%s carries a with: that is %s, but %w", p.Label(), describeShape(val), errWithNotMapping)
+	}
+
+	p.With = mapping
+
+	return nil
+}
+
+// describeShape names a YAML value's kind as a checklist's author wrote
+// it, never the Go type it decoded into.
+func describeShape(val any) string {
+	switch val.(type) {
+	case []interface{}:
+		return "a list"
+	case string:
+		return "a string"
+	case bool:
+		return "a boolean"
+	case int, int64, uint64, float64:
+		return "a number"
+	default:
+		return "not a mapping"
+	}
 }
 
 // PromptWithContext holds a prompt with its section context for evaluation.
@@ -86,7 +217,10 @@ type PromptWithContext struct {
 	CriterionName string       // e.g., "Who", "Valuable" (empty if no criterion)
 	DefaultDocs   []string     // Default docs from checklist root level
 	DefaultModels *EngineBlock // Default model tiers from the checklist `engine:` block
-	Prompt        Prompt
+	// Index is the 1-based position in the checklist, in file order: it
+	// names the Cell's artifacts and orders the report, though `D:` walks first.
+	Index  int
+	Prompt Prompt
 }
 
 // GetEffectiveDocs returns the docs to use (prompt-specific or defaults).

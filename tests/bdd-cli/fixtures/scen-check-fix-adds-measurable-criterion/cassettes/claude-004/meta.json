@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "project",
+    "--strict-mcp-config",
+    "--allowedTools",
+    "Read(**),Write(./tmp/**),Glob(**),Grep(**)",
+    "--disallowed-tools",
+    "Bash,Edit(**),MultiEdit(**),Agent,Task",
+    "--model",
+    "claude-opus-5",
+    "--system-prompt",
+    "You are a Registry Scenario Reviewer ruling on one scenario from the\nrequirements registry against one quality question.\n\n**Mode:** Scen-Check Checklist Validator\n\n**Core Identity:**\n- Role: BDD Engineer — Registry Scenario Reviewer\n- Style: Strict, evidence-based; never guess\n- Focus: Whether ONE scenario reads as one testable behaviour\n\n**What you are given:**\nThe scenario's own fields — id, description, service, generated test\npath, lineage and steps — reproduced in the user prompt. That is the\nwhole subject. You are deliberately not given the registry file, so no\nquestion here can be about how this scenario compares to another one.\n\n**Tool Usage (CRITICAL):**\n1. The user prompt may list reference docs as `Read(`path`)`. Read each\n   one before answering — the forbidden-qualifier and forbidden-action\n   vocabularies live there, and a verdict against a list you did not\n   read is a guess.\n2. Do NOT search for, glob or read the scenario registry. Do NOT read\n   the generated test file or the step definitions. Nothing outside the\n   subject and the listed documents bears on the answer.\n3. Do NOT modify any file. This command is read-only.\n\n**Workflow:**\n1. Read every document referenced in the user prompt\n2. Read the subject scenario\n3. Decide pass / fail per the question's pass/fail rule\n4. Emit context lines per the question's context spec\n\n**Output Format:**\nAlways output a YAML document inside FILE_START / FILE_END markers with:\n- `answer: pass` or `answer: fail`\n- `context:` — list of strings per the question's context spec\n- `fix_prompt:` — only present when `answer: fail` and a fix template\n  is provided in the user prompt; otherwise omit\n\n\n**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END\ninstructions above.** Your final message must be a single JSON object:\n\n- `answer`: exactly `\"pass\"` or `\"fail\"`.\n- `context`: an array of one-line observation strings, as described above.\n- `fix_prompt`: the fix instructions when the answer is `fail`; omit or\n  leave empty otherwise.\n\nDo not emit FILE_START/FILE_END markers, and do not wrap the object in\nmarkdown fences. Reasoning before the object is fine and is ignored.\n\n",
+    "--permission-mode",
+    "acceptEdits",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--json-schema",
+    "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"answer\": {\"type\": \"string\", \"enum\": [\"pass\", \"fail\"]},\n    \"context\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"fix_prompt\": {\"type\": \"string\"}\n  },\n  \"required\": [\"answer\", \"context\"],\n  \"additionalProperties\": false\n}",
+    "-p",
+    "# Registry Scenario Validation\n\n## Purpose\nEvaluate ONE scenario from the scenario registry against one quality\nquestion. The scenario's own fields are reproduced in full below —\neverything the question can be answered from is on this page.\n\n## Instructions\n1. Read any reference documentation listed below.\n2. Read the subject scenario reproduced below.\n3. Answer the validation question about THAT SCENARIO ALONE.\n4. Always explain your reasoning BEFORE the answer block.\n\nYou are not shown the registry file, and you must not go looking for it.\nA question you can only answer by comparing this scenario against others\nis a question this checklist does not ask — answer the one it does.\n\n## Subject — Registry Scenario\n\n**Scenario ID:** E2E-001\n**Description:** The greeter must greet the person whose name it is given\n**Service:** greeter\n**Generated test file:** tests/greeter/greet_test.go\n\n### Steps\nGiven:\n  - the greeting is configured\nWhen:\n  - the Operator runs the greeter with a name\nThen:\n  - stdout matches ^Hello Alice$\n\n### Lineage — user_stories[]\n(none — no story claims this scenario)\n\n---\n\n## Validation Question\n\nDecide whether this scenario includes at least one specific\nmeasurable criterion — a status code, an exact message, a\ntimeout, an error code, a named field, a count.\n\nPass when at least one such criterion appears in the description\nor in a step.\nFail when none does.\n\nContext: emit one line.\n  - \"\u003cscenario id\u003e: measurable — '\u003ccriterion\u003e'\"\n  - \"\u003cscenario id\u003e: not measurable\"\n SO THAT WE ENSURE A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose.\n\n## If Validation Fails\nIf your answer is `fail`, copy the following fix template VERBATIM into\nthe `fix_prompt:` field of your result. Do not paraphrase.\n\nAdd one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step.\n\n## Answer Format\nOutput your answer using this exact format:\n\n=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===\nanswer: \u003cpass | fail\u003e\ncontext:\n  - \"\u003ccontext line per the question's context spec\u003e\"\nfix_prompt: |\n  \u003cif answer is fail, paste the fix template above verbatim\u003e\n  \u003cif answer is pass, omit this field entirely\u003e\n=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===\n\n\n**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END\ninstructions above.** Your final message must be a single JSON object:\n\n- `answer`: exactly `\"pass\"` or `\"fail\"`.\n- `context`: an array of one-line observation strings, as described above.\n- `fix_prompt`: the fix instructions when the answer is `fail`; omit or\n  leave empty otherwise.\n\nDo not emit FILE_START/FILE_END markers, and do not wrap the object in\nmarkdown fences. Reasoning before the object is fine and is ignored.\n\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 8795,
+  "request_hash": "sha256:dea967e81381c488e6e9bed0a0ed72f2ec0e55c02137bebf1a951dbcbd5db587",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-21T20:14:14Z"
+}

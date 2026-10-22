@@ -1,0 +1,115 @@
+# Story `crush-guard-writes`: a crush write lands only inside the turn's
+# write roots, however its path is spelled.
+#
+# The write guard's path rules: an absolute target inside a root passes;
+# one outside every root, one through a symbolic link leading out of a
+# root, a sibling sharing a root's prefix, a relative path and a write
+# naming no file are denied; and a host's own crush config is reported
+# without widening what the turn may write. Which tools the guard lets
+# through at all is the Story crush-guard.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `crush-guard-writes-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: crush-guard-writes
+    feature: engine
+    title: Let a crush write land only inside the turn's write roots, whatever path it names
+    as_a: System Architect
+    i_want: the write guard to allow a write only to an absolute path inside one of the turn's write roots, and to deny one outside every root, one through a symbolic link that leads out of a root, one to a sibling directory sharing a root's name as a prefix, one to a relative path and one that names no file, while a host project's own crush config is reported and never widens where the turn writes
+    so_that: the files a crush turn may change are exactly the ones its command granted, whatever path the model writes and whatever crush config the host keeps
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-write-inside-root-allowed
+          description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
+          steps:
+            - given:
+                - the "crush-guard-write-inside-root" project tree
+                - crush's write policy lets the turn write under "tests"
+                - crush names the tool "write"
+                - crush names the file "tests/notes.md" of the project tree
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard allows the tool call
+        - id: 002-write-outside-roots-denied
+          description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
+          steps:
+            - given:
+                - the "crush-guard-write-outside-roots" project tree
+                - crush's write policy lets the turn write under "tests"
+                - and: crush's write policy lets the turn write under "services"
+                - crush names the tool "write"
+                - crush names the file "docs/notes.md" of the project tree
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard denies the tool call
+                - and: the guard's reason matches write target \S*/docs/notes\.md is outside \S*/tests, \S*/services
+        - id: 003-symlink-escape-denied
+          description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the link leads rather than by the path crush names
+          steps:
+            - given:
+                - the "crush-guard-symlink-escape" project tree
+                - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
+                - crush's write policy lets the turn write under "tests"
+                - crush names the tool "write"
+                - crush names the file "tests/node_modules/shared/README.md" of the project tree
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard denies the tool call
+                - and: the guard's reason matches write target \S*/docs/README\.md is outside \S*/tests
+        - id: 004-shared-prefix-denied
+          description: A write to a sibling directory whose name starts with a write root's name must be denied
+          steps:
+            - given:
+                - the "crush-guard-shared-prefix" project tree
+                - crush's write policy lets the turn write under "tests"
+                - crush names the tool "write"
+                - crush names the file "tests-old/notes.md" of the project tree
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard denies the tool call
+                - and: the guard's reason matches write target \S*/tests-old/notes\.md is outside \S*/tests
+        - id: 005-relative-path-denied
+          description: A write naming a relative path must be denied, since a relative path does not say where the write lands
+          steps:
+            - given:
+                - the "crush-guard-relative-path" project tree
+                - crush's write policy lets the turn write under "tests"
+                - crush names the tool "write"
+                - crush names the path "tests/notes.md" as written
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard denies the tool call
+                - and: the guard's reason matches write target must be an absolute path, got tests/notes\.md
+        - id: 006-unnamed-path-denied
+          description: A write that names no file must be denied
+          steps:
+            - given:
+                - the "crush-guard-unnamed-path" project tree
+                - crush's write policy lets the turn write under "tests"
+                - crush names the tool "write"
+            - when:
+                - crush asks the guard about the tool call
+            - then:
+                - the guard denies the tool call
+                - and: the guard's reason matches write tool did not name a target path
+        - id: 007-host-crush-config-reported
+          description: A host project's own crush config declaring permissions or hooks must be reported before a crush turn, and the turn must still write only inside its write roots
+          steps:
+            - given:
+                - the "build-tests-host-crush-config" project tree
+                - the System Architect answers "1" to every question
+            - when:
+                - the System Architect runs "build tests --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches level=WARN msg="Host crush config merges over the engine's generated config" file=\S*/\.crush\.json declares="\[permissions hooks\]" note="engine write-guard hook still applies"
+                - and: the file "tests/mcp/mcp_test.go" is created
+                - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+                - but: no file outside "tests" and "tmp" changed

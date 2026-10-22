@@ -96,21 +96,12 @@ var (
 	ErrLoadTemplateFile           = errors.New("failed to load template file")
 	ErrInitializeConfig           = errors.New("failed to initialize config")
 	ErrCreateAIClient             = errors.New("failed to create AI client")
-	ErrLoadStoryFromEpic          = errors.New("failed to load story from epic file")
 	ErrFindStoryFile              = errors.New("failed to find story file")
 	ErrStoryFileNotFound          = errors.New("story file not found")
 	ErrMultipleStoryFiles         = errors.New("multiple story files found")
 	ErrReadStoryFile              = errors.New("failed to read story file")
 	ErrParseStoryYAML             = errors.New("failed to parse story YAML")
-	ErrParseStoryNumber           = errors.New("failed to parse story number")
-	ErrLoadEpic                   = errors.New("failed to load epic")
-	ErrStoryIndexOutOfBounds      = errors.New("story index out of bounds")
-	ErrInvalidStoryNumberFormat   = errors.New("invalid story number format")
-	ErrSearchEpicFiles            = errors.New("failed to search for epic files")
-	ErrNoEpicFile                 = errors.New("no epic file found")
-	ErrMultipleEpicFiles          = errors.New("multiple epic files found")
-	ErrReadEpicFile               = errors.New("failed to read epic file")
-	ErrParseEpicYAML              = errors.New("failed to parse epic YAML")
+	ErrStoryIDMismatch            = errors.New("story file declares another story's id")
 	ErrArchUpdateNoContent        = errors.New("no content found in architecture update response")
 	ErrModifierMustHaveOneKey     = errors.New("modifier must have exactly one key")
 	ErrInvalidStepStatementFormat = errors.New("invalid step statement format")
@@ -141,7 +132,6 @@ func ErrExecuteTemplateFailed(cause error) error {
 
 // Validation Errors.
 var (
-	ErrInvalidOptions       = errors.New("invalid options")
 	ErrScenarioValidation   = errors.New("scenario validation failed")
 	ErrEmptyScenarioID      = errors.New("scenario ID cannot be empty")
 	ErrNoCriteria           = errors.New("scenario must reference at least one acceptance criterion")
@@ -161,14 +151,12 @@ var (
 	ErrInvalidModifier      = errors.New("invalid modifier type")
 	ErrEmptyCoverage        = errors.New("coverage value cannot be empty")
 	ErrInvalidCoverage      = errors.New("coverage value should be a percentage")
-	ErrACMissingSteps       = errors.New("acceptance criterion has no steps")
 )
 
 // Filesystem Errors.
 var (
-	ErrCreateDirectory       = errors.New("failed to create directory")
-	ErrCheckWorkingDirectory = errors.New("failed to check working directory")
-	ErrReadConfig            = errors.New("failed to read config")
+	ErrCreateDirectory = errors.New("failed to create directory")
+	ErrReadConfig      = errors.New("failed to read config")
 )
 
 func ErrCreateRunDirectoryFailed(cause error) error {
@@ -177,15 +165,6 @@ func ErrCreateRunDirectoryFailed(cause error) error {
 		Code:     "CREATE_RUN_DIRECTORY_FAILED",
 		Message:  "failed to create run directory",
 		Cause:    errors.Join(ErrCreateDirectory, cause),
-	}
-}
-
-func ErrCheckWorkingDirectoryFailed(cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "CHECK_WORKING_DIRECTORY_FAILED",
-		Message:  "failed to check working directory",
-		Cause:    errors.Join(ErrCheckWorkingDirectory, cause),
 	}
 }
 
@@ -203,33 +182,6 @@ var (
 	ErrMarshalYAML   = errors.New("failed to marshal to YAML")
 	ErrUnmarshalYAML = errors.New("failed to unmarshal from YAML")
 )
-
-func ErrNegativeMaxThinkingTokens(value int) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "INVALID_MAX_THINKING_TOKENS",
-		Message:  fmt.Sprintf("MaxThinkingTokens must be non-negative, got %d", value),
-		Cause:    ErrInvalidOptions,
-	}
-}
-
-func ErrNegativeMaxTurns(value int) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "INVALID_MAX_TURNS",
-		Message:  fmt.Sprintf("MaxTurns must be non-negative, got %d", value),
-		Cause:    ErrInvalidOptions,
-	}
-}
-
-func ErrToolInBothLists(tool string) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "TOOL_CONFLICT",
-		Message:  fmt.Sprintf("tool '%s' cannot be in both AllowedTools and DisallowedTools", tool),
-		Cause:    ErrInvalidOptions,
-	}
-}
 
 var (
 	ErrClaudeStreamNoOutput = errors.New("claude process produced no output")
@@ -253,15 +205,6 @@ func ErrCreateAIClientFailed(cause error) error {
 	}
 }
 
-func ErrLoadStoryFromEpicFailed(cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "LOAD_STORY_FROM_EPIC_FAILED",
-		Message:  "failed to load story from epic file",
-		Cause:    errors.Join(ErrLoadStoryFromEpic, cause),
-	}
-}
-
 func ErrFindStoryFileFailed(cause error) error {
 	return &AppError{
 		Category: CategoryInfrastructure,
@@ -271,13 +214,13 @@ func ErrFindStoryFileFailed(cause error) error {
 	}
 }
 
-func ErrStoryFileNotFoundError(storyNumber, storiesDir, format string) error {
+func ErrStoryFileNotFoundError(storyID, storiesDir, format string) error {
 	return &AppError{
 		Category: CategoryInfrastructure,
 		Code:     "STORY_FILE_NOT_FOUND",
 		Message: fmt.Sprintf(
 			"no story file found for story %s in %s (expected format: %s-<slug>.yaml)",
-			storyNumber,
+			storyID,
 			storiesDir,
 			format,
 		),
@@ -285,11 +228,11 @@ func ErrStoryFileNotFoundError(storyNumber, storiesDir, format string) error {
 	}
 }
 
-func ErrMultipleStoryFilesError(storyNumber string, matches []string) error {
+func ErrMultipleStoryFilesError(storyID string, matches []string) error {
 	return &AppError{
 		Category: CategoryInfrastructure,
 		Code:     "MULTIPLE_STORY_FILES",
-		Message:  fmt.Sprintf("multiple story files found for story %s: %v", storyNumber, matches),
+		Message:  fmt.Sprintf("multiple story files found for story %s: %v", storyID, matches),
 		Cause:    ErrMultipleStoryFiles,
 	}
 }
@@ -312,93 +255,20 @@ func ErrParseStoryYAMLFailed(storyFile string, cause error) error {
 	}
 }
 
-func ErrParseStoryNumberFailed(storyNumber string, cause error) error {
+// ErrStoryIDMismatchError names a story file the `<id>-*.yaml` glob found
+// for storyID whose own `id:` is another Story's: `scen-*.yaml` also
+// matches `scen-check-x.yaml`, so the glob alone cannot tell them apart.
+func ErrStoryIDMismatchError(storyID, storyFile, declaredID string) error {
+	declared := "id " + declaredID
+	if declaredID == "" {
+		declared = "no id"
+	}
+
 	return &AppError{
 		Category: CategoryParsing,
-		Code:     "PARSE_STORY_NUMBER_FAILED",
-		Message:  "failed to parse story number " + storyNumber,
-		Cause:    errors.Join(ErrParseStoryNumber, cause),
-	}
-}
-
-func ErrLoadEpicFailed(epicNum int, cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "LOAD_EPIC_FAILED",
-		Message:  fmt.Sprintf("failed to load epic %d", epicNum),
-		Cause:    errors.Join(ErrLoadEpic, cause),
-	}
-}
-
-func ErrStoryIndexOutOfBoundsError(storyIndex, epicNum, totalStories int) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "STORY_INDEX_OUT_OF_BOUNDS",
-		Message:  fmt.Sprintf("story index %d out of bounds for epic %d (has %d stories)", storyIndex, epicNum, totalStories),
-		Cause:    ErrStoryIndexOutOfBounds,
-	}
-}
-
-func ErrInvalidStoryNumberFormatError(storyNumber string) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "INVALID_STORY_NUMBER_FORMAT",
-		Message:  "invalid story number format, expected X.Y but got " + storyNumber,
-		Cause:    ErrInvalidStoryNumberFormat,
-	}
-}
-
-func ErrSearchEpicFilesFailed(cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "SEARCH_EPIC_FILES_FAILED",
-		Message:  "failed to search for epic files",
-		Cause:    errors.Join(ErrSearchEpicFiles, cause),
-	}
-}
-
-func ErrNoEpicFileError(pattern string) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "NO_EPIC_FILE",
-		Message:  "no epic file found matching pattern " + pattern,
-		Cause:    ErrNoEpicFile,
-	}
-}
-
-func ErrMultipleEpicFilesError(pattern string, matches []string) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "MULTIPLE_EPIC_FILES",
-		Message:  fmt.Sprintf("multiple epic files found matching pattern %s: %v", pattern, matches),
-		Cause:    ErrMultipleEpicFiles,
-	}
-}
-
-func ErrReadEpicFileFailed(epicFilePath string, cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "READ_EPIC_FILE_FAILED",
-		Message:  "failed to read epic file " + epicFilePath,
-		Cause:    errors.Join(ErrReadEpicFile, cause),
-	}
-}
-
-func ErrParseEpicYAMLFailed(epicFilePath string, cause error) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "PARSE_EPIC_YAML_FAILED",
-		Message:  "failed to parse epic YAML from " + epicFilePath,
-		Cause:    errors.Join(ErrParseEpicYAML, cause),
-	}
-}
-
-func ErrACMissingStepsError(acID string) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "AC_MISSING_STEPS",
-		Message:  fmt.Sprintf("AC %s has no steps", acID),
-		Cause:    ErrACMissingSteps,
+		Code:     "STORY_ID_MISMATCH",
+		Message:  fmt.Sprintf("story file %s declares %s, not %s", storyFile, declared, storyID),
+		Cause:    ErrStoryIDMismatch,
 	}
 }
 
@@ -426,7 +296,6 @@ var (
 	ErrFixNotApplied               = errors.New("fix applier reported the fix was not applied")
 	ErrFixLoopStuck                = errors.New("fix loop is not converging")
 	ErrFixPromptGeneration         = errors.New("fix prompt generation failed")
-	ErrFixPromptRefinement         = errors.New("fix prompt refinement failed")
 	ErrSaveStoryVersion            = errors.New("failed to save story version")
 	ErrWriteStoryFile              = errors.New("failed to write story file")
 )
@@ -562,15 +431,6 @@ func ErrFixPromptGenerationFailed(cause error) error {
 		Code:     "FIX_PROMPT_GENERATION_FAILED",
 		Message:  "fix prompt generation failed",
 		Cause:    errors.Join(ErrFixPromptGeneration, cause),
-	}
-}
-
-func ErrFixPromptRefinementFailed(cause error) error {
-	return &AppError{
-		Category: CategoryAI,
-		Code:     "FIX_PROMPT_REFINEMENT_FAILED",
-		Message:  "fix prompt refinement failed",
-		Cause:    errors.Join(ErrFixPromptRefinement, cause),
 	}
 }
 

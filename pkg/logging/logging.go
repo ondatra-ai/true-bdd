@@ -48,7 +48,7 @@ func (s Stream) writer() io.Writer {
 }
 
 // Install points this process's default slog at Handler's result. The file is
-// created up front: E2E-019 reads an engine log with zero records, so a
+// created up front: engine-004 reads an engine log with zero records, so a
 // missing one is not an empty one.
 func Install(text Stream, jsonPath, tool string) {
 	if jsonPath != "" {

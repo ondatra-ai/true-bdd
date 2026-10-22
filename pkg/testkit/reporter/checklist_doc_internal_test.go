@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-// The flattening MUST match the engine's (checklist_loader.go): sections
-// and prompts in file order, skipped prompts omitted — that walk assigns
-// the %02d index in every artifact filename.
+// The flattening MUST match the engine's (runner.flattenChecklistPrompts):
+// sections and prompts in file order, `skip: true` prompts omitted — that
+// walk assigns the %02d index in every artifact filename.
 func TestLoadChecklistDocFlattensLikeTheEngine(t *testing.T) {
 	t.Parallel()
 
@@ -21,8 +21,10 @@ sections:
       - Q: "first"
       - Q: "second"
         F: "fix me"
-      - Q: "skipped"
-        skip: "not yet"
+      - Q: "parked"
+        skip: true
+      - Q: "walked"
+        skip: false
   - id: invest
     name: "INVEST"
     validation_prompts:
@@ -34,8 +36,8 @@ sections:
 		t.Fatal("doc did not load")
 	}
 
-	if len(doc.Prompts) != 3 {
-		t.Fatalf("prompts = %d, want 3 (the skipped one must not consume an index)", len(doc.Prompts))
+	if len(doc.Prompts) != 4 {
+		t.Fatalf("prompts = %d, want 4 (only the skip: true one is left out of the index)", len(doc.Prompts))
 	}
 
 	cases := []struct {
@@ -44,9 +46,10 @@ sections:
 		name    string
 		hasFix  bool
 	}{
-		{1, "acceptance_criteria", testSectionName, false},
-		{2, "acceptance_criteria", testSectionName, true},
-		{3, "invest", "INVEST", false},
+		{1, testSectionID, testSectionName, false},
+		{2, testSectionID, testSectionName, true},
+		{3, testSectionID, testSectionName, false},
+		{4, "invest", "INVEST", false},
 	}
 
 	for _, testCase := range cases {

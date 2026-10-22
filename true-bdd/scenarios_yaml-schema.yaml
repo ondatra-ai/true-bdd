@@ -32,7 +32,10 @@
 #     substance. Anything a step definition could assert belongs in one.
 
 metadata: include('metadata')
-scenarios: map(include('scenario'), min=1)
+# A key is its lineage id `<story-id>-<NNN>-<slug>` (ADR 0014), e.g.
+# `scen-check-001-unknown-id-refused`; the retired `E2E-NNN` stays valid
+# until each Story renames its Scenarios.
+scenarios: map(include('scenario'), key=regex('^(E2E-[0-9]{3}|[a-z0-9][a-z0-9.-]*-[0-9]{3}-[a-z0-9]+(-[a-z0-9]+)*)$'), min=1)
 
 ---
 metadata:
@@ -43,9 +46,9 @@ metadata:
 
 ---
 scenario:
-  # One sentence naming the behaviour, in the product document's action
-  # vocabulary. What a reader sees first in `build tests` output and in
-  # the run report.
+  # One sentence naming the behaviour, free of the words the product
+  # document's `vocabulary:` forbids. The generated test carries it as the
+  # comment above its function.
   description: str()
   # Must name a service declared in architecture.yaml. It is also the
   # join that decides which tests own the scenario: they live in
@@ -57,8 +60,7 @@ scenario:
   path: str()
   # Free-form note on where the behaviour comes from. Optional.
   requirement: str(required=False)
-  # Optional grouping label. Read by the workspace UI, never by the
-  # engine.
+  # Optional grouping label for a human reader; the engine never reads it.
   feature: str(required=False)
   last_updated: str(required=False)
   # Lineage back to the stories this scenario was merged from, written

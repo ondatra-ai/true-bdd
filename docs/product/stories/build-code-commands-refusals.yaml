@@ -1,0 +1,98 @@
+# Story `build-code-commands`: `build code` refusing a suite command it
+# cannot run as the architecture document declares it.
+#
+# The framework the suite names, and the `replay` command it declares:
+# both are checked at startup, before any test runner is spawned. An
+# architecture document the engine cannot read or that leaves the suite
+# undeclared is the Story build-code-spec; running the suite and the fix
+# loop is the Story build-code-run.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-code-commands-<id>` (ADR 0014), and its steps are that
+# Scenario's steps.
+
+story:
+    id: build-code-commands
+    feature: build-code
+    title: Refuse a suite command build code cannot run as the architecture declares it
+    as_a: System Architect
+    i_want: build code to refuse at startup a test suite whose framework it cannot run, or whose replay command names no program, leaves a quote open or never asks for machine-readable output, naming what is wrong before any test runner is spawned
+    so_that: the suite command I declare is the one that runs, and a walk never reports green from a command run some other way than I wrote it or from results it could not read
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-unknown-framework-refused
+          description: A test framework the engine cannot run must be refused, naming the framework, before any test runner is spawned
+          steps:
+            - given:
+                - the "build-code-unknown-framework" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches unknown test framework
+                - stdout matches rspec
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 002-empty-program-refused
+          description: A suite command that is present but names no program must be refused
+          steps:
+            - given:
+                - the "build-code-empty-command" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches go-test: test suite command is empty'
+                - 'stdout matches test suite command is empty: \\"''''\\"'
+                - stdout matches level=ERROR msg="Refusing to start" command="build code"
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 003-unclosed-quote-refused
+          description: A suite command whose quoting never closes must be refused, not guessed
+          steps:
+            - given:
+                - the "build-code-unterminated-quote" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches unterminated quote
+                - stdout matches go-test
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 004-not-machine-readable-refused
+          description: A suite command that runs but never asks for machine-readable output must be refused, naming the flag it is missing
+          steps:
+            - given:
+                - the "build-code-command-not-machine-readable" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches must emit machine-readable output
+                - stdout matches is missing -json
+                - stdout matches go-test
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns
+        - id: 005-jest-without-json-refused
+          description: A Jest suite command that never asks for machine-readable output must be refused, naming the --json flag it is missing, before any test runner is spawned
+          steps:
+            - given:
+                - the "build-code-jest-command-not-machine-readable" project tree
+            - when:
+                - the System Architect runs "build code"
+            - then:
+                - the command exits with code 1
+                - 'stdout matches level=ERROR msg="Refusing to start'
+                - stdout matches must emit machine-readable output
+                - stdout matches jest command .*npx jest --config jest\.config\.js.* is missing --json
+                - but: no file outside "tmp" changed
+                - and: the engine spawned no test runner
+                - and: the engine dispatched no AI turns

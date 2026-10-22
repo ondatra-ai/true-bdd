@@ -1,0 +1,34 @@
+# Fixture checklist for `scen-check-failed-check-skips-questions`.
+#
+# The shipped checklist's first quality question, verbatim, followed by the
+# built-in check that a scenario carries all three step kinds. The check
+# comes second in the file on purpose: the engine must still run it
+# first, and skip the question for any scenario that fails it.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
+
+      - D: given-when-then
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

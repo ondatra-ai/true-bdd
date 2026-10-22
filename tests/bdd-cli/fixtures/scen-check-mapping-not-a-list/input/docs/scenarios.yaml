@@ -1,0 +1,30 @@
+# Registry seed for `scen-check-mapping-not-a-list`.
+#
+# One claimed scenario, sound in every respect: every step matches
+# one catalogue phrase whose words are defined and mapped.
+#
+# The walk stops at its term-mapping check: the architecture
+# document's word mapping is not a list.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "One scenario the checklist's Prompts would ask about"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-001-answers-pong
+        merge_date: "2026-10-22"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "ping"
+      then:
+        - the service answers "pong"

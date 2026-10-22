@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,15 +24,21 @@ type sectionDoc struct {
 }
 
 // promptDoc is one validation prompt, decoded with production parity
-// (map-based unmarshal accepts only string values — see TestSkipParity
-// in universe_test.go for the skip: false quirk this preserves).
+// (map-based unmarshal; see TestSkipParity in universe_test.go for which
+// `skip:` values park a prompt).
 type promptDoc struct {
 	Question    string
+	Check       string         // the built-in check a `D:` prompt names
+	With        map[string]any // that check's parameters
 	Rationale   string
-	Skip        string
+	Skip        bool // only `skip: true` parks; production refuses a non-boolean
 	FixTemplate string
 	Docs        []string
 }
+
+// errWithNotMapping mirrors the production refusal of a `with:` that is
+// not a mapping of check parameters.
+var errWithNotMapping = errors.New("with: takes a mapping of check parameters")
 
 // UnmarshalYAML implements the production map-based prompt decoding.
 func (p *promptDoc) UnmarshalYAML(node *yaml.Node) error {
@@ -41,12 +50,50 @@ func (p *promptDoc) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	p.Question = stringFromMap(raw, "Q")
+	p.Check = stringFromMap(raw, "D")
+
+	with, present := raw["with"]
+	if present && with != nil {
+		mapping, isMapping := with.(map[string]interface{})
+		if !isMapping {
+			return fmt.Errorf("%w, got %T", errWithNotMapping, with)
+		}
+
+		p.With = mapping
+	}
+
 	p.Rationale = stringFromMap(raw, "rationale")
-	p.Skip = stringFromMap(raw, "skip")
+	p.Skip = raw["skip"] == true
 	p.FixTemplate = stringFromMap(raw, "F")
 	p.Docs = stringSliceFromMap(raw, "docs")
 
 	return nil
+}
+
+// isCheck reports whether a built-in check answers the prompt (`D:`),
+// the production Prompt.IsCheck rule.
+func (p *promptDoc) isCheck() bool {
+	return strings.TrimSpace(p.Check) != ""
+}
+
+// identityText is what a prompt is censused by: its question, or for a
+// check its name and parameters, since a `D:` prompt asks no question.
+func (p *promptDoc) identityText() string {
+	if !p.isCheck() {
+		return p.Question
+	}
+
+	identity := "D: " + strings.TrimSpace(p.Check)
+
+	if len(p.With) > 0 {
+		// json.Marshal sorts map keys, so equal parameters encode equally.
+		encoded, err := json.Marshal(p.With)
+		if err == nil {
+			identity += " with " + string(encoded)
+		}
+	}
+
+	return identity
 }
 
 // parseChecklistDoc unmarshals a checklist YAML document.

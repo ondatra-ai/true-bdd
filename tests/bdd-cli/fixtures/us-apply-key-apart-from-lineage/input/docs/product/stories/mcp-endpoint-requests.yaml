@@ -1,0 +1,33 @@
+# Story seed for the `us-apply-key-apart-from-lineage` BDD fixture.
+#
+# Two criteria, both cited in the seeded registry; the Scenario for 002
+# is keyed apart from its lineage id there.
+
+story:
+    id: mcp-endpoint
+    feature: mcp-server
+    title: BDD fixture - us apply over a Scenario keyed apart from its lineage
+    as_a: Claude User
+    i_want: a story one of whose Scenarios is keyed apart from its lineage id
+    so_that: the BDD harness can assert us apply refuses to write that Registry
+    status: PLANNED
+    acceptance_criteria:
+        - id: 002-get-refused
+          description: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User sends an HTTP GET request to /mcp
+            - then:
+                - the server returns HTTP 405 Method Not Allowed
+        - id: 001-initialize-ok
+          description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User posts a valid JSON-RPC initialize request to /mcp
+            - then:
+                - the server returns HTTP 200
+                - and: the response body is a well-formed JSON-RPC envelope referencing the request id

@@ -1,0 +1,148 @@
+# Story `us-refine-refusals`: what `us refine` refuses before it walks a Story.
+#
+# A Story id shaped like a path, and a Story file that is missing, that two
+# files claim, that declares another Story's id or that is not valid YAML:
+# each is refused at startup, naming the id or the file, with no AI turn
+# spent and no file changed. Among the files whose names start with the id,
+# the one that declares it is the Story read, so a Story whose id prefixes
+# another's is never confused with it. The fix loop and the verdicts on a
+# Story it can walk are Stories of their own: us-refine-fix and
+# us-refine-verdicts.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `us-refine-refusals-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: us-refine-refusals
+    feature: us-refine
+    title: Refuse a Story us refine cannot walk before it spends an AI turn
+    as_a: Product Owner
+    i_want: us refine to refuse at startup a Story it cannot walk, one whose file is missing, is claimed by two files, declares another Story's id or is not valid YAML, or one I name by a path rather than a Story id, and to name the id or the file at fault, which is the file declaring the id I named even when another Story's file starts with that id too
+    so_that: I correct the Story file the refusal names, instead of paying for AI turns spent on the wrong Story or on none
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-missing-story-refused
+          description: '`us refine` on a story nobody has written must be refused, and the refusal must tell the user to write the Story file first and where it goes'
+          steps:
+            - given:
+                - the "us-refine-missing-story" project tree
+            - when:
+                - the Product Owner runs "us refine 96.9"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story 96\.9
+                - stdout matches level=ERROR msg="No story file found" story_number=96\.9 pattern=docs/product/stories/96\.9-\*\.yaml
+                - stdout matches story file not found — write the Story file first
+                - stdout matches no story file found for story 96\.9 in docs/product/stories
+                - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match msg="Story loaded"
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+                - and: no file matching "docs/product/stories/96.9-*.yaml" is created
+                - and: the engine dispatched no AI turns
+        - id: 002-slug-id-accepted
+          description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
+          steps:
+            - given:
+                - the "us-refine-slug-id-missing-story" project tree
+            - when:
+                - the Product Owner runs "us refine scen-check"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story scen-check
+                - stdout matches level=ERROR msg="No story file found" story_number=scen-check pattern=docs/product/stories/scen-check-\*\.yaml
+                - stdout matches no story file found for story scen-check in docs/product/stories
+                - 'stdout matches \(expected format: scen-check-<slug>\.yaml\)'
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match invalid story
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 003-path-like-id-refused
+          description: A path-like Story id must be refused at startup with a refusal naming the id, so it never reaches the filesystem
+          steps:
+            - given:
+                - the "us-refine-path-like-story-id" project tree
+            - when:
+                - the Product Owner runs "us refine ../x"
+            - then:
+                - the command exits with code 1
+                - stdout matches invalid story id \\"\.\./x\\"
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match US REFINE — Story
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/x-outside-stories.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 004-two-files-one-id-refused
+          description: Two files claiming the same story id must be refused, not silently resolved by picking one
+          steps:
+            - given:
+                - the "us-refine-ambiguous-story" project tree
+            - when:
+                - the Product Owner runs "us refine 96.9"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story 96\.9
+                - stdout matches level=ERROR msg="Multiple story files found" story_number=96\.9 count=2
+                - stdout matches multiple story files found for story 96\.9
+                - stdout matches 96\.9-document-summary\.yaml
+                - stdout matches 96\.9-document-summary-v2\.yaml
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
+                - and: the file "docs/product/stories/96.9-document-summary-v2.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 005-other-id-refused
+          description: A Story file whose name starts with the requested id but which declares another Story's id must be refused at startup, naming both ids, so `us refine scen` never walks the Story `scen-check`
+          steps:
+            - given:
+                - the "us-refine-story-id-mismatch" project tree
+            - when:
+                - the Product Owner runs "us refine scen"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story scen
+                - stdout matches level=ERROR msg="Story file declares another id" story_number=scen file=docs/product/stories/scen-check-closure\.yaml declared_id=scen-check
+                - stdout matches story file docs/product/stories/scen-check-closure\.yaml declares id scen-check, not scen
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match msg="Story loaded"
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/scen-check-closure.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 006-invalid-yaml-refused
+          description: A story file that is not valid YAML must be refused with the parser's own complaint, not a generic failure
+          steps:
+            - given:
+                - the "us-refine-malformed-story" project tree
+            - when:
+                - the Product Owner runs "us refine 96.9"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story 96\.9
+                - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/96\.9-document-summary\.yaml
+                - stdout matches failed to parse story YAML from docs/product/stories/96\.9-document-summary\.yaml
+                - stdout matches mapping values are not allowed in this context
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: no file outside "tmp" changed
+                - and: the file "docs/product/stories/96.9-document-summary.yaml" is unchanged
+                - and: the engine dispatched no AI turns
+        - id: 007-shared-prefix-reads-own-file
+          description: When the requested id is a prefix of another Story's id, so that both Story files start with it, `us refine` must read the file whose own id is the requested one, so a fault in that file is what the refusal names and the other Story is never mentioned
+          steps:
+            - given:
+                - the "us-refine-shared-prefix" project tree
+            - when:
+                - the Product Owner runs "us refine scen-check"
+            - then:
+                - the command exits with code 1
+                - stdout matches US REFINE — Story scen-check
+                - stdout matches level=ERROR msg="Failed to unmarshal story YAML" file=docs/product/stories/scen-check-verifier\.yaml
+                - 'stdout matches invalid modifier type: or'
+                - stdout matches level=ERROR msg="Refusing to start" command="us refine"
+                - but: stdout does not match multiple story files
+                - and: stdout does not match scen-check-phrases
+                - and: no file outside "tmp" changed
+                - and: the file "docs/product/stories/scen-check-verifier.yaml" is unchanged
+                - and: the file "docs/product/stories/scen-check-phrases-tag.yaml" is unchanged
+                - and: the engine dispatched no AI turns

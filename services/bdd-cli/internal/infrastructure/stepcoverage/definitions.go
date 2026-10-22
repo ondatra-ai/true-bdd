@@ -35,11 +35,13 @@ var ErrPatternNotConstant = errors.New("step pattern is not a constant expressio
 // suite, where one bad pattern is reported by every scenario.
 var ErrPatternInvalid = errors.New("step pattern is not a valid regexp")
 
-// definition is one registered step pattern and where it was written.
+// definition is one registered step pattern and where it was written:
+// the file's base name and the line of the pattern.
 type definition struct {
 	pattern *regexp.Regexp
 	source  string
-	where   string
+	file    string
+	line    int
 }
 
 // loadDefinitions reads every step definition a suite's steps/ package
@@ -184,7 +186,8 @@ func stepPatternArg(node ast.Node) (ast.Expr, bool) {
 
 // newDefinition folds one pattern argument and compiles it.
 func newDefinition(fset *token.FileSet, expr ast.Expr, table constTable) (definition, error) {
-	where := fset.Position(expr.Pos()).String()
+	position := fset.Position(expr.Pos())
+	where := position.String()
 
 	source, folded := table.fold(expr, map[string]bool{})
 	if !folded {
@@ -198,7 +201,12 @@ func newDefinition(fset *token.FileSet, expr ast.Expr, table constTable) (defini
 			where, ErrPatternInvalid, source, err)
 	}
 
-	return definition{pattern: compiled, source: source, where: where}, nil
+	return definition{
+		pattern: compiled,
+		source:  source,
+		file:    filepath.Base(position.Filename),
+		line:    position.Line,
+	}, nil
 }
 
 // render prints an expression as it was written, for the refusal to name.

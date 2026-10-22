@@ -3,6 +3,8 @@ package provider
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -29,20 +31,9 @@ func NewRegistry(rawModels map[string]string, rawDefaults map[Role]string) (*Reg
 		return nil, ErrNoModelsConfigured
 	}
 
-	byTier := make(map[Tier]ModelRef, len(rawModels))
-
-	for rawTier, rawRef := range rawModels {
-		tier, err := ParseTier(rawTier)
-		if err != nil {
-			return nil, fmt.Errorf("engine.models: %w", err)
-		}
-
-		ref, err := ParseModelRef(rawRef)
-		if err != nil {
-			return nil, fmt.Errorf("engine.models.%s: %w", rawTier, err)
-		}
-
-		byTier[tier] = ref
+	byTier, err := parseModels(rawModels)
+	if err != nil {
+		return nil, err
 	}
 
 	defaultTiers, err := parseDefaultTiers(byTier, rawDefaults)
@@ -53,27 +44,59 @@ func NewRegistry(rawModels map[string]string, rawDefaults map[Role]string) (*Reg
 	return &Registry{byTier: byTier, defaultTiers: defaultTiers}, nil
 }
 
-// parseDefaultTiers validates every role's default in Roles() order, so
-// a config with several bad keys always reports the same one first.
+// parseModels validates every `engine.models` entry in key order and
+// reports each one it refuses, so one edit of true-bdd.yaml fixes them all.
+func parseModels(rawModels map[string]string) (map[Tier]ModelRef, error) {
+	byTier := make(map[Tier]ModelRef, len(rawModels))
+	faults := make([]error, 0)
+
+	for _, rawTier := range slices.Sorted(maps.Keys(rawModels)) {
+		tier, err := ParseTier(rawTier)
+		if err != nil {
+			faults = append(faults, fmt.Errorf("engine.models: %w", err))
+
+			continue
+		}
+
+		ref, err := ParseModelRef(rawModels[rawTier])
+		if err != nil {
+			faults = append(faults, fmt.Errorf("engine.models.%s: %w", rawTier, err))
+
+			continue
+		}
+
+		byTier[tier] = ref
+	}
+
+	return byTier, errors.Join(faults...)
+}
+
+// parseDefaultTiers validates every role's default in Roles() order and
+// reports each one it refuses, in that order.
 func parseDefaultTiers(byTier map[Tier]ModelRef, rawDefaults map[Role]string) (map[Role]Tier, error) {
 	defaultTiers := make(map[Role]Tier, len(Roles()))
+	faults := make([]error, 0)
 
 	for _, role := range Roles() {
 		raw := rawDefaults[role]
 
 		tier, err := ParseTier(raw)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", role.ConfigKey(), err)
+			faults = append(faults, fmt.Errorf("%s: %w", role.ConfigKey(), err))
+
+			continue
 		}
 
 		if _, ok := byTier[tier]; !ok {
-			return nil, fmt.Errorf("%s: %w: %q", role.ConfigKey(), ErrDefaultTierMissing, raw)
+			faults = append(faults, fmt.Errorf("%s: %w: %q", role.ConfigKey(), ErrDefaultTierMissing, raw))
+
+			continue
 		}
 
 		defaultTiers[role] = tier
 	}
 
-	return defaultTiers, nil
+	return defaultTiers, errors.Join(faults...)
 }
 
 // DefaultTier is the tier a role falls back to when neither a prompt nor

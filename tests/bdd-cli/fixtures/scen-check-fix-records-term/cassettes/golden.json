@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-records-term",
+  "files": [
+    {
+      "path": "docs/product/product.yaml",
+      "kind": "modified",
+      "size": 1579,
+      "sha256": "14e00d3318773eb2ad53f5eee3c3cad8485307612aaa26bcd2957afd1bb3be70",
+      "text": "# Product document for `scen-check-fix-records-term`.\n#\n# The catalogue phrases every step of E2E-001, and the glossary defines\n# every term those phrases declare but \"reply\"; the fix adds the entry\n# that defines it.\n\ntitle: \"Fixture host project\"\n\ndescription:\n  summary: \u003e-\n    A single MCP service, used by the bdd-cli fixtures as the host\n    project a scenario registry describes.\n\nroles:\n  - name: Operator\n    definition: Runs the MCP service and watches what it answers.\n  - name: Client Developer\n    definition: Writes the clients that send the MCP service its requests.\n\nglossary:\n  - term: mcp service\n    means: \u003e-\n      The service this project builds: it takes a message from a client\n      and answers it. What every Scenario of the project observes.\n  - term: message\n    means: \u003e-\n      One request a client sends the MCP service, as text. The service\n      answers each message on its own.\n  - term: reply\n    means: \u003e-\n      The text the MCP service sends back for one message — exactly one\n      reply per message. What a Scenario's Then block checks.\n\ncatalogue:\n  - template: 'the mcp service is running'\n    block: given\n    means: The MCP service has started and accepts requests.\n    terms: [mcp service]\n  - template: 'the {actor:role} sends \"{message}\"'\n    block: when\n    means: That role sends the quoted message to the MCP service, once.\n    terms: [mcp service, message]\n  - template: 'the service answers \"{reply}\"'\n    block: then\n    means: The MCP service's reply to the message is exactly the quoted text.\n    terms: [mcp service, reply]\n"
+    }
+  ]
+}

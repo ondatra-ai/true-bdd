@@ -1,11 +1,13 @@
 # Architectural spec for this repository (the TrueBDD engine itself).
 #
-# Two sections, both read by the build pipeline:
+# Two sections read by the build pipeline, and one by `scen check`:
 #   testing:  — the suites `build code` walks and `build tests` writes
 #               into. One section for the whole repository, because how
 #               a project runs its tests is a property of the project,
 #               not of any one service.
 #   services: — the production source roots `build code --fix` may edit.
+#   terms:    — the word mapping: how each product glossary word is built
+#               and how a step definition observes it (`D: term-mappings`).
 #
 # Path resolved from `documents.architecture_yaml` in true-bdd/true-bdd.yaml.
 #
@@ -41,13 +43,749 @@ architecture:
       #	third_party — a vendor's service, wherever the binary lives (crush is
       #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
-        - name: claude
-          protocol: cli
-          scope: third_party
+        # Replay hashes every AI turn's argv and stdin, so each CLI states its
+        # invocation exactly (docs/qna Q2, Q19): a rebuilt engine must send
+        # the same requests.
         - name: crush
           protocol: cli
           scope: third_party
+          # binary and args match every crush cassette's `binary` and `argv`.
+          invocation:
+            binary: crush
+            args: [run, --quiet, -m, "{model}", --cwd, "{work_dir}"]
+            # Neither CLI has a system-prompt flag, so the system prompt is
+            # folded into stdin when it is not blank after trimming whitespace.
+            stdin: &folded-prompt
+              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
+              without_system: "{user_prompt}"
+            values:
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `zhipu-coding/glm-5.2` in every crush cassette.
+              work_dir: &work-dir >-
+                The directory true-bdd was started in, as an absolute path: the
+                host project root. Cassettes record it as `{{CWD}}`.
+              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
+              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
+              run_dir: &run-dir >-
+                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
+                created at startup. The join is cleaned and stays relative to
+                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
+                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
+                `{{RUN_DIR}}`.
+            dir: "{work_dir}"
+            env:
+              CRUSH_GLOBAL_CONFIG: >-
+                A new `{run_dir}/crush-config-<random>` directory per turn holding
+                the generated `crush.json`: `options.data_directory` under that
+                directory, `permissions.allowed_tools` for the turn's mode, and
+                one `PreToolUse` hook named `true-bdd-guard` whose command is
+                this executable's path in single quotes, a space and
+                `crush-guard`, with a 15-second timeout.
+              TRUE_BDD_CRUSH_POLICY: >-
+                The JSON write policy `crush-guard` enforces: the turn's write
+                roots and whether it may run bash.
+            notes:
+              - >-
+                crush has no permission gate of its own and runs a tool when its
+                hook cannot run, so the engine probes `crush-guard` before every
+                turn and refuses the turn unless the probe is denied.
+              - >-
+                crush silently ignores a model it does not know when the model is
+                named in config, so the model travels only as `-m`.
+              - >-
+                A grandchild of crush's embedded shell can hold stdout open past
+                the exit, so the turn runs as its own process group, killed as
+                one, with a 10-second bound on the wait after the exit.
+              - >-
+                stdout and stderr merge into one transcript; a non-zero exit
+                fails the turn.
         - name: codex
           protocol: cli
           scope: third_party
+          # binary and args match every codex cassette's `binary` and `argv`.
+          invocation:
+            binary: codex
+            args:
+              - exec
+              - -s
+              - "{sandbox}"
+              - --ephemeral
+              - --skip-git-repo-check
+              - --color
+              - never
+              - -C
+              - "{work_dir}"
+              - -m
+              - "{model}"
+              - when: >-
+                  The turn carries a result schema, as every codex validation
+                  and fix turn does; an apply turn carries none.
+                args: [--output-schema, "{schema_path}"]
+              - -o
+              - "{answer_path}"
+              - "-"
+            stdin: *folded-prompt
+            values:
+              sandbox: >-
+                `workspace-write` when the turn may write a project tree outside
+                the run directory (the apply turn of `build code --fix` and
+                `build tests --fix`, which hold write roots); `read-only` for
+                every other turn. codex has no level between the two.
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `gpt-6.1-sol` in every codex cassette.
+              work_dir: *work-dir
+              system_prompt: *system-prompt
+              user_prompt: *user-prompt
+              run_dir: *run-dir
+              label: >-
+                `codex-turn<NNN>`: NNN is this turn's number, from 1 and
+                zero-padded to three digits, among every AI turn the run
+                dispatched, whichever CLI ran it.
+              schema_path: >-
+                `{run_dir}/{label}-codex-schema.json`, written before the spawn
+                with the JSON Schema the answer must satisfy, every object's
+                `required` listing all of its properties: codex refuses a
+                schema that leaves one out, which claude accepts.
+              answer_path: >-
+                `{run_dir}/{label}-codex-answer.txt`, where codex writes its final
+                message; the engine reads the answer there, never from stdout.
+            dir: "{work_dir}"
+            notes:
+              - >-
+                `-s` is mandatory: without a sandbox level `codex exec` blocks on
+                an approval prompt and hangs forever.
+              - The trailing `-` makes codex read the prompt from stdin.
+              - >-
+                `--skip-git-repo-check`: a BDD fixture's run directory is no git
+                repository, and codex refuses to run outside one without it.
+              - >-
+                The environment is inherited unchanged. Process group, wait bound
+                and merged output are as for crush.
+              - >-
+                Before the spawn the engine logs the turn's sandbox level as
+                msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
 
+        - name: claude
+          protocol: cli
+          scope: third_party
+          # binary and args match every engine claude cassette's `binary` and
+          # `argv`: the turn's prompts, model, tools and answer schema all ride
+          # in argv, which replay hashes.
+          invocation:
+            binary: claude
+            args:
+              - --setting-sources
+              - project
+              - --strict-mcp-config
+              - --allowedTools
+              - "{allowed_tools}"
+              - --disallowed-tools
+              - "{disallowed_tools}"
+              - --model
+              - "{model}"
+              - when: >-
+                  The turn's system prompt is not empty, as every engine
+                  turn's is.
+                args: [--system-prompt, "{system_prompt}"]
+              - --permission-mode
+              - acceptEdits
+              - --output-format
+              - stream-json
+              - --verbose
+              - when: >-
+                  The turn carries a result schema: every validation turn and
+                  every fix turn does; an apply turn carries none.
+                args: [--json-schema, "{schema}"]
+              - -p
+              - "{user_prompt}"
+            values:
+              allowed_tools: >-
+                The turn's allowed tools joined by commas. A validation or fix
+                turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
+                turn: `Read(**),Write({tmp_glob}),Edit({tmp_glob}),MultiEdit({tmp_glob}),Glob(**),Grep(**)`,
+                followed, for each write root the command grants its applier
+                in order, by `Write(<glob>),Edit(<glob>),MultiEdit(<glob>)`.
+                `build code` grants every declared service's `path:`, `build
+                tests` `paths.test_write_globs` (else `./tests/**` and
+                `./services/**`), the other commands none. A root holding `*`,
+                `?` or `[` is its own glob; any other has a trailing `/` dropped
+                and `/**` added; a blank one is skipped.
+              disallowed_tools: >-
+                A validation or fix turn: `Bash,Edit(**),MultiEdit(**),Agent,Task`.
+                An apply turn: `Bash,Agent,Task`.
+              tmp_glob: >-
+                `paths.tmp_glob` from true-bdd.yaml: `./tmp/**` in every
+                cassette.
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `claude-opus-5` in almost every cassette.
+              system_prompt: *system-prompt
+              user_prompt: *user-prompt
+              work_dir: *work-dir
+              schema: >-
+                `{validation_schema}` for a validation turn, `{fix_schema}` for
+                a fix turn, each byte for byte.
+              validation_schema: |-
+                {
+                  "type": "object",
+                  "properties": {
+                    "answer": {"type": "string", "enum": ["pass", "fail"]},
+                    "context": {"type": "array", "items": {"type": "string"}},
+                    "fix_prompt": {"type": "string"}
+                  },
+                  "required": ["answer", "context"],
+                  "additionalProperties": false
+                }
+              fix_schema: |-
+                {
+                  "type": "object",
+                  "properties": {
+                    "fix_prompt": {"type": "string"},
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "string"},
+                          "question": {"type": "string"},
+                          "context": {"type": "string"},
+                          "options": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["id", "question", "context", "options"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["fix_prompt", "questions"],
+                  "additionalProperties": false
+                }
+            dir: "{work_dir}"
+            env:
+              CLAUDE_HISTORY_ROLE: Empty; the engine labels no turn.
+              CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
+            notes:
+              - >-
+                No stdin: the prompts travel in argv. `CLAUDECODE` is removed
+                from the inherited environment, so the turn does not look
+                launched from a Claude session.
+              - >-
+                `--setting-sources project` keeps user-scope settings (an
+                operator's advisor model, plugins) out while the project's own
+                settings still apply; `--strict-mcp-config` loads no MCP
+                server, since the command line names none. The advisor is a
+                server-side tool `--disallowed-tools` cannot reach, so only
+                the environment entry turns it off.
+              - >-
+                `-p` comes last: a flag before it would otherwise read the
+                prompt as its own value.
+              - >-
+                The answer is the stream's `result` record: its
+                `structured_output` object when the turn carried a schema,
+                else its text. A schema turn whose result holds no object, or
+                a non-zero exit, fails the turn, and the turn is bounded by
+                the router's 20 minutes.
+
+  # How each product word the catalogue declares is built and observed, in
+  # words naming no code identifier, so the steps can be rebuilt from it.
+  # It maps every word the catalogue declares, one entry per word.
+  terms:
+    - term: engine
+      technical: >-
+        The `true-bdd` binary, built from `services/bdd-cli` once per test
+        session. Every log record it writes goes out twice: as text on stdout,
+        and as one JSON line in `tmp/true-bdd.log.json` under the directory
+        the command runs in.
+      observed_by: >-
+        A step about what the engine did reads that JSON log file after the
+        run, never stdout; a run that left no log file fails the step instead
+        of counting nothing.
+
+    - term: command
+      technical: >-
+        The quoted text, split into arguments at whitespace (no quoting, so
+        an argument cannot hold a space) and run as the engine binary's
+        arguments in a subprocess; `{{CWD}}` in an argument stands for the
+        run directory's absolute path, so a command can name a file of the
+        project tree by one. Its working
+        directory is the run directory assembled from the project tree, its
+        stdin carries the answers a Given step set (nothing otherwise), and
+        the AI CLIs it finds on its PATH are the harness's record or replay
+        stand-ins for the session's mode.
+      observed_by: >-
+        Run once by the When step, which fails when no Given step prepared a
+        project tree. The fixture is handed the command first, so it can
+        refuse an empty one or a checklist narrowing the command does not
+        read. The run is capped by the Scenario's `timeout:`, five minutes
+        when absent, and the fixture carries that cap for the run's record.
+        Its exit code, stdout, stderr and file changes are kept for the Then
+        steps. As soon as the run returns, before the step passes or fails,
+        the When step hands it to the harness's run recorder, a run that
+        could not complete included: its run directory, its stdout and
+        stderr files, its file changes, and its exit code once it completed.
+        The recorder writes them, when the Scenario ends, to
+        `bdd-cli-logs/harness.json` in the run directory, the record the BDD
+        report reads; a When step that does not hand the run over leaves
+        that record without a run directory, an exit code or a file change,
+        though every step passes. A run that could not complete fails the
+        step, naming the run directory it left behind.
+
+    - term: project tree
+      technical: >-
+        A fixture directory `tests/bdd-cli/fixtures/<name>/`. Its `input/` is
+        laid over this repository's `true-bdd/` and `templates/` in a fresh
+        run directory `tmp/test_run/<session>/<name>/`, the command's working
+        directory. Beside `input/` sit `cassettes/` (the recorded AI turns and
+        the recorded outcome) and the optional `prep.sh`, `teardown.sh` and
+        `checklist-prompts.yaml`.
+      observed_by: >-
+        Set up by the Given step naming the tree: it loads that fixture, and
+        decides per caller where the run's AI turns come from (the fixture's
+        cassettes in replay, refusing a fixture with no cassettes or no
+        recorded outcome; a staging directory in record; the real CLIs live).
+        Nothing runs yet: the run directory is assembled when the When step
+        runs the command. A Given step saying the tree has no file records
+        that path, and the assembled run directory has it deleted before
+        `prep.sh` and the snapshot; a path leading out of the run directory,
+        or one the assembled directory does not hold, fails the run rather
+        than proving nothing. A Then step that reads a named file of the tree
+        after the run (that an unchanged file is still there, its line count,
+        its content) takes the quoted path relative to the run directory and
+        holds it inside before reading: an empty or absolute path, one that
+        climbs out through `..` once cleaned, or one whose symbolic links,
+        resolved on both sides (the run directory's own path too) and whole
+        path components compared, lead out of the run directory fails the
+        step, and so does a path naming anything but a regular file, such as
+        a directory. A path that does not exist is held by its deepest
+        existing directory, resolved the same way: inside the run directory
+        the step fails because the file is missing, and through a link out
+        of it because the path leads out. A step about a created or modified
+        file only compares the quoted path, as written, with the paths of the
+        run's file changes, and reads no file.
+
+    - term: exit code
+      technical: >-
+        The engine process's exit status: 1 when the command returns an error
+        (a refusal, an unusable answer, or a walk of `scen check`, `build
+        tests` or `build code` that ends with a check still failing), 0
+        otherwise. The Finalize step of `us refine` and `us apply` returns no
+        error for a walk that ends failing: it logs the verdict, skips the
+        write, and the process exits 0.
+      observed_by: >-
+        The step reads the number and compares it with the kept exit status; a
+        mismatch fails the step and names where the run's evidence lives.
+
+    - term: stdout
+      technical: >-
+        The engine's standard output: console answer lines (banners such as
+        `SCEN CHECK`, the report table, `ALL CHECKS PASSED!`) and every log
+        record in text form, `time=… level=… msg="…" key=value`.
+      observed_by: >-
+        The kept stdout, as one string, is asked for a match of the step's
+        pattern anywhere in it, or for none; a failed match prints the tail of
+        stdout beside the pattern.
+
+    - term: stderr
+      technical: >-
+        The engine's standard error. When a command returns an error, the
+        command-line library prints `Error: ` and the error's text there; the
+        text of an argument a command does not take carries the command's
+        usage after it. A failure before the log is set up, such as a missing
+        `true-bdd/true-bdd.yaml`, also prints its log record there, as
+        `<date> <time> ERROR <msg> key=value`.
+      observed_by: >-
+        The kept stderr, as one string, is asked for a match of the step's
+        pattern anywhere in it, or for none; a failed match prints stderr
+        beside the pattern.
+
+    - term: log record
+      technical: >-
+        One record of the engine's structured log: a level, a message and
+        named fields. Message strings and field names are a wire contract the
+        BDD report also reads, so a step may pin them.
+      observed_by: >-
+        Through stdout, by a pattern naming its text form, such as
+        `level=ERROR msg="Refusing to start" command="scen check"`; in the
+        JSON log file, by its exact message (see engine and AI turn).
+
+    - term: pattern
+      technical: >-
+        An RE2 regular expression: the step's text after its fixed words,
+        verbatim to the end of the step, quotes included.
+      observed_by: >-
+        Compiled by the step that holds it; one that does not compile fails
+        the step rather than matching nothing.
+
+    - term: file change
+      technical: >-
+        One entry of the run's structural diff of the run directory, taken
+        between a snapshot after the directory is assembled and prepared and
+        one after the command ends: created, modified or deleted, with its
+        path relative to the run directory. Noise directories such as `.git`
+        and `node_modules/` are left out of both snapshots.
+      observed_by: >-
+        A step reads the kept diff. A path lies outside a directory unless it
+        is that directory or starts with it plus a slash, so `tmp-x.yaml` is
+        outside `tmp`; the step lists every change outside it.
+
+    - term: checklist
+      technical: >-
+        `true-bdd/checklists/<command stem>.yaml` in the run directory (`scen
+        check` reads `scen-check.yaml`): sections of Prompts the command reads
+        at startup.
+      observed_by: >-
+        A fixture narrows a checklist in `checklist-prompts.yaml` at its root,
+        mapping a checklist's stem to snippets of its Prompts' questions; the
+        harness rewrites the run's copy to keep only the matching Prompts. The
+        step checks the fixture declares exactly the one quoted snippet for the
+        quoted checklist, and fails when it declares none, several or another.
+
+    - term: Prompt
+      technical: >-
+        One element of a checklist section's `validation_prompts`: a `Q:`
+        question or a `D:` check name, its `rationale`, the `docs` it reads
+        and an optional `F:` fix.
+      observed_by: >-
+        Selected by a snippet of its `Q:` text, which must match exactly one
+        Prompt of the checklist.
+
+    - term: AI turn
+      technical: >-
+        One request through the engine's AI router to claude, crush or codex,
+        logged once as msg="Dispatching AI turn" before the CLI is spawned; in
+        replay the answer comes from a cassette.
+      observed_by: >-
+        Count the "Dispatching AI turn" records in the run's JSON log file;
+        "no" is zero, and a missing log file fails instead of counting zero.
+
+    - term: AI CLI
+      technical: >-
+        The binary an AI turn is spawned as, `claude`, `crush` or `codex`
+        (see `dependencies[]` above): the half before the first colon of the
+        `<cli>:<model>` reference the turn's tier resolves to under
+        `engine.models`. The tier is the Prompt's own `model:`, `fix_model:`
+        or `apply_model:` for a validation, fix or apply turn, else its
+        checklist's `engine:` block, else `engine.default_<role>_model`.
+      observed_by: >-
+        Read from the `cli` field of each "Dispatching AI turn" record in the
+        run's JSON log file, its `role` field telling the kind of turn:
+        `prompt` for a validation turn, `fix` for a fix turn, `apply` for an
+        apply turn. The records of that role and CLI are counted; "no" is
+        zero, and a missing log file fails instead of counting zero.
+
+    - term: fix loop
+      technical: >-
+        The engine's interactive answer to a failed Prompt under `--fix`. A
+        clarifying question prints its suggested answers numbered from 1,
+        plus `0) Other`, then reads one line of stdin as the answer, a number
+        picking that suggestion. The proposed
+        fix is then followed by `[1] Apply this fix to working copy`, `[2]
+        Refine the fix prompt` and `[3] Exit without applying`, and one line
+        is read: `1` or `apply` applies the fix, `2` or `refine` reads
+        feedback lines up to an empty one, and anything else exits. End of
+        input reads as an empty line, so it exits.
+      observed_by: >-
+        Set up by a Given step, which fails when no Given step prepared a
+        project tree; nothing runs yet, the When step pipes the lines in. The
+        every-question step makes the command's stdin the answer and a
+        newline, 64 times over, enough for every question one walk asks, and
+        lines left over are never read. The line-by-line step splits its
+        quoted text at each `/`, trims each piece, and makes stdin those
+        pieces, one per line in order and nothing after, so an empty piece is
+        an empty line.
+
+    - term: test dependencies
+      technical: >-
+        The fixture's optional `prep.sh`, beside `input/`: one shell script
+        run in the run directory after the directory is assembled and before
+        the snapshot the run's file changes are counted from, on a budget of
+        its own of 15 minutes. A blank script counts as absent.
+      observed_by: >-
+        The Given step installs nothing itself, since the run directory does
+        not exist yet. It fails when no Given step prepared a project tree,
+        or when the fixture ships no `prep.sh`, naming the dependencies the
+        step named.
+
+    - term: glob
+      technical: >-
+        A path pattern over paths relative to the run directory: `*` matches
+        any run of characters but `/`, `?` one such character, and `[…]` one
+        character of a set.
+      observed_by: >-
+        The glob is checked on its own first, before any path is matched: one
+        that is not well formed, such as one with an unclosed `[`, fails the
+        step rather than matching nothing, even when the run created no file
+        at all, so neither the no-files step nor a count of none can pass on
+        it. Only then is it matched against the path of every file the run's
+        diff marks created, never modified or deleted ones, and the matches
+        are counted.
+
+    - term: Story
+      technical: >-
+        A YAML file under `paths.stories_dir` (`docs/product/stories/`),
+        named `<id>-<slug>.yaml`, whose top-level `story:` holds `id`,
+        `feature`, `title`, `as_a`, `i_want`, `so_that`, `status` and
+        `acceptance_criteria`.
+      observed_by: >-
+        After the run, the quoted path is taken as a glob inside the run
+        directory and must match exactly one file: none, several, or one
+        reached through a link out of the run directory fail the step. The
+        file must parse and hold a top-level `story:` mapping; its `id` is
+        compared as written.
+
+    - term: Feature
+      technical: >-
+        The Story's `feature:` value, a slug such as `scen-check`.
+      observed_by: >-
+        Compared as written; a Story without `feature:` has an empty one.
+
+    - term: Acceptance Criterion
+      technical: >-
+        One element of the Story's `acceptance_criteria:` list: `id`
+        (`<NNN>-<slug>`; legacy Stories use `AC-<n>`), `description`, and
+        `steps`, a list of one-key `given:`, `when:` and `then:` blocks each
+        holding steps. Its lineage id is `<story id>-<id>`.
+      observed_by: >-
+        Counted as the elements of that list. Found by its `id` as written,
+        and a Story without one with that id fails the step; its
+        description is matched as one string.
+
+    - term: step
+      technical: >-
+        One string, or a one-key `and:` or `but:` mapping holding the
+        string, in a `given:`, `when:` or `then:` list. The key is for
+        reading only and not part of the text; a text opening with `judge:`
+        or `llm:` is run by a model rather than by a step definition.
+      observed_by: >-
+        Read from the YAML file after the run. A block counts as present
+        only when it holds at least one step. A criterion's step texts are
+        matched one by one, mapping keys dropped, and a criterion with no
+        steps fails. Two Scenarios share the same steps when their
+        `merged_steps` read back as identical YAML; a Scenario without
+        `merged_steps` shares nothing.
+
+    - term: template
+      technical: >-
+        A catalogue entry's `template:` text, which the engine compiles into
+        one regular expression, anchored at both ends, that a step's whole
+        text, without its `and:` or `but:` key, must match: words as written,
+        case and spaces included; a quoted slot, which sits between literal
+        double quotes, as one or more characters other than a double quote;
+        a number slot as digits or `no`; a role slot as exactly one of the
+        names under the product document's `roles:` (Product Owner, System
+        Architect, Quality Engineer); a pattern slot, only ever the last
+        token and after a space, as the rest of the text, at least one
+        character; brackets with several alternatives as exactly one of them,
+        and brackets with one as that text or nothing; a backslash before
+        `{`, `}`, `[`, `]` or `\` as that character.
+      observed_by: >-
+        A step definition's pattern is its phrase's template written as an
+        anchored regular expression: it binds exactly the texts the template
+        matches, no fewer and no more, so a step the catalogue takes binds
+        and one it refuses binds nothing. Each slot is a capture group: a
+        quoted slot captures one or more characters other than a double
+        quote, so an empty quote binds nothing; a number slot captures
+        digits or `no`, which the definition reads as zero; a role slot
+        captures only the declared role names, so other words, however
+        capitalised, bind nothing, and which role it names changes nothing
+        the step does; a pattern slot captures the rest of the step
+        verbatim, quotes included, never split or unquoted, and the step
+        compiles it as the mapping of pattern says. Brackets with several
+        alternatives are a group that must match exactly one of them and is
+        never optional, so a step naming none of them binds nothing; brackets
+        with one alternative are optional.
+
+    - term: Scenario
+      technical: >-
+        One entry under the Registry's `scenarios:`, keyed by its Scenario
+        key: `description`, `service`, `path` (the test file it is
+        generated into), an optional `timeout`, `user_stories` (its lineage)
+        and `merged_steps` (its Given, When and Then steps).
+      observed_by: >-
+        Read from the Registry the run left behind, after the command has
+        ended, and found by its key or by its lineage. A Scenario the
+        Registry does not declare fails the step that names it.
+
+    - term: Registry
+      technical: >-
+        The YAML file `documents.scenarios_yaml` names in the project's
+        `true-bdd/true-bdd.yaml`, conventionally `docs/scenarios.yaml`; a
+        step names it by its path relative to the run directory.
+      observed_by: >-
+        Read and parsed after the run. The quoted path is held inside the run
+        directory before anything is read, as a Then step holds a file of the
+        project tree: an empty or absolute path, one that climbs out through
+        `..` once cleaned, or one whose symbolic links, resolved on both sides
+        (the run directory's own path too) and whole path components
+        compared, lead out of the run directory fails the step, and so does a
+        path naming anything but a regular file. A file that cannot be read
+        or parsed, or one declaring no Scenario, fails the step too.
+
+    - term: lineage
+      technical: >-
+        A Scenario's `user_stories:` list, written by `us apply`. Each
+        element names `story` (the Story file's path from the project root),
+        `scenario_id` (the Acceptance Criterion's lineage id) and
+        `merge_date`; an empty list means no Story claims the Scenario yet.
+      observed_by: >-
+        The Scenarios coming from a criterion are those with an element
+        whose `scenario_id` equals the quoted id. A count step counts them;
+        every other step requires exactly one and names them all when none
+        or several are found. It then compares their `story` values with
+        the quoted path as written, or matches the pattern against the whole
+        entry written back out as YAML.
+
+    - term: Scenario key
+      technical: >-
+        The key of the Scenario's entry under `scenarios:`,
+        `<story-id>-<NNN>-<slug>` once a Story claims it; legacy `E2E-NNN`
+        keys, and other keys in fixture projects, stay until renamed. The
+        generated test is named `Test` plus the key in CamelCase.
+      observed_by: >-
+        Compared as written with the key the entry sits under, and used as
+        written to find a Scenario in the Registry.
+
+    - term: step definition
+      technical: >-
+        A registration in the Go package `steps/` beside a Scenario's test
+        file: a regular expression, written as a string literal, paired with
+        the code run for every step whose whole text it matches.
+      observed_by: >-
+        The step reads the source of every `.go` file directly in the quoted
+        directory, without building it. The directory is held inside the run
+        directory first: an empty or absolute one, one that climbs out
+        through `..` once cleaned, or one whose symbolic links, resolved on
+        both sides (the run directory's own path too) and whole path
+        components compared, lead out of the run directory fails the step.
+        The step takes each registration's string literal that compiles as a
+        regular expression. Each step of the named Scenario must match
+        exactly one; model-run steps are skipped. A file that does not parse
+        fails the step, and the failure names every step that matched none
+        or several.
+
+    - term: test runner
+      technical: >-
+        A subprocess the engine starts from the suite command the
+        architecture document declares under `testing.commands` (`replay`
+        for `build code`), split into arguments by shell quoting rules, with
+        a filter of the engine's own appended when it re-runs one test after
+        a fix. Before each start it writes one log record, msg="Spawning
+        test runner", with the program in `binary` and its arguments in
+        `args`.
+      observed_by: >-
+        Read the "Spawning test runner" records in the run's JSON log file:
+        count them, compare `binary` with the quoted program, or match the
+        `args` joined by single spaces against the pattern. A missing log
+        file fails instead of counting zero.
+
+    - term: shell command
+      technical: >-
+        The quoted text split on whitespace, with no shell and no quoting,
+        and run as a subprocess in the quoted directory, relative to the run
+        directory. It inherits the test's environment without `CLAUDECODE`,
+        and it is capped at 10 minutes.
+      observed_by: >-
+        Run by the Then step itself after the command has ended, so it sits
+        last among a Scenario's Then steps: a re-run may change files that
+        earlier steps read. An empty command fails the step. The quoted
+        directory is then held inside the run directory before anything runs:
+        an empty or absolute one, one that climbs out through `..` once
+        cleaned, or one whose symbolic links, resolved on both sides (the run
+        directory's own path too) and whole path components compared, lead
+        out of the run directory fails the step; one that does not exist is
+        held by its deepest existing directory, resolved the same way. A
+        shell command that cannot start fails the step, as does an exit
+        status other than the quoted one, printing the shell command's stdout
+        and stderr.
+
+    - term: crush
+      technical: >-
+        The `crush` CLI the engine spawns for a turn whose tier names it (the
+        crush dependency above), with a per-turn generated config whose
+        `PreToolUse` hook runs this binary's `crush-guard` subcommand and with
+        the turn's write policy in that hook's environment. Hooks from a host
+        project's own `.crush.json` or `crush.json` run beside it, and a
+        denial from either stops the tool.
+      observed_by: >-
+        A Scenario about the write guard never starts crush: its Given steps
+        record what crush would hand the guard, and its When step runs the
+        guard the way crush does, so it spends no AI turn and needs no CLI.
+
+    - term: write guard
+      technical: >-
+        The engine binary's hidden `crush-guard` subcommand, run with no
+        arguments. It reads the write policy, then the tool call, and exits 0
+        to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
+        stderr for a denial. A missing or unreadable policy denies before the
+        tool call is read. `view`, `ls`, `grep`, `glob`, `sourcegraph`,
+        `diagnostics`, `fetch` and the `context7` MCP tools only read and are
+        allowed; `bash` is allowed only when the policy allows the shell; the
+        file tools `edit`, `write`, `multiedit`, `patch`, `create` and
+        `download` are allowed only for an absolute target inside a write
+        root, with symbolic links resolved on both sides (through the deepest
+        part of the path that exists) and whole path components compared;
+        any other tool is denied as a writer.
+      observed_by: >-
+        Run once by the When step as the engine binary's subprocess in the
+        run directory, under the Scenario's timeout, its exit status, stdout,
+        stderr and file changes kept as a command's are. As a command's run
+        is, the guard's run is handed to the harness's run recorder as soon
+        as it returns, before the step passes or fails, a run that could not
+        complete included, so the Scenario's `bdd-cli-logs/harness.json` in
+        the run directory records its run directory, output files and file
+        changes, and its exit status once it completed, for the BDD report.
+        The allow and deny steps compare the status with 0 and 2, failing
+        with the reason it gave; the reason step matches its pattern anywhere
+        in the kept stderr.
+
+    - term: write policy
+      technical: >-
+        A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
+        `write_roots`, a list of absolute directory paths, and `allow_bash`,
+        true or false. The engine derives it per turn from the turn's write
+        globs, each cut at its first wildcard and made absolute against the
+        project root, and from whether the turn may run the shell.
+      observed_by: >-
+        Built by the Given steps for the When step: each write-under step adds
+        the quoted directory joined to the run directory, the shell step sets
+        `allow_bash`, and with neither the policy grants nothing. The
+        no-policy step leaves the variable blank, which the guard reads as
+        unset, and the unreadable step sets it to text that is not JSON.
+
+    - term: tool call
+      technical: >-
+        The tool's name in `CRUSH_TOOL_NAME` and its target file in
+        `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
+        a blank or unset variable names nothing.
+      observed_by: >-
+        The When step sets both variables and the write policy every time,
+        blank where no Given step named them, so nothing the test process
+        exports reaches the guard. A file of the project tree is joined to
+        the run directory; a path as written passes unchanged.
+
+    - term: hook payload
+      technical: >-
+        The JSON crush pipes to a hook's stdin. The guard reads its
+        `tool_name` for a blank tool name, and its `input.file_path`, else
+        `input.path`, for a blank target; an empty or unparseable payload
+        names nothing.
+      observed_by: >-
+        The When step writes `{"tool_name": <tool>, "input": {"file_path":
+        <the file joined to the run directory>}}` to the guard's stdin; with
+        no payload step the guard's stdin is empty.
+
+    - term: symbolic link
+      technical: >-
+        A filesystem symbolic link holding the target as written, so a
+        relative target resolves from the link's own directory.
+      observed_by: >-
+        The Given step adds a command to the fixture's prep phase that makes
+        the link's directory and the link, after the run directory is
+        assembled and before the snapshot the file changes are counted from.
+        The snapshot refuses a link it walks into, so the link must sit in a
+        directory it leaves out, such as `node_modules`; a link path that is
+        absolute or climbs out of the project tree fails the step.

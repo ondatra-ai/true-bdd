@@ -38,18 +38,30 @@ func FixtureName(scenario bddgo.Scenario) string {
 	return scenario.ID
 }
 
-// TestName is the generated Go test function for a scenario, mirroring
-// the engine's own derivation so a record hint names a filter that
-// actually selects something.
+// TestName is the generated Go test function for a scenario, mirroring the
+// engine's CamelCase of its key (ADR 0014) so a record hint names a filter
+// that actually selects something.
 func TestName(scenario bddgo.Scenario) string {
 	var name strings.Builder
 
 	name.WriteString("Test")
 
+	segmentStart := true
+
 	for _, char := range scenario.ID {
-		if unicode.IsLetter(char) || unicode.IsDigit(char) {
-			name.WriteRune(char)
+		if !unicode.IsLetter(char) && !unicode.IsDigit(char) {
+			segmentStart = true
+
+			continue
 		}
+
+		if segmentStart {
+			char = unicode.ToUpper(char)
+		}
+
+		name.WriteRune(char)
+
+		segmentStart = false
 	}
 
 	return name.String()
@@ -72,6 +84,9 @@ type State struct {
 	// cleanup, where it cannot, but the record must still be written.
 	judged       bool
 	judgeVerdict runner.Verdict
+
+	// guardCall is the tool call a crush-guard scenario has crush ask about.
+	guardCall *guardCall
 }
 
 // ProxySetup is one scenario's recording context: where the shim reads
@@ -128,6 +143,10 @@ func (s *State) Judge(clauses []bddgo.Step) error {
 
 	if s.Result == nil {
 		return s.fail("%w", ErrNoRun)
+	}
+
+	if s.Fixture == nil {
+		return s.fail("%w", ErrNoTreePrepared)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.Harness.JudgeTimeout)
@@ -247,7 +266,7 @@ func (s *State) publishRecordings() {
 	}
 
 	if s.T.Failed() {
-		dest, _ := s.Harness.CassetteDir(s.Fixture.Name)
+		dest, _ := s.Harness.CassetteDir(s.fixtureName())
 		s.T.Logf("recordings NOT published — the run failed; the rejected recording is at %s "+
 			"and %s is unchanged", s.stagingRoot(), dest)
 
@@ -262,7 +281,7 @@ func (s *State) publishRecordings() {
 		return
 	}
 
-	err := s.Harness.promoteJudgeShelf(s.Fixture.Name, s.Proxy.JudgeStaging)
+	err := s.Harness.promoteJudgeShelf(s.fixtureName(), s.Proxy.JudgeStaging)
 	if err != nil {
 		s.T.Errorf("publish judge shelf: %v", err)
 
@@ -270,6 +289,13 @@ func (s *State) publishRecordings() {
 	}
 
 	s.T.Logf("recorded the judge verdict; the engine's cassettes are untouched")
+}
+
+// fixtureName is the tree this scenario's Given step names, the same name
+// its recorder, run dir and staging use: read from the scenario, so it holds
+// whether or not a step definition kept the Fixture it loaded.
+func (s *State) fixtureName() string {
+	return FixtureName(s.Scenario)
 }
 
 // stagingRoot is whichever staging directory this run wrote into.
@@ -322,7 +348,7 @@ func (s *State) finalVerdict() runner.Verdict {
 // publishes both, so a later replay has something deterministic to be
 // graded against.
 func (s *State) recordOutcome() {
-	golden := runner.NewGoldenTree(s.Fixture.Name, s.Result.Diff)
+	golden := runner.NewGoldenTree(s.fixtureName(), s.Result.Diff)
 
 	err := runner.WriteGolden(s.Proxy.Staging, golden)
 	if err != nil {
@@ -331,7 +357,7 @@ func (s *State) recordOutcome() {
 		return
 	}
 
-	err = s.Harness.promoteCassettes(s.Fixture.Name, s.Proxy.Staging)
+	err = s.Harness.promoteCassettes(s.fixtureName(), s.Proxy.Staging)
 	if err != nil {
 		s.T.Errorf("publish cassettes: %v", err)
 

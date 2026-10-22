@@ -1,0 +1,32 @@
+# Architectural spec for the us-refine BDD fixtures (shared).
+#
+# Read by the us-refine acceptance_criteria test-sketch prompt, which
+# must discover the test framework and helpers HERE (never from code).
+# Declares one integration layer (jest + McpClient) and one e2e layer
+# (playwright + chatPage) so every conversation-level AC has an obvious
+# home for a runnable sketch.
+
+architecture:
+  services:
+    - name: mcp-service
+      path: services/mcp
+      language: go
+      frameworks:
+        - net/http
+      quality_gate:
+        tests:
+          integration:
+            path: tests/integration
+            framework: jest
+            config: tests/jest.config.ts
+            helpers:
+              - name: McpClient
+                description: "Typed JSON-RPC client that posts requests to the MCP endpoint and returns parsed responses"
+          e2e:
+            path: tests/e2e
+            framework: playwright
+            config: tests/playwright.config.ts
+            helpers:
+              - name: chatPage
+                description: "Playwright fixture that opens the Claude chat UI, submits a prompt, and reads the rendered reply"
+      dependencies: []

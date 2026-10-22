@@ -1,0 +1,23 @@
+# Seed registry for the `build-tests-framework-without-renderer` BDD fixture.
+#
+# One scenario of a service whose architecture runs its tests on jest.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-framework-without-renderer fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/session.test.ts"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

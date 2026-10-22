@@ -1,0 +1,35 @@
+# Fixture checklist for `scen-check-fix-check-without-f`.
+#
+# The first Prompt carries an `F:`; the second, a built-in check, does
+# not. Under `--fix` the engine must refuse the walk before it starts,
+# naming the second Prompt by its check: a `D:` Prompt has no question
+# to name it by.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: |
+          Rewrite the description as one sentence stating the rule with
+          "must" or "should", and move any Given/When/Then text into the steps.
+
+      - D: given-when-then
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

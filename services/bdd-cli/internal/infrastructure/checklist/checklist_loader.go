@@ -26,8 +26,8 @@ func NewChecklistLoader(cfg *config.ViperConfig) *ChecklistLoader {
 }
 
 // LoadFull reads the checklist for the named command and returns the full
-// Checklist struct, including the optional `config:` block. Prefer Load
-// when only the flat prompt list is needed.
+// Checklist struct, including the optional `config:` block; the runner
+// flattens its prompts for the walk.
 func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, error) {
 	path := filepath.Join(l.checklistsDir, commandName+".yaml")
 	slog.Debug("Loading full checklist", "command", commandName, "path", path)
@@ -45,52 +45,4 @@ func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, er
 	}
 
 	return &parsed, nil
-}
-
-// Load reads the checklist for the named command (e.g. "us-create") and
-// returns its prompts flattened with section context. Skipped prompts are
-// filtered out.
-func (l *ChecklistLoader) Load(commandName string) ([]checklist.PromptWithContext, error) {
-	path := filepath.Join(l.checklistsDir, commandName+".yaml")
-	slog.Debug("Loading checklist", "command", commandName, "path", path)
-
-	data, err := disk.Read(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read checklist %s: %w", path, err)
-	}
-
-	var parsed checklist.Checklist
-
-	err = yaml.Unmarshal(data, &parsed)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse checklist %s: %w", path, err)
-	}
-
-	prompts := make([]checklist.PromptWithContext, 0)
-
-	for _, section := range parsed.Sections {
-		for _, prompt := range section.ValidationPrompts {
-			if prompt.ShouldSkip() {
-				continue
-			}
-
-			prompts = append(prompts, checklist.PromptWithContext{
-				SectionID:     commandName,
-				SectionName:   commandName,
-				CriterionID:   section.ID,
-				CriterionName: section.Name,
-				DefaultDocs:   parsed.DefaultDocs,
-				DefaultModels: parsed.Engine,
-				Prompt:        prompt,
-			})
-		}
-	}
-
-	slog.Debug("Checklist loaded",
-		"command", commandName,
-		"sections", len(parsed.Sections),
-		"prompts", len(prompts),
-	)
-
-	return prompts, nil
 }

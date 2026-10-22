@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
 )
 
-// Story-shape assertions read a story a `us create … --fix` run authored:
+// Story-shape assertions read a story a `us refine … --fix` run rewrote:
 // its id, criteria shape, and that a clause avoids forbidden vocabulary.
-// Filenames are the fix loop's to choose, so steps resolve them by glob.
+// Steps resolve the story file by glob.
 //	story:
-//	  id: "99.1"
+//	  id: "99.1"                 (a slug: `scen-check` as well)
+//	  feature: document-summaries (optional label)
 //	  as_a / i_want / so_that: …
 //	  acceptance_criteria: [{id, description, steps}, …]
 
@@ -29,12 +29,11 @@ type storyCriterion struct {
 }
 
 // storyData is one story document reduced to what the story assertions
-// need: id, acceptance criteria, and every top-level clause as a raw node
-// so an arbitrarily-named one (as_a, i_want, so_that) can be looked up.
+// need: its id, feature and acceptance criteria.
 type storyData struct {
 	ID       string
+	Feature  string
 	Criteria []storyCriterion
-	Clauses  map[string]yaml.Node
 }
 
 // readMatchedStory reads the one file a story glob resolved to, refusing a
@@ -94,6 +93,7 @@ func loadStory(state *State, glob string) (storyData, error) {
 
 	var typed struct {
 		ID       string           `yaml:"id"`
+		Feature  string           `yaml:"feature"`
 		Criteria []storyCriterion `yaml:"acceptance_criteria"`
 	}
 
@@ -102,14 +102,7 @@ func loadStory(state *State, glob string) (storyData, error) {
 		return storyData{}, state.fail("decoding story %q: %w", glob, decodeErr)
 	}
 
-	clauses := map[string]yaml.Node{}
-
-	decodeErr = file.Story.Decode(&clauses)
-	if decodeErr != nil {
-		return storyData{}, state.fail("decoding the clauses of story %q: %w", glob, decodeErr)
-	}
-
-	return storyData{ID: typed.ID, Criteria: typed.Criteria, Clauses: clauses}, nil
+	return storyData{ID: typed.ID, Feature: typed.Feature, Criteria: typed.Criteria}, nil
 }
 
 // missingStepKeywords returns which of given/when/then a criterion has no
@@ -217,39 +210,32 @@ func assertStoryID(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriteriaCount pins a lower bound on acceptance criteria —
-// "at least", since the fix loop may add or polish criteria and the
-// scenario pins only the floor it must clear.
-func assertStoryCriteriaCount(state *State, args []string) error {
+// assertStoryFeature pins the Feature label the story carries: a rewrite
+// that drops the label leaves it empty, which fails here by name.
+func assertStoryFeature(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
 		return err
 	}
 
-	want, err := strconv.Atoi(args[1])
-	if err != nil {
-		return state.fail("acceptance-criteria count %q is not a number: %w", args[1], err)
-	}
+	want := args[1]
 
-	if got := len(story.Criteria); got < want {
-		return state.fail(
-			"expected story %q to have at least %d acceptance criteria, but it has %d",
-			args[0], want, got)
+	if story.Feature != want {
+		return state.fail("expected story %q to have feature %q, but it has %q", args[0], want, story.Feature)
 	}
 
 	return nil
 }
 
-// assertStoryCriteriaExactCount pins the EXACT criteria count — the
-// tighter twin of assertStoryCriteriaCount's "at least", proving a fix
-// loop that rewrote the story neither dropped nor added one.
+// assertStoryCriteriaExactCount pins the EXACT criteria count, proving
+// a fix loop that rewrote the story neither dropped nor added one.
 func assertStoryCriteriaExactCount(state *State, args []string) error {
 	story, err := loadStory(state, args[0])
 	if err != nil {
 		return err
 	}
 
-	want, err := strconv.Atoi(args[1])
+	want, err := numberSlot(args[1])
 	if err != nil {
 		return state.fail("acceptance-criteria count %q is not a number: %w", args[1], err)
 	}
@@ -258,86 +244,6 @@ func assertStoryCriteriaExactCount(state *State, args []string) error {
 		return state.fail(
 			"expected story %q to have exactly %d acceptance criteria, but it has %d",
 			args[0], want, got)
-	}
-
-	return nil
-}
-
-// assertStoryCriteriaWellFormed pins that EVERY criterion has an id
-// matching a regexp and a non-empty description; a story with no
-// criteria fails rather than passing vacuously.
-func assertStoryCriteriaWellFormed(state *State, args []string) error {
-	story, err := loadStory(state, args[0])
-	if err != nil {
-		return err
-	}
-
-	idPattern, err := regexp.Compile(args[1])
-	if err != nil {
-		return state.fail("criterion-id pattern %q does not compile: %w", args[1], err)
-	}
-
-	if len(story.Criteria) == 0 {
-		return state.fail(
-			"expected every acceptance criterion in story %q to have an id matching %q and a "+
-				"non-empty description, but the story has no criteria", args[0], args[1])
-	}
-
-	var problems []string
-
-	for index, criterion := range story.Criteria {
-		if !idPattern.MatchString(criterion.ID) {
-			problems = append(problems, fmt.Sprintf(
-				"criterion %d has id %q, which does not match %q", index+1, criterion.ID, args[1]))
-		}
-
-		if strings.TrimSpace(criterion.Description) == "" {
-			problems = append(problems, fmt.Sprintf(
-				"criterion %d (id %q) has an empty description", index+1, criterion.ID))
-		}
-	}
-
-	if len(problems) > 0 {
-		return state.fail(
-			"expected every acceptance criterion in story %q to have an id matching %q and a "+
-				"non-empty description, but: %s", args[0], args[1], strings.Join(problems, "; "))
-	}
-
-	return nil
-}
-
-// assertStoryClauseNoMatch pins that a named clause (as_a, i_want,
-// so_that) does NOT match a forbidden regexp, e.g. driving an
-// implementation term out of so_that. Pattern is undelimited, like `stdout matches`.
-func assertStoryClauseNoMatch(state *State, args []string) error {
-	clause := args[0]
-
-	story, err := loadStory(state, args[1])
-	if err != nil {
-		return err
-	}
-
-	pattern, err := regexp.Compile(args[2])
-	if err != nil {
-		return state.fail("clause-match pattern %q does not compile: %w", args[2], err)
-	}
-
-	node, ok := story.Clauses[clause]
-	if !ok {
-		return state.fail("expected story %q to carry a %q clause, but it has none", args[1], clause)
-	}
-
-	var value string
-
-	decodeErr := node.Decode(&value)
-	if decodeErr != nil {
-		return state.fail("reading the %q clause of story %q: %w", clause, args[1], decodeErr)
-	}
-
-	if pattern.MatchString(value) {
-		return state.fail(
-			"expected the %q clause of story %q not to match %q, but it did:\n%s",
-			clause, args[1], args[2], value)
 	}
 
 	return nil
@@ -379,9 +285,8 @@ func assertStoryCriteriaHaveSteps(state *State, args []string) error {
 	return nil
 }
 
-// assertStoryCriterionDescNoMatch is the per-criterion twin of
-// assertStoryClauseNoMatch: a NAMED criterion's description must NOT
-// match a forbidden regexp. Resolved by id; no such criterion fails.
+// assertStoryCriterionDescNoMatch pins that a NAMED criterion's
+// description does NOT match a forbidden regexp. Resolved by id; no such criterion fails.
 func assertStoryCriterionDescNoMatch(state *State, args []string) error {
 	criterionID := args[0]
 

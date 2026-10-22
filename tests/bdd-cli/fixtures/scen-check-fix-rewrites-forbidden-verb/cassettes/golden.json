@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-rewrites-forbidden-verb",
+  "files": [
+    {
+      "path": "docs/scenarios.yaml",
+      "kind": "modified",
+      "size": 830,
+      "sha256": "dcc7969c1219542031705f08a5d79f6e0e3327b6b81f8e65c2880746ea5d6685",
+      "text": "# Registry seed for `scen-check-fix-rewrites-forbidden-verb`.\n#\n# One Scenario whose then step says the greeter \"handles\" the name, a\n# verb the product document forbids and replaces with the observable\n# action it hides. The fix rewrites the step in this entry.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One scenario with a forbidden action verb in a step\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the greeter prints \"Hello Ada\"\n"
+    }
+  ]
+}

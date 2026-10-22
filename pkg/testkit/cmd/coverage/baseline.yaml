@@ -1,6 +1,6 @@
 schema_version: 1
 evidence_quality: reconstructed
-universe_sha256: ee38bc3d0766d3ae53eb5a68c70a81a9d6266f693659bd14dd0b6da8ac7bcc0e
+universe_sha256: c266a0eb907128db49fb035a59600591295d39c5419dbab872b45308c17c2fa4
 covered:
     - id: build-code/test-passes/q1@b171d92d#fail
       q_sha256: b171d92d889b0bc943942ab0e6d78faa2ecf24fbbabf392ae7dadc6660f54830
@@ -22,90 +22,148 @@ covered:
       f_sha256: ad333768a4d023de4f63725ef9e2d30b96ec384282a6137f89b82e4d3229a884
     - id: scen-check/scenario_quality/q1@30469152#fail
       q_sha256: 30469152937a9385c4afea140c4440aba2b3934091b7b42ceaae2c2c2d8ccd44
+      f_sha256: aa72a507ab4b6a665225a100c94773b41d83566dd4b39520908f79cabd352493
+    - id: scen-check/scenario_quality/q1@30469152#fix
+      q_sha256: 30469152937a9385c4afea140c4440aba2b3934091b7b42ceaae2c2c2d8ccd44
+      f_sha256: aa72a507ab4b6a665225a100c94773b41d83566dd4b39520908f79cabd352493
     - id: scen-check/scenario_quality/q1@30469152#pass
       q_sha256: 30469152937a9385c4afea140c4440aba2b3934091b7b42ceaae2c2c2d8ccd44
+      f_sha256: aa72a507ab4b6a665225a100c94773b41d83566dd4b39520908f79cabd352493
     - id: scen-check/scenario_quality/q2@45c4a3a0#fail
       q_sha256: 45c4a3a04a4f1ab4c5edebd7164e71afb42f745d320e66dd75f46485a0e2c333
+      f_sha256: 88098eeb320ae7413342f228bb063923dbe9001e6c7dc889f42915f6d0a25055
+    - id: scen-check/scenario_quality/q2@45c4a3a0#fix
+      q_sha256: 45c4a3a04a4f1ab4c5edebd7164e71afb42f745d320e66dd75f46485a0e2c333
+      f_sha256: 88098eeb320ae7413342f228bb063923dbe9001e6c7dc889f42915f6d0a25055
     - id: scen-check/scenario_quality/q2@45c4a3a0#pass
       q_sha256: 45c4a3a04a4f1ab4c5edebd7164e71afb42f745d320e66dd75f46485a0e2c333
+      f_sha256: 88098eeb320ae7413342f228bb063923dbe9001e6c7dc889f42915f6d0a25055
     - id: scen-check/scenario_quality/q3@6fd4a11c#fail
       q_sha256: 6fd4a11c80b532717f083ba48c7d42fb770890c7f49e5a57c628562377afadc4
+      f_sha256: b751dcf9df3352aaf0e70338dcfd7512faa79c14e290b0f0f79455e448e9cfe7
+    - id: scen-check/scenario_quality/q3@6fd4a11c#fix
+      q_sha256: 6fd4a11c80b532717f083ba48c7d42fb770890c7f49e5a57c628562377afadc4
+      f_sha256: b751dcf9df3352aaf0e70338dcfd7512faa79c14e290b0f0f79455e448e9cfe7
     - id: scen-check/scenario_quality/q3@6fd4a11c#pass
       q_sha256: 6fd4a11c80b532717f083ba48c7d42fb770890c7f49e5a57c628562377afadc4
+      f_sha256: b751dcf9df3352aaf0e70338dcfd7512faa79c14e290b0f0f79455e448e9cfe7
     - id: scen-check/scenario_quality/q4@63aefa89#fail
       q_sha256: 63aefa89cffc2d2aec88ee33ae43eaa0cdbf6de1703dc820ba19f595b4f8b213
+      f_sha256: a80c20c022b6e3fa3f3555b05592084a099344059d0dc438a1b96f17e23a7e18
+    - id: scen-check/scenario_quality/q4@63aefa89#fix
+      q_sha256: 63aefa89cffc2d2aec88ee33ae43eaa0cdbf6de1703dc820ba19f595b4f8b213
+      f_sha256: a80c20c022b6e3fa3f3555b05592084a099344059d0dc438a1b96f17e23a7e18
     - id: scen-check/scenario_quality/q4@63aefa89#pass
       q_sha256: 63aefa89cffc2d2aec88ee33ae43eaa0cdbf6de1703dc820ba19f595b4f8b213
+      f_sha256: a80c20c022b6e3fa3f3555b05592084a099344059d0dc438a1b96f17e23a7e18
     - id: scen-check/scenario_quality/q5@6d955d38#fail
       q_sha256: 6d955d38a59f5de2d76890096878fa2a46b36c297c83ab954299a58acebd20ea
+      f_sha256: 5db8e7b9ec4cf1e5a414c0ba10cf5d7fa1d77f4a20ca175ff2fc2be372fa6f67
+    - id: scen-check/scenario_quality/q5@6d955d38#fix
+      q_sha256: 6d955d38a59f5de2d76890096878fa2a46b36c297c83ab954299a58acebd20ea
+      f_sha256: 5db8e7b9ec4cf1e5a414c0ba10cf5d7fa1d77f4a20ca175ff2fc2be372fa6f67
     - id: scen-check/scenario_quality/q5@6d955d38#pass
       q_sha256: 6d955d38a59f5de2d76890096878fa2a46b36c297c83ab954299a58acebd20ea
+      f_sha256: 5db8e7b9ec4cf1e5a414c0ba10cf5d7fa1d77f4a20ca175ff2fc2be372fa6f67
     - id: scen-check/scenario_quality/q6@4ca30544#fail
       q_sha256: 4ca30544f977b7d30901680c086f2f9c1690e354e8314c1ad3c5ea655a772bb3
+      f_sha256: bc5e9ae176ff9ed38fe0c472d9e23d5c718bc1df8a7590b355b02d6e6c4a9aa9
+    - id: scen-check/scenario_quality/q6@4ca30544#fix
+      q_sha256: 4ca30544f977b7d30901680c086f2f9c1690e354e8314c1ad3c5ea655a772bb3
+      f_sha256: bc5e9ae176ff9ed38fe0c472d9e23d5c718bc1df8a7590b355b02d6e6c4a9aa9
     - id: scen-check/scenario_quality/q6@4ca30544#pass
       q_sha256: 4ca30544f977b7d30901680c086f2f9c1690e354e8314c1ad3c5ea655a772bb3
+      f_sha256: bc5e9ae176ff9ed38fe0c472d9e23d5c718bc1df8a7590b355b02d6e6c4a9aa9
     - id: scen-check/scenario_quality/q7@d92aa73c#fail
       q_sha256: d92aa73c3cb13fee88535de540519db9f443125f0574cf7652930edc2b0d37bc
+      f_sha256: 0f16fd991c23ff80807056c0a1e9a4be3a011b3cee6841e51a8cd8ebf1cb4739
+    - id: scen-check/scenario_quality/q7@d92aa73c#fix
+      q_sha256: d92aa73c3cb13fee88535de540519db9f443125f0574cf7652930edc2b0d37bc
+      f_sha256: 0f16fd991c23ff80807056c0a1e9a4be3a011b3cee6841e51a8cd8ebf1cb4739
     - id: scen-check/scenario_quality/q7@d92aa73c#pass
       q_sha256: d92aa73c3cb13fee88535de540519db9f443125f0574cf7652930edc2b0d37bc
+      f_sha256: 0f16fd991c23ff80807056c0a1e9a4be3a011b3cee6841e51a8cd8ebf1cb4739
     - id: scen-check/scenario_quality/q8@17ccea8c#fail
       q_sha256: 17ccea8c74dfb584732c9376c4222f0f40d5ef98b955d4abbb2941f37ad2f47c
+      f_sha256: 79d465e4a0ba3649e29e157caf8133e576a3e48fd367a68e52147a424df4bed3
+    - id: scen-check/scenario_quality/q8@17ccea8c#fix
+      q_sha256: 17ccea8c74dfb584732c9376c4222f0f40d5ef98b955d4abbb2941f37ad2f47c
+      f_sha256: 79d465e4a0ba3649e29e157caf8133e576a3e48fd367a68e52147a424df4bed3
     - id: scen-check/scenario_quality/q8@17ccea8c#pass
       q_sha256: 17ccea8c74dfb584732c9376c4222f0f40d5ef98b955d4abbb2941f37ad2f47c
+      f_sha256: 79d465e4a0ba3649e29e157caf8133e576a3e48fd367a68e52147a424df4bed3
+    - id: scen-check/term_closure/d1@671e5470#fail
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: 3690d81f249fcd23491e0269558a3e463b65743eeb7abc48d59f238fa5d11b38
+    - id: scen-check/term_closure/d1@671e5470#fix
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: 3690d81f249fcd23491e0269558a3e463b65743eeb7abc48d59f238fa5d11b38
+    - id: scen-check/term_closure/d1@671e5470#pass
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: 3690d81f249fcd23491e0269558a3e463b65743eeb7abc48d59f238fa5d11b38
+    - id: scen-check/term_closure/d2@436052d9#fail
+      q_sha256: 436052d92be7f6c6ca4061f1304519ffac4f26a9349826c7318f163be96ab96f
+      f_sha256: 15126f579f021783c0b1b0880f0da76cf39baa1ceca341e94e0e423d29f94de7
+    - id: scen-check/term_closure/d2@436052d9#fix
+      q_sha256: 436052d92be7f6c6ca4061f1304519ffac4f26a9349826c7318f163be96ab96f
+      f_sha256: 15126f579f021783c0b1b0880f0da76cf39baa1ceca341e94e0e423d29f94de7
+    - id: scen-check/term_closure/d2@436052d9#pass
+      q_sha256: 436052d92be7f6c6ca4061f1304519ffac4f26a9349826c7318f163be96ab96f
+      f_sha256: 15126f579f021783c0b1b0880f0da76cf39baa1ceca341e94e0e423d29f94de7
+    - id: scen-check/term_closure/d3@6e3404db#fail
+      q_sha256: 6e3404dbfcd51723a9a8505015d95aa521b81028d3d4a1c244faa3e4ba725847
+      f_sha256: b19bfe763659c45f7440e836d75a3addd0b1c54929af517e4fba27c9e447b2e6
+    - id: scen-check/term_closure/d3@6e3404db#fix
+      q_sha256: 6e3404dbfcd51723a9a8505015d95aa521b81028d3d4a1c244faa3e4ba725847
+      f_sha256: b19bfe763659c45f7440e836d75a3addd0b1c54929af517e4fba27c9e447b2e6
+    - id: scen-check/term_closure/d3@6e3404db#pass
+      q_sha256: 6e3404dbfcd51723a9a8505015d95aa521b81028d3d4a1c244faa3e4ba725847
+      f_sha256: b19bfe763659c45f7440e836d75a3addd0b1c54929af517e4fba27c9e447b2e6
+    - id: scen-check/term_closure/d4@8dee002e#fail
+      q_sha256: 8dee002eea8890bcd811a97006bca4fa6db46c44daaffec3dee024ca151c6d8a
+      f_sha256: ac59148adc2d6ac13c9ff148329b617cc8d6e6163a926fae302fce2a4a4d6d57
+    - id: scen-check/term_closure/d4@8dee002e#fix
+      q_sha256: 8dee002eea8890bcd811a97006bca4fa6db46c44daaffec3dee024ca151c6d8a
+      f_sha256: ac59148adc2d6ac13c9ff148329b617cc8d6e6163a926fae302fce2a4a4d6d57
+    - id: scen-check/term_closure/d4@8dee002e#pass
+      q_sha256: 8dee002eea8890bcd811a97006bca4fa6db46c44daaffec3dee024ca151c6d8a
+      f_sha256: ac59148adc2d6ac13c9ff148329b617cc8d6e6163a926fae302fce2a4a4d6d57
+    - id: scen-check/term_closure/q5@3e039823#fail
+      q_sha256: 3e03982321922357fa745d84432ad58595d91e4b724ad80b163de8fda204772e
+      f_sha256: 1967f3e74469ceb80be33e5acb118dc535b101fdc6ab425ebbb2b23c2e076c33
+    - id: scen-check/term_closure/q5@3e039823#fix
+      q_sha256: 3e03982321922357fa745d84432ad58595d91e4b724ad80b163de8fda204772e
+      f_sha256: 1967f3e74469ceb80be33e5acb118dc535b101fdc6ab425ebbb2b23c2e076c33
+    - id: scen-check/term_closure/q5@3e039823#pass
+      q_sha256: 3e03982321922357fa745d84432ad58595d91e4b724ad80b163de8fda204772e
+      f_sha256: 1967f3e74469ceb80be33e5acb118dc535b101fdc6ab425ebbb2b23c2e076c33
+    - id: scen-check/term_closure/q6@5dfd2b61#fail
+      q_sha256: 5dfd2b61e9aaf0706b1c5b1513e3bb1b90698a71d887216b5f06f8276fdcb025
+      f_sha256: 46c40be739de7c5f57dbffaee1073d5998b827ee95c2ad7b7017d2dde6150a73
+    - id: scen-check/term_closure/q6@5dfd2b61#fix
+      q_sha256: 5dfd2b61e9aaf0706b1c5b1513e3bb1b90698a71d887216b5f06f8276fdcb025
+      f_sha256: 46c40be739de7c5f57dbffaee1073d5998b827ee95c2ad7b7017d2dde6150a73
+    - id: scen-check/term_closure/q6@5dfd2b61#pass
+      q_sha256: 5dfd2b61e9aaf0706b1c5b1513e3bb1b90698a71d887216b5f06f8276fdcb025
+      f_sha256: 46c40be739de7c5f57dbffaee1073d5998b827ee95c2ad7b7017d2dde6150a73
     - id: us-apply/merge/q1@6da54561#fail
       q_sha256: 6da545617c836b3c0f231c3f3d6801ee48024624a70a6916bf21dd4186d60313
-      f_sha256: 50ca9248ba1e75e12800cb9fad322025815e7fd3a5fd49442fb1b53e134453f1
+      f_sha256: 41146f599c2edd63a7bd04422ca8ea85838296b5cca6e73ea1345bcf2769206a
     - id: us-apply/merge/q1@6da54561#fix
       q_sha256: 6da545617c836b3c0f231c3f3d6801ee48024624a70a6916bf21dd4186d60313
-      f_sha256: 50ca9248ba1e75e12800cb9fad322025815e7fd3a5fd49442fb1b53e134453f1
+      f_sha256: 41146f599c2edd63a7bd04422ca8ea85838296b5cca6e73ea1345bcf2769206a
     - id: us-apply/merge/q1@6da54561#pass
       q_sha256: 6da545617c836b3c0f231c3f3d6801ee48024624a70a6916bf21dd4186d60313
-      f_sha256: 50ca9248ba1e75e12800cb9fad322025815e7fd3a5fd49442fb1b53e134453f1
+      f_sha256: 41146f599c2edd63a7bd04422ca8ea85838296b5cca6e73ea1345bcf2769206a
     - id: us-apply/merge/q2@9844391f#fail
       q_sha256: 9844391f53f6df30f612756abfd1d670e93b338fd1f5fb33b7945b3e552d9573
-      f_sha256: e7b6db37666dc8ebeccfcede65449886f915e128b0ee56689711e8a81ad84d67
+      f_sha256: ed5ef47e8d514de61970d430386fa848a4e18d3d44ac805d41c60b61752fb326
     - id: us-apply/merge/q2@9844391f#fix
       q_sha256: 9844391f53f6df30f612756abfd1d670e93b338fd1f5fb33b7945b3e552d9573
-      f_sha256: e7b6db37666dc8ebeccfcede65449886f915e128b0ee56689711e8a81ad84d67
+      f_sha256: ed5ef47e8d514de61970d430386fa848a4e18d3d44ac805d41c60b61752fb326
     - id: us-apply/merge/q2@9844391f#pass
       q_sha256: 9844391f53f6df30f612756abfd1d670e93b338fd1f5fb33b7945b3e552d9573
-      f_sha256: e7b6db37666dc8ebeccfcede65449886f915e128b0ee56689711e8a81ad84d67
-    - id: us-create/format/q1@75797b9f#fail
-      q_sha256: 75797b9fa2f58598571470c17b011128867b4644b114c3e04bf804a9a1eb2d50
-    - id: us-create/format/q1@75797b9f#pass
-      q_sha256: 75797b9fa2f58598571470c17b011128867b4644b114c3e04bf804a9a1eb2d50
-    - id: us-create/format/q2@5424a5e5#fail
-      q_sha256: 5424a5e5ca65237448a34454f72a0dee6291ba7854b228852dc506ccbfe7061a
-    - id: us-create/format/q2@5424a5e5#pass
-      q_sha256: 5424a5e5ca65237448a34454f72a0dee6291ba7854b228852dc506ccbfe7061a
-    - id: us-create/what/q1@1e091618#fail
-      q_sha256: 1e09161822d64e8a5723532289d7cb1ea13d55719d89624689882f9dd7d418d4
-    - id: us-create/what/q1@1e091618#pass
-      q_sha256: 1e09161822d64e8a5723532289d7cb1ea13d55719d89624689882f9dd7d418d4
-    - id: us-create/what/q2@2df19546#fail
-      q_sha256: 2df19546e9c720e4a75ddbc5950aa739b7bbe6bafb1691166c8264caf36b9c54
-    - id: us-create/what/q2@2df19546#pass
-      q_sha256: 2df19546e9c720e4a75ddbc5950aa739b7bbe6bafb1691166c8264caf36b9c54
-    - id: us-create/who/q1@63600b68#fail
-      q_sha256: 63600b68154f54a8d2f9419a80b3a43b06acde9ef5bc2ca90b72b294da94127b
-    - id: us-create/who/q1@63600b68#pass
-      q_sha256: 63600b68154f54a8d2f9419a80b3a43b06acde9ef5bc2ca90b72b294da94127b
-    - id: us-create/why/q1@5eeaae63#fail
-      q_sha256: 5eeaae638c78444fbc137e681e0ff1eee576bf0a010d78b535a76945692d849c
-    - id: us-create/why/q1@5eeaae63#pass
-      q_sha256: 5eeaae638c78444fbc137e681e0ff1eee576bf0a010d78b535a76945692d849c
-    - id: us-create/why/q2@9c909a4d#fail
-      q_sha256: 9c909a4d09fe4555f2d395e5ad638499e89a58884ab75c21f1ccb0eee4e7a3e8
-    - id: us-create/why/q2@9c909a4d#pass
-      q_sha256: 9c909a4d09fe4555f2d395e5ad638499e89a58884ab75c21f1ccb0eee4e7a3e8
-    - id: us-create/why/q3@429b882e#fail
-      q_sha256: 429b882e5ff79d47b101f4a1cb9e21af4520bbb9b178d2ec80a66bdb6378ffad
-    - id: us-create/why/q3@429b882e#pass
-      q_sha256: 429b882e5ff79d47b101f4a1cb9e21af4520bbb9b178d2ec80a66bdb6378ffad
-    - id: us-create/why/q4@3873135d#fail
-      q_sha256: 3873135d7394207ffb5f7ddf31f8a1dc699035559f5b00d9239a1cab1bc7c528
-    - id: us-create/why/q4@3873135d#pass
-      q_sha256: 3873135d7394207ffb5f7ddf31f8a1dc699035559f5b00d9239a1cab1bc7c528
+      f_sha256: ed5ef47e8d514de61970d430386fa848a4e18d3d44ac805d41c60b61752fb326
     - id: us-refine/acceptance_criteria/q10@9f77fac8#fail
       q_sha256: 9f77fac8e16f02ba8ff2301a2bbc343d081673de897e4e1a133a536e509b3586
     - id: us-refine/acceptance_criteria/q10@9f77fac8#pass
@@ -133,44 +191,44 @@ covered:
       f_sha256: 13eb33a850f460ab25fad9754b7a13e771a775673a93e0175f2ab3d730de1102
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#fail
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#fix
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
     - id: us-refine/acceptance_criteria/q3@fa3f00d3#pass
       q_sha256: fa3f00d38b2d361422f043bf7c621b25c04889efab31ec90b63e3867fe13e7eb
-      f_sha256: 7dc43b872b55425d7fe17dc25dab69a2ae8e9a0d1efb38908e0116d482a49586
-    - id: us-refine/acceptance_criteria/q4@567e38e7#fail
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q4@567e38e7#fix
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q4@567e38e7#pass
-      q_sha256: 567e38e74cdad905aa5f0e09259cef5fc3b8c5610a4a35a2ebe4a478a6e338dc
-      f_sha256: 526d3b50db635c851aace691066d4baaf16d9e656689109d47cececa4cb39320
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#fail
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#fix
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q5@7cfe4b20#pass
-      q_sha256: 7cfe4b20f4e87ca07f3323cd68ba7b33dbba5a8fd597d630b153cde4ab92ed46
-      f_sha256: ee58ab12fed5f0c5d7db4ad72184626cea24ca694907ccb3cfa2ec22ddc3b7f9
-    - id: us-refine/acceptance_criteria/q6@bb57188d#fail
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q6@bb57188d#fix
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q6@bb57188d#pass
-      q_sha256: bb57188dd620ba412d7d18b4c1a5201c3cab837061489628be796b6eb35ccd70
-      f_sha256: cb101118a12e610672e2e8d305de8456330b6ed6804d385c9aa4b0db27bc4c0b
-    - id: us-refine/acceptance_criteria/q7@66806976#fail
-      q_sha256: 66806976b3380f7bfa6e9dd658010ebb1dd6d58477323906f4fdf1c7ed957753
-    - id: us-refine/acceptance_criteria/q7@66806976#pass
-      q_sha256: 66806976b3380f7bfa6e9dd658010ebb1dd6d58477323906f4fdf1c7ed957753
+      f_sha256: c3fc63daf278879d0b08ace3b3d8f68b1433f65019cd63f196d712c36cd3b752
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#fail
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#fix
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q4@4fa4e82c#pass
+      q_sha256: 4fa4e82cb3bbc14cb22da8d7963a571e28a8a15f2a8e4f3a9afabe8725684526
+      f_sha256: c5de50908fab64ea853ee6f4debed2aff54369a98cfb1fce9fdfbca8c78183e9
+    - id: us-refine/acceptance_criteria/q5@882442b9#fail
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q5@882442b9#fix
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q5@882442b9#pass
+      q_sha256: 882442b9eaba06670ec47e70ec2fc752a3df848f4cf4fd0266006925238510f6
+      f_sha256: 21ceed0af825e87b429eac303e2ba36b9e8c90e3575f5edd94588cfa9e8853c3
+    - id: us-refine/acceptance_criteria/q6@3929749d#fail
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q6@3929749d#fix
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q6@3929749d#pass
+      q_sha256: 3929749db41ff335fb0b8f1882ca517c5a17bd2726a43bf85d09c6db7a5b672b
+      f_sha256: 62d881be575e78398f5529f1409b500dded3e82caa8b20f0123011c883fec6e9
+    - id: us-refine/acceptance_criteria/q7@0372c4be#fail
+      q_sha256: 0372c4bef3086a556e346a23b0cd52641e20f4cf105965bf3162c1ca9fb06365
+    - id: us-refine/acceptance_criteria/q7@0372c4be#pass
+      q_sha256: 0372c4bef3086a556e346a23b0cd52641e20f4cf105965bf3162c1ca9fb06365
     - id: us-refine/acceptance_criteria/q8@5b2f20ef#fail
       q_sha256: 5b2f20ef67b54ce00ccc1a1b71c7476402dc7e5c725f9775824761f5853ed1ca
     - id: us-refine/acceptance_criteria/q8@5b2f20ef#pass
@@ -179,3 +237,12 @@ covered:
       q_sha256: 987d724c09bc361f94381460f831fded198a63cfb653d4ac0522565c90e64f36
     - id: us-refine/acceptance_criteria/q9@987d724c#pass
       q_sha256: 987d724c09bc361f94381460f831fded198a63cfb653d4ac0522565c90e64f36
+    - id: us-refine/term_closure/d1@671e5470#fail
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88
+    - id: us-refine/term_closure/d1@671e5470#fix
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88
+    - id: us-refine/term_closure/d1@671e5470#pass
+      q_sha256: 671e5470143ef335eeb81f98f19e840593d021bf5ee5119c9d5c165d44ade4fd
+      f_sha256: a12f5dd58164b56a762958d3ce25eedae95679b22b18042ea26915e41dbd0a88

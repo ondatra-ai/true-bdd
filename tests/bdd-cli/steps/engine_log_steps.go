@@ -3,11 +3,9 @@ package steps
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -27,12 +25,20 @@ const (
 )
 
 // engineLogRecord is the slice of one slog JSON line these assertions
-// need: the message naming the event, and the binary a test-runner spawn
-// carries. Other fields (timings, byte counts, cost) are left undecoded.
+// need: the message, a test-runner spawn's binary and args, an AI-turn
+// dispatch's role and CLI. Timings, byte counts and cost stay undecoded.
 type engineLogRecord struct {
 	Msg    string   `json:"msg"`
 	Binary string   `json:"binary"`
 	Args   []string `json:"args"`
+	Role   string   `json:"role"`
+	CLI    string   `json:"cli"`
+}
+
+// turnRoles maps the kind of turn a step names to the `role` the engine
+// stamps on its dispatch record.
+func turnRoles() map[string]string {
+	return map[string]string{"validation": "prompt", "fix": "fix", "apply": "apply"}
 }
 
 // ErrNoEngineLog means a run left no structured log at all — distinct
@@ -155,7 +161,7 @@ func assertTestRunnerArgs(state *State, args []string) error {
 // spawned — what separates "discovery failed and stopped" (one) from
 // "it went on to rerun a fixed test" (another).
 func assertTestRunnerCount(state *State, args []string) error {
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("test-runner count %q is not a number: %w", args[0], err)
 	}
@@ -204,7 +210,7 @@ func assertNoTestRunnerSpawned(state *State, _ []string) error {
 // counted at the router's dispatch record so it is one number regardless
 // of which CLI a tier named. Zero is the read-only walk that never fixes.
 func assertAITurnCount(state *State, args []string) error {
-	want, err := aiTurnCount(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("AI-turn count %q is not a number: %w", args[0], err)
 	}
@@ -223,18 +229,47 @@ func assertAITurnCount(state *State, args []string) error {
 	return nil
 }
 
-// aiTurnCount reads the count a scenario wrote, accepting the word "no"
-// for zero so "dispatched no AI turns" reads as English while
-// "dispatched 3 AI turns" still parses as a number.
-func aiTurnCount(token string) (int, error) {
-	if token == "no" {
-		return 0, nil
-	}
-
-	count, err := strconv.Atoi(token)
+// assertAITurnsTo pins how many turns of one kind (validation, fix or
+// apply) the engine dispatched to one AI CLI, read off the dispatch
+// record's `role` and `cli`: proof of where a tier routed each turn.
+func assertAITurnsTo(state *State, args []string) error {
+	want, err := numberSlot(args[0])
 	if err != nil {
-		return 0, fmt.Errorf("%q is not a count: %w", token, err)
+		return state.fail("AI-turn count %q is not a number: %w", args[0], err)
 	}
 
-	return count, nil
+	kind, cli := args[1], args[2]
+
+	role, known := turnRoles()[kind]
+	if !known {
+		return state.fail("%q is no kind of AI turn: want validation, fix or apply", kind)
+	}
+
+	records, err := readEngineLog(state)
+	if err != nil {
+		return err
+	}
+
+	got := 0
+	routed := map[string]int{}
+
+	for _, record := range records {
+		if record.Msg != engineMsgDispatchAITurn || record.Role != role {
+			continue
+		}
+
+		routed[record.CLI]++
+
+		if record.CLI == cli {
+			got++
+		}
+	}
+
+	if got != want {
+		return state.fail(
+			"expected the engine to dispatch %d %s AI turn(s) to %q, but it dispatched %d; "+
+				"its %s turns went to %v", want, kind, cli, got, kind, routed)
+	}
+
+	return nil
 }

@@ -1,0 +1,10 @@
+=== QUESTIONS_START ===
+questions:
+  - id: q1
+    question: "Which measurable criterion should the Then step 'the greeter greets that person' assert?"
+    context: "The fix template requires adding one measurable criterion (exact message, count, code or threshold) to the outcome-asserting step, and says to ask which criterion first. The Scenario and the documents in this prompt never state what the greeter actually outputs, so picking the criterion decides what the test asserts on — the user's decision, not mine. Only the Then step would change; Given, When, id, service, path and lineage stay as they are (no catalogue constraint applies, since no story claims this Scenario)."
+    options:
+      - "Exact message — Then becomes: the greeter outputs the exact message \"Hello, <name>!\" where <name> is the name given in the When step (recommended: a greeter's outcome is its message, and a verbatim assertion is the strongest criterion)"
+      - "Named field — Then becomes: the greeter returns a field \"message\" whose value is exactly \"Hello, <name>!\" (if the greeter responds in structured form rather than plain text)"
+      - "Count — Then becomes: the greeter outputs exactly one line containing the name given in the When step (if the exact greeting wording is intentionally free)"
+=== QUESTIONS_END ===

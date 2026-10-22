@@ -3,7 +3,6 @@ package validate
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -102,19 +101,18 @@ func NewChecklistEvaluatorWithPaths(
 
 // EvaluateOne evaluates a single prompt against the subject and returns the
 // full ValidationResult, not just pass/fail, so the cell's `genFix` closure
-// can read it via shared closure state. promptIndex must be 1-based to match the tmp-file naming convention.
+// can read it via shared closure state. The prompt's 1-based Index names its tmp files.
 func (e *ChecklistEvaluator) EvaluateOne(
 	ctx context.Context,
 	subject any,
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
 	tmpDir string,
-	promptIndex int,
 ) (checklist.ValidationResult, error) {
 	e.tmpDir = tmpDir
 	e.subjectID = subjectID
 
-	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx, promptIndex)
+	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx)
 }
 
 // evaluatePrompt evaluates a single prompt against the subject.
@@ -123,16 +121,15 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	subject any,
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
-	promptIndex int,
 ) (checklist.ValidationResult, error) {
+	promptIndex := promptCtx.Index
+
 	// Load requested documents for this prompt (uses prompt-specific or defaults)
 	requestedDocs := e.loadRequestedDocs(promptCtx.GetEffectiveDocs())
 
 	// Build result file path for FILE_START/FILE_END pattern
 	sectionPath := promptCtx.GetFullSectionPath()
-	safeSectionPath := sanitizeID(sectionPath)
-	resultPath := fmt.Sprintf("%s/%02d-%s-checklist-%s-result.yaml",
-		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath)
+	resultPath := cellArtifactPath(e.tmpDir, promptIndex, e.subjectID, sectionPath, "result.yaml")
 
 	e.logResolvedDocs(promptIndex, sectionPath, requestedDocs)
 
@@ -453,10 +450,7 @@ func (e *ChecklistEvaluator) savePromptFile(sectionPath string, promptIndex int,
 		return
 	}
 
-	// Flatten section path and subject id into safe filename segments.
-	safeSectionPath := sanitizeID(sectionPath)
-	filePath := fmt.Sprintf("%s/%02d-%s-checklist-%s-%s.txt",
-		e.tmpDir, promptIndex, sanitizeID(e.subjectID), safeSectionPath, suffix)
+	filePath := cellArtifactPath(e.tmpDir, promptIndex, e.subjectID, sectionPath, suffix+".txt")
 
 	err := disk.Write(filePath, []byte(content), disk.Shared)
 	if err != nil {

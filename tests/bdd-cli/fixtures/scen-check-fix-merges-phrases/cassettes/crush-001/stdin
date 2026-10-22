@@ -1,0 +1,139 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Term Document Editor applying an approved fix to the working
+copy of one term document: the product document's step-phrase catalogue
+or glossary.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: append an entry at the end of its list, at the
+  list's own indentation, or replace an old_string verbatim.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch the scenario registry, a generated test file or a step
+  definition. A term is defined where every Scenario reads it, never in
+  the Scenario that lacked it.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The service must answer a ping with a pong
+
+### Steps
+Given:
+  - the mcp service is running
+When:
+  - the Operator sends "ping"
+Then:
+  - the service answers "pong"
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
+
+## Target
+The `product` document: `docs/product/product.yaml`, its `catalogue:` list.
+
+Nothing else may change. Do NOT edit `docs/scenarios.yaml` (or any registry entry), `tests/mcp/ping_test.go`, `tests/mcp/steps/mcp_steps.go`, the `roles:` list, the `glossary:` list, or any other catalogue entry.
+
+## Why
+The finding: step definition `^the service (?:answers|replies) "([^"]+)"$` (`tests/mcp/steps/mcp_steps.go:24`) is reached by two catalogue templates — `the service answers "{reply}"` and `the service replies "{reply}"`. One definition, two templates, so the catalogue and the steps disagree on what the phrase is.
+
+The two entries already state the same `means` word for word ("The MCP service's reply to the message is exactly the quoted text."), and the single step definition binds both wordings on purpose. So "answers" and "replies" are one phrase with two surface spellings, not two meanings: the close is a **merge** into one entry whose template carries both spellings as literal alternatives.
+
+After the merge the step `the service answers "pong"` (E2E-001) still matches exactly one template — the merged one — and that template reaches exactly the one step definition. A future step `the service replies "..."` matches the same single entry.
+
+## Required Changes
+
+### Change #1: Merge the two `then` entries into one
+
+**Document:** `docs/product/product.yaml`
+**Action:** Replace `old_string` with `new_string`, verbatim. Two adjacent entries become one; the surrounding entries are untouched.
+
+**old_string:**
+```
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []
+  - template: 'the service replies "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []
+```
+
+**new_string:**
+```
+  - template: 'the service [answers|replies] "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []
+```
+
+**Resulting entry, as exact YAML (copy it, do not recompose it):**
+```yaml
+  - template: 'the service [answers|replies] "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: []
+```
+
+Keep the template single-quoted exactly as given: `[answers|replies]` is the grammar's literal-alternatives token (exactly one of the two words), and `"{reply}"` keeps the quoted slot, so both former templates' steps are matched by this one entry. The slot name stays `reply`, unchanged from both merged entries.
+
+## Verification after applying
+- `docs/product/product.yaml` has exactly three catalogue entries: `the mcp service is running` (given), `the {actor:role} sends "{message}"` (when), `the service [answers|replies] "{reply}"` (then).
+- No entry with template `the service answers "{reply}"` or `the service replies "{reply}"` remains.
+- `roles:`, `glossary:`, `title:` and `description:` are byte-identical to before.
+- `tests/mcp/steps/mcp_steps.go` and `tests/mcp/ping_test.go` are unmodified (`git diff --stat` shows only `docs/product/product.yaml`).
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`catalogue:` or
+   `glossary:`).
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of its list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
+   template single-quoted: it carries `{`, `[` and `"` of its own.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, the scenario registry, a generated test file and a step
+   definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

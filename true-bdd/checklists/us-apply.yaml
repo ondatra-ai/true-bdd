@@ -7,7 +7,7 @@
 # expanded with richer merge-correctness checks once the engine is proven.
 
 version: "1.0"
-last_updated: "2026-04-25"
+last_updated: "2026-10-21"
 
 # Per-checklist engine knob, read by `us apply --fix` to bound the outer
 # re-walk loop: any fix applied during walk N re-walks from AC 1 prompt 1;
@@ -41,9 +41,10 @@ sections:
 
           Use the Edit tool against the registry file referenced by the
           subject. Steps:
-            1. Pick the next free id following existing numbering — `INT-NNN`
-               for integration-layer ACs, `E2E-NNN` for e2e-layer ACs. If
-               unsure, prefer `E2E-NNN`. Do not reuse an existing id.
+            1. Key the new entry by the subject's lineage scenario id,
+               verbatim (`<story id>-<ac id>`). That id is the scenario's
+               registry key and names its generated test, so never pick a
+               number or invent another id.
             2. Insert a new entry under `scenarios:` with:
                   description: <short summary derived from the AC description>
                   service: ""
@@ -90,12 +91,12 @@ sections:
 
           Use the Edit tool against the registry file referenced by the
           subject. Steps:
-            1. Choose a winning entry (prefer the lower-numbered id; prefer
-               `INT-` over `E2E-` when both layers cover the same behavior
-               and an integration test exists).
+            1. The winning entry is the one keyed by the subject's lineage
+               scenario id. When no entry carries that key, keep the first
+               one in file order and re-key it to the lineage scenario id.
             2. Move every `user_stories[]` item from the losing entry into
                the winner's `user_stories[]`, preserving order and
                deduplicating by `(story, scenario_id)`.
             3. Union the `merged_steps` so every step from both entries
                appears in the winner, deduplicated.
-            4. Delete the losing entry. Do not renumber other ids.
+            4. Delete the losing entry. Do not rename any other entry.

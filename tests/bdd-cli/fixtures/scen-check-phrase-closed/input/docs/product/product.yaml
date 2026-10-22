@@ -1,0 +1,48 @@
+# Product document for `scen-check-phrase-closed`.
+#
+# A catalogue using every slot kind: quoted text, a number (digits or
+# "no"), a role, alternatives, an optional letter, escaped braces and a
+# pattern tail.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+  - name: Client Developer
+    definition: Writes the clients that send the MCP service its requests.
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: [mcp service]
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: That role sends the quoted message to the MCP service, once.
+    terms: [mcp service]
+  - template: 'the service answers "{reply}" within {limit:number} millisecond[s]'
+    block: then
+    means: The reply is exactly the quoted text and arrives within that many milliseconds.
+    terms: [mcp service]
+  - template: 'the service logged {count:number} error[s]'
+    block: then
+    means: The MCP service logged exactly that many errors; "no" means none.
+    terms: [mcp service]
+  - template: 'the service [accepts|rejects] the request'
+    block: then
+    means: The MCP service took the request, or turned it away.
+    terms: [mcp service]
+  - template: 'the reply body is \{\}'
+    block: then
+    means: The reply carries an empty JSON object as its body.
+    terms: [mcp service]
+  - template: 'the reply matches {expected:pattern}'
+    block: then
+    means: The reply has a match for the pattern.
+    terms: [mcp service, pattern]

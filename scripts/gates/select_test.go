@@ -88,7 +88,7 @@ func TestMatchGlob(t *testing.T) {
 	}{
 		{"**/*.go", "scripts/gates/table.go", true},
 		{"**/*.go", "scripts/gates/table.yaml", false},
-		{"true-bdd/**", "true-bdd/checklists/us-create.yaml", true},
+		{"true-bdd/**", "true-bdd/checklists/us-refine.yaml", true},
 		{"true-bdd/**", "true-bdd.yaml", false},
 		{registry, registry, true},
 		{registry, registry + ".bak", false},

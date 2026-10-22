@@ -9,19 +9,18 @@
 #
 #   yamale -s true-bdd/architecture_yaml-schema.yaml docs/architecture/architecture.yaml
 #
-# The engine decodes only `testing:` and
-# `services[].{name,path,language}`; everything else here is spec a host
-# writes for its own readers and for the checklists' prompts. Which is
-# exactly why it needs a schema: nothing else would notice a typo in it.
+# The engine decodes only `testing:`, `services[].{name,path,language}`
+# and, for the `D: term-mappings` check, `terms:`; everything else here is
+# spec a host writes for its own readers and for the checklists' prompts.
+# Which is exactly why it needs a schema: nothing else would notice a typo
+# in it.
 #
 # Yamale is strict by default — an unlisted key is an error — so a host
 # adding a block to its architectural spec adds it here too.
 
 architecture: include('architecture')
-# The BDD vocabulary `us refine` enforces on steps and AC descriptions.
-# Preferred home is the product document; a host may keep it here instead
-# (the engine's own fixtures do) — optional in both schemas, not just one.
-vocabulary: include('vocabulary', required=False)
+# No `vocabulary:` here: the product document holds it and its catalogue,
+# which `us refine` cites; this document only maps the words (`terms:`).
 
 ---
 # One `testing:` section for the whole repository, beside the services it
@@ -30,6 +29,15 @@ vocabulary: include('vocabulary', required=False)
 architecture:
   testing: include('testing')
   services: list(include('service'), min=1)
+  terms: list(include('term_mapping'), required=False)
+
+---
+# How one product glossary word turns into the implementation, and how a
+# step definition sets it up or observes it, in words, never a Go name.
+term_mapping:
+  term: str()
+  technical: str()
+  observed_by: str()
 
 ---
 # How this repository's tests run. `framework` routes to a runner and
@@ -67,6 +75,41 @@ dependency:
   name: str()
   protocol: str()
   scope: enum('internal', 'self_hosted', 'third_party')
+  # How the service spawns a `protocol: cli` dependency, when a rebuild must
+  # send exactly the same request: replay hashes argv and stdin.
+  invocation: include('invocation', required=False)
+
+---
+# One spawn of a CLI dependency, stated byte for byte. A `{name}` token
+# anywhere in it stands for the entry `values` defines under that name.
+invocation:
+  # The executable, found on PATH. A cassette records it as `binary`.
+  binary: str()
+  # Every argument after the binary, in order. A cassette records them as
+  # `argv`. A map entry is a run of arguments sent only when `when` holds.
+  args: list(any(str(), include('conditional_args')), min=1)
+  # What the child reads on stdin, then EOF. `with_system` applies when the
+  # turn has a system prompt, `without_system` when it has none. Absent when
+  # the child reads nothing there (its prompts travel in argv).
+  stdin: include('stdin', required=False)
+  # What each `{name}` token stands for.
+  values: map(str(), min=1)
+  # The child's working directory.
+  dir: str()
+  # Environment entries set on top of the inherited environment.
+  env: map(str(), required=False)
+  # Facts about the binary that shaped this invocation.
+  notes: list(str(), required=False)
+
+---
+conditional_args:
+  when: str()
+  args: list(str(), min=1)
+
+---
+stdin:
+  with_system: str()
+  without_system: str()
 
 ---
 pattern:
@@ -99,23 +142,3 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
-
----
-# Mirrors `vocabulary` in product-schema.yaml — duplicated (yamale has no
-# cross-file include) because the block may live in either document. The
-# two must stay in step: one checklist reads whichever the host wrote.
-vocabulary:
-  actions: list(include('action'), min=1)
-  forbidden_qualifiers: list(str(), min=1)
-  forbidden_actions: list(include('forbidden_action'), min=1)
-
----
-action:
-  name: str()
-  means: str()
-
----
-forbidden_action:
-  name: str()
-  reason: str()
-  replacement: str()

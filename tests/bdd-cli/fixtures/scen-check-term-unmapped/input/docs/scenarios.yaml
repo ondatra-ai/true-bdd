@@ -1,0 +1,27 @@
+# Registry seed for `scen-check-term-unmapped`.
+#
+# One Scenario a Story claims, its Then step's phrase relying on a term
+# the architecture does not map.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "One claimed scenario relying on an unmapped term"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-001-answers-pong
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "ping"
+      then:
+        - the service answers "pong"

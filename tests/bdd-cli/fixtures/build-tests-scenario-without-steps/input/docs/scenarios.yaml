@@ -1,0 +1,17 @@
+# Seed registry for the `build-tests-scenario-without-steps` BDD fixture.
+#
+# One scenario whose merged_steps declare no step at all.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-scenario-without-steps fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    user_stories: []
+    merged_steps: {}

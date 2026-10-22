@@ -1,0 +1,9 @@
+**Reasoning:** No reference documents were listed, so the scenario fields above are the complete evidence. Scanning the description ("The greeter must greet the person whose name it is given") and every step: "the greeting is configured", "the Operator runs the greeter with a name", "the greeter greets that person" — none contains a status code, exact message, timeout, error code, named field, or count. The Then step merely restates the prose ("greets that person") with nothing a step definition could assert on. No measurable criterion exists anywhere in the scenario, so the answer is fail.
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
+answer: fail
+context:
+  - "E2E-001: not measurable"
+fix_prompt: |
+  Add one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step.
+=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===

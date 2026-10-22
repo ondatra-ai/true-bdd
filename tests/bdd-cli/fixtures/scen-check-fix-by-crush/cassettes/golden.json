@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-by-crush",
+  "files": [
+    {
+      "path": "docs/scenarios.yaml",
+      "kind": "modified",
+      "size": 941,
+      "sha256": "e73b6754ea39596737a8896a3608d5013e557582fe3e4b00edb4bce8cadedd10",
+      "text": "# Registry seed for `scen-check-fix-by-crush`.\n#\n# The seed of scen-check-fix-adds-measurable-criterion, walked with every\n# tier naming crush: one Scenario that names no exact message, count, code\n# or threshold anywhere. crush answers in the delimited FILE block, asks\n# which criterion in the QUESTIONS block, then writes the fix.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-22\"\n  description: \"One scenario with no measurable criterion\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must greet the person whose name it is given\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories: []\n    merged_steps:\n      given:\n        - the greeting is configured\n      when:\n        - the Operator runs the greeter with a name\n      then:\n        - the greeter outputs the exact message \"Hello, \u003cname\u003e!\" where \u003cname\u003e is the name given in the When step\n"
+    }
+  ]
+}

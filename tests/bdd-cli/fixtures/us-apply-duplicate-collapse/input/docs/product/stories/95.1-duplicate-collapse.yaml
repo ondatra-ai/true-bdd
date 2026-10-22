@@ -1,7 +1,7 @@
 # Story seed for the `us-apply-duplicate-collapse` BDD fixture.
 #
 # One AC only. The seeded registry already contains TWO entries that
-# both reference this AC's lineage id (95.1-001), so the walk against
+# both reference this AC's lineage id (95.1-001-mcp-initialize), so the walk against
 # the SHIPPED us-apply checklist (no per-fixture override) goes:
 # "present?" passes, "duplicate?" fails, the F: collapses the two
 # entries into one, and the re-walk confirms the fixpoint.
@@ -14,7 +14,7 @@ story:
     so_that: the BDD harness can assert the duplicate-collapse fix path of us apply end-to-end
     status: PLANNED
     acceptance_criteria:
-        - id: AC-1
+        - id: 001-mcp-initialize
           description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
           steps:
             - given:

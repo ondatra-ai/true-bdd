@@ -1,35 +1,58 @@
 # Registry seed for `scen-check-validation-fails`.
 #
-# One scenario carrying a designed defect for every one of the eight
-# scen-check prompts, so a single un-narrowed walk observes all eight
-# failing. Which defect answers which prompt:
+# Two Scenarios a Story claims, walked against the shipped checklist.
 #
-#   1 description is a gerund phrase with neither must nor should
+# E2E-001 passes every structural check, its steps all phrased by the
+# catalogue, and carries a designed defect for every model question:
+#
+#   phrase meaning   two of its phrases only restate their templates
+#   phrase use       its stdout pattern names a function, not output
+#   1 description is two sentences with neither must nor should
 #   2 no given step
-#   3 "properly" in the description
-#   4 "correctly" in the when step
-#   5 "handles" — a forbidden action verb
-#   6 "updating the database schema" is implementation, not behaviour
+#   3 "quickly" in the description
+#   4 "properly" in a then step
+#   5 "handles" and "processes", forbidden action verbs
+#   6 "formatGreeting() was called" is implementation, not behaviour
 #   7 no measurable criterion anywhere
-#   8 "the response is helpful" cannot be decided without taste
+#   8 "shown properly" cannot be decided without taste
 #
-# The walk reports every failure and the CLI still exits 0 — the command
-# is advisory, per docs/adr/0001-scen-check-is-advisory-and-per-scenario.md.
+# E2E-002's last step matches no catalogue phrase, so it fails a check
+# and its model questions are skipped, costing no turn. The walk reports
+# both and the CLI exits 1, so a bare `scen check` gates a change.
 
 metadata:
   title: "Test Requirements Registry (BDD fixture seed)"
   version: "2.0"
-  last_updated: "2026-08-25"
-  description: "One scenario that fails every scen-check prompt"
+  last_updated: "2026-10-21"
+  description: "Two claimed scenarios, one failing every question and one a check"
 
 scenarios:
   E2E-001:
-    description: Handling the request properly and updating the database schema
-    service: mcp-service
-    path: tests/mcp/request_test.go
-    user_stories: []
+    description: Greeting people. The greeter handles names quickly
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories:
+      - story: docs/product/stories/greet-by-name.yaml
+        scenario_id: greet-by-name-001-prints-greeting
+        merge_date: "2026-10-21"
     merged_steps:
       when:
-        - the client handles the request correctly
+        - the Operator processes the name "Ada"
       then:
-        - the response is helpful
+        - the greeting is shown properly
+        - and: stdout matches formatGreeting\(\) was called
+  E2E-002:
+    description: The greeter must print the configured greeting followed by the name it is given
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories:
+      - story: docs/product/stories/greet-by-name.yaml
+        scenario_id: greet-by-name-002-prints-one-line
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the greeting is configured as "Hello"
+      when:
+        - the Operator runs "greet Ada"
+      then:
+        - the greeter prints "Hello Ada" on one line

@@ -343,7 +343,7 @@ func checkIdentifiers(scenarios []*registry.RegistryScenario) error {
 
 // checkRunnableTestName refuses an id whose function `go test` would
 // compile and never run. Per testing.isTest: Test followed by anything NOT
-// a lower-case letter runs; `int-900` renders Testint900: compiles, silently skipped, reports covered.
+// a lower-case letter runs; `ß-900` renders Testß900 (ß has no upper case): compiles, silently skipped.
 func checkRunnableTestName(scenarioID, name string) error {
 	rest := strings.TrimPrefix(name, testPrefix)
 
@@ -355,8 +355,8 @@ func checkRunnableTestName(scenarioID, name string) error {
 	first, _ := utf8.DecodeRuneInString(rest)
 	if unicode.IsLower(first) {
 		return fmt.Errorf("%q: %w: it renders %q, and `go test` does not run a "+
-			"Test name followed by a lower-case letter — start the id with an "+
-			"upper-case letter or a digit",
+			"Test name followed by a lower-case letter — start the id with a "+
+			"digit or a letter that has an upper-case form",
 			scenarioID, ErrUnrunnableTestName, name)
 	}
 
@@ -366,16 +366,30 @@ func checkRunnableTestName(scenarioID, name string) error {
 // testPrefix is what `go test` looks for at the front of a test name.
 const testPrefix = "Test"
 
-// funcName renders a scenario id as a Go test function name.
+// funcName renders a scenario id as a Go test name in CamelCase (ADR 0014):
+// each run of letters and digits starts upper-case and keeps the rest, so
+// `scen-check-001-x` gives TestScenCheck001X and `E2E-021` still TestE2E021.
 func funcName(scenarioID string) string {
 	var name strings.Builder
 
 	name.WriteString(testPrefix)
 
+	segmentStart := true
+
 	for _, char := range scenarioID {
-		if unicode.IsLetter(char) || unicode.IsDigit(char) {
-			name.WriteRune(char)
+		if !unicode.IsLetter(char) && !unicode.IsDigit(char) {
+			segmentStart = true
+
+			continue
 		}
+
+		if segmentStart {
+			char = unicode.ToUpper(char)
+		}
+
+		name.WriteRune(char)
+
+		segmentStart = false
 	}
 
 	return name.String()

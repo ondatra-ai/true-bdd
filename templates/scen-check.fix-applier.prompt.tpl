@@ -1,18 +1,11 @@
-{{/*
-Unreachable today, for the same reason as the fix generator: no
-scen-check prompt carries an `F:`, so --fix is refused at startup.
-*/ -}}
+{{ if eq .Check "" -}}
 ## Subject — Registry Scenario
 
 **Scenario ID:** {{.Subject.ID}}
 **Description:** {{.Subject.Description}}
-**Service:** {{.Subject.Service}}
-**Generated test file:** {{.Subject.Path}}
 
 ### Steps
 {{.Subject.FormatSteps}}
-### Lineage — user_stories[]
-{{.Subject.FormatUserStories}}
 ---
 
 ## Fix Prompt to Apply
@@ -21,23 +14,96 @@ scen-check prompt carries an `F:`, so --fix is refused at startup.
 
 ---
 
+## Where to write
+
+Each document a fix may change has a working copy in this run's tmp
+directory. Edit the working copy of the document the fix prompt names,
+never the document itself:
+{{- with .Subject.RegistryDocument }}
+- `{{ .Key }}`: edit `{{ .Scratch }}`, the working copy of `{{ .Path }}`, the scenario registry
+{{- end }}
+{{- range .Subject.TermDocuments }}
+- `{{ .Key }}`: edit `{{ .Scratch }}`, the working copy of `{{ .Path }}`
+{{- end }}
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, and the registry only while it still holds the
+same Scenarios, so a copy you leave unparseable changes nothing.
+
 ## Instructions
 
-1. Use the Read and Grep tools to locate the `{{.Subject.ID}}` entry in
-   the scenario registry and read it as it stands.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above with the Edit tool, matching the old_string verbatim.
-3. You MAY only modify the `{{.Subject.ID}}` entry. Another scenario's
-   entry, a generated test file and a step definition are all out of
-   bounds — the generated test is re-rendered from the registry by
-   `true-bdd build tests --fix`, so editing it here would be discarded.
-4. You MUST NOT change `service:`, `path:` or `user_stories[]`.
-5. Keep the behaviour the scenario specifies. You are rewording it, not
-   deciding what it should assert.
-6. After the changes succeed, output the confirmation block below.
+1. Use the Read tool to load the working copy the fix prompt names. In
+   the registry, find the `{{.Subject.ID}}:` entry under `scenarios:`;
+   in the product document, the catalogue entry the fix names.
+2. Apply each change with the Edit tool on that working copy: replace
+   the current text the fix prompt gives with its new text, inside that
+   entry only.
+3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`
+   key and its list indentation, and a value carrying `: ` or `#`, or
+   opening with a quote or a bracket, stays quoted.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, every other Scenario's entry, a generated test file and
+   a step definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
 
 === FILE_START: {{.ResultPath}} ===
 applied: true
-target: "<repo-relative path of the registry file you edited>"
+target: "<path of the working copy you edited>"
 summary: "<one-line summary of what changed>"
 === FILE_END: {{.ResultPath}} ===
+{{ else -}}
+## Subject — Registry Scenario
+
+**Scenario ID:** {{.Subject.ID}}
+**Description:** {{.Subject.Description}}
+
+### Steps
+{{.Subject.FormatSteps}}
+---
+
+## Fix Prompt to Apply
+
+{{.FixPrompt}}
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+{{- range .Subject.TermDocuments }}
+- `{{ .Key }}`: edit `{{ .Scratch }}`, the working copy of `{{ .Path }}`
+{{- end }}
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+{{ if .Subject.Writes "architecture_yaml" -}}
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`catalogue:` or
+   `glossary:` in the product document, `architecture.terms:` in the
+   architecture document).
+{{- else -}}
+1. Use the Read tool to load the working copy the fix prompt's
+   document names, and find the list it changes (`catalogue:` or
+   `glossary:`).
+{{- end }}
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of its list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
+   template single-quoted: it carries `{`, `[` and `"` of its own.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, the scenario registry, a generated test file and a step
+   definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: {{.ResultPath}} ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: {{.ResultPath}} ===
+{{ end -}}

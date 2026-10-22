@@ -65,9 +65,9 @@ func buildSpecCmd(use, short, long string, flag specFlag, provide containerProvi
 		// globally and argsWithUsage restores it only for that one case.
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			container, err := provide()
+			container, err := containerFor(cmd, provide)
 			if err != nil {
-				return fmt.Errorf("initialize container: %w", err)
+				return err
 			}
 
 			ctx, stop := signal.NotifyContext(context.Background(),
@@ -112,6 +112,11 @@ scenario's service:. With --fix, every failed (scenario, prompt) cell
 drives a Claude-mediated test-authoring turn that Writes or Edits a step
 definition under that suite's path:; the registry is never touched. The
 CLI exits non-zero if any scenario is still uncovered after the walk.
+
+When the product document (documents.product) declares a catalogue:,
+every step of every scenario must first match exactly one of its
+templates, declared for the step's block, or the run is refused before
+it writes a file or spends an AI turn, naming each step outside it.
 
 Example:
   true-bdd build tests

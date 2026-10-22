@@ -33,22 +33,29 @@ func newScenCheckCmd(provide containerProvider) *cobra.Command {
 		Short: "Walk registry scenarios against the scen-check checklist",
 		Long: `Walk entries in the configured scenario registry
 (documents.scenarios_yaml, conventionally docs/scenarios.yaml) against
-the scen-check checklist, one AI turn per (scenario, prompt) cell. Each
-prompt reads one scenario's own fields — description, service, path,
-lineage and steps — and rules on that scenario alone; no prompt is shown
-the registry file, so none can ask a cross-registry question.
+the scen-check checklist, one cell per (scenario, prompt). Each prompt
+reads one scenario's own fields — description, service, path, lineage
+and steps — and rules on that scenario alone; no prompt is shown the
+registry file, so none can ask a cross-registry question. A Q: prompt
+costs one AI turn per scenario; a D: prompt is answered by one of the
+engine's built-in checks with no turn, before any Q: prompt, and a
+scenario failing one skips its Q: prompts.
 
 With no argument every scenario is walked; ids narrow the walk to those
 scenarios, in ascending id order whatever order they are typed. An id
 naming no entry, or given twice, is refused before the first turn.
 
-The command is advisory: a failed check is reported and the CLI still
-exits 0, so scen check cannot gate a commit. --fix is refused at startup,
-because no scen-check prompt carries a fix template.
+The CLI exits 1 when any scenario fails a check, so scen check can gate
+a change. --fix walks the same checklist, every shipped prompt of which
+carries a fix template, and is refused at startup while a prompt it
+would walk carries none. A failed D: check's fix defines what it found
+undefined in the product document, or maps it in the architecture
+document, never in the scenario; a failed Q: prompt's fix rewrites the
+scenario's own registry entry, or the meaning of a catalogue phrase.
 
 Example:
   true-bdd scen check
-  true-bdd scen check E2E-001 E2E-005
+  true-bdd scen check scen-check-001-claimed-scenario-passes scen-check-003-unknown-id-refused
   true-bdd scen check --requirements docs/scenarios.yaml`,
 		Args: argsWithUsage(cobra.ArbitraryArgs),
 		// A run failure shouldn't dump help text like a mistyped flag
@@ -70,9 +77,9 @@ Example:
 // runScenCheck is newScenCheckCmd's RunE body, lifted out so the cobra
 // shell above stays a declaration.
 func runScenCheck(cmd *cobra.Command, args []string, provide containerProvider) error {
-	container, err := provide()
+	container, err := containerFor(cmd, provide)
 	if err != nil {
-		return fmt.Errorf("initialize container: %w", err)
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(),

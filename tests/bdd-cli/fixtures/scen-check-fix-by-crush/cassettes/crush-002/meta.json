@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 29717,
+  "request_hash": "sha256:aeac59d02bdedddeb0afd15041f66c219a3a4c68666d3dc1e5271ccca832e427",
+  "fsdiff": {
+    "created": [],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-22T05:32:53Z"
+}

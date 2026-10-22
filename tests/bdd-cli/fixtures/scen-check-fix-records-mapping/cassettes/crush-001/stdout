@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/architecture_yaml.yaml"
+summary: "Appended the `reply` term mapping (technical + observed_by) as the third entry of architecture.terms:, after `message`; nothing else touched."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

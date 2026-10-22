@@ -26,17 +26,28 @@ type Branch struct {
 	Ordinal   int // 1-based ordinal within the section
 	Global    int // 1-based index over the flattened prompt list
 	Kind      BranchKind
-	QHash     string // full sha256 hex over the collapsed Q text
+	Check     bool   // a `D:` prompt's branch, located as d<ordinal>
+	QHash     string // full sha256 hex over the collapsed Q text, or a check's name and parameters
 	FHash     string // full sha256 hex over the collapsed F text, "" when no F
 	Snippet   string // first characters of the collapsed Q, for humans
 }
 
-// ID renders the display identity, e.g. "us-create/format/q1@75797b9f#pass".
+// ID renders the display identity, e.g. "us-refine/acceptance_criteria/q1@895981ea#pass".
 // The locator part (section/ordinal) is display-only; machine matching
 // uses the full hashes.
 func (b Branch) ID() string {
-	return fmt.Sprintf("%s/%s/q%d@%s#%s",
-		b.Checklist, b.SectionID, b.Ordinal, shortHash(b.QHash), b.Kind)
+	return fmt.Sprintf("%s/%s#%s", b.Checklist, b.locator(), b.Kind)
+}
+
+// locator renders "<section>/<q|d><ordinal>@<hash8>": d marks a prompt a
+// built-in check answers, q one a model does.
+func (b Branch) locator() string {
+	kind := "q"
+	if b.Check {
+		kind = "d"
+	}
+
+	return fmt.Sprintf("%s/%s%d@%s", b.SectionID, kind, b.Ordinal, shortHash(b.QHash))
 }
 
 // collapseWhitespace joins all whitespace runs to single spaces so YAML

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
@@ -19,19 +18,9 @@ import (
 // answering what project ran, what it must exit with, print, or leave on
 // disk. A scenario needing a new answer is what `build tests --fix` writes.
 func Register(suite *bddgo.Suite[State]) {
-	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
-	// Given preconditions the scenario states and the fixture materialises
-	// during tmpdir assembly: the dependency install (`prep:`) and the
-	// interactive answers piped to the fix loop. Implemented below.
-	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
-	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every prompt$`,
-		assertAnswersEveryPrompt)
-	// A Given precondition that a checklist is narrowed to one named prompt;
-	// the fixture selects it via `checklist_prompts:`, and this step verifies
-	// the selection is real and singular.
-	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	registerGivenSteps(suite)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
-	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
+	suite.Step(`^the command exits with code (\d+|no)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
 	// their own (`msg="Refusing to start"`), and a quoting scheme would
 	// force escaping into a document meant to be read.
@@ -40,6 +29,10 @@ func Register(suite *bddgo.Suite[State]) {
 	// the fix loop converged before it "Hit max apply attempts". Implemented
 	// below.
 	suite.Step(`^stdout does not match (.+)$`, assertStdoutNoMatch)
+	// What the command line says before the log is up: a stray argument's
+	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
+	suite.Step(`^stderr matches (.+)$`, assertStderr)
+	suite.Step(`^stderr does not match (.+)$`, assertStderrNoMatch)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -54,26 +47,23 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
 	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
 	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
-	suite.Step(`^the file "([^"]+)" has exactly (\d+) lines?$`, assertFileLineCount)
+	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
 	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
 	// A count-of-files-matching-a-glob assertion, distinct from the named-path
 	// `is created` above: the fix loop chooses the new file's name, so a
 	// scenario can only pin how many .go files appeared under a directory.
-	suite.Step(`^exactly (\d+) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
+	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
 	// The negative twin of the count assertion above: proves the run created
 	// NO file matching a glob. Implemented in file_steps.go.
 	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
-	// Story-shape assertions read a story a `us create … --fix` run authored:
+	// Story-shape assertions read a story a `us refine … --fix` run rewrote:
 	// its id, acceptance-criteria count and shape, forbidden vocabulary.
-	// Filenames are resolved by glob since the fix loop names the file. See story_steps.go.
+	// Filenames are resolved by glob. See story_steps.go.
 	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
-	suite.Step(`^the story "([^"]+)" has at least (\d+) acceptance criteria$`, assertStoryCriteriaCount)
-	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
-	suite.Step(`^every acceptance criterion in the story "([^"]+)" has an id matching (.+) and a non-empty description$`,
-		assertStoryCriteriaWellFormed)
+	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
+	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
 	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
 		assertStoryCriteriaHaveSteps)
-	suite.Step(`^the "([^"]+)" clause of the story "([^"]+)" does not match (.+)$`, assertStoryClauseNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
 		assertStoryCriterionDescNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
@@ -91,28 +81,58 @@ func Register(suite *bddgo.Suite[State]) {
 	// Registry-origin assertions read the registry a `us apply … --fix` run
 	// writes and ask its LINEAGE: which acceptance criterion an entry
 	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
-	suite.Step(`^exactly (\d+) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
+	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
 		assertRegistryScenarioCount)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
 		assertRegistryScenarioCitesStory)
+	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" is keyed "([^"]+)"$`,
+		assertRegistryScenarioKeyed)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" matches (.+)$`,
 		assertRegistryScenarioMatches)
 	// The duplicate-collapse invariant stated positively: no two registry
 	// entries carry the same merged_steps. Implemented in
 	// registry_origin_steps.go.
 	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
-	// Engine-behaviour assertions read the CLI's own structured log rather
-	// than its stdout: which framework runners it spawned and how many, and
-	// how many model turns it dispatched. Implemented in engine_log_steps.go.
-	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
-	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
-	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
-	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
-	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
-	// The independent outcome check: the harness itself runs a command the
+	registerEngineLogSteps(suite)
+	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
-	suite.Step(`^the command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+|no)$`, assertCommandExitCode)
+	// crush, not a role, runs the write guard. See crush_guard_steps.go.
+	registerCrushGuardSteps(suite)
+}
+
+// registerEngineLogSteps binds the assertions that read the CLI's own
+// structured log rather than its stdout: which test runners it spawned, how
+// many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
+func registerEngineLogSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
+	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
+	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
+	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
+	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
+	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
+}
+
+// registerGivenSteps binds the Given steps: the tree a scenario starts
+// from and the preconditions the fixture establishes on it.
+func registerGivenSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^the "([^"]+)" project tree$`, prepareTree)
+	// Given preconditions the scenario states and the fixture materialises
+	// during tmpdir assembly: the dependency install (`prep:`) and the
+	// interactive answers piped to the fix loop. Implemented below.
+	suite.Step(`^the project's (browser )?test dependencies are installed$`, assertDependenciesInstalled)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
+		answerEveryQuestion)
+	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
+		answerLineByLine)
+	// A Given precondition that a checklist is narrowed to one named prompt;
+	// the fixture selects it via `checklist_prompts:`, and this step verifies
+	// the selection is real and singular.
+	suite.Step(`^the "([^"]+)" checklist is narrowed to its "([^"]+)" prompt$`, assertChecklistNarrowed)
+	// A Given precondition that the tree lacks a file, even one the repo
+	// layer brings (the engine's own true-bdd.yaml); the run dir drops it.
+	suite.Step(`^the project tree has no "([^"]+)"$`, leaveOutOfTree)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
@@ -266,11 +286,15 @@ func asksJudge(scenario bddgo.Scenario) bool {
 // role is discarded — validated by the pattern itself, with nothing else
 // for the harness to do with it.
 func runCLI(state *State, args []string) error {
+	return runEngine(state, args[1])
+}
+
+// runEngine runs the engine once with the given command; extraEnv rides on
+// top of the proxy's environment and wins ties.
+func runEngine(state *State, command string, extraEnv ...string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
-
-	command := args[1]
 
 	err := state.Fixture.UseCommand(command)
 	if err != nil {
@@ -282,8 +306,10 @@ func runCLI(state *State, args []string) error {
 	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
 		command, state.Fixture.Name, timeout)
 
+	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
+
 	result, err := runner.Execute(context.Background(), state.Fixture,
-		state.Harness.BinPath, state.Harness.SessionRoot, timeout, state.Proxy.Env...)
+		state.Harness.BinPath, state.Harness.SessionRoot, timeout, env...)
 
 	// Observed before the branch: a run that errored still has a diff
 	// worth recording, and the tmpdir path is what makes it findable.
@@ -321,33 +347,46 @@ func assertDependenciesInstalled(state *State, args []string) error {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
-	kind := args[0]
+	browser := args[0]
 
 	if len(state.Fixture.PrepCmds) == 0 {
 		return state.fail(
-			"the scenario says the project's %s dependencies are installed, but %w",
-			kind, ErrNoDependencyInstall)
+			"the scenario says the project's %stest dependencies are installed, but %w",
+			browser, ErrNoDependencyInstall)
 	}
 
 	return nil
 }
 
-// everyPromptAnswers is how many copies of the answer the step feeds the
+// leaveOutOfTree records a path the run dir must not hold. Nothing is
+// deleted yet: the run dir is assembled when the When step runs, and
+// runner.Execute fails it if the path is outside it or not there to drop.
+func leaveOutOfTree(state *State, args []string) error {
+	if state.Fixture == nil {
+		return state.fail("%w", ErrNoTreePrepared)
+	}
+
+	state.Fixture.Absent = append(state.Fixture.Absent, args[0])
+
+	return nil
+}
+
+// everyQuestionAnswers is how many copies of the answer the step feeds the
 // fix loop; picked generously since surplus lines are harmless (EOF exits
 // the CLI cleanly).
-const everyPromptAnswers = 64
+const everyQuestionAnswers = 64
 
-// assertAnswersEveryPrompt sets the fixture's stdin to the given answer,
+// answerEveryQuestion sets the fixture's stdin to the given answer,
 // repeated, before the When step runs the CLI and pipes it to the
 // subprocess. The captured role is discarded — validated by the pattern.
-func assertAnswersEveryPrompt(state *State, args []string) error {
+func answerEveryQuestion(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
 	answer := args[1]
 
-	state.Fixture.Stdin = []byte(strings.Repeat(answer+"\n", everyPromptAnswers))
+	state.Fixture.Stdin = []byte(strings.Repeat(answer+"\n", everyQuestionAnswers))
 
 	return nil
 }
@@ -396,7 +435,7 @@ func assertExitCode(state *State, args []string) error {
 		return state.fail("%w", ErrNoRun)
 	}
 
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("exit code %q is not a number: %w", args[0], err)
 	}
@@ -404,7 +443,9 @@ func assertExitCode(state *State, args []string) error {
 	// Carried onto the fixture so the run's manifest snapshot — and
 	// therefore the report's expected-vs-actual column — states what this
 	// run was actually held to.
-	state.Fixture.ExpectedExitCode = want
+	if state.Fixture != nil {
+		state.Fixture.ExpectedExitCode = want
+	}
 
 	err = runner.CheckExitCode(state.Result.ExitCode, want)
 	if err != nil {
@@ -426,7 +467,9 @@ func assertStdout(state *State, args []string) error {
 		return state.fail("stdout pattern %q does not compile: %w", args[0], err)
 	}
 
-	state.Fixture.StdoutRegexes = append(state.Fixture.StdoutRegexes, pattern)
+	if state.Fixture != nil {
+		state.Fixture.StdoutRegexes = append(state.Fixture.StdoutRegexes, pattern)
+	}
 
 	err = runner.CheckStdout(state.Result.Stdout, pattern)
 	if err != nil {
@@ -452,6 +495,44 @@ func assertStdoutNoMatch(state *State, args []string) error {
 	if pattern.MatchString(state.Result.Stdout) {
 		return state.fail(
 			"expected stdout not to match %q, but it did:\n%s", args[0], state.Result.Stdout)
+	}
+
+	return nil
+}
+
+// assertStderr is assertStdout's twin over the run's stderr, printed whole
+// on a miss: what lands there is a short error, never a log stream.
+func assertStderr(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if !pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr to match %q, but it did not:\n%s", args[0], state.Result.Stderr)
+	}
+
+	return nil
+}
+
+// assertStderrNoMatch is assertStderr's negative twin: proves stderr does
+// NOT match a pattern, such as a usage an error must not be followed by.
+func assertStderrNoMatch(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr not to match %q, but it did:\n%s", args[0], state.Result.Stderr)
 	}
 
 	return nil

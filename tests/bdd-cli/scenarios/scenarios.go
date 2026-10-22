@@ -2,7 +2,7 @@
 
 // Package scenarios binds bddgo's generics to the bdd-cli suite.
 //
-// A generated test file calls `scenarios.New(t, "E2E-001")` with no type
+// A generated test file calls `scenarios.New(t, "engine-001-help-prints-command-tree")` with no type
 // argument, which is only possible because the state type is already
 // fixed here. That is the whole job: one hand-written file per suite,
 // naming the state, the step registrations and the harness, so the
@@ -40,6 +40,12 @@ import (
 var proxyMode = flag.String("mode", "",
 	"per-caller AI CLI mode, e.g. services:replay,tests:live")
 
+// -engine-bin is how scripts/cmd/engine_coverage hands in a covered engine.
+//
+//nolint:gochecknoglobals // test-binary flag; parsed by `go test`
+var engineBin = flag.String("engine-bin", "",
+	"absolute path of a prebuilt true-bdd binary to drive instead of building one")
+
 const (
 	// scenarioTimeout caps the CLI run alone; prep/teardown have their own
 	// budgets. Kept tight on purpose — a run past five minutes is wrong,
@@ -61,6 +67,9 @@ var (
 	// errModeRequired marks a harness asked to run with no -mode. Absence
 	// is legal for the model-free guards, which never reach this point.
 	errModeRequired = errors.New("-mode is required to run a scenario")
+	// errEngineBinRelative marks an -engine-bin `go test` would resolve
+	// against the suite's package directory rather than the caller's.
+	errEngineBinRelative = errors.New("-engine-bin must be an absolute path")
 )
 
 //nolint:gochecknoglobals // process-wide suite state, built once in Main
@@ -375,6 +384,10 @@ func installShimNames(base, caller, proxyPath string) (string, error) {
 }
 
 func buildTrueBDD() (string, error) {
+	if *engineBin != "" {
+		return prebuiltEngine(*engineBin)
+	}
+
 	dir, err := disk.TempDir("", "true-bdd-bin-")
 	if err != nil {
 		return "", fmt.Errorf("create bin dir: %w", err)
@@ -390,6 +403,21 @@ func buildTrueBDD() (string, error) {
 	}
 
 	return binPath, nil
+}
+
+// prebuiltEngine checks the binary -engine-bin names before any scenario
+// spawns it, so a wrong path fails the boot rather than every When step.
+func prebuiltEngine(path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return "", fmt.Errorf("%w: %s", errEngineBinRelative, path)
+	}
+
+	_, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("-engine-bin: %w", err)
+	}
+
+	return path, nil
 }
 
 // goBuild builds one package of the repository module into binPath. Captured

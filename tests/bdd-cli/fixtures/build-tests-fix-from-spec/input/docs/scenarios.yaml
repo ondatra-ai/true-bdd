@@ -1,0 +1,52 @@
+# Seed registry for the `build-tests-fix-from-spec` BDD fixture.
+#
+# Two scenarios of one suite, `mcp`, rooted at `tests/mcp`, which has no
+# `steps/` package yet, so every step binds to nothing. Each step matches
+# one phrase of the catalogue in docs/product/product.yaml, and every
+# word those phrases rely on is defined in its glossary and mapped in
+# docs/architecture/architecture.yaml.
+#
+# The walk reaches INT-901 first. Its step-authoring prompt carries the
+# phrase, glossary words and word mapping of each of its unbound steps,
+# and the phrase of INT-902's unbound Then step too, since the fix sweeps
+# the neighbours of the same suite into the same pass.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Seed for build-tests-fix-from-spec fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/99.4-fixture.yaml"
+        scenario_id: "99.4-001"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket"
+  INT-902:
+    description: "A Claude User opening a session at the MCP server is told the protocol version the server speaks"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/99.4-fixture.yaml"
+        scenario_id: "99.4-002"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the server names its protocol version"

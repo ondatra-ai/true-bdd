@@ -1,0 +1,28 @@
+# Registry seed for `scen-check-prompt-names-its-tiers`.
+#
+# The seed of scen-check-fix-rewrites-description-qualifier: one Scenario
+# whose description says "quickly", a forbidden qualifier, where its then
+# step states the measurable criterion, 100 milliseconds. The walk's one
+# Prompt names its own tiers, so which CLI each turn went to says whose
+# tier won.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "One scenario with a vague word in its description"
+
+scenarios:
+  E2E-001:
+    description: The greeter must print the configured greeting followed by the name it is given quickly
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the greeting is configured as "Hello"
+      when:
+        - the Operator runs "greet Ada"
+      then:
+        - the command exits with code 0 within 100 milliseconds
+        - and: stdout matches ^Hello Ada$

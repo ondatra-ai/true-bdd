@@ -1,0 +1,18 @@
+# Fixture checklist for `fix-loop-own-words`.
+#
+# The step-phrase check alone, with a fix that asks one question before it
+# proposes its catalogue entry, so the person answers it in their own words.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of a Scenario a Story claims must match exactly one catalogue phrase."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for the failing step, asking exactly one question first: what the step means. Write it to the product document, never to the Scenario."

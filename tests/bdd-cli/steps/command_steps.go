@@ -1,7 +1,6 @@
 package steps
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +24,7 @@ func assertCommandExitCode(state *State, args []string) error {
 	command := args[0]
 	dirRel := args[1]
 
-	want, err := strconv.Atoi(args[2])
+	want, err := numberSlot(args[2])
 	if err != nil {
 		return state.fail("exit code %q is not a number: %w", args[2], err)
 	}

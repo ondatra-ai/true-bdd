@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-records-mapping",
+  "files": [
+    {
+      "path": "docs/architecture/architecture.yaml",
+      "kind": "modified",
+      "size": 1680,
+      "sha256": "c2bec9bb64c918af3a63d1ff47b6910a89924a2a0d57f49cec63b3e4ba99383e",
+      "text": "# Architectural spec for `scen-check-fix-records-mapping`.\n#\n# The word mapping says how \"mcp service\" and \"message\" are built and\n# observed, and says nothing of \"reply\", which E2E-001 relies on; the fix\n# adds the mapping.\n\narchitecture:\n  testing:\n    framework: go-test\n    commands:\n      record: go test -json -count=1 ./tests/mcp/... -mode=record\n      replay: go test -json -count=1 ./tests/mcp/... -mode=replay\n      live: go test -json -count=1 ./tests/mcp/...\n  services:\n    - name: mcp-service\n      path: services/mcp-service\n      language: go\n  terms:\n    - term: mcp service\n      technical: \u003e-\n        The mcp-service binary, serving JSON-RPC over HTTP on the port its\n        config names.\n      observed_by: \u003e-\n        Start the binary in the run directory and wait until its port\n        accepts a connection.\n    - term: message\n      technical: \u003e-\n        One JSON-RPC request whose params carry the text, posted to /mcp.\n      observed_by: \u003e-\n        Post the request to /mcp and keep the response for the steps after.\n    - term: reply\n      technical: \u003e-\n        The text field of the result object in the JSON-RPC response the\n        service returns for one message; the reply is that field's string\n        value. Only a successful response carries a reply: a response that\n        comes back with an error instead of a result has none.\n      observed_by: \u003e-\n        Take the response the sending step kept, read the reply text out of\n        its result object, and compare that text to the expected text for\n        exact equality. A response carrying an error instead of a result,\n        or a result without that text field, fails the observation.\n"
+    }
+  ]
+}

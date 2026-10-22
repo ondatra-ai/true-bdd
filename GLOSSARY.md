@@ -13,11 +13,11 @@ The single YAML file holding every Scenario, resolved from `documents.scenarios_
 _Avoid_: requirements file, scenarios file, spec file
 
 **Scenario**:
-One entry in the Registry, keyed by id, carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from.
+One entry in the Registry, keyed by its lineage id `<story-id>-<ac-id>` (legacy entries keep an `E2E-NNN` key until their Story renames them), carrying a description, a `service`, a `path`, its originating `user_stories` and its `merged_steps`. The unit of specification a generated test is rendered from, and named after: the key in CamelCase.
 _Avoid_: test case, requirement, feature
 
 **Story**:
-One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document.
+One user story: a goal stated as who wants what and why, plus the Acceptance Criteria that define it. Written directly, out of a discussion of a Feature, never extracted from a larger document; no command creates one, and `us refine` is the first step of the pipeline that reads it.
 _Avoid_: epic story, ticket, requirement
 
 **Feature**:
@@ -25,7 +25,7 @@ A named group of Stories that together deliver one product capability. A label a
 _Avoid_: epic, theme, module
 
 **Acceptance Criterion**:
-One testable condition inside a refined user story, before it is merged into the Registry. An AC becomes a Scenario; the two are the same shape and different lifecycle stages.
+One testable condition inside a refined user story, before it is merged into the Registry. An AC becomes a Scenario; the two are the same shape and different lifecycle stages. Its id is `<NNN>-<slug>`, written by the author, and becomes the second half of that Scenario's key.
 _Avoid_: AC (in prose), criterion, condition
 
 **Item**:
@@ -35,6 +35,10 @@ _Avoid_: subject, entity, record
 **Prompt**:
 One validation question in a Checklist, with its rationale, its declared reference documents and its optional `F:` fix template. A model answers a `Q:` Prompt; the engine's own code answers a `D:` Prompt, which names one of the engine's built-in checks, and an Item's `D:` Prompts are answered before any of its `Q:` Prompts. Never the rendered text sent to a model; that is the rendered prompt for a Cell.
 _Avoid_: check, question, validation item
+
+**Built-in check**:
+Code of the engine that a `D:` Prompt names, answering that Prompt for an Item without a model: pass or fail, with one line per finding. "Check" alone stays avoided: a Prompt is what a checklist asks, and a built-in check is one way to answer it.
+_Avoid_: deterministic check, D-check, rule, validator
 
 **Cell**:
 One (Item, Prompt) pair. The unit of work an AI turn is spent on, and the unit a fix is applied to.
@@ -47,6 +51,22 @@ _Avoid_: pass, sweep, iteration
 **Step coverage**:
 The engine's own answer to which Scenarios have a step no definition binds: the Scenarios it examined, and the unbound steps among them. `examined` is the load-bearing half — an empty gap list says nothing about a Scenario nobody looked at. Resolved in-process by parsing each suite's `steps/` package, never by running a test; a step two definitions match is a refusal rather than a gap.
 _Avoid_: coverage report, coverage output, step report, gap list
+
+**Catalogue**:
+The product document's list of step phrases: each the shape a step may take, the block it may sit in, what it means, and the terms that meaning relies on. Every step a model does not run must match exactly one phrase.
+_Avoid_: vocabulary (the words a Story must not use), phrase book, step library
+
+**Word mapping**:
+The architecture document's list of terms, each saying what the term is in the implementation and how a step definition sets it up or observes it, without naming code. Every term a catalogue phrase declares is mapped exactly once.
+_Avoid_: architecture glossary, dictionary
+
+**Term document**:
+A specification document that holds the words the Catalogue relies on: the product document, with the Catalogue and the glossary, and the architecture document, with the Word mapping. A fix for a failed Closure check edits a term document, never the Scenario.
+_Avoid_: vocabulary file, dictionary
+
+**Closure check**:
+One of the four Built-in checks that hold a Scenario's steps to its Term documents: every step matches one Catalogue phrase, the glossary defines and the Word mapping maps every term those phrases declare, and the phrases and the suite's step definitions correspond one to one. A Scenario no Story claims, or a Host project with no Catalogue, passes them unchecked.
+_Avoid_: spec check, term check
 
 **Services**:
 The process a scenario exercises — the `true-bdd` binary for the CLI suite — as distinct from the tests that drive it. Its `third_party` CLI dependencies are the ones the harness shims; a Services caller declaring none has a vacuous mode axis.

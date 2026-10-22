@@ -1,0 +1,7 @@
+`tests/mcp/steps/` doesn't exist yet. Checking the generated test file and module name for context before writing.No existing steps package — creating both new files exactly as the fix prompt specifies.Verifying the new package compiles:Both files written; LSP diagnostics report 0 errors for the new package (the `mcp_test.go` warning is pre-existing: its `scenarios` package is generated elsewhere and outside this fix's write root). Shell verification is blocked by the guard hook, so the compile check relies on gopls, which is clean.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===
+applied: true
+target: "tests/mcp/steps/steps.go"
+summary: "Created the mcp suite's steps package: shared state and observation helpers in state.go, and Register binding four definitions (server running, actor opens a session, ticket granted, protocol version named) in steps.go."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-901-iter1-result.yaml ===

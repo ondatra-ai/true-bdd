@@ -1,0 +1,17 @@
+# Architectural spec for the `build-tests-framework-without-renderer` fixture.
+#
+# One service, mcp-service, whose tests run on jest: a framework
+# `build tests` has no generated-test renderer for.
+
+architecture:
+  testing:
+    framework: jest
+    config: tests/jest.config.ts
+    commands:
+      record: npx jest --config tests/jest.config.ts
+      replay: npx jest --config tests/jest.config.ts
+      live: npx jest --config tests/jest.config.ts
+  services:
+    - name: mcp-service
+      path: services/mcp-service
+      language: typescript

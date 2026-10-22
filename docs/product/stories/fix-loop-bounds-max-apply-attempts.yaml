@@ -1,0 +1,95 @@
+# Story `fix-loop-bounds`: where a `--fix` run that cannot converge stops.
+#
+# A checklist's `config.max_apply_attempts` bounds both the walks a run may
+# make and the fixes one Prompt may take, and the fix loop asks at most
+# five rounds of clarifying questions before it gives up on a failure.
+# Criteria 001 to 003 run `us refine --fix`, whose Story file is written
+# only by a walk that converged; 004 runs `scen check --fix`, whose term
+# documents keep a fix only once a walk has converged.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `fix-loop-bounds-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: fix-loop-bounds
+    feature: engine
+    title: Bound the --fix loop so a run that cannot converge stops, says why, and leaves the Story as it was
+    as_a: Product Owner
+    i_want: a --fix run to stop once its checklist's max_apply_attempts walks are used, once one Prompt needs more fixes than max_apply_attempts allows, or once five rounds of clarifying questions settle nothing, saying which, and to leave the Story file and the term documents as they were
+    so_that: a fix loop that cannot converge spends a bounded number of AI turns and never writes a Story or a term document no walk has confirmed
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-one-walk-keeps-story
+          description: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
+          steps:
+            - given:
+                - the "fix-loop-attempts-exhausted" project tree
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 97.2 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="Walk attempt started" attempt=1 max_attempts=1
+                - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
+                - and: stdout matches REFINE COMPLETE
+                - and: stdout matches Hit max apply attempts without convergence\.
+                - but: stdout does not match attempt=2
+                - and: 'stdout does not match msg="Story saved"'
+                - and: the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 4 AI turns
+        - id: 002-refixed-prompt-stops-walk
+          description: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+          steps:
+            - given:
+                - the "fix-loop-refix-stops" project tree
+                - the Product Owner answers "1" to every question
+            - when:
+                - the Product Owner runs "us refine 97.3 --fix"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Walk stopped" command="us refine"
+                - and: stdout matches gave up after 2 applied fix\(es\) that never made the check pass
+                - and: stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}
+                - but: stdout does not match REFINE COMPLETE
+                - and: the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 6 AI turns
+        - id: 003-unsettled-questions-keep-story
+          description: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+          steps:
+            - given:
+                - the "fix-loop-unsettled" project tree
+                - the Product Owner answers "I have not decided yet" to every question
+            - when:
+                - the Product Owner runs "us refine 97.4 --fix"
+            - then:
+                - the command exits with code 0
+                - stdout matches msg="User answered clarification question" .* answer="I have not decided yet"
+                - and: stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true
+                - but: stdout does not match iteration=6
+                - and: stdout matches Validation failed\. No fix was applied\.
+                - and: stdout matches REFINE COMPLETE
+                - but: stdout does not match FIX PROMPT GENERATED
+                - and: 'stdout does not match msg="Story saved"'
+                - and: the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 6 AI turns
+        - id: 004-walks-exhausted-keep-term-documents
+          description: 'A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1'
+          steps:
+            - given:
+                - the "fix-loop-walks-exhausted-terms" project tree
+                - the Quality Engineer answers "1" to every question
+            - when:
+                - the Quality Engineer runs "scen check --fix"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="Walk attempt started" attempt=1 max_attempts=1
+                - and: stdout matches msg="Fix recorded in the document" document=product
+                - and: stdout matches Hit max apply attempts without convergence\.
+                - and: stdout matches msg="Fix undone in the document" document=product
+                - but: stdout does not match attempt=2
+                - and: the file "docs/product/product.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 2 AI turns

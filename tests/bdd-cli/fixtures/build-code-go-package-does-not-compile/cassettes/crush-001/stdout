@@ -1,0 +1,7 @@
+Edit applied and verified: `services/calc/calc.go` now matches the expected resulting file exactly (the earlier gopls error was a stale snapshot from before the edit; shell/LSP re-checks are blocked by the true-bdd guard, so verification is by content comparison).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Replaced the planted-defect comment with the missing Multiply(a, b int) int declaration returning a * b"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===

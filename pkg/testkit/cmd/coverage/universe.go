@@ -18,6 +18,7 @@ type UniversePrompt struct {
 	SectionID     string
 	Ordinal       int
 	Global        int
+	Check         bool   // a built-in check answers it (`D:`); QHash then covers its name and parameters
 	QHash         string
 	FHash         string
 	QCollapsed    string
@@ -115,6 +116,7 @@ func (u *Universe) buildBranches() {
 			SectionID: prompt.SectionID,
 			Ordinal:   prompt.Ordinal,
 			Global:    prompt.Global,
+			Check:     prompt.Check,
 			QHash:     prompt.QHash,
 			FHash:     prompt.FHash,
 			Snippet:   prompt.Snippet,
@@ -135,7 +137,7 @@ func (u *Universe) buildBranches() {
 }
 
 // loadChecklistPrompts parses one checklist file and flattens it with
-// production parity (skip = any non-empty string, order preserved,
+// production parity (skip = `skip: true` only, order preserved,
 // 1-based global index over the filtered list).
 func loadChecklistPrompts(path, stem string) ([]UniversePrompt, error) {
 	data, err := disk.Read(path)
@@ -155,7 +157,7 @@ func loadChecklistPrompts(path, stem string) ([]UniversePrompt, error) {
 		ordinal := 0
 
 		for _, prompt := range section.ValidationPrompts {
-			if prompt.Skip != "" {
+			if prompt.Skip {
 				continue
 			}
 
@@ -184,19 +186,21 @@ func newUniversePrompt(
 		docs = defaultDocs
 	}
 
-	evalKey := evalFieldsDigest(doc.Question, doc.Rationale, doc.FixTemplate, docs)
+	identity := doc.identityText()
+	evalKey := evalFieldsDigest(identity, doc.Rationale, doc.FixTemplate, docs)
 
 	return UniversePrompt{
 		Checklist:     stem,
 		SectionID:     sectionID,
 		Ordinal:       ordinal,
 		Global:        global,
-		QHash:         hashText(doc.Question),
+		Check:         doc.isCheck(),
+		QHash:         hashText(identity),
 		FHash:         fHashOf(doc.FixTemplate),
 		QCollapsed:    collapseWhitespace(doc.Question),
 		EvalKey:       evalKey,
 		HasF:          strings.TrimSpace(doc.FixTemplate) != "",
-		Snippet:       snippet(doc.Question, snippetLen),
+		Snippet:       snippet(identity, snippetLen),
 		SanitizedPath: sanitizeID(stem + "/" + sectionID),
 	}
 }

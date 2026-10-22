@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 
 	"gopkg.in/yaml.v3"
 
@@ -20,6 +18,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
+	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
@@ -60,24 +59,19 @@ func validateGenerators[I any](spec Spec[I]) error {
 	return fmt.Errorf("%w: %s", errIncompleteGeneratorTriple, strings.Join(missing, ", "))
 }
 
-// errInvalidStoryNumberFormat is the canonical error returned by
-// validateStoryNumber. Wraps the package error so callers can both
-// errors.Is-match and format a useful message.
-var errInvalidStoryNumberFormat = errors.New("invalid story number format")
+// storyIDSlug is the shape of every Story id (ADR 0013): `scen-check` and
+// `96.2` both pass, and an id carrying a `/` never reaches the stories glob.
+var storyIDSlug = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*$`)
 
-// validateStoryNumber rejects anything that isn't `<digit>.<digit>`.
-func validateStoryNumber(storyNumber string) error {
-	matched, err := regexp.MatchString(`^\d+\.\d+$`, storyNumber)
-	if err != nil {
-		return fmt.Errorf("regex failed: %w", err)
-	}
+// errInvalidStoryID is the canonical error returned by validateStoryID.
+var errInvalidStoryID = errors.New("invalid story id")
 
-	if !matched {
-		// Names the offending value: the bare message alone doesn't say
-		// which input failed, and this is the user-facing refusal itself,
-		// not an internal error a wrapper elaborates later.
-		return fmt.Errorf("%w: expected <epic>.<story>, got %q",
-			errInvalidStoryNumberFormat, storyNumber)
+// validateStoryID refuses a Story id that is not a safe slug, naming the
+// id: this is the user-facing message itself, not one a wrapper elaborates.
+func validateStoryID(storyID string) error {
+	if !storyIDSlug.MatchString(storyID) {
+		return fmt.Errorf("%w %q: expected a slug of lower-case letters, digits, dots and hyphens, "+
+			"starting with a letter or digit", errInvalidStoryID, storyID)
 	}
 
 	return nil
@@ -161,14 +155,14 @@ func validateFixTemplates(
 			continue
 		}
 
-		// The question goes in unquoted: half of them carry double
+		// The label goes in unquoted: half of them carry double
 		// quotes of their own, and %q would render those as \" — an
 		// escaping scheme in a line whose whole job is to be read.
 		offenders = append(offenders, fmt.Sprintf(
 			"%s #%d %s",
 			prompts[idx].GetFullSectionPath(),
-			idx+1,
-			questionFirstLine(prompts[idx].Prompt.Question),
+			prompts[idx].Index,
+			prompts[idx].Prompt.Label(),
 		))
 	}
 
@@ -185,22 +179,9 @@ func validateFixTemplates(
 	)
 }
 
-// questionFirstLine returns the first non-blank line of a prompt's Q, so
-// a multi-line question still names its prompt in one line of output.
-func questionFirstLine(question string) string {
-	for line := range strings.SplitSeq(question, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-
-	return ""
-}
-
 // reported wraps an error already diagnosed by the code that produced
 // it — Error()/Unwrap() pass straight through, so the marker is
-// invisible to everything except refuseStartup.
+// invisible to everything except RefuseStartup.
 type reported struct{ error }
 
 // Unwrap keeps errors.Is/As working through the marker.
@@ -211,10 +192,10 @@ func (r reported) Unwrap() error { return r.error }
 // "Cannot run <svc>/<layer>:" itself before returning.
 func Reported(err error) error { return reported{err} }
 
-// refuseStartup reports a precondition failure on both stdout and the
+// RefuseStartup reports a precondition failure on both stdout and the
 // log, the way validateRequiredDocs and cmd.refuseUnresolvedDoc do —
 // a bare cobra stderr usage dump reaches neither a harness nor the judge.
-func refuseStartup(command string, err error) error {
+func RefuseStartup(command string, err error) error {
 	var alreadyReported reported
 	if errors.As(err, &alreadyReported) {
 		return err
@@ -226,30 +207,6 @@ func refuseStartup(command string, err error) error {
 	)
 
 	return err
-}
-
-// slugify converts a title string into a URL-friendly slug for use
-// in story filenames.
-func slugify(title string) string {
-	lower := strings.ToLower(title)
-
-	var builder strings.Builder
-
-	for _, r := range lower {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			builder.WriteRune(r)
-		} else {
-			builder.WriteRune('-')
-		}
-	}
-
-	slug := builder.String()
-
-	for strings.Contains(slug, "--") {
-		slug = strings.ReplaceAll(slug, "--", "-")
-	}
-
-	return strings.Trim(slug, "-")
 }
 
 // displayFailureInfo prints the section / question / rationale /
@@ -281,53 +238,25 @@ func displayFixPrompt(fixPrompt string) {
 	console.Println(fixPrompt)
 }
 
-// writeNewStoryFile writes a fresh story YAML under `<id>-<slug>.yaml`
-// and returns its path. Used by `us create` after the walk converges.
-func writeNewStoryFile(storyData *story.Story, storiesDir string) (string, error) {
-	slug := slugify(storyData.Title)
-	filename := fmt.Sprintf("%s-%s.yaml", storyData.ID, slug)
-	filePath := filepath.Join(storiesDir, filename)
+// errStoryFileGone is returned by updateStoryFile when the file the walk
+// loaded no longer matches its id: rewriting under a guessed name would
+// leave the Story in two files, or in one nobody asked for.
+var errStoryFileGone = errors.New("the story file the walk loaded is gone")
 
-	err := disk.Dir(storiesDir, disk.Shared)
+// updateStoryFile replaces the story file `us refine` loaded, in place,
+// after the walk converges: the file storyinfra.FindStoryFile resolves the
+// id to, as the load did.
+func updateStoryFile(storyID string, updatedStory *story.Story, storiesDir string) (string, error) {
+	storyFile, err := storyinfra.FindStoryFile(storiesDir, storyID)
+	if errors.Is(err, pkgerrors.ErrStoryFileNotFound) {
+		return "", pkgerrors.ErrWriteStoryFileFailed(fmt.Errorf("%w: %w", errStoryFileGone, err))
+	}
+
 	if err != nil {
 		return "", pkgerrors.ErrWriteStoryFileFailed(err)
 	}
 
-	wrapper := struct {
-		Story story.Story `yaml:"story"`
-	}{Story: *storyData}
-
-	data, err := yaml.Marshal(wrapper)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	err = disk.Write(filePath, data, disk.Shared)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	slog.Info("Story file created", "path", filePath)
-
-	return filePath, nil
-}
-
-// updateStoryFile replaces the canonical story file in place. Used by
-// `us refine` after the walk converges. Falls back to creating a new
-// file if no matching file is found.
-func updateStoryFile(storyNumber string, updatedStory *story.Story, storiesDir string) (string, error) {
-	pattern := filepath.Join(storiesDir, storyNumber+"-*.yaml")
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return "", pkgerrors.ErrWriteStoryFileFailed(err)
-	}
-
-	if len(matches) == 0 {
-		return writeNewStoryFile(updatedStory, storiesDir)
-	}
-
-	filePath := matches[0]
+	filePath := storyFile.Path
 
 	wrapper := struct {
 		Story story.Story `yaml:"story"`
@@ -361,7 +290,7 @@ type fixPromptGenInput struct {
 }
 
 // runFixPromptGeneration adapts one call to FixPromptGenerator.Generate
-// into the engine's FixResult type, so us create/refine and us apply's
+// into the engine's FixResult type, so us refine's and us apply's
 // genFix closures don't need the engine to import validate directly.
 func runFixPromptGeneration(
 	ctx context.Context,
@@ -397,16 +326,9 @@ func runFixPromptGeneration(
 	return out, nil
 }
 
-// StorySubject is the GetSubject implementation shared by us create
-// and us refine. Pulls the (id, title) pair the report builder uses
-// for table headings.
-func StorySubject(item *story.Story) (string, string) {
-	return item.ID, item.Title
-}
-
-// StoryPostFix returns the PostFix closure for story-based commands: it
-// unmarshals the applier's YAML onto a zero Story, so a partial body
-// zeroes whatever it omits — only the ID is reasserted here as a backstop.
+// StoryPostFix returns the PostFix closure for story-based commands: the
+// applier's YAML lands on a zero Story, zeroing what it omits, so the ID and
+// the Feature label (its template never shows it) are reasserted from the item.
 func StoryPostFix(
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context, item *story.Story, applierContent string) (*story.Story, error) {
@@ -419,6 +341,7 @@ func StoryPostFix(
 		}
 
 		updated.ID = item.ID
+		updated.Feature = item.Feature
 
 		_, err = versionMgr.SaveNextVersion(&updated)
 		if err != nil {
@@ -438,17 +361,17 @@ func StoryPostFix(
 }
 
 // StoryFinalize returns the Finalize closure for story-based commands.
-// On Converged it writes the final story file (new or update toggle);
-// every other stop reason prints a help message and returns nil.
+// On Converged it rewrites the story file in place; every other stop
+// reason prints a help message and returns nil.
 func StoryFinalize(
-	storiesDir, storyNumber string,
+	storiesDir, storyID string,
 	versionMgr *fs.StoryVersionManager,
-	fix, writeNew bool,
+	fix bool,
 ) func(*engine.Result[*story.Story]) error {
 	return func(result *engine.Result[*story.Story]) error {
 		switch result.Reason {
 		case engine.Converged:
-			return writeConvergedStory(versionMgr, storiesDir, storyNumber, writeNew)
+			return writeConvergedStory(versionMgr, storiesDir, storyID)
 		case engine.NotFixed:
 			if fix {
 				slog.Warn("Validation failed. No fix was applied.")
@@ -471,13 +394,12 @@ func StoryFinalize(
 	}
 }
 
-// writeConvergedStory writes the engine's final item to disk (new file
-// or update, per writeNew) and propagates any write/load failure instead
-// of swallowing it (plan §3.2): a story that never landed no longer reports success.
+// writeConvergedStory writes the engine's final item over its story file
+// and propagates any write/load failure instead of swallowing it (plan
+// §3.2): a story that never landed no longer reports success.
 func writeConvergedStory(
 	versionMgr *fs.StoryVersionManager,
-	storiesDir, storyNumber string,
-	writeNew bool,
+	storiesDir, storyID string,
 ) error {
 	slog.Info("ALL CHECKS PASSED!")
 
@@ -488,14 +410,7 @@ func writeConvergedStory(
 		return fmt.Errorf("load latest story for writing: %w", err)
 	}
 
-	var storyPath string
-
-	if writeNew {
-		storyPath, err = writeNewStoryFile(latest, storiesDir)
-	} else {
-		storyPath, err = updateStoryFile(storyNumber, latest, storiesDir)
-	}
-
+	storyPath, err := updateStoryFile(storyID, latest, storiesDir)
 	if err != nil {
 		slog.Error("Could not write story file", "error", err)
 

@@ -1,0 +1,19 @@
+# Fixture checklist for `scen-check-fix-records-term`.
+#
+# The declared-term check alone, with the fix that closes it: a term no
+# glossary entry defines gets one, asked about first and written to the
+# product document's glossary, never to the Scenario.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every term a matched catalogue phrase declares must be defined in the product glossary."
+    validation_prompts:
+      - D: declared-terms
+        rationale: "A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product document's glossary, never to the Scenario."

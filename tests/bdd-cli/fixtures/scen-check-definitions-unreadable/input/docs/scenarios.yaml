@@ -1,0 +1,26 @@
+# Registry seed for `scen-check-definitions-unreadable`.
+#
+# One claimed Scenario, held to a suite whose patterns do not all fold.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "One claimed scenario over an unreadable suite"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories:
+      - story: docs/product/stories/ping-answers.yaml
+        scenario_id: ping-001-answers-pong
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - the Operator sends "ping"
+      then:
+        - the service answers "pong"

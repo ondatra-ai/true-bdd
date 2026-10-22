@@ -54,8 +54,8 @@ expanders for nothing.
 | changed files | path, with per-run scratch dirs normalised away |
 | prompt / judge text | lines, via `textdiff.Hunks` + `IndentHeuristic` |
 
-Turn alignment is the one that earns its keep. A cell is retried until it passes, so
-`us-create-happy-path` is nine turns over four cells (`format`×2, `who`, `what`×2, `why`×4).
+Turn alignment is the one that earns its keep. A cell holds several prompts and is retried
+until it passes, so `us-refine-happy-path` is twelve turns in one cell (`acceptance_criteria`×12).
 Keying on turn number *is* ordinal pairing: one extra retry then shifts every later turn and
 reports all of them as changed. Keying on the cell yields a single insertion.
 

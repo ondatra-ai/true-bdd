@@ -1,0 +1,13 @@
+# Fixture checklist for `scen-check-prompt-with-no-kind`.
+#
+# Its one Prompt carries a rationale but neither `D:` nor `Q:`, so
+# nothing would answer it. The engine must refuse it before the walk.
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    validation_prompts:
+      - rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

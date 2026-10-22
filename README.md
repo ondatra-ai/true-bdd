@@ -77,7 +77,9 @@ persistent contracts; the implementation in between is free to drift
 between rebuilds, as long as both contracts are honoured.
 
 `true-bdd` is the substrate this vision is being built on. The `us`
-subcommand suite manages the spec lifecycle; the `build` subcommands
+subcommand suite manages the spec lifecycle, starting from a Story the
+Product Owner writes directly, out of a discussion of a Feature, into
+`docs/product/stories/`; the `build` subcommands
 implement the regeneration loop — `build tests` derives executable
 tests from the registry, `build code` regenerates production code
 until those tests pass.
@@ -86,18 +88,23 @@ until those tests pass.
 
 | Subcommand | State |
 |---|---|
-| `us create <id>` | **Working** — extracts a story from its epic, validates against the `us-create` checklist, writes to `docs/product/stories/`. |
-| `us refine <id>` | **Working** — iterates a story against the `us-refine` checklist; updates in place. |
+| `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
-| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; the registry itself is never modified. |
+| `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. The registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
-| `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one AI turn per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Advisory by design: a failed check is reported and the CLI still exits 0, so it cannot gate a commit. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
+| `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
 Every command accepts `--fix` for an interactive loop in which
 Claude proposes edits for each failed check and the user applies,
-refines, or exits — except `scen check`, which registers the flag and
-refuses it at startup, because no `scen-check` prompt carries a fix
-template. `build tests` and `scen check` also take
+refines, or exits. `--fix` is refused at startup when a prompt the walk
+would visit carries no `F:` fix template; every prompt of the shipped
+`scen-check` checklist carries one. A `scen check` fix for a failed
+closure check defines the missing term in the product document, or maps
+it in the architecture document, never in the Scenario; a fix for a
+failed model question rewrites the Scenario's own registry entry, or the
+meaning of the catalogue phrase it uses (see "The step-phrase catalogue"
+below).
+`build tests` and `scen check` also take
 `--requirements <path>` and `build code` takes `--architecture <path>`
 to override the configured spec locations (`documents.scenarios_yaml`
 and `documents.architecture_yaml` in `true-bdd.yaml`).
@@ -117,12 +124,11 @@ a Claude Code session, unset `CLAUDECODE` first so the child has a
 clean environment:
 
 ```bash
-env -u CLAUDECODE ./bin/true-bdd us create 4.1
-env -u CLAUDECODE ./bin/true-bdd us refine 4.1 --fix
-env -u CLAUDECODE ./bin/true-bdd us apply  4.1 --fix
+env -u CLAUDECODE ./bin/true-bdd us refine scen-check --fix
+env -u CLAUDECODE ./bin/true-bdd us apply  scen-check --fix
 env -u CLAUDECODE ./bin/true-bdd build tests --fix
 env -u CLAUDECODE ./bin/true-bdd build code  --fix
-env -u CLAUDECODE ./bin/true-bdd scen check E2E-001
+env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 ```
 
 `us refine` issues many sequential Claude calls and typically takes
@@ -133,20 +139,178 @@ env -u CLAUDECODE ./bin/true-bdd scen check E2E-001
 The host project supplies a `true-bdd/` directory at its root:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
-  `paths:` (`epics_dir`, `stories_dir`, `checklists_dir`, `tmp_dir`,
+  `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
   `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
-  author into), per-command prompt-template paths, and a `documents:`
+  author into, `./tests/**` and `./services/**` when it names none), per-command prompt-template paths, and a `documents:`
   map naming the files a check may cite (`product`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points
   the prompt at those files.
 - `checklists/` — one checklist per command, named by hyphenating the
-  command path (`us create` → `us-create.yaml`, `build tests` →
-  `build-tests.yaml`, …).
+  command path (`us refine` → `us-refine.yaml`, `build tests` →
+  `build-tests.yaml`, …). Each prompt is a `Q:` a model answers or a
+  `D:` the engine answers itself (below).
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
-  artifacts (stories, epics, the scenario registry, checklists,
-  `architecture.yaml`); the host project validates them in its lint
-  step, outside the engine itself.
+  documents (`product.yaml`, the scenario registry, `architecture.yaml`);
+  the host project validates them in its lint step, outside the engine
+  itself.
+
+### Deterministic prompts
+
+A checklist prompt is either `Q:`, a question a model answers, or
+`D: <check>`, which names one of the engine's built-in checks and is
+answered by the engine's own code, with no AI turn (ADR 0015). A check's
+parameters go under `with:`; `rationale`, `docs` (the documents the
+check reads) and `F:` keep their meaning, as do `fix_model` and
+`apply_model`:
+
+```yaml
+validation_prompts:
+  - D: given-when-then   # scen check: the scenario has given, when and then steps
+    rationale: "…"
+  - Q: "…"
+```
+
+Within an item every `D:` prompt runs first, in file order, then every
+`Q:` prompt, and an item failing a `D:` prompt skips its `Q:` prompts,
+reported as SKIP, so no turn is spent on it. A `D:` verdict has a
+model's shape (pass or fail plus context lines), and under `--fix` its
+`F:` drives the same fix loop. The engine refuses at startup a prompt
+carrying both `D:` and `Q:` or neither, a `D:` naming a check the
+command does not hold, a `with:` parameter the check does not read, and
+`model:` on a `D:` prompt, since no model answers it, and a `D:` whose
+`docs:` does not list a document its check reads. `scen check` holds five
+checks, `given-when-then`, `step-phrases`, `declared-terms`,
+`term-mappings` and `step-definitions` (below); the shipped `scen-check`
+checklist walks the last four.
+
+### Parking a prompt
+
+`skip: true` parks a prompt, `Q:` or `D:`: the walk leaves it out as if
+it were not in the file, so it costs no AI turn, takes no report row and
+no position in the artifact names, and none of the startup checks above
+look at it. `skip: false`, or no `skip:`, walks the prompt as usual:
+
+```yaml
+validation_prompts:
+  - Q: "…"
+    skip: true    # parked: not walked, no AI turn
+  - D: given-when-then
+    skip: false   # walked, as with no skip: at all
+```
+
+`skip:` takes only a YAML boolean. Any other value is refused at
+startup, naming the prompt, since the engine would have to guess what it
+meant: the quoted `"false"`, which once parked the prompt it was meant
+to keep, and `yes`, which YAML reads as a string, among them. A
+checklist whose every prompt is parked is refused like one with no
+prompts, rather than passing every item unchecked.
+
+### The step-phrase catalogue
+
+The product document may declare a `catalogue:`, the shape each Given,
+When and Then step may take and what it means. `D: step-phrases` (with
+`docs: [product]`) holds every step of a Scenario to it:
+
+```yaml
+catalogue:
+  - template: 'the engine dispatched {turns:number} AI turn[s]'
+    block: then            # given, when or then: where such a step may sit
+    means: >-
+      The engine sent exactly that many AI turns during the run; "no"
+      means none, so the run cost no model call.
+    terms: [engine, AI turn]   # the glossary words the meaning relies on
+```
+
+A template is literal text plus slots: `"{name}"` (a quoted run, between
+literal double quotes), `{name:number}` (digits, or `no` for zero),
+`{name:role}` (one of the product's `roles[].name`) and `{name:pattern}`
+(the rest of the step, last token only); `[a|b]` is one of the
+alternatives, `[s]` an optional `s`, and `\{ \} \[ \] \\` are literal. A
+step's whole text, without its `and:`/`but:` keyword, must match exactly
+one template in the whole catalogue, declared for the step's block. A
+step matching none or several, or one declared for another block, fails
+its Scenario with a context line naming the step and the templates; a
+template the grammar refuses fails every checked Scenario. Steps opening
+with `llm:` or `judge:` are exempt, since a model runs them.
+
+`build tests --fix` hands whoever writes a step definition the phrase each
+unbound step matches, with the glossary meaning and the word mapping of
+every term that phrase declares, and nothing else of the catalogue: not
+this grammar. A host whose definitions must follow it states it as a word
+its phrases declare. TrueBDD's own product document does: its glossary
+defines `template`, its architecture document maps it, and every phrase
+whose template holds a slot or brackets declares it.
+
+`D: declared-terms` (also `docs: [product]`) holds the words those
+meanings rely on to the product document's `glossary:`, each entry a
+`term` and what it `means`. Every term the one template a step matches
+declares must be defined exactly once, spelled exactly as the catalogue
+spells it: a term the glossary lacks fails the Scenario naming the
+template and the term, and a term defined twice fails it naming the
+count. A term only an unmatched template declares is no failure of the
+Scenario.
+
+`D: term-mappings` (`docs: [product, architecture_yaml]`) holds the same
+terms to the architecture document's word mapping, `architecture.terms:`,
+which says how each product word is built and how a step definition
+observes it, in words that name no code identifier:
+
+```yaml
+architecture:
+  terms:
+    - term: AI turn
+      technical: >-
+        One request through the engine's AI router to claude, crush or
+        codex, logged once as msg="Dispatching AI turn".
+      observed_by: >-
+        Count the "Dispatching AI turn" records in the run's JSON log file.
+```
+
+Every term must be mapped exactly once: an unmapped term fails the
+Scenario naming the term, and a term mapped twice fails it naming the
+count.
+
+`D: step-definitions` (`docs: [product]`) holds the catalogue to the
+suite's step definitions, the `steps/` package beside the Scenario's test
+file, read without running it as `build tests` reads it. Over the steps
+of every Scenario a Story claims in that suite, whatever ids the walk
+selected, the two must correspond one to one: a template whose steps bind
+two definitions, a definition two templates reach, and a step two
+definitions bind each fail the Scenario, naming the definitions by
+pattern, file and line. A step no definition binds yet is a gap `build
+tests --fix` authors, reported but not failed. A pattern that does not
+fold to a constant stops the walk with `msg="Check could not answer"`.
+
+Adoption is opt-in and gradual. With no `catalogue:` key every Scenario
+passes "not checked: the product document declares no catalogue". With
+one, a Scenario is checked once a Story claims it (a non-empty
+`user_stories`); until then it passes "not checked: no Story claims this
+Scenario yet". `build tests` is stricter: once a catalogue is declared it
+holds every registry step to it, claimed or not, and refuses to start on
+a step outside it. `us refine` always checks the Story it walks, one
+context line per acceptance criterion. Under `--fix` a failed check's
+`F:` drives the usual clarification loop, and the fix is written to a
+scratch copy of the product or architecture document in the run
+directory, which the engine puts in place of the document once it
+parses: the Scenario, the Story and the step definitions are never
+edited.
+
+What no check can settle, a model answers. The shipped `scen-check`
+checklist follows the four closure checks with two `Q:` prompts that
+read the product and the architecture document: whether the meaning of
+each phrase a Scenario's steps use says what is set up or observed (a
+pattern slot's phrase must say which output its pattern is held
+against: an answer line, or a log record's message or fields), and
+whether the Scenario uses each phrase in that meaning. They pass a
+Scenario no Story claims, or a product with no catalogue, as "not
+checked", and they cost a turn each, so a Scenario failing a closure
+check skips them. Its eight quality questions follow, on the
+description and the steps. Under `--fix` a model question's fix
+rewrites the meaning in the product document, or the Scenario's own
+entry in a scratch copy of the registry, which the engine puts in place
+once it loads with the same Scenarios; the walk then restarts on the
+Scenario as it now reads, and `build tests --fix` re-renders its test.
 
 ### Model tiers
 
@@ -237,20 +401,22 @@ The host project's documents live under `docs/`:
 - `docs/architecture/architecture.yaml` — the architectural spec that
   scopes `build code` (which test suites get walked, and how each one
   runs — see below), tells `build tests` which suite owns a scenario,
-  and carries the BDD `vocabulary:`
-  (allowed action verbs, forbidden action verbs, forbidden qualifiers)
-  cited by the `us refine` checks.
-- `docs/product/product.yaml` — the product document, including the `roles:` that
-  `us create` validates a story's `as_a:` clause against. These are
-  roles (responsibilities), not personas (invented individuals) — one
-  person commonly holds two of them.
-- `docs/product/epics/*.yaml` — epic files that `us create` extracts
-  stories from.
-- `docs/product/stories/*.yaml` — the stories `us create` writes and
-  `us refine` / `us apply` read.
+  and maps each product word onto the implementation under `terms:`.
+- `docs/product/product.yaml` — the product document, including its
+  `roles:`, the BDD `vocabulary:` (forbidden qualifiers and forbidden action verbs) the `us refine` and `scen check` Prompts cite, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
+  individuals) — one person commonly holds two of them.
+- `docs/product/stories/*.yaml` — the stories, written by hand out of a
+  discussion of a Feature, that `us refine` / `us apply` read, one
+  `<id>-<slug>.yaml` each. No command creates one. A story id is
+  a slug (`scen-check`, `96.2`), and a story may carry a `feature:` label
+  that `us refine` keeps through every rewrite.
 - `docs/scenarios.yaml` — the scenario registry `us apply` merges into,
   `build tests` walks, and the test suites RUN: each scenario is a test,
-  its steps bound to code by the suite that owns it.
+  its steps bound to code by the suite that owns it. A scenario is keyed
+  by its lineage, `<story-id>-<ac-id>`, and the author writes each
+  acceptance criterion's id as `<NNN>-<slug>` (ADR 0014), so the key
+  `scen-check-001-unknown-id-refused` survives reordering the story;
+  `us apply` refuses a criterion id of any other shape.
 
 Prompt templates live in [`templates/`](templates/) (Go `text/template`
 with sprig).
@@ -319,8 +485,9 @@ go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 ```
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
-architectural spec assigns to it gets one top-level Go test named after
-its id (`TestE2E016`), written into the file the scenario's `path:` names
+architectural spec assigns to it gets one top-level Go test named from
+its key in CamelCase (`scen-check-003-unknown-id-refused` gives `TestScenCheck003UnknownIdRefused`),
+written into the file the scenario's `path:` names
 by `true-bdd build tests --fix` and by nothing else. Its steps are bound
 by regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's
 Given step names the fixture tree it drives.

@@ -19,12 +19,12 @@ var errLoadItems = errors.New(
 		"in docs/product/stories (expected format: 95.4-<slug>.yaml): story file not found",
 )
 
-// refuseStartup must return the cause untouched: callers match on
+// RefuseStartup must return the cause untouched: callers match on
 // sentinels via errors.Is, and cobra prints exactly this text — a
 // helper that re-wrapped or flattened it would break both silently.
 func TestRefuseStartupReturnsTheCauseUnchanged(t *testing.T) {
 	stdout := captureRunnerStdout(t, func() {
-		got := refuseStartup("us apply", errLoadItems)
+		got := RefuseStartup("us apply", errLoadItems)
 
 		if !errors.Is(got, errLoadItems) {
 			t.Errorf("returned error does not wrap the cause: %v", got)
@@ -35,7 +35,7 @@ func TestRefuseStartupReturnsTheCauseUnchanged(t *testing.T) {
 		}
 	})
 
-	// Only stdout is assertable here — see refuseStartup's doc for why.
+	// Only stdout is assertable here — see RefuseStartup's doc for why.
 	if !strings.Contains(stdout, `msg="Refusing to start"`) ||
 		!strings.Contains(stdout, "no story file found for story 95.4") {
 		t.Errorf("stdout missing the refusal line, got: %q", stdout)
@@ -48,7 +48,7 @@ func TestRefuseStartupStaysSilentForAnAlreadyReportedError(t *testing.T) {
 	cause := errors.New("discover calc/e2e: executable file not found in $PATH")
 
 	stdout := captureRunnerStdout(t, func() {
-		got := refuseStartup("build code", Reported(cause))
+		got := RefuseStartup("build code", Reported(cause))
 
 		// Suppressing the report must not suppress the error: the exit
 		// code and every errors.Is match upstream still depend on it.

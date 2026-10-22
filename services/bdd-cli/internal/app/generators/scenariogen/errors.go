@@ -76,3 +76,8 @@ var ErrWouldClobberHandWritten = errors.New("refusing to overwrite a file that i
 // ErrNoModuleForSuite signals a suite with no go.mod above it, so the
 // import path of its scenarios package cannot be computed.
 var ErrNoModuleForSuite = errors.New("no go.mod above the suite's directory")
+
+// ErrNoModuleDirective signals that the nearest go.mod above a suite
+// declares no `module`, so the same import path cannot follow from it.
+var ErrNoModuleDirective = errors.New(
+	"no module directive, so no import path follows for the suite's scenarios package")

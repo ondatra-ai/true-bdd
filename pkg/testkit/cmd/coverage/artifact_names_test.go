@@ -8,7 +8,7 @@ import "testing"
 func TestDecodeEvaluatorName(t *testing.T) {
 	t.Parallel()
 
-	paths := []string{"us-apply-merge", "build-code-test-passes", "us-create-why"}
+	paths := []string{"us-apply-merge", "build-code-test-passes", "us-refine-why"}
 
 	cases := []struct {
 		name    string
@@ -27,11 +27,11 @@ func TestDecodeEvaluatorName(t *testing.T) {
 			1, "frontend-integration-playwright-startup-", true,
 		},
 		{
-			"simple subject response", "09-99.1-checklist-us-create-why-response.txt",
+			"simple subject response", "09-99.1-checklist-us-refine-why-response.txt",
 			9, "99.1", true,
 		},
 		{"unknown section", "01-99.1-checklist-other-section-result.yaml", 0, "", false},
-		{"no index prefix", "xx-99.1-checklist-us-create-why-result.yaml", 0, "", false},
+		{"no index prefix", "xx-99.1-checklist-us-refine-why-result.yaml", 0, "", false},
 	}
 
 	for _, testCase := range cases {

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allowed_tools": ["view", "ls", "grep", "glob", "edit", "write", "multiedit", "bash"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "host-audit",
+        "command": "true",
+        "timeout": 5
+      }
+    ]
+  }
+}

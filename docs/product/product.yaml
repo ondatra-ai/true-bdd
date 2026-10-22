@@ -8,14 +8,12 @@ description:
   summary: >-
     TrueBDD moves the source of truth from the code to the
     specification, so an agent can rebuild the code from the
-    documentation alone. It has two parts built on one engine: a Go
-    console harness that walks a project's epics, user stories, and
-    scenarios through checklists, turns each scenario into an
-    executable test, and drives an agent until those tests pass; and a
-    stateless web app that shows the same harness in a browser, so a
-    run can be watched and driven from another screen. The harness and
-    the project's files stay on the developer's machine and are the
-    only state. It works with any technology stack.
+    documentation alone. It is a Go console harness that walks a
+    project's user stories and scenarios through checklists, turns
+    each scenario into an executable test, and drives an agent until
+    those tests pass. The harness and the project's files stay on the
+    developer's machine and are the only state. It works with any
+    technology stack.
 
   problem: >-
     AI removed the bottleneck on writing code, but not on deciding
@@ -55,10 +53,13 @@ description:
     application by hand, so the checking bottleneck goes away and the
     expected speedup becomes reachable.
 
+  # Vision, goals, releases and not_goals are declared empty until the
+  # session that settles them; an empty value is a decision on the record.
+  vision: ""
+
   goals: []
 
-  # Adoption, not internals: the usage that proves the product works.
-  targets: []
+  releases: []
 
   not_goals: []
 
@@ -69,23 +70,24 @@ roles:
   - name: Product Owner
     definition: >-
       Accountable for the value the product delivers. Owns the product
-      document, the epics, and the user stories, and decides which
-      behaviour the system must show.
-    primary_use_case: "Turning a product goal into registered scenarios — us create, us refine, us apply"
+      document and the user stories, writing each story directly out of
+      a discussion of a Feature, and decides which behaviour the system
+      must show.
+    primary_use_case: "Turning a product goal into registered scenarios — discusses Features, writes stories, runs us refine and us apply"
     characteristics:
       - "Writes acceptance criteria as behaviour the user can observe, never as implementation"
-      - "Works inside the action vocabulary the product document declares"
+      - "Writes steps in the phrases the product document's catalogue declares"
       - "Answers each failed check in the --fix loop: apply, refine, or exit"
       - "May hand the writing to someone else, but keeps the accountability"
 
   - name: System Architect
     definition: >-
       Defines the technical shape of the system — its services, their
-      interfaces, and the test layers used to observe behaviour.
-    primary_use_case: "Declaring the architectural contract and running the regeneration loop — build tests, build code"
+      dependencies, and the test suite that observes behaviour.
+    primary_use_case: "Owning the architecture and running the regeneration loop — runs build tests and build code"
     characteristics:
-      - "Owns architecture.yaml: services, quality-gate test layers and frameworks"
-      - "Designs so behaviour can be tested — every scenario must be observable through a declared layer"
+      - "Owns architecture.yaml: services, their dependencies, and how the test suite runs"
+      - "Designs so behaviour can be tested — every scenario must be observable through a declared service"
       - "Fixes the contracts that must survive regeneration and leaves the rest free to change"
       - "Never edits a scenario to make a failing test pass"
 
@@ -94,26 +96,17 @@ roles:
       Accountable for the scenario set being complete and executable:
       the failure cases are written down, and every step can be
       automated.
-    primary_use_case: "Strengthening scenarios before they reach the registry — us refine"
+    primary_use_case: "Verifying the scenarios in the registry — runs scen check"
     characteristics:
       - "Asks what could go wrong: permission denied, not found, timeout, boundary values"
       - "Rejects steps that no test runner could execute"
       - "Reads a build tests failure as a sign that a scenario cannot be observed, not just that a test is missing"
       - "Often the same person as the Product Owner; the accountability stays separate"
 
-# The allowed BDD language for stories and scenarios, read by `us refine`:
-# every step needs a declared action, forbidden lists reject vague wording.
-# Preferred home is here; a host may keep it in architecture.yaml instead (the fixtures do).
+# The words `us refine` rejects in stories and scenarios. The phrases a
+# step may use are the `catalogue` below. The product document is its only
+# home: the architecture document holds no `vocabulary:`.
 vocabulary:
-  # Allowed action verbs with their concrete meaning.
-  actions:
-    - name: "runs <command>"
-      means: "invokes the true-bdd CLI with that subcommand in a terminal"
-    - name: "answers the prompt"
-      means: "types a choice (apply / refine / exit) into the --fix loop"
-    - name: "opens the run report"
-      means: "loads the report server page in a browser"
-
   # Vague words that must not appear in AC descriptions or steps.
   forbidden_qualifiers:
     - properly
@@ -140,7 +133,713 @@ vocabulary:
       reason: "Describes internal mechanics, not user-observable behavior."
       replacement: "Describe the visible result of reading the input."
 
-# Product glossary — empty on purpose (a recorded decision, not an
-# oversight). Fill it when `us create` mis-classifies one of our own words
-# as an "internal implementation term" — listing it here declares it user-world, not implementation.
-glossary: []
+# The product's words: what each word a catalogue entry declares is, and
+# why it matters. `D: declared-terms` holds every term a claimed Scenario's
+# phrases declare to exactly one entry here.
+glossary:
+  - term: engine
+    means: >-
+      TrueBDD's own program, `true-bdd`. It walks a project's documents
+      through checklists and sends AI turns to the models; it is neither
+      the project's own code nor the AI CLIs it drives, so a Scenario can
+      say what TrueBDD itself did.
+
+  - term: command
+    means: >-
+      One `true-bdd` subcommand with its arguments, as a person types it
+      after `true-bdd`, such as `scen check --fix`. It is what a role runs,
+      and the unit whose exit code, stdout and file changes a Scenario
+      observes.
+
+  - term: project tree
+    means: >-
+      The files of the project a command works on (its specification
+      documents, the engine's configuration and checklists, its code and
+      tests) as a Scenario starts from them. Named, so a Scenario says
+      exactly which starting point its behaviour depends on.
+
+  - term: exit code
+    means: >-
+      The number a finished command reports: anything but 0 when it refused
+      to start or could not finish, 0 when it ran to its end. A check still
+      failing at the end makes `scen check`, `build tests` and `build code`
+      report non-zero too, since they gate a change; `us refine` and `us
+      apply` report that check on stdout instead, leave the file they would
+      rewrite as it was, and report 0. It is what a script or a CI gate
+      reads to decide whether to go on.
+
+  - term: stdout
+    means: >-
+      Everything a command prints on its standard output: its answer lines
+      and its log records. It is what a person watching the terminal, or a
+      script reading it, sees.
+
+  - term: stderr
+    means: >-
+      Everything a command prints on its standard error: the error that
+      stopped it, followed by the command's usage when it was given an
+      argument it does not take. A command that cannot read its
+      configuration says so only there, since it never starts the log it
+      would print on stdout.
+
+  - term: log record
+    means: >-
+      One line the engine prints about its own run: a level, a message and
+      named fields, such as `level=ERROR msg="Refusing to start"
+      command="scen check"`. Its message and field names are product
+      output that people and tools rely on.
+
+  - term: pattern
+    means: >-
+      A regular expression a step uses to say what text must or must not
+      appear; it matches anywhere in the text unless it anchors itself.
+
+  - term: file change
+    means: >-
+      A file of the project tree that a run created, modified or deleted,
+      compared with the tree as the run found it. What a command leaves
+      behind is its lasting effect.
+
+  - term: checklist
+    means: >-
+      The ordered Prompts a command asks about each Story or Scenario it
+      walks, one checklist per command, read from the project tree. It
+      decides which questions a run asks.
+
+  - term: Prompt
+    means: >-
+      One question of a checklist, answered by a model (`Q:`) or by the
+      engine's own code (`D:`), with its rationale, the documents it reads
+      and an optional fix. A walk's verdicts and its AI turns are counted
+      per Prompt.
+
+  - term: AI turn
+    means: >-
+      One request the engine sends to an AI model and waits on. It is the
+      unit of model cost and time: a run that needs none costs nothing.
+
+  - term: AI CLI
+    means: >-
+      The agent command-line program an AI turn runs through: `claude`,
+      `crush` or `codex`. The project's configuration names one per kind of
+      turn, and a single Prompt may name its own, so moving work to another
+      provider is a configuration edit. Each enforces a different answer
+      shape and write boundary, so which one ran a turn decides what that
+      turn could do and what it cost.
+
+  - term: fix loop
+    means: >-
+      What a command run with `--fix` does for each check that fails: it
+      may first ask clarifying questions, each with numbered suggested
+      answers, then shows the fix it proposes and asks whether to apply it,
+      refine it with the person's feedback, or exit. It is how a person
+      settles a failure in their own words without editing a document by
+      hand.
+
+  - term: test dependencies
+    means: >-
+      The packages and tools a project's own tests need before they can
+      start, such as the npm packages of a Jest suite, or the browser and
+      the npm packages of browser tests.
+      They are installed into the project tree from outside it; no command
+      writes them, so a Scenario states them as a starting condition.
+
+  - term: glob
+    means: >-
+      A file path in which `*` stands for any run of characters within one
+      directory level, so a Scenario can count files whose exact names a
+      command chooses.
+
+  - term: Story
+    means: >-
+      One user story in its own file: who wants what and why, plus the
+      Acceptance Criteria that define it. A person writes it directly, out
+      of a discussion of a Feature; it is where a behaviour's reason is
+      recorded.
+
+  - term: Feature
+    means: >-
+      A named group of Stories that together deliver one product
+      capability. A label a Story carries, not a document of its own, so
+      related Stories can be found together.
+
+  - term: Acceptance Criterion
+    means: >-
+      One testable condition of a Story: an id the author writes as
+      `<NNN>-<slug>`, a description, and its own Given, When and Then
+      steps. When the Story is applied it becomes one Scenario of the
+      Registry, so it is the same behaviour at an earlier stage.
+
+  - term: step
+    means: >-
+      One line of a Scenario or an Acceptance Criterion: a Given sets up
+      where the behaviour starts, a When is what the role does, a Then is
+      what must be observed afterwards. Its text takes one shape the
+      catalogue declares, or is a `judge:` clause a model rules on.
+
+  # Every phrase whose template holds a slot or brackets declares it, so
+  # whoever writes the phrase's step definition is handed the grammar.
+  - term: template
+    means: >-
+      The shape a catalogue phrase gives the text of its steps, as its
+      `template:` writes it: words a step repeats exactly, slots it fills
+      in, and brackets offering a choice. A step takes the shape with its
+      whole text, never a part of it. A quoted slot, `"{name}"`, is filled
+      with at least one character and no double quote, so a step with an
+      empty quote does not take the shape; a number slot, `{name:number}`,
+      with a whole number in digits or the word `no` for zero; a role slot,
+      `{name:role}`, with exactly one of the roles the product document
+      declares, spelled as declared, and no other words; a pattern slot,
+      `{name:pattern}`, always the last thing in the template, with the rest
+      of the step as written, quotes included. Brackets with several
+      alternatives, such as `[is|are]`, take exactly one of them, never
+      none; brackets with one, such as `[s]`, take it or leave it out. What
+      fills a slot is what the phrase's meaning calls the named or given
+      thing, that many, or that role, so the template decides which steps a
+      meaning speaks of.
+
+  - term: Scenario
+    means: >-
+      One behaviour the product is held to, written as an entry of the
+      Registry with its Given, When and Then steps. Each becomes one
+      executable test, and the test's verdict, not anyone's opinion, says
+      whether the product behaves.
+
+  - term: Registry
+    means: >-
+      The one file of a project holding every Scenario, so the whole
+      behaviour the product is held to can be read, checked and turned
+      into tests in one place.
+
+  - term: lineage
+    means: >-
+      The record on a Scenario of the Story and the Acceptance Criterion it
+      came from, the criterion named by its lineage id
+      `<story-id>-<ac-id>`. It is how a behaviour says which role wanted it
+      and why.
+
+  - term: Scenario key
+    means: >-
+      The name a Scenario has in the Registry: its lineage id
+      `<story-id>-<ac-id>` once a Story claims it. The Scenario's test is
+      named after it, so it is what a reader sees when the test fails.
+
+  - term: step definition
+    means: >-
+      The test code that carries out one shape of step against the running
+      product: it sets up what a Given states or observes what a Then
+      states. A step runs through the one definition whose pattern matches
+      its whole text. Unlike the tests rendered from the Registry, the
+      definitions are written, by a person or by `build tests --fix`.
+
+  - term: test runner
+    means: >-
+      The program a project runs its own tests with, such as `go test` or
+      `npx playwright test`, as the architecture document declares it.
+      `build code` starts it to find the failing tests and again to confirm
+      a fix.
+
+  - term: shell command
+    means: >-
+      A program with its arguments, as a person would type it in a
+      terminal, that a Scenario runs itself in a directory of the project
+      tree once the command has ended, apart from the engine: typically the
+      project's own tests, to confirm the outcome the command was driving
+      at. It reports its own exit status, 0 for success.
+
+  - term: crush
+    means: >-
+      One of the AI CLIs the engine can send an AI turn to, the one that
+      makes the turns that change files. It has no permission check of its
+      own, so before each tool it wants to run during a turn it asks the
+      engine's write guard, and runs the tool only when the guard allows
+      it.
+
+  - term: write guard
+    means: >-
+      The engine's own check that crush runs before each tool call of a
+      turn. It answers allow or deny, holding the call to the turn's write
+      policy, and gives a reason for a denial. It denies whatever it cannot
+      decide, so a crush turn never changes a file the engine did not let
+      it change.
+
+  - term: write policy
+    means: >-
+      What one crush turn may do beyond reading: the directories of the
+      project tree it may write under, none for a turn that only reads,
+      and whether it may run shell commands, which could write anywhere.
+      The engine derives it from what the command lets that turn change
+      and hands it to crush with the turn.
+
+  - term: tool call
+    means: >-
+      One tool crush wants to run during a turn: the tool's name, such as
+      `view` to read a file, `write` or `edit` to change one, or `bash` to
+      run a shell command, and, for a tool that works on a file, that
+      file's path.
+
+  - term: hook payload
+    means: >-
+      The description of a tool call that crush writes to the write
+      guard's standard input, naming the tool and the file it targets. The
+      guard reads it for whatever crush did not otherwise name.
+
+  - term: symbolic link
+    means: >-
+      A file of the project tree that points at another path: reading or
+      writing through it reaches the path it points at, which may lie
+      outside the directory holding the link.
+
+# The step-phrase catalogue: the shape each Given, When and Then step may
+# take, and what it means. `D: step-phrases` holds every step of a Scenario
+# a Story claims to exactly one entry; the Scenarios no Story claims wait.
+catalogue:
+  - template: 'the "{tree}" project tree'
+    block: given
+    means: >-
+      The run starts from the named project tree: a fresh copy of that
+      project's files becomes the directory the command runs in, so
+      nothing an earlier run changed is visible in it.
+    terms: [project tree, command, template]
+
+  - template: 'the {actor:role} answers "{answer}" to every question'
+    block: given
+    means: >-
+      Every question the command asks on the terminal during its fix
+      loop is answered with the given text, as that role would type it:
+      "1" picks the first offered choice, which applies the proposed fix.
+      Once the answers run out the command reads end of input, which
+      exits the loop.
+    terms: [fix loop, template]
+
+  - template: 'the {actor:role} answers "{lines}" line by line'
+    block: given
+    means: >-
+      The quoted text, split at each "/", is what that role types on the
+      terminal during the fix loop, one piece per line in that order: the
+      first piece answers whatever the command asks first, the next piece
+      what it asks next. An empty piece is an empty line, which ends a
+      multi-line answer such as the feedback that refines a proposed fix.
+      Once the lines run out the command reads end of input, which exits
+      the loop.
+    terms: [fix loop, template]
+
+  - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
+    block: given
+    means: >-
+      The named checklist, as the command reads it from the project tree,
+      holds only the one Prompt whose question contains the quoted text,
+      so the run asks that Prompt and no other of that checklist.
+    terms: [checklist, Prompt, command, project tree, template]
+
+  - template: 'the project tree has no "{file}"'
+    block: given
+    means: >-
+      The project tree the run starts from lacks the named file, even one
+      the engine's own configuration and checklists would bring into it,
+      such as `true-bdd/true-bdd.yaml`, so the run shows what a command
+      does without that file.
+    terms: [project tree, template]
+
+  - template: "the project's [browser ]test dependencies are installed"
+    block: given
+    means: >-
+      The test dependencies the project's tests need, or with "browser"
+      those its browser tests need, are installed into the project tree
+      before the command runs, so those tests can start. The installation
+      happens before the run, so the files it adds are no file change of
+      the run.
+    terms: [test dependencies, project tree, file change, template]
+
+  - template: 'the {actor:role} runs "{command}"'
+    block: when
+    means: >-
+      That role runs the engine with the given command in the project
+      tree, once, and the Scenario waits for it to end. The role says who
+      wants the behaviour; it changes nothing in what the command does.
+    terms: [engine, command, project tree, template]
+
+  - template: 'the command exits with code {code:number}'
+    block: then
+    means: >-
+      The command the role ran ended with this exit code: non-zero when it
+      refused to start or could not finish, 0 when it ran to its end. A
+      check still failing at the end is non-zero for `scen check`, `build
+      tests` and `build code`, and 0 for `us refine` and `us apply`, which
+      report it on stdout and leave the Story or the Registry as it was.
+    terms: [command, exit code, template]
+
+  - template: 'stdout matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stdout has a match for the pattern
+      somewhere. Stdout carries the command's answer and its log records,
+      so a pattern may name a log record's message or fields.
+    terms: [stdout, log record, pattern, template]
+
+  - template: 'stdout does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      Nothing the command printed on stdout, neither an answer line nor a
+      log record's message or fields, has a match for the pattern: proof
+      that a message, a banner or a log record never appeared.
+    terms: [command, stdout, log record, pattern, template]
+
+  - template: 'stderr matches {expected:pattern}'
+    block: then
+    means: >-
+      What the command printed on stderr has a match for the pattern
+      somewhere. Stderr carries the error that stopped the command, so a
+      pattern may name a mistyped argument, the usage printed after it, or
+      a missing configuration.
+    terms: [stderr, pattern, template]
+
+  - template: 'stderr does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      Nothing the command printed on stderr has a match for the pattern:
+      proof that an error never named something, or that the usage a
+      mistyped argument earns never followed an error it did not earn.
+    terms: [command, stderr, pattern, template]
+
+  - template: 'no file outside "{dir}" changed'
+    block: then
+    means: >-
+      Every file change the run made lies under the named directory of
+      the project tree; every file outside it is as the run found it.
+    terms: [file change, project tree, template]
+
+  - template: 'no file outside "{dir}" and "{other_dir}" changed'
+    block: then
+    means: >-
+      Every file change the run made lies under one of the two named
+      directories of the project tree; every file outside both is as the
+      run found it.
+    terms: [file change, project tree, template]
+
+  - template: 'the only file changed outside "{dir}" is "{file}"'
+    block: then
+    means: >-
+      Outside the named directory the run made exactly one file change,
+      and it is to the named file of the project tree: proof that, beside
+      that directory, the command changed that one file and nothing else.
+    terms: [file change, project tree, template]
+
+  - template: 'the file "{file}" is created'
+    block: then
+    means: >-
+      The run created the named file: it was not in the project tree when
+      the run started and is there when it ends.
+    terms: [file change, project tree, template]
+
+  - template: 'the file "{file}" is modified'
+    block: then
+    means: >-
+      The named file was in the project tree when the run started and the
+      run changed its content.
+    terms: [file change, project tree, template]
+
+  - template: 'the file "{file}" is unchanged'
+    block: then
+    means: >-
+      The named file is in the project tree after the run, and the run did
+      not create, modify or delete it. A path naming no file fails, so a
+      mistyped path cannot pass.
+    terms: [file change, project tree, template]
+
+  - template: 'the file "{file}" has exactly {lines:number} line[s]'
+    block: then
+    means: >-
+      After the run the named file of the project tree holds exactly that
+      many lines of text. A newline at its end closes the last line rather
+      than opening another, and an empty file has none.
+    terms: [project tree, template]
+
+  - template: 'the file "{file}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run the content of the named file of the project tree has a
+      match for the pattern somewhere: proof that a command wrote a file
+      that says the right thing.
+    terms: [project tree, pattern, template]
+
+  - template: 'exactly {count:number} file[s] matching "{glob}" [is|are] created'
+    block: then
+    means: >-
+      The run created exactly that many files whose path in the project
+      tree matches the glob; files it modified or deleted do not count. It
+      is how a Scenario pins new files whose names the command chooses. A
+      glob that is not well formed fails the step whatever the run created,
+      a count of none included, so a mistyped glob cannot pass.
+    terms: [file change, glob, project tree, template]
+
+  - template: 'no file[s] matching "{glob}" [is|are] created'
+    block: then
+    means: >-
+      The run created no file whose path in the project tree matches the
+      glob. A glob that is not well formed fails the step, even when the run
+      created no file at all, so a mistyped glob cannot pass.
+    terms: [file change, glob, project tree, template]
+
+  - template: 'the story "{story_file}" has id "{id}"'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree
+      carries that id.
+    terms: [Story, project tree, template]
+
+  - template: 'the story "{story_file}" has feature "{feature}"'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree carries
+      that Feature.
+    terms: [Story, Feature, project tree, template]
+
+  - template: 'the story "{story_file}" has {count:number} acceptance criteria'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree holds
+      exactly that many Acceptance Criteria: none was dropped or added.
+    terms: [Story, Acceptance Criterion, project tree, template]
+
+  - template: 'every acceptance criterion in the story "{story_file}" has given, when and then steps'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has at
+      least one Acceptance Criterion, and each has at least one Given, one
+      When and one Then step.
+    terms: [Story, Acceptance Criterion, step, project tree, template]
+
+  - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, and its description has a match
+      for the pattern.
+    terms: [Story, Acceptance Criterion, pattern, project tree, template]
+
+  - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, and its description has no match
+      for the pattern: proof that a word or a shape is gone from it.
+    terms: [Story, Acceptance Criterion, pattern, project tree, template]
+
+  - template: 'the steps of acceptance criterion "{criterion}" of the story "{story_file}" do not match {unexpected:pattern}'
+    block: then
+    means: >-
+      After the run the Story in the named file of the project tree has an
+      Acceptance Criterion with that id, it has steps, and the text of none
+      of them has a match for the pattern.
+    terms: [Story, Acceptance Criterion, step, pattern, project tree, template]
+
+  - template: 'every step of scenario "{scenario}" in "{registry}" is matched by a step definition under "{steps_dir}"'
+    block: then
+    means: >-
+      After the run every step of the Scenario under that Scenario key in
+      the named Registry, model-run steps aside, matches exactly one step
+      definition in the named directory of the project tree, so the
+      Scenario can run as a test.
+    terms: [Scenario, Scenario key, Registry, step, step definition, project tree, template]
+
+  - template: 'exactly {count:number} scenario[s] in "{registry}" come[s] from acceptance criterion "{criterion}"'
+    block: then
+    means: >-
+      After the run exactly that many Scenarios of the named Registry name,
+      in their lineage, the Acceptance Criterion with that lineage id.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, template]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" cites the story "{story_file}"'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and its lineage names
+      the Story file at that path.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Story, template]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" is keyed "{key}"'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and it sits in the
+      Registry under that Scenario key.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Scenario key, template]
+
+  - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" matches {expected:pattern}'
+    block: then
+    means: >-
+      After the run exactly one Scenario of the named Registry comes from
+      the Acceptance Criterion with that lineage id, and its whole entry,
+      written out as YAML, has a match for the pattern: proof that it kept
+      the behaviour, not only its name.
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, pattern, template]
+
+  - template: 'no two scenarios in "{registry}" share the same steps'
+    block: then
+    means: >-
+      After the run no two Scenarios of the named Registry carry the same
+      Given, When and Then steps.
+    terms: [Scenario, Registry, step, template]
+
+  - template: 'the engine spawned the test runner "{program}"'
+    block: then
+    means: >-
+      The engine started the project's test runner through the named
+      program at least once during the run, even if that start then failed.
+    terms: [engine, test runner, template]
+
+  - template: 'the engine spawned a test runner with arguments matching {expected:pattern}'
+    block: then
+    means: >-
+      At least one test runner the engine started during the run carried
+      arguments that, joined by single spaces, have a match for the
+      pattern: proof of which tests the engine asked it to run.
+    terms: [engine, test runner, pattern, template]
+
+  - template: 'the engine spawned exactly {count:number} test runner[s]'
+    block: then
+    means: >-
+      The engine started the project's test runner exactly that many times
+      during the run.
+    terms: [engine, test runner, template]
+
+  - template: 'the engine spawned no test runner[s]'
+    block: then
+    means: >-
+      The engine never started the project's test runner during the run,
+      as when the command refuses to start.
+    terms: [engine, test runner, template]
+
+  - template: 'the engine dispatched {turns:number} AI turn[s]'
+    block: then
+    means: >-
+      The engine sent exactly that many AI turns during the run; "no"
+      means none, so the run cost no model call.
+    terms: [engine, AI turn, template]
+
+  - template: 'the engine dispatched {turns:number} [validation|fix|apply] AI turn[s] to "{cli}"'
+    block: then
+    means: >-
+      Of the AI turns the engine sent during the run, exactly that many of
+      the named kind went to the named AI CLI; "no" means none. A
+      validation turn answers a Prompt, a fix turn turns a failed Prompt
+      into a proposed fix or clarifying questions, and an apply turn writes
+      the fix. It is how a Scenario observes which AI CLI the configuration
+      routed each kind of turn to.
+    terms: [engine, AI turn, AI CLI, Prompt, template]
+
+  - template: 'the shell command "{shell_command}" run in "{dir}" exits with code {code:number}'
+    block: then
+    means: >-
+      Once the command has ended, the shell command run in the named
+      directory of the project tree reports that exit status: an outcome
+      checked apart from the engine, such as the project's own tests
+      passing in the tree the command left.
+    terms: [shell command, project tree, template]
+
+  - template: 'crush''s write policy lets the turn write under "{dir}"'
+    block: given
+    means: >-
+      The write policy crush hands the write guard lets the turn write
+      anywhere under the named directory of the project tree. Each such
+      step adds one directory: without one the turn may write nowhere, and
+      without the shell step it may not run the shell.
+    terms: [crush, write policy, write guard, project tree, template]
+
+  - template: 'crush''s write policy lets the turn run the shell'
+    block: given
+    means: >-
+      The write policy crush hands the write guard also lets the turn run
+      shell commands, so a tool call to `bash` is allowed, wherever the
+      command might write.
+    terms: [crush, write policy, write guard, tool call]
+
+  - template: 'crush hands the guard no write policy'
+    block: given
+    means: >-
+      crush asks the write guard about a tool call without any write
+      policy, as when crush is started by hand rather than by the engine,
+      so the guard has nothing to hold the call to.
+    terms: [crush, write guard, write policy, tool call]
+
+  - template: 'crush hands the guard an unreadable write policy'
+    block: given
+    means: >-
+      crush hands the write guard a write policy written in a shape the
+      guard cannot read, so the guard cannot tell where the turn may write
+      or whether it may run the shell.
+    terms: [crush, write guard, write policy]
+
+  - template: 'crush names the tool "{tool}"'
+    block: given
+    means: >-
+      The tool call crush asks about runs the named tool, spelled as crush
+      spells it, such as `view`, `write` or `bash`.
+    terms: [crush, tool call, template]
+
+  - template: 'crush names the file "{file}" of the project tree'
+    block: given
+    means: >-
+      The tool call crush asks about targets the named file of the project
+      tree, which crush names by its absolute path. The file need not exist
+      yet, since a write usually creates it.
+    terms: [crush, tool call, project tree, template]
+
+  - template: 'crush names the path "{path}" as written'
+    block: given
+    means: >-
+      The tool call crush asks about targets the path exactly as quoted,
+      left relative rather than made absolute, so it does not say which
+      directory it starts from.
+    terms: [crush, tool call, template]
+
+  - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
+    block: given
+    means: >-
+      crush writes the hook payload for the tool call to the write guard:
+      the named tool, and the named file of the project tree by its
+      absolute path. The guard reads it for whichever of the two crush did
+      not name otherwise.
+    terms: [crush, hook payload, write guard, tool call, project tree, template]
+
+  - template: 'the project tree''s "{link}" is a symbolic link to "{target}"'
+    block: given
+    means: >-
+      Before the run, the named path of the project tree is a symbolic link
+      pointing at the target, a path relative to the link's own directory,
+      so a write through the link lands at the target instead. Creating it
+      is no file change of the run.
+    terms: [symbolic link, project tree, file change, template]
+
+  - template: 'crush asks the guard about the tool call'
+    block: when
+    means: >-
+      crush runs the engine's write guard once in the project tree, as it
+      does before running a tool during a turn, with the write policy, the
+      tool call and the hook payload the Given steps set, and the Scenario
+      waits for the guard's answer. No AI turn is sent.
+    terms: [crush, write guard, write policy, tool call, hook payload, project tree, AI turn]
+
+  - template: 'the guard allows the tool call'
+    block: then
+    means: >-
+      The write guard answered that crush may run the tool: it ended with
+      status 0, which crush reads as allow.
+    terms: [write guard, tool call, crush]
+
+  - template: 'the guard denies the tool call'
+    block: then
+    means: >-
+      The write guard answered that crush must not run the tool: it ended
+      with status 2, which crush reads as a denial and reports with the
+      guard's reason, rather than as a guard that failed to answer.
+    terms: [write guard, tool call, crush]
+
+  - template: 'the guard''s reason matches {expected:pattern}'
+    block: then
+    means: >-
+      The reason the write guard gave for its answer, the one line it
+      prints on its standard error for crush to show beside a denied tool,
+      has a match for the pattern somewhere.
+    terms: [write guard, crush, pattern, template]

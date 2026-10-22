@@ -115,10 +115,20 @@ func TestPrepareRunDirGeneratesFilteredChecklist(t *testing.T) {
 		t.Error("generated prompt lost its F template")
 	}
 
-	created := parseGeneratedChecklist(t, tmpDir, "us-create")
-	if len(created.Sections) < 2 {
-		t.Errorf("us-create.yaml must stay unfiltered, got %d sections", len(created.Sections))
+	checked := parseGeneratedChecklist(t, tmpDir, "scen-check")
+	if checked.promptCount() < 2 {
+		t.Errorf("scen-check.yaml must stay unfiltered, got %+v", checked.Sections)
 	}
+}
+
+// promptCount counts the prompts of every section of the checklist.
+func (c loadedChecklist) promptCount() int {
+	count := 0
+	for _, section := range c.Sections {
+		count += len(section.ValidationPrompts)
+	}
+
+	return count
 }
 
 // TestPrepareRunDirWithoutFilterLeavesChecklistIdentical pins the
@@ -205,7 +215,7 @@ func TestLoadFixtureRejectsBadFilterDeclarations(t *testing.T) {
 	}{
 		{
 			name:      "stem does not match cmd",
-			selection: "us-create:\n  - \"a snippet\"\n",
+			selection: "us-apply:\n  - \"a snippet\"\n",
 			wantErr:   ErrFilterStemMismatch,
 		},
 		{
@@ -351,27 +361,31 @@ func TestFilterChecklistFileRejectsUnsupportedYAML(t *testing.T) {
 }
 
 // TestFilterChecklistFileExcludesSkippedPrompts pins production-parity
-// skip semantics: a string skip hides the prompt from selection, while
-// a boolean skip (which production decodes to "") does not.
+// skip semantics: only `skip: true` hides the prompt from selection;
+// `skip: false` and a non-boolean, which production refuses, do not.
 func TestFilterChecklistFileExcludesSkippedPrompts(t *testing.T) {
 	t.Parallel()
 
 	content := "sections:\n  - id: s\n    validation_prompts:\n" +
-		"      - Q: \"skipped question\"\n        skip: \"flaky\"\n" +
-		"      - Q: \"bool-skip question\"\n        skip: false\n"
+		"      - Q: \"parked question\"\n        skip: true\n" +
+		"      - Q: \"walked question\"\n        skip: false\n" +
+		"      - Q: \"string-skip question\"\n        skip: \"flaky\"\n"
 
 	path := writeTempChecklist(t, content)
 
-	err := FilterChecklistFile(path, []string{"skipped question"})
+	err := FilterChecklistFile(path, []string{"parked question"})
 	if !errors.Is(err, ErrSnippetUnmatched) {
-		t.Errorf("string-skipped prompt must be unselectable, got %v", err)
+		t.Errorf("a skip: true prompt must be unselectable, got %v", err)
 	}
 
-	path = writeTempChecklist(t, content)
+	for _, snippet := range []string{"walked question", "string-skip question"} {
+		path = writeTempChecklist(t, content)
 
-	err = FilterChecklistFile(path, []string{"bool-skip question"})
-	if err != nil {
-		t.Errorf("bool skip decodes to no-skip in production and must stay selectable, got %v", err)
+		err = FilterChecklistFile(path, []string{snippet})
+		if err != nil {
+			t.Errorf("%q: production walks or refuses it, never skips it, so it must stay selectable, got %v",
+				snippet, err)
+		}
 	}
 }
 
@@ -400,7 +414,7 @@ func TestCommandChecklistStemStopsAtTheFirstArgument(t *testing.T) {
 	const scenCheck = "scen-check"
 
 	for cmd, want := range map[string]string{
-		"us create 99.1":             "us-create",
+		"us refine scen-check":       "us-refine",
 		"us apply 95.1 --fix":        "us-apply",
 		"build tests --fix":          "build-tests",
 		"scen check":                 scenCheck,

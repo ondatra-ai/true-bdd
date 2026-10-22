@@ -1,0 +1,29 @@
+# Product document for `scen-check-phrase-docs-unlisted`.
+#
+# The catalogue phrases every step of E2E-001 but its last: nothing here
+# says what "answers within 200 milliseconds" means.
+
+title: "Fixture host project"
+
+description:
+  summary: >-
+    A single MCP service, used by the bdd-cli fixtures as the host
+    project a scenario registry describes.
+
+roles:
+  - name: Operator
+    definition: Runs the MCP service and watches what it answers.
+
+catalogue:
+  - template: 'the mcp service is running'
+    block: given
+    means: The MCP service has started and accepts requests.
+    terms: [mcp service]
+  - template: 'the {actor:role} sends "{message}"'
+    block: when
+    means: That role sends the quoted message to the MCP service, once.
+    terms: [mcp service]
+  - template: 'the service answers "{reply}"'
+    block: then
+    means: The MCP service's reply to the message is exactly the quoted text.
+    terms: [mcp service]

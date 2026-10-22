@@ -1,0 +1,22 @@
+# Seed registry for the `build-tests-path-missing` BDD fixture.
+#
+# One scenario that declares no `path:` for its generated test.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-path-missing fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

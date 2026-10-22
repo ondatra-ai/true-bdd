@@ -1112,3 +1112,379 @@ log:
       keep the four wrappers in pkg/cli?
     answer: |
       Да, я разрешаю, но я хотел бы, чтобы это было четко объяснено, что короче говоря, чтобы в этих штуках было в линтере, чтобы указали, что не что угодно можно, а именно 4 этих штуки доступны для внутри того короче, внутри движка. Вот.
+  - decision_trace:
+      research:
+        - |
+          Spike #133 (its result is the 2026-10-21 comment on the issue) ran a throwaway
+          matcher on feat/127-self-spec at 0a7d4999: 56 Scenarios, 604 steps, 592 of them
+          deterministic (12 `judge:`). A draft catalogue of 37 templates matches each of the
+          592 exactly once (none 0, several 0, wrong block 0), and the 37 templates map one
+          to one onto 37 of the 38 step definitions; the 38th
+          (tests/bdd-cli/steps/cli_steps.go:74) is used by no step.
+        - |
+          The grammar #133 first named (slots only for quoted runs and numbers, a pattern
+          tail only after `stdout matches`) needs 50 templates, and 9 step definitions are
+          then reached by 22 templates, so it is not one to one. The wider grammar's slots
+          across the 37 templates: text 46, inflection 10, number 8, pattern 8, role 2; 34
+          of 114 filled number slots hold the word "no"; 69 steps open with a role.
+        - |
+          23 glossary words carry the 37 meanings; each is defined once and mapped once.
+      recommendation: |
+        Confirm (c), with more slot kinds: a pattern slot at the end of any template, a role
+        slot, "no" as a number, inflections and literal alternatives. 37 phrases cover 592
+        steps; 23 words carry the meanings.
+      settled: |
+        (c) confirmed, no longer provisional (Q7): closure checks both the step phrase and
+        the word. A catalogue entry is `template`, `block`, `means` and `terms`; the template
+        is its identity, so it has no id. Grammar: literals, `"{name}"`, `{name:number}`
+        (digits or "no"), `{name:role}` (a role the product document declares),
+        `{name:pattern}` (last, opaque, never parsed), `[a|b]` and `[s]`. Every step but a
+        `judge:` or `llm:` one matches exactly one template in the whole catalogue, in the
+        block the entry declares; there is no precedence and no longest match.
+    question: |
+      Q34 - Spike #133 is done: confirm Q7 (c), step phrases and words both, with the
+      template grammar widened past quoted runs and numbers (a pattern slot ending any
+      template, a role slot, "no" as a number, inflections and literal alternatives)?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          Spike #133 put the whole catalogue and the glossary in docs/product/product.yaml and
+          only a word mapping in docs/architecture/architecture.yaml (`architecture.terms`:
+          term, technical, observed_by). Yamale passes the schema additions on scratch copies
+          with the draft merged in, and on the committed documents.
+        - |
+          All 37 meanings were written in product words. What is technical about the
+          observation and setup phrases Q13 (b) would have sent to architecture (stdout in
+          196 steps, log record 196, file change 99, AI turn 39, test runner 16) went into
+          each word's `technical` and `observed_by`, not into a phrase.
+      recommendation: |
+        Revise to (a): catalogue and glossary both in the product document; architecture
+        holds only the word mapping.
+      settled: |
+        (a), revising Q13's provisional (b): `catalogue:` and `glossary:` are top-level lists
+        of the product document; the architecture document gains only `architecture.terms`,
+        saying how each product word becomes the implementation and how a step definition
+        sets it up or observes it, in words that never name a Go identifier. No link from a
+        catalogue entry to a step definition is stored; that correspondence is computed.
+        Overrides Q13 (b).
+    question: |
+      Q35 - Revise Q13 to (a): the phrase catalogue and the glossary both in product.yaml,
+      and architecture.yaml only the mapping from each product word to its implementation?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          Spike #133 matched all 592 deterministic steps without rewriting one. The 67 stdout
+          patterns that pin a log field (`key=`) fall under `stdout matches
+          {expected:pattern}`, whose meaning names the answer line or log record the engine
+          prints.
+        - |
+          The words that look technical (AI turn, test runner, log record, engine, step
+          definition) each got a product meaning and an architecture mapping. AI turn: one
+          request through the engine's AI router to claude, crush or codex, logged once as
+          `msg="Dispatching AI turn"`, observed by counting those records in the run's JSON
+          log file.
+        - |
+          Two templates use a glossary word in another sense (Q38).
+      recommendation: |
+        Confirm (a): all step phrases are product language; no step had to be rewritten.
+      settled: |
+        (a) confirmed, no longer provisional (Q14): every step phrase is product language
+        and the steps keep their wording, apart from the two homonyms Q38 rewords. The
+        product glossary says what each word is and why it matters; the architecture
+        mapping says how it is implemented and observed. Whether a pattern tail names
+        observable product output is for the model closure Prompts to judge (#138); no `D:`
+        check parses or compiles it.
+    question: |
+      Q36 - Confirm Q14 (a): every step phrase is product language, the steps stay as they
+      are, and architecture only maps the words their meanings rely on?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 1: "Format, the three sample
+      entries (see `samples` in the orchestrator's message: `the engine dispatched
+      {turns:number} AI turn[s]`, `the {actor:role} runs "{command}"`, `stdout matches
+      {expected:pattern}` with their meanings, glossary terms and mappings) and the Q7
+      confirm (c) / Q13 revise to (a) / Q14 confirm (a) recommendations: APPROVED as
+      written."
+  - decision_trace:
+      research:
+        - |
+          No `build tests` fixture has a product document, so a closure check must stay off
+          where none is declared (Q31). All 63 Scenarios still carry `user_stories: []`, so
+          a contract keyed on a Story's claim lets the catalogue grow Story by Story while
+          the rest of the Registry stays unconverted. #133 had worded the contract per
+          catalogued Story.
+      recommendation: |
+        Declared means the file at `documents.product` exists and has a top-level
+        `catalogue` list (an empty one counts); a missing key, file or setting means not
+        declared, never a refusal. Not declared: every closure check passes every Item with
+        "not checked: the product document declares no catalogue". Declared: a Scenario is
+        checked once a Story claims it (non-empty `user_stories`), an unclaimed one passes
+        with "not checked: no Story claims this Scenario yet"; `us refine` always checks the
+        Story it walks; `build tests` checks every Scenario in the Registry. No explicit list.
+      settled: |
+        As recommended. Verdicts stay pass or fail (ADR 0015); "not checked" is a pass with
+        a context line. Phase 4 converts a Story by writing it, rekeying its Scenarios and
+        filling their `user_stories`. #135's criterion "an uncatalogued Story is not
+        checked" becomes "a Scenario no Story claims is not checked".
+    question: |
+      Q37 - How does term closure switch on: a catalogue counts as declared when
+      product.yaml has a top-level `catalogue` list; once declared, `scen check` checks a
+      Scenario a Story claims (non-empty `user_stories`) and passes an unclaimed one as
+      "not checked", `us refine` always checks its Story, `build tests` checks every
+      Scenario, and no explicit list of converted Stories exists?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 2: "Activation: a Scenario is
+      checked once a Story claims it (non-empty `user_stories`); unclaimed Scenarios pass
+      as "not checked". No explicit list. (§7 as written.)"
+  - decision_trace:
+      research:
+        - |
+          Spike #133's matcher found two templates whose wording uses a glossary word in
+          another sense: `the {actor:role} answers "{answer}" to every prompt` (13 steps),
+          where a Prompt is one element of a Checklist, and `the command "{shell_command}"
+          run in "{dir}" exits with code {code:number}` (2 steps), where a command is one of
+          TrueBDD's own.
+        - |
+          These steps reach no recorded request: a run dir layers only `true-bdd/` and
+          `templates/` under a fixture's `input/`, and the judge prompt carries only `judge:`
+          clauses, so rewording them changes no cassette.
+      recommendation: |
+        Reword both: `… answers "1" to every question` and `the shell command "…" run in
+        "…" exits with code N`.
+      settled: |
+        Reworded to `the <role> answers "<answer>" to every question` and `the shell command
+        "<argv>" run in "<dir>" exits with code N`. 15 Registry steps and 2 step definitions
+        change, the generated tests re-render with no AI turn, and no cassette changes.
+    question: |
+      Q38 - Reword the two homonyms: `the <role> answers "1" to every prompt` becomes `… to
+      every question`, and `the command "…" run in "…" exits with code N` becomes `the
+      shell command "…" run in "…" exits with code N`?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 3: "Homonyms: reword both.
+      `the {role} answers "1" to every prompt` becomes `... answers "1" to every question`;
+      `the command "…" run in "…" exits with code N` becomes `the shell command "…" run in
+      "…" exits with code N`. 15 Registry steps and 2 step definitions change; tests
+      re-render; no cassette changes."
+  - decision_trace:
+      research:
+        - |
+          product.yaml `vocabulary.actions` holds two When actions, "runs <command>" and
+          "answers the prompt", each with a meaning; true-bdd/product-schema.yaml requires
+          at least one, and true-bdd/checklists/us-refine.yaml asks for "an allowed action
+          verb from the architecture vocabulary".
+        - |
+          The catalogue's templates `the {actor:role} runs "{command}"` (when) and `the
+          {actor:role} answers "{answer}" to every question` (given) state the same two
+          actions, each with a meaning, so keeping both lists means two sources that drift.
+      recommendation: |
+        Retire `vocabulary.actions` in favour of the catalogue, the one source of step
+        phrasing.
+      settled: |
+        `vocabulary.actions` is retired in favour of the catalogue; its removal, schema
+        included, lands with #135, and #152 points `us refine` at the catalogue. The ruling
+        leaves `forbidden_qualifiers` and `forbidden_actions` as they are.
+    question: |
+      Q39 - Retire product.yaml's `vocabulary.actions` in favour of the catalogue, so step
+      phrasing has one source, with #152 pointing `us refine` at the catalogue?
+    answer: |
+      Product Owner, verdict on spike #133 (2026-10-21), item 4: "`vocabulary.actions` in
+      the product document is RETIRED in favour of the catalogue (one source). #152 points
+      `us refine` at the catalogue."
+  - decision_trace:
+      research:
+        - |
+          Phase 4 of #127 groups TrueBDD's Scenarios into Stories of 3-7 Acceptance
+          Criteria. About 40 Scenarios run `scen check`: the walk, its id filter and exit
+          code, the `D:` Prompt refusals and ordering, and one family per closure level
+          (phrases, glossary terms, architecture mappings, catalogue to step definition
+          correspondence) plus the `--fix` clarification loop.
+      recommendation: |
+        Split by closure level: `scen-check` (#140), `checklist-checks` (Feature `engine`),
+        `scen-check-phrases`, `scen-check-terms`, `scen-check-mappings`,
+        `scen-check-step-definitions` and `scen-check-fix`, each its own sub-issue of #127.
+      settled: |
+        Split by closure level. The six new Stories became #158-#163, each blocking #151
+        and #154. #163 later split its Scenarios into `scen-check-fix` and
+        `scen-check-quality-fix`.
+    question: |
+      Q40 - How are the ~40 `scen check` Scenarios cut into Stories: (a) split by closure
+      level, a sub-issue per Story; (b) let #140 propose the cut; (c) one big `scen-check`
+      Story, relaxing the 3-7 rule?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-21): "Split by closure
+      level (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #140's drill deleted the 8 step definitions the `scen-check` Story uses and rebuilt
+          them with one `build tests --fix` from the spec: 7 of 8 patterns came back
+          byte-identical and the whole suite replayed 101/101 against them.
+        - |
+          `us refine` and `us apply` find a Story by the glob `<id>-*.yaml`, so `scen-check`
+          also matches `scen-check-phrases-*.yaml` once #159-#163 land.
+        - |
+          The rebuilt 'project tree' step sets the fixture after its recordings resolve; in
+          record mode a failed setup leaves it nil and the harness's publishRecordings would
+          crash.
+      recommendation: |
+        Approve the rebuilt steps; fix the loader to pick the file whose own `id:` equals
+        the argument; make the harness (`pkg/testkit`, source) nil-safe.
+      settled: |
+        Approved, as recorded in the comment on #140. The loader picks the Story file whose
+        `id:` equals the argument, and the harness is nil-safe (merged as the #140
+        follow-up, 80881b10). The remaining Stories are converted the same way.
+    question: |
+      Q41 - Verdict on the step definitions #140 rebuilt from the spec, and how to resolve
+      the Story-file glob clash and the nil fixture the drill exposed?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-21): verdict "Approve
+      (Recommended)"; Story clash "Fix the loader (Recommended)"; drill gap "Harden the
+      harness (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          Coverage triage (#154): the `remote` agent polls `/api/agent/*` on the relay #123
+          deleted with `services/bdd-web`; nothing serves those routes. `deadcode` with the
+          remote commands unregistered lists the code only it reaches: `store` (SQLite),
+          `queryserver`, `inventory`, `promptprobe`, `cli/ps` and the `events` channel.
+      recommendation: |
+        Delete `remote`, `remote-supervisor`, `prompt-probe` and the code only they reach.
+      settled: |
+        Deleted in #164 (17fe88b8). Engine coverage under replay rose to 80.3%; no Scenario
+        or cassette changed.
+    question: |
+      Q42 - #164: delete the `remote` agent, its two sibling commands and the engine code
+      only it reaches; keep it out of scope; or keep and specify it?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Delete it
+      (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #128 added `cli/ps` exemptions to `.golangci.yaml` and `.alint.yml` (Q33); #164
+          deletes `cli/ps`, which leaves those entries naming a package that no longer
+          exists.
+      recommendation: |
+        Remove only the `cli/ps` entries #128 added; nothing else in either config changes.
+      settled: |
+        Removed in #164; the rules get stricter, not looser.
+    question: |
+      Q43 - When `cli/ps` is deleted, may #164 remove its now-dangling exemption entries
+      from `.golangci.yaml` and `.alint.yml`, only those entries?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Yes, remove them
+      (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #148's `scen check` walk found the term documents saying a failed check means a
+          non-zero exit, while `us refine` and `us apply` exit 0 after a failed walk; only
+          `scen check`, `build tests` and `build code` exit 1.
+      recommendation: |
+        No recommendation: either keep exit 0 as documented behaviour, or open a small
+        engine ticket making both commands exit 1 on failure.
+      settled: |
+        `us refine` and `us apply` keep exit 0 after a failed check. The glossary,
+        catalogue and mapping say so (corrected in #148). Do not ask again.
+    question: |
+      Q44 - `us refine` and `us apply` exit 0 after a failed check. Should they exit 1 so
+      they can gate a change too?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Keep exit 0".
+  - decision_trace:
+      research:
+        - |
+          The checklist Prompt field `skip:` is used by no shipped checklist and is
+          undocumented, and a string "false" still skips the Prompt.
+      recommendation: |
+        Delete it in #164.
+      settled: |
+        Kept and specified instead: #172 refuses a non-boolean `skip:` at startup, specifies
+        that a `skip: true` Prompt costs no AI turn, and documents the field in the README.
+    question: |
+      Q45 - The checklist field `skip:` is unused, undocumented and skips on a string
+      "false". Delete it in #164, or keep and specify it?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Keep and specify
+      it".
+  - decision_trace:
+      research:
+        - |
+          #155's steps regeneration drill on 426c64f1 deleted all 55 step definitions and
+          rebuilt them with `build tests --fix` from the spec, against the 19 Scenarios that
+          together use every catalogue phrase ($30, 33 AI turns). `build tests` over the full
+          Registry is complete; the full replay with the rebuilt definitions passes 196 of 197.
+          The failure, `us-apply-001` (`no two scenarios … share the same steps`), is a coding
+          slip against a precise mapping: the rebuilt code decodes into a `*yaml.Node` that
+          yaml.v3 leaves empty. 46 of 55 patterns came back byte-identical.
+        - |
+          The drill found four spec gaps that fail no Scenario: the template grammar is only in
+          README.md; nothing says the When step hands the run to the harness recorder;
+          link-following for "a path leading out of the run directory" is undecided outside
+          Story files; and one explicit glob case was missed. It also found that `build tests
+          --fix` never runs a definition it writes, and that the engine's claude turns load the
+          project's settings (`CLAUDE.md`, `.claude/rules/`).
+      recommendation: |
+        (b): write the four gaps into the spec now (no cassette changes), file the process gap
+        and minimal-mode claude turns as their own issues, and accept the drill at 196/197 with
+        the explanation on #155.
+      settled: |
+        (b). The four gaps go into the spec documents; #173 (`build tests --fix` runs the step
+        definitions it writes) and #174 (the engine's claude turns run in minimal mode) are
+        filed apart from #127; #155's drill criterion is accepted at 196 of 197, explained on
+        #155.
+    question: |
+      Q46 - The #155 drill replays 196 of 197 with rebuilt step definitions. (a) Close every
+      gap, teach `build tests --fix` to run what it writes, and re-run the drill until green;
+      (b) write the four spec gaps in now, file the process gap and minimal-mode claude turns
+      as their own issues, and accept the drill at 196/197 with the explanation on #155;
+      (c) accept as is and file everything as issues?
+    answer: |
+      (б) Мой вариант.
+
+      * Сейчас дописать четыре дыры в спеку. Это почти бесплатно и кассет не трогает.
+      * «Прогонять пересобранные шаги» и «минимальный режим вызова claude» завести отдельными issues.
+      * Принять дрилл как 196 из 197 с объяснением в #155.
+  - decision_trace:
+      research:
+        - |
+          #155 asks for a whole-Registry model `scen check` walk: 10 model Prompts per
+          Scenario, about $2 each, about $390 for 195 Scenarios and many hours. Every Story
+          ticket already walked its own Scenarios with the model until clean. The free walk of
+          the four deterministic closure Prompts (no AI CLI on PATH) over the whole Registry
+          passes 195 of 195 Scenarios, 780 cells, at 426c64f1.
+        - |
+          After their tickets' walks, only the review-fix pass changed Scenarios: seven,
+          which it walked with the model, all clean ($16.26).
+      recommendation: |
+        Instead of the whole-Registry model walk: the free deterministic walk over the whole
+        Registry, plus a model walk of only the Scenarios changed since their own ticket's
+        walk.
+      settled: |
+        No whole-Registry model walk. #155's walk criterion is met by the free deterministic
+        walk over the whole Registry (re-run after the last spec change lands) and the model
+        walk of the seven Scenarios the review pass changed. A later change to a Scenario
+        walks that Scenario with the model.
+    question: |
+      Q47 - #155's whole-Registry model `scen check` walk costs about $390: run it in full;
+      or run the free deterministic walk over the whole Registry plus a model walk of only
+      the Scenarios changed since their ticket's walk; or neither?
+    answer: |
+      Слушай, да, давай пока дешевый прогон попробуем сделать, а потом я посмотрю на
+      результаты и...
+
+      Asked again after the results: "так а что я сказал делать то? Я ж уже ответил разве
+      нет?" (2026-10-22): the cheap variant stands.
