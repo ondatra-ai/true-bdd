@@ -368,6 +368,37 @@ scenarios:
         - and: the engine spawned the test runner "npx"
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched 1 AI turn
+  build-code-frameworks-002-jest-fix-reruns-test-by-name:
+    description: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
+        scenario_id: build-code-frameworks-002-jest-fix-reruns-test-by-name
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "build-code-jest-fix-named-test" project tree
+        - and: the project's test dependencies are installed
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Suite failures" failures=1 framework=jest
+        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches BUILD CODE COMPLETE
+        - and: the file "services/greeter/greeting.js" is modified
+        - and: the file "tests/unit/suite-runs.log" has exactly 1 line
+        - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$
+        - and: the engine spawned exactly 2 test runners
+        - but: the file "tests/unit/greeting.test.js" is unchanged
+        - and: the file "tests/unit/canary.test.js" is unchanged
+        - and: the file "docs/architecture/architecture.yaml" is unchanged
+        # Independent outcome check, last: the suite run appends to
+        # suite-runs.log after the line-count clause.
+        - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
   build-tests-refusals-001-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, never walked to a trivial success
     service: bdd-cli

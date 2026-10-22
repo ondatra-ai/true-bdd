@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 27553,
+  "request_hash": "sha256:50a559259f5c0e2023f9da69670e67a1bd4373a736897234d954984450f2f639",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/greeter/greeting.js"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-22T05:31:53Z"
+}

@@ -117,6 +117,28 @@ func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
 	s.Done()
 }
 
+// build-code-frameworks-002-jest-fix-reruns-test-by-name: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
+	s.Given(`the "build-code-jest-fix-named-test" project tree`)
+	s.And(`the project's test dependencies are installed`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/greeter/greeting.js" is modified`)
+	s.And(`the file "tests/unit/suite-runs.log" has exactly 1 line`)
+	s.And(`the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/unit/greeting.test.js" is unchanged`)
+	s.And(`the file "tests/unit/canary.test.js" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")
