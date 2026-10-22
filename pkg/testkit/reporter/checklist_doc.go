@@ -43,7 +43,9 @@ type rawChecklist struct {
 		ID                string `yaml:"id"`
 		Name              string `yaml:"name"`
 		ValidationPrompts []struct {
-			Skip string `yaml:"skip"`
+			// Any type: only the boolean true parks a prompt, as in the
+			// engine; a string such as "false" never did, and is refused.
+			Skip any `yaml:"skip"`
 			// Uppercase on purpose: the checklist format spells the
 			// question `Q:` and the fix template `F:`, and the tag has to
 			// match the file rather than a naming convention.
@@ -53,7 +55,7 @@ type rawChecklist struct {
 }
 
 // loadChecklistDoc reads the checklist the run logged and flattens it,
-// matching checklist_loader.go's own walk exactly — see
+// matching runner.flattenChecklistPrompts exactly — see
 // TestLoadChecklistDocFlattensLikeTheEngine and TestLoadChecklistDocDegrades.
 func loadChecklistDoc(fixtureDir, logged string) ChecklistDoc {
 	doc := ChecklistDoc{Path: logged}
@@ -78,7 +80,7 @@ func loadChecklistDoc(fixtureDir, logged string) ChecklistDoc {
 
 	for _, section := range raw.Sections {
 		for _, prompt := range section.ValidationPrompts {
-			if prompt.Skip != "" {
+			if prompt.Skip == true {
 				continue
 			}
 
