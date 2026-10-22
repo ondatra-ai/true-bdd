@@ -113,6 +113,8 @@ func Register(suite *bddgo.Suite[State]) {
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
 	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	// crush, not a role, runs the write guard. See crush_guard_steps.go.
+	registerCrushGuardSteps(suite)
 }
 
 // prepareTree loads the named fixture tree and resolves how this run
@@ -266,11 +268,15 @@ func asksJudge(scenario bddgo.Scenario) bool {
 // role is discarded — validated by the pattern itself, with nothing else
 // for the harness to do with it.
 func runCLI(state *State, args []string) error {
+	return runEngine(state, args[1])
+}
+
+// runEngine runs the engine once with the given command; extraEnv rides on
+// top of the proxy's environment and wins ties.
+func runEngine(state *State, command string, extraEnv ...string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
-
-	command := args[1]
 
 	err := state.Fixture.UseCommand(command)
 	if err != nil {
@@ -282,8 +288,10 @@ func runCLI(state *State, args []string) error {
 	state.T.Logf("running %q (%s, timeout %s) — this can take several minutes",
 		command, state.Fixture.Name, timeout)
 
+	env := append(slices.Clone(state.Proxy.Env), extraEnv...)
+
 	result, err := runner.Execute(context.Background(), state.Fixture,
-		state.Harness.BinPath, state.Harness.SessionRoot, timeout, state.Proxy.Env...)
+		state.Harness.BinPath, state.Harness.SessionRoot, timeout, env...)
 
 	// Observed before the branch: a run that errored still has a diff
 	// worth recording, and the tmpdir path is what makes it findable.
