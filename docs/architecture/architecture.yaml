@@ -462,3 +462,85 @@ architecture:
         empty command, or one that cannot start fails the step, as does an
         exit status other than the quoted one, printing the shell command's
         stdout and stderr.
+
+    - term: crush
+      technical: >-
+        The `crush` CLI the engine spawns for a turn whose tier names it (the
+        crush dependency above), with a per-turn generated config whose
+        `PreToolUse` hook runs this binary's `crush-guard` subcommand and with
+        the turn's write policy in that hook's environment. Hooks from a host
+        project's own `.crush.json` or `crush.json` run beside it, and a
+        denial from either stops the tool.
+      observed_by: >-
+        A Scenario about the write guard never starts crush: its Given steps
+        record what crush would hand the guard, and its When step runs the
+        guard the way crush does, so it spends no AI turn and needs no CLI.
+
+    - term: write guard
+      technical: >-
+        The engine binary's hidden `crush-guard` subcommand, run with no
+        arguments. It reads the write policy, then the tool call, and exits 0
+        to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
+        stderr for a denial. A missing or unreadable policy denies before the
+        tool call is read. `view`, `ls`, `grep`, `glob`, `sourcegraph`,
+        `diagnostics`, `fetch` and the `context7` MCP tools only read and are
+        allowed; `bash` is allowed only when the policy allows the shell; the
+        file tools `edit`, `write`, `multiedit`, `patch`, `create` and
+        `download` are allowed only for an absolute target inside a write
+        root, with symbolic links resolved on both sides (through the deepest
+        part of the path that exists) and whole path components compared;
+        any other tool is denied as a writer.
+      observed_by: >-
+        Run once by the When step as the engine binary's subprocess in the
+        run directory, under the Scenario's timeout, its exit status, stdout,
+        stderr and file changes kept as a command's are. The allow and deny
+        steps compare the status with 0 and 2, failing with the reason it
+        gave; the reason step matches its pattern anywhere in the kept stderr.
+
+    - term: write policy
+      technical: >-
+        A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
+        `write_roots`, a list of absolute directory paths, and `allow_bash`,
+        true or false. The engine derives it per turn from the turn's write
+        globs, each cut at its first wildcard and made absolute against the
+        project root, and from whether the turn may run the shell.
+      observed_by: >-
+        Built by the Given steps for the When step: each write-under step adds
+        the quoted directory joined to the run directory, the shell step sets
+        `allow_bash`, and with neither the policy grants nothing. The
+        no-policy step leaves the variable blank, which the guard reads as
+        unset, and the unreadable step sets it to text that is not JSON.
+
+    - term: tool call
+      technical: >-
+        The tool's name in `CRUSH_TOOL_NAME` and its target file in
+        `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
+        a blank or unset variable names nothing.
+      observed_by: >-
+        The When step sets both variables and the write policy every time,
+        blank where no Given step named them, so nothing the test process
+        exports reaches the guard. A file of the project tree is joined to
+        the run directory; a path as written passes unchanged.
+
+    - term: hook payload
+      technical: >-
+        The JSON crush pipes to a hook's stdin. The guard reads its
+        `tool_name` for a blank tool name, and its `input.file_path`, else
+        `input.path`, for a blank target; an empty or unparseable payload
+        names nothing.
+      observed_by: >-
+        The When step writes `{"tool_name": <tool>, "input": {"file_path":
+        <the file joined to the run directory>}}` to the guard's stdin; with
+        no payload step the guard's stdin is empty.
+
+    - term: symbolic link
+      technical: >-
+        A filesystem symbolic link holding the target as written, so a
+        relative target resolves from the link's own directory.
+      observed_by: >-
+        The Given step adds a command to the fixture's prep phase that makes
+        the link's directory and the link, after the run directory is
+        assembled and before the snapshot the file changes are counted from.
+        The snapshot refuses a link it walks into, so the link must sit in a
+        directory it leaves out, such as `node_modules`; a link path that is
+        absolute or climbs out of the project tree fails the step.
