@@ -2503,6 +2503,147 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  build-tests-paths-001-missing-path-refused:
+    description: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario, rather than write its generated test to a file it guessed
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-001-missing-path-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-missing" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: scenario declares no path: for its generated test'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-002-path-with-whitespace-refused:
+    description: A `path:` with whitespace around it must refuse `build tests`, quoting the path as written, rather than write the test to a file the Registry does not name
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-002-path-with-whitespace-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-with-whitespace" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"tests/mcp/mcp_test\.go \\": path: must be a clean repo-relative path \(surrounding whitespace\)'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-003-path-outside-project-refused:
+    description: A `path:` that is absolute or climbs out of the project tree with `..` must refuse `build tests`, naming the Scenario and the path, so no generated test is written outside the project
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-003-path-outside-project-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-outside-project" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"\.\./tests/mcp/mcp_test\.go\\": path: must be a clean repo-relative path'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-004-path-not-test-file-refused:
+    description: A `path:` that does not end in `_test.go` must refuse `build tests`, naming the Scenario and the path, since Go never runs such a file as a test
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-004-path-not-test-file-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-not-test-file" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"tests/mcp/mcp\.go\\": path: must name a _test\.go file'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-005-path-in-steps-dir-refused:
+    description: A `path:` inside the suite's `steps/` directory must refuse `build tests`, naming the Scenario and the path, so a generated test never takes the place of a step definition
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-005-path-in-steps-dir-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-in-steps-dir" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-901: \\"tests/mcp/steps/mcp_test\.go\\": path: must not be inside the suite''s steps/ tree'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-006-service-in-two-dirs-refused:
+    description: Two Scenarios of one service whose `path:` values lie in two directories must refuse `build tests`, naming the second Scenario, its path and the directory the first one already set
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-006-service-in-two-dirs-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-service-in-two-dirs" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches INT-902: \\"tests/mcp/tickets/ticket_test\.go\\": path: must sit directly in the owning suite''s directory'
+        - and: stdout matches \(INT-901 puts mcp-service in \\"tests/mcp\\"\)
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
+  build-tests-paths-007-path-derives-no-package-refused:
+    description: A `path:` whose directory name derives no Go package name must refuse `build tests`, naming the directory and the name it derives
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/build-tests-paths-generated-test-file.yaml
+        scenario_id: build-tests-paths-007-path-derives-no-package-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-path-derives-no-package" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches tests/2e2/mcp_test\.go: suite \\"2e2\\": suite name derives an invalid Go package name \(derived \\"2e2_test\\"\)'
+        - but: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+
   build-tests-steps-003-only-unbound-scenarios-walked:
     description: A host that declares no coverage command must still walk only the scenarios with an unbound step, because the engine resolves step coverage itself
     service: bdd-cli

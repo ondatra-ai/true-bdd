@@ -1,0 +1,24 @@
+# Seed registry for the `build-tests-path-derives-no-package` BDD fixture.
+#
+# One scenario whose `path:` sits in tests/2e2/, a directory whose name
+# starts with a digit, so it derives no Go package name.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-path-derives-no-package fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/2e2/mcp_test.go"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"

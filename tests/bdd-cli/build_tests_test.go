@@ -112,6 +112,98 @@ func TestBuildTestsFiles006StepFileNotGoRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-tests-paths-001-missing-path-refused: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario, rather than write its generated test to a file it guessed
+func TestBuildTestsPaths001MissingPathRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-001-missing-path-refused")
+	s.Given(`the "build-tests-path-missing" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: scenario declares no path: for its generated test`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-002-path-with-whitespace-refused: A `path:` with whitespace around it must refuse `build tests`, quoting the path as written, rather than write the test to a file the Registry does not name
+func TestBuildTestsPaths002PathWithWhitespaceRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-002-path-with-whitespace-refused")
+	s.Given(`the "build-tests-path-with-whitespace" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/mcp_test\.go \\": path: must be a clean repo-relative path \(surrounding whitespace\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-003-path-outside-project-refused: A `path:` that is absolute or climbs out of the project tree with `..` must refuse `build tests`, naming the Scenario and the path, so no generated test is written outside the project
+func TestBuildTestsPaths003PathOutsideProjectRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-003-path-outside-project-refused")
+	s.Given(`the "build-tests-path-outside-project" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"\.\./tests/mcp/mcp_test\.go\\": path: must be a clean repo-relative path`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-004-path-not-test-file-refused: A `path:` that does not end in `_test.go` must refuse `build tests`, naming the Scenario and the path, since Go never runs such a file as a test
+func TestBuildTestsPaths004PathNotTestFileRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-004-path-not-test-file-refused")
+	s.Given(`the "build-tests-path-not-test-file" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/mcp\.go\\": path: must name a _test\.go file`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-005-path-in-steps-dir-refused: A `path:` inside the suite's `steps/` directory must refuse `build tests`, naming the Scenario and the path, so a generated test never takes the place of a step definition
+func TestBuildTestsPaths005PathInStepsDirRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-005-path-in-steps-dir-refused")
+	s.Given(`the "build-tests-path-in-steps-dir" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/steps/mcp_test\.go\\": path: must not be inside the suite's steps/ tree`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-006-service-in-two-dirs-refused: Two Scenarios of one service whose `path:` values lie in two directories must refuse `build tests`, naming the second Scenario, its path and the directory the first one already set
+func TestBuildTestsPaths006ServiceInTwoDirsRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-006-service-in-two-dirs-refused")
+	s.Given(`the "build-tests-service-in-two-dirs" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-902: \\"tests/mcp/tickets/ticket_test\.go\\": path: must sit directly in the owning suite's directory`)
+	s.And(`stdout matches \(INT-901 puts mcp-service in \\"tests/mcp\\"\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-007-path-derives-no-package-refused: A `path:` whose directory name derives no Go package name must refuse `build tests`, naming the directory and the name it derives
+func TestBuildTestsPaths007PathDerivesNoPackageRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-007-path-derives-no-package-refused")
+	s.Given(`the "build-tests-path-derives-no-package" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/2e2/mcp_test\.go: suite \\"2e2\\": suite name derives an invalid Go package name \(derived \\"2e2_test\\"\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
 func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
