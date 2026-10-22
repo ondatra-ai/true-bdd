@@ -1,0 +1,49 @@
+# Seed registry for the `us-apply-key-apart-from-lineage` BDD fixture.
+#
+# What a model's fix could write: the Scenario for criterion 002 cites its
+# lineage id `mcp-endpoint-002-get-refused` but is keyed
+# `mcp-endpoint-get-refused`. The presence prompt passes for both criteria,
+# since each lineage id is cited here, so the walk converges; the engine
+# itself must then refuse to write a Registry whose key is not the
+# lineage id (ADR 0014), and leave this file as it is.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-21"
+  description: "Seed for us-apply-key-apart-from-lineage fixture"
+
+scenarios:
+  mcp-endpoint-001-initialize-ok:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize request to /mcp"
+    service: ""
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/mcp-endpoint-requests.yaml"
+        scenario_id: "mcp-endpoint-001-initialize-ok"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+      when:
+        - the Claude User posts a valid JSON-RPC initialize request to /mcp
+      then:
+        - the server returns HTTP 200
+        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+  mcp-endpoint-get-refused:
+    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
+    service: ""
+    path: "tests/mcp/mcp_endpoint_test.go"
+    last_updated: "2026-10-21"
+    user_stories:
+      - story: "docs/product/stories/mcp-endpoint-requests.yaml"
+        scenario_id: "mcp-endpoint-002-get-refused"
+        merge_date: "2026-10-21"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+      when:
+        - the Claude User sends an HTTP GET request to /mcp
+      then:
+        - the server returns HTTP 405 Method Not Allowed

@@ -1319,6 +1319,28 @@ scenarios:
         - and: the engine dispatched 4 AI turns
         - but: no file outside "tmp" changed
         - and: stdout does not match RE-WALK
+  us-apply-004-key-apart-from-lineage-refused:
+    description: '`us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story''s criteria is keyed apart from that criterion''s lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims'
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories:
+      - story: docs/product/stories/us-apply-registry-merge.yaml
+        scenario_id: us-apply-004-key-apart-from-lineage-refused
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "us-apply-key-apart-from-lineage" project tree
+        - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+      when:
+        - the Product Owner runs "us apply mcp-endpoint"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Scenario keyed apart from its lineage" scenario=mcp-endpoint-get-refused lineage=mcp-endpoint-002-get-refused
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 2 AI turns
   checklist-checks-002-check-and-question-refused:
     description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
     service: bdd-cli

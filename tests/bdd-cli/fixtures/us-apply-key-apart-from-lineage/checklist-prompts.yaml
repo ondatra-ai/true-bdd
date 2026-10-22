@@ -1,0 +1,5 @@
+# Which prompts of the shipped checklist this fixture's run walks.
+# The presence check passes for both criteria, each cited once, so the
+# walk converges and only the engine's own key check is left to refuse.
+us-apply:
+- already appear as a scenario in the registry

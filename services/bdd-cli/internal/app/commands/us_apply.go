@@ -2,9 +2,11 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -14,6 +16,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 )
@@ -22,6 +25,10 @@ import (
 // tmpdir. Deliberately fixed: one registry per run, and the name never
 // leaves the tmpdir, so it stays stable regardless of where documents.scenarios_yaml points.
 const scratchRegistryFilename = "scenarios.yaml"
+
+// errKeyNotLineage refuses a walk's Registry in which a Scenario claims a
+// criterion's lineage under another key (ADR 0014).
+var errKeyNotLineage = errors.New("a Scenario must be keyed by the lineage id it claims, so the Registry is unchanged")
 
 // ApplyDeps bundles what `us apply` needs at the command boundary.
 type ApplyDeps struct {
@@ -144,11 +151,16 @@ func commitApplyWalk(
 			return nil
 		}
 
+		err := heldLineageKeys(scratchPath, result.Items)
+		if err != nil {
+			return err
+		}
+
 		slog.Info("ALL CHECKS PASSED!")
 
 		// Copy then drop the scratch: disk.Copy commits through a rename, so
 		// the canonical registry is never the half-written one.
-		err := disk.Copy(requirementsFile, scratchPath, disk.Shared)
+		err = disk.Copy(requirementsFile, scratchPath, disk.Shared)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to commit scratch registry to %s: %w",
@@ -162,4 +174,38 @@ func commitApplyWalk(
 
 		return nil
 	}
+}
+
+// heldLineageKeys refuses the walk's Registry when a Scenario claiming one
+// of the walked criteria is keyed apart from that criterion's lineage id:
+// the key never depends on a model, whatever its fix wrote.
+func heldLineageKeys(scratchPath string, items []*template.ScenarioApplyData) error {
+	scenarios, err := registry.NewRegistryLoader().Load(scratchPath)
+	if err != nil {
+		return fmt.Errorf("read the walked Registry: %w", err)
+	}
+
+	walked := make(map[string]bool, len(items))
+	for _, item := range items {
+		walked[item.LineageScenarioID] = true
+	}
+
+	offenders := make([]string, 0)
+
+	for _, scenario := range scenarios {
+		for _, ref := range scenario.UserStories {
+			if !walked[ref.ScenarioID] || scenario.ID == ref.ScenarioID {
+				continue
+			}
+
+			slog.Error("Scenario keyed apart from its lineage", "scenario", scenario.ID, "lineage", ref.ScenarioID)
+			offenders = append(offenders, scenario.ID+" claims "+ref.ScenarioID)
+		}
+	}
+
+	if len(offenders) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%w: %s", errKeyNotLineage, strings.Join(offenders, "; "))
 }

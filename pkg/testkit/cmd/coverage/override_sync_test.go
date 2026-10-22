@@ -20,11 +20,14 @@ const (
 	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
 	usRefineStem         = "us-refine"
 	scenCheckStem        = "scen-check"
+	usApplyStem          = "us-apply"
 	// measurableQShort is the scen-check question several fixtures narrow
 	// to: "whether this scenario includes at least one specific measurable criterion".
 	measurableQShort = "d92aa73c"
 	// vagueDescriptionQ is the us-refine vague-word-in-description prompt.
 	vagueDescriptionQ = "4fa4e82c"
+	// presenceQ is the us-apply "already appear as a scenario in the registry" prompt.
+	presenceQ = "6da54561"
 )
 
 // declaredSelection pins one fixture's checklist_prompts declaration to
@@ -47,9 +50,10 @@ func declaredSelections() map[string]declaredSelection {
 		"us-refine-fix-step-qualifier":           {Stem: usRefineStem, QShort: "882442b9", RequireF: true},
 		"us-refine-fix-forbidden-verb":           {Stem: usRefineStem, QShort: "3929749d", RequireF: true},
 		"us-refine-fix-unfixable-checklist":      {Stem: usRefineStem, QShort: "895981ea", RequireF: false},
-		"us-apply-rewalk-converges":              {Stem: "us-apply", QShort: "6da54561", RequireF: true},
+		"us-apply-rewalk-converges":              {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"us-apply-key-apart-from-lineage":        {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"fix-loop-exit-story":                    {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
-		"fix-loop-exit-registry":                 {Stem: "us-apply", QShort: "6da54561", RequireF: true},
+		"fix-loop-exit-registry":                 {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
 		"scen-check-id-filter":                   {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"scen-check-fix-rewrites-phrase-meaning": {Stem: scenCheckStem, QShort: "3e039823", RequireF: true},
 		"scen-check-fix-rewrites-phrase-use":     {Stem: scenCheckStem, QShort: "5dfd2b61", RequireF: true},
