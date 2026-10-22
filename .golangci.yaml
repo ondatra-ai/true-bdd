@@ -214,12 +214,11 @@ linters:
             - "$all"
             - "!**/pkg/cli/**"
             - "!**/pkg/shell/**"
-            # Inside the engine ONLY these four wrappers may reach pkg/shell:
-            # codex, crush, ps and the engine's own binary, named one by one
+            # Inside the engine ONLY these three wrappers may reach pkg/shell:
+            # codex, crush and the engine's own binary, named one by one
             # so any other engine package stays refused (docs/qna Q19, Q33).
             - "!**/services/bdd-cli/internal/infrastructure/cli/codex/*.go"
             - "!**/services/bdd-cli/internal/infrastructure/cli/crush/*.go"
-            - "!**/services/bdd-cli/internal/infrastructure/cli/ps/*.go"
             - "!**/services/bdd-cli/internal/infrastructure/cli/truebdd/*.go"
           deny:
             - pkg: "github.com/ondatra-ai/true-bdd/pkg/shell"

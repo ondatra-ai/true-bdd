@@ -26,8 +26,6 @@ type Prompt struct {
 	With         map[string]any // The check's parameters (with in YAML)
 	Rationale    string         // Why this matters
 	Skip         string   // If set, skip this prompt
-	ActionIfYes  string   // Action if answer is yes
-	ActionIfFail string   // Action if validation fails
 	Docs         []string // Document keys to inject into prompt
 	FixTemplate  string   // Template for generating fix prompt when validation fails (F in YAML)
 	// Model tier overrides for this prompt alone, each shadowing the
@@ -57,8 +55,6 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 
 	p.Rationale = getStringFromMap(raw, "rationale")
 	p.Skip = getStringFromMap(raw, "skip")
-	p.ActionIfYes = getStringFromMap(raw, "action_if_yes")
-	p.ActionIfFail = getStringFromMap(raw, "action_if_fail")
 	p.Docs = getStringSliceFromMap(raw, "docs")
 	p.FixTemplate = getStringFromMap(raw, "F")
 	p.Model = getStringFromMap(raw, "model")
