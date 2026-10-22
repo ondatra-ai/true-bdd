@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -108,7 +107,7 @@ func assertFileLineCount(state *State, args []string) error {
 
 	path := args[0]
 
-	want, err := strconv.Atoi(args[1])
+	want, err := numberSlot(args[1])
 	if err != nil {
 		return state.fail("line count %q is not a number: %w", args[1], err)
 	}
@@ -174,7 +173,7 @@ func assertFilesMatchingCreated(state *State, args []string) error {
 		return state.fail("%w", ErrNoRun)
 	}
 
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("file count %q is not a number: %w", args[0], err)
 	}

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
@@ -21,7 +20,7 @@ import (
 func Register(suite *bddgo.Suite[State]) {
 	registerGivenSteps(suite)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) runs "([^"]+)"$`, runCLI)
-	suite.Step(`^the command exits with code (\d+)$`, assertExitCode)
+	suite.Step(`^the command exits with code (\d+|no)$`, assertExitCode)
 	// Undelimited on purpose: several patterns carry double quotes of
 	// their own (`msg="Refusing to start"`), and a quoting scheme would
 	// force escaping into a document meant to be read.
@@ -48,12 +47,12 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the file "([^"]+)" is created$`, assertFileCreated)
 	suite.Step(`^the file "([^"]+)" is modified$`, assertFileModified)
 	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
-	suite.Step(`^the file "([^"]+)" has exactly (\d+) lines?$`, assertFileLineCount)
+	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
 	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
 	// A count-of-files-matching-a-glob assertion, distinct from the named-path
 	// `is created` above: the fix loop chooses the new file's name, so a
 	// scenario can only pin how many .go files appeared under a directory.
-	suite.Step(`^exactly (\d+) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
+	suite.Step(`^exactly (\d+|no) files? matching "([^"]+)" (?:is|are) created$`, assertFilesMatchingCreated)
 	// The negative twin of the count assertion above: proves the run created
 	// NO file matching a glob. Implemented in file_steps.go.
 	suite.Step(`^no files? matching "([^"]+)" (?:is|are) created$`, assertNoFileMatchingCreated)
@@ -62,7 +61,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// Filenames are resolved by glob. See story_steps.go.
 	suite.Step(`^the story "([^"]+)" has id "([^"]+)"$`, assertStoryID)
 	suite.Step(`^the story "([^"]+)" has feature "([^"]+)"$`, assertStoryFeature)
-	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
+	suite.Step(`^the story "([^"]+)" has (\d+|no) acceptance criteria$`, assertStoryCriteriaExactCount)
 	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
 		assertStoryCriteriaHaveSteps)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
@@ -82,7 +81,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// Registry-origin assertions read the registry a `us apply … --fix` run
 	// writes and ask its LINEAGE: which acceptance criterion an entry
 	// descends from, which story it cites, its serialized content. See registry_origin_steps.go.
-	suite.Step(`^exactly (\d+) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
+	suite.Step(`^exactly (\d+|no) scenarios? in "([^"]+)" comes? from acceptance criterion "([^"]+)"$`,
 		assertRegistryScenarioCount)
 	suite.Step(`^the scenario from acceptance criterion "([^"]+)" in "([^"]+)" cites the story "([^"]+)"$`,
 		assertRegistryScenarioCitesStory)
@@ -98,7 +97,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// The independent outcome check: the harness itself runs a shell command the
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
-	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+|no)$`, assertCommandExitCode)
 	// crush, not a role, runs the write guard. See crush_guard_steps.go.
 	registerCrushGuardSteps(suite)
 }
@@ -109,7 +108,7 @@ func Register(suite *bddgo.Suite[State]) {
 func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
-	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
+	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
 	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
@@ -122,7 +121,7 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 	// Given preconditions the scenario states and the fixture materialises
 	// during tmpdir assembly: the dependency install (`prep:`) and the
 	// interactive answers piped to the fix loop. Implemented below.
-	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
+	suite.Step(`^the project's (browser )?test dependencies are installed$`, assertDependenciesInstalled)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
 		answerEveryQuestion)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
@@ -348,12 +347,12 @@ func assertDependenciesInstalled(state *State, args []string) error {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
 
-	kind := args[0]
+	browser := args[0]
 
 	if len(state.Fixture.PrepCmds) == 0 {
 		return state.fail(
-			"the scenario says the project's %s dependencies are installed, but %w",
-			kind, ErrNoDependencyInstall)
+			"the scenario says the project's %stest dependencies are installed, but %w",
+			browser, ErrNoDependencyInstall)
 	}
 
 	return nil
@@ -436,7 +435,7 @@ func assertExitCode(state *State, args []string) error {
 		return state.fail("%w", ErrNoRun)
 	}
 
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("exit code %q is not a number: %w", args[0], err)
 	}

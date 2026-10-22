@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/runner"
@@ -21,5 +22,25 @@ func TestExitCodeAndStdoutStepsGradeARunWithoutAFixture(t *testing.T) {
 	err = assertStdout(state, []string{"REFINE COMPLETE"})
 	if err != nil {
 		t.Fatalf("stdout step without a fixture: %v", err)
+	}
+}
+
+// A tree with no `prep.sh` cannot have installed what the step names, and
+// the failure quotes the step as written, browser or not.
+func TestTheDependenciesStepNamesTheDependenciesItStates(t *testing.T) {
+	t.Parallel()
+
+	for _, step := range []struct{ capture, wording string }{
+		{capture: "", wording: "the project's test dependencies are installed"},
+		{capture: "browser ", wording: "the project's browser test dependencies are installed"},
+	} {
+		err := assertDependenciesInstalled(&State{T: t, Fixture: &runner.Fixture{}}, []string{step.capture})
+		if err == nil {
+			t.Fatalf("%q on a tree with no prep: want an error", step.wording)
+		}
+
+		if !strings.Contains(err.Error(), step.wording) {
+			t.Errorf("the failure %q does not quote %q", err, step.wording)
+		}
 	}
 }

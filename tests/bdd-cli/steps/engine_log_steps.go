@@ -3,11 +3,9 @@ package steps
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -163,7 +161,7 @@ func assertTestRunnerArgs(state *State, args []string) error {
 // spawned — what separates "discovery failed and stopped" (one) from
 // "it went on to rerun a fixed test" (another).
 func assertTestRunnerCount(state *State, args []string) error {
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("test-runner count %q is not a number: %w", args[0], err)
 	}
@@ -212,7 +210,7 @@ func assertNoTestRunnerSpawned(state *State, _ []string) error {
 // counted at the router's dispatch record so it is one number regardless
 // of which CLI a tier named. Zero is the read-only walk that never fixes.
 func assertAITurnCount(state *State, args []string) error {
-	want, err := aiTurnCount(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("AI-turn count %q is not a number: %w", args[0], err)
 	}
@@ -235,7 +233,7 @@ func assertAITurnCount(state *State, args []string) error {
 // apply) the engine dispatched to one AI CLI, read off the dispatch
 // record's `role` and `cli`: proof of where a tier routed each turn.
 func assertAITurnsTo(state *State, args []string) error {
-	want, err := aiTurnCount(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("AI-turn count %q is not a number: %w", args[0], err)
 	}
@@ -274,20 +272,4 @@ func assertAITurnsTo(state *State, args []string) error {
 	}
 
 	return nil
-}
-
-// aiTurnCount reads the count a scenario wrote, accepting the word "no"
-// for zero so "dispatched no AI turns" reads as English while
-// "dispatched 3 AI turns" still parses as a number.
-func aiTurnCount(token string) (int, error) {
-	if token == "no" {
-		return 0, nil
-	}
-
-	count, err := strconv.Atoi(token)
-	if err != nil {
-		return 0, fmt.Errorf("%q is not a count: %w", token, err)
-	}
-
-	return count, nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"gopkg.in/yaml.v3"
@@ -155,7 +154,7 @@ func assertRegistryScenarioCount(state *State, args []string) error {
 		return state.fail("%w", ErrNoRun)
 	}
 
-	want, err := strconv.Atoi(args[0])
+	want, err := numberSlot(args[0])
 	if err != nil {
 		return state.fail("scenario count %q is not a number: %w", args[0], err)
 	}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -236,7 +235,7 @@ func assertStoryCriteriaExactCount(state *State, args []string) error {
 		return err
 	}
 
-	want, err := strconv.Atoi(args[1])
+	want, err := numberSlot(args[1])
 	if err != nil {
 		return state.fail("acceptance-criteria count %q is not a number: %w", args[1], err)
 	}
