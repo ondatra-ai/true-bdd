@@ -20,7 +20,7 @@ func (r Runner) attempt(ctx context.Context, record Record, note string) (Record
 	record.WeeklyLimit = weeklyLimit()
 	r.announce(record)
 
-	login := codex.CheckLogin(ctx, r.Root, r.watch())
+	login := codex.CheckLogin(ctx, r.Root, r.preparationWatch())
 	if ctx.Err() != nil {
 		return r.finish(record, "failed", ctx.Err().Error(), -1)
 	}

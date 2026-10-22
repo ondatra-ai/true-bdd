@@ -23,7 +23,7 @@ func (r Runner) saveIssues(ctx context.Context, record Record) error {
 			continue
 		}
 
-		data, err := gh.IssueJSON(ctx, r.Root, number, r.watch())
+		data, err := gh.IssueJSON(ctx, r.Root, number, r.preparationWatch())
 		if err != nil {
 			return fmt.Errorf("saving issue #%s: %w", number, err)
 		}

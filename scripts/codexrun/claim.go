@@ -18,7 +18,20 @@ func (r Runner) claim(ctx context.Context, opts Options, resume bool) (Record, e
 		return Record{}, err
 	}
 
-	var record Record
+	err = disk.Dir(r.file("", ""), disk.Private)
+	if err != nil {
+		return Record{}, err
+	}
+
+	before, err := r.records()
+	if err != nil {
+		return Record{}, err
+	}
+
+	record, err := r.candidate(ctx, opts, resume, before)
+	if err != nil {
+		return Record{}, err
+	}
 
 	err = disk.Update(r.file("", ".registry"), disk.Private, func(_ []byte) ([]byte, error) {
 		records, err := r.records()
@@ -26,7 +39,7 @@ func (r Runner) claim(ctx context.Context, opts Options, resume bool) (Record, e
 			return nil, err
 		}
 
-		record, err = r.candidate(ctx, opts, resume, records)
+		err = r.recheck(record, resume, before, records)
 		if err != nil {
 			return nil, err
 		}
@@ -36,29 +49,7 @@ func (r Runner) claim(ctx context.Context, opts Options, resume bool) (Record, e
 			return nil, err
 		}
 
-		record.Attempt++
-		record.PID = os.Getpid()
-		record.Status = statusRunning
-		record.Reason = ""
-		record.ExitCode = -1
-		record.StartedAt = time.Now().UTC()
-		record.EndedAt = time.Time{}
-
-		suffix := ""
-		if record.Attempt > 1 {
-			suffix = fmt.Sprintf("-%d", record.Attempt)
-		}
-
-		record.Log = r.file(record.Name, "run"+suffix+".log")
-
-		record.Final = r.file(record.Name, "final"+suffix+".md")
-
-		err = disk.Write(record.Log, nil, disk.Private)
-		if err != nil {
-			return nil, err
-		}
-
-		err = r.save(record)
+		err = r.publish(&record)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +128,7 @@ func available(record Record, records []Record) error {
 			continue
 		}
 
-		if other.Worktree == record.Worktree {
+		if other.Worktree == record.Worktree || other.Branch == record.Branch && record.Branch != "" {
 			return refuse("another running command holds this worktree")
 		}
 
@@ -211,4 +202,30 @@ func (r Runner) localArtifacts() error {
 	}
 
 	return nil
+}
+
+func (r Runner) publish(record *Record) error {
+	record.Attempt++
+	record.PID = os.Getpid()
+	record.Status = statusRunning
+	record.Reason = ""
+	record.ExitCode = -1
+	record.StartedAt = time.Now().UTC()
+	record.EndedAt = time.Time{}
+
+	suffix := ""
+	if record.Attempt > 1 {
+		suffix = fmt.Sprintf("-%d", record.Attempt)
+	}
+
+	record.Log = r.file(record.Name, "run"+suffix+".log")
+
+	record.Final = r.file(record.Name, "final"+suffix+".md")
+
+	err := disk.Write(record.Log, nil, disk.Private)
+	if err != nil {
+		return err
+	}
+
+	return r.save(*record)
 }

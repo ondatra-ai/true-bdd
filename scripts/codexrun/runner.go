@@ -135,5 +135,12 @@ func (r Runner) watch() codex.Watchdog {
 }
 
 func (r Runner) repository(dir string) git.Repository {
-	return git.Repository{Dir: dir, Watchdog: r.watch()}
+	return git.Repository{Dir: dir, Watchdog: r.preparationWatch()}
+}
+
+func (r Runner) preparationWatch() codex.Watchdog {
+	watch := r.watch()
+	watch.Limit = r.Stall
+
+	return watch
 }
