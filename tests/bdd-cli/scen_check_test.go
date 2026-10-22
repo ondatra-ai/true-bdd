@@ -340,6 +340,21 @@ func TestEngineRoutes005FailedCrushTurnStopsRun(t *testing.T) {
 	s.Done()
 }
 
+// engine-routes-006-host-memory-excluded: A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes
+func TestEngineRoutes006HostMemoryExcluded(t *testing.T) {
+	s := scenarios.New(t, "engine-routes-006-host-memory-excluded")
+	s.Given(`the "engine-claude-minimal" project tree`)
+	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt`)
+	s.When(`the Quality Engineer runs "scen check E2E-001"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the file "tmp/true-bdd.log.json" matches context\\":\[\\"E2E-001: ok\\"\]`)
+	s.But(`stdout does not match CHECK FAILED|HOST_MEMORY_CANARY_174`)
+	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // engine-term-documents-001-glossary-not-a-list-stops-scen-check: `scen check` must stop at its declared-term check when the product document's `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn
 func TestEngineTermDocuments001GlossaryNotAListStopsScenCheck(t *testing.T) {
 	s := scenarios.New(t, "engine-term-documents-001-glossary-not-a-list-stops-scen-check")

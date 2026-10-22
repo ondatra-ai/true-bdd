@@ -4434,13 +4434,13 @@ scenarios:
         - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
-  engine-claude-minimal-001-host-memory-excluded:
+  engine-routes-006-host-memory-excluded:
     description: 'A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes'
     service: bdd-cli
-    path: tests/bdd-cli/engine_claude_minimal_test.go
+    path: tests/bdd-cli/scen_check_test.go
     user_stories:
-    - story: docs/product/stories/engine-claude-minimal-isolation.yaml
-      scenario_id: engine-claude-minimal-001-host-memory-excluded
+    - story: docs/product/stories/engine-routes-agent-clis.yaml
+      scenario_id: engine-routes-006-host-memory-excluded
       merge_date: '2026-10-22'
     timeout: 5m
     merged_steps:
