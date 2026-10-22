@@ -161,6 +161,28 @@ func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
 	s.Done()
 }
 
+// build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
+func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered")
+	s.Given(`the "build-code-go-package-does-not-compile" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=go-test`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/calc/calc.go" is modified`)
+	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/suite/multiply_test.go" is unchanged`)
+	s.And(`the file "tests/suite/add_test.go" is unchanged`)
+	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")

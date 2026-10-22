@@ -428,6 +428,37 @@ scenarios:
         - and: the file "docs/architecture/architecture.yaml" is unchanged
         - and: no file outside "tmp" and "services/web" changed
         - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
+  build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered:
+    description: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
+        scenario_id: build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "build-code-go-package-does-not-compile" project tree
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Suite failures" failures=1 framework=go-test
+        - stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>
+        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches BUILD CODE COMPLETE
+        - and: the file "services/calc/calc.go" is modified
+        - and: the file "tests/suite/suite-runs.log" has exactly 1 line
+        - and: the engine spawned exactly 2 test runners
+        - but: the file "tests/suite/multiply_test.go" is unchanged
+        - and: the file "tests/suite/add_test.go" is unchanged
+        - and: the file "tests/suite/canary_test.go" is unchanged
+        - and: the file "docs/architecture/architecture.yaml" is unchanged
+        # Independent outcome check, last: the suite run appends to
+        # suite-runs.log after the line-count clause.
+        - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-tests-refusals-001-empty-registry-refused:
     description: A registry file that declares no scenarios must be refused, never walked to a trivial success
     service: bdd-cli
