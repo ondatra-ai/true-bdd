@@ -27,7 +27,7 @@ func TestSelectedScenarioRequiresPassInOwningPackage(t *testing.T) {
 			root := t.TempDir()
 
 			files := map[string]string{
-				"go.mod":                    "module fixture/selected\n\ngo 1.26\n",
+				"go.mod":                    "module fixture/selected\n\ngo 1.25\n",
 				"selected/scenario_test.go": "package selected_test\nimport \"testing\"\n" + testCase.selected,
 				"other/scenario_test.go":    "package other_test\nimport \"testing\"\nfunc TestShared(t *testing.T) {}\n",
 			}
