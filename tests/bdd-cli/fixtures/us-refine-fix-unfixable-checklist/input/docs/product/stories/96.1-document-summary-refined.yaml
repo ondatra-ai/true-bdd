@@ -3,7 +3,7 @@
 # Designed to PASS every prompt in the shipped us-refine checklist:
 # 4 ACs (in the 3-7 range), rule-based must/should descriptions, full
 # Given/When/Then steps, no vague qualifiers or forbidden verbs (see
-# the fixture's docs/architecture/architecture.yaml vocabulary), observable behavior
+# the fixture's docs/product/product.yaml vocabulary), observable behavior
 # only, two happy-path and two error-scenario ACs, measurable criteria
 # everywhere, binary outcomes, and test sketches drawable from the
 # fixture's docs/architecture/architecture.yaml.

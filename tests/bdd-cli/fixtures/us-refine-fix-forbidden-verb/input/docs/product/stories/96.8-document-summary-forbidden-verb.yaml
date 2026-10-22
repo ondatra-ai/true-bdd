@@ -6,7 +6,7 @@
 # fail/fix chain):
 #
 #   - AC-1: the then step uses the forbidden action verb "handles"
-#     (listed in the fixture's docs/architecture/architecture.yaml forbidden_actions)
+#     (listed in the fixture's docs/product/product.yaml forbidden_actions)
 #     -> fails the forbidden-verb prompt; its F replaces it with a
 #     concrete verb that names the interaction mechanism.
 #

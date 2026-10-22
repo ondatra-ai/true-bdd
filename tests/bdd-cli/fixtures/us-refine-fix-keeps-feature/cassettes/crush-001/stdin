@@ -101,6 +101,7 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
+Only AC-3 changes. AC-1, AC-2 and AC-4 are reproduced unchanged — description and steps word for word.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -110,16 +111,14 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria`): its description contains the forbidden qualifier `properly` from `vocabulary.forbidden_qualifiers` in `docs/architecture/architecture.yaml`. AC-1, AC-2 and AC-4 contain no forbidden qualifiers and are reproduced below exactly as they stand — same descriptions, same steps.
-
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
 
-**Issue:** The description contains the forbidden qualifier `properly`. It is not observable or measurable: it gives a test no way to decide whether the displayed message was "proper". The rest of the criterion (the exact message text and the 30-second bound) is already specific, so the fix is to delete `properly` and state the observable outcome it was standing in for — that the timeout message is what appears in the conversation, and that no summary content appears alongside it.
+**Issue:** The description contains the forbidden qualifier 'properly' (`./docs/product/product.yaml` → `vocabulary.forbidden_qualifiers`). "Properly display" is not objectively observable — the testable fact is that the exact message text is displayed after the 30-second threshold is crossed. Drop the qualifier and keep the threshold explicit.
 
-**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation, and display no summary content, when no summary is produced within 30 seconds of the Claude User's request.
+**After (description):** Claude must display the message 'The summary timed out - please try again' when the summary backend returns no summary within 30 seconds of the Claude User's request.
 
-**After (steps):**
+**After (steps):** unchanged from the existing steps — they are already Given/When/Then and already use the exact role 'Claude User' from the story's as_a clause.
 ```yaml
 - given:
     - "a Google Doc is shared with the Claude User's account"
@@ -128,12 +127,10 @@ Only AC-3 is faulted by the failed check (`us-refine/acceptance_criteria`): its 
     - "the Claude User asks Claude to summarize the document"
 - then:
     - "Claude displays the message 'The summary timed out - please try again'"
-    - "Claude displays no summary content"
 ```
 
-The two existing `given` steps and the existing `when` step are unchanged. The second `then` step is added only to keep the steps consistent with the revised description, which now names "display no summary content" as the second observable outcome.
-
-No new acceptance criteria are added, none are merged, and none are removed.
+### No other changes
+AC-1, AC-2 and AC-4 contain no forbidden qualifiers. Their descriptions and steps are left exactly as they are. No ACs are added, merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -161,7 +158,7 @@ No new acceptance criteria are added, none are merged, and none are removed.
         - "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no summary content, when no summary is produced within 30 seconds of the Claude User's request."
+  description: "Claude must display the message 'The summary timed out - please try again' when the summary backend returns no summary within 30 seconds of the Claude User's request."
   steps:
     - given:
         - "a Google Doc is shared with the Claude User's account"
@@ -170,7 +167,6 @@ No new acceptance criteria are added, none are merged, and none are removed.
         - "the Claude User asks Claude to summarize the document"
     - then:
         - "Claude displays the message 'The summary timed out - please try again'"
-        - "Claude displays no summary content"
 
 - ac_id: AC-4
   description: "Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words."
@@ -183,17 +179,6 @@ No new acceptance criteria are added, none are merged, and none are removed.
         - "Claude displays a summary of the first 10000 words"
         - "Claude states that only the first 10000 words were summarized"
 ```
-
-## Verification
-
-After applying, each AC description checks clean against `vocabulary.forbidden_qualifiers` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive):
-
-- AC-1: ok
-- AC-2: ok
-- AC-3: ok
-- AC-4: ok
-
-Every step uses the exact role from the story's `as_a` clause, "Claude User".
 
 === FILE_END: tmp/{{RUN_DIR}}/01-doc-summary-fix-prompts.md ===
 

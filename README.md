@@ -88,7 +88,7 @@ until those tests pass.
 
 | Subcommand | State |
 |---|---|
-| `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. |
+| `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. The registry itself is never modified. |
 | `build code` | **Working** — walks every suite declared under `testing.suites[]` in the architectural spec (`architecture.yaml`), discovers currently-failing tests via each framework's runner, and exits non-zero if any remain. With `--fix`, each failure drives a Claude-mediated turn that edits production source until the test passes; test files and the registry are never modified. This is the Spec-as-Source step. |
@@ -258,11 +258,13 @@ one, a Scenario is checked once a Story claims it (a non-empty
 `user_stories`); until then it passes "not checked: no Story claims this
 Scenario yet". `build tests` is stricter: once a catalogue is declared it
 holds every registry step to it, claimed or not, and refuses to start on
-a step outside it. Under `--fix` a failed check's `F:` drives the usual
-clarification loop, and the fix is written to a scratch copy of the
-product or architecture document in the run directory, which the engine
-puts in place of the document once it parses: the Scenario and the step
-definitions are never edited.
+a step outside it. `us refine` always checks the Story it walks, one
+context line per acceptance criterion. Under `--fix` a failed check's
+`F:` drives the usual clarification loop, and the fix is written to a
+scratch copy of the product or architecture document in the run
+directory, which the engine puts in place of the document once it
+parses: the Scenario, the Story and the step definitions are never
+edited.
 
 What no check can settle, a model answers. The shipped `scen-check`
 checklist follows the four closure checks with two `Q:` prompts that
@@ -369,12 +371,9 @@ The host project's documents live under `docs/`:
 - `docs/architecture/architecture.yaml` — the architectural spec that
   scopes `build code` (which test suites get walked, and how each one
   runs — see below), tells `build tests` which suite owns a scenario,
-  carries the BDD `vocabulary:`
-  (allowed action verbs, forbidden action verbs, forbidden qualifiers)
-  cited by the `us refine` checks, and maps each product word onto the
-  implementation under `terms:`.
+  and maps each product word onto the implementation under `terms:`.
 - `docs/product/product.yaml` — the product document, including its
-  `roles:`, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
+  `roles:`, the BDD `vocabulary:` (forbidden qualifiers and forbidden action verbs) the `us refine` and `scen check` Prompts cite, its step-phrase `catalogue:` and the `glossary:` defining the terms the catalogue declares. These are roles (responsibilities), not personas (invented
   individuals) — one person commonly holds two of them.
 - `docs/product/stories/*.yaml` — the stories, written by hand out of a
   discussion of a Feature, that `us refine` / `us apply` read, one
