@@ -73,8 +73,10 @@ catalogue:
   - template: 'the command exits with code {code:number}'
     block: then
     means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
+      After waiting for the command to finish, the Operator reads its
+      exit code in the terminal that ran it and compares that number
+      with the number in the step. This is the exit code kept from that
+      command, the same number a script calling the greeter branches on.
     terms: [command, exit code]
   - template: 'stdout matches {expected:pattern}'
     block: then

@@ -73,16 +73,17 @@ catalogue:
   - template: 'the command exits with code {code:number}'
     block: then
     means: >-
-      The command that role ran ended with that exit code; 0 means it
-      succeeded.
+      After waiting for the command to finish, the Operator reads its
+      exit code in the terminal that ran it and compares that number
+      with the number in the step. This is the exit code kept from that
+      command, the same number a script calling the greeter branches on.
     terms: [command, exit code]
   - template: 'stdout matches {expected:pattern}'
     block: then
     means: >-
-      One of the lines the command printed to its standard output — the
-      answer line the greeter writes for its user, or one of the log
-      records that follow it — matches the regular expression the step
-      ends with; "stdout" in the step names that standard output. The
-      Operator sets this up by running the command in a terminal and
-      observes it by reading the lines it printed before it exited.
+      After the command has exited, the Operator reads the standard
+      output it printed in the terminal — the greeter's answer line and
+      its log records alike — and holds the rest of the step against
+      those lines as a regular expression, one printed line at a time.
+      The step is met when at least one of the printed lines matches.
     terms: [command, standard output]
