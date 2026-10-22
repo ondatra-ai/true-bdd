@@ -10,8 +10,8 @@ import (
 )
 
 // containerProvider lazily builds the bootstrap container on first use.
-// `version`/`remote` never call it, so they run without one — honestly
-// reporting a bare folder (plan §3.1); `us`/`build` resolve it in RunE.
+// `version` never calls it, so it runs in a bare folder; `us`, `build` and
+// `scen` resolve it in RunE.
 type containerProvider func() (*bootstrap.Container, error)
 
 // lazyContainer returns a provider that constructs the container at most
@@ -42,9 +42,6 @@ func Execute() {
 	}
 
 	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newRemoteCmd())
-	rootCmd.AddCommand(newRemoteSupervisorCmd())
-	rootCmd.AddCommand(newPromptProbeCmd())
 	rootCmd.AddCommand(newCrushGuardCmd())
 	rootCmd.AddCommand(NewUSCommand(provide))
 	rootCmd.AddCommand(NewBuildCommand(provide))
