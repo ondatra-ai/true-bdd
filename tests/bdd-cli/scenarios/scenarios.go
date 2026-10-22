@@ -2,7 +2,7 @@
 
 // Package scenarios binds bddgo's generics to the bdd-cli suite.
 //
-// A generated test file calls `scenarios.New(t, "E2E-001")` with no type
+// A generated test file calls `scenarios.New(t, "engine-001-help-prints-command-tree")` with no type
 // argument, which is only possible because the state type is already
 // fixed here. That is the whole job: one hand-written file per suite,
 // naming the state, the step registrations and the harness, so the

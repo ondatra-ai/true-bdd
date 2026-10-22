@@ -176,7 +176,7 @@ func TestInstallStampsNothingWithoutATool(t *testing.T) {
 	}
 }
 
-// E2E-019 asserts the engine dispatched no AI turns by reading its log, so a
+// engine-004 asserts the engine dispatched no AI turns by reading its log, so a
 // run that records nothing must still leave a file to read.
 func TestInstallCreatesTheFileUpFront(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "unwritten.log.json")

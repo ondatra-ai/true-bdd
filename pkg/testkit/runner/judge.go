@@ -349,7 +349,7 @@ func writeDiffSummary(buf *strings.Builder, diff []FileChange) {
 		fmt.Fprintf(buf, "### %s: `%s`\n\n", change.Kind, change.Path)
 
 		// Both states, because a clause asking whether an untouched part
-		// SURVIVED is unanswerable from the result alone — E2E-024 failed
+		// SURVIVED is unanswerable from the result alone — engine-003 failed
 		// on exactly that, the judge saying so in its own reason.
 		if change.Kind != KindCreated {
 			writeFileState(buf, "before", change.Before)
