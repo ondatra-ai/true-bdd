@@ -76,434 +76,271 @@ Then:
 
 # Fix Prompt for Scenario INT-901: A Claude User opening a session at the MCP server is granted a ticket
 
-## Target suite
+## Target
+`tests/mcp/steps/steps.go` — NEW file in the existing steps package of the
+`mcp-service` suite (suite root `tests/mcp`, per the architectural spec's
+`mcp-service` entry and the registry `path: tests/mcp/mcp_test.go`).
 
-`docs/architecture/architecture.yaml` declares one service, `mcp-service`,
-and the testing commands run `./tests/mcp/...`; `docs/scenarios.yaml` roots
-both `mcp-service` scenarios at `tests/mcp/mcp_test.go`. The suite is
-therefore `tests/mcp`, and the ONLY tree you may write is:
+Do not touch `docs/scenarios.yaml`, `tests/mcp/mcp_test.go`,
+`tests/mcp/scenarios/scenarios.go`, or `tests/mcp/steps/state.go`. The only
+write allowed is the new file below.
 
-    tests/mcp/steps/
+## Context the fix is written against (already in the tree — reuse, do not redefine)
+`tests/mcp/steps/state.go` declares:
+```go
+package steps
 
-That directory does not exist yet (`tests/mcp/mcp_test.go` is the only Go
-file in the tree), so there is no sibling state type or helper to reuse:
-this fix creates the steps package, self-contained on the standard library
-only, with a single `Register` call site.
+import "net/http"
 
-## Scope of this pass (subject + neighbour, one pass)
+// State is the existing per-Scenario host state; reuse it for definitions.
+type State struct {
+	BaseURL  string
+	Client   *http.Client
+	Response *http.Response
+}
 
-Unbound steps collected from `docs/scenarios.yaml` for service
-`mcp-service`:
+// Suite is the harness registration interface. Register is authored separately.
+type Suite interface { Step(string, func(*State, []string) error) }
+```
+`tests/mcp/scenarios/scenarios.go` already calls `steps.Register(suite)` and
+seeds `State{BaseURL: ..., Client: ...}` via `suite.Init`, and sets `MCP_PORT`
+to the test server's port. So `Register` must be a single function
+`func Register(suite Suite)` in package `steps`, registering ALL four phrases
+of this suite's vocabulary — INT-901's three steps and neighbour INT-902's
+`the server names its protocol version`.
 
-- INT-901 Given `the MCP server is running` — also INT-902's Given
-- INT-901 When `the Claude User opens a session` (phrase
-  `the {actor:role} opens a session`) — also INT-902's When
-- INT-901 Then `the session is granted a ticket`
-- INT-902 Then `the server names its protocol version`
-
-Four definitions bind both scenarios. Register all four in this pass.
+The file carries NO build tag (matching `state.go`).
 
 ## Required Changes
 
-### Change #1: create the suite registry
-
-**File:** `tests/mcp/steps/suite.go`
-**Action:** Use the **Write** tool to create the file with exactly this
-content.
-**Content:**
-```go
-// Package steps holds the step definitions of the `mcp` suite.
-//
-// Every registry scenario of service mcp-service binds its
-// Given/When/Then steps here: Register (in mcp_steps.go) is the single
-// call site listing everything this suite binds, and each definition is a
-// `suite.Step(`^…$`, fn)` call whose pattern is anchored at both ends.
-package steps
-
-import (
-	"fmt"
-	"regexp"
-	"strings"
-)
-
-// StepFunc runs one step. args carries the submatches of the definition's
-// pattern, in order, so a parameterised definition serves every scenario
-// that phrases its step that way.
-type StepFunc func(args []string) error
-
-// Definition is one registered pattern and the function it binds.
-type Definition struct {
-	Pattern *regexp.Regexp
-	Fn      StepFunc
-}
-
-// Suite is the registry of this suite's step definitions, together with
-// the state its definitions share within one scenario.
-type Suite struct {
-	state *State
-	defs  []Definition
-}
-
-// NewSuite returns a suite whose definitions all share st.
-func NewSuite(st *State) *Suite {
-	if st == nil {
-		st = NewState()
-	}
-	return &Suite{state: st}
-}
-
-// State is the shared state the definitions of this suite read and write.
-func (s *Suite) State() *State { return s.state }
-
-// Step registers fn under an anchored regexp. An unanchored pattern would
-// quietly match steps it was never meant to, so Step refuses one.
-func (s *Suite) Step(pattern string, fn StepFunc) {
-	if len(pattern) < 2 || pattern[0] != '^' || pattern[len(pattern)-1] != '$' {
-		panic(fmt.Sprintf("step pattern %q must be anchored with ^ and $", pattern))
-	}
-	s.defs = append(s.defs, Definition{Pattern: regexp.MustCompile(pattern), Fn: fn})
-}
-
-// Definitions returns the registered definitions in registration order.
-func (s *Suite) Definitions() []Definition { return s.defs }
-
-// Run executes the one definition whose pattern matches text. A step that
-// matches none, or more than one, is not executable, and Run says which it
-// was instead of passing.
-func (s *Suite) Run(text string) error {
-	var matched []Definition
-	var args []string
-	for _, d := range s.defs {
-		if m := d.Pattern.FindStringSubmatch(text); m != nil {
-			matched = append(matched, d)
-			args = m[1:]
-		}
-	}
-	switch len(matched) {
-	case 0:
-		return fmt.Errorf("step %q matches no step definition in the mcp suite", text)
-	case 1:
-		return matched[0].Fn(args)
-	default:
-		pats := make([]string, 0, len(matched))
-		for _, d := range matched {
-			pats = append(pats, d.Pattern.String())
-		}
-		return fmt.Errorf("step %q matches %d step definitions (%s); exactly one must match",
-			text, len(matched), strings.Join(pats, ", "))
-	}
-}
-```
-
-### Change #2: create the shared state and the word helpers
-
-Each helper observes one word exactly as the architecture's word mapping
-says: the address from `MCP_PORT` (7411 unset) polled at `GET /healthz` for
-at most 5 seconds; the session opened by one JSON-RPC `initialize` POST to
-`/mcp` with `Content-Type: application/json`, whose status and headers are
-kept for the Then steps.
-
-**File:** `tests/mcp/steps/state.go`
-**Action:** Use the **Write** tool to create the file with exactly this
-content.
+### Change #1: Author the suite's step vocabulary
+**File:** `tests/mcp/steps/steps.go`
+**Action:** Use the **Write** tool to create the file with exactly this content.
 **Content:**
 ```go
 package steps
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 )
 
+// Word mapping (docs/architecture/architecture.yaml):
+//   MCP server       - 127.0.0.1 at the port MCP_PORT names, 7411 when unset;
+//                      answers GET /healthz with 200 once ready.
+//   session          - opened by JSON-RPC 2.0 "initialize" POSTed to /mcp with
+//                      Content-Type application/json; the reply is the opening.
+//   ticket           - X-Session-Ticket of that reply: 32 lowercase hex chars.
+//   protocol version - X-MCP-Protocol of that reply: a date in YYYY-MM-DD form.
 const (
-	// defaultPort is the port the MCP server listens on when MCP_PORT is
-	// unset, per the word mapping of "MCP server".
-	defaultPort = "7411"
-
-	// readyTimeout bounds the wait for GET /healthz to answer 200.
-	readyTimeout = 5 * time.Second
-
-	// pollInterval spaces the /healthz attempts.
-	pollInterval = 100 * time.Millisecond
-
-	// initializeBody is the JSON-RPC 2.0 request that opens a session.
-	initializeBody = `{"jsonrpc":"2.0","id":1,"method":"initialize"}`
+	defaultMCPPort    = "7411"
+	healthDeadline    = 5 * time.Second
+	healthPollEvery   = 50 * time.Millisecond
+	initializeRequest = `{"jsonrpc":"2.0","id":1,"method":"initialize"}`
 )
 
-// Reply is what a session's opening left behind: the status code and
-// headers of the server's answer, which the Then steps read.
-type Reply struct {
-	Status int
-	Header http.Header
-	Body   string
+var (
+	// A ticket is 32 lowercase hexadecimal characters, nothing else.
+	ticketPattern = regexp.MustCompile(`^[0-9a-f]{32}$`)
+	// A protocol version is a date in YYYY-MM-DD form, such as 2025-06-18.
+	protocolVersionPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+)
+
+// Register binds every phrase this suite's scenarios speak. One definition
+// per catalogue phrase, anchored, with a capture group wherever the phrase
+// varies, so a new scenario phrasing it the same way needs no new definition.
+func Register(suite Suite) {
+	suite.Step(`^the MCP server is running$`, givenTheMCPServerIsRunning)
+	suite.Step(`^the (.+) opens a session$`, whenTheActorOpensASession)
+	suite.Step(`^the session is granted a ticket$`, thenTheSessionIsGrantedATicket)
+	suite.Step(`^the server names its protocol version$`, thenTheServerNamesItsProtocolVersion)
 }
 
-// Snippet returns the reply's body shortened for an error message.
-func (r *Reply) Snippet() string {
-	const max = 200
-	if len(r.Body) <= max {
-		return r.Body
-	}
-	return r.Body[:max] + "..."
-}
-
-// State is shared by every step definition of the mcp suite within one
-// scenario: the Given step proves the server is up, the When step opens
-// the session, the Then steps read the reply it kept.
-type State struct {
-	// Client issues every request this suite makes.
-	Client *http.Client
-	// Ready records that a Given step saw /healthz answer 200.
-	Ready bool
-	// Actor is the role whose client opened the session, as captured by
-	// the When step, so a Then step's error can name it.
-	Actor string
-	// LastReply is the server's answer to the most recent request; nil
-	// until a When step has opened a session.
-	LastReply *Reply
-}
-
-// NewState returns the state a scenario's definitions share.
-func NewState() *State {
-	return &State{Client: &http.Client{Timeout: readyTimeout}}
-}
-
-// BaseURL resolves the MCP server's address: 127.0.0.1 at the port
-// MCP_PORT names, 7411 when it is unset.
-func (st *State) BaseURL() string {
-	port := os.Getenv("MCP_PORT")
+// serverBaseURL resolves the MCP server's address the way the word mapping
+// says: 127.0.0.1 at the port MCP_PORT names, 7411 when it is unset.
+func serverBaseURL() string {
+	port := strings.TrimSpace(os.Getenv("MCP_PORT"))
 	if port == "" {
-		port = defaultPort
+		port = defaultMCPPort
 	}
 	return "http://127.0.0.1:" + port
 }
 
-// ActorName names the role whose client opened the session; "client" until
-// a When step captured one.
-func (st *State) ActorName() string {
-	if st.Actor == "" {
-		return "client"
+// httpClient reuses the client the suite's Init seeded, and falls back to a
+// bounded one so a definition never blocks forever.
+func httpClient(state *State) *http.Client {
+	if state.Client == nil {
+		state.Client = &http.Client{Timeout: 10 * time.Second}
 	}
-	return st.Actor
+	return state.Client
 }
 
-func (st *State) httpClient() *http.Client {
-	if st.Client == nil {
-		st.Client = &http.Client{Timeout: readyTimeout}
+// lastReply is the reply to the session's opening, kept by the When step.
+// A Then step that finds none fails instead of passing.
+func lastReply(state *State) (*http.Response, error) {
+	if state.Response == nil {
+		return nil, fmt.Errorf(
+			"expected a reply to the session's initialize request to be on hand, got none: " +
+				"no When step opened a session, or it never reached the MCP server")
 	}
-	return st.Client
+	return state.Response, nil
 }
 
-// WaitReady polls GET /healthz at the server's address until it answers
-// 200, for at most readyTimeout. A server that never answers fails,
-// naming the address polled and the last thing that happened there.
-func (st *State) WaitReady() error {
-	url := st.BaseURL() + "/healthz"
-	deadline := time.Now().Add(readyTimeout)
-	last := "no attempt completed"
+// capturedActor reads the role the When step names. The harness hands a
+// definition its capture groups; reading the final element keeps this correct
+// whether or not the whole matched step text is prepended to them.
+func capturedActor(args []string) string {
+	if len(args) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(args[len(args)-1])
+}
+
+// givenTheMCPServerIsRunning: the server has started and is ready to answer.
+// Poll GET /healthz at the resolved address until it answers 200, for at most
+// 5 seconds; a server that never answers fails the step, naming the address.
+func givenTheMCPServerIsRunning(state *State, _ []string) error {
+	state.BaseURL = serverBaseURL()
+	health := state.BaseURL + "/healthz"
+
+	var lastOutcome string
+	deadline := time.Now().Add(healthDeadline)
 	for {
-		resp, err := st.httpClient().Get(url)
+		response, err := httpClient(state).Get(health)
 		if err != nil {
-			last = "request error: " + err.Error()
+			lastOutcome = "request error: " + err.Error()
 		} else {
-			status := resp.StatusCode
-			_, _ = io.Copy(io.Discard, resp.Body)
-			_ = resp.Body.Close()
+			status := response.StatusCode
+			_, _ = io.Copy(io.Discard, response.Body)
+			_ = response.Body.Close()
 			if status == http.StatusOK {
-				st.Ready = true
 				return nil
 			}
-			last = fmt.Sprintf("answered status %d", status)
+			lastOutcome = fmt.Sprintf("status %d", status)
 		}
 		if !time.Now().Before(deadline) {
 			return fmt.Errorf(
-				"the MCP server is not running: expected GET %s to answer 200 within %s, but it never did (last attempt: %s)",
-				url, readyTimeout, last)
+				"expected the MCP server to answer GET %s with 200 within %s, got %s on the last attempt",
+				health, healthDeadline, lastOutcome)
 		}
-		time.Sleep(pollInterval)
+		time.Sleep(healthPollEvery)
 	}
 }
 
-// OpenSession POSTs the initialize request to /mcp at the server's address,
-// once, and keeps the reply's status code and headers for the steps after.
-func (st *State) OpenSession() error {
-	url := st.BaseURL() + "/mcp"
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(initializeBody)))
-	if err != nil {
-		return fmt.Errorf("could not build the initialize request for %s: %w", url, err)
+// whenTheActorOpensASession: that role's client asks the MCP server for a new
+// session, once, and the server's answer is kept for the steps that follow.
+func whenTheActorOpensASession(state *State, args []string) error {
+	actor := capturedActor(args)
+	if actor == "" {
+		return fmt.Errorf("expected the step to name the role opening the session, got an empty role")
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if state.BaseURL == "" {
+		state.BaseURL = serverBaseURL()
+	}
+	endpoint := state.BaseURL + "/mcp"
 
-	resp, err := st.httpClient().Do(req)
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(initializeRequest))
 	if err != nil {
-		return fmt.Errorf("the %s could not open a session: POST %s (%s) failed: %w",
-			st.ActorName(), url, initializeBody, err)
+		return fmt.Errorf("expected to build the initialize request for POST %s, got: %w", endpoint, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	request.Header.Set("Content-Type", "application/json")
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	response, err := httpClient(state).Do(request)
 	if err != nil {
-		return fmt.Errorf("the %s could not read the reply to initialize from %s: %w",
-			st.ActorName(), url, err)
+		return fmt.Errorf(
+			"expected the %s's client to open a session with POST %s, got: %w", actor, endpoint, err)
 	}
-	st.LastReply = &Reply{Status: resp.StatusCode, Header: resp.Header.Clone(), Body: string(body)}
+	// Only the status code and headers of the opening are observed later;
+	// drain and close the body so the connection is released.
+	_, _ = io.Copy(io.Discard, response.Body)
+	_ = response.Body.Close()
+	state.Response = response
 	return nil
 }
 
-// OpeningReply returns the session's opening. A Then step that finds no
-// reply fails instead of passing.
-func (st *State) OpeningReply() (*Reply, error) {
-	if st.LastReply == nil {
-		return nil, fmt.Errorf(
-			"no reply to read: no session was opened, so the When step that POSTs %s to %s/mcp never ran",
-			initializeBody, st.BaseURL())
+// thenTheSessionIsGrantedATicket: the MCP server accepted the session and
+// handed back its ticket - a 200 reply carrying an X-Session-Ticket of 32
+// lowercase hexadecimal characters.
+func thenTheSessionIsGrantedATicket(state *State, _ []string) error {
+	response, err := lastReply(state)
+	if err != nil {
+		return err
 	}
-	return st.LastReply, nil
+	ticket := response.Header.Get("X-Session-Ticket")
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf(
+			"expected the session's opening to be accepted with status 200 and an X-Session-Ticket "+
+				"of 32 lowercase hexadecimal characters, got status %d with X-Session-Ticket %q",
+			response.StatusCode, ticket)
+	}
+	if ticket == "" {
+		return fmt.Errorf(
+			"expected the status %d reply to the session's opening to carry an X-Session-Ticket "+
+				"of 32 lowercase hexadecimal characters, got no such header",
+			response.StatusCode)
+	}
+	if !ticketPattern.MatchString(ticket) {
+		return fmt.Errorf(
+			"expected the X-Session-Ticket of the status %d reply to be 32 lowercase hexadecimal "+
+				"characters, got %q (%d characters)",
+			response.StatusCode, ticket, len(ticket))
+	}
+	return nil
+}
+
+// thenTheServerNamesItsProtocolVersion: the answer to the session's opening
+// says which protocol version the server speaks - X-MCP-Protocol, a date in
+// YYYY-MM-DD form.
+func thenTheServerNamesItsProtocolVersion(state *State, _ []string) error {
+	response, err := lastReply(state)
+	if err != nil {
+		return err
+	}
+	version := response.Header.Get("X-MCP-Protocol")
+	if version == "" {
+		return fmt.Errorf(
+			"expected the status %d reply to the session's opening to carry an X-MCP-Protocol header "+
+				"holding a date in YYYY-MM-DD form, got no such header",
+			response.StatusCode)
+	}
+	if !protocolVersionPattern.MatchString(version) {
+		return fmt.Errorf(
+			"expected the X-MCP-Protocol of the status %d reply to hold a date in YYYY-MM-DD form, got %q",
+			response.StatusCode, version)
+	}
+	if _, err := time.Parse("2006-01-02", version); err != nil {
+		return fmt.Errorf(
+			"expected the X-MCP-Protocol of the status %d reply to hold a real date in YYYY-MM-DD form, got %q: %v",
+			response.StatusCode, version, err)
+	}
+	return nil
 }
 ```
 
-### Change #3: register the four step definitions
+## Why these four registrations
+- `^the MCP server is running$` — INT-901 and INT-902's Given (phrase
+  `the MCP server is running`).
+- `^the (.+) opens a session$` — phrase `the {actor:role} opens a session`; the
+  capture group stands where the role varies, so `the Claude User opens a
+  session` and any other role phrasing bind to this one definition instead of a
+  literal copy of INT-901's line.
+- `^the session is granted a ticket$` — INT-901's Then.
+- `^the server names its protocol version$` — neighbour INT-902's Then, swept
+  into this same pass so the walk does not buy another fix cycle for it.
 
-The When pattern carries a capture group where the catalogue phrase
-`the {actor:role} opens a session` varies, so it serves INT-901's
-"Claude User" and any other role a scenario names. The Given and the two
-Then phrases carry no variable part in the catalogue, so their patterns are
-the phrase itself, anchored.
-
-**File:** `tests/mcp/steps/mcp_steps.go`
-**Action:** Use the **Write** tool to create the file with exactly this
-content.
-**Content:**
-```go
-package steps
-
-import (
-	"fmt"
-	"net/http"
-	"regexp"
-	"time"
-)
-
-const (
-	// ticketHeader carries the ticket the MCP server grants a session.
-	ticketHeader = "X-Session-Ticket"
-
-	// protocolHeader carries the protocol version the server speaks.
-	protocolHeader = "X-MCP-Protocol"
-
-	// dateLayout is the YYYY-MM-DD form a protocol version takes.
-	dateLayout = "2006-01-02"
-)
-
-// ticketPattern is a ticket's shape: 32 lowercase hexadecimal characters.
-var ticketPattern = regexp.MustCompile(`^[0-9a-f]{32}$`)
-
-// protocolVersionPattern is a protocol version's shape: a date in
-// YYYY-MM-DD form, such as 2025-06-18.
-var protocolVersionPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-
-// Register lists every step definition the mcp suite binds. It is the one
-// call site: a new definition belongs here, beside the others.
-func Register(suite *Suite) {
-	st := suite.State()
-
-	// given: `the MCP server is running`
-	suite.Step(`^the MCP server is running$`, func([]string) error {
-		return st.WaitReady()
-	})
-
-	// when: `the {actor:role} opens a session` — the role varies from one
-	// scenario to the next, so it is captured instead of spelled out.
-	suite.Step(`^the (.+) opens a session$`, func(args []string) error {
-		if len(args) != 1 || args[0] == "" {
-			return fmt.Errorf("the step named no role whose client opens the session")
-		}
-		st.Actor = args[0]
-		return st.OpenSession()
-	})
-
-	// then: `the session is granted a ticket`
-	suite.Step(`^the session is granted a ticket$`, func([]string) error {
-		reply, err := st.OpeningReply()
-		if err != nil {
-			return err
-		}
-		ticket := reply.Header.Get(ticketHeader)
-		if reply.Status != http.StatusOK {
-			return fmt.Errorf(
-				"the session the %s opened was not accepted: expected status 200 from the reply to initialize, got %d (%s: %q; body: %q)",
-				st.ActorName(), reply.Status, ticketHeader, ticket, reply.Snippet())
-		}
-		if ticket == "" {
-			return fmt.Errorf(
-				"the session the %s opened was granted no ticket: the 200 reply to initialize carries no %s header (headers: %v)",
-				st.ActorName(), ticketHeader, headerNames(reply.Header))
-		}
-		if !ticketPattern.MatchString(ticket) {
-			return fmt.Errorf(
-				"malformed ticket: expected 32 lowercase hexadecimal characters in %s, got %q (%d characters) on a %d reply",
-				ticketHeader, ticket, len(ticket), reply.Status)
-		}
-		return nil
-	})
-
-	// then: `the server names its protocol version`
-	suite.Step(`^the server names its protocol version$`, func([]string) error {
-		reply, err := st.OpeningReply()
-		if err != nil {
-			return err
-		}
-		version := reply.Header.Get(protocolHeader)
-		if version == "" {
-			return fmt.Errorf(
-				"the server named no protocol version: the %d reply to initialize carries no %s header (headers: %v)",
-				reply.Status, protocolHeader, headerNames(reply.Header))
-		}
-		if !protocolVersionPattern.MatchString(version) {
-			return fmt.Errorf(
-				"malformed protocol version: expected a date in YYYY-MM-DD form in %s, got %q on a %d reply",
-				protocolHeader, version, reply.Status)
-		}
-		if _, err := time.Parse(dateLayout, version); err != nil {
-			return fmt.Errorf(
-				"malformed protocol version: %s carries %q, which is not a calendar date in YYYY-MM-DD form: %w",
-				protocolHeader, version, err)
-		}
-		return nil
-	})
-}
-
-// headerNames lists the header names a reply carried, so an error about a
-// missing header shows what was there instead.
-func headerNames(h http.Header) []string {
-	names := make([]string, 0, len(h))
-	for name := range h {
-		names = append(names, name)
-	}
-	return names
-}
+## Verification the applier should run
+From the suite's module root:
 ```
-
-## Constraints the applier must respect
-
-- Write ONLY under `tests/mcp/steps/`. Do not create, edit or regenerate
-  `tests/mcp/mcp_test.go`, `docs/scenarios.yaml`, `docs/product/`,
-  `docs/architecture/` or `true-bdd/`.
-- Do not add a build tag to these files: `tests/mcp/mcp_test.go` is behind
-  `//go:build bdd`, and untagged files compile under both builds.
-- If `tests/mcp/steps/` turns out to already hold a `Suite`/`State` type
-  or a `Register` function, do NOT create the files above. Instead reuse
-  what is there: add only the four `suite.Step(...)` calls and their
-  functions into the existing `Register`, rewritten against the existing
-  state type's helpers, and skip any pattern already registered.
-- Keep all four `suite.Step` calls inside the single `Register` function;
-  do not add a second registration entry point.
-- After writing, confirm the package builds: `go vet ./tests/mcp/steps/`
-  (or `go build ./tests/mcp/steps/`).
+go vet ./tests/mcp/steps/
+go test -tags bdd -json -count=1 ./tests/mcp/...
+```
+Both INT-901 and INT-902 must pass, and every step must resolve to exactly one
+pattern. No other file may appear in the diff.
 
 ---
 

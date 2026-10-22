@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 32390,
+  "request_hash": "sha256:09d432dd93430cb4ee194efc6bfcbbc5fed07f2f0de660f36a7b196461644af3",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "tests/calc/steps/steps.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-22T20:31:17Z"
+}

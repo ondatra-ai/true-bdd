@@ -1,0 +1,7 @@
+File state matches the fix prompt. Applying the two edits.Both edits applied cleanly (the transient `undefined: transform` diagnostic resolved once the function landed; shell/lint tools are hook-blocked in this mode).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered and implemented parameterised transform step (doubled|tripled|squared|negated|halved) over State.Value"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

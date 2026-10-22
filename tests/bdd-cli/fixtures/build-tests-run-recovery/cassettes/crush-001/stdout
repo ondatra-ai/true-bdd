@@ -1,0 +1,7 @@
+Applying the two edits to `tests/calc/steps/steps.go`:Verifying the file and compiling:Both edits applied successfully; the file compiles cleanly per inspection (shell is denied by the guard hook, but the change is pure Go using already-imported `fmt`/`strconv` and matches the suite's `Registrar` signature).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered and implemented the scaled step (doubled|tripled|quadrupled) multiplying State.Value by the matching factor"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

@@ -37,6 +37,8 @@ type Spec[I any] struct {
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
+	// DeferCompletion lets a caller announce success after post-run validation.
+	DeferCompletion bool
 
 	// LoadItems is the per-command source: us refine loads from
 	// docs/product/stories/, us apply parses the refined story into one
@@ -50,6 +52,10 @@ type Spec[I any] struct {
 	// unmarshals the new ACs and stores a new version; us apply's mutation
 	// is already on disk via the Edit tool, so it returns the item unchanged.
 	PostFix func(ctx context.Context, item I, applierContent string) (I, error)
+	// ReviewResult may hold a model verdict to execution evidence after a fix.
+	ReviewResult func(
+		ctx context.Context, item I, result checklistmodels.ValidationResult,
+	) (checklistmodels.ValidationResult, error)
 	// PostCheckFix, if non-nil, runs in PostFix's place after the fix of a
 	// failed `D:` Prompt, named by check: us refine's applier then edits a
 	// term document, not the Story, so the Story stays as it reads.
@@ -137,7 +143,9 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	// Trailing banner has no em-dash so fixture regexes like
 	// "APPLY COMPLETE" / "REFINE COMPLETE" match as a contiguous
 	// substring of the upper-cased command name.
-	slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
+	if !spec.DeferCompletion {
+		slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
+	}
 
 	return spec.Finalize(result)
 }
@@ -335,6 +343,13 @@ func buildQueryClosure[I any](
 
 		if err != nil {
 			return false, fmt.Errorf("evaluator failed: %w", err)
+		}
+
+		if spec.ReviewResult != nil {
+			result, err = spec.ReviewResult(ctx, item, result)
+			if err != nil {
+				return false, err
+			}
 		}
 
 		*latestResult = result

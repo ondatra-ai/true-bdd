@@ -1,0 +1,7 @@
+Replay blocked by guard hook; verifying via file inspection instead.Both edits applied exactly as specified (registration now uses the named `double`, `number` drops the `== 3` branch and reports bad input, `double` multiplies by 2). The replay command was blocked by this environment's guard hook, so verification is by file inspection — the file matches the fix prompt's expected end state.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Registered named double function (x2), removed Given's value==3 drift, and made number report invalid input via fmt.Errorf"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

@@ -60,6 +60,8 @@ func (r *GoTestRunner) Discover(
 		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, suite, err)
 	}
 
+	argv = appendGoScenarioFilter(argv, cfg.Tests)
+
 	stdout, stderr, runErr := r.exec(CommandDir(cfg), PhaseDiscover, argv)
 	if runErr != nil && stdout.Len() == 0 {
 		return nil, fmt.Errorf("go test discovery failed under %s: %w (stderr: %s)",
@@ -72,6 +74,16 @@ func (r *GoTestRunner) Discover(
 	}
 
 	failures := events.toFailingTests(service, suite)
+	if len(cfg.Tests) > 0 && len(failures) == 0 {
+		if runErr != nil {
+			return nil, fmt.Errorf("selected scenarios failed: %w: %s", runErr, stderr.String())
+		}
+
+		err := events.requireTests(cfg.Tests)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	for _, failure := range failures {
 		failure.RunnerConfig = cfg
@@ -184,6 +196,7 @@ func splitGoTestName(name string) (string, string, error) {
 // the empty test holds package-level events. Compiler lines are keyed
 // by import path, joined to a package through its fail's FailedBuild.
 type goEventStream struct {
+	testPassed    map[string]bool
 	testFailed    map[string]bool
 	packageFailed map[string]bool
 	testOutput    map[string]*strings.Builder
@@ -194,6 +207,7 @@ type goEventStream struct {
 
 func newGoEventStream() *goEventStream {
 	return &goEventStream{
+		testPassed:    make(map[string]bool),
 		testFailed:    make(map[string]bool),
 		packageFailed: make(map[string]bool),
 		testOutput:    make(map[string]*strings.Builder),
@@ -249,6 +263,10 @@ func (s *goEventStream) absorb(event dto.GoTestEvent) {
 		} else {
 			appendBuilder(s.packageOutput, event.Package, event.Output)
 		}
+	}
+
+	if event.Action == "pass" && event.Test != "" {
+		s.testPassed[key] = true
 	}
 
 	if event.Action == "fail" {

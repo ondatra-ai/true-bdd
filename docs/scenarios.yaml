@@ -3601,7 +3601,7 @@ scenarios:
         - and: the engine dispatched 1 AI turn
 
   fix-loop-choices-006-exit-fails-build-tests:
-    description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+    description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, exit 1 and never report BUILD TESTS COMPLETE, since the Scenario's steps still bind to nothing
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
@@ -3619,7 +3619,7 @@ scenarios:
         - the command exits with code 1
         - stdout matches msg="User chose fix action" rawInput=3 action=exit
         - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation'
-        - and: stdout matches BUILD TESTS COMPLETE
+        - but: stdout does not match BUILD TESTS COMPLETE
         - and: the file "tests/mcp/mcp_test.go" is created
         - but: no file matching "tests/mcp/steps/*.go" is created
         - and: the file "docs/scenarios.yaml" is unchanged
@@ -4456,3 +4456,89 @@ scenarios:
       - but: stdout does not match CHECK FAILED|HOST_MEMORY_CANARY_174
       - and: the engine dispatched 1 validation AI turn to "claude"
       - and: no file outside "tmp" changed
+  build-tests-run-001-failed-definition-repaired:
+    description: After writing a step definition, build tests --fix must run its Scenarios through the declared replay command and repair a definition that fails before reporting COMPLETE
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-001-failed-definition-repaired
+      merge_date: '2026-10-22'
+    merged_steps:
+      given:
+      - the "build-tests-run-recovery" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - and: stdout matches calc-001-double
+      - and: stdout matches expected 4, got 6
+      - and: the engine spawned a test runner with arguments matching -run
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
+  build-tests-run-002-attempt-bound-reports-failing-step:
+    description: A definition still failing after the configured fix attempt bound must end build tests --fix with a nonzero exit naming the Scenario and its failing step
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-002-attempt-bound-reports-failing-step
+      merge_date: '2026-10-22'
+    merged_steps:
+      given:
+      - the "build-tests-run-bound" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches authored step definitions still fail after 1 fixes for Scenario calc-001-double
+      - and: stdout matches the result is 4
+      - and: stdout matches expected 4, got 6
+      - but: stdout does not match BUILD TESTS COMPLETE
+      - and: the engine spawned exactly 1 test runner
+  build-tests-run-003-shared-definition-scenarios-run:
+    description: A changed step definition must also run a Scenario that already bound every step, using the declared suite with a name filter
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-003-shared-definition-scenarios-run
+      merge_date: '2026-10-22'
+    merged_steps:
+      given:
+      - the "build-tests-run-shared" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 0
+      - and: stdout matches calc-002-shared
+      - and: stdout matches expected 3, got 4
+      - and: the engine spawned a test runner with arguments matching TestCalc002Shared
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
+  build-tests-run-004-selected-package-must-pass:
+    description: A selected Scenario skipped in its owning package must fail build tests --fix even when a same-named test passes in another package
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-004-selected-package-must-pass
+      merge_date: '2026-10-22'
+    merged_steps:
+      given:
+      - the "build-tests-run-package" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches declared suite did not pass the selected Scenario
+      - and: stdout matches fixture/stepsrun/tests/calc::TestCalc001Double
+      - but: stdout does not match BUILD TESTS COMPLETE
+      - and: the engine spawned exactly 1 test runner

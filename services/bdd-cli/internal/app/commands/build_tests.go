@@ -20,6 +20,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/stepcoverage"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
 // ErrBuildTestsNotConverged is returned when the build-tests walk finishes
@@ -39,6 +40,7 @@ var ErrFixTouchedGeneratedTests = errors.New("the fix walk modified a generated 
 // BuildTestsDeps bundles what `build tests` needs at the command
 // boundary.
 type BuildTestsDeps struct {
+	TestRunnerDispatcher         *testrunner.Dispatcher
 	RegistryLoader               *registry.RegistryLoader
 	ChecklistLoader              *checklist.ChecklistLoader
 	DocResolver                  *docs.Resolver
@@ -66,20 +68,23 @@ func RunBuildTests(
 		productFile:      productDocument(deps.DocResolver),
 		registryFile:     requirementsFile,
 		fix:              fix,
+		execution:        &buildTestsExecution{dispatcher: deps.TestRunnerDispatcher, loader: deps.ChecklistLoader},
 	}
 
 	err := runner.Run(ctx, runner.Spec[*BuildTestsItem]{
-		Name:          "build tests",
-		ChecklistName: "build-tests",
-		StoryID:       "",
-		Fix:           fix,
+		Name:            "build tests",
+		ChecklistName:   "build-tests",
+		StoryID:         "",
+		Fix:             fix,
+		DeferCompletion: true,
 
-		LoadItems:   loadRegistryScenarios(deps, requirementsFile),
-		Prepare:     prep.run,
-		PostFix:     buildTestsPostFix,
-		Finalize:    finalizeBuildTests,
-		GetSubject:  buildTestsSubject,
-		OnItemStart: buildTestsOnItemStart,
+		LoadItems:    loadRegistryScenarios(deps, requirementsFile),
+		Prepare:      prep.run,
+		PostFix:      prep.execution.postFix,
+		ReviewResult: prep.execution.reviewResult,
+		Finalize:     finalizeBuildTests,
+		GetSubject:   buildTestsSubject,
+		OnItemStart:  buildTestsOnItemStart,
 
 		Evaluator:    deps.BuildTestsEvaluator,
 		FixGenerator: deps.BuildTestsFixPromptGenerator,
@@ -97,10 +102,15 @@ func RunBuildTests(
 	clobberErr := prep.checkGeneratedTestsSurvived()
 
 	if err != nil {
-		return errors.Join(err, clobberErr)
+		return prep.execution.finish(errors.Join(err, clobberErr))
 	}
 
-	return clobberErr
+	err = prep.execution.finish(clobberErr)
+	if err == nil {
+		slog.Info("BUILD TESTS COMPLETE")
+	}
+
+	return err
 }
 
 // buildTestsPrep holds what the walk's preparation stage resolves, so
@@ -117,7 +127,8 @@ type buildTestsPrep struct {
 	// walking marks that Prepare finished, so the post-walk re-check runs
 	// only once a fix turn could actually have written something — without
 	// it, a refusal raised after the plan builds would misreport as clobbering.
-	walking bool
+	walking   bool
+	execution *buildTestsExecution
 }
 
 // run is the Prepare hook: it resolves which steps bind, reads what the
@@ -160,6 +171,11 @@ func (p *buildTestsPrep) run(
 
 	// Before codegen too: a document it cannot read refuses untouched.
 	specs, err := p.specify(source, scenarios, answer)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.prepareExecution(arch, scenarios)
 	if err != nil {
 		return nil, err
 	}
@@ -314,19 +330,6 @@ func buildTestsOnItemStart(idx, total int, item *BuildTestsItem) {
 		"index", idx+1, "total", total, "id", item.ID, "description", item.Description)
 }
 
-// buildTestsPostFix is the PostFix implementation for build-tests. The fix
-// already wrote test files to disk via Claude's tools, so the item itself is
-// unchanged; Run's next Query iteration re-reads the test trees from disk.
-func buildTestsPostFix(
-	_ context.Context,
-	item *BuildTestsItem,
-	_ string,
-) (*BuildTestsItem, error) {
-	slog.Info("Fix applied; re-running test-coverage check")
-
-	return item, nil
-}
-
 // finalizeBuildTests is the Finalize closure for `build tests`. Returns
 // a non-nil error iff the walk did not converge so the CLI exits
 // non-zero on any uncovered scenario.
@@ -336,4 +339,15 @@ func finalizeBuildTests(result *engine.Result[*BuildTestsItem]) error {
 	}
 
 	return ErrBuildTestsNotConverged
+}
+
+func (p *buildTestsPrep) prepareExecution(
+	arch *architecture.Architecture,
+	scenarios []*registry.RegistryScenario,
+) error {
+	if !p.fix {
+		return nil
+	}
+
+	return p.execution.prepare(arch, scenarios, p.plan, p.repoRoot)
 }

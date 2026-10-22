@@ -117,7 +117,7 @@ story:
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched 1 AI turn
         - id: 006-exit-fails-build-tests
-          description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+          description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, exit 1 and never report BUILD TESTS COMPLETE, since the Scenario's steps still bind to nothing
           steps:
             - given:
                 - the "fix-loop-exit-steps" project tree
@@ -128,7 +128,7 @@ story:
                 - the command exits with code 1
                 - stdout matches msg="User chose fix action" rawInput=3 action=exit
                 - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation'
-                - and: stdout matches BUILD TESTS COMPLETE
+                - but: stdout does not match BUILD TESTS COMPLETE
                 - and: the file "tests/mcp/mcp_test.go" is created
                 - but: no file matching "tests/mcp/steps/*.go" is created
                 - and: the file "docs/scenarios.yaml" is unchanged

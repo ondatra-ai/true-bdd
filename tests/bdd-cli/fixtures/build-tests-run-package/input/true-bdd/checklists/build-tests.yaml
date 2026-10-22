@@ -1,0 +1,106 @@
+# Checklist for `true-bdd build tests`.
+#
+# Walk every scenario in the registry and confirm it is executable: that
+# every one of its Given/When/Then steps resolves to a step definition in
+# the suite that owns it. The fix loop asks Claude to author the missing
+# definition.
+#
+# The older contract — "some test file mentions the scenario id" — died
+# with the feature file. A scenario is no longer copied into a spec that
+# names it; it IS the spec, read at run time by the suite's runner, and
+# what can be missing is the code its steps bind to. Grepping for the id
+# would now pass on the registry itself.
+
+version: "2.0"
+last_updated: "2026-08-16"
+
+# Model tier per AI role, from `engine.models` in true-bdd.yaml (never a
+# model id). Omit a role to inherit its engine-level default; a prompt can
+# override with `model:` / `fix_model:` / `apply_model:`.
+engine:
+  # Writing the missing step definition is a writing job, not a
+  # reasoning one.
+  apply_model: coder
+
+config:
+  max_apply_attempts: 1
+
+sections:
+  - id: implementation
+    name: "Step Coverage"
+    description: "Every step of every registry scenario must bind to a step definition in the suite that owns the scenario."
+    validation_prompts:
+      - Q: |
+          Does every step of this scenario resolve to a step definition
+          in the suite that owns it?
+
+          First find the suite. Read the architectural spec listed under
+          Reference Documentation and look through
+          the tree `tests/<service>/`, where `service:`
+          equals this scenario's **Service**. That entry's `path:` is
+          the suite's root; its step definitions live under
+          `<path>/steps/`.
+
+          Then bind each step. A step definition is a call of the form
+          `suite.Step(`<regexp>`, <func>)`. A step RESOLVES when exactly
+          one registered regexp matches its text — the text alone, with
+          the Given/When/Then/And keyword stripped, because a definition
+          is bound by wording and not by which block a step sits in.
+
+          One exception, and it is not a loophole: a step whose text
+          opens with `llm:` or `judge:` is run by a MODEL rather than by
+          a step definition. It always resolves and it must never be
+          given one — a definition matching `judge: …` would bind a
+          clause written precisely because no pattern could settle it.
+          Mark such a step MODEL-RUN and move on.
+
+          Pass when every step of the scenario resolves.
+          Fail when any step resolves to none, or to more than one.
+
+          Context: emit one line per step, then a verdict.
+            - "step: <step text> -> <matching pattern, MODEL-RUN, or UNDEFINED>"
+            - "Verdict: executable / <N> step(s) unbound"
+        rationale: "A scenario no step definition binds is behaviour written down and never run; the registry would claim coverage the suite does not have."
+        docs:
+          - architecture_yaml
+        F: |
+          Author the missing step definition(s) in the suite that owns
+          this scenario — and, in the same pass, the ones its registry
+          neighbours are missing for the same reason.
+
+          Steps:
+            1. Read the architectural spec and find the
+               tree `tests/<service>/`, where `service:`
+               matches this scenario's. Its `path:` is the suite root.
+            2. Read the existing definitions under `<suite path>/steps/`
+               to learn the state type they share and the helpers
+               already available. REUSE them — a new definition that
+               re-implements what a sibling already does is the drift
+               this command exists to prevent.
+            3. Widen the job before you write any of it. Read this
+               scenario's neighbours in `docs/scenarios.yaml` — the
+               scenarios of the same `service:` that follow it, about
+               ten of them — and collect THEIR steps that nothing under
+               `<suite path>/steps/` binds either. You are authoring a
+               vocabulary, not patching one scenario: every such step
+               you leave unbound buys another whole validate-fix-apply
+               cycle when the walk reaches it, and the walk reaches it
+               within minutes.
+            4. Register one definition per unbound step you collected —
+               this scenario's and the neighbours':
+               `suite.Step(`^<anchored regexp>$`, <func>)`. Put a
+               capture group where the step's text varies — a quoted
+               run, a number — so one definition serves every scenario
+               phrasing it that way, and do not write a definition whose
+               pattern is a literal copy of one scenario's line.
+            5. Implement every function against the suite's state type.
+               Given prepares, When acts, Then asserts and returns an
+               error naming what it expected and what it got. A
+               neighbour's definition is held to the same standard as
+               this scenario's — an unimplemented stub is not a fix.
+            6. Do not weaken an existing definition to make a step
+               match. Do not edit the registry.
+            7. Never write a definition for a step whose text opens with
+               `llm:` or `judge:`. Those are run by a model by the
+               scenario author's explicit choice, and a pattern that
+               captured one would take that choice back.

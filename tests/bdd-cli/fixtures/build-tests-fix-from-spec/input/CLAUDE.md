@@ -13,3 +13,6 @@ Synthetic host project driven by TrueBDD's `build tests --fix`.
   belong in `tests/mcp/steps/`.
 - Never modify `docs/scenarios.yaml`, `docs/product/`, `docs/architecture/`
   or `true-bdd/`.
+
+
+The host now runs its generated Scenarios. The suite shim in tests/mcp/scenarios uses the real bddgo harness with the existing steps.State and steps.Suite. Author Register(suite Suite) in a new definitions file, with callbacks func(*State, []string) error. Reuse the State in state.go, its BaseURL, Client and Response; do not redeclare the types. The shim starts the host HTTP service and sets MCP_PORT to its address for each Scenario. Never edit the shim or state.go.

@@ -1,0 +1,9 @@
+Edit applied. Running the declared replay command to verify.Replay execution is blocked by a guard hook in this mode; verifying the edited file content instead.The edit is applied exactly as specified: `double` multiplies by 2, the `value == 3` hack is gone from `number`, `result` and patterns are untouched. Note: `sh replay.sh -json` was blocked by the environment's guard hook, so runtime verification could not be executed here.
+
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Fixed doubling to *2 via named double step, removed the value==3 hack, and made number validate input before mutating state"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+```

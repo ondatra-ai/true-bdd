@@ -701,7 +701,7 @@ func TestEngineTermDocuments006MappingNotAListRefusesBuildTestsFix(t *testing.T)
 	s.Done()
 }
 
-// fix-loop-choices-006-exit-fails-build-tests: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+// fix-loop-choices-006-exit-fails-build-tests: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, exit 1 and never report BUILD TESTS COMPLETE, since the Scenario's steps still bind to nothing
 func TestFixLoopChoices006ExitFailsBuildTests(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-tests")
 	s.Given(`the "fix-loop-exit-steps" project tree`)
@@ -710,7 +710,7 @@ func TestFixLoopChoices006ExitFailsBuildTests(t *testing.T) {
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
 	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation`)
-	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.But(`stdout does not match BUILD TESTS COMPLETE`)
 	s.And(`the file "tests/mcp/mcp_test.go" is created`)
 	s.But(`no file matching "tests/mcp/steps/*.go" is created`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)

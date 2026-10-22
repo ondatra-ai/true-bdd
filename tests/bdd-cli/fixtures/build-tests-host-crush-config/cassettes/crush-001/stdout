@@ -1,5 +1,7 @@
-The suite's `steps/` package doesn't exist yet and `go.mod` confirms a stdlib-only module. Creating the file exactly as specified:Now verifying per the fix prompt:Shell is blocked by a guard hook in this mode, so gofmt/build can't be run; gopls diagnostics on the written file report 0 errors (the sole project warning is the pre-existing missing `scenarios` import in `mcp_test.go`, explicitly out of scope). Verifying the file landed intact:=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+No existing definitions — `steps.Register` is undefined (confirmed by diagnostics). Creating the file exactly as specified.File written; the stale diagnostic should clear after build verification.Shell is blocked by the guard hook; verifying compilation via LSP diagnostics instead.`steps.Register` now resolves with zero compiler errors (the earlier undefined error is gone; the remaining warning is just the `bdd`-tagged generated test, pre-existing). Shell verification was blocked by the guard hook, so LSP diagnostics served as the compile check — the concrete suite satisfies `Suite`, so no parameter-type adjustment was needed.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
 applied: true
 target: "tests/mcp/steps/mcp_steps.go"
-summary: "Created the mcp suite's steps package with State, helpers, and one Register binding all three INT-900 step patterns"
+summary: "Created Register with three anchored, capture-grouped definitions binding INT-900's Given/When/Then to the existing State contract"
 === FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

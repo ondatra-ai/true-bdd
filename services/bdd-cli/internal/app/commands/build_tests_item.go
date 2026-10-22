@@ -14,6 +14,9 @@ type BuildTestsItem struct {
 	// Spec is read under --fix for a Scenario with an unbound step, from
 	// a product document declaring a catalogue; the zero value renders nothing.
 	Spec catalogue.Specification
+
+	// Failures carries runtime evidence into the step-authoring prompt.
+	Failures []string
 }
 
 // buildTestsItems wraps each loaded Registry entry, in the loader's order.
