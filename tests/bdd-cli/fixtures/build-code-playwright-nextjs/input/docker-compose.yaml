@@ -3,4 +3,6 @@ services:
     build:
       context: ./services/frontend
     ports:
-      - "3000:3000"
+      # The host port is this copy's own (tests/playwright.config.ts), so two
+      # runs at once never share one; the app listens on 3000 inside.
+      - "${FRONTEND_PORT:-3000}:3000"
