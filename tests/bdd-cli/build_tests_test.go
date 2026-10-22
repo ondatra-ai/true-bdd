@@ -22,6 +22,96 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
+// build-tests-files-001-stale-test-refused: Without `--fix`, a generated test file that is missing or differs from what the Registry renders must refuse `build tests`, naming each such file and the command that regenerates it, and must leave every file as it was
+func TestBuildTestsFiles001StaleTestRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-001-stale-test-refused")
+	s.Given(`the "build-tests-stale-generated-test" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/session_test\.go: no generated test file`)
+	s.And(`stdout matches tests/mcp/ticket_test\.go: the generated test file is not what the registry renders`)
+	s.And(`stdout matches regenerate with: true-bdd build tests --fix`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-002-stale-test-regenerated: Under `--fix`, a generated test file that differs from what the Registry renders must be rewritten to match it, while a generated test file that already matches must be left untouched
+func TestBuildTestsFiles002StaleTestRegenerated(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-002-stale-test-regenerated")
+	s.Given(`the "build-tests-regenerate-stale-test" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Generated test files from the registry" count=1 files=tests/mcp/ticket_test\.go`)
+	s.And(`the file "tests/mcp/ticket_test.go" is modified`)
+	s.And(`the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds`)
+	s.But(`the file "tests/mcp/session_test.go" is unchanged`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-tests-files-003-hand-written-test-kept: Under `--fix`, a Registry `path:` naming a hand-written test file, one without the `// Code generated` header, must refuse `build tests`, naming that file, before any generated test file is rewritten
+func TestBuildTestsFiles003HandWrittenTestKept(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-003-hand-written-test-kept")
+	s.Given(`the "build-tests-hand-written-test-kept" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/ticket_test\.go: refusing to overwrite a file that is not marked generated`)
+	s.But(`the file "tests/mcp/ticket_test.go" is unchanged`)
+	s.And(`the file "tests/mcp/session_test.go" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-004-foreign-package-refused: A hand-written test file in a generated test's directory that declares a package other than the one the directory's name derives must refuse `build tests`, naming the file and both package names
+func TestBuildTestsFiles004ForeignPackageRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-004-foreign-package-refused")
+	s.Given(`the "build-tests-foreign-test-package" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/support_test\.go: the target directory declares a different package`)
+	s.And(`stdout matches the directory declares \\"mcpserver_test\\", the suite name derives \\"mcp_test\\"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-005-invalid-step-pattern-refused: A step definition whose pattern is not a valid regular expression must refuse `build tests`, naming its file, line and column, before any generated test file is compared with the Registry
+func TestBuildTestsFiles005InvalidStepPatternRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-005-invalid-step-pattern-refused")
+	s.Given(`the "build-tests-invalid-step-pattern" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go:23:13: step pattern is not a valid regexp`)
+	s.And(`stdout matches missing closing \)`)
+	s.But(`stdout does not match no generated test file`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-006-step-file-not-go-refused: A step definition file that is not valid Go must refuse `build tests`, naming the file, line and column where Go stops reading it, before any generated test file is compared with the Registry
+func TestBuildTestsFiles006StepFileNotGoRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-006-step-file-not-go-refused")
+	s.Given(`the "build-tests-step-file-not-go" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go:23:75: missing`)
+	s.And(`stdout matches before newline in argument list`)
+	s.But(`stdout does not match no generated test file`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
 func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
