@@ -1303,3 +1303,120 @@ log:
       Product Owner, verdict on spike #133 (2026-10-21), item 4: "`vocabulary.actions` in
       the product document is RETIRED in favour of the catalogue (one source). #152 points
       `us refine` at the catalogue."
+  - decision_trace:
+      research:
+        - |
+          Phase 4 of #127 groups TrueBDD's Scenarios into Stories of 3-7 Acceptance
+          Criteria. About 40 Scenarios run `scen check`: the walk, its id filter and exit
+          code, the `D:` Prompt refusals and ordering, and one family per closure level
+          (phrases, glossary terms, architecture mappings, catalogue to step definition
+          correspondence) plus the `--fix` clarification loop.
+      recommendation: |
+        Split by closure level: `scen-check` (#140), `checklist-checks` (Feature `engine`),
+        `scen-check-phrases`, `scen-check-terms`, `scen-check-mappings`,
+        `scen-check-step-definitions` and `scen-check-fix`, each its own sub-issue of #127.
+      settled: |
+        Split by closure level. The six new Stories became #158-#163, each blocking #151
+        and #154. #163 later split its Scenarios into `scen-check-fix` and
+        `scen-check-quality-fix`.
+    question: |
+      Q40 - How are the ~40 `scen check` Scenarios cut into Stories: (a) split by closure
+      level, a sub-issue per Story; (b) let #140 propose the cut; (c) one big `scen-check`
+      Story, relaxing the 3-7 rule?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-21): "Split by closure
+      level (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #140's drill deleted the 8 step definitions the `scen-check` Story uses and rebuilt
+          them with one `build tests --fix` from the spec: 7 of 8 patterns came back
+          byte-identical and the whole suite replayed 101/101 against them.
+        - |
+          `us refine` and `us apply` find a Story by the glob `<id>-*.yaml`, so `scen-check`
+          also matches `scen-check-phrases-*.yaml` once #159-#163 land.
+        - |
+          The rebuilt 'project tree' step sets the fixture after its recordings resolve; in
+          record mode a failed setup leaves it nil and the harness's publishRecordings would
+          crash.
+      recommendation: |
+        Approve the rebuilt steps; fix the loader to pick the file whose own `id:` equals
+        the argument; make the harness (`pkg/testkit`, source) nil-safe.
+      settled: |
+        Approved, as recorded in the comment on #140. The loader picks the Story file whose
+        `id:` equals the argument, and the harness is nil-safe (merged as the #140
+        follow-up, 80881b10). The remaining Stories are converted the same way.
+    question: |
+      Q41 - Verdict on the step definitions #140 rebuilt from the spec, and how to resolve
+      the Story-file glob clash and the nil fixture the drill exposed?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-21): verdict "Approve
+      (Recommended)"; Story clash "Fix the loader (Recommended)"; drill gap "Harden the
+      harness (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          Coverage triage (#154): the `remote` agent polls `/api/agent/*` on the relay #123
+          deleted with `services/bdd-web`; nothing serves those routes. `deadcode` with the
+          remote commands unregistered lists the code only it reaches: `store` (SQLite),
+          `queryserver`, `inventory`, `promptprobe`, `cli/ps` and the `events` channel.
+      recommendation: |
+        Delete `remote`, `remote-supervisor`, `prompt-probe` and the code only they reach.
+      settled: |
+        Deleted in #164 (17fe88b8). Engine coverage under replay rose to 80.3%; no Scenario
+        or cassette changed.
+    question: |
+      Q42 - #164: delete the `remote` agent, its two sibling commands and the engine code
+      only it reaches; keep it out of scope; or keep and specify it?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Delete it
+      (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #128 added `cli/ps` exemptions to `.golangci.yaml` and `.alint.yml` (Q33); #164
+          deletes `cli/ps`, which leaves those entries naming a package that no longer
+          exists.
+      recommendation: |
+        Remove only the `cli/ps` entries #128 added; nothing else in either config changes.
+      settled: |
+        Removed in #164; the rules get stricter, not looser.
+    question: |
+      Q43 - When `cli/ps` is deleted, may #164 remove its now-dangling exemption entries
+      from `.golangci.yaml` and `.alint.yml`, only those entries?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Yes, remove them
+      (Recommended)".
+  - decision_trace:
+      research:
+        - |
+          #148's `scen check` walk found the term documents saying a failed check means a
+          non-zero exit, while `us refine` and `us apply` exit 0 after a failed walk; only
+          `scen check`, `build tests` and `build code` exit 1.
+      recommendation: |
+        No recommendation: either keep exit 0 as documented behaviour, or open a small
+        engine ticket making both commands exit 1 on failure.
+      settled: |
+        `us refine` and `us apply` keep exit 0 after a failed check. The glossary,
+        catalogue and mapping say so (corrected in #148). Do not ask again.
+    question: |
+      Q44 - `us refine` and `us apply` exit 0 after a failed check. Should they exit 1 so
+      they can gate a change too?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Keep exit 0".
+  - decision_trace:
+      research:
+        - |
+          The checklist Prompt field `skip:` is used by no shipped checklist and is
+          undocumented, and a string "false" still skips the Prompt.
+      recommendation: |
+        Delete it in #164.
+      settled: |
+        Kept and specified instead: #172 refuses a non-boolean `skip:` at startup, specifies
+        that a `skip: true` Prompt costs no AI turn, and documents the field in the README.
+    question: |
+      Q45 - The checklist field `skip:` is unused, undocumented and skips on a string
+      "false". Delete it in #164, or keep and specify it?
+    answer: |
+      Product Owner, dialog during #127's implementation (2026-10-22): "Keep and specify
+      it".
