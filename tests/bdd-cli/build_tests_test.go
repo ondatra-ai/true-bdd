@@ -273,3 +273,29 @@ func TestEngineConfig003UnresolvableDefaultTiersRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document's `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe
+func TestEngineTermDocuments005GlossaryNotAListRefusesBuildTestsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix")
+	s.Given(`the "build-tests-fix-glossary-not-a-list" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document's `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built
+func TestEngineTermDocuments006MappingNotAListRefusesBuildTestsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix")
+	s.Given(`the "build-tests-fix-mapping-not-a-list" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" changed`)
+	s.Done()
+}

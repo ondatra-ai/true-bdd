@@ -1,0 +1,29 @@
+# Seed registry for the `build-tests-fix-glossary-not-a-list` BDD fixture.
+#
+# One scenario whose steps bind to nothing, each matching one phrase
+# of the catalogue in docs/product/product.yaml, so `build tests --fix`
+# must read what the spec says about them.
+#
+# The run is refused before codegen and before any AI turn: the
+# product document's glossary is not a list.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-fix-glossary-not-a-list fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-22"
+    user_stories: []
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket"

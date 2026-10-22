@@ -2601,3 +2601,121 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+  engine-term-documents-001-glossary-not-a-list-stops-scen-check:
+    description: '`scen check` must stop at its declared-term check when the product document''s `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-001-glossary-not-a-list-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-glossary-not-a-list" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001
+        - and: 'stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms'
+        - but: stdout does not match check=term-mappings
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-002-mapping-not-a-list-stops-scen-check:
+    description: '`scen check` must stop at its term-mapping check when the architecture document''s `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-002-mapping-not-a-list-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-mapping-not-a-list" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
+        - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
+        - but: stdout does not match check=step-definitions
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-003-product-not-yaml-stops-scen-check:
+    description: '`scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-003-product-not-yaml-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-product-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001
+        - and: 'stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match check=declared-terms
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-004-architecture-not-yaml-stops-scen-check:
+    description: '`scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-004-architecture-not-yaml-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-architecture-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
+        - and: 'stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match check=step-definitions
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix:
+    description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document''s `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-fix-glossary-not-a-list" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms'
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed
+  engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix:
+    description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document''s `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-fix-mapping-not-a-list" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed

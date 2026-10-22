@@ -197,6 +197,62 @@ func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-term-documents-001-glossary-not-a-list-stops-scen-check: `scen check` must stop at its declared-term check when the product document's `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn
+func TestEngineTermDocuments001GlossaryNotAListStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-001-glossary-not-a-list-stops-scen-check")
+	s.Given(`the "scen-check-glossary-not-a-list" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001`)
+	s.And(`stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms`)
+	s.But(`stdout does not match check=term-mappings`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-002-mapping-not-a-list-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document's `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn
+func TestEngineTermDocuments002MappingNotAListStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-002-mapping-not-a-list-stops-scen-check")
+	s.Given(`the "scen-check-mapping-not-a-list" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001`)
+	s.And(`stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings`)
+	s.But(`stdout does not match check=step-definitions`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-003-product-not-yaml-stops-scen-check: `scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
+func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-003-product-not-yaml-stops-scen-check")
+	s.Given(`the "scen-check-product-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001`)
+	s.And(`stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match check=declared-terms`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-004-architecture-not-yaml-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
+func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-004-architecture-not-yaml-stops-scen-check")
+	s.Given(`the "scen-check-architecture-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001`)
+	s.And(`stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match check=step-definitions`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
