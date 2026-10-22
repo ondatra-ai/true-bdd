@@ -101,7 +101,8 @@ Claude must quickly state that only the first 10000 words were summarized when t
 
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
-Change AC-3 only. AC-1, AC-2 and AC-4 are reproduced here unchanged and must stay exactly as they are in the story file — including AC-4's word "quickly", which is out of scope for this fix and gets a fix of its own.
+
+Scope note: the failed check (`us-refine/acceptance_criteria`) faults **AC-3 only**. AC-1, AC-2 and AC-4 are reproduced word for word, including AC-4's `quickly`, which is deliberately left in place for a separate fix. Do not edit them in this pass.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -111,27 +112,32 @@ Change AC-3 only. AC-1, AC-2 and AC-4 are reproduced here unchanged and must sta
 
 ## Required Changes
 
+Change ONLY what the failed check requires. Every criterion the check does not fault is reproduced exactly as it stands — same description, same steps, word for word.
+
 ### Change #1: AC-3
 **Before:** "Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds."
 
-**Issue:** The description contains the forbidden qualifier "properly" (`docs/product/product.yaml` → `vocabulary.forbidden_qualifiers`: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). "Properly" does not say what a correct display looks like, so no test can tell a pass from a fail. The observable outcome must be stated exactly: which message appears, where it appears, and that no summary appears alongside it.
+**Issue:** The description contains `properly`, a forbidden qualifier from the `vocabulary.forbidden_qualifiers` list in `docs/product/product.yaml` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). `properly` adds no observable meaning — either the exact message string is displayed or it is not — and it hides the measurable trigger condition behind a judgement call.
 
-**After (description):** "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one."
+**After (description):** "Claude must display the message 'The summary timed out - please try again' in the conversation when the summary backend does not respond within 30 seconds of the Claude User's summary request."
 
-**After (steps):** keep AC-3's existing Given/When/Then and add the one Then the reworded description now promises (no summary displayed). The role stays "the Claude User", exactly as in the story's as_a clause.
+**After (steps):** unchanged — reproduce the existing given/when/then steps byte for byte:
 ```yaml
 - given: "a Google Doc is shared with the Claude User's account"
 - given: "the summary backend does not respond within 30 seconds"
 - when: "the Claude User asks Claude to summarize the document"
-- then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
-- and: "Claude does not display a document summary"
+- then: "Claude displays the message 'The summary timed out - please try again'"
 ```
 
-No acceptance criteria are added, merged or removed. AC-3 keeps its id.
+**Unchanged:** the `AC-3` id, all four steps, and the role wording "Claude User" taken from the story's `as_a` clause.
+
+### No other changes
+- AC-1: not faulted by this check — reproduce exactly.
+- AC-2: not faulted by this check — reproduce exactly.
+- AC-4: contains `quickly`, which is addressed by a separate fix — reproduce exactly, qualifier included.
+- No acceptance criteria are added, merged, or removed.
 
 ## Complete Fixed Acceptance Criteria
-
-Replace the story's acceptance-criteria list with the block below. AC-1, AC-2 and AC-4 appear here with their current descriptions and steps verbatim — if the story file writes their continuation steps with a different key than `and:`, keep the file's existing form for those three; do not reword or restructure them.
 
 ```yaml
 - ac_id: AC-1
@@ -140,7 +146,7 @@ Replace the story's acceptance-criteria list with the block below. AC-1, AC-2 an
     - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of 150 words or fewer in the conversation"
-    - and: "the summary names the document title"
+    - then: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
@@ -148,16 +154,15 @@ Replace the story's acceptance-criteria list with the block below. AC-1, AC-2 an
     - given: "a Google Doc exists that is not shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize that document"
     - then: "Claude displays the message 'This document is not shared with your account'"
-    - and: "Claude does not display any content from the document"
+    - then: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one."
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when the summary backend does not respond within 30 seconds of the Claude User's summary request."
   steps:
     - given: "a Google Doc is shared with the Claude User's account"
     - given: "the summary backend does not respond within 30 seconds"
     - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
-    - and: "Claude does not display a document summary"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
   description: "Claude must quickly state that only the first 10000 words were summarized when the document contains more than 10000 words."
@@ -165,7 +170,7 @@ Replace the story's acceptance-criteria list with the block below. AC-1, AC-2 an
     - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of the first 10000 words"
-    - and: "Claude states that only the first 10000 words were summarized"
+    - then: "Claude states that only the first 10000 words were summarized"
 ```
 
 === FILE_END: tmp/{{RUN_DIR}}/01-97.3-fix-prompts.md ===

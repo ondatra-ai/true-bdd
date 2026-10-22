@@ -86,7 +86,7 @@ Claude must display a summary of 150 words or fewer in the conversation when the
 Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access.
 
 **AC-3:**
-Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one.
+Claude must display the message 'The summary timed out - please try again' in the conversation when the summary backend does not respond within 30 seconds of the Claude User's summary request.
 
 **AC-4:**
 Claude must quickly state that only the first 10000 words were summarized when the document contains more than 10000 words.
@@ -102,12 +102,12 @@ Claude must quickly state that only the first 10000 words were summarized when t
 ## Instructions
 Apply the following changes to the acceptance criteria for this story.
 
-Scope: ONE criterion changes — AC-4, and only its `description` field. AC-1, AC-2 and AC-3 are reproduced below byte for byte and must not be edited. AC-4's steps are also reproduced byte for byte: the new description introduces no new threshold, so no step needs to change.
+Only AC-4 is at fault. AC-1, AC-2 and AC-3 are reproduced below word for word — do not reword, re-order, or "improve" them.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
 2. AC-2: Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access. [has steps]
-3. AC-3: Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one. [has steps]
+3. AC-3: Claude must display the message 'The summary timed out - please try again' in the conversation when the summary backend does not respond within 30 seconds of the Claude User's summary request. [has steps]
 4. AC-4: Claude must quickly state that only the first 10000 words were summarized when the document contains more than 10000 words. [has steps]
 
 ## Required Changes
@@ -115,25 +115,25 @@ Scope: ONE criterion changes — AC-4, and only its `description` field. AC-1, A
 ### Change #1: AC-4
 **Before:** "Claude must quickly state that only the first 10000 words were summarized when the document contains more than 10000 words."
 
-**Issue:** The word "quickly" is in the `forbidden_qualifiers` list of the product document's vocabulary (./docs/product/product.yaml: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). It names no bound an observer can measure, so no test can decide whether the truncation statement arrived quickly enough. The criterion's own steps assert no timing at all — the qualifier adds an unverifiable claim on top of behaviour that is already observable.
+**Issue:** The description contains the word "quickly", which is listed in `vocabulary.forbidden_qualifiers` of the product document (docs/product/product.yaml: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive). It asserts an unmeasurable speed with no stated threshold, so no test can objectively decide whether the criterion was met. The truncation notice itself is already observable; only the speed qualifier is unverifiable.
 
-**Resolution:** Drop the unmeasurable timing claim and state only the observable outcomes the steps already check: the summary of the first 10000 words, and the statement that only the first 10000 words were summarized. (The alternative — naming a second-count threshold — would force a new timing Then step onto a criterion whose steps the failed check does not fault, so the timing claim is dropped instead.)
+**After (description):** "Claude must display a summary of the first 10000 words together with a statement that only the first 10000 words were summarized when the document contains more than 10000 words."
 
-**After (description):** "Claude must display a summary of the first 10000 words and state that only the first 10000 words were summarized, when the document contains more than 10000 words."
-
-**After (steps):** unchanged from the current story file —
+**After (steps):** unchanged — AC-4's existing given/when/then steps are already specific and measurable, and they already use the exact role "Claude User" from the story's as_a clause. Reproduce them byte for byte:
 ```yaml
 - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
 - when: "the Claude User asks Claude to summarize the document"
 - then: "Claude displays a summary of the first 10000 words"
-- then: "Claude states that only the first 10000 words were summarized" (and)
+- then: "Claude states that only the first 10000 words were summarized"
 ```
 
-No other change. No acceptance criterion is added, merged or removed.
+**Notes on scope:**
+- Keep AC-4's `ac_id` unchanged.
+- Do NOT add a response-time threshold to AC-4. The vague speed claim is removed rather than converted into a number, because no timing bound for the truncation notice is stated anywhere in the story or the product document; AC-3 already owns the 30-second response-time rule for summary requests, so inventing a second timing requirement here would add untested scope.
+- No new acceptance criteria are added, none are merged, and none are removed.
+- All other story fields (title, as_a, i_want, so_that) remain unchanged.
 
 ## Complete Fixed Acceptance Criteria
-
-This block replaces the whole acceptance-criteria list for story 97.3.
 
 ```yaml
 - ac_id: AC-1
@@ -142,7 +142,7 @@ This block replaces the whole acceptance-criteria list for story 97.3.
     - given: "a Google Doc with at least 500 words of body text is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of 150 words or fewer in the conversation"
-    - and_then: "the summary names the document title"
+    - then: "the summary names the document title"
 
 - ac_id: AC-2
   description: "Claude must display the message 'This document is not shared with your account' when the Claude User asks for a summary of a document they cannot access."
@@ -150,27 +150,24 @@ This block replaces the whole acceptance-criteria list for story 97.3.
     - given: "a Google Doc exists that is not shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize that document"
     - then: "Claude displays the message 'This document is not shared with your account'"
-    - and_then: "Claude does not display any content from the document"
+    - then: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' in the conversation, and display no document summary, when no summary is produced within 30 seconds of the Claude User asking for one."
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when the summary backend does not respond within 30 seconds of the Claude User's summary request."
   steps:
     - given: "a Google Doc is shared with the Claude User's account"
-    - and_given: "the summary backend does not respond within 30 seconds"
+    - given: "the summary backend does not respond within 30 seconds"
     - when: "the Claude User asks Claude to summarize the document"
-    - then: "Claude displays the message 'The summary timed out - please try again' in the conversation"
-    - and_then: "Claude does not display a document summary"
+    - then: "Claude displays the message 'The summary timed out - please try again'"
 
 - ac_id: AC-4
-  description: "Claude must display a summary of the first 10000 words and state that only the first 10000 words were summarized, when the document contains more than 10000 words."
+  description: "Claude must display a summary of the first 10000 words together with a statement that only the first 10000 words were summarized when the document contains more than 10000 words."
   steps:
     - given: "a Google Doc with more than 10000 words is shared with the Claude User's account"
     - when: "the Claude User asks Claude to summarize the document"
     - then: "Claude displays a summary of the first 10000 words"
-    - and_then: "Claude states that only the first 10000 words were summarized"
+    - then: "Claude states that only the first 10000 words were summarized"
 ```
-
-Note on step keys: the `and`-marked continuation lines above are written with the same key the story file already uses for them (a repeated `given:`/`then:` entry marked `and`, or `and_given:`/`and_then:` — whichever the file on disk has). Preserve the file's existing key style verbatim; only AC-4's `description` string changes.
 
 === FILE_END: tmp/{{RUN_DIR}}/01-97.3-fix-prompts.md ===
 
