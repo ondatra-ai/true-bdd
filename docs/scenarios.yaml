@@ -3297,6 +3297,26 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
 
+  engine-entry-004-failed-us-command-prints-no-usage:
+    description: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-004-failed-us-command-prints-no-usage
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "us-refine-error-without-usage" project tree
+      when:
+        - the Product Owner runs "us refine 96.9"
+      then:
+        - the command exits with code 1
+        - 'stderr matches Error: us refine: failed to load items: story file not found — write the Story file first'
+        - but: 'stderr does not match Usage:'
+        - and: stderr does not match command failed
+        - and: no file outside "tmp" changed
+
   engine-documents-002-missing-architecture-flag-refused:
     description: '`build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists'
     service: bdd-cli
@@ -3751,7 +3771,7 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
 
   engine-routes-004-failed-claude-turn-stops-run:
-    description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+    description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
@@ -3768,7 +3788,9 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model
-        - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+        - and: 'stderr matches Error: scen check: walker failed on item 0: evaluator failed: '
+        - but: stderr does not match command failed
+        - and: stdout does not match CHECK FAILED|ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
 

@@ -97,7 +97,7 @@ func RunBuildTests(
 	clobberErr := prep.checkGeneratedTestsSurvived()
 
 	if err != nil {
-		return errors.Join(fmt.Errorf("build tests command failed: %w", err), clobberErr)
+		return errors.Join(err, clobberErr)
 	}
 
 	return clobberErr

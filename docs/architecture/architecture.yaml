@@ -259,8 +259,8 @@ architecture:
         `<date> <time> ERROR <msg> key=value`.
       observed_by: >-
         The kept stderr, as one string, is asked for a match of the step's
-        pattern anywhere in it; a failed match prints stderr beside the
-        pattern.
+        pattern anywhere in it, or for none; a failed match prints stderr
+        beside the pattern.
 
     - term: log record
       technical: >-

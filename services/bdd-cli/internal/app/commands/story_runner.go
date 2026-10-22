@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -53,7 +52,7 @@ func runStoryCommand(
 		StoryNumber:   storyNumber,
 		Fix:           fix,
 
-		LoadItems:  loadItems(versionMgr),
+		LoadItems:    loadItems(versionMgr),
 		PostFix:      refinePostFix(versionMgr),
 		PostCheckFix: refinePostCheckFix,
 		Finalize:     refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyNumber, versionMgr, fix)),
@@ -70,9 +69,6 @@ func runStoryCommand(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          deps.RunDir.GetTmpOutPath(),
 	})
-	if err != nil {
-		return fmt.Errorf("%s command failed: %w", name, err)
-	}
 
-	return nil
+	return err
 }

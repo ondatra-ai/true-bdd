@@ -79,11 +79,8 @@ func RunScenCheck(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          deps.RunDir.GetTmpOutPath(),
 	})
-	if err != nil {
-		return fmt.Errorf("scen check command failed: %w", err)
-	}
 
-	return nil
+	return err
 }
 
 // loadCheckScenarios is the LoadItems factory for `scen check`: load the

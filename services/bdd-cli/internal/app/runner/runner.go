@@ -137,7 +137,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		// `stdout matches` step reads (#168).
 		slog.Error("Walk stopped", "command", spec.Name, "error", err)
 
-		return fmt.Errorf("%s command failed: %w", spec.Name, err)
+		return err
 	}
 
 	builder.RenderAll(spec.Renderer, spec.Fix)

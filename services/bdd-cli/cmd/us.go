@@ -42,7 +42,10 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 		Use:   use,
 		Short: short,
 		Long:  long,
-		Args:  cobra.ExactArgs(1),
+		Args:  argsWithUsage(cobra.ExactArgs(1)),
+		// A failed run prints its error alone, as `build` and `scen` do;
+		// argsWithUsage restores the usage for a mistyped argument.
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			container, err := containerFor(cmd, provide)
 			if err != nil {
@@ -60,7 +63,7 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 			stop()
 
 			if err != nil {
-				return fmt.Errorf("%s command failed: %w", use, err)
+				return fmt.Errorf("%s: %w", commandName(cmd), err)
 			}
 
 			return nil

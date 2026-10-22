@@ -33,6 +33,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// What the command line says before the log is up: a stray argument's
 	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
 	suite.Step(`^stderr matches (.+)$`, assertStderr)
+	suite.Step(`^stderr does not match (.+)$`, assertStderrNoMatch)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -514,6 +515,25 @@ func assertStderr(state *State, args []string) error {
 
 	if !pattern.MatchString(state.Result.Stderr) {
 		return state.fail("expected stderr to match %q, but it did not:\n%s", args[0], state.Result.Stderr)
+	}
+
+	return nil
+}
+
+// assertStderrNoMatch is assertStderr's negative twin: proves stderr does
+// NOT match a pattern, such as a usage an error must not be followed by.
+func assertStderrNoMatch(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr not to match %q, but it did:\n%s", args[0], state.Result.Stderr)
 	}
 
 	return nil

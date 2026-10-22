@@ -15,10 +15,14 @@ import (
 func containerFor(cmd *cobra.Command, provide containerProvider) (*bootstrap.Container, error) {
 	container, err := provide()
 	if err != nil {
-		command := strings.TrimPrefix(cmd.CommandPath(), cmd.Root().Name()+" ")
-
-		return nil, runner.RefuseStartup(command, fmt.Errorf("initialize container: %w", err))
+		return nil, runner.RefuseStartup(commandName(cmd), fmt.Errorf("initialize container: %w", err))
 	}
 
 	return container, nil
+}
+
+// commandName is the command as a person types it after the binary's own
+// name: `us refine`, `scen check`.
+func commandName(cmd *cobra.Command) string {
+	return strings.TrimPrefix(cmd.CommandPath(), cmd.Root().Name()+" ")
 }

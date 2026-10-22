@@ -71,11 +71,8 @@ func RunApply(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,
 	})
-	if err != nil {
-		return fmt.Errorf("us apply command failed: %w", err)
-	}
 
-	return nil
+	return err
 }
 
 // loadScenarios is the LoadItems factory for `us apply`. Copies the

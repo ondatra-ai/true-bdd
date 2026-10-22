@@ -55,6 +55,19 @@ func TestEngine007MissingDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-entry-004-failed-us-command-prints-no-usage: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
+func TestEngineEntry004FailedUsCommandPrintsNoUsage(t *testing.T) {
+	s := scenarios.New(t, "engine-entry-004-failed-us-command-prints-no-usage")
+	s.Given(`the "us-refine-error-without-usage" project tree`)
+	s.When(`the Product Owner runs "us refine 96.9"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stderr matches Error: us refine: failed to load items: story file not found — write the Story file first`)
+	s.But(`stderr does not match Usage:`)
+	s.And(`stderr does not match command failed`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // fix-loop-bounds-001-one-walk-keeps-story: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
 func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-bounds-001-one-walk-keeps-story")

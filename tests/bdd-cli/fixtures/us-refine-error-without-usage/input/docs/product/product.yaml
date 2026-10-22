@@ -1,0 +1,53 @@
+# Product document (BDD test fixture stub).
+# Read by checklist prompts as the product reference. The engine reads
+# only its `catalogue:`, which it does not declare, so `us refine`'s
+# step-phrase check passes every Story as not checked.
+
+title: "MCP Google Docs Editor (BDD fixture stub)"
+summary: "Synthetic product document for BDD fixtures — deliberately minimal."
+
+# Roles (folded from the retired terms.yaml roles): the names a story's
+# as_a clause may use.
+roles:
+  - name: Claude User
+    definition: "An individual who uses Claude Desktop or Claude Web App and wants to edit their Google Docs through natural language commands"
+    primary_use_case: "Document editing through conversational AI interface"
+    characteristics:
+      - "Non-technical users focused on content creation and editing"
+      - "Values seamless integration between Claude AI and Google Docs"
+      - "Expects reliable, fast document operations with clear error messaging"
+
+  - name: Developer/Maintainer
+    definition: "Technical personnel responsible for building, deploying, monitoring, and maintaining the MCP Google Docs Editor system"
+    primary_use_case: "System development, deployment, and operational support"
+    characteristics:
+      - "Technical expertise in Go, Railway CLI, MCP protocol, and Google APIs"
+      - "Focused on system reliability, security, and performance"
+
+# The words the us-refine vague-word and forbidden-verb prompts reject.
+vocabulary:
+  # Vague words that must not appear in AC descriptions or steps.
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - appropriate
+    - appropriately
+    - user-friendly
+    - fast
+    - quickly
+    - easily
+    - seamless
+    - intuitive
+
+  # Action verbs too abstract to automate: they hide the interaction
+  # mechanism.
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the system observably does with the input."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "process"
+      reason: "Does not specify the interaction mechanism or the visible outcome."
+      replacement: "Name the observable action: displays, returns, lists, rejects."
+    - name: "parse"
+      reason: "Describes internal mechanics, not user-observable behavior."
+      replacement: "Describe the visible result of reading the input."

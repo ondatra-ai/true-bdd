@@ -71,11 +71,8 @@ func RunBuildCode(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          tmpDir,
 	})
-	if err != nil {
-		return fmt.Errorf("build code command failed: %w", err)
-	}
 
-	return nil
+	return err
 }
 
 // loadFailingTests is the LoadItems factory for `build code`. Dispatches

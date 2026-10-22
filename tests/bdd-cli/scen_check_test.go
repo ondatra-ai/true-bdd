@@ -309,7 +309,7 @@ func TestEngineRoutes003PromptTiersWin(t *testing.T) {
 	s.Done()
 }
 
-// engine-routes-004-failed-claude-turn-stops-run: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+// engine-routes-004-failed-claude-turn-stops-run: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
 func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 	s := scenarios.New(t, "engine-routes-004-failed-claude-turn-stops-run")
 	s.Given(`the "scen-check-claude-turn-fails" project tree`)
@@ -317,7 +317,9 @@ func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model`)
-	s.But(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
+	s.And(`stderr matches Error: scen check: walker failed on item 0: evaluator failed: `)
+	s.But(`stderr does not match command failed`)
+	s.And(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
 	s.And(`the engine dispatched 1 AI turn`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
