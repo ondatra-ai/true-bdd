@@ -65,6 +65,7 @@ func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 // is a bug worth surfacing rather than a silent downgrade to some default.
 func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Options {
 	opts := claude.Options{
+		Minimal:        true,
 		SystemPrompt:   req.SystemPrompt,
 		Model:          req.Model,
 		PermissionMode: permissionAcceptEdits,
@@ -89,7 +90,7 @@ func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Option
 }
 
 // permissionAcceptEdits is the mode every engine turn runs under: the turn's
-// writes are already fenced by the allowlist and the fixture's own settings,
+// writes are already fenced by the engine's tool allowlist,
 // so a prompt would only stall a run nobody is watching.
 const permissionAcceptEdits = "acceptEdits"
 

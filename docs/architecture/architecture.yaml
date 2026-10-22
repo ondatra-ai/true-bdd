@@ -179,8 +179,9 @@ architecture:
             binary: claude
             args:
               - --setting-sources
-              - project
+              - ""
               - --strict-mcp-config
+              - --safe-mode
               - --allowedTools
               - "{allowed_tools}"
               - --disallowed-tools
@@ -202,6 +203,9 @@ architecture:
                 args: [--json-schema, "{schema}"]
               - -p
               - "{user_prompt}"
+            # Empty setting sources exclude user/project/local settings; strict MCP admits no servers.
+            # Safe mode excludes discovered CLAUDE.md memory, skills, plugins and hooks.
+            # Auth and built-in tools remain; --bare would require API-key auth.
             values:
               allowed_tools: >-
                 The turn's allowed tools joined by commas. A validation or fix
