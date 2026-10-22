@@ -274,6 +274,19 @@ func TestEngineConfig003UnresolvableDefaultTiersRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-config-006-default-write-roots: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
+func TestEngineConfig006DefaultWriteRoots(t *testing.T) {
+	s := scenarios.New(t, "engine-config-006-default-write-roots")
+	s.Given(`the "build-tests-fix-default-write-roots" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
 // engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document's `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe
 func TestEngineTermDocuments005GlossaryNotAListRefusesBuildTestsFix(t *testing.T) {
 	s := scenarios.New(t, "engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix")

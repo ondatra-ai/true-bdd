@@ -100,3 +100,16 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine spawned no test runner
                 - and: the engine dispatched no AI turns
+        - id: 006-default-write-roots
+          description: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
+          steps:
+            - given:
+                - the "build-tests-fix-default-write-roots" project tree
+                - the System Architect answers "1" to every question
+            - when:
+                - the System Architect runs "build tests --fix"
+            - then:
+                - the command exits with code 0
+                - and: the file "tests/mcp/mcp_test.go" is created
+                - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+                - but: no file outside "tmp" and "tests" changed

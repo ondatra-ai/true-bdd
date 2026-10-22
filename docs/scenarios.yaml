@@ -2541,6 +2541,26 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
+  engine-config-006-default-write-roots:
+    description: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-006-default-write-roots
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "build-tests-fix-default-write-roots" project tree
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+        - but: no file outside "tmp" and "tests" changed
   engine-checklists-001-missing-checklist-refused:
     description: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
     service: bdd-cli
