@@ -55,6 +55,80 @@ func TestEngine007MissingDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// fix-loop-bounds-001-one-walk-keeps-story: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
+func TestFixLoopBounds001OneWalkKeepsStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-001-one-walk-keeps-story")
+	s.Given(`the "fix-loop-attempts-exhausted" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 97.2 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Walk attempt started" attempt=1 max_attempts=1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`stdout matches Hit max apply attempts without convergence\.`)
+	s.But(`stdout does not match attempt=2`)
+	s.And(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 4 AI turns`)
+	s.Done()
+}
+
+// fix-loop-bounds-002-refixed-prompt-stops-walk: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+func TestFixLoopBounds002RefixedPromptStopsWalk(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-002-refixed-prompt-stops-walk")
+	s.Given(`the "fix-loop-refix-stops" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine 97.3 --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped" command="us refine"`)
+	s.And(`stdout matches gave up after 2 applied fix\(es\) that never made the check pass`)
+	s.And(`stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}`)
+	s.But(`stdout does not match REFINE COMPLETE`)
+	s.And(`the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// fix-loop-bounds-003-unsettled-questions-keep-story: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+func TestFixLoopBounds003UnsettledQuestionsKeepStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-003-unsettled-questions-keep-story")
+	s.Given(`the "fix-loop-unsettled" project tree`)
+	s.And(`the Product Owner answers "I have not decided yet" to every question`)
+	s.When(`the Product Owner runs "us refine 97.4 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User answered clarification question" .* answer="I have not decided yet"`)
+	s.And(`stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true`)
+	s.But(`stdout does not match iteration=6`)
+	s.And(`stdout matches Validation failed\. No fix was applied\.`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.But(`stdout does not match FIX PROMPT GENERATED`)
+	s.And(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-003-exit-keeps-story: Choosing to exit a `us refine --fix` run's fix loop must leave the Story file exactly as it was, saying where the latest version of the Story was kept
+func TestFixLoopChoices003ExitKeepsStory(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-003-exit-keeps-story")
+	s.Given(`the "fix-loop-exit-story" project tree`)
+	s.And(`the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt`)
+	s.And(`the Product Owner answers "3" to every question`)
+	s.When(`the Product Owner runs "us refine 97.1 --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches REFINE COMPLETE`)
+	s.And(`stdout matches msg=Exiting latest_version=tmp/[^ ]+/story-97\.1-v01\.yaml`)
+	s.But(`stdout does not match msg="Story saved"`)
+	s.And(`the file "docs/product/stories/97.1-document-summary-exit.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // us-refine-fix-001-vague-description-made-measurable: A vague qualifier in an acceptance criterion's description must drive the fix loop until the description is measurable
 func TestUsRefineFix001VagueDescriptionMadeMeasurable(t *testing.T) {
 	s := scenarios.New(t, "us-refine-fix-001-vague-description-made-measurable")

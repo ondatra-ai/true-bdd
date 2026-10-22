@@ -140,6 +140,60 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.Done()
 }
 
+// fix-loop-choices-001-refine-reshapes-fix: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
+func TestFixLoopChoices001RefineReshapesFix(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-001-refine-reshapes-fix")
+	s.Given(`the "fix-loop-refine-feedback" project tree`)
+	s.And(`the Quality Engineer answers "2 / Call the number slot of the new template budget / / 1" line by line`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=2 action=refine`)
+	s.And(`stdout matches msg="User provided refinement feedback" feedbackLength=47 feedback="Call the number slot of the new template budget"`)
+	s.And(`stdout matches (?s)FIX PROMPT GENERATED.*REFINE FIX PROMPT.*FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches \{budget:number\}`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-002-own-words-answer-kept: A clarifying question answered in the person's own words rather than by an option's number must reach the fix as typed, so the fix applied carries those words
+func TestFixLoopChoices002OwnWordsAnswerKept(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-002-own-words-answer-kept")
+	s.Given(`the "fix-loop-own-words" project tree`)
+	s.And(`the Quality Engineer answers "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="AI needs clarification" questionCount=1`)
+	s.And(`stdout matches msg="User answered clarification question" questionID=q1 question=.* answer="It means the round trip from sending the message to receiving its reply takes at most that many milliseconds"`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=1 action=apply`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
+	s.And(`the file "docs/product/product.yaml" matches round trip from sending the message to receiving its reply takes\s+at most`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.Done()
+}
+
+// fix-loop-choices-005-exit-keeps-term-documents: Choosing to exit a `scen check --fix` run's fix loop must leave the term documents and the Registry exactly as they were, report the failed Prompt with its fix, and exit 1
+func TestFixLoopChoices005ExitKeepsTermDocuments(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-005-exit-keeps-term-documents")
+	s.Given(`the "fix-loop-exit-terms" project tree`)
+	s.And(`the Quality Engineer answers "3" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches msg=Exiting\.`)
+	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: scen-check/term_closure.*Propose one catalogue entry`)
+	s.But(`stdout does not match msg="Fix recorded in the document"`)
+	s.And(`the file "docs/product/product.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.Done()
+}
+
 // scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")

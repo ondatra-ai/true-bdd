@@ -1,0 +1,29 @@
+story:
+    id: "98.1"
+    title: BDD fixture — us apply fix loop exited
+    as_a: Claude User
+    i_want: a synthetic story whose criteria the registry lacks
+    so_that: the BDD harness can assert that exiting the fix loop leaves the registry as it was
+    status: PLANNED
+    acceptance_criteria:
+        - id: 001-mcp-initialize
+          description: The MCP server must respond with a 200 status and a JSON-RPC envelope when a Claude User posts a valid JSON-RPC initialize request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+                - the server accepts JSON-RPC over HTTP POST at /mcp
+            - when:
+                - the Claude User posts a valid JSON-RPC initialize request to /mcp
+            - then:
+                - the server returns HTTP 200
+                - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - id: 002-mcp-get-refused
+          description: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
+          steps:
+            - given:
+                - the MCP server is running on its configured port
+            - when:
+                - the Claude User sends an HTTP GET request to /mcp
+            - then:
+                - the server returns HTTP 405 Method Not Allowed
+                - and: the response indicates the method is not allowed for this endpoint
