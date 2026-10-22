@@ -28,11 +28,8 @@ var ErrUnknownScenarioID = errors.New("no scenario in the registry has id")
 var ErrDuplicateScenarioID = errors.New("scenario id given more than once")
 
 // ErrScenariosFailedCheck is a walk that ended with a Scenario failing,
-// for a non-zero exit; it wraps ErrExpectedNonconvergence, a finding, not a crash.
-var ErrScenariosFailedCheck = fmt.Errorf(
-	"one or more scenarios failed the scen-check checklist: %w",
-	runner.ErrExpectedNonconvergence,
-)
+// for a non-zero exit: a finding, not a crash.
+var ErrScenariosFailedCheck = errors.New("one or more scenarios failed the scen-check checklist")
 
 // ScenCheckDeps bundles what `scen check` needs at the command boundary.
 type ScenCheckDeps struct {
