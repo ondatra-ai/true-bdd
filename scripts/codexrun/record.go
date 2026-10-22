@@ -69,7 +69,7 @@ func (r Runner) finish(record Record, status, reason string, code int) (Record, 
 	record.Reason = reason
 	record.ExitCode = code
 
-	err := r.stopWorkdir(record)
+	err := r.stopMarked(record)
 	if err != nil {
 		record.Status, record.Reason = "failed", err.Error()
 	} else if status == statusDone && record.writer() {

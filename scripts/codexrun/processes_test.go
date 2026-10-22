@@ -19,13 +19,14 @@ const failedStatus = "failed"
 
 func TestRunStopsDetachedChildBeforeSummary(t *testing.T) {
 	for _, test := range []struct {
-		name, mode, status string
-		writer             bool
+		name, mode, status, login string
+		resume                    bool
 	}{
-		{"writer-timeout", "stall", "timed-out", true},
-		{"writer-done", "", doneStatus, true},
-		{"reader-failed", "fail", failedStatus, false},
-		{"reader-done", "", doneStatus, false},
+		{name: "writer-timeout", mode: "stall", status: "timed-out"},
+		{name: "writer-done", status: doneStatus},
+		{name: "writer-failed", mode: "fail", status: failedStatus},
+		{name: "crush-done", status: doneStatus, login: "out"},
+		{name: "writer-resume", status: doneStatus, resume: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root, opts := fixture(t)
@@ -33,16 +34,37 @@ func TestRunStopsDetachedChildBeforeSummary(t *testing.T) {
 			runner.Limit = 500 * time.Millisecond
 			runner.Grace = 20 * time.Millisecond
 
-			if test.writer {
-				opts.Name, opts.Kind, opts.Branch, opts.Base = "detached", codeKind, "impl/detached", mainBranch
+			opts.Name, opts.Kind, opts.Branch, opts.Base = "detached", codeKind, "impl/detached", mainBranch
+
+			if test.resume {
+				t.Setenv("MODE", "fail")
+				record, err := runner.Start(t.Context(), opts)
+				assertStatus(t, record, err, failedStatus)
 			}
 
 			installDetachedAgent(t, root)
 			t.Setenv("MODE", test.mode)
+			t.Setenv("LOGIN", test.login)
 			t.Setenv("COMMIT", "yes")
-			record, err := runner.Start(t.Context(), opts)
+
+			var (
+				record codexrun.Record
+				err    error
+			)
+			if test.resume {
+				record, err = runner.Resume(t.Context(), opts.Name, "retry")
+			} else {
+				record, err = runner.Start(t.Context(), opts)
+			}
+
 			assertStatus(t, record, err, test.status)
 			pid := detachedPID(t, root)
+
+			marker := read(t, filepath.Join(root, "capture.pid.marker"))
+			if !strings.HasPrefix(marker, opts.Name+":"+strconv.Itoa(record.Attempt)+":") {
+				t.Fatalf("child did not inherit this attempt's marker: %q", marker)
+			}
+
 			t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
 
 			if syscall.Kill(pid, 0) == nil {
@@ -55,10 +77,14 @@ func TestRunStopsDetachedChildBeforeSummary(t *testing.T) {
 func installDetachedAgent(t *testing.T, root string) {
 	t.Helper()
 	setupDetachedProcess(t, root)
-	path := filepath.Join(root, "bin/codex")
-	script := strings.Replace(read(t, path), "echo 'session id: session-175'",
-		"echo 'session id: session-175'\n\"$DETACHED_EXECUTABLE\" -test.run=^TestDetachedProcessHelper$", 1)
-	write(t, path, script)
+	t.Setenv("DETACHED_LEAVE", "yes")
+
+	for _, agent := range []string{"codex", crushAgent} {
+		path := filepath.Join(root, "bin", agent)
+		script := strings.Replace(read(t, path), "cat > \"$CAPTURE.stdin\"",
+			"cat > \"$CAPTURE.stdin\"\n\"$DETACHED_EXECUTABLE\" -test.run=^TestDetachedProcessHelper$", 1)
+		write(t, path, script)
+	}
 }
 
 func setupDetachedProcess(t *testing.T, root string) {
@@ -75,63 +101,123 @@ func setupDetachedProcess(t *testing.T, root string) {
 }
 
 func TestResumeAndFixRefuseDetachedHolders(t *testing.T) {
-	for _, writer := range []bool{false, true} {
-		t.Run(strconv.FormatBool(writer), func(t *testing.T) {
-			root, opts := fixture(t)
-			runner := codexrun.New(root)
+	root, opts := fixture(t)
+	runner := codexrun.New(root)
+	opts.Name, opts.Kind, opts.Branch, opts.Base = "held", codeKind, "impl/held", mainBranch
 
-			if writer {
-				opts.Name, opts.Kind, opts.Branch, opts.Base = "held", codeKind, "impl/held", mainBranch
-			}
+	t.Setenv("MODE", "fail")
+	record, err := runner.Start(t.Context(), opts)
+	assertStatus(t, record, err, failedStatus)
+	saved := read(t, filepath.Join(root, "tmp/codex", opts.Name, "run.json"))
+	// Ownership follows the environment even after a child leaves the worktree.
+	pid := startHolder(t, root, root, strings.TrimSpace(read(t, filepath.Join(root, "capture.marker"))))
+	_, err = runner.Resume(t.Context(), opts.Name, "retry")
+	assertHolderRefusal(t, err, pid)
 
-			t.Setenv("MODE", "fail")
-			record, err := runner.Start(t.Context(), opts)
-			assertStatus(t, record, err, failedStatus)
-			saved := read(t, filepath.Join(root, "tmp/codex", opts.Name, "run.json"))
-			setupDetachedProcess(t, root)
-
-			dir := filepath.Join(record.Workdir, "tmp/child space")
-
-			err = os.MkdirAll(dir, 0o755)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			cmd := exec.CommandContext(t.Context(), os.Getenv("DETACHED_EXECUTABLE"), "-test.run=^TestDetachedProcessHelper$")
-
-			cmd.Dir = dir
-
-			err = cmd.Run()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			pid := detachedPID(t, root)
-			t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
-			_, err = runner.Resume(t.Context(), opts.Name, "retry")
-			assertHolderRefusal(t, err, pid)
-
-			if got := read(t, filepath.Join(root, "tmp/codex", opts.Name, "run.json")); got != saved {
-				t.Fatal("refusal consumed an attempt")
-			}
-
-			if writer {
-				assertResumeExitCode(t, root, record.Name, pid)
-				opts.Name, opts.Kind, opts.Base = "held-fix", fixKind, ""
-				_, err = runner.Start(t.Context(), opts)
-				assertHolderRefusal(t, err, pid)
-
-				_, err = os.Stat(filepath.Join(root, "tmp/codex", opts.Name))
-				if !os.IsNotExist(err) {
-					t.Fatal("refused fix created an attempt")
-				}
-			}
-
-			if syscall.Kill(pid, 0) != nil {
-				t.Fatal("refusal killed the holder")
-			}
-		})
+	if got := read(t, filepath.Join(root, "tmp/codex", opts.Name, "run.json")); got != saved {
+		t.Fatal("refusal consumed an attempt")
 	}
+
+	assertResumeExitCode(t, root, record.Name, pid)
+	opts.Name, opts.Kind, opts.Base = "held-fix", fixKind, ""
+	_, err = runner.Start(t.Context(), opts)
+	assertHolderRefusal(t, err, pid)
+
+	_, err = os.Stat(filepath.Join(root, "tmp/codex", opts.Name))
+	if !os.IsNotExist(err) {
+		t.Fatal("refused fix created an attempt")
+	}
+
+	if syscall.Kill(pid, 0) != nil {
+		t.Fatal("refusal killed the holder")
+	}
+}
+
+func TestWriterLeavesUnmarkedWorktreeProcess(t *testing.T) {
+	root, opts := fixture(t)
+	runner := codexrun.New(root)
+	opts.Name, opts.Kind, opts.Branch, opts.Base = "unmarked", codeKind, "impl/unmarked", mainBranch
+
+	t.Setenv("MODE", "fail")
+	record, err := runner.Start(t.Context(), opts)
+	assertStatus(t, record, err, failedStatus)
+	pid := startHolder(t, root, filepath.Join(record.Worktree, "tmp/child space"), "")
+	t.Setenv("MODE", "")
+	t.Setenv("COMMIT", "yes")
+	record, err = runner.Resume(t.Context(), opts.Name, "retry")
+	assertStatus(t, record, err, doneStatus)
+
+	if syscall.Kill(pid, 0) != nil {
+		t.Fatal("writer stopped an unmarked worktree process")
+	}
+
+	opts.Name, opts.Kind, opts.Base = "unmarked-fix", fixKind, ""
+	record, err = runner.Start(t.Context(), opts)
+	assertStatus(t, record, err, doneStatus)
+
+	if syscall.Kill(pid, 0) != nil {
+		t.Fatal("fix stopped an unmarked worktree process")
+	}
+}
+
+func TestReaderLeavesCheckoutAndOtherRunProcesses(t *testing.T) {
+	root, opts := fixture(t)
+	runner := codexrun.New(root)
+	rootPID := startHolder(t, root, root, "")
+	otherPID := startHolder(t, root, filepath.Join(root, "tmp/codex-worktrees/other"), "other:1")
+	// Readers must not depend on discovery at end or resume.
+	write(t, filepath.Join(root, "bin/lsof"), "#!/bin/sh\nexit 1\n")
+	write(t, filepath.Join(root, "bin/ps"), "#!/bin/sh\nexit 1\n")
+
+	for _, name := range []string{"lsof", "ps"} {
+		err := os.Chmod(filepath.Join(root, "bin", name), 0o755)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Setenv("MODE", "fail")
+	record, err := runner.Start(t.Context(), opts)
+	assertStatus(t, record, err, failedStatus)
+	t.Setenv("MODE", "")
+	record, err = runner.Resume(t.Context(), opts.Name, "retry")
+	assertStatus(t, record, err, doneStatus)
+
+	for _, pid := range []int{rootPID, otherPID} {
+		if syscall.Kill(pid, 0) != nil {
+			t.Fatalf("reader stopped unrelated process %d", pid)
+		}
+	}
+}
+
+func startHolder(t *testing.T, root, dir, marker string) int {
+	t.Helper()
+	setupDetachedProcess(t, root)
+
+	err := os.Remove(os.Getenv("DETACHED_PID"))
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+
+	err = os.MkdirAll(dir, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.CommandContext(t.Context(), os.Getenv("DETACHED_EXECUTABLE"), "-test.run=^TestDetachedProcessHelper$")
+	cmd.Dir = dir
+
+	cmd.Env = append(os.Environ(), "TRUE_BDD_CODEX_RUN="+marker)
+
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pid := detachedPID(t, root)
+	t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
+
+	return pid
 }
 
 func assertResumeExitCode(t *testing.T, root, name string, pid int) {
@@ -168,12 +254,13 @@ func assertHolderRefusal(t *testing.T, err error, pid int) {
 func TestDiscoveryFailurePreventsCompletion(t *testing.T) {
 	for name, script := range map[string]string{
 		failedStatus: "echo discovery-failed >&2; exit 1",
-		"malformed": "printf unexpected",
-		"empty":     "exit 0",
+		"malformed":  "printf unexpected",
+		"empty":      "exit 0",
 	} {
 		t.Run(name, func(t *testing.T) {
 			root, opts := fixture(t)
-			path := filepath.Join(root, "bin/lsof")
+			opts.Name, opts.Kind, opts.Branch, opts.Base = "discovery", codeKind, "impl/discovery", mainBranch
+			path := filepath.Join(root, "bin/ps")
 			write(t, path, "#!/bin/sh\n"+script+"\n")
 
 			err := os.Chmod(path, 0o755)
@@ -182,7 +269,7 @@ func TestDiscoveryFailurePreventsCompletion(t *testing.T) {
 			}
 
 			record, err := codexrun.New(root).Start(t.Context(), opts)
-			if err == nil || record.Status != failedStatus || !strings.Contains(record.Reason, "lsof") {
+			if err == nil || record.Status != failedStatus || !strings.Contains(record.Reason, "ps") {
 				t.Fatalf("reported completion without discovering holders: %+v %v", record, err)
 			}
 		})
@@ -233,7 +320,18 @@ func TestDetachedProcessHelper(t *testing.T) {
 
 	signal.Ignore(syscall.SIGTERM)
 
-	err := os.WriteFile(os.Getenv("DETACHED_PID"), []byte(strconv.Itoa(os.Getpid())), 0o600)
+	if os.Getenv("DETACHED_LEAVE") == "yes" {
+		t.Chdir("/")
+	}
+
+	marker := []byte(os.Getenv("TRUE_BDD_CODEX_RUN"))
+
+	err := os.WriteFile(os.Getenv("DETACHED_PID")+".marker", marker, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(os.Getenv("DETACHED_PID"), []byte(strconv.Itoa(os.Getpid())), 0o600)
 	if err != nil {
 		t.Fatal(err)
 	}

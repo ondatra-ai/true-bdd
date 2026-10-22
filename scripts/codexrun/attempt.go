@@ -90,6 +90,10 @@ func (r Runner) execute(
 	opts := codex.Options{Dir: record.Workdir, Final: record.Final, Writer: record.writer(), Search: record.Search,
 		Output: logWriter{path: record.Log}, Watchdog: r.remaining(began)}
 
+	if record.writer() {
+		opts.RunMarker = r.marker(*record)
+	}
+
 	var (
 		result codex.Result
 		err    error
@@ -164,7 +168,7 @@ func (r Runner) takeover(
 		return codex.Result{Code: -1}, err
 	}
 
-	return crush.WriteCode(ctx, prompt, crush.Options{Dir: record.Workdir,
+	return crush.WriteCode(ctx, prompt, crush.Options{Dir: record.Workdir, RunMarker: r.marker(*record),
 		Output: logWriter{path: record.Log}, Report: logWriter{path: record.Final}, Watchdog: r.remaining(began)})
 }
 
