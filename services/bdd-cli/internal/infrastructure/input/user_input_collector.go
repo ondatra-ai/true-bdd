@@ -9,29 +9,18 @@ import (
 
 	"github.com/ondatra-ai/true-bdd/pkg/console"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/events"
 )
 
 const separatorWidth = 60
 
 // UserInputCollector handles interactive user input from stdin.
 type UserInputCollector struct {
-	reader  *bufio.Reader
-	emitter *events.Emitter
+	reader *bufio.Reader
 }
 
 // NewUserInputCollector creates a new UserInputCollector reading console.In().
-// The emitter is a no-op unless TRUE_BDD_EVENTS_FILE is set (under
-// `true-bdd remote`), so default CLI behavior is unchanged.
 func NewUserInputCollector() *UserInputCollector {
 	return newUserInputCollector(console.In())
-}
-
-// NewUserInputCollectorFrom builds a collector over an arbitrary reader. The
-// hidden `prompt-probe` command (plan §4) uses it to drive the real prompt
-// dialogs against controlled stdin without spawning `claude`.
-func NewUserInputCollectorFrom(reader io.Reader) *UserInputCollector {
-	return newUserInputCollector(reader)
 }
 
 // newUserInputCollector builds a collector over an arbitrary reader so the
@@ -39,8 +28,7 @@ func NewUserInputCollectorFrom(reader io.Reader) *UserInputCollector {
 // multiline freetext termination) is unit-testable without a real terminal.
 func newUserInputCollector(reader io.Reader) *UserInputCollector {
 	return &UserInputCollector{
-		reader:  bufio.NewReader(reader),
-		emitter: events.NewEmitter(),
+		reader: bufio.NewReader(reader),
 	}
 }
 
@@ -52,10 +40,6 @@ func (c *UserInputCollector) AskQuestions(questions []checklist.ClarifyQuestion)
 
 	for idx, question := range questions {
 		c.printQuestion(idx+1, len(questions), question)
-
-		// Publish the clarify prompt on the event channel immediately
-		// before blocking on stdin (plan §3.2). No-op without the env var.
-		c.emitter.EmitClarifyPrompt(question.Question, question.Options)
 
 		userInput := c.readUserInput()
 		userInput = c.mapOptionToText(userInput, question.Options)
@@ -99,12 +83,6 @@ func (c *UserInputCollector) AskApplyRefineOrExit() ActionChoice {
 	console.Separator("=", separatorWidth)
 	console.Print("Your choice (1/2/3): ")
 
-	// Publish the choice prompt on the event channel immediately before
-	// blocking on stdin (plan §3.2). No-op without the env var.
-	c.emitter.EmitChoicePrompt([]string{
-		string(ActionApply), string(ActionRefine), string(ActionExit),
-	})
-
 	rawInput := c.readUserInput()
 
 	var action ActionChoice
@@ -131,10 +109,6 @@ func (c *UserInputCollector) AskRefinementFeedback() string {
 	console.Println("Enter your feedback to improve the fix prompt.")
 	console.Println("Press Enter twice when done.")
 	console.BlankLine()
-
-	// Publish the freetext prompt on the event channel immediately
-	// before reading the multiline block (plan §3.2). No-op without env.
-	c.emitter.EmitFreetextPrompt("Enter your feedback to improve the fix prompt.")
 
 	var lines []string
 

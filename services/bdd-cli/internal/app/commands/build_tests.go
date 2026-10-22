@@ -23,12 +23,8 @@ import (
 )
 
 // ErrBuildTestsNotConverged is returned when the build-tests walk finishes
-// with scenarios still missing a test, for a non-zero exit code. It wraps
-// runner.ErrExpectedNonconvergence so the envelope classifies it not_fixed, not a failure (finding 7).
-var ErrBuildTestsNotConverged = fmt.Errorf(
-	"one or more scenarios have no corresponding executable test: %w",
-	runner.ErrExpectedNonconvergence,
-)
+// with scenarios still missing a test, for a non-zero exit code.
+var ErrBuildTestsNotConverged = errors.New("one or more scenarios have no corresponding executable test")
 
 // ErrGeneratedTestsStale signals generated test files that are not what the
 // registry renders. Refused at startup, not as a per-scenario finding: every

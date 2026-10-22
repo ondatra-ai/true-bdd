@@ -92,8 +92,3 @@ func (r *ChecklistReport) GetOverallStatus() string {
 
 	return "PASSED"
 }
-
-// AllPassed returns true if all evaluated prompts passed (no failures).
-func (r *ChecklistReport) AllPassed() bool {
-	return r.Summary.FailCount == 0
-}

@@ -22,15 +22,13 @@ var (
 // Prompt represents a single validation prompt: a model answers its
 // Question (`Q:`), or the built-in check its Check names (`D:`) does.
 type Prompt struct {
-	Question     string         // The validation question (Q in YAML)
-	Check        string         // The built-in check answering it instead (D in YAML)
-	With         map[string]any // The check's parameters (with in YAML)
-	Rationale    string         // Why this matters
-	Skip         bool           // Parks the prompt, left out of the walk (skip: true in YAML)
-	ActionIfYes  string         // Action if answer is yes
-	ActionIfFail string         // Action if validation fails
-	Docs         []string       // Document keys to inject into prompt
-	FixTemplate  string         // Template for generating fix prompt when validation fails (F in YAML)
+	Question    string         // The validation question (Q in YAML)
+	Check       string         // The built-in check answering it instead (D in YAML)
+	With        map[string]any // The check's parameters (with in YAML)
+	Rationale   string         // Why this matters
+	Skip        bool           // Parks the prompt, left out of the walk (skip: true in YAML)
+	Docs        []string       // Document keys to inject into prompt
+	FixTemplate string         // Template for generating fix prompt when validation fails (F in YAML)
 	// Model tier overrides for this prompt alone, each shadowing the
 	// checklist's EngineBlock. Empty means "inherit".
 	Model      string // Tier for the validation turn (model in YAML)
@@ -61,8 +59,6 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 
 	p.Rationale = getStringFromMap(raw, "rationale")
 	p.decodeSkip(raw)
-	p.ActionIfYes = getStringFromMap(raw, "action_if_yes")
-	p.ActionIfFail = getStringFromMap(raw, "action_if_fail")
 	p.Docs = getStringSliceFromMap(raw, "docs")
 	p.FixTemplate = getStringFromMap(raw, "F")
 	p.Model = getStringFromMap(raw, "model")

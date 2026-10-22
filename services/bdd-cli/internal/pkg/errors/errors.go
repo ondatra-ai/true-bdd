@@ -132,7 +132,6 @@ func ErrExecuteTemplateFailed(cause error) error {
 
 // Validation Errors.
 var (
-	ErrInvalidOptions       = errors.New("invalid options")
 	ErrScenarioValidation   = errors.New("scenario validation failed")
 	ErrEmptyScenarioID      = errors.New("scenario ID cannot be empty")
 	ErrNoCriteria           = errors.New("scenario must reference at least one acceptance criterion")
@@ -152,14 +151,12 @@ var (
 	ErrInvalidModifier      = errors.New("invalid modifier type")
 	ErrEmptyCoverage        = errors.New("coverage value cannot be empty")
 	ErrInvalidCoverage      = errors.New("coverage value should be a percentage")
-	ErrACMissingSteps       = errors.New("acceptance criterion has no steps")
 )
 
 // Filesystem Errors.
 var (
-	ErrCreateDirectory       = errors.New("failed to create directory")
-	ErrCheckWorkingDirectory = errors.New("failed to check working directory")
-	ErrReadConfig            = errors.New("failed to read config")
+	ErrCreateDirectory = errors.New("failed to create directory")
+	ErrReadConfig      = errors.New("failed to read config")
 )
 
 func ErrCreateRunDirectoryFailed(cause error) error {
@@ -168,15 +165,6 @@ func ErrCreateRunDirectoryFailed(cause error) error {
 		Code:     "CREATE_RUN_DIRECTORY_FAILED",
 		Message:  "failed to create run directory",
 		Cause:    errors.Join(ErrCreateDirectory, cause),
-	}
-}
-
-func ErrCheckWorkingDirectoryFailed(cause error) error {
-	return &AppError{
-		Category: CategoryInfrastructure,
-		Code:     "CHECK_WORKING_DIRECTORY_FAILED",
-		Message:  "failed to check working directory",
-		Cause:    errors.Join(ErrCheckWorkingDirectory, cause),
 	}
 }
 
@@ -194,33 +182,6 @@ var (
 	ErrMarshalYAML   = errors.New("failed to marshal to YAML")
 	ErrUnmarshalYAML = errors.New("failed to unmarshal from YAML")
 )
-
-func ErrNegativeMaxThinkingTokens(value int) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "INVALID_MAX_THINKING_TOKENS",
-		Message:  fmt.Sprintf("MaxThinkingTokens must be non-negative, got %d", value),
-		Cause:    ErrInvalidOptions,
-	}
-}
-
-func ErrNegativeMaxTurns(value int) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "INVALID_MAX_TURNS",
-		Message:  fmt.Sprintf("MaxTurns must be non-negative, got %d", value),
-		Cause:    ErrInvalidOptions,
-	}
-}
-
-func ErrToolInBothLists(tool string) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "TOOL_CONFLICT",
-		Message:  fmt.Sprintf("tool '%s' cannot be in both AllowedTools and DisallowedTools", tool),
-		Cause:    ErrInvalidOptions,
-	}
-}
 
 var (
 	ErrClaudeStreamNoOutput = errors.New("claude process produced no output")
@@ -311,15 +272,6 @@ func ErrStoryIDMismatchError(storyNumber, storyFile, declaredID string) error {
 	}
 }
 
-func ErrACMissingStepsError(acID string) error {
-	return &AppError{
-		Category: CategoryParsing,
-		Code:     "AC_MISSING_STEPS",
-		Message:  fmt.Sprintf("AC %s has no steps", acID),
-		Cause:    ErrACMissingSteps,
-	}
-}
-
 func ErrInvalidModifierError(modifierType string) error {
 	return &AppError{
 		Category: CategoryParsing,
@@ -344,7 +296,6 @@ var (
 	ErrFixNotApplied               = errors.New("fix applier reported the fix was not applied")
 	ErrFixLoopStuck                = errors.New("fix loop is not converging")
 	ErrFixPromptGeneration         = errors.New("fix prompt generation failed")
-	ErrFixPromptRefinement         = errors.New("fix prompt refinement failed")
 	ErrSaveStoryVersion            = errors.New("failed to save story version")
 	ErrWriteStoryFile              = errors.New("failed to write story file")
 )
@@ -480,15 +431,6 @@ func ErrFixPromptGenerationFailed(cause error) error {
 		Code:     "FIX_PROMPT_GENERATION_FAILED",
 		Message:  "fix prompt generation failed",
 		Cause:    errors.Join(ErrFixPromptGeneration, cause),
-	}
-}
-
-func ErrFixPromptRefinementFailed(cause error) error {
-	return &AppError{
-		Category: CategoryAI,
-		Code:     "FIX_PROMPT_REFINEMENT_FAILED",
-		Message:  "fix prompt refinement failed",
-		Cause:    errors.Join(ErrFixPromptRefinement, cause),
 	}
 }
 

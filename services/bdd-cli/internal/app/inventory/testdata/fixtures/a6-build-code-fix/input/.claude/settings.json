@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Write(services/**)",
-      "Edit(services/**)",
-      "MultiEdit(services/**)"
-    ]
-  }
-}
