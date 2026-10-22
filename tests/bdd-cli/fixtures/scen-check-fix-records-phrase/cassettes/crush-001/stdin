@@ -52,35 +52,48 @@ Then:
 # Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
 
 ## Target
-The `product` document: `docs/product/product.yaml`, its `catalogue:` list.
+The `product` document: `docs/product/product.yaml` — its `catalogue:` list only.
 
-Only that document, and only its `catalogue:` list, is edited. Do NOT touch `docs/scenarios.yaml`, the Scenario E2E-001, the generated test `tests/mcp/ping_test.go`, any step definition, or any other document. No `glossary:` or `roles:` change is needed: the terms this entry relies on (`mcp service`, `reply`) are already in the glossary, spelled exactly that way.
+Do **not** touch anything else: not the Scenario `E2E-001`, not the Story
+`docs/product/stories/ping-answers.yaml`, not the generated test
+`tests/mcp/ping_test.go`, not any step definition, and not the `glossary:`
+or `roles:` lists (both glossary terms this entry relies on — `mcp service`
+and `reply` — already exist and are spelled exactly as used below).
 
-## Finding being closed
-`E2E-001: then step "the service answers within 200 milliseconds" matches no template` — one new catalogue entry phrases it. (The step is written in the Scenario as `and the service answers within 200 milliseconds`; the leading `and ` is the block's conjunction, not part of the step text, so the template below must NOT include it.)
+## Finding being fixed
+- `E2E-001`: then step `the service answers within 200 milliseconds` matches
+  no template (check `scen-check/term_closure`, D: step-phrases).
+
+One new catalogue entry phrases this step. No existing entry is edited or
+removed.
 
 ## Required Changes
 
-### Change #1: add the catalogue entry phrasing the latency step
+### Change #1: Add the catalogue entry phrasing the reply-deadline then step
+
 **Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list, after the existing `the service answers "{reply}"` entry. Keep the file's existing indentation (entries start at two spaces, fields at four) and its `>-` folded style for multi-line `means`.
+
+**Action:** Append this entry to the end of the `catalogue:` list, after the
+existing `the service answers "{reply}"` entry. Keep the list's existing
+two-space indentation for `- template:` and four-space indentation for the
+sibling keys.
 
 **YAML:**
 ```yaml
-  - template: 'the service answers within {budget:number} milliseconds'
+  - template: 'the service answers within {limit:number} milliseconds'
     block: then
     means: >-
-      The MCP service's reply to the message the When step sent arrives, and
-      the round trip the sender observes — from the moment that message is
-      sent until its reply arrives back at the sender — is at most {budget}
-      milliseconds. A reply arriving at exactly {budget} milliseconds passes
-      (elapsed <= {budget}); no reply arriving at all fails this step.
+      The MCP service's reply to the preceding When step's message — the
+      same single reply — arrives no later than {limit} milliseconds after
+      that message was sent. The time is the round trip as the sending
+      client observes it: from the moment the role's message of the
+      preceding When step is sent, to the moment the complete reply has
+      arrived back.
     terms: [mcp service, reply]
 ```
 
-**Apply it as this exact replacement** (the `old_string` is the current last entry of `catalogue:`, the `new_string` is that entry followed by the new one):
+**Exact edit** — replace this `old_string`:
 
-`old_string`:
 ```
   - template: 'the service answers "{reply}"'
     block: then
@@ -88,33 +101,58 @@ Only that document, and only its `catalogue:` list, is edited. Do NOT touch `doc
     terms: [mcp service, reply]
 ```
 
-`new_string`:
+with this `new_string`:
+
 ```
   - template: 'the service answers "{reply}"'
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
     terms: [mcp service, reply]
-  - template: 'the service answers within {budget:number} milliseconds'
+  - template: 'the service answers within {limit:number} milliseconds'
     block: then
     means: >-
-      The MCP service's reply to the message the When step sent arrives, and
-      the round trip the sender observes — from the moment that message is
-      sent until its reply arrives back at the sender — is at most {budget}
-      milliseconds. A reply arriving at exactly {budget} milliseconds passes
-      (elapsed <= {budget}); no reply arriving at all fails this step.
+      The MCP service's reply to the preceding When step's message — the
+      same single reply — arrives no later than {limit} milliseconds after
+      that message was sent. The time is the round trip as the sending
+      client observes it: from the moment the role's message of the
+      preceding When step is sent, to the moment the complete reply has
+      arrived back.
     terms: [mcp service, reply]
 ```
+
+(If the file ends with a trailing newline after the last `terms:` line, keep
+it; the appended entry goes before that end-of-file newline.)
 
 ## Why this entry, and why it stays unambiguous
-- `{budget:number}` is the only slot: the number becomes reusable, while `milliseconds` stays literal and plural, as decided. A later Scenario that needs seconds gets its own entry rather than a unit slot here.
-- It cannot collide with `the service answers "{reply}"`: that template requires literal double quotes right after `answers`, which this step does not have, and this template requires the literal word `within` plus digits plus ` milliseconds`, which `the service answers "pong"` does not have.
-- It cannot collide with `the mcp service is running` (given) or `the {actor:role} sends "{message}"` (when): different literal text, and different blocks.
-- After the change, every step of E2E-001 matches exactly one template in the right block: `the mcp service is running` → given entry; `the Operator sends "ping"` → when entry (`Operator` is a declared `roles[].name`); `the service answers "pong"` → then entry; `the service answers within 200 milliseconds` → the new then entry.
 
-## Verification after applying
-- The `catalogue:` list has exactly one new entry and no other diff in `docs/product/product.yaml`.
-- `git status` shows `docs/product/product.yaml` as the only modified file.
-- Every `terms:` value of the new entry appears verbatim as a `glossary[].term` (`mcp service`, `reply`).
+- `{limit:number}` is a number slot, so `200` in E2E-001 is matched and any
+  other deadline reuses the same entry. The unit stays the literal word
+  `milliseconds`; a seconds variant, if a later Scenario needs one, is a
+  separate entry with its own literal unit and so cannot overlap this one.
+- `block: then` matches the step's block in E2E-001.
+- No collision with the existing `the service answers "{reply}"` entry: that
+  template requires a literal double-quoted run immediately after `answers`,
+  while this one requires the literal word `within` there. No step text can
+  satisfy both, so every step keeps matching exactly one template.
+- Neither of the other two entries (`the mcp service is running`,
+  `the {actor:role} sends "{message}"`) can match a step beginning
+  `the service answers within`, so their Scenarios are unaffected.
+- `terms: [mcp service, reply]` names only glossary terms that already
+  exist, spelled exactly as the glossary spells them. `reply` is already
+  defined as covering both the content and the delay, so the deadline
+  meaning needs no new glossary entry.
+
+## Acceptance
+
+After the edit:
+- `docs/product/product.yaml` has four `catalogue:` entries; the three
+  pre-existing ones are byte-identical to before.
+- Every step of E2E-001 matches exactly one template in the right block:
+  `the mcp service is running` (given), `the Operator sends "ping"` (when),
+  `the service answers "pong"` (then), and
+  `the service answers within 200 milliseconds` (then).
+- `scen-check/term_closure` (D: step-phrases) passes for E2E-001.
+- `git status` shows exactly one modified file: `docs/product/product.yaml`.
 
 ---
 
