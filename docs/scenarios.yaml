@@ -3790,3 +3790,267 @@ scenarios:
         - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
+
+  crush-guard-001-read-only-tool-allowed:
+    description: A tool call to a tool that only reads must be allowed whatever file it reads, inside the turn's write roots or not
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-001-read-only-tool-allowed
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-read-only-tool" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "view"
+        - crush names the file "docs/README.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard allows the tool call
+  crush-guard-002-shell-denied-without-grant:
+    description: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since a shell command can write anywhere
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-002-shell-denied-without-grant
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-shell-denied" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "bash"
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches shell is denied in this mode
+  crush-guard-003-shell-allowed-with-grant:
+    description: A tool call to the shell must be allowed when the turn's write policy lets the turn run it
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-003-shell-allowed-with-grant
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-shell-allowed" project tree
+        - crush's write policy lets the turn write under "tests"
+        - and: crush's write policy lets the turn run the shell
+        - crush names the tool "bash"
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard allows the tool call
+  crush-guard-004-unknown-tool-denied:
+    description: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside a write root
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-004-unknown-tool-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-unknown-tool" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "rename"
+        - crush names the file "tests/notes.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches tool rename is not on the allowlist \(unknown tools are treated as writers\)
+  crush-guard-005-missing-policy-denied:
+    description: A tool call must be denied when crush hands the guard no write policy, even one to a tool that only reads
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-005-missing-policy-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-missing-policy" project tree
+        - crush hands the guard no write policy
+        - crush names the tool "view"
+        - crush names the file "docs/README.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches crush guard policy is not set
+  crush-guard-006-unreadable-policy-denied:
+    description: A tool call must be denied when the guard cannot read the write policy crush hands it, even one to a tool that only reads
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-006-unreadable-policy-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-unreadable-policy" project tree
+        - crush hands the guard an unreadable write policy
+        - crush names the tool "view"
+        - crush names the file "docs/README.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches crush guard policy is malformed
+  crush-guard-007-payload-names-the-call:
+    description: When crush names neither the tool nor its file but in the hook payload, the guard must judge the tool call the payload names
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-tool-calls.yaml
+        scenario_id: crush-guard-007-payload-names-the-call
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-hook-payload" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush pipes the hook payload naming the tool "write" and the file "tests/notes.md"
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard allows the tool call
+  crush-guard-writes-001-write-inside-root-allowed:
+    description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-001-write-inside-root-allowed
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-write-inside-root" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "write"
+        - crush names the file "tests/notes.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard allows the tool call
+  crush-guard-writes-002-write-outside-roots-denied:
+    description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-002-write-outside-roots-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-write-outside-roots" project tree
+        - crush's write policy lets the turn write under "tests"
+        - and: crush's write policy lets the turn write under "services"
+        - crush names the tool "write"
+        - crush names the file "docs/notes.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches write target \S*/docs/notes\.md is outside \S*/tests, \S*/services
+  crush-guard-writes-003-symlink-escape-denied:
+    description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the link leads rather than by the path crush names
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-003-symlink-escape-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-symlink-escape" project tree
+        - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "write"
+        - crush names the file "tests/node_modules/shared/README.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches write target \S*/docs/README\.md is outside \S*/tests
+  crush-guard-writes-004-shared-prefix-denied:
+    description: A write to a sibling directory whose name starts with a write root's name must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-004-shared-prefix-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-shared-prefix" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "write"
+        - crush names the file "tests-old/notes.md" of the project tree
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches write target \S*/tests-old/notes\.md is outside \S*/tests
+  crush-guard-writes-005-relative-path-denied:
+    description: A write naming a relative path must be denied, since a relative path does not say where the write lands
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-005-relative-path-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-relative-path" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "write"
+        - crush names the path "tests/notes.md" as written
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches write target must be an absolute path, got tests/notes\.md
+  crush-guard-writes-006-unnamed-path-denied:
+    description: A write that names no file must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-006-unnamed-path-denied
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "crush-guard-unnamed-path" project tree
+        - crush's write policy lets the turn write under "tests"
+        - crush names the tool "write"
+      when:
+        - crush asks the guard about the tool call
+      then:
+        - the guard denies the tool call
+        - and: the guard's reason matches write tool did not name a target path
+  crush-guard-writes-007-host-crush-config-reported:
+    description: A host project's own crush config declaring permissions or hooks must be reported before a crush turn, and the turn must still write only inside its write roots
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
+        scenario_id: crush-guard-writes-007-host-crush-config-reported
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "build-tests-host-crush-config" project tree
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches level=WARN msg="Host crush config merges over the engine's generated config" file=\S*/\.crush\.json declares="\[permissions hooks\]" note="engine write-guard hook still applies"
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+        - but: no file outside "tests" and "tmp" changed
