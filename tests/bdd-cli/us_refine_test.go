@@ -288,7 +288,7 @@ func TestUsRefineRefusals001MissingStoryRefused(t *testing.T) {
 	s.And(`stdout matches no story file found for story 96\.9 in docs/product/stories`)
 	s.And(`stdout matches \(expected format: 96\.9-<slug>\.yaml\)`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="us refine"`)
-	s.But(`stdout does not match us create`)
+	s.But(`stdout does not match msg="Story loaded"`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged`)
 	s.And(`no file matching "docs/product/stories/96.9-*.yaml" is created`)

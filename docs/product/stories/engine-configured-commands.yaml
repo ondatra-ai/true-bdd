@@ -74,7 +74,7 @@ story:
                 - and: the file "docs/product/stories/95.2-relocated-registry.yaml" is unchanged
                 - and: 'judge: the scenario from acceptance criterion 90.2-001 — the unrelated settings page — still says what the seed registry said it did'
         - id: 004-unknown-model-cli-refused
-          description: Multi-provider routing must fail LOUDLY, never quietly
+          description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive, naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
           steps:
             - given:
                 - the "build-tests-unknown-cli-tier" project tree
@@ -82,7 +82,10 @@ story:
                 - the System Architect runs "build tests"
             - then:
                 - the command exits with code 1
-                - but: no file outside "tmp" changed
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches engine\.models\.coder: model reference names an unknown cli: \\"aider\\" \(supported: claude, crush, codex\)'
+                - but: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
                 - and: the file "docs/scenarios.yaml" is unchanged
                 - and: the engine dispatched no AI turns
         - id: 005-prompt-without-fix-refused

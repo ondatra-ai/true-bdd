@@ -545,7 +545,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-004-unknown-model-cli-refused:
-    description: Multi-provider routing must fail LOUDLY, never quietly
+    description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive, naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
@@ -559,7 +559,10 @@ scenarios:
         - the System Architect runs "build tests"
       then:
         - the command exits with code 1
-        - but: no file outside "tmp" changed
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.models\.coder: model reference names an unknown cli: \\"aider\\" \(supported: claude, crush, codex\)'
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
   engine-001-help-prints-command-tree:
@@ -982,7 +985,7 @@ scenarios:
         - stdout matches no story file found for story 96\.9 in docs/product/stories
         - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us refine"
-        - but: stdout does not match us create
+        - but: stdout does not match msg="Story loaded"
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: no file matching "docs/product/stories/96.9-*.yaml" is created
