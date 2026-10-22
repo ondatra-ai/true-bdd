@@ -24,9 +24,7 @@ type Result struct {
 	Stderr string
 	// Code is the child's exit status, or NotStarted.
 	Code int
-	// Signal is what killed the child, and is zero when nothing did. The
-	// number, not its name: remote/supervisor re-raises it on itself to
-	// propagate the death faithfully, which a name cannot express.
+	// Signal is what killed the child, and is zero when nothing did.
 	Signal syscall.Signal
 }
 
@@ -45,8 +43,7 @@ func (r Result) Err() error {
 }
 
 // classify reports an exit status, the signal that produced it, and whether
-// the child ran at all. ExitCode() alone loses the signal, which is the one
-// fact remote/terminal_envelope exists to report.
+// the child ran at all. ExitCode() alone loses the signal.
 func classify(runErr error) (int, syscall.Signal, bool) {
 	if runErr == nil {
 		return 0, 0, true

@@ -1,5 +1,0 @@
-# P3 (plan §4.3): engine base + a host with every document the scan
-# reports present — config, product, architecture, registry, a stories
-# directory holding two stories, and the engine's checklists.
-base: engine
-input: input

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -20,11 +21,7 @@ import (
 
 // ErrBuildCodeNotConverged is returned when the build-code walk finishes with
 // tests still failing after the engine's max apply attempts (non-zero exit).
-// It wraps runner.ErrExpectedNonconvergence so the envelope classifies it not_fixed, not a failure (finding 7).
-var ErrBuildCodeNotConverged = fmt.Errorf(
-	"one or more tests still failing after max fix attempts: %w",
-	runner.ErrExpectedNonconvergence,
-)
+var ErrBuildCodeNotConverged = errors.New("one or more tests still failing after max fix attempts")
 
 // BuildCodeDeps bundles what `build code` needs at the command boundary.
 // Mirrors BuildTestsDeps, plus the architecture loader and the test-runner
