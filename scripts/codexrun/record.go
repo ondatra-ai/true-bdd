@@ -1,7 +1,9 @@
 package codexrun
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -67,6 +69,16 @@ func (r Runner) finish(record Record, status, reason string, code int) (Record, 
 	record.Reason = reason
 	record.ExitCode = code
 
+	err := r.stopMarked(record)
+	if err != nil {
+		record.Status, record.Reason = "failed", err.Error()
+	} else if status == statusDone && record.writer() {
+		problem := r.repository(record.Worktree).CompletionProblem(context.Background(), record.Branch, record.Since)
+		if problem != "" {
+			record.Status, record.Reason = "incomplete", problem
+		}
+	}
+
 	record.EndedAt = time.Now().UTC()
 	if record.Agent == agentCodex {
 		data, _ := disk.Read(record.Log)
@@ -77,7 +89,7 @@ func (r Runner) finish(record Record, status, reason string, code int) (Record, 
 		}
 	}
 
-	return record, r.save(record)
+	return record, errors.Join(err, r.save(record))
 }
 
 // Summary is the single closing report Claude reads.

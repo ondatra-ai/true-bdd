@@ -78,7 +78,7 @@ func (r Runner) candidate(ctx context.Context, opts Options, resume bool, record
 			return record, err
 		}
 
-		return record, nil
+		return record, r.requireIdle(ctx, record)
 	}
 
 	_, err := os.Stat(filepath.Dir(path))
@@ -99,7 +99,7 @@ func canResume(record Record) error {
 		return refuse("run is still running")
 	}
 
-	if record.Status == "done" {
+	if record.Status == statusDone {
 		return refuse("run is already done")
 	}
 

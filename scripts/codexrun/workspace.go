@@ -26,7 +26,12 @@ func (r Runner) writerRecord(ctx context.Context, record Record, records []Recor
 
 	record.Workdir = record.Worktree
 
-	return record, r.checkWriter(ctx, record)
+	err = r.checkWriter(ctx, record)
+	if err != nil {
+		return record, err
+	}
+
+	return record, r.requireIdle(ctx, record)
 }
 
 func owned(records []Record, tree, branch string) bool {

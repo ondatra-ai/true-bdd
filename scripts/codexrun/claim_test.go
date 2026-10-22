@@ -27,6 +27,7 @@ func delayGit(t *testing.T, root, command string) {
 if [ "$1" = "` + command + `" ] && [ ! -f "$CAPTURE.validating" ]; then
  "$CODEX_TEST_GIT" "$@" > "$CAPTURE.validation-output"
  validation_status=$?
+ cd / || exit 1
  : > "$CAPTURE.validating"
  while [ ! -f "$CAPTURE.release" ]; do sleep 0.01; done
  cat "$CAPTURE.validation-output"
