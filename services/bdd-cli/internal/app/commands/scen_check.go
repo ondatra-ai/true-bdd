@@ -46,7 +46,7 @@ type ScenCheckDeps struct {
 
 // RunScenCheck drives `scen check`: walks registry scenarios against the
 // scen-check checklist, one cell per (scenario, prompt), and fails when
-// any scenario does.
+// any scenario does; a run that fails puts back every document a fix wrote.
 func RunScenCheck(
 	ctx context.Context,
 	deps ScenCheckDeps,
@@ -54,6 +54,8 @@ func RunScenCheck(
 	ids []string,
 	fix bool,
 ) error {
+	ledger := &fixLedger{}
+
 	err := runner.Run(ctx, runner.Spec[*template.ScenarioCheckData]{
 		Name:          "scen check",
 		ChecklistName: "scen-check",
@@ -62,7 +64,7 @@ func RunScenCheck(
 		StoryNumber: "",
 		Fix:         fix,
 
-		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix),
+		LoadItems:   loadCheckScenarios(deps, requirementsFile, ids, fix, ledger),
 		PostFix:     scenCheckPostFix(deps, requirementsFile),
 		Finalize:    finalizeScenCheck,
 		GetSubject:  scenCheckSubject,
@@ -79,8 +81,11 @@ func RunScenCheck(
 		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
 		TmpDir:          deps.RunDir.GetTmpOutPath(),
 	})
+	if err != nil {
+		return errors.Join(err, ledger.restore())
+	}
 
-	return err
+	return nil
 }
 
 // loadCheckScenarios is the LoadItems factory for `scen check`: load the
@@ -91,6 +96,7 @@ func loadCheckScenarios(
 	requirementsFile string,
 	ids []string,
 	fix bool,
+	ledger *fixLedger,
 ) func(ctx context.Context) ([]*template.ScenarioCheckData, error) {
 	return func(_ context.Context) ([]*template.ScenarioCheckData, error) {
 		// Through the loader, so an empty registry raises its refusal
@@ -109,7 +115,7 @@ func loadCheckScenarios(
 		items := checkItems(scenarios, selected)
 
 		if fix {
-			err = seedFixDocuments(deps, requirementsFile, items)
+			err = seedFixDocuments(deps, requirementsFile, items, ledger)
 			if err != nil {
 				return nil, err
 			}
@@ -121,7 +127,12 @@ func loadCheckScenarios(
 
 // seedFixDocuments gives every item the working copies a fix edits: the
 // term documents the host has, and the Registry the walk loaded.
-func seedFixDocuments(deps ScenCheckDeps, requirementsFile string, items []*template.ScenarioCheckData) error {
+func seedFixDocuments(
+	deps ScenCheckDeps,
+	requirementsFile string,
+	items []*template.ScenarioCheckData,
+	ledger *fixLedger,
+) error {
 	tmpDir := deps.RunDir.GetTmpOutPath()
 
 	termDocuments, err := seedTermDocuments(deps.DocResolver, tmpDir)
@@ -130,6 +141,16 @@ func seedFixDocuments(deps ScenCheckDeps, requirementsFile string, items []*temp
 	}
 
 	registryDocument, err := seedFixDocument(docs.KeyScenariosYAML, requirementsFile, tmpDir)
+	if err != nil {
+		return err
+	}
+
+	err = ledger.keep(termDocuments...)
+	if err != nil {
+		return err
+	}
+
+	err = ledger.keep(registryDocument)
 	if err != nil {
 		return err
 	}

@@ -396,6 +396,24 @@ func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
 	s.Done()
 }
 
+// fix-loop-bounds-004-walks-exhausted-keep-term-documents: A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1
+func TestFixLoopBounds004WalksExhaustedKeepTermDocuments(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-004-walks-exhausted-keep-term-documents")
+	s.Given(`the "fix-loop-walks-exhausted-terms" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Walk attempt started" attempt=1 max_attempts=1`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches Hit max apply attempts without convergence\.`)
+	s.And(`stdout matches msg="Fix undone in the document" document=product`)
+	s.But(`stdout does not match attempt=2`)
+	s.And(`the file "docs/product/product.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // fix-loop-choices-001-refine-reshapes-fix: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
 func TestFixLoopChoices001RefineReshapesFix(t *testing.T) {
 	s := scenarios.New(t, "fix-loop-choices-001-refine-reshapes-fix")

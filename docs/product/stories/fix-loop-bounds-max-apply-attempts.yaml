@@ -3,8 +3,9 @@
 # A checklist's `config.max_apply_attempts` bounds both the walks a run may
 # make and the fixes one Prompt may take, and the fix loop asks at most
 # five rounds of clarifying questions before it gives up on a failure.
-# Each criterion runs `us refine --fix`, whose Story file is written only
-# by a walk that converged.
+# Criteria 001 to 003 run `us refine --fix`, whose Story file is written
+# only by a walk that converged; 004 runs `scen check --fix`, whose term
+# documents keep a fix only once a walk has converged.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `fix-loop-bounds-<id>` (ADR 0014), and its steps are that Scenario's steps.
@@ -14,8 +15,8 @@ story:
     feature: engine
     title: Bound the --fix loop so a run that cannot converge stops, says why, and leaves the Story as it was
     as_a: Product Owner
-    i_want: a --fix run to stop once its checklist's max_apply_attempts walks are used, once one Prompt needs more fixes than max_apply_attempts allows, or once five rounds of clarifying questions settle nothing, saying which, and to leave the Story file as it was
-    so_that: a fix loop that cannot converge spends a bounded number of AI turns and never writes a Story no walk has confirmed
+    i_want: a --fix run to stop once its checklist's max_apply_attempts walks are used, once one Prompt needs more fixes than max_apply_attempts allows, or once five rounds of clarifying questions settle nothing, saying which, and to leave the Story file and the term documents as they were
+    so_that: a fix loop that cannot converge spends a bounded number of AI turns and never writes a Story or a term document no walk has confirmed
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-one-walk-keeps-story
@@ -74,3 +75,21 @@ story:
                 - and: the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched 6 AI turns
+        - id: 004-walks-exhausted-keep-term-documents
+          description: 'A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1'
+          steps:
+            - given:
+                - the "fix-loop-walks-exhausted-terms" project tree
+                - the Quality Engineer answers "1" to every question
+            - when:
+                - the Quality Engineer runs "scen check --fix"
+            - then:
+                - the command exits with code 1
+                - stdout matches msg="Walk attempt started" attempt=1 max_attempts=1
+                - and: stdout matches msg="Fix recorded in the document" document=product
+                - and: stdout matches Hit max apply attempts without convergence\.
+                - and: stdout matches msg="Fix undone in the document" document=product
+                - but: stdout does not match attempt=2
+                - and: the file "docs/product/product.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 2 AI turns

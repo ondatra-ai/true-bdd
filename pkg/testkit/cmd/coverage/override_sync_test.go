@@ -210,6 +210,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,
 		"fix-loop-exit-terms":                     overrideFixLoop,
+		"fix-loop-walks-exhausted-terms":           overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
 		"fix-loop-refix-stops":                    overrideFixLoop,
 		"fix-loop-unsettled":                      overrideFixLoop,
