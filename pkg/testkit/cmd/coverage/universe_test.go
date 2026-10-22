@@ -66,9 +66,9 @@ func TestUniverseCensus(t *testing.T) {
 	}
 }
 
-// TestSkipParity pins the production skip semantics: any non-empty
-// string skips (even "false"); a YAML boolean decodes to "" and does
-// not skip.
+// TestSkipParity pins the production skip semantics: only `skip: true`
+// parks a prompt. `skip: false` walks it, and a non-boolean such as
+// "false" is kept, as production keeps it to refuse it by its position.
 func TestSkipParity(t *testing.T) {
 	t.Parallel()
 
@@ -77,12 +77,12 @@ sections:
   - id: s
     validation_prompts:
       - Q: "kept one?"
-      - Q: "skipped string false?"
-        skip: "false"
+      - Q: "parked bool true?"
+        skip: true
       - Q: "kept bool false?"
         skip: false
-      - Q: "skipped anything?"
-        skip: "anything"
+      - Q: "kept string false?"
+        skip: "false"
 `
 
 	path := filepath.Join(t.TempDir(), "mini.yaml")
@@ -97,11 +97,12 @@ sections:
 		t.Fatalf("loading: %v", loadErr)
 	}
 
-	if len(prompts) != 2 {
-		t.Fatalf("flattened prompts: got %d, want 2", len(prompts))
+	if len(prompts) != 3 {
+		t.Fatalf("flattened prompts: got %d, want 3", len(prompts))
 	}
 
-	if prompts[0].QCollapsed != "kept one?" || prompts[1].QCollapsed != "kept bool false?" {
+	if prompts[0].QCollapsed != "kept one?" || prompts[1].QCollapsed != "kept bool false?" ||
+		prompts[2].QCollapsed != "kept string false?" {
 		t.Errorf("wrong prompts survived skip filtering: %+v", prompts)
 	}
 
