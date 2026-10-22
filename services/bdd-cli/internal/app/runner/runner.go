@@ -133,6 +133,10 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 
 	result, err := eng.Run(ctx, items, walkOrder(prompts))
 	if err != nil {
+		// Logged here: cobra prints the error only to stderr, which no
+		// `stdout matches` step reads (#168).
+		slog.Error("Walk stopped", "command", spec.Name, "error", err)
+
 		return fmt.Errorf("%s command failed: %w", spec.Name, err)
 	}
 

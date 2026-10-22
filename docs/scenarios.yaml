@@ -2906,3 +2906,241 @@ scenarios:
         - and: 'stdout matches scenario id given more than once: E2E-001'
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+
+  fix-loop-choices-001-refine-reshapes-fix:
+    description: Choosing to refine a proposed fix must read the person's feedback up to an empty line, propose the fix again shaped by that feedback, and apply the refined fix once the person picks apply
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-001-refine-reshapes-fix
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-refine-feedback" project tree
+        - the Quality Engineer answers "2 / Call the number slot of the new template budget / / 1" line by line
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="User chose fix action" rawInput=2 action=refine
+        - and: stdout matches msg="User provided refinement feedback" feedbackLength=47 feedback="Call the number slot of the new template budget"
+        - and: stdout matches (?s)FIX PROMPT GENERATED.*REFINE FIX PROMPT.*FIX PROMPT GENERATED
+        - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+        - and: the file "docs/product/product.yaml" matches \{budget:number\}
+        - and: the engine dispatched 3 AI turns
+
+  fix-loop-choices-002-own-words-answer-kept:
+    description: A clarifying question answered in the person's own words rather than by an option's number must reach the fix as typed, so the fix applied carries those words
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-002-own-words-answer-kept
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-own-words" project tree
+        - the Quality Engineer answers "It means the round trip from sending the message to receiving its reply takes at most that many milliseconds / 1" line by line
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="AI needs clarification" questionCount=1
+        - and: stdout matches msg="User answered clarification question" questionID=q1 question=.* answer="It means the round trip from sending the message to receiving its reply takes at most that many milliseconds"
+        - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+        - and: the file "docs/product/product.yaml" matches round trip from sending the message to receiving its reply takes\s+at most
+        - and: the engine dispatched 3 AI turns
+
+  fix-loop-choices-003-exit-keeps-story:
+    description: Choosing to exit a `us refine --fix` run's fix loop must leave the Story file exactly as it was, saying where the latest version of the Story was kept
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-003-exit-keeps-story
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-exit-story" project tree
+        - and: the "us-refine" checklist is narrowed to its "whether its description field contains a vague word" prompt
+        - the Product Owner answers "3" to every question
+      when:
+        - the Product Owner runs "us refine 97.1 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="User chose fix action" rawInput=3 action=exit
+        - and: stdout matches REFINE COMPLETE
+        - and: stdout matches msg=Exiting latest_version=tmp/[^ ]+/story-97\.1-v01\.yaml
+        - but: 'stdout does not match msg="Story saved"'
+        - and: the file "docs/product/stories/97.1-document-summary-exit.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 2 AI turns
+
+  fix-loop-choices-004-exit-keeps-registry:
+    description: Choosing to exit a `us apply --fix` run's fix loop must leave the Registry exactly as it was and walk no further acceptance criterion, reporting the failed Prompt with the fix it carries
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-004-exit-keeps-registry
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-exit-registry" project tree
+        - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+        - the Product Owner answers "3" to every question
+      when:
+        - the Product Owner runs "us apply 98.1 --fix"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg=AC index=1 total=2'
+        - and: stdout matches msg="User chose fix action" rawInput=3 action=exit
+        - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: us-apply/merge'
+        - and: stdout matches APPLY COMPLETE
+        - and: stdout matches One or more scenarios did not pass; the canonical file is unchanged
+        - but: 'stdout does not match msg=AC index=2'
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 2 AI turns
+
+  fix-loop-choices-005-exit-keeps-term-documents:
+    description: Choosing to exit a `scen check --fix` run's fix loop must leave the term documents and the Registry exactly as they were, report the failed Prompt with its fix, and exit 1
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-005-exit-keeps-term-documents
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-exit-terms" project tree
+        - the Quality Engineer answers "3" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches msg="User chose fix action" rawInput=3 action=exit
+        - and: stdout matches msg=Exiting\.
+        - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: scen-check/term_closure.*Propose one catalogue entry'
+        - but: stdout does not match msg="Fix recorded in the document"
+        - and: the file "docs/product/product.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 1 AI turn
+
+  fix-loop-choices-006-exit-fails-build-tests:
+    description: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-choices-apply-refine-exit.yaml
+        scenario_id: fix-loop-choices-006-exit-fails-build-tests
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "fix-loop-exit-steps" project tree
+        - the System Architect answers "3" to every question
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches msg="User chose fix action" rawInput=3 action=exit
+        - and: 'stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation'
+        - and: stdout matches BUILD TESTS COMPLETE
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - but: no file matching "tests/mcp/steps/*.go" is created
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: no file outside "tmp" and "tests" changed
+        - and: the engine dispatched 2 AI turns
+
+  fix-loop-bounds-001-one-walk-keeps-story:
+    description: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
+        scenario_id: fix-loop-bounds-001-one-walk-keeps-story
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "fix-loop-attempts-exhausted" project tree
+        - the Product Owner answers "1" to every question
+      when:
+        - the Product Owner runs "us refine 97.2 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="Walk attempt started" attempt=1 max_attempts=1
+        - and: stdout matches msg="User chose fix action" rawInput=1 action=apply
+        - and: stdout matches REFINE COMPLETE
+        - and: stdout matches Hit max apply attempts without convergence\.
+        - but: stdout does not match attempt=2
+        - and: 'stdout does not match msg="Story saved"'
+        - and: the file "docs/product/stories/97.2-document-summary-attempts.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 4 AI turns
+
+  fix-loop-bounds-002-refixed-prompt-stops-walk:
+    description: A `us refine --fix` run whose checklist allows one fix per Prompt must stop with exit code 1 when the same Prompt still fails after its fix and needs a second, leaving the Story file as it was
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
+        scenario_id: fix-loop-bounds-002-refixed-prompt-stops-walk
+        merge_date: '2026-10-22'
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "fix-loop-refix-stops" project tree
+        - the Product Owner answers "1" to every question
+      when:
+        - the Product Owner runs "us refine 97.3 --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Walk stopped" command="us refine"
+        - and: stdout matches gave up after 2 applied fix\(es\) that never made the check pass
+        - and: stdout matches (?s)(msg="User chose fix action" rawInput=1 action=apply.*){2}
+        - but: stdout does not match REFINE COMPLETE
+        - and: the file "docs/product/stories/97.3-document-summary-refix.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 6 AI turns
+
+  fix-loop-bounds-003-unsettled-questions-keep-story:
+    description: A `us refine --fix` run whose clarifying questions the person never settles must give up after five rounds of questions with no fix proposed, saying no fix was applied, and leave the Story file as it was
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
+        scenario_id: fix-loop-bounds-003-unsettled-questions-keep-story
+        merge_date: '2026-10-22'
+    timeout: 20m
+    merged_steps:
+      given:
+        - the "fix-loop-unsettled" project tree
+        - the Product Owner answers "I have not decided yet" to every question
+      when:
+        - the Product Owner runs "us refine 97.4 --fix"
+      then:
+        - the command exits with code 0
+        - stdout matches msg="User answered clarification question" .* answer="I have not decided yet"
+        - and: stdout matches msg="Generating fix prompt" .* iteration=5 hasUserAnswers=true
+        - but: stdout does not match iteration=6
+        - and: stdout matches Validation failed\. No fix was applied\.
+        - and: stdout matches REFINE COMPLETE
+        - but: stdout does not match FIX PROMPT GENERATED
+        - and: 'stdout does not match msg="Story saved"'
+        - and: the file "docs/product/stories/97.4-document-summary-unsettled.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 6 AI turns

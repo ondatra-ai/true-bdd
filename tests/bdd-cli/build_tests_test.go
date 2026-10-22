@@ -269,3 +269,21 @@ func TestEngineEntry002StrayArgumentPrintsUsage(t *testing.T) {
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
 }
+
+// fix-loop-choices-006-exit-fails-build-tests: Choosing to exit a `build tests --fix` run's fix loop must write no step definition, leave the Registry as it was, and exit 1, since the Scenario's steps still bind to nothing
+func TestFixLoopChoices006ExitFailsBuildTests(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-choices-006-exit-fails-build-tests")
+	s.Given(`the "fix-loop-exit-steps" project tree`)
+	s.And(`the System Architect answers "3" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="User chose fix action" rawInput=3 action=exit`)
+	s.And(`stdout matches (?s)FIX PROMPTS.*### Fix 1: build-tests/implementation`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.But(`no file matching "tests/mcp/steps/*.go" is created`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}

@@ -339,6 +339,18 @@ catalogue:
       exits the loop.
     terms: [fix loop]
 
+  - template: 'the {actor:role} answers "{lines}" line by line'
+    block: given
+    means: >-
+      The quoted text, split at each "/", is what that role types on the
+      terminal during the fix loop, one piece per line in that order: the
+      first piece answers whatever the command asks first, the next piece
+      what it asks next. An empty piece is an empty line, which ends a
+      multi-line answer such as the feedback that refines a proposed fix.
+      Once the lines run out the command reads end of input, which exits
+      the loop.
+    terms: [fix loop]
+
   - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
     block: given
     means: >-
