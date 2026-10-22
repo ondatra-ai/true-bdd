@@ -26,11 +26,7 @@ func answerCheck[I any](
 		return checklistmodels.ValidationResult{}, fmt.Errorf("check %s: %w", name, err)
 	}
 
-	verdict, err := spec.Checks[name].Run(item, checks.Input{
-		SubjectID: subjectID,
-		With:      prompt.Prompt.With,
-		Docs:      docPaths,
-	})
+	verdict, err := spec.Checks[name].Run(item, checks.Input{Docs: docPaths})
 	if err != nil {
 		// Logged here: the walk stops on it, and cobra prints the error to
 		// stderr, which no `stdout matches` step reads.
