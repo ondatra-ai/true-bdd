@@ -1,5 +1,0 @@
-# P4 matrix (plan §4.3): the canonical stories directory path
-# (docs/product/stories) is occupied by a regular FILE. The inventory must
-# report the stories directory as `not_a_dir`.
-base: engine
-input: input

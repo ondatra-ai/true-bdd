@@ -292,15 +292,19 @@ func findPromptsBySnippet(sections *yaml.Node, snippet string) []*yaml.Node {
 }
 
 // promptSkipped mirrors the production skip rule exactly: skipped only
-// when `skip` is a NON-EMPTY STRING — booleans and other types decode
-// to "" in the production map-based decoder and don't skip.
+// when `skip` is the boolean true. A non-boolean is not skipped, since
+// production refuses that prompt rather than skip it.
 func promptSkipped(prompt *yaml.Node) bool {
 	skip := mappingValue(prompt, "skip")
-	if skip == nil || skip.Kind != yaml.ScalarNode {
+	if skip == nil || skip.Kind != yaml.ScalarNode || skip.ShortTag() != "!!bool" {
 		return false
 	}
 
-	return skip.ShortTag() == "!!str" && strings.TrimSpace(skip.Value) != ""
+	var parked bool
+
+	err := skip.Decode(&parked)
+
+	return err == nil && parked
 }
 
 // parseSingleDocument parses checklist YAML, rejecting multi-document

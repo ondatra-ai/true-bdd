@@ -130,7 +130,7 @@ const (
 	// overrideUnsanctioned is every fixture off the allowlist.
 	overrideUnsanctioned overridePurpose = iota
 	// overrideEmpty walks nothing: build-tests-refusals-004-empty-checklist-refused
-	// pins the refusal of a checklist with nothing to ask.
+	// and checklist-skip-003 pin the refusal of a checklist with nothing to ask.
 	overrideEmpty
 	// overrideRefused carries a prompt the engine refuses at startup, so
 	// it walks nothing and nothing in it need be shipped.
@@ -146,6 +146,7 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
 		"build-tests-empty-checklist":             overrideEmpty,
+		"scen-check-every-prompt-skipped":         overrideEmpty,
 		"scen-check-prompt-with-both-kinds":       overrideRefused,
 		"scen-check-prompt-with-no-kind":          overrideRefused,
 		"scen-check-unknown-check":                overrideRefused,
@@ -153,6 +154,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-unknown-check-parameter":      overrideRefused,
 		"scen-check-fix-check-without-f":          overrideRefused,
 		"scen-check-phrase-docs-unlisted":         overrideRefused,
+		"scen-check-skip-not-boolean":             overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
 		"scen-check-phrase-unmatched":             overrideChecks,
 		"scen-check-phrase-ambiguous":             overrideChecks,
@@ -178,6 +180,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-closure-no-catalogue":         overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
 		"scen-check-fix-merges-phrases":           overrideChecks,
+		"scen-check-skipped-prompt":               overrideChecks,
 	}
 }
 

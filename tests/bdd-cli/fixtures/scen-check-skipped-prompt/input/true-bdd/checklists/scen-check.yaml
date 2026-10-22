@@ -1,0 +1,52 @@
+# Fixture checklist for `scen-check-skipped-prompt`.
+#
+# Two of the shipped checklist's quality questions, verbatim, and the
+# built-in check that a scenario carries all three step kinds. The first
+# question carries `skip: true`: the walk must leave it out, so it costs
+# no AI turn. The second carries `skip: false` and the check carries no
+# `skip:`; both must be walked as before. One turn in all, spent on the
+# second question, proves the first was never asked.
+
+version: "1.0"
+last_updated: "2026-10-22"
+
+sections:
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        skip: true
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
+
+      - Q: |
+          Decide whether this scenario has a binary pass/fail outcome —
+          whether a reviewer can decide pass or fail without subjective
+          judgement, with no ambiguity about what counts as correct.
+
+          Pass when the outcome is binary.
+          Fail when it is subjective.
+
+          Context: emit one line.
+            - "<scenario id>: binary"
+            - "<scenario id>: subjective — '<reason>'"
+        skip: false
+        rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
+        F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."
+
+      - D: given-when-then
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."

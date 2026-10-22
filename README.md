@@ -184,6 +184,28 @@ checks, `given-when-then`, `step-phrases`, `declared-terms`,
 `term-mappings` and `step-definitions` (below); the shipped `scen-check`
 checklist walks the last four.
 
+### Parking a prompt
+
+`skip: true` parks a prompt, `Q:` or `D:`: the walk leaves it out as if
+it were not in the file, so it costs no AI turn, takes no report row and
+no position in the artifact names, and none of the startup checks above
+look at it. `skip: false`, or no `skip:`, walks the prompt as usual:
+
+```yaml
+validation_prompts:
+  - Q: "…"
+    skip: true    # parked: not walked, no AI turn
+  - D: given-when-then
+    skip: false   # walked, as with no skip: at all
+```
+
+`skip:` takes only a YAML boolean. Any other value is refused at
+startup, naming the prompt, since the engine would have to guess what it
+meant: the quoted `"false"`, which once parked the prompt it was meant
+to keep, and `yes`, which YAML reads as a string, among them. A
+checklist whose every prompt is parked is refused like one with no
+prompts, rather than passing every item unchecked.
+
 ### The step-phrase catalogue
 
 The product document may declare a `catalogue:`, the shape each Given,

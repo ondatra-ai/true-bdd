@@ -2,7 +2,6 @@ package shell
 
 import (
 	"io"
-	"os"
 	"time"
 )
 
@@ -24,7 +23,4 @@ type Options struct {
 	Group bool
 	// WaitDelay bounds how long Wait lingers once the context has ended.
 	WaitDelay time.Duration
-	// ExtraFiles are descriptors the child inherits from fd 3 upwards. Only
-	// remote/managed_child.go passes any: a lock fd and a release pipe.
-	ExtraFiles []*os.File
 }
