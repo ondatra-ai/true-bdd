@@ -321,9 +321,18 @@ architecture:
         project tree. The fixture is handed the command first, so it can
         refuse an empty one or a checklist narrowing the command does not
         read. The run is capped by the Scenario's `timeout:`, five minutes
-        when absent; its exit code, stdout, stderr and file changes are kept
-        for the Then steps, and a run that could not complete fails the step,
-        naming the run directory it left behind.
+        when absent, and the fixture carries that cap for the run's record.
+        Its exit code, stdout, stderr and file changes are kept for the Then
+        steps. As soon as the run returns, before the step passes or fails,
+        the When step hands it to the harness's run recorder, a run that
+        could not complete included: its run directory, its stdout and
+        stderr files, its file changes, and its exit code once it completed.
+        The recorder writes them, when the Scenario ends, to
+        `bdd-cli-logs/harness.json` in the run directory, the record the BDD
+        report reads; a When step that does not hand the run over leaves
+        that record without a run directory, an exit code or a file change,
+        though every step passes. A run that could not complete fails the
+        step, naming the run directory it left behind.
 
     - term: project tree
       technical: >-
@@ -343,7 +352,20 @@ architecture:
         that path, and the assembled run directory has it deleted before
         `prep.sh` and the snapshot; a path leading out of the run directory,
         or one the assembled directory does not hold, fails the run rather
-        than proving nothing.
+        than proving nothing. A Then step that reads a named file of the tree
+        after the run (that an unchanged file is still there, its line count,
+        its content) takes the quoted path relative to the run directory and
+        holds it inside before reading: an empty or absolute path, one that
+        climbs out through `..` once cleaned, or one whose symbolic links,
+        resolved on both sides (the run directory's own path too) and whole
+        path components compared, lead out of the run directory fails the
+        step, and so does a path naming anything but a regular file, such as
+        a directory. A path that does not exist is held by its deepest
+        existing directory, resolved the same way: inside the run directory
+        the step fails because the file is missing, and through a link out
+        of it because the path leads out. A step about a created or modified
+        file only compares the quoted path, as written, with the paths of the
+        run's file changes, and reads no file.
 
     - term: exit code
       technical: >-
@@ -494,9 +516,13 @@ architecture:
         any run of characters but `/`, `?` one such character, and `[…]` one
         character of a set.
       observed_by: >-
-        Matched against the path of every file the run's diff marks created,
-        never modified or deleted ones, and the matches are counted. A glob
-        that is not well formed fails the step rather than matching nothing.
+        The glob is checked on its own first, before any path is matched: one
+        that is not well formed, such as one with an unclosed `[`, fails the
+        step rather than matching nothing, even when the run created no file
+        at all, so neither the no-files step nor a count of none can pass on
+        it. Only then is it matched against the path of every file the run's
+        diff marks created, never modified or deleted ones, and the matches
+        are counted.
 
     - term: Story
       technical: >-
@@ -542,6 +568,37 @@ architecture:
         `merged_steps` read back as identical YAML; a Scenario without
         `merged_steps` shares nothing.
 
+    - term: template
+      technical: >-
+        A catalogue entry's `template:` text, which the engine compiles into
+        one regular expression, anchored at both ends, that a step's whole
+        text, without its `and:` or `but:` key, must match: words as written,
+        case and spaces included; a quoted slot, which sits between literal
+        double quotes, as one or more characters other than a double quote;
+        a number slot as digits or `no`; a role slot as exactly one of the
+        names under the product document's `roles:` (Product Owner, System
+        Architect, Quality Engineer); a pattern slot, only ever the last
+        token and after a space, as the rest of the text, at least one
+        character; brackets with several alternatives as exactly one of them,
+        and brackets with one as that text or nothing; a backslash before
+        `{`, `}`, `[`, `]` or `\` as that character.
+      observed_by: >-
+        A step definition's pattern is its phrase's template written as an
+        anchored regular expression: it binds exactly the texts the template
+        matches, no fewer and no more, so a step the catalogue takes binds
+        and one it refuses binds nothing. Each slot is a capture group: a
+        quoted slot captures one or more characters other than a double
+        quote, so an empty quote binds nothing; a number slot captures
+        digits or `no`, which the definition reads as zero; a role slot
+        captures only the declared role names, so other words, however
+        capitalised, bind nothing, and which role it names changes nothing
+        the step does; a pattern slot captures the rest of the step
+        verbatim, quotes included, never split or unquoted, and the step
+        compiles it as the mapping of pattern says. Brackets with several
+        alternatives are a group that must match exactly one of them and is
+        never optional, so a step naming none of them binds nothing; brackets
+        with one alternative are optional.
+
     - term: Scenario
       technical: >-
         One entry under the Registry's `scenarios:`, keyed by its Scenario
@@ -559,9 +616,14 @@ architecture:
         `true-bdd/true-bdd.yaml`, conventionally `docs/scenarios.yaml`; a
         step names it by its path relative to the run directory.
       observed_by: >-
-        Read and parsed after the run. A path leading out of the run
-        directory, a file that cannot be read or parsed, or one declaring no
-        Scenario fails the step.
+        Read and parsed after the run. The quoted path is held inside the run
+        directory before anything is read, as a Then step holds a file of the
+        project tree: an empty or absolute path, one that climbs out through
+        `..` once cleaned, or one whose symbolic links, resolved on both sides
+        (the run directory's own path too) and whole path components
+        compared, lead out of the run directory fails the step, and so does a
+        path naming anything but a regular file. A file that cannot be read
+        or parsed, or one declaring no Scenario, fails the step too.
 
     - term: lineage
       technical: >-
@@ -594,11 +656,16 @@ architecture:
         the code run for every step whose whole text it matches.
       observed_by: >-
         The step reads the source of every `.go` file directly in the quoted
-        directory, inside the run directory, without building it, and takes
-        each registration's string literal that compiles as a regular
-        expression. Each step of the named Scenario must match exactly one;
-        model-run steps are skipped. A file that does not parse fails the
-        step, and the failure names every step that matched none or several.
+        directory, without building it. The directory is held inside the run
+        directory first: an empty or absolute one, one that climbs out
+        through `..` once cleaned, or one whose symbolic links, resolved on
+        both sides (the run directory's own path too) and whole path
+        components compared, lead out of the run directory fails the step.
+        The step takes each registration's string literal that compiles as a
+        regular expression. Each step of the named Scenario must match
+        exactly one; model-run steps are skipped. A file that does not parse
+        fails the step, and the failure names every step that matched none
+        or several.
 
     - term: test runner
       technical: >-
@@ -624,10 +691,16 @@ architecture:
       observed_by: >-
         Run by the Then step itself after the command has ended, so it sits
         last among a Scenario's Then steps: a re-run may change files that
-        earlier steps read. A directory leading out of the run directory, an
-        empty command, or one that cannot start fails the step, as does an
-        exit status other than the quoted one, printing the shell command's
-        stdout and stderr.
+        earlier steps read. An empty command fails the step. The quoted
+        directory is then held inside the run directory before anything runs:
+        an empty or absolute one, one that climbs out through `..` once
+        cleaned, or one whose symbolic links, resolved on both sides (the run
+        directory's own path too) and whole path components compared, lead
+        out of the run directory fails the step; one that does not exist is
+        held by its deepest existing directory, resolved the same way. A
+        shell command that cannot start fails the step, as does an exit
+        status other than the quoted one, printing the shell command's stdout
+        and stderr.
 
     - term: crush
       technical: >-
@@ -659,9 +732,15 @@ architecture:
       observed_by: >-
         Run once by the When step as the engine binary's subprocess in the
         run directory, under the Scenario's timeout, its exit status, stdout,
-        stderr and file changes kept as a command's are. The allow and deny
-        steps compare the status with 0 and 2, failing with the reason it
-        gave; the reason step matches its pattern anywhere in the kept stderr.
+        stderr and file changes kept as a command's are. As a command's run
+        is, the guard's run is handed to the harness's run recorder as soon
+        as it returns, before the step passes or fails, a run that could not
+        complete included, so the Scenario's `bdd-cli-logs/harness.json` in
+        the run directory records its run directory, output files and file
+        changes, and its exit status once it completed, for the BDD report.
+        The allow and deny steps compare the status with 0 and 2, failing
+        with the reason it gave; the reason step matches its pattern anywhere
+        in the kept stderr.
 
     - term: write policy
       technical: >-
