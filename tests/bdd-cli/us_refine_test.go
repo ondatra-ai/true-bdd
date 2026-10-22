@@ -352,3 +352,24 @@ func TestUsRefineVerdicts003ImplementationAndSubjectiveFail(t *testing.T) {
 	s.And(`stdout does not match msg="Story saved"`)
 	s.Done()
 }
+
+// us-refine-verdicts-004-step-outside-catalogue-fails: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
+func TestUsRefineVerdicts004StepOutsideCatalogueFails(t *testing.T) {
+	s := scenarios.New(t, "us-refine-verdicts-004-step-outside-catalogue-fails")
+	s.Given(`the "us-refine-step-outside-catalogue" project tree`)
+	s.When(`the Product Owner runs "us refine doc-outline"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=13 answer=fail`)
+	s.And(`stdout matches AC-1: 3 steps match one template each`)
+	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches AC-3: given step \\"the Claude User asks Claude to outline the document\\" matches \\"the \{actor:role\} asks Claude to outline the document\\", declared for when`)
+	s.And(`stdout matches msg="Prompt skipped after a failed check" subjectID=doc-outline promptIndex=1`)
+	s.And(`stdout matches us-refine/term_closure +D: step-phrases +fail +FAIL`)
+	s.And(`stdout matches SKIP: 12\n`)
+	s.And(`stdout matches Validation failed. Use --fix flag to enter interactive fix mode.`)
+	s.But(`stdout does not match msg="Story saved"`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" is unchanged`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}

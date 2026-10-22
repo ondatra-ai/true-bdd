@@ -869,6 +869,7 @@ scenarios:
         - stdout matches REFINE COMPLETE
         - but: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.4-summary-error-messages.yaml" is unchanged
+        - and: 'stdout matches msg="Check answered" check=step-phrases subjectID=96\.4 promptIndex=13 answer=pass context="\[96\.4: not checked: the product document declares no catalogue\]"'
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match msg="Story saved"'
   us-refine-verdicts-003-implementation-and-subjective-fail:
@@ -893,6 +894,33 @@ scenarios:
         - and: the file "docs/product/stories/96.3-summary-service-internals.yaml" is unchanged
         - and: stdout does not match ALL CHECKS PASSED!
         - and: 'stdout does not match msg="Story saved"'
+  us-refine-verdicts-004-step-outside-catalogue-fails:
+    description: When the product document declares a catalogue, a Story with a step that matches no catalogue phrase, or only a phrase of another block, must fail the step-phrase check, naming each such step under its acceptance criterion, skip every model check, and leave the Story unchanged without an AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/us-refine-verdicts-without-fix.yaml
+        scenario_id: us-refine-verdicts-004-step-outside-catalogue-fails
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "us-refine-step-outside-catalogue" project tree
+      when:
+        - the Product Owner runs "us refine doc-outline"
+      then:
+        - the command exits with code 0
+        - 'stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=13 answer=fail'
+        - and: 'stdout matches AC-1: 3 steps match one template each'
+        - and: 'stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template'
+        - and: 'stdout matches AC-3: given step \\"the Claude User asks Claude to outline the document\\" matches \\"the \{actor:role\} asks Claude to outline the document\\", declared for when'
+        - and: stdout matches msg="Prompt skipped after a failed check" subjectID=doc-outline promptIndex=1
+        - and: 'stdout matches us-refine/term_closure +D: step-phrases +fail +FAIL'
+        - and: 'stdout matches SKIP: 12\n'
+        - and: stdout matches Validation failed. Use --fix flag to enter interactive fix mode.
+        - but: 'stdout does not match msg="Story saved"'
+        - and: no file outside "tmp" changed
+        - and: the file "docs/product/stories/doc-outline-catalogued.yaml" is unchanged
+        - and: the engine dispatched no AI turns
   us-refine-refusals-002-slug-id-accepted:
     description: A Story id that is a slug rather than a numeric `<N>.<M>` must pass validation, so a story with no file is refused as a missing Story, never as a malformed id
     service: bdd-cli

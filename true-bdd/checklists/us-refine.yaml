@@ -329,3 +329,16 @@ sections:
         docs:
           - product
           - architecture_yaml
+
+  # Appended, not inserted: `D:` prompts walk first wherever they sit, but
+  # a Cell's artifacts keep its file position, so a prompt above the `Q:`s
+  # would renumber them and re-hash every us-refine cassette.
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of every acceptance criterion must match exactly one phrase of the product document's catalogue, declared for its block, so the Story speaks the language the product declares."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for each failing step, asking what it means first. Write it to the product document, never to the Story."
