@@ -85,7 +85,7 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 006-suite-without-module-refused
-          description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, since no import path for its generated test follows from it
+          description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
           steps:
             - given:
                 - the "build-tests-suite-without-module" project tree

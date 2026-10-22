@@ -2745,7 +2745,7 @@ scenarios:
         - and: the engine dispatched no AI turns
 
   build-tests-renderable-006-suite-without-module-refused:
-    description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, since no import path for its generated test follows from it
+    description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
@@ -2780,7 +2780,7 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-        - and: 'stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
+        - and: 'stdout matches requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 

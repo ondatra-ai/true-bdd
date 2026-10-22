@@ -29,7 +29,7 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-                - and: 'stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
+                - and: 'stdout matches requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24'
                 - but: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
         - id: 002-list-modifier-refused

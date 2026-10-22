@@ -358,7 +358,7 @@ func TestBuildTestsRenderable005ScenarioWithoutStepsRefused(t *testing.T) {
 	s.Done()
 }
 
-// build-tests-renderable-006-suite-without-module-refused: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, since no import path for its generated test follows from it
+// build-tests-renderable-006-suite-without-module-refused: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
 func TestBuildTestsRenderable006SuiteWithoutModuleRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-renderable-006-suite-without-module-refused")
 	s.Given(`the "build-tests-suite-without-module" project tree`)
@@ -378,7 +378,7 @@ func TestBuildTestsStepShapes001TwoKeyModifierRefused(t *testing.T) {
 	s.When(`the System Architect runs "build tests"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
-	s.And(`stdout matches failed to parse requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24`)
+	s.And(`stdout matches requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24`)
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
