@@ -184,6 +184,34 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-documents-005-undeclared-registry-refused-by-scen-check: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
+func TestEngineDocuments005UndeclaredRegistryRefusedByScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-documents-005-undeclared-registry-refused-by-scen-check")
+	s.Given(`the "scen-check-undeclared-registry" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start: document unresolvable" command="scen check" document="scenario registry"`)
+	s.And(`stdout matches documents\.scenarios_yaml`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-entry-003-missing-config-refused: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
+func TestEngineEntry003MissingConfigRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-entry-003-missing-config-refused")
+	s.Given(`the "scen-check-without-config" project tree`)
+	s.And(`the project tree has no "true-bdd/true-bdd.yaml"`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stderr matches Error: initialize container`)
+	s.And(`stderr matches open \./true-bdd/true-bdd\.yaml: no such file or directory`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // scen-check-001-claimed-scenario-passes: A registry scenario a Story claims that satisfies every prompt of the shipped checklist, its closure checks and its model questions alike, must pass the walk and report success
 func TestScenCheck001ClaimedScenarioPasses(t *testing.T) {
 	s := scenarios.New(t, "scen-check-001-claimed-scenario-passes")
@@ -259,6 +287,20 @@ func TestScenCheck005IdsNarrowTheWalk(t *testing.T) {
 	s.And(`the engine dispatched 2 AI turns`)
 	s.But(`stdout does not match E2E-003`)
 	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// scen-check-006-duplicate-id-refused: An id given twice on the command line must be refused before the first prompt, naming the id, never walked once or twice as though asked
+func TestScenCheck006DuplicateIdRefused(t *testing.T) {
+	s := scenarios.New(t, "scen-check-006-duplicate-id-refused")
+	s.Given(`the "scen-check-duplicate-id" project tree`)
+	s.When(`the Quality Engineer runs "scen check E2E-001 E2E-001"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scenario id given more than once: E2E-001`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 

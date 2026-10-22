@@ -1,0 +1,61 @@
+# Story `engine-entry`: what the command line does before a command
+# reads any document.
+#
+# Printing the version, refusing an argument a command does not take,
+# and refusing to start without `true-bdd/true-bdd.yaml`. Which documents
+# a command reads, from that file or from a flag, is the Story
+# engine-documents; the help and the checklist refusals every command
+# shares are the Story engine.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `engine-entry-<id>` (ADR 0014), and its steps are that Scenario's steps.
+
+story:
+    id: engine-entry
+    feature: engine
+    title: Start any command from the command line, and have it refuse there what it cannot start with
+    as_a: System Architect
+    i_want: true-bdd version to print the engine's version wherever I run it, a command given an argument it does not take to print what went wrong and its usage, and every other command to refuse to start where there is no true-bdd/true-bdd.yaml
+    so_that: I can tell which engine a project runs and correct a mistyped command from the terminal alone, and a project that was never configured is left as it was
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-version-runs-without-config
+          description: The `version` command must print `true-bdd version` followed by the engine's version number and exit 0 in a project tree that holds no `true-bdd/true-bdd.yaml`, because it reads no configuration
+          steps:
+            - given:
+                - the "version-without-config" project tree
+                - and: the project tree has no "true-bdd/true-bdd.yaml"
+            - when:
+                - the System Architect runs "version"
+            - then:
+                - the command exits with code 0
+                - stdout matches (?m)^true-bdd version \d+\.\d+\.\d+$
+                - and: no file outside "tmp" changed
+        - id: 002-stray-argument-prints-usage
+          description: A command given an argument it does not take must exit 1 before it starts its walk, printing an error that names the argument followed by that command's usage, and must change no file
+          steps:
+            - given:
+                - the "build-tests-stray-argument" project tree
+            - when:
+                - the System Architect runs "build tests docs/scenarios.yaml"
+            - then:
+                - the command exits with code 1
+                - stderr matches unknown command "docs/scenarios\.yaml" for "true-bdd build tests"
+                - and: 'stderr matches Usage:\n  true-bdd build tests \[flags\]'
+                - and: stderr matches --requirements string
+                - but: stdout does not match BUILD TESTS
+                - and: no file outside "tmp" changed
+        - id: 003-missing-config-refused
+          description: A command run in a project tree with no `true-bdd/true-bdd.yaml` must exit 1 before it reads any document, saying on stderr that it could not open that file, and must change no file
+          steps:
+            - given:
+                - the "scen-check-without-config" project tree
+                - and: the project tree has no "true-bdd/true-bdd.yaml"
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - 'stderr matches Error: initialize container'
+                - and: 'stderr matches open \./true-bdd/true-bdd\.yaml: no such file or directory'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
