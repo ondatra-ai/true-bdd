@@ -171,6 +171,9 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-unknown-check-parameter":      overrideRefused,
 		"scen-check-fix-check-without-f":          overrideRefused,
 		"scen-check-phrase-docs-unlisted":         overrideRefused,
+		"scen-check-prompt-tier-unconfigured":     overrideRefused,
+		"scen-check-checklist-not-yaml":           overrideRefused,
+		"scen-check-check-with-not-a-mapping":     overrideRefused,
 		"scen-check-skip-not-boolean":             overrideRefused,
 		"scen-check-failed-check-skips-questions": overrideChecks,
 		"scen-check-phrase-unmatched":             overrideChecks,
@@ -451,7 +454,10 @@ func TestOverrideConfigMatchesShipped(t *testing.T) {
 	t.Parallel()
 
 	for _, override := range discoverOverrides(t) {
-		if allowedOverrideFixtures()[override.Fixture] == overrideFixLoop {
+		// A fix-loop override may bound the loop (#168); no walk reads a refused one, and
+		// scen-check-checklist-not-yaml's is not YAML (#171).
+		purpose := allowedOverrideFixtures()[override.Fixture]
+		if purpose == overrideFixLoop || purpose == overrideRefused {
 			continue
 		}
 

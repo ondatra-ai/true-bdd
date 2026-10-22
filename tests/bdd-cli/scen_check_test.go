@@ -184,6 +184,63 @@ func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-checklists-001-missing-checklist-refused: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
+func TestEngineChecklists001MissingChecklistRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-001-missing-checklist-refused")
+	s.Given(`the "scen-check-checklist-missing" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches failed to read checklist true-bdd/host-checklists/scen-check\.yaml: .*no such file or directory`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-checklists-002-checklist-not-yaml-refused: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
+func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-002-checklist-not-yaml-refused")
+	s.Given(`the "scen-check-checklist-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
+	s.Given(`the "scen-check-check-with-not-a-mapping" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-config-004-prompt-tier-unconfigured-refused: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+func TestEngineConfig004PromptTierUnconfiguredRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-004-prompt-tier-unconfigured-refused")
+	s.Given(`the "scen-check-prompt-tier-unconfigured" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 Decide whether this scenario's steps carry all three: prompt turn: model tier is not configured under engine\.models: \\"quick\\" \(configured: xhigh, high, coder\)`)
+	s.But(`stdout does not match scen-check/scenario_quality #1`)
+	s.And(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-documents-005-undeclared-registry-refused-by-scen-check: A host whose `true-bdd.yaml` declares no scenario registry must have `scen check` refused before it walks, naming the missing `documents.scenarios_yaml` key, never served the registry at its conventional path
 func TestEngineDocuments005UndeclaredRegistryRefusedByScenCheck(t *testing.T) {
 	s := scenarios.New(t, "engine-documents-005-undeclared-registry-refused-by-scen-check")
@@ -277,6 +334,62 @@ func TestEngineRoutes005FailedCrushTurnStopsRun(t *testing.T) {
 	s.But(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
 	s.And(`the engine dispatched 1 AI turn`)
 	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-term-documents-001-glossary-not-a-list-stops-scen-check: `scen check` must stop at its declared-term check when the product document's `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn
+func TestEngineTermDocuments001GlossaryNotAListStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-001-glossary-not-a-list-stops-scen-check")
+	s.Given(`the "scen-check-glossary-not-a-list" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001`)
+	s.And(`stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms`)
+	s.But(`stdout does not match check=term-mappings`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-002-mapping-not-a-list-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document's `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn
+func TestEngineTermDocuments002MappingNotAListStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-002-mapping-not-a-list-stops-scen-check")
+	s.Given(`the "scen-check-mapping-not-a-list" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001`)
+	s.And(`stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings`)
+	s.But(`stdout does not match check=step-definitions`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-003-product-not-yaml-stops-scen-check: `scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
+func TestEngineTermDocuments003ProductNotYamlStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-003-product-not-yaml-stops-scen-check")
+	s.Given(`the "scen-check-product-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001`)
+	s.And(`stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match check=declared-terms`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-term-documents-004-architecture-not-yaml-stops-scen-check: `scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn
+func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-004-architecture-not-yaml-stops-scen-check")
+	s.Given(`the "scen-check-architecture-not-yaml" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001`)
+	s.And(`stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected`)
+	s.But(`stdout does not match check=step-definitions`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 

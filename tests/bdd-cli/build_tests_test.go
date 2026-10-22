@@ -567,6 +567,67 @@ func TestEngine004UnknownModelCliRefused(t *testing.T) {
 	s.Done()
 }
 
+// engine-config-001-empty-model-table-refused: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
+func TestEngineConfig001EmptyModelTableRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-001-empty-model-table-refused")
+	s.Given(`the "build-tests-empty-model-table" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.models is empty: configure at least one tier`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-config-002-malformed-model-entries-refused: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI and one with an empty model, and none of the sound entries
+func TestEngineConfig002MalformedModelEntriesRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-002-malformed-model-entries-refused")
+	s.Given(`the "build-tests-malformed-model-entries" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)`)
+	s.And(`stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"`)
+	s.And(`stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"`)
+	s.And(`stdout matches engine\.models\.coder: model reference has an empty model: got \\"crush:\\"`)
+	s.But(`stdout does not match engine\.models\.quick`)
+	s.And(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-config-003-unresolvable-default-tiers-refused: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
+func TestEngineConfig003UnresolvableDefaultTiersRefused(t *testing.T) {
+	s := scenarios.New(t, "engine-config-003-unresolvable-default-tiers-refused")
+	s.Given(`the "build-tests-unresolvable-default-tiers" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.default_prompt_model: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)`)
+	s.And(`stdout matches engine\.default_apply_model: default model tier names a tier that engine\.models does not configure: \\"coder\\"`)
+	s.But(`stdout does not match engine\.default_fix_model`)
+	s.And(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// engine-config-006-default-write-roots: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
+func TestEngineConfig006DefaultWriteRoots(t *testing.T) {
+	s := scenarios.New(t, "engine-config-006-default-write-roots")
+	s.Given(`the "build-tests-fix-default-write-roots" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`the file "tests/mcp/mcp_test.go" is created`)
+	s.And(`every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"`)
+	s.But(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
 // engine-documents-001-absolute-requirements-overrides-config: `build tests --requirements` given an absolute path must read the Registry at that path instead of the one `true-bdd.yaml` names, and must quote it in a generated test's header by its path relative to the project, so a test rendered from that relative path is reported unchanged and the run exits 0
 func TestEngineDocuments001AbsoluteRequirementsOverridesConfig(t *testing.T) {
 	s := scenarios.New(t, "engine-documents-001-absolute-requirements-overrides-config")
@@ -608,6 +669,32 @@ func TestEngineEntry002StrayArgumentPrintsUsage(t *testing.T) {
 	s.And(`stderr matches --requirements string`)
 	s.But(`stdout does not match BUILD TESTS`)
 	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document's `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe
+func TestEngineTermDocuments005GlossaryNotAListRefusesBuildTestsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix")
+	s.Given(`the "build-tests-fix-glossary-not-a-list" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" changed`)
+	s.Done()
+}
+
+// engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix: `build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document's `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built
+func TestEngineTermDocuments006MappingNotAListRefusesBuildTestsFix(t *testing.T) {
+	s := scenarios.New(t, "engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix")
+	s.Given(`the "build-tests-fix-mapping-not-a-list" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`no file outside "tmp" changed`)
 	s.Done()
 }
 

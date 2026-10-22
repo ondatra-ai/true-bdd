@@ -4054,3 +4054,310 @@ scenarios:
         - and: the file "tests/mcp/mcp_test.go" is created
         - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
         - but: no file outside "tests" and "tmp" changed
+  engine-config-001-empty-model-table-refused:
+    description: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-001-empty-model-table-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-empty-model-table" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.models is empty: configure at least one tier'
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-config-002-malformed-model-entries-refused:
+    description: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI and one with an empty model, and none of the sound entries
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-002-malformed-model-entries-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-malformed-model-entries" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
+        - and: 'stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"'
+        - and: 'stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"'
+        - and: 'stdout matches engine\.models\.coder: model reference has an empty model: got \\"crush:\\"'
+        - but: stdout does not match engine\.models\.quick
+        - and: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-config-003-unresolvable-default-tiers-refused:
+    description: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-003-unresolvable-default-tiers-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-unresolvable-default-tiers" project tree
+      when:
+        - the System Architect runs "build tests"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.default_prompt_model: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
+        - and: 'stdout matches engine\.default_apply_model: default model tier names a tier that engine\.models does not configure: \\"coder\\"'
+        - but: stdout does not match engine\.default_fix_model
+        - and: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-config-004-prompt-tier-unconfigured-refused:
+    description: A command must be refused at startup, before it asks any Prompt, when a Prompt's own `model:` names a tier that `engine.models` does not configure, naming that Prompt, the tier and the tiers the table does configure, even when the Prompt is not the first the walk would ask
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-004-prompt-tier-unconfigured-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-prompt-tier-unconfigured" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches scen-check/scenario_quality #2 Decide whether this scenario''s steps carry all three: prompt turn: model tier is not configured under engine\.models: \\"quick\\" \(configured: xhigh, high, coder\)'
+        - but: 'stdout does not match scen-check/scenario_quality #1'
+        - and: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-config-005-checklist-tiers-unconfigured-refused:
+    description: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the validation, fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-005-checklist-tiers-unconfigured-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-code-fix-tiers-unconfigured" project tree
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build code"
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: prompt turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
+        - but: no file outside "tmp" changed
+        - and: the engine spawned no test runner
+        - and: the engine dispatched no AI turns
+  engine-config-006-default-write-roots:
+    description: When true-bdd.yaml names no `paths.test_write_globs`, `build tests --fix` must grant its apply turn the default write roots `./tests/**` and `./services/**`, so the step definitions a Scenario lacks are authored under the suite that owns it and nothing outside `tests` changes
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-config-models-and-roots.yaml
+        scenario_id: engine-config-006-default-write-roots
+        merge_date: '2026-10-22'
+    timeout: 15m
+    merged_steps:
+      given:
+        - the "build-tests-fix-default-write-roots" project tree
+        - the System Architect answers "1" to every question
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 0
+        - and: the file "tests/mcp/mcp_test.go" is created
+        - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
+        - but: no file outside "tmp" and "tests" changed
+  engine-checklists-001-missing-checklist-refused:
+    description: A command must be refused at startup when the directory `paths.checklists_dir` names holds no checklist for it, naming the checklist file it looked for, before its walk starts or any AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
+        scenario_id: engine-checklists-001-missing-checklist-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-checklist-missing" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches failed to read checklist true-bdd/host-checklists/scen-check\.yaml: .*no such file or directory'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-checklists-002-checklist-not-yaml-refused:
+    description: A command must be refused at startup when its checklist is not valid YAML, naming the checklist file and the line its reader stopped at, before its walk starts or any AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
+        scenario_id: engine-checklists-002-checklist-not-yaml-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-checklist-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-checklists-003-check-with-not-a-mapping-refused:
+    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-checklists-unreadable-checklist.yaml
+        scenario_id: engine-checklists-003-check-with-not-a-mapping-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-check-with-not-a-mapping" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-001-glossary-not-a-list-stops-scen-check:
+    description: '`scen check` must stop at its declared-term check when the product document''s `glossary:` is not a list, naming the document and that the glossary must hold a list of terms, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-001-glossary-not-a-list-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-glossary-not-a-list" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=declared-terms subjectID=E2E-001
+        - and: 'stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms'
+        - but: stdout does not match check=term-mappings
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-002-mapping-not-a-list-stops-scen-check:
+    description: '`scen check` must stop at its term-mapping check when the architecture document''s `architecture.terms:` is not a list, naming the document and that the word mapping must hold a list of mappings, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-002-mapping-not-a-list-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-mapping-not-a-list" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
+        - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
+        - but: stdout does not match check=step-definitions
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-003-product-not-yaml-stops-scen-check:
+    description: '`scen check` must stop at its first check that reads the product document when that document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-003-product-not-yaml-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-product-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=step-phrases subjectID=E2E-001
+        - and: 'stdout matches read the catalogue: .*product document \./docs/product/product\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match check=declared-terms
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-004-architecture-not-yaml-stops-scen-check:
+    description: '`scen check` must stop at its term-mapping check when the architecture document is not valid YAML, naming the document and the line its reader stopped at, before any later check or AI turn'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-004-architecture-not-yaml-stops-scen-check
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-architecture-not-yaml" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Check could not answer" check=term-mappings subjectID=E2E-001
+        - and: 'stdout matches read the word mapping: .*architecture document \./docs/architecture/architecture\.yaml: yaml: line \d+: did not find expected'
+        - but: stdout does not match check=step-definitions
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns
+  engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix:
+    description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the product document''s `glossary:` is not a list, naming the document, rather than author step definitions without the meaning of the words they observe'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-005-glossary-not-a-list-refuses-build-tests-fix
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-fix-glossary-not-a-list" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches read the glossary: product document \./docs/product/product\.yaml: glossary: must hold a list of terms'
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed
+  engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix:
+    description: '`build tests --fix` must be refused before it writes a generated test or dispatches any AI turn when the architecture document''s `architecture.terms:` is not a list, naming the document, rather than author step definitions without how each word they observe is built'
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_test.go
+    user_stories:
+      - story: docs/product/stories/engine-term-documents-unreadable.yaml
+        scenario_id: engine-term-documents-006-mapping-not-a-list-refuses-build-tests-fix
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "build-tests-fix-mapping-not-a-list" project tree
+      when:
+        - the System Architect runs "build tests --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
+        - and: the engine dispatched no AI turns
+        - but: no file outside "tmp" changed

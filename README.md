@@ -141,7 +141,7 @@ The host project supplies a `true-bdd/` directory at its root:
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
   `tmp_glob`, and the `test_write_globs` roots `build tests --fix` may
-  author into), per-command prompt-template paths, and a `documents:`
+  author into, `./tests/**` and `./services/**` when it names none), per-command prompt-template paths, and a `documents:`
   map naming the files a check may cite (`product`, `architecture_yaml`,
   `scenarios_yaml` — the scenario registry). Each check in a checklist
   lists the document keys it needs under `docs:`, and the engine points

@@ -1,0 +1,15 @@
+# One Go service with one suite, whose single test fails on a planted
+# defect. Sound in every respect: all three commands are identical and
+# carry -json. Nothing in it is why the run is refused.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/suite/...
+      replay: go test -json -count=1 ./tests/suite/...
+      live: go test -json -count=1 ./tests/suite/...
+  services:
+    - name: calc
+      path: services/calc
+      language: go

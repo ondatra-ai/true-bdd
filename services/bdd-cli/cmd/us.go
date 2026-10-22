@@ -44,9 +44,9 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 		Long:  long,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			container, err := provide()
+			container, err := containerFor(cmd, provide)
 			if err != nil {
-				return fmt.Errorf("initialize container: %w", err)
+				return err
 			}
 
 			ctx, stop := signal.NotifyContext(context.Background(),
