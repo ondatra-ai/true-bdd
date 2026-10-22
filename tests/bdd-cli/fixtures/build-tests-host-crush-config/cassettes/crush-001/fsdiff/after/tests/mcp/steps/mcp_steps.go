@@ -1,203 +1,264 @@
+//go:build bdd
+
+// Step definitions for the `mcp` suite.
+//
+// The suite that owns scenario INT-900 is rooted at tests/mcp per
+// docs/architecture/architecture.yaml, so every definition for its
+// scenarios is registered from this package.
+//
+// Shape of the package:
+//
+//   - State is the suite's shared state: one HTTP client, the resolved
+//     base URL of the server under test, and whatever the last request
+//     came back with. Every definition reads and writes it through the
+//     closure Register hands out, so Given can prepare for a When and a
+//     Then can report on what actually happened.
+//   - Patterns are anchored and parameterised. Where a scenario's wording
+//     varies — the actor, the service name, the JSON-RPC method, the
+//     request path, the expected status code — there is a capture group,
+//     so one definition serves every scenario phrased that way.
 package steps
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
+// Suite is the registration surface the BDD harness hands to Register.
+// It is an interface so the harness's own suite type satisfies it
+// structurally, without this package having to import the harness.
+type Suite interface {
+	Step(pattern string, fn interface{})
+}
+
+// State is the state shared by every definition in this suite.
+type State struct {
+	Client  *http.Client
+	Service string // service named by the Given step, for error messages
+	BaseURL string // e.g. "http://127.0.0.1:8080", no trailing slash
+
+	LastMethod string // JSON-RPC method of the last request sent
+	LastPath   string // request path of the last request sent
+	LastStatus int    // 0 until a response has been received
+	LastBody   []byte
+}
+
 const (
-	defaultMCPPort   = 8080
-	maxTCPPort       = 65535
-	dialTimeout      = 2 * time.Second
-	requestTimeout   = 10 * time.Second
-	protocolVersion  = "2025-06-18"
-	jsonRPCVersion   = "2.0"
-	jsonRPCRequestID = 1
-	bodySnippetLimit = 512
+	defaultHost    = "127.0.0.1"
+	defaultPort    = "8080"
+	dialTimeout    = 5 * time.Second
+	requestTimeout = 10 * time.Second
 )
 
-// ErrNoResponse is what a Then clause returns when no When step of the
-// scenario recorded an exchange for it to assert on.
-var ErrNoResponse = errors.New("no HTTP response recorded")
+// resolveBaseURL derives the address of the server under test from the
+// environment: MCP_BASE_URL wins, otherwise MCP_PORT on localhost,
+// otherwise the default port. "its configured port" in the scenario text
+// is exactly this configuration.
+func resolveBaseURL() (string, error) {
+	if raw := strings.TrimSpace(os.Getenv("MCP_BASE_URL")); raw != "" {
+		u, err := url.Parse(raw)
+		if err != nil {
+			return "", fmt.Errorf("expected MCP_BASE_URL to be a URL like http://127.0.0.1:8080, got %q: %w", raw, err)
+		}
+		if u.Scheme == "" || u.Host == "" {
+			return "", fmt.Errorf("expected MCP_BASE_URL to be a URL like http://127.0.0.1:8080, got %q", raw)
+		}
+		return strings.TrimRight(raw, "/"), nil
+	}
 
-// Register binds every phrase of the mcp suite. One definition per
-// phrase, each anchored and parameterised: add a new phrase here rather
-// than in a second Register function.
-func Register(suite *Suite) {
-	suite.Step(`^the MCP server is running on (?:its configured port|port (\d+))$`, serverIsRunning)
-	suite.Step(`^the (.+) posts an? (valid|malformed) JSON-RPC ([A-Za-z][A-Za-z0-9_/.-]*) request to (/\S*)$`, postJSONRPCRequest)
-	suite.Step(`^the server returns HTTP (\d{3})$`, serverReturnsHTTPStatus)
+	port := strings.TrimSpace(os.Getenv("MCP_PORT"))
+	if port == "" {
+		port = defaultPort
+	}
+	if _, err := strconv.Atoi(port); err != nil {
+		return "", fmt.Errorf("expected MCP_PORT to be a port number, got %q", port)
+	}
+	return "http://" + net.JoinHostPort(defaultHost, port), nil
 }
 
-// serverIsRunning prepares: it resolves the server's base URL and
-// refuses to proceed unless something is listening there.
-func serverIsRunning(s *State, args ...string) error {
-	port, err := resolvePort(arg(args, 0))
+// hostPort returns the dialable host:port of a base URL, filling in the
+// scheme's default port when the URL omits one.
+func hostPort(base string) (string, error) {
+	u, err := url.Parse(base)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("expected a parsable base URL, got %q: %w", base, err)
 	}
-
-	addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
-
-	conn, err := net.DialTimeout("tcp", addr, dialTimeout)
-	if err != nil {
-		return fmt.Errorf("expected the MCP server to be listening on %s, got: %w", addr, err)
+	if u.Host == "" {
+		return "", fmt.Errorf("expected a base URL with a host, got %q", base)
 	}
-
-	defer func() { _ = conn.Close() }()
-
-	s.Port = port
-	s.BaseURL = "http://" + addr
-
-	return nil
+	if u.Port() != "" {
+		return u.Host, nil
+	}
+	if u.Scheme == "https" {
+		return net.JoinHostPort(u.Hostname(), "443"), nil
+	}
+	return net.JoinHostPort(u.Hostname(), "80"), nil
 }
 
-// resolvePort prefers the port the step named, then MCP_PORT, then the
-// service's default.
-func resolvePort(named string) (int, error) {
-	raw := named
-	if raw == "" {
-		raw = os.Getenv("MCP_PORT")
+// waitReachable blocks until something accepts TCP connections at addr, or
+// the timeout runs out.
+func waitReachable(addr string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var last error
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return nil
+		}
+		last = err
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf("expected something listening on %s within %s, but dialling it kept failing: %w", addr, timeout, last)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
-
-	if raw == "" {
-		return defaultMCPPort, nil
-	}
-
-	port, err := strconv.Atoi(raw)
-	if err != nil {
-		return 0, fmt.Errorf("expected a TCP port number, got %q: %w", raw, err)
-	}
-
-	if port < 1 || port > maxTCPPort {
-		return 0, fmt.Errorf("expected a TCP port in 1..%d, got %d", maxTCPPort, port)
-	}
-
-	return port, nil
 }
 
-// postJSONRPCRequest acts: it posts the envelope the step described and
-// records the status and body for the Thens.
-func postJSONRPCRequest(s *State, args ...string) error {
-	role, validity, method, path := arg(args, 0), arg(args, 1), arg(args, 2), arg(args, 3)
-
-	if s.BaseURL == "" {
-		return errors.New("expected a resolved MCP server, got none: a Given step must establish it before a request is posted")
+// jsonRPCParams returns a well-formed params object for the given
+// JSON-RPC method, so "a valid ... request" is actually valid.
+func jsonRPCParams(method string) map[string]interface{} {
+	switch method {
+	case "initialize":
+		return map[string]interface{}{
+			"protocolVersion": "2025-06-18",
+			"capabilities":    map[string]interface{}{},
+			"clientInfo": map[string]interface{}{
+				"name":    "true-bdd-suite",
+				"version": "1.0.0",
+			},
+		}
+	default:
+		return map[string]interface{}{}
 	}
+}
 
-	body, err := requestBody(role, validity, method)
+// post sends a JSON body to path on the state's base URL and records the
+// outcome on the state.
+func (s *State) post(path string, payload interface{}) error {
+	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("expected the request body to encode as JSON, but encoding failed: %w", err)
 	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	target := s.BaseURL + path
 
-	s.RequestURL = s.BaseURL + path
-	s.StatusCode = 0
-	s.Body = nil
-
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.RequestURL, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, target, bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("could not build the POST to %s: %w", s.RequestURL, err)
+		return fmt.Errorf("expected to build a POST to %s, but it failed: %w", target, err)
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("expected a response to the JSON-RPC %s request to %s, got: %w", method, s.RequestURL, err)
+	client := s.Client
+	if client == nil {
+		client = &http.Client{Timeout: requestTimeout}
 	}
-
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("expected a response to POST %s, but the request failed: %w", target, err)
+	}
 	defer func() { _ = resp.Body.Close() }()
 
-	read, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("expected to read the response from %s, got: %w", s.RequestURL, err)
+	raw, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if readErr != nil {
+		return fmt.Errorf("POST %s returned HTTP %d but its body could not be read: %w", target, resp.StatusCode, readErr)
 	}
 
-	s.StatusCode = resp.StatusCode
-	s.Body = read
-
+	s.LastPath = path
+	s.LastStatus = resp.StatusCode
+	s.LastBody = raw
 	return nil
 }
 
-// requestBody renders the JSON-RPC envelope the step asked for; the
-// malformed variant is truncated on purpose, so the server rejects it.
-func requestBody(role, validity, method string) ([]byte, error) {
-	if validity == "malformed" {
-		return []byte(`{"jsonrpc": "2.0", "method":`), nil
+// snippet renders a response body short enough to belong in an error.
+func snippet(b []byte) string {
+	const max = 300
+	t := strings.TrimSpace(string(b))
+	if t == "" {
+		return "<empty body>"
 	}
-
-	payload := map[string]any{
-		"jsonrpc": jsonRPCVersion,
-		"id":      jsonRPCRequestID,
-		"method":  method,
-		"params": map[string]any{
-			"protocolVersion": protocolVersion,
-			"capabilities":    map[string]any{},
-			"clientInfo":      map[string]any{"name": role, "version": "0.0.0"},
-		},
+	if len(t) > max {
+		return t[:max] + "…"
 	}
-
-	encoded, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("could not encode the JSON-RPC %s request: %w", method, err)
-	}
-
-	return encoded, nil
+	return t
 }
 
-// serverReturnsHTTPStatus asserts: the recorded status is the one the
-// step names, and the failure says which it got and what came back.
-func serverReturnsHTTPStatus(s *State, args ...string) error {
-	raw := arg(args, 0)
+// Register binds this suite's vocabulary. Every definition shares the one
+// *State created here.
+func Register(suite Suite) {
+	st := &State{Client: &http.Client{Timeout: requestTimeout}}
 
-	want, err := strconv.Atoi(raw)
-	if err != nil {
-		return fmt.Errorf("expected an HTTP status code, got %q: %w", raw, err)
-	}
+	// Given — prepares: resolve the configured address and prove something
+	// is listening there before any scenario tries to talk to it.
+	// Capture group: the service name ("the MCP server", "the gateway
+	// server", …).
+	suite.Step(`^the (.+?) server is running on its configured port$`, func(service string) error {
+		base, err := resolveBaseURL()
+		if err != nil {
+			return fmt.Errorf("cannot locate the %s server: %w", service, err)
+		}
+		addr, err := hostPort(base)
+		if err != nil {
+			return fmt.Errorf("cannot locate the %s server: %w", service, err)
+		}
 
-	if s.StatusCode == 0 {
-		return fmt.Errorf("%w: expected HTTP %d, but no When step of this scenario posted a request", ErrNoResponse, want)
-	}
+		st.Service = service
+		st.BaseURL = base
+		st.LastMethod = ""
+		st.LastPath = ""
+		st.LastStatus = 0
+		st.LastBody = nil
 
-	if s.StatusCode != want {
-		return fmt.Errorf(
-			"expected HTTP %d from %s, got HTTP %d; body: %s",
-			want, s.RequestURL, s.StatusCode, snippet(s.Body),
-		)
-	}
+		if err := waitReachable(addr, dialTimeout); err != nil {
+			return fmt.Errorf("expected the %s server to be running on its configured port (%s): %w", service, base, err)
+		}
+		return nil
+	})
 
-	return nil
-}
+	// When — acts: POST a well-formed JSON-RPC request.
+	// Capture groups: the actor, the JSON-RPC method, the request path.
+	suite.Step(`^the (.+?) posts a valid JSON-RPC (\S+) request to (\S+)$`, func(actor, method, path string) error {
+		if st.BaseURL == "" {
+			return fmt.Errorf("%s cannot post a JSON-RPC %q request to %s: no server address has been resolved — the Given step that starts the server did not run", actor, method, path)
+		}
+		payload := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"method":  method,
+			"params":  jsonRPCParams(method),
+		}
+		st.LastMethod = method
+		if err := st.post(path, payload); err != nil {
+			return fmt.Errorf("%s posting a valid JSON-RPC %q request to %s: %w", actor, method, path, err)
+		}
+		return nil
+	})
 
-func arg(args []string, i int) string {
-	if i < 0 || i >= len(args) {
-		return ""
-	}
-
-	return args[i]
-}
-
-func snippet(body []byte) string {
-	if len(body) == 0 {
-		return "<empty>"
-	}
-
-	if len(body) > bodySnippetLimit {
-		return string(body[:bodySnippetLimit]) + "...(truncated)"
-	}
-
-	return string(body)
+	// Then — asserts: the status code of the last response.
+	// Capture group: the expected status code.
+	suite.Step(`^the server returns HTTP (\d+)$`, func(want string) error {
+		code, err := strconv.Atoi(want)
+		if err != nil {
+			return fmt.Errorf("expected an HTTP status code in the step text, got %q: %w", want, err)
+		}
+		if st.LastStatus == 0 {
+			return fmt.Errorf("expected HTTP %d, but no request has been sent yet — the When step did not run or did not reach the server", code)
+		}
+		if st.LastStatus != code {
+			return fmt.Errorf("expected HTTP %d from POST %s%s (JSON-RPC %q), got HTTP %d; body: %s",
+				code, st.BaseURL, st.LastPath, st.LastMethod, st.LastStatus, snippet(st.LastBody))
+		}
+		return nil
+	})
 }
