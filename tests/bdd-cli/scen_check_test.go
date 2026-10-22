@@ -125,6 +125,20 @@ func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// checklist-skip-002-non-boolean-skip-refused: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-002-non-boolean-skip-refused")
+	s.Given(`the "scen-check-skip-not-boolean" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check/scenario_quality #2 Decide whether this scenario includes at least one specific carries skip: \\"false\\", but skip: takes true or false`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
 func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-006-check-without-fix-refused")

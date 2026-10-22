@@ -2432,3 +2432,24 @@ scenarios:
         - and: stdout matches step matches more than one definition
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+
+  checklist-skip-002-non-boolean-skip-refused:
+    description: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/checklist-skip-parked-prompts.yaml
+        scenario_id: checklist-skip-002-non-boolean-skip-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-skip-not-boolean" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - 'stdout matches scen-check/scenario_quality #2 Decide whether this scenario includes at least one specific carries skip: \\"false\\", but skip: takes true or false'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

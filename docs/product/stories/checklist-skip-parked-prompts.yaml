@@ -1,0 +1,36 @@
+# Story `checklist-skip`: a checklist Prompt parked with `skip: true`, and
+# a `skip:` that is not a boolean refused at startup.
+#
+# A Prompt carrying `skip: true` is left out of the walk; `skip: false`,
+# or no `skip:`, walks it as before. YAML reads `"false"` and `yes` as
+# strings, so a `skip:` that is not a boolean is refused rather than read
+# as one. Each Scenario drives it through `scen check`, whose built-in
+# checks let a Prompt be walked beside the parked one without an AI turn.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `checklist-skip-<id>` (ADR 0014), and its steps are that Scenario's
+# steps.
+
+story:
+    id: checklist-skip
+    feature: engine
+    title: Park a checklist Prompt with `skip: true`, and refuse at startup a `skip:` that is not a boolean
+    as_a: Quality Engineer
+    i_want: a checklist Prompt carrying `skip: true` left out of the walk, every other Prompt walked as before, and a Prompt whose `skip:` is not a boolean refused at startup, naming the Prompt
+    so_that: a parked Prompt costs no AI turn, and a `skip:` the engine would have to guess at, such as the string "false", stops the run before it spends anything instead of silently skipping the Prompt
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 002-non-boolean-skip-refused
+          description: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
+          steps:
+            - given:
+                - the "scen-check-skip-not-boolean" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - 'stdout matches scen-check/scenario_quality #2 Decide whether this scenario includes at least one specific carries skip: \\"false\\", but skip: takes true or false'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
