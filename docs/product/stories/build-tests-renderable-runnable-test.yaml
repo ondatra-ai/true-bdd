@@ -1,0 +1,99 @@
+# Story `build-tests-renderable`: `build tests` refusing a Registry
+# Scenario it cannot render as a test that runs.
+#
+# The service, the test framework, the Scenario key, the steps and the
+# Go module a generated test depends on. A `path:` naming no file a test
+# can be written to is the Story build-tests-paths; a step of the wrong
+# shape is the Story build-tests-step-shapes.
+#
+# Each criterion's id is the second half of its Scenario's Registry key,
+# `build-tests-renderable-<id>` (ADR 0014), and its steps are that
+# Scenario's steps.
+
+story:
+    id: build-tests-renderable
+    feature: build-tests
+    title: Refuse a Registry Scenario that cannot render as a test that runs
+    as_a: System Architect
+    i_want: build tests to refuse at startup, naming the Scenario, a service the architecture does not declare, a testing framework it cannot generate tests for, two Scenario keys that render one test name, a key whose test `go test` would never run, a Scenario with no steps, and a suite under a go.mod that declares no module
+    so_that: every Scenario becomes a test that runs and checks something, never a test that is missing, skipped or trivially green, and the refusal leaves the project as it was and costs no AI turn
+    status: IMPLEMENTED
+    acceptance_criteria:
+        - id: 001-undeclared-service-refused
+          description: A Scenario whose `service:` the architecture document does not declare must refuse `build tests`, naming the Scenario and the service
+          steps:
+            - given:
+                - the "build-tests-undeclared-service" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: service \\"payments-service\\": no test suite declares this scenario''s service'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 002-framework-without-renderer-refused
+          description: An architecture whose testing framework `build tests` cannot generate tests for must refuse `build tests`, naming the framework, rather than leave its Scenarios without a test
+          steps:
+            - given:
+                - the "build-tests-framework-without-renderer" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901: no test generator for this suite''s framework: \\"jest\\"'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 003-colliding-test-names-refused
+          description: Two Scenario keys that render the same Go test name must refuse `build tests`, naming both keys and that name
+          steps:
+            - given:
+                - the "build-tests-colliding-test-names" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches INT-901 and INT901: two scenario ids render the same Go test name \(TestINT901\)'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 004-unrunnable-test-name-refused
+          description: A Scenario key whose Go test name `go test` would compile but never run must refuse `build tests`, naming the key and the test name it renders
+          steps:
+            - given:
+                - the "build-tests-unrunnable-test-name" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches \\"ß-901\\": scenario id renders a name `go test` will not run: it renders \\"Testß901\\"'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 005-scenario-without-steps-refused
+          description: A Scenario with no steps must refuse `build tests`, naming that Scenario by its Registry key, rather than render a test that passes without checking anything
+          steps:
+            - given:
+                - the "build-tests-scenario-without-steps" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches error="INT-901: scenario has no steps, so its test would pass trivially'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns
+        - id: 006-suite-without-module-refused
+          description: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
+          steps:
+            - given:
+                - the "build-tests-suite-without-module" project tree
+            - when:
+                - the System Architect runs "build tests"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+                - and: 'stdout matches tests/mcp/mcp_test\.go: \S+/build-tests-suite-without-module/go\.mod: no module directive'
+                - but: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

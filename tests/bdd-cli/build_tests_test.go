@@ -22,6 +22,188 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
+// build-tests-files-001-stale-test-refused: Without `--fix`, a generated test file that is missing or differs from what the Registry renders must refuse `build tests`, naming each such file and the command that regenerates it, and must leave every file as it was
+func TestBuildTestsFiles001StaleTestRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-001-stale-test-refused")
+	s.Given(`the "build-tests-stale-generated-test" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/session_test\.go: no generated test file`)
+	s.And(`stdout matches tests/mcp/ticket_test\.go: the generated test file is not what the registry renders`)
+	s.And(`stdout matches regenerate with: true-bdd build tests --fix`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-002-stale-test-regenerated: Under `--fix`, a generated test file that differs from what the Registry renders must be rewritten to match it, while a generated test file that already matches must be left untouched
+func TestBuildTestsFiles002StaleTestRegenerated(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-002-stale-test-regenerated")
+	s.Given(`the "build-tests-regenerate-stale-test" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Generated test files from the registry" count=1 files=tests/mcp/ticket_test\.go`)
+	s.And(`the file "tests/mcp/ticket_test.go" is modified`)
+	s.And(`the file "tests/mcp/ticket_test.go" matches the session is granted a ticket within 5 seconds`)
+	s.But(`the file "tests/mcp/session_test.go" is unchanged`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the engine dispatched no AI turns`)
+	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-tests-files-003-hand-written-test-kept: Under `--fix`, a Registry `path:` naming a hand-written test file, one without the `// Code generated` header, must refuse `build tests`, naming that file, before any generated test file is rewritten
+func TestBuildTestsFiles003HandWrittenTestKept(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-003-hand-written-test-kept")
+	s.Given(`the "build-tests-hand-written-test-kept" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/ticket_test\.go: refusing to overwrite a file that is not marked generated`)
+	s.But(`the file "tests/mcp/ticket_test.go" is unchanged`)
+	s.And(`the file "tests/mcp/session_test.go" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-004-foreign-package-refused: A hand-written test file in a generated test's directory that declares a package other than the one the directory's name derives must refuse `build tests`, naming the file and both package names
+func TestBuildTestsFiles004ForeignPackageRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-004-foreign-package-refused")
+	s.Given(`the "build-tests-foreign-test-package" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/support_test\.go: the target directory declares a different package`)
+	s.And(`stdout matches the directory declares \\"mcpserver_test\\", the suite name derives \\"mcp_test\\"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-005-invalid-step-pattern-refused: A step definition whose pattern is not a valid regular expression must refuse `build tests`, naming its file, line and column, before any generated test file is compared with the Registry
+func TestBuildTestsFiles005InvalidStepPatternRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-005-invalid-step-pattern-refused")
+	s.Given(`the "build-tests-invalid-step-pattern" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go:23:13: step pattern is not a valid regexp`)
+	s.And(`stdout matches missing closing \)`)
+	s.But(`stdout does not match no generated test file`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-files-006-step-file-not-go-refused: A step definition file that is not valid Go must refuse `build tests`, naming the file, line and column where Go stops reading it, before any generated test file is compared with the Registry
+func TestBuildTestsFiles006StepFileNotGoRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-files-006-step-file-not-go-refused")
+	s.Given(`the "build-tests-step-file-not-go" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/steps/steps\.go:23:75: missing`)
+	s.And(`stdout matches before newline in argument list`)
+	s.But(`stdout does not match no generated test file`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-001-missing-path-refused: A Scenario that declares no `path:` must refuse `build tests`, naming that Scenario by its Registry key, rather than write its generated test to a file it guessed
+func TestBuildTestsPaths001MissingPathRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-001-missing-path-refused")
+	s.Given(`the "build-tests-path-missing" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches error="INT-901: scenario declares no path: for its generated test`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-002-path-with-whitespace-refused: A `path:` with whitespace around it must refuse `build tests`, quoting the path as written, rather than write the test to a file the Registry does not name
+func TestBuildTestsPaths002PathWithWhitespaceRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-002-path-with-whitespace-refused")
+	s.Given(`the "build-tests-path-with-whitespace" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/mcp_test\.go \\": path: must be a clean repo-relative path \(surrounding whitespace\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-003-path-outside-project-refused: A `path:` that is absolute or climbs out of the project tree with `..` must refuse `build tests`, naming the Scenario and the path, so no generated test is written outside the project
+func TestBuildTestsPaths003PathOutsideProjectRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-003-path-outside-project-refused")
+	s.Given(`the "build-tests-path-outside-project" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"\.\./tests/mcp/mcp_test\.go\\": path: must be a clean repo-relative path`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-004-path-not-test-file-refused: A `path:` that does not end in `_test.go` must refuse `build tests`, naming the Scenario and the path, since Go never runs such a file as a test
+func TestBuildTestsPaths004PathNotTestFileRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-004-path-not-test-file-refused")
+	s.Given(`the "build-tests-path-not-test-file" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/mcp\.go\\": path: must name a _test\.go file`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-005-path-in-steps-dir-refused: A `path:` inside the suite's `steps/` directory must refuse `build tests`, naming the Scenario and the path, so a generated test never takes the place of a step definition
+func TestBuildTestsPaths005PathInStepsDirRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-005-path-in-steps-dir-refused")
+	s.Given(`the "build-tests-path-in-steps-dir" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"tests/mcp/steps/mcp_test\.go\\": path: must not be inside the suite's steps/ tree`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-006-service-in-two-dirs-refused: Two Scenarios of one service whose `path:` values lie in two directories must refuse `build tests`, naming the second Scenario, its path and the directory the first one already set
+func TestBuildTestsPaths006ServiceInTwoDirsRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-006-service-in-two-dirs-refused")
+	s.Given(`the "build-tests-service-in-two-dirs" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-902: \\"tests/mcp/tickets/ticket_test\.go\\": path: must sit directly in the owning suite's directory`)
+	s.And(`stdout matches \(INT-901 puts mcp-service in \\"tests/mcp\\"\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-paths-007-path-derives-no-package-refused: A `path:` whose suite directory has a name that derives no valid Go package name must refuse `build tests`, naming the path, that suite and the package name it derives
+func TestBuildTestsPaths007PathDerivesNoPackageRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-paths-007-path-derives-no-package-refused")
+	s.Given(`the "build-tests-path-derives-no-package" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/2e2/mcp_test\.go: suite \\"2e2\\": suite name derives an invalid Go package name \(derived \\"2e2_test\\"\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // build-tests-refusals-001-empty-registry-refused: A registry file that declares no scenarios must be refused, never walked to a trivial success
 func TestBuildTestsRefusals001EmptyRegistryRefused(t *testing.T) {
 	s := scenarios.New(t, "build-tests-refusals-001-empty-registry-refused")
@@ -108,6 +290,165 @@ func TestBuildTestsRefusals006NoCatalogueWalksUnrefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.And(`the file "tests/mcp/mcp_test.go" is created`)
 	s.And(`no file outside "tmp" and "tests" changed`)
+	s.Done()
+}
+
+// build-tests-renderable-001-undeclared-service-refused: A Scenario whose `service:` the architecture document does not declare must refuse `build tests`, naming the Scenario and the service
+func TestBuildTestsRenderable001UndeclaredServiceRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-001-undeclared-service-refused")
+	s.Given(`the "build-tests-undeclared-service" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: service \\"payments-service\\": no test suite declares this scenario's service`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-002-framework-without-renderer-refused: An architecture whose testing framework `build tests` cannot generate tests for must refuse `build tests`, naming the framework, rather than leave its Scenarios without a test
+func TestBuildTestsRenderable002FrameworkWithoutRendererRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-002-framework-without-renderer-refused")
+	s.Given(`the "build-tests-framework-without-renderer" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: no test generator for this suite's framework: \\"jest\\"`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-003-colliding-test-names-refused: Two Scenario keys that render the same Go test name must refuse `build tests`, naming both keys and that name
+func TestBuildTestsRenderable003CollidingTestNamesRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-003-colliding-test-names-refused")
+	s.Given(`the "build-tests-colliding-test-names" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901 and INT901: two scenario ids render the same Go test name \(TestINT901\)`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-004-unrunnable-test-name-refused: A Scenario key whose Go test name `go test` would compile but never run must refuse `build tests`, naming the key and the test name it renders
+func TestBuildTestsRenderable004UnrunnableTestNameRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-004-unrunnable-test-name-refused")
+	s.Given(`the "build-tests-unrunnable-test-name" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And("stdout matches \\\\\"ß-901\\\\\": scenario id renders a name `go test` will not run: it renders \\\\\"Testß901\\\\\"")
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-005-scenario-without-steps-refused: A Scenario with no steps must refuse `build tests`, naming that Scenario by its Registry key, rather than render a test that passes without checking anything
+func TestBuildTestsRenderable005ScenarioWithoutStepsRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-005-scenario-without-steps-refused")
+	s.Given(`the "build-tests-scenario-without-steps" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches error="INT-901: scenario has no steps, so its test would pass trivially`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-renderable-006-suite-without-module-refused: A suite whose nearest `go.mod` declares no module must refuse `build tests`, naming the Scenario's path and that `go.mod`, rather than write a generated test that cannot compile
+func TestBuildTestsRenderable006SuiteWithoutModuleRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-renderable-006-suite-without-module-refused")
+	s.Given(`the "build-tests-suite-without-module" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches tests/mcp/mcp_test\.go: \S+/build-tests-suite-without-module/go\.mod: no module directive`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-001-two-key-modifier-refused: An `and:` or `but:` step written as one mapping with two keys must refuse `build tests`, naming the Registry line, rather than keep one of the two steps and drop the other
+func TestBuildTestsStepShapes001TwoKeyModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-001-two-key-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-two-keys" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches requirements registry \./docs/scenarios\.yaml: malformed step modifier near line 24`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-002-list-modifier-refused: An `and:` or `but:` step holding a list instead of one step's text must refuse `build tests`, naming the keyword and the Registry line
+func TestBuildTestsStepShapes002ListModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-002-list-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-list" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches malformed step modifier: \\"and\\" takes a scalar`)
+	s.And(`stdout matches near line 25`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-003-unknown-modifier-refused: A step mapping keyed by a word other than `and` or `but` must refuse `build tests`, naming that key and the Registry line
+func TestBuildTestsStepShapes003UnknownModifierRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-003-unknown-modifier-refused")
+	s.Given(`the "build-tests-step-modifier-unknown-key" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches malformed step modifier: got \\"or\\" near line 24`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-004-llm-step-in-then-refused: A Then step that opens with `llm:` must refuse `build tests`, naming the Scenario and the step and pointing to `judge:`, since a Then step rules on the run rather than acting in it
+func TestBuildTestsStepShapes004LlmStepInThenRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-004-llm-step-in-then-refused")
+	s.Given(`the "build-tests-llm-step-in-then" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"llm: the session is granted a ticket\\": model-run step prefix is not legal in this block`)
+	s.And(`stdout matches use \\"judge:\\" for a clause to be ruled on`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-005-judge-step-outside-then-refused: A Given or When step that opens with `judge:` must refuse `build tests`, naming the Scenario and the step and pointing to `llm:`, since only a Then step rules on the run
+func TestBuildTestsStepShapes005JudgeStepOutsideThenRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-005-judge-step-outside-then-refused")
+	s.Given(`the "build-tests-judge-step-in-when" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"judge: the Claude User opens a session\\": model-run step prefix is not legal in this block`)
+	s.And(`stdout matches use \\"llm:\\" to make something happen`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-tests-step-shapes-006-empty-model-step-refused: A step that is `llm:` or `judge:` with no text after it must refuse `build tests`, naming the Scenario and the step, rather than hand a model an empty instruction
+func TestBuildTestsStepShapes006EmptyModelStepRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-step-shapes-006-empty-model-step-refused")
+	s.Given(`the "build-tests-empty-model-step" project tree`)
+	s.When(`the System Architect runs "build tests"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches INT-901: \\"llm:\\": model-run step has no text after its prefix`)
+	s.But(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
 

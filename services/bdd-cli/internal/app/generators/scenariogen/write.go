@@ -87,7 +87,43 @@ func Verify(plan *Plan, repoRoot string) ([]Drift, error) {
 // returning their repo-relative paths. Skips identical files because
 // rewriting them touches mtime, which a build cache and file watcher key on.
 func Write(plan *Plan, repoRoot string) ([]string, error) {
-	var written []string
+	pending, err := pendingWrites(plan, repoRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	written := make([]string, 0, len(pending))
+
+	for _, file := range pending {
+		target := filepath.Join(repoRoot, filepath.FromSlash(file.path))
+
+		err = disk.Dir(filepath.Dir(target), disk.Shared)
+		if err != nil {
+			return nil, fmt.Errorf("create %s: %w", filepath.Dir(file.path), err)
+		}
+
+		err = disk.Write(target, file.content, disk.Shared)
+		if err != nil {
+			return nil, fmt.Errorf("write %s: %w", file.path, err)
+		}
+
+		written = append(written, file.path)
+	}
+
+	return written, nil
+}
+
+// renderedFile is one planned file whose rendered bytes differ from disk.
+type renderedFile struct {
+	path    string
+	content []byte
+}
+
+// pendingWrites renders every planned file and keeps those that differ from
+// disk. Every target is checked before Write writes one, so a hand-written
+// file anywhere in the plan leaves even the stale generated files untouched.
+func pendingWrites(plan *Plan, repoRoot string) ([]renderedFile, error) {
+	var pending []renderedFile
 
 	for _, file := range plan.Files {
 		want, err := Render(file)
@@ -95,9 +131,7 @@ func Write(plan *Plan, repoRoot string) ([]string, error) {
 			return nil, err
 		}
 
-		target := filepath.Join(repoRoot, filepath.FromSlash(file.Path))
-
-		got, err := disk.Read(target)
+		got, err := disk.Read(filepath.Join(repoRoot, filepath.FromSlash(file.Path)))
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
 		case err != nil:
@@ -111,20 +145,10 @@ func Write(plan *Plan, repoRoot string) ([]string, error) {
 			return nil, fmt.Errorf("%s: %w", file.Path, ErrWouldClobberHandWritten)
 		}
 
-		err = disk.Dir(filepath.Dir(target), disk.Shared)
-		if err != nil {
-			return nil, fmt.Errorf("create %s: %w", filepath.Dir(file.Path), err)
-		}
-
-		err = disk.Write(target, want, disk.Shared)
-		if err != nil {
-			return nil, fmt.Errorf("write %s: %w", file.Path, err)
-		}
-
-		written = append(written, file.Path)
+		pending = append(pending, renderedFile{path: file.Path, content: want})
 	}
 
-	return written, nil
+	return pending, nil
 }
 
 // DriftReport renders the drifted files as the refusal prints them.

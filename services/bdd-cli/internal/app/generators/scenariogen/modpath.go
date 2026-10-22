@@ -77,5 +77,5 @@ func readModulePath(modFile string) (string, bool, error) {
 		return strings.TrimSpace(after), true, nil
 	}
 
-	return "", false, fmt.Errorf("%s: %w", modFile, ErrNoModuleForSuite)
+	return "", false, fmt.Errorf("%s: %w", modFile, ErrNoModuleDirective)
 }
