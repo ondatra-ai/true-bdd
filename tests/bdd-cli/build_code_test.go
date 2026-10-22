@@ -139,6 +139,28 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s.Done()
 }
 
+// build-code-frameworks-003-playwright-fix-reruns-test-by-grep: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
+func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-003-playwright-fix-reruns-test-by-grep")
+	s.Given(`the "build-code-playwright-failing-assertion" project tree`)
+	s.And(`the project's browser test dependencies are installed`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Suite failures" failures=1 framework=playwright`)
+	s.And(`stdout matches msg=test index=1 total=1 id=/playwright/playwright:home\.spec\.ts::home\.spec\.ts_>_home_page_>_shows_the_store_name_as_its_heading`)
+	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the file "services/web/server.js" is modified`)
+	s.And(`the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading`)
+	s.And(`the engine spawned exactly 2 test runners`)
+	s.But(`the file "tests/integration/home.spec.ts" is unchanged`)
+	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
+	s.And(`no file outside "tmp" and "services/web" changed`)
+	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
+	s.Done()
+}
+
 // build-code-run-001-runs-declared-replay-command: `build code` must run the command its architectural spec declares — and specifically the `replay` one
 func TestBuildCodeRun001RunsDeclaredReplayCommand(t *testing.T) {
 	s := scenarios.New(t, "build-code-run-001-runs-declared-replay-command")
