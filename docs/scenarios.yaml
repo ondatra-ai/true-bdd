@@ -2433,6 +2433,30 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
 
+  checklist-skip-001-skipped-prompt-not-walked:
+    description: 'A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist''s other Prompts, with `skip: false` or no `skip:`, are walked as before'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/checklist-skip-parked-prompts.yaml
+        scenario_id: checklist-skip-001-skipped-prompt-not-walked
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "scen-check-skipped-prompt" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 0
+        - stdout matches SCEN CHECK
+        - and: stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass
+        - and: stdout matches scen-check/scenario_quality +Decide whether this scenario has a binary pass/fail.* +pass +PASS
+        - but: stdout does not match description follows the
+        - and: stdout matches ALL CHECKS PASSED
+        - and: the engine dispatched 1 AI turn
+        - and: no file outside "tmp" changed
+
   checklist-skip-002-non-boolean-skip-refused:
     description: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
     service: bdd-cli

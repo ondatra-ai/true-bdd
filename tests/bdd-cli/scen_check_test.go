@@ -125,6 +125,22 @@ func TestChecklistChecks007UnlistedDocumentRefused(t *testing.T) {
 	s.Done()
 }
 
+// checklist-skip-001-skipped-prompt-not-walked: A checklist Prompt carrying `skip: true` must not be walked and must cost no AI turn, while the checklist's other Prompts, with `skip: false` or no `skip:`, are walked as before
+func TestChecklistSkip001SkippedPromptNotWalked(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-001-skipped-prompt-not-walked")
+	s.Given(`the "scen-check-skipped-prompt" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches SCEN CHECK`)
+	s.And(`stdout matches msg="Check answered" check=given-when-then subjectID=E2E-001 promptIndex=2 answer=pass`)
+	s.And(`stdout matches scen-check/scenario_quality +Decide whether this scenario has a binary pass/fail.* +pass +PASS`)
+	s.But(`stdout does not match description follows the`)
+	s.And(`stdout matches ALL CHECKS PASSED`)
+	s.And(`the engine dispatched 1 AI turn`)
+	s.And(`no file outside "tmp" changed`)
+	s.Done()
+}
+
 // checklist-skip-002-non-boolean-skip-refused: A checklist Prompt whose `skip:` is not a boolean, such as the string "false", must be refused at startup, naming the Prompt, with no AI turn, rather than skipped or walked on a guess at what it meant
 func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
 	s := scenarios.New(t, "checklist-skip-002-non-boolean-skip-refused")

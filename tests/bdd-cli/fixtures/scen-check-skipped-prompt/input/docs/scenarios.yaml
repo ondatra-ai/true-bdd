@@ -1,0 +1,25 @@
+# Registry seed for `scen-check-skipped-prompt`.
+#
+# One scenario that carries all three step kinds and a binary outcome,
+# so every Prompt the walk asks passes it. Whether its description
+# follows the rule-based format is never asked: that Prompt is parked.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "One scenario passing every Prompt the walk asks"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong within 200 milliseconds
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping
+      then:
+        - the service answers pong within 200 milliseconds

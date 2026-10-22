@@ -179,6 +179,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-closure-no-catalogue":         overrideChecks,
 		"scen-check-fix-records-mapping":          overrideChecks,
 		"scen-check-fix-merges-phrases":           overrideChecks,
+		"scen-check-skipped-prompt":               overrideChecks,
 	}
 }
 
