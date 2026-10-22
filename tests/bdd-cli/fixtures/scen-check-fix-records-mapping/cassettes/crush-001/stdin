@@ -51,72 +51,76 @@ Then:
 # Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
 
 ## Target
-The `architecture_yaml` document: `./docs/architecture/architecture.yaml`, its `architecture.terms:` list, and nothing else.
+The `architecture_yaml` document — `./docs/architecture/architecture.yaml` — and only its `architecture.terms:` list.
 
-## Context the applier does not need to re-derive
-- The product catalogue entry `the service answers "{reply}"` (block `then`, means "The MCP service's reply to the message is exactly the quoted text.") declares the terms `mcp service` and `reply`.
-- `mcp service` and `message` are already mapped in `architecture.terms:`. `reply` is not mapped at all — that is the whole finding (`E2E-001: "reply" has no mapping in the architecture`).
-- The glossary defines `reply` as: "What the MCP service sends back for one message. A client waits on it, so its content is behaviour."
-- The user has already decided the meaning: the reply is the string value of the `result` object's text field in the JSON-RPC response for that message; the observing step reuses the response the sending step kept and compares that text for exact equality; only a successful response is a reply, an error response makes the observation fail.
+Do NOT edit:
+- the Scenario E2E-001 registry entry,
+- the generated test `tests/mcp/ping_test.go`,
+- any step definition,
+- `./docs/product/product.yaml` (its glossary already defines `reply` and its catalogue already declares it),
+- any other part of `./docs/architecture/architecture.yaml` (`testing:`, `services:`, the existing `mcp service` and `message` mappings, and the leading comment block all stay byte-for-byte as they are).
+
+## Why
+The catalogue entry `the service answers "{reply}"` (block: `then`) declares the terms `[mcp service, reply]`. The architecture's word mapping maps `mcp service` and `message`, but has no entry for `reply`, so nothing says what a reply is in the implementation or how a step definition observes it. The fix is exactly one new `architecture.terms` entry for `reply`.
 
 ## Required Changes
 
-### Change #1: map the term `reply`
+### Change #1: Add the `reply` mapping to `architecture.terms`
+
 **Document:** architecture_yaml (`./docs/architecture/architecture.yaml`)
-**Action:** Append one entry to the end of the existing `architecture.terms:` list, directly after the `message` entry. Do this as an exact string replacement so the surrounding lines are untouched.
 
-**old_string** (the last existing entry, verbatim):
-```
-    - term: message
-      technical: >-
-        One JSON-RPC request whose params carry the text, posted to /mcp.
-      observed_by: >-
-        Post the request to /mcp and keep the response for the steps after.
-```
+**Action:** Append one new entry to the end of the existing `architecture.terms:` list, immediately after the `message` entry. Keep the list's existing indentation: `- term:` at 4 spaces, the sibling keys at 6 spaces, folded-block text at 8 spaces.
 
-**new_string**:
-```
-    - term: message
-      technical: >-
-        One JSON-RPC request whose params carry the text, posted to /mcp.
-      observed_by: >-
-        Post the request to /mcp and keep the response for the steps after.
-    - term: reply
-      technical: >-
-        The text field of the result object in the JSON-RPC response the
-        service returns for one message; the reply is that field's string
-        value. Only a successful response carries a reply: a response that
-        comes back with an error instead of a result has none.
-      observed_by: >-
-        Take the response the sending step kept, read the reply text out of
-        its result object, and compare that text to the expected text for
-        exact equality. A response carrying an error instead of a result,
-        or a result without that text field, fails the observation.
-```
-
-**Resulting YAML of the new entry, for reference (copy it, do not recompose it):**
+**YAML to add (copy verbatim):**
 ```yaml
     - term: reply
       technical: >-
-        The text field of the result object in the JSON-RPC response the
-        service returns for one message; the reply is that field's string
-        value. Only a successful response carries a reply: a response that
-        comes back with an error instead of a result has none.
+        The text in the `result` field of the JSON-RPC response the mcp
+        service returns for one posted request, mirroring how `message`
+        names that request's params.
       observed_by: >-
-        Take the response the sending step kept, read the reply text out of
-        its result object, and compare that text to the expected text for
-        exact equality. A response carrying an error instead of a result,
-        or a result without that text field, fails the observation.
+        Read the reply text out of the response the send step kept and
+        compare it to the expected text for exact equality; send no second
+        request and do not retry.
 ```
 
-## Constraints
-- Add exactly this one entry. Do not touch the `mcp service` or `message` mappings, `architecture.testing:`, `architecture.services:`, or the document's header comment.
-- Keep the file's existing style: four-space indentation for list items under `terms:`, six spaces for the entry's fields, `>-` folded block scalars, lines wrapped at roughly the same width as the neighbouring entries.
-- Spell the term exactly `reply`, lower-case, as the catalogue entry `the service answers "{reply}"` declares it. A different spelling is not found by lookup and the check still fails.
-- Do NOT edit `./docs/product/product.yaml` (the catalogue, the glossary and the roles stay exactly as they are), the Scenario in `docs/scenarios.yaml`, the Story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, or any step definition. The Scenario's step `the service answers "pong"` must remain word for word as written — the mapping is what makes it implementable.
+**Exact edit — replace old_string with new_string:**
 
-## Done when
-`architecture.terms:` holds three entries — `mcp service`, `message`, `reply` — each mapped exactly once, and no other file in the repository differs.
+old_string:
+```
+    - term: message
+      technical: >-
+        One JSON-RPC request whose params carry the text, posted to /mcp.
+      observed_by: >-
+        Post the request to /mcp and keep the response for the steps after.
+```
+
+new_string:
+```
+    - term: message
+      technical: >-
+        One JSON-RPC request whose params carry the text, posted to /mcp.
+      observed_by: >-
+        Post the request to /mcp and keep the response for the steps after.
+    - term: reply
+      technical: >-
+        The text in the `result` field of the JSON-RPC response the mcp
+        service returns for one posted request, mirroring how `message`
+        names that request's params.
+      observed_by: >-
+        Read the reply text out of the response the send step kept and
+        compare it to the expected text for exact equality; send no second
+        request and do not retry.
+```
+
+The file ends with a trailing newline after the last `observed_by:` line; preserve it.
+
+## Acceptance
+- `architecture.terms` now has exactly three entries, in order: `mcp service`, `message`, `reply`.
+- `reply` is spelled exactly as the catalogue entry `the service answers "{reply}"` declares it in its `terms` list: lower-case, one word.
+- `reply` is mapped exactly once; the `mcp service` and `message` mappings are unchanged.
+- The new `observed_by` names no code identifier, and reads as instructions a step definition for the `then` step can be rebuilt from: it reuses the response the `when` step (`the {actor:role} sends "{message}"`) already kept, rather than sending anything itself.
+- The YAML still parses, and no other file in the repository is modified.
 
 ---
 

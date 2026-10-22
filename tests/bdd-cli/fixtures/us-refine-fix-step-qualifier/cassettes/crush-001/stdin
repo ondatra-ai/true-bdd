@@ -96,6 +96,7 @@ Claude must state that only the first 10000 words were summarized when the docum
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-96.7-fix-prompts.md ===
 # Fix Prompt for Story 96.7: Document Summary On Demand
 
 ## Instructions
@@ -109,14 +110,16 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-Only AC-4 is faulted by the failed check. AC-1, AC-2 and AC-3 are reproduced exactly as they stand — same description, same steps, word for word.
+Only AC-4 fails the check. AC-1, AC-2, and AC-3 contain no forbidden qualifiers in any Given/When/Then step and must be reproduced word for word — do not reword their descriptions or steps.
 
 ### Change #1: AC-4
 **Before:** Claude must state that only the first 10000 words were summarized when the document contains more than 10000 words.
 
-**Issue:** The Then step — "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized" — contains two forbidden qualifiers from the product document's `vocabulary.forbidden_qualifiers` list (./docs/product/product.yaml):
-- `quickly` — no measurable time bound; it hides what an automated check would assert.
-- `user-friendly` — a judgement about the output rather than the output itself; the literal notice text is never stated, so the step is not observable.
+**Issue:** The Then step reads "Claude quickly displays a user-friendly notice that only the first 10000 words were summarized" and contains two words from the product document's `vocabulary.forbidden_qualifiers` list:
+- "quickly" — states no time bound, so no test can decide when the step is satisfied. Replace with a measurable latency budget (within 2 seconds).
+- "user-friendly" — names no observable property of the notice. Replace with the exact message text Claude must display, so the step can be asserted by string comparison, matching the style already used in AC-2 and AC-3.
+
+The description is also made message-exact so it matches the Then step.
 
 **After (description):** Claude must display the message 'Only the first 10000 words of this document were summarized' when the document contains more than 10000 words.
 
@@ -127,16 +130,11 @@ Only AC-4 is faulted by the failed check. AC-1, AC-2 and AC-3 are reproduced exa
 - when:
     - "the Claude User asks Claude to summarize the document"
 - then:
-    - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
-    - and: "Claude displays the message within 30 seconds of the Claude User's request"
+    - "Claude displays the message 'Only the first 10000 words of this document were summarized' within 2 seconds"
+    - and: "the summary covers only the first 10000 words of the document body"
 ```
 
-Notes on the replacements:
-- `user-friendly notice` → the exact literal message text, so the Then step names one observable output string.
-- `quickly` → the measurable bound "within 30 seconds of the Claude User's request", consistent with the 30-second rule already fixed by AC-3.
-- The role stays the exact `Claude User` from the story's as_a clause in every Given/When/Then step.
-
-No acceptance criteria are added, merged or removed.
+No new acceptance criteria are added, and no existing criterion is merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -182,9 +180,16 @@ No acceptance criteria are added, merged or removed.
     - when:
         - "the Claude User asks Claude to summarize the document"
     - then:
-        - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
-        - and: "Claude displays the message within 30 seconds of the Claude User's request"
+        - "Claude displays the message 'Only the first 10000 words of this document were summarized' within 2 seconds"
+        - and: "the summary covers only the first 10000 words of the document body"
 ```
+
+## Verification
+- No step in any AC contains any of: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, easily, seamless, intuitive.
+- All Given/When/Then steps use the exact role wording "the Claude User" from the story's as_a clause.
+- AC-1, AC-2, and AC-3 are byte-for-byte unchanged from the original.
+
+=== FILE_END: tmp/{{RUN_DIR}}/01-96.7-fix-prompts.md ===
 
 ---
 

@@ -29,5 +29,5 @@ catalogue:
     terms: []
   - template: 'the service [answers|replies] "{reply}"'
     block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
+    means: The MCP service's reply to the message is exactly the quoted text; `answers` and `replies` are the same step said two ways.
     terms: []

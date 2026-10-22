@@ -44,6 +44,6 @@ acceptance_criteria:
       - when:
           - "the Claude User asks Claude to summarize the document"
       - then:
-          - "Claude displays the message 'Only the first 10000 words of this document were summarized'"
-          - and: "Claude displays the message within 30 seconds of the Claude User's request"
+          - "Claude displays the message 'Only the first 10000 words of this document were summarized' within 2 seconds"
+          - and: "the summary covers only the first 10000 words of the document body"
 === FILE_END: tmp/{{RUN_DIR}}/apply-96.7-iter1-result.yaml ===

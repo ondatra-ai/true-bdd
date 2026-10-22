@@ -4434,3 +4434,25 @@ scenarios:
         - and: 'stdout matches read the word mapping: architecture document \./docs/architecture/architecture\.yaml: architecture\.terms: must hold a list of mappings'
         - and: the engine dispatched no AI turns
         - but: no file outside "tmp" changed
+  engine-routes-006-host-memory-excluded:
+    description: 'A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+    - story: docs/product/stories/engine-routes-agent-clis.yaml
+      scenario_id: engine-routes-006-host-memory-excluded
+      merge_date: '2026-10-22'
+    timeout: 5m
+    merged_steps:
+      given:
+      - the "engine-claude-minimal" project tree
+      - and: the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+      when:
+      - the Quality Engineer runs "scen check E2E-001"
+      then:
+      - the command exits with code 0
+      - stdout matches ALL CHECKS PASSED
+      - and: 'the file "tmp/true-bdd.log.json" matches context\\":\[\\"E2E-001: ok\\"\]'
+      - but: stdout does not match CHECK FAILED|HOST_MEMORY_CANARY_174
+      - and: the engine dispatched 1 validation AI turn to "claude"
+      - and: no file outside "tmp" changed

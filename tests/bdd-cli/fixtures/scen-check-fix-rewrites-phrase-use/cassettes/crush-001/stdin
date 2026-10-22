@@ -52,33 +52,78 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0
 
 ## Target
-The `E2E-001` entry of `docs/scenarios.yaml` (the scenario registry). Edit only the one `then:` step named below. Do not touch `docs/product/product.yaml`, `docs/architecture/architecture.yaml`, `tests/greeter/greet_test.go`, any step definition, or any other field or Scenario.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry,
+`docs/scenarios.yaml`). One step changes: the second `then` step. Nothing else
+in the registry, and no other document, changes.
+
+Do NOT edit `tests/greeter/greet_test.go`, any step definition, the product
+document, or the architecture document. The generated test is re-rendered by
+`true-bdd build tests --fix` once this entry reads correctly.
 
 ## Why
-The finding: the last `then:` step uses the catalogue phrase `stdout matches {expected:pattern}`, whose `means` in the product document is "A line the command printed to its standard output matches the pattern, a regular expression: either the answer line the command prints for its user, or a log record's message or fields." The slot value `formatGreeting\(\)` names an internal Go function identifier the Operator never sees — neither an answer line nor a log record. The Scenario's description pins the observable output: the configured greeting followed by the name it is given. With this Scenario's own slot values in place — greeting `"Hello"` (given step) and command `"greet Ada"` (when step) — the answer line the Operator reads is `Hello Ada`.
-
-The fix keeps the same catalogue template and the same assertion target (a line of standard output), and only replaces the `{expected:pattern}` slot value with the output line the description requires. The behaviour the Scenario specifies is unchanged: the greeting-followed-by-name line on stdout, plus exit code 0.
+The catalogue entry `stdout matches {expected:pattern}` means: "A line the
+command printed to its standard output matches the pattern, a regular
+expression: either the answer line the command prints for its user, or a log
+record's message or fields." The current slot value, `formatGreeting\(\) was
+called`, names an internal Go function identifier and asserts it was invoked —
+not a line the greeter prints. The Scenario's description pins the observable
+output: the configured greeting followed by the name it is given. With the
+`given` step setting the greeting to "Hello" and the `when` step running
+"greet Ada", the answer line the Operator reads is `Hello Ada`. The step is
+rewritten to hold the same catalogue phrase against that line, keeping the
+assertion the Scenario specifies (the greeting-followed-by-name line was
+printed) and keeping the step inside the one template it already matches.
 
 ## Required Changes
-### Change #1: hold the stdout pattern against the printed greeting line instead of an internal function name
-**Document:** docs/scenarios.yaml
-**Field:** `scenarios.E2E-001.merged_steps.then` — the second (`and:`) entry
-**Current text:**
+
+### Change #1: Hold the stdout pattern against the printed greeting line, not an internal function call
+**Document:** scenarios_yaml (`docs/scenarios.yaml`)
+**Field:** `scenarios.E2E-001.merged_steps.then` — the second entry (the one
+carrying the `and:` keyword)
+
+**Current text** (the step as it reads in the registry entry):
 ```
         - and: stdout matches formatGreeting\(\) was called
 ```
+
 **New text:**
 ```
         - and: stdout matches ^Hello Ada$
 ```
 
-Notes for the applier:
-- Keep the `and:` keyword mapping exactly as it is; only the step text after `and: ` changes. The step must still read as the catalogue template `stdout matches {expected:pattern}`, with the whole rest of the step, verbatim, as the pattern slot.
-- `^Hello Ada$` is the regular expression for the answer line the greeter prints for the Operator when the greeting is configured as `"Hello"` and the command is `"greet Ada"`: the configured greeting, a space, then the name given on the command line. Do not add quotes, backticks or extra escaping around it — the pattern slot is the rest of the step, verbatim.
-- Leave the first `then:` step (`the command exits with code 0`), the `given:` step, the `when:` step, and `description:`, `service:`, `path:` and `user_stories:` of `E2E-001` exactly as they are, and leave `metadata:` and every other Scenario untouched.
+If the entry is written without the `and:` key in the file, the step text to
+replace is:
 
-## After the edit
-The generated test is not edited here: re-render it from the registry with `true-bdd build tests --fix` once the entry reads correctly.
+**Current text:**
+```
+stdout matches formatGreeting\(\) was called
+```
+
+**New text:**
+```
+stdout matches ^Hello Ada$
+```
+
+## Must stay exactly as they are
+- `scenarios.E2E-001.description`: `The greeter must print the configured greeting followed by the name it is given, and exit with code 0`
+- `scenarios.E2E-001.service`: `greeter`
+- `scenarios.E2E-001.path`: `tests/greeter/greet_test.go`
+- `scenarios.E2E-001.user_stories` (story, scenario_id and merge_date), untouched
+- `merged_steps.given`: `the greeting is configured as "Hello"`
+- `merged_steps.when`: `the Operator runs "greet Ada"`
+- `merged_steps.then` first entry: `the command exits with code 0`
+- Every other Scenario in the registry, and the `metadata:` block
+
+## Acceptance
+- The second `then` step still matches exactly one catalogue template,
+  `stdout matches {expected:pattern}`, of block `then`, with the whole rest of
+  the step (`^Hello Ada$`) as the pattern slot.
+- The pattern's value names an observable product output: the answer line the
+  greeter prints for its Operator, which the architecture document's
+  `standard output` term is observed by holding the kept standard output,
+  line by line, against the step's regular expression.
+- The Scenario still asserts exit code 0 and still asserts the
+  greeting-followed-by-name output line; no assertion is dropped or weakened.
 
 ---
 

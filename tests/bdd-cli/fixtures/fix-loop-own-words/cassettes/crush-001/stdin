@@ -49,31 +49,34 @@ Then:
 
 ## Fix Prompt to Apply
 
-= Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
+# Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
 
 ## Target
-The `product` document — `docs/product/product.yaml` — and its `catalogue:` list only.
+The `product` document: `docs/product/product.yaml`, its `catalogue:` list.
 
-Do NOT touch: `docs/scenarios.yaml` (the Registry / the Scenario E2E-001), `tests/mcp/ping_test.go`, any step definition, `docs/product/stories/ping-answers.yaml`, the `glossary:` list, or the `roles:` list. The Scenario's step text stays exactly as written: `and the service answers within 200 milliseconds`.
+Do **not** touch the Scenario (`E2E-001`), its lineage story
+(`docs/product/stories/ping-answers.yaml`), the generated test
+(`tests/mcp/ping_test.go`), any step definition, or any other document.
+The Scenario step text stays exactly as written; only the catalogue gains
+the entry that gives it a stated meaning.
 
-## Why
-scen-check/term_closure (D: step-phrases) reports:
+## Finding being closed
+- `E2E-001`: then step `the service answers within 200 milliseconds` matches no template.
 
-- `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
-
-The catalogue already phrases the other three steps of E2E-001:
-
-- `the mcp service is running` → `'the mcp service is running'` (given)
-- `the Operator sends "ping"` → `'the {actor:role} sends "{message}"'` (when)
-- `the service answers "pong"` → `'the service answers "{reply}"'` (then)
-
-Only the timing step has no entry. The fix is exactly one new catalogue entry.
+The user stated the meaning of this step: *the round trip from sending the
+message to receiving its reply takes at most that many milliseconds.* The
+entry below records exactly that, with the number as a `{:number}` slot so
+every other Scenario asserting a time budget reuses the same phrase.
 
 ## Required Changes
 
-### Change #1: add the catalogue entry that phrases the timing step
+### Change #1: add the catalogue entry phrasing the time-budget then step
+
 **Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list (after the `the service answers "{reply}"` entry). Copy the YAML verbatim, including the single quotes around `template` and the two-space list indentation used by the existing entries.
+
+**Action:** Append this entry to the end of the `catalogue:` list (it becomes
+the fourth entry, after `the service answers "{reply}"`). Keep the existing
+two-space list indentation.
 
 **YAML:**
 ```yaml
@@ -85,8 +88,9 @@ Only the timing step has no entry. The fix is exactly one new catalogue entry.
     terms: [mcp service, reply]
 ```
 
-**Equivalent exact edit** — replace this `old_string`:
+**Exact edit — replace `old_string` with `new_string`, verbatim:**
 
+`old_string`:
 ```
   - template: 'the service answers "{reply}"'
     block: then
@@ -94,8 +98,7 @@ Only the timing step has no entry. The fix is exactly one new catalogue entry.
     terms: [mcp service, reply]
 ```
 
-with this `new_string`:
-
+`new_string`:
 ```
   - template: 'the service answers "{reply}"'
     block: then
@@ -109,17 +112,35 @@ with this `new_string`:
     terms: [mcp service, reply]
 ```
 
-(The file currently ends with the `the service answers "{reply}"` entry, so this append is the whole change.)
+(If the file ends with a trailing newline after the last entry, keep it:
+the appended block goes before that final newline, so the file still ends
+with exactly one newline.)
 
-## Why this entry is the right shape
-- `template` is the step's text with the one number turned into a slot, so the next Scenario asking for 50 or 1000 milliseconds reuses it; the words that carry the meaning (`the service answers within`, `milliseconds`) stay literal.
-- `{limit:number}` matches `200`, and also the word `no` for zero, per the template grammar.
-- `block: then` matches the block the step sits in, and the `and ` connector of `and the service answers within 200 milliseconds` is not part of the step text a template matches.
-- No ambiguity: the existing `'the service answers "{reply}"'` requires a literal double quote right after `answers `, which `within 200 milliseconds` cannot supply, and `'the {actor:role} sends "{message}"'` requires a `roles[].name` plus `sends`. Nothing else in the catalogue matches a step of the new shape, and the new template matches no step the other three entries phrase.
-- `terms` names only glossary terms spelled as the glossary spells them: `mcp service` and `reply` — `reply` already carries "and how long it took to arrive", which is the delay this entry bounds. No new glossary term is needed, so do not add one.
+## Why this entry and not another
+- **`template`** — `the service answers within {limit:number} milliseconds`
+  matches the failing step's whole text with `200` in the `{limit:number}`
+  slot (`{:number}` accepts digits, or the word `no`). The leading `and` of
+  the Scenario's `and the service answers within 200 milliseconds` is the
+  block conjunction, not step text, so it is not part of the template.
+- **`block: then`** — the step sits in the Scenario's `then` block.
+- **`means`** — the user's own words for the step, naming the template's
+  `{limit}` slot, in product words a reader of E2E-001 understands.
+- **`terms`** — `mcp service` and `reply` are both already in the
+  `glossary:` of this document, spelled exactly that way. No glossary entry
+  needs adding or changing.
 
-## Expected result
-`scen-check/term_closure` (D: step-phrases) passes for E2E-001: each of its four steps matches exactly one catalogue template, in that template's block.
+## No-ambiguity check the applier should confirm after editing
+- The new template's literal text (`... within ... milliseconds`) shares no
+  shape with `the service answers "{reply}"`: that entry requires a quoted
+  run between literal double quotes, which the failing step has none of, and
+  the new entry requires the literal words `within` and `milliseconds`,
+  which `the service answers "pong"` has none of. Each of E2E-001's two then
+  steps therefore matches exactly one entry.
+- `the mcp service is running` (given) and `the Operator sends "ping"`
+  (when, via `the {actor:role} sends "{message}"` with the `Operator` role)
+  keep matching their existing entries unchanged.
+- No existing `template` value is edited, so no two entries share a
+  template and no step another entry phrases becomes ambiguous.
 
 ---
 

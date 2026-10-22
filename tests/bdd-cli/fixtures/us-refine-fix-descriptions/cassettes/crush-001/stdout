@@ -7,7 +7,7 @@ so_that: "I can decide whether the document needs my attention without reading i
 status: "PLANNED"
 acceptance_criteria:
   - id: "AC-1"
-    description: "Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a Google Doc shared with their account."
+    description: "Claude must display a summary of 150 words or fewer when the Claude User asks for a summary of a Google Doc shared with their account."
     steps:
       - given:
           - "a Google Doc with at least 500 words of body text is shared with the Claude User's account"

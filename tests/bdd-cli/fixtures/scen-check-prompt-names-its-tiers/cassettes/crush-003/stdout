@@ -1,6 +1,4 @@
-I read the product document. Its `forbidden_qualifiers` list is: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful.
-
-The scenario description is: "The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds". Checking each forbidden qualifier against it: none of the eight words (or their variants) appear anywhere in the description. The timing expectation is stated as a measurable criterion ("within 100 milliseconds"), not a vague qualifier like "fast" or "quickly". The description therefore asserts only things a run can settle.
+The description — "print the configured greeting followed by the name it is given, and the command must exit within 100 milliseconds" — contains none of the forbidden_qualifiers from docs/product/product.yaml (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful). Every claim in it is measurable (exact stdout content, exit code, 100 ms bound), so it passes.
 
 === FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
 answer: pass

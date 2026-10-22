@@ -60,8 +60,7 @@ catalogue:
   - template: 'Claude offers to summarise the document instead'
     block: then
     means: >-
-      Claude's reply proposes writing a summary of the Google Doc as an
-      alternative to the outline it could not produce, in a reply that
-      follows the message it displayed, and Claude writes no summary
-      until the Claude User accepts the offer.
-    terms: [Google Doc, outline]
+      Claude's reply additionally proposes summarising the Google Doc,
+      and Claude waits for the Claude User's answer before producing any
+      summary.
+    terms: [Google Doc]

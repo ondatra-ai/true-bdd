@@ -73,20 +73,26 @@ Then:
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context (current state)
-The registry's `scenarios:` block is the empty flow mapping `scenarios: {}` (line 27). No entry references story `docs/product/stories/99.3-rewalk-fixture.yaml` with lineage scenario id `99.3-001-mcp-initialize`, so the merge check fails. The fix adds exactly one scenario entry, keyed by the lineage id verbatim, replacing the empty `{}` with a block mapping.
+## Context
+The registry currently has an empty `scenarios: {}` map (line 27), so no
+entry references story `docs/product/stories/99.3-rewalk-fixture.yaml`
+with lineage scenario id `99.3-001-mcp-initialize`. The merge check
+therefore fails and the AC must be added as a NEW scenario keyed by its
+lineage id.
 
-Notes used in building the entry:
-- `service: ""` — this fixture registry declares no architecture services; keep it empty, as the template specifies.
-- `path:` — no existing scenario exists to reuse a path from, so a new one is created for the MCP-endpoint family: `tests/mcp/mcp_endpoint_test.go`. AC `002-mcp-get-refused` of the same story belongs to the same family and should reuse this exact path when it is merged later.
-- Steps are copied verbatim from the AC, including the `and:` modifier mapping form in `then:` (the registry schema allows a step to be a plain string or a one-key `{and: …}` mapping).
-- `last_updated` / `merge_date` use today's date: `2026-10-21`.
+Since the registry has no existing entries, there is no `path:` to
+reuse; create the family file `tests/mcp_test.go` (suite path `tests/`
+because `service:` is empty, family `mcp`). Keep this exact path so the
+sibling AC `99.3-002-mcp-get-refused` can share the same file.
 
 ## Required Changes
-
-### Change #1: Add scenario `99.3-001-mcp-initialize` under `scenarios:`
-**Issue:** The AC has no entry in the registry — `scenarios:` is the empty map `{}`, so no entry's `user_stories[]` carries story path `docs/product/stories/99.3-rewalk-fixture.yaml` together with lineage scenario id `99.3-001-mcp-initialize`.
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This replaces the empty flow mapping with a block mapping containing the single new entry. Do not modify the header comments or the `metadata:` block.
+### Change #1: Replace the empty `scenarios` map with the new scenario entry
+**Issue:** `scenarios:` is the empty mapping `{}`; the AC
+`001-mcp-initialize` (lineage `99.3-001-mcp-initialize`) is not present
+in the registry.
+**Action:** Use the Edit tool on the target file with the exact
+old_string and new_string below. Do not change the comment header or the
+`metadata:` block.
 **old_string:**
 ```
 scenarios: {}
@@ -94,15 +100,15 @@ scenarios: {}
 **new_string:**
 ```
 scenarios:
-  "99.3-001-mcp-initialize":
-    description: "MCP server answers a valid JSON-RPC initialize POST to /mcp with HTTP 200 and a JSON-RPC envelope"
+  99.3-001-mcp-initialize:
+    description: "MCP server returns HTTP 200 and a JSON-RPC envelope for a valid initialize POST to /mcp"
     service: ""
-    path: "tests/mcp/mcp_endpoint_test.go"
-    last_updated: "2026-10-21"
+    path: tests/mcp_test.go
+    last_updated: "2026-10-22"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-001-mcp-initialize"
-        merge_date: "2026-10-21"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-001-mcp-initialize
+        merge_date: "2026-10-22"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -111,15 +117,16 @@ scenarios:
         - the Claude User posts a valid JSON-RPC initialize request to /mcp
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
 ## Verification
-After the edit, the file must:
-1. Still open with the original comment header and `metadata:` block, byte-for-byte unchanged.
-2. Contain exactly one entry under `scenarios:`, keyed `"99.3-001-mcp-initialize"`, whose `user_stories[0]` has `story: "docs/product/stories/99.3-rewalk-fixture.yaml"` and `scenario_id: "99.3-001-mcp-initialize"`.
-3. Parse as valid YAML with `scenarios:` a map (not a list) with one key — two-space indentation per level, as shown.
-Do not add any other scenario (AC `002-mcp-get-refused` is merged by its own walk).
+After the edit:
+- `scenarios:` contains exactly one entry, keyed `99.3-001-mcp-initialize`.
+- That entry's `user_stories[0]` has `story: docs/product/stories/99.3-rewalk-fixture.yaml`
+  and `scenario_id: 99.3-001-mcp-initialize`.
+- Two-space indentation per level is preserved; the file remains valid YAML.
+- No other part of the file (header comments, `metadata:`) was modified.
 
 ---
 

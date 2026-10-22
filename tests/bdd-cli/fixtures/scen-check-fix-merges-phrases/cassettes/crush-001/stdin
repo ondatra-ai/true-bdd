@@ -51,23 +51,47 @@ Then:
 # Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong
 
 ## Target
-The `product` document: `docs/product/product.yaml`, its `catalogue:` list.
+`docs/product/product.yaml` — its `catalogue:` list only.
 
-Nothing else may change. Do NOT edit `docs/scenarios.yaml` (or any registry entry), `tests/mcp/ping_test.go`, `tests/mcp/steps/mcp_steps.go`, the `roles:` list, the `glossary:` list, or any other catalogue entry.
+Do **not** touch: the Scenario (`E2E-001`), its story
+(`docs/product/stories/ping-answers.yaml`), the generated test
+(`tests/mcp/ping_test.go`), the step definitions
+(`tests/mcp/steps/mcp_steps.go`), `roles:`, `glossary:`, or any other
+catalogue entry.
 
-## Why
-The finding: step definition `^the service (?:answers|replies) "([^"]+)"$` (`tests/mcp/steps/mcp_steps.go:24`) is reached by two catalogue templates — `the service answers "{reply}"` and `the service replies "{reply}"`. One definition, two templates, so the catalogue and the steps disagree on what the phrase is.
+## Why this change
 
-The two entries already state the same `means` word for word ("The MCP service's reply to the message is exactly the quoted text."), and the single step definition binds both wordings on purpose. So "answers" and "replies" are one phrase with two surface spellings, not two meanings: the close is a **merge** into one entry whose template carries both spellings as literal alternatives.
+The catalogue carries two separate `then` entries —
+`the service answers "{reply}"` and `the service replies "{reply}"` —
+whose `means` are already word-for-word identical:
 
-After the merge the step `the service answers "pong"` (E2E-001) still matches exactly one template — the merged one — and that template reaches exactly the one step definition. A future step `the service replies "..."` matches the same single entry.
+> The MCP service's reply to the message is exactly the quoted text.
+
+The suite binds both with a single step definition,
+`^the service (?:answers|replies) "([^"]+)"$` (`mcp_steps.go:24`), whose
+own comment says it is "one definition for both ways of saying the
+service answers". So the two templates are two spellings of one phrase,
+not two phrases. The one-to-one correspondence is restored by **merging**
+them into a single entry whose template admits either verb through a
+literal alternation, leaving exactly one template reaching that one
+definition.
+
+After the merge, `the service answers "pong"` (the `Then` step of
+E2E-001) still matches exactly one template, in block `then`, and
+`the service replies "..."` — used by any future Scenario — matches that
+same single template. No other catalogue entry matches either step, so
+nothing else becomes ambiguous.
 
 ## Required Changes
 
-### Change #1: Merge the two `then` entries into one
+### Change #1: Merge the two `the service answers/replies` entries into one
 
 **Document:** `docs/product/product.yaml`
-**Action:** Replace `old_string` with `new_string`, verbatim. Two adjacent entries become one; the surrounding entries are untouched.
+
+**Action:** Replace `old_string` with `new_string`, verbatim. This is a
+single contiguous replacement covering both existing entries (the last
+two entries of the `catalogue:` list, lines 30–37) — two entries in,
+one entry out.
 
 **old_string:**
 ```
@@ -85,25 +109,42 @@ After the merge the step `the service answers "pong"` (E2E-001) still matches ex
 ```
   - template: 'the service [answers|replies] "{reply}"'
     block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
+    means: The MCP service's reply to the message is exactly the quoted text; `answers` and `replies` are the same step said two ways.
     terms: []
 ```
 
-**Resulting entry, as exact YAML (copy it, do not recompose it):**
+**Resulting entry, as YAML, for reference:**
 ```yaml
   - template: 'the service [answers|replies] "{reply}"'
     block: then
-    means: The MCP service's reply to the message is exactly the quoted text.
+    means: The MCP service's reply to the message is exactly the quoted text; `answers` and `replies` are the same step said two ways.
     terms: []
 ```
 
-Keep the template single-quoted exactly as given: `[answers|replies]` is the grammar's literal-alternatives token (exactly one of the two words), and `"{reply}"` keeps the quoted slot, so both former templates' steps are matched by this one entry. The slot name stays `reply`, unchanged from both merged entries.
+## Notes for the applier
+
+- The template is single-quoted in YAML, so the embedded double quotes
+  around `{reply}` and the `[answers|replies]` brackets are literal
+  catalogue grammar, not YAML syntax — copy the line exactly as given.
+- `[answers|replies]` is the grammar's literal-alternation token: the
+  step must read exactly one of the two verbs there.
+- `terms:` stays empty: the `glossary:` list in this document is empty
+  and the meaning relies on no glossary term. Do not add a glossary
+  entry.
+- No new entry is appended and no other entry is reordered; the
+  catalogue goes from four entries to three, the first two
+  (`the mcp service is running`, `the {actor:role} sends "{message}"`)
+  untouched.
 
 ## Verification after applying
-- `docs/product/product.yaml` has exactly three catalogue entries: `the mcp service is running` (given), `the {actor:role} sends "{message}"` (when), `the service [answers|replies] "{reply}"` (then).
-- No entry with template `the service answers "{reply}"` or `the service replies "{reply}"` remains.
-- `roles:`, `glossary:`, `title:` and `description:` are byte-identical to before.
-- `tests/mcp/steps/mcp_steps.go` and `tests/mcp/ping_test.go` are unmodified (`git diff --stat` shows only `docs/product/product.yaml`).
+
+- `docs/product/product.yaml` `catalogue:` has exactly three entries.
+- No two catalogue entries share a template, and no step of E2E-001
+  matches more than one template.
+- `tests/mcp/steps/mcp_steps.go` and `tests/mcp/ping_test.go` are
+  unchanged in the diff.
+- Each of the three step definitions in `mcp_steps.go` is now reached by
+  exactly one catalogue template.
 
 ---
 

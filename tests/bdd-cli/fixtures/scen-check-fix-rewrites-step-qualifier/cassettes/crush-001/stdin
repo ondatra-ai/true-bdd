@@ -52,33 +52,36 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds
 
 ## Target
-The `E2E-001` entry of `docs/scenarios.yaml` (the scenario registry), and nothing else. Do not touch `docs/product/product.yaml`, `tests/greeter/greet_test.go`, or any step definition. `true-bdd build tests --fix` re-renders the generated test from the registry after this edit.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry), at `scenarios.E2E-001.merged_steps.then`. Nothing else in that document, and no other document, is edited. Do not touch `docs/product/product.yaml`: the finding is about this Scenario's step wording, not about what a catalogue phrase means.
 
-## What the finding is
-`scen-check/scenario_quality` reported: `E2E-001: contains 'quickly' in then`. `quickly` is on the product document's `vocabulary.forbidden_qualifiers` list. The Scenario's own description already states the measurable criterion the word stands for — "exit with code 0 within 100 milliseconds" — so the vague word is replaced by that bound, keeping the timing assertion intact.
+## Why
+The scen-check/scenario_quality check failed with:
+- `E2E-001: contains 'quickly' in then`
 
-Note on the catalogue: `docs/product/product.yaml` declares a `catalogue:`, but this Scenario's `user_stories:` is `[]` — no Story claims it — so catalogue-template matching does not apply to its steps, and the timing clause may be stated directly in the step. Leave `user_stories: []` exactly as it is; do not add lineage.
+`quickly` is on the product document's `vocabulary.forbidden_qualifiers` list. The Scenario's own description already states the measurable criterion the word stands for — "exit with code 0 within 100 milliseconds" — so the qualifier is replaced by that criterion. The timing assertion is kept, not dropped.
+
+Note on the catalogue: this Scenario's `user_stories:` is empty (no Story claims it), so the catalogue-template constraint does not apply to its steps, and the new wording may carry the explicit duration even though no catalogue entry has a duration slot. Do not add, change or re-slot any catalogue entry to accommodate it.
 
 ## Required Changes
 
-### Change #1: Replace the forbidden qualifier 'quickly' with the measurable 100 ms bound from the description
-**Document:** scenarios_yaml (`docs/scenarios.yaml`)
-**Field:** `scenarios.E2E-001.merged_steps.then` — the first list item
+### Change #1: Replace the forbidden qualifier 'quickly' with the measurable criterion from the description
+**Document:** scenarios_yaml
+**Field:** merged_steps.then (the first `then` step of scenario `E2E-001`)
 **Current text:**
 ```
-        - the command exits with code 0 quickly
+the command exits with code 0 quickly
 ```
 **New text:**
 ```
-        - the command exits with code 0 within 100 milliseconds
+the command exits with code 0 within 100 milliseconds
 ```
 
-## Changes NOT to make
-- Do not edit `scenarios.E2E-001.description`: it is already free of forbidden qualifiers and it is the source of the 100 ms criterion.
-- Do not edit the `given` step, the `when` step, or the second `then` step (`- and: stdout matches ^Hello Ada$`).
-- Do not change `scenarios.E2E-001`'s key/id, `service: greeter`, `path: tests/greeter/greet_test.go`, or `user_stories: []`.
-- Do not drop or weaken the timing assertion, and do not drop the exit-code assertion: the replacement step must still assert both exit code 0 and the 100-millisecond bound.
-- Do not touch `metadata:`, any other Scenario, `docs/product/product.yaml` (no catalogue entry's `means` is at fault here), the generated test, or any step definition.
+## Constraints
+- Change only the one `then` step quoted above. Leave the second `then` step (`and: stdout matches ^Hello Ada$`) byte-for-byte as it is, and leave the `given` and `when` steps unchanged — no finding names them.
+- Leave `scenarios.E2E-001`'s `description`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are. The description already states the 100 ms criterion and needs no edit.
+- Leave the document's `metadata:` block and every other Scenario entry untouched.
+- Keep the existing YAML shape of the `then` list: a plain string list item (`- the command exits with code 0 within 100 milliseconds`), with the same indentation as the line it replaces. Do not convert it to a mapping, and do not add an `and:` key to it.
+- Do not edit `tests/greeter/greet_test.go` or any step definition. The generated test is re-rendered from the registry by `true-bdd build tests --fix` once this entry reads correctly.
 
 ## Verification
 After the edit, `scenarios.E2E-001.merged_steps` reads:
@@ -92,7 +95,7 @@ After the edit, `scenarios.E2E-001.merged_steps` reads:
         - the command exits with code 0 within 100 milliseconds
         - and: stdout matches ^Hello Ada$
 ```
-No step contains any word from `vocabulary.forbidden_qualifiers` (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`), and the Scenario still asserts exit code 0, the 100 ms bound, and the `^Hello Ada$` stdout line.
+No step contains a word from `vocabulary.forbidden_qualifiers` (properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful), and the Scenario still asserts the exit code 0, the 100 ms bound and the stdout line.
 
 ---
 

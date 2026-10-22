@@ -12,7 +12,7 @@ metadata:
 
 scenarios:
   E2E-001:
-    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0 within 100 milliseconds
+    description: The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds
     service: greeter
     path: tests/greeter/greet_test.go
     user_stories: []

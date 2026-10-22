@@ -1,4 +1,4 @@
-**Reasoning:** The forbidden_qualifiers list in `./docs/product/product.yaml` (lines 22-29) bans: properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful. The scenario description — "The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds" — contains none of these. Its timing claim is a measurable criterion ("within 100 milliseconds") rather than a vague word like "fast", so a run can settle every assertion.
+Reasoning: The product document's `forbidden_qualifiers` list contains properly, correctly, appropriate, appropriately, user-friendly, fast, quickly, helpful. The scenario description — "The greeter must print the configured greeting followed by the name it is given, and the command must exit within 100 milliseconds" — contains none of these words; its timing claim is a concrete 100 ms bound, not a vague qualifier. No forbidden qualifier is present.
 
 === FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
 answer: pass

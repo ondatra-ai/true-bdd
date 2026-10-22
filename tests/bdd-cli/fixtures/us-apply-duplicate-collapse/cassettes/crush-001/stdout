@@ -1,7 +1,5 @@
-```
 === FILE_START: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Deleted duplicate E2E-901 and unioned its steps into 95.1-001-mcp-initialize (2 given / 1 when / 2 then); E2E-950 untouched"
+summary: "Deleted duplicate entry E2E-901 and folded its extra given/then steps into the winning 95.1-001-mcp-initialize entry (now 2 given, 1 when, 2 then); E2E-950, metadata, and header untouched"
 === FILE_END: tmp/{{RUN_DIR}}/apply-95.1-001-mcp-initialize-iter1-result.yaml ===
-```

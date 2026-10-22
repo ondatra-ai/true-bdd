@@ -62,9 +62,8 @@ func TestOptionsIsolateTheTurn(t *testing.T) {
 
 	args := (&ClaudeProvider{}).options(t.Context(), Request{Model: "claude-opus-5"}).Args("body")
 
-	for _, want := range []string{"--setting-sources", "project", "--strict-mcp-config"} {
-		if !slices.Contains(args, want) {
-			t.Errorf("turn is not isolated, %q missing: %q", want, args)
-		}
+	want := []string{"--setting-sources", "", "--strict-mcp-config", "--safe-mode"}
+	if !slices.Equal(args[:len(want)], want) {
+		t.Errorf("turn is not minimal, got argv %q, want prefix %q", args, want)
 	}
 }

@@ -1,160 +1,156 @@
-// Package steps binds the registry steps of the `mcp` suite to code.
-//
-// The suite's state is the MCP server address the Given step resolved
-// and the reply to the session's opening the When step kept; every Then
-// step reads that reply.
 package steps
 
 import (
-	"context"
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
 const (
-	// portEnv and defaultPort are the architecture's address mapping:
-	// 127.0.0.1 at MCP_PORT, 7411 when it is unset.
-	portEnv     = "MCP_PORT"
+	// defaultPort is the port the MCP server listens on when MCP_PORT is
+	// unset, per the word mapping of "MCP server".
 	defaultPort = "7411"
-	localHost   = "127.0.0.1"
+
+	// readyTimeout bounds the wait for GET /healthz to answer 200.
+	readyTimeout = 5 * time.Second
+
+	// pollInterval spaces the /healthz attempts.
+	pollInterval = 100 * time.Millisecond
+
+	// initializeBody is the JSON-RPC 2.0 request that opens a session.
+	initializeBody = `{"jsonrpc":"2.0","id":1,"method":"initialize"}`
 )
 
-const (
-	healthTimeout      = 5 * time.Second
-	healthPollInterval = 50 * time.Millisecond
-	healthReqTimeout   = time.Second
-	openSessionTimeout = 10 * time.Second
-	initializeRequest  = `{"jsonrpc":"2.0","id":1,"method":"initialize"}`
-)
-
-// Reply is what a Then step may read of the session's opening: the
-// status code and the headers of the server's reply to initialize.
+// Reply is what a session's opening left behind: the status code and
+// headers of the server's answer, which the Then steps read.
 type Reply struct {
 	Status int
 	Header http.Header
+	Body   string
 }
 
-// State is the state the suite's step definitions share.
+// Snippet returns the reply's body shortened for an error message.
+func (r *Reply) Snippet() string {
+	const max = 200
+	if len(r.Body) <= max {
+		return r.Body
+	}
+	return r.Body[:max] + "..."
+}
+
+// State is shared by every step definition of the mcp suite within one
+// scenario: the Given step proves the server is up, the When step opens
+// the session, the Then steps read the reply it kept.
 type State struct {
-	addr  string
-	reply *Reply
+	// Client issues every request this suite makes.
+	Client *http.Client
+	// Ready records that a Given step saw /healthz answer 200.
+	Ready bool
+	// Actor is the role whose client opened the session, as captured by
+	// the When step, so a Then step's error can name it.
+	Actor string
+	// LastReply is the server's answer to the most recent request; nil
+	// until a When step has opened a session.
+	LastReply *Reply
 }
 
-// New returns the state one scenario's steps run against.
-func New() *State {
-	return &State{}
+// NewState returns the state a scenario's definitions share.
+func NewState() *State {
+	return &State{Client: &http.Client{Timeout: readyTimeout}}
 }
 
-// Addr is the MCP server address the Given step resolved.
-func (s *State) Addr() string {
-	return s.addr
-}
-
-// openedSession returns the reply the When step kept. A Then step that
-// finds none fails instead of passing.
-func (s *State) openedSession() (*Reply, error) {
-	if s.reply == nil {
-		return nil, fmt.Errorf(
-			"no session was opened: expected the When step to POST initialize to %s/mcp and keep the reply, but no reply was kept",
-			s.serverAddrForMessage(),
-		)
-	}
-
-	return s.reply, nil
-}
-
-func (s *State) serverAddrForMessage() string {
-	if s.addr == "" {
-		return "(no server address resolved)"
-	}
-
-	return s.addr
-}
-
-// serverAddr resolves the MCP server's address from MCP_PORT, 7411 when
-// it is unset.
-func serverAddr() string {
-	port := os.Getenv(portEnv)
+// BaseURL resolves the MCP server's address: 127.0.0.1 at the port
+// MCP_PORT names, 7411 when it is unset.
+func (st *State) BaseURL() string {
+	port := os.Getenv("MCP_PORT")
 	if port == "" {
 		port = defaultPort
 	}
-
-	return "http://" + localHost + ":" + port
+	return "http://127.0.0.1:" + port
 }
 
-// waitHealthy polls GET /healthz until it answers 200, for at most
-// healthTimeout, and names the address it polled when it never does.
-func waitHealthy(addr string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), healthTimeout)
-	defer cancel()
+// ActorName names the role whose client opened the session; "client" until
+// a When step captured one.
+func (st *State) ActorName() string {
+	if st.Actor == "" {
+		return "client"
+	}
+	return st.Actor
+}
 
-	client := &http.Client{Timeout: healthReqTimeout}
+func (st *State) httpClient() *http.Client {
+	if st.Client == nil {
+		st.Client = &http.Client{Timeout: readyTimeout}
+	}
+	return st.Client
+}
+
+// WaitReady polls GET /healthz at the server's address until it answers
+// 200, for at most readyTimeout. A server that never answers fails,
+// naming the address polled and the last thing that happened there.
+func (st *State) WaitReady() error {
+	url := st.BaseURL() + "/healthz"
+	deadline := time.Now().Add(readyTimeout)
 	last := "no attempt completed"
-
-	for ctx.Err() == nil {
-		status, err := getHealth(ctx, client, addr)
-		if err == nil && status == http.StatusOK {
-			return nil
-		}
-
+	for {
+		resp, err := st.httpClient().Get(url)
 		if err != nil {
-			last = err.Error()
+			last = "request error: " + err.Error()
 		} else {
-			last = fmt.Sprintf("status %d", status)
+			status := resp.StatusCode
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+			if status == http.StatusOK {
+				st.Ready = true
+				return nil
+			}
+			last = fmt.Sprintf("answered status %d", status)
 		}
-
-		time.Sleep(healthPollInterval)
+		if !time.Now().Before(deadline) {
+			return fmt.Errorf(
+				"the MCP server is not running: expected GET %s to answer 200 within %s, but it never did (last attempt: %s)",
+				url, readyTimeout, last)
+		}
+		time.Sleep(pollInterval)
 	}
-
-	return fmt.Errorf(
-		"the MCP server is not running: expected GET %s/healthz to answer 200 within %s, last attempt gave %s",
-		addr, healthTimeout, last,
-	)
 }
 
-func getHealth(ctx context.Context, client *http.Client, addr string) (int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr+"/healthz", nil)
+// OpenSession POSTs the initialize request to /mcp at the server's address,
+// once, and keeps the reply's status code and headers for the steps after.
+func (st *State) OpenSession() error {
+	url := st.BaseURL() + "/mcp"
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(initializeBody)))
 	if err != nil {
-		return 0, fmt.Errorf("building GET %s/healthz: %w", addr, err)
+		return fmt.Errorf("could not build the initialize request for %s: %w", url, err)
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("GET %s/healthz failed: %w", addr, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	_, _ = io.Copy(io.Discard, resp.Body)
-
-	return resp.StatusCode, nil
-}
-
-// openSession POSTs the initialize request to /mcp and keeps the reply's
-// status code and headers.
-func openSession(addr string) (*Reply, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), openSessionTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPost, addr+"/mcp", strings.NewReader(initializeRequest),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("building POST %s/mcp: %w", addr, err)
-	}
-
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := st.httpClient().Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("POST %s/mcp with %s failed: %w", addr, initializeRequest, err)
+		return fmt.Errorf("the %s could not open a session: POST %s (%s) failed: %w",
+			st.ActorName(), url, initializeBody, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	_, _ = io.Copy(io.Discard, resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return fmt.Errorf("the %s could not read the reply to initialize from %s: %w",
+			st.ActorName(), url, err)
+	}
+	st.LastReply = &Reply{Status: resp.StatusCode, Header: resp.Header.Clone(), Body: string(body)}
+	return nil
+}
 
-	return &Reply{Status: resp.StatusCode, Header: resp.Header.Clone()}, nil
+// OpeningReply returns the session's opening. A Then step that finds no
+// reply fails instead of passing.
+func (st *State) OpeningReply() (*Reply, error) {
+	if st.LastReply == nil {
+		return nil, fmt.Errorf(
+			"no reply to read: no session was opened, so the When step that POSTs %s to %s/mcp never ran",
+			initializeBody, st.BaseURL())
+	}
+	return st.LastReply, nil
 }

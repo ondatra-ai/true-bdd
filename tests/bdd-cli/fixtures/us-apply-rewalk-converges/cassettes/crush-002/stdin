@@ -67,46 +67,57 @@ Then:
 
 ## Fix Prompt to Apply
 
+=== FILE_START: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
 # Fix Prompt for AC 99.3-002-mcp-get-refused: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
 
 ## Target
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
-## Context (already verified — do not re-derive)
-- The registry currently holds exactly one entry under `scenarios:`, keyed `"99.3-001-mcp-initialize"`.
-- No entry's `user_stories[]` contains `scenario_id: "99.3-002-mcp-get-refused"`, so the AC is **not present** and must be added as a brand-new entry.
-- The new entry reuses the existing family file `tests/mcp/mcp_endpoint_test.go` and `service: ""` from the sibling MCP-endpoint scenario `99.3-001-mcp-initialize` — do NOT invent a new path.
-- Step text is copied verbatim from `docs/product/stories/99.3-rewalk-fixture.yaml` AC `002-mcp-get-refused`, including the `- and:` mapping form used by that story and mirrored by the existing 001 entry.
-- Today's date is `2026-10-21` (matching the sibling entry).
+## Context
+The registry's `scenarios:` block currently contains exactly one entry,
+`99.3-001-mcp-initialize`. No entry's `user_stories[]` list references
+lineage scenario id `99.3-002-mcp-get-refused`, so the `us-apply/merge`
+presence check fails for AC `002-mcp-get-refused`.
+
+This AC belongs to the same feature family as the existing entry (the MCP
+`/mcp` HTTP endpoint), so it REUSES the existing `path:` value
+`tests/mcp_test.go` and the same empty `service:` (`""`). Do not invent a
+new test file.
 
 ## Required Changes
 
-### Change #1: Add the missing scenario entry for lineage id 99.3-002-mcp-get-refused
-**Issue:** The acceptance criterion `002-mcp-get-refused` of story `docs/product/stories/99.3-rewalk-fixture.yaml` has no scenario in the registry: there is no entry under `scenarios:` whose `user_stories[]` lists both that story path and the lineage scenario id `99.3-002-mcp-get-refused`. The `us-apply/merge` check therefore fails.
+### Change #1: Append a new scenario entry keyed by the lineage id `99.3-002-mcp-get-refused`
+**Issue:** AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) is
+not present in the registry — no `scenarios:` entry lists both story path
+`docs/product/stories/99.3-rewalk-fixture.yaml` and scenario_id
+`99.3-002-mcp-get-refused` under `user_stories[]`.
 
-**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This appends the new entry after the existing `99.3-001-mcp-initialize` entry at the end of the file, preserving existing ordering and 2-space indentation and touching no other entry.
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml`
+with the exact `old_string` and `new_string` below. This anchors on the tail
+of the existing `99.3-001-mcp-initialize` entry and appends the new entry
+immediately after it, leaving every existing line byte-identical.
 
 **old_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
 ```
 
 **new_string:**
 ```
       then:
         - the server returns HTTP 200
-        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
-  "99.3-002-mcp-get-refused":
-    description: "MCP server refuses an HTTP GET to /mcp with HTTP 405 Method Not Allowed"
+        - and the response body is a well-formed JSON-RPC envelope referencing the request id
+  99.3-002-mcp-get-refused:
+    description: "MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp"
     service: ""
-    path: "tests/mcp/mcp_endpoint_test.go"
-    last_updated: "2026-10-21"
+    path: tests/mcp_test.go
+    last_updated: "2026-10-22"
     user_stories:
-      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
-        scenario_id: "99.3-002-mcp-get-refused"
-        merge_date: "2026-10-21"
+      - story: docs/product/stories/99.3-rewalk-fixture.yaml
+        scenario_id: 99.3-002-mcp-get-refused
+        merge_date: "2026-10-22"
     merged_steps:
       given:
         - the MCP server is running on its configured port
@@ -114,17 +125,37 @@ Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
         - the Claude User sends an HTTP GET request to /mcp
       then:
         - the server returns HTTP 405 Method Not Allowed
-        - and: the response indicates the method is not allowed for this endpoint
+        - and the response indicates the method is not allowed for this endpoint
 ```
 
-## Constraints
-- Do not modify the file header comments, the `metadata:` block, or the `99.3-001-mcp-initialize` entry.
-- Do not renumber, re-key, or reorder any scenario; the new entry's key must be the lineage scenario id `99.3-002-mcp-get-refused` verbatim.
-- Keep the trailing newline at end of file.
+## Notes / Constraints
+- The registry key MUST be exactly `99.3-002-mcp-get-refused` (the subject's
+  lineage scenario id, verbatim). Do not renumber it or invent another id.
+- Indentation: scenario keys sit at 2 spaces, their fields at 4 spaces,
+  list items at 6 spaces, and `merged_steps` leaf list items at 8 spaces —
+  matching the existing `99.3-001-mcp-initialize` entry exactly.
+- `merged_steps.given` / `when` / `then` are copied verbatim from the AC's
+  steps. The story YAML writes the final `then` step as a nested
+  `and: the response indicates the method is not allowed for this endpoint`;
+  it is flattened to the plain string
+  `and the response indicates the method is not allowed for this endpoint`,
+  which is the same convention the existing `99.3-001-mcp-initialize` entry
+  already uses for its own `and:` step.
+- Do NOT modify the header comment block, the `metadata:` block, or any
+  field of the existing `99.3-001-mcp-initialize` entry. Do not reorder
+  entries — the new entry goes last, after `99.3-001-mcp-initialize`.
+- Do not add any other scenario, and do not create or touch
+  `tests/mcp_test.go` as part of this fix.
 
-## Verification after applying
-- `scenarios:` contains an entry keyed `"99.3-002-mcp-get-refused"` whose `user_stories[0]` has `story: "docs/product/stories/99.3-rewalk-fixture.yaml"` and `scenario_id: "99.3-002-mcp-get-refused"`.
-- The file is still valid YAML with exactly two scenario entries.
+## Verification
+After the edit, `scenarios:` has two keys in this order:
+`99.3-001-mcp-initialize`, then `99.3-002-mcp-get-refused`. The new entry's
+`user_stories[]` contains one item whose `story` is
+`docs/product/stories/99.3-rewalk-fixture.yaml` and whose `scenario_id` is
+`99.3-002-mcp-get-refused`, so the merge check now reports:
+`AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`.
+The file must remain valid YAML.
+=== FILE_END: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
 
 ---
 

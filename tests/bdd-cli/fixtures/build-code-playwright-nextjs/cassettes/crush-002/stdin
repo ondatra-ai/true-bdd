@@ -1,0 +1,251 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** /playwright/playwright:<startup>
+**Service:** 
+**Suite:** playwright
+**Framework:** playwright
+**Test Name:** <startup>
+**Source File:** 
+
+### Last Failure Output
+```
+
+```
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test /playwright/playwright:<startup>
+
+## Target
+Apply the change(s) under `services/*` only. The contract is
+`tests/integration/frontend-home.spec.ts`:
+
+```ts
+import { expect, test } from '@playwright/test';
+
+test('home page greets with Hello world', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toHaveText('Hello world');
+});
+```
+
+Do NOT modify it, and do NOT modify `tests/playwright.config.ts`,
+`docker-compose.yaml`, anything under `docs/`, or anything under `true-bdd/`.
+
+## Root Cause (read this before editing)
+The failing subject is `<startup>` — Playwright never got to run the spec:
+
+```
+Error: Process from config.webServer was not able to start. Exit code: 1
+```
+
+`tests/playwright.config.ts` boots the app with `docker compose up --build frontend`
+(`cwd: '..'`) and waits on `http://127.0.0.1:${FRONTEND_PORT}`; the root
+`docker-compose.yaml` builds that service from `context: ./services/frontend` and
+publishes `${FRONTEND_PORT}:3000`.
+
+The previous iteration already created the service, and the app code itself is correct
+(`services/frontend/app/page.tsx` renders exactly one `<h1>Hello world</h1>`,
+`app/layout.tsx` is a valid App Router root layout). Evidence that the remaining
+problem is the **container image**, not the React code:
+
+- First run (before `services/frontend` existed) failed in 445 ms — missing build context.
+- Run after the files were created failed in ~24.7 s — i.e. `docker compose up --build`
+  ran a real image build for ~24 s and then exited 1. That is the `npm install` layer
+  completing and the next step (`npm run build` / container start) dying.
+
+The two defects in `services/frontend/Dockerfile` that produce exactly this:
+
+1. **`node:20-alpine` (musl).** Next.js 15's SWC compiler needs the musl SWC binary and
+   `libc6-compat` on Alpine (the upstream Next.js Alpine image explicitly does
+   `apk add --no-cache libc6-compat`). Without it `next build` dies within a couple of
+   seconds of starting with a "Failed to load SWC binary for linux/x64" style error —
+   which matches the ~24 s total (slow install, instant build failure).
+2. **`ENV NODE_ENV=development` during `npm install` + `npm run build`, then flipping to
+   `NODE_ENV=production` for `npm run start`.** `next build` honours a standard
+   `NODE_ENV`, so the artifact in `.next` is produced in development mode and is then
+   served by a `next start` running in production mode — a build/runtime mismatch that
+   can make the container exit non-zero immediately on boot (`docker compose up` then
+   returns 1, which is what Playwright reports).
+
+Fix: rebuild the image on a glibc Debian base and keep a single, consistent
+`NODE_ENV=production` for build and runtime, installing devDependencies explicitly so
+TypeScript/`@types` are still present for `next build`.
+
+## Required Changes
+
+### Change #1: Replace the Dockerfile with a glibc, production-consistent build
+**File:** `services/frontend/Dockerfile`
+**Action:** Use the **Write** tool to replace the whole file with exactly this content.
+**Content:**
+```dockerfile
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# No lockfile is committed, so `npm install` (not `npm ci`). NODE_ENV=production
+# would normally omit devDependencies, but `next build` needs typescript and the
+# @types packages, so include them explicitly.
+COPY package.json ./
+RUN npm install --include=dev --no-audit --no-fund
+
+COPY . .
+
+# Built with NODE_ENV=production, served with NODE_ENV=production: the artifact in
+# .next matches what `next start` expects.
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]
+```
+Notes for the applier:
+- Keep it **single-stage**. Do not add a multi-stage `COPY --from=...`; `next start`
+  must find `.next` and `node_modules` in `/app`.
+- Do **not** go back to an `-alpine` base. If, and only if, you have a reason to keep
+  Alpine, it must be `FROM node:20-alpine` plus `RUN apk add --no-cache libc6-compat`
+  before `npm install` — but the Debian slim base above is the intended fix.
+- Do not switch `npm install` to `npm ci` (there is no `package-lock.json` in the build
+  context).
+
+### Change #2: Make the image build independent of lint tooling
+**File:** `services/frontend/next.config.mjs`
+**Action:** Use the **Edit** tool on the existing file.
+**old_string:**
+```js
+const nextConfig = {
+  reactStrictMode: true,
+};
+```
+**new_string:**
+```js
+const nextConfig = {
+  reactStrictMode: true,
+  // ESLint is not a dependency of this service; the architecture quality gate runs
+  // type checking separately via services/frontend/tsconfig.json. Keep `next build`
+  // from failing the container build on lint tooling that is intentionally absent.
+  eslint: { ignoreDuringBuilds: true },
+};
+```
+Do **not** add `typescript: { ignoreBuildErrors: true }` — type errors must stay visible
+to the quality gate.
+
+## Explicitly leave these files UNCHANGED
+- `services/frontend/app/page.tsx` — already renders exactly one `<h1>` whose text is
+  exactly `Hello world` (server component, no `'use client'`, per the
+  `component-composition` pattern in `docs/architecture/architecture.yaml`). Do not add
+  extra visible text inside the `h1` and do not add a second `h1` anywhere, or
+  `page.locator('h1')` becomes strict-mode ambiguous / `toHaveText` stops matching.
+- `services/frontend/app/layout.tsx`
+- `services/frontend/tsconfig.json`
+- `services/frontend/.dockerignore`
+- `services/frontend/package.json` — in particular keep
+  `"start": "next start -H 0.0.0.0 -p 3000"`. Compose publishes the host port onto
+  container port **3000**, and a loopback-only bind is unreachable from the host probe
+  that Playwright performs.
+
+## Verification Expectations (do not run the test yourself)
+After the edits, `docker compose up --build frontend` should build on a glibc base,
+`next build` should succeed, the container should serve `/` on `0.0.0.0:3000`,
+Playwright's `webServer` URL probe should resolve, and
+`expect(page.locator('h1')).toHaveText('Hello world')` should pass.
+
+## Forbidden
+- Do NOT create or edit anything under `tests/` (including
+  `tests/integration/frontend-home.spec.ts` and `tests/playwright.config.ts`).
+- Do NOT edit `docker-compose.yaml`, anything under `docs/` (including
+  `docs/scenarios.yaml`), or anything under `true-bdd/`.
+- Do NOT edit any `*_test.go` file or anything under `services/*/__tests__/`.
+- Do NOT weaken, skip, or remove the assertion.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===

@@ -75,12 +75,18 @@ Then:
 Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
 
 ## Required Changes
-### Change #1: Add the AC as a new scenario entry keyed by its lineage id
-**Issue:** The `us-apply/merge` check failed: no entry under `scenarios:` has a `user_stories[]` item containing BOTH the subject story path (`docs/product/stories/95.2-relocated-registry.yaml`) AND the subject lineage id (`95.2-001-health-ok`). Only the unrelated `E2E-960` entry exists. The AC must be added as a new scenario keyed verbatim by its lineage id `95.2-001-health-ok`.
 
-**Action:** Use the Edit tool on the target file with the exact old_string and new_string below. This appends one new entry immediately after the existing `E2E-960` entry and leaves `E2E-960` untouched.
+### Change #1: Add the missing scenario for AC 95.2-001-health-ok
+**Issue:** The registry contains no scenario entry whose `user_stories[]` references both the story path `docs/product/stories/95.2-relocated-registry.yaml` and the lineage scenario id `95.2-001-health-ok`. The `us-apply/merge` check fails: "AC 001-health-ok (lineage 95.2-001-health-ok): not present".
 
-Note on `path:`: `E2E-960` has `service: "web-service"` and carries no `path:`, so it is neither the same feature family nor a reusable anchor. Per the fix template, `service:` for this AC is `""` and no existing file fits, so a new path is coined for the MCP health family: `tests/mcp-server/health_test.go`.
+**Action:** Use the Edit tool on the target file to append a new scenario entry keyed by the lineage id `95.2-001-health-ok`, immediately after the existing `E2E-960` entry. Match the file's indentation exactly (2-space scenario key, 4-space fields, 6-space list items, 8-space step values). Do not modify the `E2E-960` entry.
+
+Notes on the inserted fields:
+- Key the entry verbatim with the lineage id `95.2-001-health-ok`.
+- `service: ""` per the merge template (the AC does not bind to the existing `web-service` suite).
+- No existing `path:` fits (the only other scenario is `web-service`, a different family and service), so a new path is introduced for the MCP health family: `tests/mcp/health_test.go`. If a later MCP scenario is added, it should reuse this same file.
+- `last_updated` and `merge_date` use today's date, `2026-10-22`.
+- `merged_steps` copy the AC's given/when/then verbatim.
 
 **old_string:**
 ```
@@ -92,14 +98,14 @@ Note on `path:`: `E2E-960` has `service: "web-service"` and carries no `path:`, 
       then:
         - "the settings page renders the account section"
   95.2-001-health-ok:
-    description: "MCP server /health returns HTTP 200 with a healthy status body"
+    description: "GET /health returns HTTP 200 and a JSON body reporting the service as healthy"
     service: ""
-    path: "tests/mcp-server/health_test.go"
-    last_updated: "2026-10-21"
+    path: "tests/mcp/health_test.go"
+    last_updated: "2026-10-22"
     user_stories:
       - story: "docs/product/stories/95.2-relocated-registry.yaml"
         scenario_id: "95.2-001-health-ok"
-        merge_date: "2026-10-21"
+        merge_date: "2026-10-22"
     merged_steps:
       given:
         - "the MCP server is running on its configured port"

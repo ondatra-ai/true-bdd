@@ -40,12 +40,13 @@ catalogue:
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
     terms: [mcp service, reply]
-  - template: 'the service answers within {budget:number} milliseconds'
+  - template: 'the service answers within {limit:number} milliseconds'
     block: then
     means: >-
-      The MCP service's reply to the message the When step sent arrives, and
-      the round trip the sender observes — from the moment that message is
-      sent until its reply arrives back at the sender — is at most {budget}
-      milliseconds. A reply arriving at exactly {budget} milliseconds passes
-      (elapsed <= {budget}); no reply arriving at all fails this step.
+      The MCP service's reply to the preceding When step's message — the
+      same single reply — arrives no later than {limit} milliseconds after
+      that message was sent. The time is the round trip as the sending
+      client observes it: from the moment the role's message of the
+      preceding When step is sent, to the moment the complete reply has
+      arrived back.
     terms: [mcp service, reply]

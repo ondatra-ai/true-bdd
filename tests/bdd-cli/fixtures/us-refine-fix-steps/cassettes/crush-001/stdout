@@ -29,7 +29,6 @@ acceptance_criteria:
     steps:
       - given:
           - "a Google Doc is shared with the Claude User's account"
-      - given:
           - "the summary backend does not respond within 30 seconds"
       - when:
           - "the Claude User asks Claude to summarize the document"

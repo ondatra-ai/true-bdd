@@ -100,7 +100,7 @@ Claude must state that only the first 10000 words were summarized when the docum
 # Fix Prompt for Story 96.6: Document Summary On Demand
 
 ## Instructions
-Apply the following changes to the acceptance criteria for this story.
+Apply the following changes to the acceptance criteria for this story. Only AC-3 changes. AC-1, AC-2 and AC-4 are reproduced unchanged — do not edit their descriptions or steps.
 
 ## Original Acceptance Criteria
 1. AC-1: Claude must display a summary of 150 words or fewer in the conversation when the Claude User asks for a summary of a shared Google Doc. [has steps]
@@ -110,24 +110,11 @@ Apply the following changes to the acceptance criteria for this story.
 
 ## Required Changes
 
-The failed check is `us-refine/acceptance_criteria`: no AC description may contain a forbidden qualifier from the product document's vocabulary (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `easily`, `seamless`, `intuitive`).
-
-Per-AC result:
-- AC-1: ok
-- AC-2: ok
-- AC-3: contains 'properly'
-- AC-4: ok
-
-Only AC-3 changes. AC-1, AC-2 and AC-4 are reproduced word for word, descriptions and steps unchanged.
-
 ### Change #1: AC-3
 **Before:** Claude must properly display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds.
-
-**Issue:** The description contains the forbidden qualifier "properly". "Properly" is not observable — it does not say what a correct display looks like. The exact message string and the 30-second threshold are already the measurable criteria, so the qualifier adds nothing and must be dropped.
-
-**After (description):** Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User asking for a summary.
-
-**After (steps):** unchanged — the existing steps are already observable and already use the exact role "Claude User". Reproduce them as they stand:
+**Issue:** The description contains the forbidden qualifier "properly" from the product document's `vocabulary.forbidden_qualifiers` list. "Properly display" is not objectively testable — it adds no verifiable condition beyond the exact message text and the 30-second bound the description already states.
+**After (description):** Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User's request.
+**After (steps):** unchanged from the current steps — they already use the exact role "Claude User" from the story's as_a clause and already assert the exact message text and the 30-second bound.
 ```yaml
 - given: "a Google Doc is shared with the Claude User's account"
 - given: "the summary backend does not respond within 30 seconds"
@@ -135,7 +122,8 @@ Only AC-3 changes. AC-1, AC-2 and AC-4 are reproduced word for word, description
 - then: "Claude displays the message 'The summary timed out - please try again'"
 ```
 
-No new acceptance criteria are added and none are merged or removed: AC-1 (successful summary), AC-2 (document not shared), AC-3 (timeout) and AC-4 (document over 10000 words) each describe a distinct trigger and a distinct observable outcome.
+### No other changes
+AC-1, AC-2 and AC-4 descriptions contain no forbidden qualifiers, and the failed check is scoped to description fields only. Leave their descriptions and steps byte for byte as they are. No ACs are added, merged or removed.
 
 ## Complete Fixed Acceptance Criteria
 
@@ -157,7 +145,7 @@ No new acceptance criteria are added and none are merged or removed: AC-1 (succe
     - and: "Claude does not display any content from the document"
 
 - ac_id: AC-3
-  description: "Claude must display the message 'The summary timed out - please try again' when no summary is produced within 30 seconds of the Claude User asking for a summary."
+  description: "Claude must display the message 'The summary timed out - please try again' in the conversation when no summary is produced within 30 seconds of the Claude User's request."
   steps:
     - given: "a Google Doc is shared with the Claude User's account"
     - given: "the summary backend does not respond within 30 seconds"
@@ -172,6 +160,12 @@ No new acceptance criteria are added and none are merged or removed: AC-1 (succe
     - then: "Claude displays a summary of the first 10000 words"
     - and: "Claude states that only the first 10000 words were summarized"
 ```
+
+## Verification
+- AC-1: ok — no forbidden qualifier in description
+- AC-2: ok — no forbidden qualifier in description
+- AC-3: ok after fix — "properly" removed; exact message text and 30-second bound retained as the measurable criteria
+- AC-4: ok — no forbidden qualifier in description
 
 === FILE_END: tmp/{{RUN_DIR}}/01-96.6-fix-prompts.md ===
 

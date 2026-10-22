@@ -109,3 +109,18 @@ story:
                 - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
                 - and: the engine dispatched 1 AI turn
                 - and: no file outside "tmp" changed
+        - id: 006-host-memory-excluded
+          description: 'A host CLAUDE.md instructing every validation to fail must not reach an engine claude turn: a Scenario satisfying the selected Prompt still passes'
+          steps:
+            - given:
+                - the "engine-claude-minimal" project tree
+                - and: the "scen-check" checklist is narrowed to its "whether this scenario's description follows the rule-based format" prompt
+            - when:
+                - the Quality Engineer runs "scen check E2E-001"
+            - then:
+                - the command exits with code 0
+                - stdout matches ALL CHECKS PASSED
+                - and: 'the file "tmp/true-bdd.log.json" matches context\\":\[\\"E2E-001: ok\\"\]'
+                - but: stdout does not match CHECK FAILED|HOST_MEMORY_CANARY_174
+                - and: the engine dispatched 1 validation AI turn to "claude"
+                - and: no file outside "tmp" changed

@@ -1,7 +1,7 @@
-Edit applied and verified: header/metadata unchanged, single scenario `"99.3-001-mcp-initialize"` with correct lineage, steps, and two-space indentation.
-
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Replaced empty scenarios map with new entry 99.3-001-mcp-initialize (story 99.3-rewalk-fixture, path tests/mcp/mcp_endpoint_test.go, verbatim AC steps)"
+summary: "Replaced empty scenarios map with new scenario 99.3-001-mcp-initialize (path tests/mcp_test.go, story 99.3-rewalk-fixture, merged given/when/then steps)"
 === FILE_END: tmp/{{RUN_DIR}}/apply-99.3-001-mcp-initialize-iter1-result.yaml ===
+```

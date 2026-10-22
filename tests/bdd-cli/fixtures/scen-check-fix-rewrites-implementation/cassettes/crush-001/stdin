@@ -51,34 +51,37 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry's `means` changes, and no other document, scenario, generated test or step definition is touched.
+The `E2E-001` entry of the `scenarios_yaml` document (`docs/scenarios.yaml`, the scenario registry). No catalogue entry's `means` changes; the `product` document is not edited.
 
-## Why
-The scen-check finding is about exactly one step: the `then` step asserts that an internal Go function is invoked with given arguments, which is implementation, not something a person can watch from outside the program. The description already states observable behaviour ("must print the configured greeting followed by the name it is given") and must be left alone. The behaviour being specified — with the greeting configured as "Hello", running `greet Ada` prints `Hello Ada` — is preserved exactly, now stated as what the Operator reads on standard output.
-
-The replacement step fills the existing catalogue template `stdout matches {expected:pattern}` (block: `then`). Per the catalogue, `{expected:pattern}` is the rest of the step verbatim and is read as a regular expression, so the pattern is written unquoted; adding surrounding quotation marks would make them literal characters of the regex and the assertion would no longer match the printed line.
+## Context the applier must respect
+- The reviewer's finding is only about the `then` step: `the formatGreeting function is called with "Hello" and "Ada"` names an internal function call, which no Operator can watch from outside the program.
+- The Scenario already says what is observed: its description is "The greeter must print the configured greeting followed by the name it is given", the `given` sets the greeting to "Hello", and the `when` runs `"greet Ada"`. The observable form of the same assertion is therefore the line `Hello Ada` on standard output.
+- The product document's catalogue carries the template `stdout matches {expected:pattern}` (block `then`), whose `means` is "A line the command printed to its standard output matches the pattern, a regular expression". The replacement step fills that template's `{expected:pattern}` slot, so the step stays in the catalogue's words.
+- Leave `E2E-001`'s `description`, `service:`, `path:` and `user_stories:` exactly as they are. Leave `metadata:` and every other key untouched. Do not touch `tests/greeter/greet_test.go` or any step definition — `true-bdd build tests --fix` re-renders the test from the registry afterwards.
 
 ## Required Changes
 
-### Change #1: Replace the implementation-naming `then` step with the printed line the Operator observes
+### Change #1: Replace the `then` step that names an internal function call with the output a person reads
 **Document:** scenarios_yaml
-**Field:** merged_steps.then (the single `then` step of scenario `E2E-001`)
+**Field:** merged_steps.then
 **Current text:**
 ```
-the formatGreeting function is called with "Hello" and "Ada"
+      then:
+        - the formatGreeting function is called with "Hello" and "Ada"
 ```
 **New text:**
 ```
-stdout matches ^Hello Ada$
+      then:
+        - stdout matches ^Hello Ada$
 ```
 
-## Must not change
-- The scenario's `description`: `The greeter must print the configured greeting followed by the name it is given` — it names observable behaviour and no finding objects to it.
-- The `given` step `the greeting is configured as "Hello"` and the `when` step `the Operator runs "greet Ada"` — both already match catalogue templates and are untouched.
-- `E2E-001`'s `id`, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories:` (empty), and every other scenario in the registry.
-- `docs/product/product.yaml`, including every catalogue `means`.
-- `tests/greeter/greet_test.go` and every step definition. The generated test is re-rendered later by `true-bdd build tests --fix`; do not hand-edit it here.
-- Do not add any further assertion (for example an exit-code step). The scenario asserts one observable fact; adding or dropping assertions would re-specify it.
+That is the whole fix: one line replaced, one step in the `then` block, keeping the same assertion — the configured greeting "Hello" printed before the name "Ada" — now as what the Operator sees on standard output. Do not add, remove or reorder any other step, and do not add an exit-code step: the finding does not ask for one.
+
+## Verification after applying
+- `docs/scenarios.yaml` still has exactly one Scenario, `E2E-001`, with `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []`.
+- Its `given` and `when` blocks are byte-identical to before.
+- Its `then` block has exactly one step, `stdout matches ^Hello Ada$`, and the word `formatGreeting` no longer appears anywhere in the file.
+- No file other than `docs/scenarios.yaml` is modified.
 
 ---
 

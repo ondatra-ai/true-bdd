@@ -30,12 +30,10 @@ architecture:
         Post the request to /mcp and keep the response for the steps after.
     - term: reply
       technical: >-
-        The text field of the result object in the JSON-RPC response the
-        service returns for one message; the reply is that field's string
-        value. Only a successful response carries a reply: a response that
-        comes back with an error instead of a result has none.
+        The text in the `result` field of the JSON-RPC response the mcp
+        service returns for one posted request, mirroring how `message`
+        names that request's params.
       observed_by: >-
-        Take the response the sending step kept, read the reply text out of
-        its result object, and compare that text to the expected text for
-        exact equality. A response carrying an error instead of a result,
-        or a result without that text field, fails the observation.
+        Read the reply text out of the response the send step kept and
+        compare it to the expected text for exact equality; send no second
+        request and do not retry.

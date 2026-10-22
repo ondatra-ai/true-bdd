@@ -52,62 +52,51 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given, and exit with code 0
 
 ## Target
-The `product` document (`docs/product/product.yaml`), the `means` of the single catalogue entry the finding names: `'stdout matches {expected:pattern}'`.
-
-Nothing else changes. Do NOT touch the Scenario `E2E-001` in the scenario registry (its description, steps, id, `service:`, `path:` or `user_stories:` all stay exactly as they are), do NOT touch any catalogue `template:`, `block:` or `terms:`, do NOT touch any other catalogue entry (the other three entries were judged `ok`), and do NOT touch the generated test `tests/greeter/greet_test.go` or any step definition. `true-bdd build tests --fix` re-renders generated tests; this fix does not.
+The catalogue entry `stdout matches {expected:pattern}` in the `product` document (`docs/product/product.yaml`). Only that entry's `means` changes.
 
 ## Why
-The finding on `scen-check/term_closure` is: the entry's meaning only restates its template's words, names nothing a person could observe from outside the product, never says which product output a pattern-slot template holds the pattern against, and leans on `stdout`, which the glossary does not define — the glossary's term is `standard output`.
+The scen-check/term_closure finding is only against that one entry:
 
-The replacement below is drawn from the documents already in the repository, so it adds no new decision:
-- `product.yaml` `glossary:` → `standard output`: "The lines the command prints for its user, its answer and its log records alike. It is the greeter's only visible output."
-- `product.yaml` `glossary:` → `command`: "One command line a user types to run the greeter, its arguments included."
-- `architecture.yaml` `architecture.terms:` → `standard output`, `technical`: "What the greeter binary writes to file descriptor 1: its answer line, then its log records in logfmt, one per line."
-- `architecture.yaml` `architecture.terms:` → `standard output`, `observed_by`: "Hold the kept standard output, line by line, against the step's regular expression; any matching line passes."
+> E2E-001: 'stdout matches {expected:pattern}' — only restates the template's words and never says which product output the pattern is held against (the answer line the greeter prints, or a log record's message or fields), though the glossary's standard output covers both
 
-So the meaning must say: one line of the command's standard output — the answer line, or one of the log records after it — matches the regular expression the step carries; and it must name that output in the glossary's words (`standard output`), while making clear this is what the template's `stdout` refers to.
+The other three entries the steps use were judged `ok`. The Scenario E2E-001 itself — its description, its steps, its `id`, `service:`, `path:` and `user_stories:` — is correct and must not be touched. `tests/greeter/greet_test.go` and the step definitions must not be touched either.
+
+The replacement wording is taken from what the documents already state, so no behaviour changes:
+- `glossary:` → `standard output`: "The lines the command prints for its user, its answer and its log records alike. It is the greeter's only visible output."
+- `architecture.terms:` → `standard output` `observed_by`: "Hold the kept standard output, line by line, against the step's regular expression; any matching line passes."
 
 ## Required Changes
 
-### Change #1: State what the pattern is held against, in the glossary's words
+### Change #1: Say which product output the pattern is held against
 **Document:** product (`docs/product/product.yaml`)
-**Field:** the `means` of catalogue entry `'stdout matches {expected:pattern}'`
-
-**Current text** (the whole `means:` line of that entry, exactly as it stands in the file):
+**Field:** the means of catalogue entry 'stdout matches {expected:pattern}'
+**Current text:**
 ```
+  - template: 'stdout matches {expected:pattern}'
+    block: then
     means: Stdout matches the pattern.
+    terms: [command, standard output]
 ```
-
-**New text** (replace that one line with these lines; keep the surrounding `- template:`, `block:` and `terms:` lines of the entry untouched, and keep the 4-space / 6-space indentation shown):
-```
-    means: >-
-      One of the lines the command printed to its standard output — the
-      answer line the greeter writes for its user, or one of the log
-      records that follow it — matches the regular expression the step
-      ends with; "stdout" in the step names that standard output. The
-      Operator sets this up by running the command in a terminal and
-      observes it by reading the lines it printed before it exited.
-```
-
-## Resulting entry, for the applier to check against
-After the edit, the entry must read exactly:
+**New text:**
 ```
   - template: 'stdout matches {expected:pattern}'
     block: then
     means: >-
-      One of the lines the command printed to its standard output — the
-      answer line the greeter writes for its user, or one of the log
-      records that follow it — matches the regular expression the step
-      ends with; "stdout" in the step names that standard output. The
-      Operator sets this up by running the command in a terminal and
-      observes it by reading the lines it printed before it exited.
+      After the command has exited, the Operator reads the standard
+      output it printed in the terminal — the greeter's answer line and
+      its log records alike — and holds the rest of the step against
+      those lines as a regular expression, one printed line at a time.
+      The step is met when at least one of the printed lines matches.
     terms: [command, standard output]
 ```
 
-## Checks after the edit
-- `docs/product/product.yaml` still parses as YAML, and the `catalogue:` list still has four entries with their original templates and blocks.
-- The Scenario `E2E-001` in the scenario registry is byte-for-byte unchanged, so its step `stdout matches ^Hello Ada$` still matches the catalogue template `'stdout matches {expected:pattern}'` exactly as before.
-- No file other than `docs/product/product.yaml` is modified.
+## Constraints for the applier
+- Change nothing but the `means:` of that one catalogue entry; the `template:`, `block:` and `terms:` lines above are reproduced only so the edit lands on the right entry and must come out byte-identical.
+- Do not touch the other catalogue entries, the `glossary:`, `roles:`, `vocabulary:`, `description:` or `title:` of the product document.
+- Do not touch `docs/architecture/architecture.yaml`.
+- Do not touch the scenario registry: scenario E2E-001's description and steps stay exactly as they are, as do all other Scenarios.
+- Do not hand-edit `tests/greeter/greet_test.go` or any step definition. After the product document is saved, re-render with `true-bdd build tests --fix`.
+- Keep the document's existing YAML house style: the folded `>-` scalar with the continuation lines indented six spaces, as the neighbouring entries use.
 
 ---
 

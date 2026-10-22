@@ -45,6 +45,8 @@ var (
 // Options are the flags of one headless turn. The zero value runs `claude -p`
 // with no allowlist, which is only ever right for a turn that touches nothing.
 type Options struct {
+	// Minimal excludes settings, discovered memory and customizations while keeping auth and built-in tools.
+	Minimal bool
 	// AllowedTools is passed to --allowedTools, ahead of -p.
 	AllowedTools string
 	// PermissionMode is passed to --permission-mode.
@@ -78,10 +80,13 @@ type Options struct {
 	Timeout time.Duration
 }
 
-// isolation is the preamble every turn carries. User scope is where an
-// operator's advisorModel and enabledPlugins live; project stays, because the
-// workspace's own settings carry the permissions the turn must run under.
-func isolation() []string {
+// isolation always excludes user settings and MCP servers. Minimal turns
+// also exclude project settings and automatic memory/customizations.
+func isolation(minimal bool) []string {
+	if minimal {
+		return []string{"--setting-sources", "", "--strict-mcp-config", "--safe-mode"}
+	}
+
 	// Not --bare: it also skips CLAUDE.md and forces API-key auth.
 	return []string{
 		"--setting-sources", "project",
@@ -97,7 +102,7 @@ const AdvisorOff = "CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1"
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (o Options) Args(prompt string) []string {
 	args := make([]string, 0, 18) //nolint:mnd // the longest form: isolation, 7 flag pairs and -p.
-	args = append(args, isolation()...)
+	args = append(args, isolation(o.Minimal)...)
 
 	if o.AllowedTools != "" {
 		args = append(args, "--allowedTools", o.AllowedTools)

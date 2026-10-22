@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===
+applied: true
+target: "services/frontend/Dockerfile"
+summary: "Replaced Dockerfile with glibc node:20-bookworm-slim base, consistent NODE_ENV=production build, and dev deps included; disabled ESLint during next build in next.config.mjs"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter2-result.yaml ===

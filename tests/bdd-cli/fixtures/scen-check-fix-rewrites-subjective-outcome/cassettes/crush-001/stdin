@@ -51,45 +51,72 @@ Then:
 # Fix Prompt for Scenario E2E-001: The greeter must greet the person whose name it is given so that they feel welcome
 
 ## Target
-The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No catalogue entry and no `means` changes; the product document is not touched.
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry). No other Scenario, and no other document, changes. Do not touch `tests/greeter/greet_test.go`, any step definition, or the `product` document — the catalogue already carries the template this fix uses (`stdout matches {expected:pattern}`, block `then`), so no catalogue `means` needs editing.
 
-## What the finding objects to
-The only assertion names a feeling ("Ada feels welcomed by what the greeter prints"), so a reviewer must judge what counts as welcoming. The user settled what counts as correct: the greeter prints exactly the configured greeting, then the name, on one line — asserted as the stdout pattern `^Hello Ada$`, as a single Then step — and the description states that behaviour instead of the feeling.
+## What the finding is
+The reviewer's line: `E2E-001: subjective — 'Then step asserts "Ada feels welcomed by what the greeter prints": a feeling with no stated correct output, so a reviewer must judge whether the printed text counts as welcoming'`.
 
-The behaviour stays the same: the same Given (greeting configured as "Hello") and the same When (the Operator runs "greet Ada") lead to the same printed line; only the words of the outcome change, from a feeling to the observable output. The rewritten Then step fills the existing catalogue template `stdout matches {expected:pattern}` (block `then`), whose `{expected:pattern}` slot is the rest of the step verbatim.
+Two places carry that feeling: the `then` step that asserts it, and the description's `so that they feel welcome` clause. Both are rewritten below to the output the user settled on: the greeter prints exactly one line, `Hello Ada` — the configured greeting, one space, the given name, nothing else. The behaviour under test is unchanged: the Given still configures the greeting as `Hello`, the When still runs `greet Ada`, and the Then still asserts what the greeter prints for that run — now as a line a reviewer can match rather than judge.
 
 ## Required Changes
 
-### Change #1: State the outcome as printed output, not a feeling, in the description
+### Change #1: Replace the subjective Then step with the catalogue's stdout-match assertion
 **Document:** scenarios_yaml
-**Field:** description
+**Field:** `scenarios.E2E-001.merged_steps.then`
+**Current text:**
+```
+      then:
+        - Ada feels welcomed by what the greeter prints
+```
+**New text:**
+```
+      then:
+        - stdout matches ^Hello Ada$
+```
+Notes for the applier:
+- The `then` block keeps exactly one step. Do not add an exit-code step or any other assertion — the user chose to keep this Scenario to the printed-output assertion alone.
+- The step must read `stdout matches ^Hello Ada$` verbatim, filling the `{expected:pattern}` slot of the existing catalogue entry `stdout matches {expected:pattern}` with the anchored pattern `^Hello Ada$`. The pattern slot is the rest of the step, verbatim and unquoted; do not wrap it in quotes and do not escape the `^` or `$`.
+- If your YAML writer insists on quoting the scalar, single-quote the whole step as `'stdout matches ^Hello Ada$'`; the step's text must still be exactly `stdout matches ^Hello Ada$`.
+
+### Change #2: Replace the feeling in the description with the printed outcome
+**Document:** scenarios_yaml
+**Field:** `scenarios.E2E-001.description`
 **Current text:**
 ```
     description: The greeter must greet the person whose name it is given so that they feel welcome
 ```
 **New text:**
 ```
-    description: The greeter must print the configured greeting followed by the name it is given
+    description: The greeter must print the configured greeting followed by the name it is given, so the Operator sees one line of standard output holding the greeting, one space and that name
 ```
+Notes for the applier:
+- Keep it a plain (unquoted) scalar on one line, as it is now.
+- The wording deliberately avoids the product document's forbidden qualifiers (`properly`, `correctly`, `appropriate`, `appropriately`, `user-friendly`, `fast`, `quickly`, `helpful`) and its forbidden actions (`handle`, `process`, `parse`); it names the observable action, `print`, and the role `Operator` as declared in the product document's `roles`.
 
-### Change #2: Replace the feeling assertion with the stdout pattern
-**Document:** scenarios_yaml
-**Field:** merged_steps.then
-**Current text:**
+## Leave Unchanged
+- `scenarios.E2E-001` keys `service: greeter`, `path: tests/greeter/greet_test.go`, and `user_stories: []` — byte for byte, including the empty lineage.
+- The Scenario's id `E2E-001` and its position in `scenarios:`.
+- `scenarios.E2E-001.merged_steps.given` (`the greeting is configured as "Hello"`) and `.when` (`the Operator runs "greet Ada"`).
+- The registry's `metadata:` block and its leading comments.
+- Every other document: the `product` document (catalogue, glossary, vocabulary, roles), the generated test, and all step definitions. The generated test is re-rendered later by `true-bdd build tests --fix`; do not edit it here.
+
+## Done When
+`scenarios.E2E-001` reads:
 ```
-        - Ada feels welcomed by what the greeter prints
-```
-**New text:**
-```
+  E2E-001:
+    description: The greeter must print the configured greeting followed by the name it is given, so the Operator sees one line of standard output holding the greeting, one space and that name
+    service: greeter
+    path: tests/greeter/greet_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the greeting is configured as "Hello"
+      when:
+        - the Operator runs "greet Ada"
+      then:
         - stdout matches ^Hello Ada$
 ```
-
-## Constraints for the applier
-- Edit only the working copy of the `scenarios_yaml` document, inside the `E2E-001:` entry under `scenarios:`.
-- Leave `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are, and leave the `given:` and `when:` steps untouched.
-- The `then:` block keeps exactly one step after the edit: do not add an exit-code step or any further assertion, and do not delete the block.
-- Keep the list indentation and plain (unquoted) scalars shown above; the new step value opens with `^`, which needs no quoting.
-- Do not edit `tests/greeter/greet_test.go`, any step definition, or the product document. `true-bdd build tests --fix` re-renders the generated test from the registry afterwards.
+and nothing else in the repository differs.
 
 ---
 

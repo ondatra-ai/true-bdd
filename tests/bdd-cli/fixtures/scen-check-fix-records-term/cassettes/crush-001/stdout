@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
 applied: true
 target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Appended a glossary entry defining the term 'reply' after 'message' and before 'catalogue:', matching the catalogue's declared term spelling; no other sections changed."
+summary: "Appended a glossary entry defining the term 'reply' after 'message', before 'catalogue:', closing the declared-terms gap for E2E-001; nothing else changed."
 === FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

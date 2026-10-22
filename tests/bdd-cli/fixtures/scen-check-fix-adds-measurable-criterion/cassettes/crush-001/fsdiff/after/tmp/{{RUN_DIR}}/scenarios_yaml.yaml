@@ -22,4 +22,4 @@ scenarios:
       when:
         - the Operator runs the greeter with a name
       then:
-        - stdout matches ^Hello Alice$
+        - stdout matches ^Hello Ada$

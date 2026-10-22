@@ -52,23 +52,22 @@ Then:
 # Fix Prompt for Scenario E2E-001: The service must answer a ping with a pong within 200 milliseconds
 
 ## Target
-The `product` document — `docs/product/product.yaml` — and only its `catalogue:` list.
+The `product` document: `docs/product/product.yaml` — its `catalogue:` list only.
 
-Do **not** edit `docs/scenarios.yaml`, the Scenario E2E-001, the generated test `tests/mcp/ping_test.go`, any step definition, the `glossary:` list, the `roles:` list, or any other document. This fix is one appended catalogue entry.
+Do NOT touch the Scenario `E2E-001`, the user story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, any step definition, or any other file. No glossary change is needed: the existing `reply` term already states that a reply is "what the MCP service sends back for one message, and how long it took to arrive", and `mcp service` is already defined.
 
 ## Why
-The `scen-check/term_closure` check (D: step-phrases) reports:
+The scen-check `term_closure` finding (D: step-phrases) is:
 
 - `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
 
-The catalogue already phrases the other three steps of E2E-001 (`the mcp service is running`, `the {actor:role} sends "{message}"`, `the service answers "{reply}"`). Only the timing step has no stated meaning. It gets one new entry, with its number as a slot so later Scenarios can state a different budget without a second entry.
+The catalogue phrases every other step of E2E-001 (`the mcp service is running`, `the {actor:role} sends "{message}"`, `the service answers "{reply}"`), but nothing phrases the timing step. One new catalogue entry closes the gap, with the number slot named `budget`.
 
 ## Required Changes
 
-### Change #1: Add the catalogue entry phrasing the reply-time budget step
-
+### Change #1: Add the catalogue entry phrasing the timing step
 **Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list (it becomes the fourth and last entry; the list currently ends with the `the service answers "{reply}"` entry on the file's last line).
+**Action:** Append this entry to the end of the `catalogue:` list (after the `the service answers "{reply}"` entry, at the same two-space list indentation). Copy the YAML verbatim — the `template` value stays single-quoted exactly as written.
 **YAML:**
 ```yaml
   - template: 'the service answers within {budget:number} milliseconds'
@@ -79,10 +78,10 @@ The catalogue already phrases the other three steps of E2E-001 (`the mcp service
     terms: [mcp service, reply]
 ```
 
-**Apply it as this exact replacement:**
+**Equivalent edit, if the applier prefers an exact replacement:**
 
 old_string:
-```
+```yaml
   - template: 'the service answers "{reply}"'
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
@@ -90,7 +89,7 @@ old_string:
 ```
 
 new_string:
-```
+```yaml
   - template: 'the service answers "{reply}"'
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
@@ -103,19 +102,20 @@ new_string:
     terms: [mcp service, reply]
 ```
 
-## Notes for the applier
+## Notes on the entry
+- **Slot name:** the number slot is named `budget`, as requested. `{budget:number}` matches `200` in this Scenario and any other digit run (or the word `no`), so a later Scenario saying "the service answers within 50 milliseconds" reuses this entry without a new one.
+- **Literal words:** `the service answers within` and `milliseconds` stay literal, so the entry carries the timing meaning rather than a generic shape.
+- **No ambiguity:** a step matching this template can never also match `the service answers "{reply}"`, because that template requires a literal double quote immediately after `answers ` and this one requires the literal word `within`. Every other catalogue entry opens with different literal text (`the mcp service is running`, `the {actor:role} sends`). Each step of E2E-001 therefore still matches exactly one template, in its own block:
+  - given `the mcp service is running` → entry 1 (given)
+  - when `the Operator sends "ping"` → entry 2 (when), `Operator` being a declared `roles[].name`
+  - then `the service answers "pong"` → entry 3 (then)
+  - then `the service answers within 200 milliseconds` → the new entry 4 (then)
+- **Terms:** both named terms are spelled exactly as the glossary spells them (`mcp service`, `reply`), so term closure holds with no glossary edit.
 
-- The number slot is named `budget` — copy that name verbatim; do not rename it to `millis`, `ms`, `limit` or anything else.
-- Copy the `template:` value exactly as single-quoted above, including the braces and the literal words `the service answers within` and `milliseconds`.
-- The slot `{budget:number}` matches digits or the word `no`, so the step text `the service answers within 200 milliseconds` matches this template whole, with `budget` = `200`.
-- No ambiguity is introduced: the existing then entry `the service answers "{reply}"` requires a double-quoted run immediately after `answers`, which the timing step does not have, and the new template requires the literal word `within` there, which no existing entry accepts. Every step the other three entries phrase keeps matching exactly one template.
-- `terms:` names `mcp service` and `reply`, both already spelled that way in the document's `glossary:`; no glossary entry is added or changed, because `reply` already states that a reply's delay is behaviour.
-- Keep the file's existing two-space list indentation and leave the header comment and every other section untouched.
-
-## Verification
-
-- `go run ./scripts/cmd/alint docs/product/product.yaml`
-- Re-run `scen-check/term_closure` for E2E-001; check D (step-phrases) must pass with all four steps matching exactly one template each.
+## Acceptance
+- `docs/product/product.yaml` has exactly one new `catalogue:` entry, with template `'the service answers within {budget:number} milliseconds'` and block `then`.
+- No other line of `product.yaml` changes; no other file changes at all.
+- Re-running scen-check on E2E-001 reports `scen-check/term_closure` (D: step-phrases) as pass, and no step becomes ambiguous.
 
 ---
 
