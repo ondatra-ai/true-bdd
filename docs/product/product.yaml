@@ -277,6 +277,27 @@ glossary:
       what must be observed afterwards. Its text takes one shape the
       catalogue declares, or is a `judge:` clause a model rules on.
 
+  # Every phrase whose template holds a slot or brackets declares it, so
+  # whoever writes the phrase's step definition is handed the grammar.
+  - term: template
+    means: >-
+      The shape a catalogue phrase gives the text of its steps, as its
+      `template:` writes it: words a step repeats exactly, slots it fills
+      in, and brackets offering a choice. A step takes the shape with its
+      whole text, never a part of it. A quoted slot, `"{name}"`, is filled
+      with at least one character and no double quote, so a step with an
+      empty quote does not take the shape; a number slot, `{name:number}`,
+      with a whole number in digits or the word `no` for zero; a role slot,
+      `{name:role}`, with exactly one of the roles the product document
+      declares, spelled as declared, and no other words; a pattern slot,
+      `{name:pattern}`, always the last thing in the template, with the rest
+      of the step as written, quotes included. Brackets with several
+      alternatives, such as `[is|are]`, take exactly one of them, never
+      none; brackets with one, such as `[s]`, take it or leave it out. What
+      fills a slot is what the phrase's meaning calls the named or given
+      thing, that many, or that role, so the template decides which steps a
+      meaning speaks of.
+
   - term: Scenario
     means: >-
       One behaviour the product is held to, written as an entry of the
@@ -379,7 +400,7 @@ catalogue:
       The run starts from the named project tree: a fresh copy of that
       project's files becomes the directory the command runs in, so
       nothing an earlier run changed is visible in it.
-    terms: [project tree, command]
+    terms: [project tree, command, template]
 
   - template: 'the {actor:role} answers "{answer}" to every question'
     block: given
@@ -389,7 +410,7 @@ catalogue:
       "1" picks the first offered choice, which applies the proposed fix.
       Once the answers run out the command reads end of input, which
       exits the loop.
-    terms: [fix loop]
+    terms: [fix loop, template]
 
   - template: 'the {actor:role} answers "{lines}" line by line'
     block: given
@@ -401,7 +422,7 @@ catalogue:
       multi-line answer such as the feedback that refines a proposed fix.
       Once the lines run out the command reads end of input, which exits
       the loop.
-    terms: [fix loop]
+    terms: [fix loop, template]
 
   - template: 'the "{checklist}" checklist is narrowed to its "{prompt}" prompt'
     block: given
@@ -409,7 +430,7 @@ catalogue:
       The named checklist, as the command reads it from the project tree,
       holds only the one Prompt whose question contains the quoted text,
       so the run asks that Prompt and no other of that checklist.
-    terms: [checklist, Prompt, command, project tree]
+    terms: [checklist, Prompt, command, project tree, template]
 
   - template: 'the project tree has no "{file}"'
     block: given
@@ -418,7 +439,7 @@ catalogue:
       the engine's own configuration and checklists would bring into it,
       such as `true-bdd/true-bdd.yaml`, so the run shows what a command
       does without that file.
-    terms: [project tree]
+    terms: [project tree, template]
 
   - template: "the project's [browser ]test dependencies are installed"
     block: given
@@ -428,7 +449,7 @@ catalogue:
       before the command runs, so those tests can start. The installation
       happens before the run, so the files it adds are no file change of
       the run.
-    terms: [test dependencies, project tree, file change]
+    terms: [test dependencies, project tree, file change, template]
 
   - template: 'the {actor:role} runs "{command}"'
     block: when
@@ -436,7 +457,7 @@ catalogue:
       That role runs the engine with the given command in the project
       tree, once, and the Scenario waits for it to end. The role says who
       wants the behaviour; it changes nothing in what the command does.
-    terms: [engine, command, project tree]
+    terms: [engine, command, project tree, template]
 
   - template: 'the command exits with code {code:number}'
     block: then
@@ -446,7 +467,7 @@ catalogue:
       check still failing at the end is non-zero for `scen check`, `build
       tests` and `build code`, and 0 for `us refine` and `us apply`, which
       report it on stdout and leave the Story or the Registry as it was.
-    terms: [command, exit code]
+    terms: [command, exit code, template]
 
   - template: 'stdout matches {expected:pattern}'
     block: then
@@ -454,7 +475,7 @@ catalogue:
       What the command printed on stdout has a match for the pattern
       somewhere. Stdout carries the command's answer and its log records,
       so a pattern may name a log record's message or fields.
-    terms: [stdout, log record, pattern]
+    terms: [stdout, log record, pattern, template]
 
   - template: 'stdout does not match {unexpected:pattern}'
     block: then
@@ -462,7 +483,7 @@ catalogue:
       Nothing the command printed on stdout, neither an answer line nor a
       log record's message or fields, has a match for the pattern: proof
       that a message, a banner or a log record never appeared.
-    terms: [command, stdout, log record, pattern]
+    terms: [command, stdout, log record, pattern, template]
 
   - template: 'stderr matches {expected:pattern}'
     block: then
@@ -471,7 +492,7 @@ catalogue:
       somewhere. Stderr carries the error that stopped the command, so a
       pattern may name a mistyped argument, the usage printed after it, or
       a missing configuration.
-    terms: [stderr, pattern]
+    terms: [stderr, pattern, template]
 
   - template: 'stderr does not match {unexpected:pattern}'
     block: then
@@ -479,14 +500,14 @@ catalogue:
       Nothing the command printed on stderr has a match for the pattern:
       proof that an error never named something, or that the usage a
       mistyped argument earns never followed an error it did not earn.
-    terms: [command, stderr, pattern]
+    terms: [command, stderr, pattern, template]
 
   - template: 'no file outside "{dir}" changed'
     block: then
     means: >-
       Every file change the run made lies under the named directory of
       the project tree; every file outside it is as the run found it.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'no file outside "{dir}" and "{other_dir}" changed'
     block: then
@@ -494,7 +515,7 @@ catalogue:
       Every file change the run made lies under one of the two named
       directories of the project tree; every file outside both is as the
       run found it.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'the only file changed outside "{dir}" is "{file}"'
     block: then
@@ -502,21 +523,21 @@ catalogue:
       Outside the named directory the run made exactly one file change,
       and it is to the named file of the project tree: proof that, beside
       that directory, the command changed that one file and nothing else.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'the file "{file}" is created'
     block: then
     means: >-
       The run created the named file: it was not in the project tree when
       the run started and is there when it ends.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'the file "{file}" is modified'
     block: then
     means: >-
       The named file was in the project tree when the run started and the
       run changed its content.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'the file "{file}" is unchanged'
     block: then
@@ -524,7 +545,7 @@ catalogue:
       The named file is in the project tree after the run, and the run did
       not create, modify or delete it. A path naming no file fails, so a
       mistyped path cannot pass.
-    terms: [file change, project tree]
+    terms: [file change, project tree, template]
 
   - template: 'the file "{file}" has exactly {lines:number} line[s]'
     block: then
@@ -532,7 +553,7 @@ catalogue:
       After the run the named file of the project tree holds exactly that
       many lines of text. A newline at its end closes the last line rather
       than opening another, and an empty file has none.
-    terms: [project tree]
+    terms: [project tree, template]
 
   - template: 'the file "{file}" matches {expected:pattern}'
     block: then
@@ -540,43 +561,46 @@ catalogue:
       After the run the content of the named file of the project tree has a
       match for the pattern somewhere: proof that a command wrote a file
       that says the right thing.
-    terms: [project tree, pattern]
+    terms: [project tree, pattern, template]
 
   - template: 'exactly {count:number} file[s] matching "{glob}" [is|are] created'
     block: then
     means: >-
       The run created exactly that many files whose path in the project
       tree matches the glob; files it modified or deleted do not count. It
-      is how a Scenario pins new files whose names the command chooses.
-    terms: [file change, glob, project tree]
+      is how a Scenario pins new files whose names the command chooses. A
+      glob that is not well formed fails the step whatever the run created,
+      a count of none included, so a mistyped glob cannot pass.
+    terms: [file change, glob, project tree, template]
 
   - template: 'no file[s] matching "{glob}" [is|are] created'
     block: then
     means: >-
       The run created no file whose path in the project tree matches the
-      glob.
-    terms: [file change, glob, project tree]
+      glob. A glob that is not well formed fails the step, even when the run
+      created no file at all, so a mistyped glob cannot pass.
+    terms: [file change, glob, project tree, template]
 
   - template: 'the story "{story_file}" has id "{id}"'
     block: then
     means: >-
       After the run the Story in the named file of the project tree
       carries that id.
-    terms: [Story, project tree]
+    terms: [Story, project tree, template]
 
   - template: 'the story "{story_file}" has feature "{feature}"'
     block: then
     means: >-
       After the run the Story in the named file of the project tree carries
       that Feature.
-    terms: [Story, Feature, project tree]
+    terms: [Story, Feature, project tree, template]
 
   - template: 'the story "{story_file}" has {count:number} acceptance criteria'
     block: then
     means: >-
       After the run the Story in the named file of the project tree holds
       exactly that many Acceptance Criteria: none was dropped or added.
-    terms: [Story, Acceptance Criterion, project tree]
+    terms: [Story, Acceptance Criterion, project tree, template]
 
   - template: 'every acceptance criterion in the story "{story_file}" has given, when and then steps'
     block: then
@@ -584,7 +608,7 @@ catalogue:
       After the run the Story in the named file of the project tree has at
       least one Acceptance Criterion, and each has at least one Given, one
       When and one Then step.
-    terms: [Story, Acceptance Criterion, step, project tree]
+    terms: [Story, Acceptance Criterion, step, project tree, template]
 
   - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" matches {expected:pattern}'
     block: then
@@ -592,7 +616,7 @@ catalogue:
       After the run the Story in the named file of the project tree has an
       Acceptance Criterion with that id, and its description has a match
       for the pattern.
-    terms: [Story, Acceptance Criterion, pattern, project tree]
+    terms: [Story, Acceptance Criterion, pattern, project tree, template]
 
   - template: 'the description of acceptance criterion "{criterion}" of the story "{story_file}" does not match {unexpected:pattern}'
     block: then
@@ -600,7 +624,7 @@ catalogue:
       After the run the Story in the named file of the project tree has an
       Acceptance Criterion with that id, and its description has no match
       for the pattern: proof that a word or a shape is gone from it.
-    terms: [Story, Acceptance Criterion, pattern, project tree]
+    terms: [Story, Acceptance Criterion, pattern, project tree, template]
 
   - template: 'the steps of acceptance criterion "{criterion}" of the story "{story_file}" do not match {unexpected:pattern}'
     block: then
@@ -608,7 +632,7 @@ catalogue:
       After the run the Story in the named file of the project tree has an
       Acceptance Criterion with that id, it has steps, and the text of none
       of them has a match for the pattern.
-    terms: [Story, Acceptance Criterion, step, pattern, project tree]
+    terms: [Story, Acceptance Criterion, step, pattern, project tree, template]
 
   - template: 'every step of scenario "{scenario}" in "{registry}" is matched by a step definition under "{steps_dir}"'
     block: then
@@ -617,14 +641,14 @@ catalogue:
       the named Registry, model-run steps aside, matches exactly one step
       definition in the named directory of the project tree, so the
       Scenario can run as a test.
-    terms: [Scenario, Scenario key, Registry, step, step definition, project tree]
+    terms: [Scenario, Scenario key, Registry, step, step definition, project tree, template]
 
   - template: 'exactly {count:number} scenario[s] in "{registry}" come[s] from acceptance criterion "{criterion}"'
     block: then
     means: >-
       After the run exactly that many Scenarios of the named Registry name,
       in their lineage, the Acceptance Criterion with that lineage id.
-    terms: [Scenario, Registry, Acceptance Criterion, lineage]
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, template]
 
   - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" cites the story "{story_file}"'
     block: then
@@ -632,7 +656,7 @@ catalogue:
       After the run exactly one Scenario of the named Registry comes from
       the Acceptance Criterion with that lineage id, and its lineage names
       the Story file at that path.
-    terms: [Scenario, Registry, Acceptance Criterion, lineage, Story]
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Story, template]
 
   - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" is keyed "{key}"'
     block: then
@@ -640,7 +664,7 @@ catalogue:
       After the run exactly one Scenario of the named Registry comes from
       the Acceptance Criterion with that lineage id, and it sits in the
       Registry under that Scenario key.
-    terms: [Scenario, Registry, Acceptance Criterion, lineage, Scenario key]
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, Scenario key, template]
 
   - template: 'the scenario from acceptance criterion "{criterion}" in "{registry}" matches {expected:pattern}'
     block: then
@@ -649,21 +673,21 @@ catalogue:
       the Acceptance Criterion with that lineage id, and its whole entry,
       written out as YAML, has a match for the pattern: proof that it kept
       the behaviour, not only its name.
-    terms: [Scenario, Registry, Acceptance Criterion, lineage, pattern]
+    terms: [Scenario, Registry, Acceptance Criterion, lineage, pattern, template]
 
   - template: 'no two scenarios in "{registry}" share the same steps'
     block: then
     means: >-
       After the run no two Scenarios of the named Registry carry the same
       Given, When and Then steps.
-    terms: [Scenario, Registry, step]
+    terms: [Scenario, Registry, step, template]
 
   - template: 'the engine spawned the test runner "{program}"'
     block: then
     means: >-
       The engine started the project's test runner through the named
       program at least once during the run, even if that start then failed.
-    terms: [engine, test runner]
+    terms: [engine, test runner, template]
 
   - template: 'the engine spawned a test runner with arguments matching {expected:pattern}'
     block: then
@@ -671,28 +695,28 @@ catalogue:
       At least one test runner the engine started during the run carried
       arguments that, joined by single spaces, have a match for the
       pattern: proof of which tests the engine asked it to run.
-    terms: [engine, test runner, pattern]
+    terms: [engine, test runner, pattern, template]
 
   - template: 'the engine spawned exactly {count:number} test runner[s]'
     block: then
     means: >-
       The engine started the project's test runner exactly that many times
       during the run.
-    terms: [engine, test runner]
+    terms: [engine, test runner, template]
 
   - template: 'the engine spawned no test runner[s]'
     block: then
     means: >-
       The engine never started the project's test runner during the run,
       as when the command refuses to start.
-    terms: [engine, test runner]
+    terms: [engine, test runner, template]
 
   - template: 'the engine dispatched {turns:number} AI turn[s]'
     block: then
     means: >-
       The engine sent exactly that many AI turns during the run; "no"
       means none, so the run cost no model call.
-    terms: [engine, AI turn]
+    terms: [engine, AI turn, template]
 
   - template: 'the engine dispatched {turns:number} [validation|fix|apply] AI turn[s] to "{cli}"'
     block: then
@@ -703,7 +727,7 @@ catalogue:
       into a proposed fix or clarifying questions, and an apply turn writes
       the fix. It is how a Scenario observes which AI CLI the configuration
       routed each kind of turn to.
-    terms: [engine, AI turn, AI CLI, Prompt]
+    terms: [engine, AI turn, AI CLI, Prompt, template]
 
   - template: 'the shell command "{shell_command}" run in "{dir}" exits with code {code:number}'
     block: then
@@ -712,7 +736,7 @@ catalogue:
       directory of the project tree reports that exit status: an outcome
       checked apart from the engine, such as the project's own tests
       passing in the tree the command left.
-    terms: [shell command, project tree]
+    terms: [shell command, project tree, template]
 
   - template: 'crush''s write policy lets the turn write under "{dir}"'
     block: given
@@ -721,7 +745,7 @@ catalogue:
       anywhere under the named directory of the project tree. Each such
       step adds one directory: without one the turn may write nowhere, and
       without the shell step it may not run the shell.
-    terms: [crush, write policy, write guard, project tree]
+    terms: [crush, write policy, write guard, project tree, template]
 
   - template: 'crush''s write policy lets the turn run the shell'
     block: given
@@ -752,7 +776,7 @@ catalogue:
     means: >-
       The tool call crush asks about runs the named tool, spelled as crush
       spells it, such as `view`, `write` or `bash`.
-    terms: [crush, tool call]
+    terms: [crush, tool call, template]
 
   - template: 'crush names the file "{file}" of the project tree'
     block: given
@@ -760,7 +784,7 @@ catalogue:
       The tool call crush asks about targets the named file of the project
       tree, which crush names by its absolute path. The file need not exist
       yet, since a write usually creates it.
-    terms: [crush, tool call, project tree]
+    terms: [crush, tool call, project tree, template]
 
   - template: 'crush names the path "{path}" as written'
     block: given
@@ -768,7 +792,7 @@ catalogue:
       The tool call crush asks about targets the path exactly as quoted,
       left relative rather than made absolute, so it does not say which
       directory it starts from.
-    terms: [crush, tool call]
+    terms: [crush, tool call, template]
 
   - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
     block: given
@@ -777,7 +801,7 @@ catalogue:
       the named tool, and the named file of the project tree by its
       absolute path. The guard reads it for whichever of the two crush did
       not name otherwise.
-    terms: [crush, hook payload, write guard, tool call, project tree]
+    terms: [crush, hook payload, write guard, tool call, project tree, template]
 
   - template: 'the project tree''s "{link}" is a symbolic link to "{target}"'
     block: given
@@ -786,7 +810,7 @@ catalogue:
       pointing at the target, a path relative to the link's own directory,
       so a write through the link lands at the target instead. Creating it
       is no file change of the run.
-    terms: [symbolic link, project tree, file change]
+    terms: [symbolic link, project tree, file change, template]
 
   - template: 'crush asks the guard about the tool call'
     block: when
@@ -818,4 +842,4 @@ catalogue:
       The reason the write guard gave for its answer, the one line it
       prints on its standard error for crush to show beside a denied tool,
       has a match for the pattern somewhere.
-    terms: [write guard, crush, pattern]
+    terms: [write guard, crush, pattern, template]

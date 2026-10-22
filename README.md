@@ -234,6 +234,14 @@ its Scenario with a context line naming the step and the templates; a
 template the grammar refuses fails every checked Scenario. Steps opening
 with `llm:` or `judge:` are exempt, since a model runs them.
 
+`build tests --fix` hands whoever writes a step definition the phrase each
+unbound step matches, with the glossary meaning and the word mapping of
+every term that phrase declares, and nothing else of the catalogue: not
+this grammar. A host whose definitions must follow it states it as a word
+its phrases declare. TrueBDD's own product document does: its glossary
+defines `template`, its architecture document maps it, and every phrase
+whose template holds a slot or brackets declares it.
+
 `D: declared-terms` (also `docs: [product]`) holds the words those
 meanings rely on to the product document's `glossary:`, each entry a
 `term` and what it `means`. Every term the one template a step matches
