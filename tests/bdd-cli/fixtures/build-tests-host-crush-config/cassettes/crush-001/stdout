@@ -1,0 +1,9 @@
+Module and tree confirmed. Writing the two files exactly as specified.Both files written; the transient `Register` diagnostic cleared once the second file landed. Verifying:Shell is blocked by the fixture's guard hook, so I'll verify via LSP diagnostics instead:`go build`/`go vet` can't run — the fixture's guard hook denies shell in this mode. Verification instead comes from the write tool's embedded gopls diagnostics: after both files landed, the steps package reports 0 errors/warnings (the earlier `undefined: Register` in suite.go cleared once mcp_steps.go defined it); the only remaining project warning is the pre-existing, out-of-scope `mcp_test.go` bdd-tag issue.
+
+Both files were created with the exact content the fix prompt specifies — `tests/mcp/steps/suite.go` (State, StepFunc, Suite, NewSuite, Run) and `tests/mcp/steps/mcp_steps.go` (Register with the three anchored patterns for INT-900 plus their implementations). Nothing else was touched.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "tests/mcp/steps/mcp_steps.go"
+summary: "Created the mcp suite's steps package: suite.go registry/state and mcp_steps.go registering the three anchored INT-900 definitions (server running, JSON-RPC POST, HTTP status)."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
