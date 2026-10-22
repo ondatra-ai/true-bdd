@@ -43,12 +43,9 @@ architecture:
       #	third_party — a vendor's service, wherever the binary lives (crush is
       #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
-        - name: claude
-          protocol: cli
-          scope: third_party
-        # crush and codex are spawned by wrappers the engine owns, so a rebuild
-        # regenerates them; replay hashes their argv and stdin, so each states
-        # its invocation exactly (docs/qna Q2, Q19).
+        # Replay hashes every AI turn's argv and stdin, so each CLI states its
+        # invocation exactly (docs/qna Q2, Q19): a rebuilt engine must send
+        # the same requests.
         - name: crush
           protocol: cli
           scope: third_party
@@ -171,6 +168,127 @@ architecture:
               - >-
                 Before the spawn the engine logs the turn's sandbox level as
                 msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
+
+        - name: claude
+          protocol: cli
+          scope: third_party
+          # binary and args match every engine claude cassette's `binary` and
+          # `argv`: the turn's prompts, model, tools and answer schema all ride
+          # in argv, which replay hashes.
+          invocation:
+            binary: claude
+            args:
+              - --setting-sources
+              - project
+              - --strict-mcp-config
+              - --allowedTools
+              - "{allowed_tools}"
+              - --disallowed-tools
+              - "{disallowed_tools}"
+              - --model
+              - "{model}"
+              - when: >-
+                  The turn's system prompt is not empty, as every engine
+                  turn's is.
+                args: [--system-prompt, "{system_prompt}"]
+              - --permission-mode
+              - acceptEdits
+              - --output-format
+              - stream-json
+              - --verbose
+              - when: >-
+                  The turn carries a result schema: every validation turn and
+                  every fix turn does; an apply turn carries none.
+                args: [--json-schema, "{schema}"]
+              - -p
+              - "{user_prompt}"
+            values:
+              allowed_tools: >-
+                The turn's allowed tools joined by commas. A validation or fix
+                turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
+                turn: `Read(**),Write({tmp_glob}),Edit({tmp_glob}),MultiEdit({tmp_glob}),Glob(**),Grep(**)`,
+                followed, for each write root the command grants its applier
+                in order, by `Write(<glob>),Edit(<glob>),MultiEdit(<glob>)`.
+                `build code` grants every declared service's `path:`, `build
+                tests` `paths.test_write_globs` (else `./tests/**` and
+                `./services/**`), the other commands none. A root holding `*`,
+                `?` or `[` is its own glob; any other has a trailing `/` dropped
+                and `/**` added; a blank one is skipped.
+              disallowed_tools: >-
+                A validation or fix turn: `Bash,Edit(**),MultiEdit(**),Agent,Task`.
+                An apply turn: `Bash,Agent,Task`.
+              tmp_glob: >-
+                `paths.tmp_glob` from true-bdd.yaml: `./tmp/**` in every
+                cassette.
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `claude-opus-5` in almost every cassette.
+              system_prompt: *system-prompt
+              user_prompt: *user-prompt
+              work_dir: *work-dir
+              schema: >-
+                `{validation_schema}` for a validation turn, `{fix_schema}` for
+                a fix turn, each byte for byte.
+              validation_schema: |-
+                {
+                  "type": "object",
+                  "properties": {
+                    "answer": {"type": "string", "enum": ["pass", "fail"]},
+                    "context": {"type": "array", "items": {"type": "string"}},
+                    "fix_prompt": {"type": "string"}
+                  },
+                  "required": ["answer", "context"],
+                  "additionalProperties": false
+                }
+              fix_schema: |-
+                {
+                  "type": "object",
+                  "properties": {
+                    "fix_prompt": {"type": "string"},
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "string"},
+                          "question": {"type": "string"},
+                          "context": {"type": "string"},
+                          "options": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["id", "question", "context", "options"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["fix_prompt", "questions"],
+                  "additionalProperties": false
+                }
+            dir: "{work_dir}"
+            env:
+              CLAUDE_HISTORY_ROLE: Empty; the engine labels no turn.
+              CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
+            notes:
+              - >-
+                No stdin: the prompts travel in argv. `CLAUDECODE` is removed
+                from the inherited environment, so the turn does not look
+                launched from a Claude session.
+              - >-
+                `--setting-sources project` keeps user-scope settings (an
+                operator's advisor model, plugins) out while the project's own
+                settings still apply; `--strict-mcp-config` loads no MCP
+                server, since the command line names none. The advisor is a
+                server-side tool `--disallowed-tools` cannot reach, so only
+                the environment entry turns it off.
+              - >-
+                `-p` comes last: a flag before it would otherwise read the
+                prompt as its own value.
+              - >-
+                The answer is the stream's `result` record: its
+                `structured_output` object when the turn carried a schema,
+                else its text. A schema turn whose result holds no object, or
+                a non-zero exit, fails the turn, and the turn is bounded by
+                the router's 20 minutes.
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
