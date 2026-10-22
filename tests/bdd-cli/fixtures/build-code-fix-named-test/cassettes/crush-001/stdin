@@ -79,34 +79,90 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT weaken or remove its assertion.
+Apply the change(s) under `services/*` only. The test at `tests/suite/add_test.go`
+(`fixture/buildcodefix/tests/suite::TestAddSumsItsArguments`) is the contract; do NOT
+modify it, and do not touch anything under `tests/`, any `*_test.go`, any
+`services/*/__tests__/`, or anything under `docs/`.
 
 ## Root Cause
-`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The production function in `services/calc/calc.go` computes `a - b` instead of `a + b`, so `Add(2, 3)` returns `-1`. The failure output (`Add(2, 3) = -1, want 5`) matches exactly. The defect is in production source; the fix is to correct the operator.
+`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`:
+
+```go
+got := calc.Add(2, 3)
+if got != 5 {
+	t.Fatalf("Add(2, 3) = %d, want 5", got)
+}
+```
+
+The production function in `services/calc/calc.go` subtracts instead of adds:
+
+```go
+func Add(a, b int) int {
+	return a - b
+}
+```
+
+`2 - 3 == -1`, which matches the observed failure `Add(2, 3) = -1, want 5`. The
+smallest production fix is to correct the operator from `-` to `+`. No test
+assertion is weakened, skipped, or removed.
 
 ## Required Changes
-### Change #1: correct the arithmetic operator in `calc.Add`
+
+### Change #1: Correct the arithmetic operator in `calc.Add`
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the single return statement — do not touch the package clause, the doc comment, or anything else.
+**Action:** Use the Edit tool on this existing file.
 
 **old_string:**
 ```
+// Add returns the sum of a and b.
+//
+// It does not: the operator is wrong, deliberately. This is the planted
+// defect the fix loop has to correct, and it is in PRODUCTION source —
+// the test asserting 5 is right, and repairing the code rather than the
+// assertion is the whole contract of `build code`.
+func Add(a, b int) int {
 	return a - b
+}
 ```
 
 **new_string:**
 ```
+// Add returns the sum of a and b.
+func Add(a, b int) int {
+	return a + b
+}
+```
+
+Note: the stale doc comment describing the planted defect is removed along with
+the defect itself, so the comment no longer contradicts the code. If an exact
+match on the full block above fails (e.g. the em dash or line wrapping differs),
+fall back to the minimal edit instead — replace exactly:
+
+```
+	return a - b
+```
+
+with:
+
+```
 	return a + b
 ```
 
-## Do Not
-- Do not edit `tests/suite/add_test.go` or any other file under `tests/`.
-- Do not edit `docs/architecture/architecture.yaml` or anything else under `docs/`.
-- Do not edit anything under `true-bdd/`.
-- Do not add new files, helpers, or packages — this is a one-character production fix.
+## Verification Expectation
+After the edit, `services/calc/calc.go` must read (package clause and remaining
+comments aside):
 
-## Expected Result
-`calc.Add(2, 3)` returns `5`, and `TestAddSumsItsArguments` passes under `go test -json -count=1 ./tests/suite/...`.
+```go
+package calc
+
+// Add returns the sum of a and b.
+func Add(a, b int) int {
+	return a + b
+}
+```
+
+`calc.Add(2, 3)` then returns `5` and `TestAddSumsItsArguments` passes. Do not run
+the test yourself — the Go-side runner is authoritative and will re-execute it.
 
 ---
 
