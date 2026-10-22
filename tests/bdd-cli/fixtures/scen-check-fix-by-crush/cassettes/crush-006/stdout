@@ -1,0 +1,9 @@
+No reference documents were listed in the prompt, and I'm barred from reading the registry or generated test — the subject scenario alone decides this.
+
+**Reasoning:** The question passes when at least one specific measurable criterion (exact message, status code, timeout, error code, named field, or count) appears in the description or a step. The Then step asserts an exact message: `"Hello, <name>!"`, with `<name>` bound to the value supplied in the When step. An exact expected message is precisely the kind of criterion a step definition can assert on with a strict equality check — it is not prose restatement.
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
+answer: pass
+context:
+  - "E2E-001: measurable — 'exact message \"Hello, <name>!\" in the Then step'"
+=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===

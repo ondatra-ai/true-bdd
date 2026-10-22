@@ -363,3 +363,25 @@ func TestEngineDocuments006DirectoryDocumentRefused(t *testing.T) {
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
 }
+
+// engine-routes-001-codex-sandbox-per-turn: `build code --fix` with every tier naming codex must send each validation, fix and apply turn to codex, the validation and fix turns in its read-only sandbox and the apply turn in workspace-write, where codex corrects the service code until its failing test passes
+func TestEngineRoutes001CodexSandboxPerTurn(t *testing.T) {
+	s := scenarios.New(t, "engine-routes-001-codex-sandbox-per-turn")
+	s.Given(`the "build-code-fix-by-codex" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`the engine dispatched 3 validation AI turns to "codex"`)
+	s.And(`the engine dispatched 1 fix AI turn to "codex"`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only`)
+	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only`)
+	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write`)
+	s.But(`stdout does not match label=codex-turn00[1245] sandbox=workspace-write`)
+	s.And(`the file "services/calc/calc.go" is modified`)
+	s.But(`the file "tests/suite/add_test.go" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}

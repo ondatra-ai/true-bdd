@@ -62,7 +62,7 @@ architecture:
               with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
               without_system: "{user_prompt}"
             values:
-              model: &model >-
+              model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
                 `zhipu-coding/glm-5.2` in every crush cassette.
@@ -73,7 +73,10 @@ architecture:
               user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
               run_dir: &run-dir >-
                 The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
-                created at startup.
+                created at startup. The join is cleaned and stays relative to
+                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
+                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
+                `{{RUN_DIR}}`.
             dir: "{work_dir}"
             env:
               CRUSH_GLOBAL_CONFIG: >-
@@ -104,7 +107,7 @@ architecture:
         - name: codex
           protocol: cli
           scope: third_party
-          # No codex cassette exists, so this is stated from the wrapper.
+          # binary and args match every codex cassette's `binary` and `argv`.
           invocation:
             binary: codex
             args:
@@ -120,8 +123,8 @@ architecture:
               - -m
               - "{model}"
               - when: >-
-                  The turn carries a result schema, as every codex turn does
-                  except an apply turn.
+                  The turn carries a result schema, as every codex validation
+                  and fix turn does; an apply turn carries none.
                 args: [--output-schema, "{schema_path}"]
               - -o
               - "{answer_path}"
@@ -133,7 +136,10 @@ architecture:
                 the run directory (the apply turn of `build code --fix` and
                 `build tests --fix`, which hold write roots); `read-only` for
                 every other turn. codex has no level between the two.
-              model: *model
+              model: >-
+                The model half of the `<cli>:<model>` reference the turn's tier
+                resolves to under `engine.models`, split on the first colon:
+                `gpt-6.1-sol` in every codex cassette.
               work_dir: *work-dir
               system_prompt: *system-prompt
               user_prompt: *user-prompt
@@ -144,9 +150,11 @@ architecture:
                 dispatched, whichever CLI ran it.
               schema_path: >-
                 `{run_dir}/{label}-codex-schema.json`, written before the spawn
-                with the JSON Schema the answer must satisfy.
+                with the JSON Schema the answer must satisfy, every object's
+                `required` listing all of its properties: codex refuses a
+                schema that leaves one out, which claude accepts.
               answer_path: >-
-                `{run_dir}/{label}-codex-answer.md`, where codex writes its final
+                `{run_dir}/{label}-codex-answer.txt`, where codex writes its final
                 message; the engine reads the answer there, never from stdout.
             dir: "{work_dir}"
             notes:
@@ -160,6 +168,9 @@ architecture:
               - >-
                 The environment is inherited unchanged. Process group, wait bound
                 and merged output are as for crush.
+              - >-
+                Before the spawn the engine logs the turn's sandbox level as
+                msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
@@ -310,6 +321,21 @@ architecture:
       observed_by: >-
         Count the "Dispatching AI turn" records in the run's JSON log file;
         "no" is zero, and a missing log file fails instead of counting zero.
+
+    - term: AI CLI
+      technical: >-
+        The binary an AI turn is spawned as, `claude`, `crush` or `codex`
+        (see `dependencies[]` above): the half before the first colon of the
+        `<cli>:<model>` reference the turn's tier resolves to under
+        `engine.models`. The tier is the Prompt's own `model:`, `fix_model:`
+        or `apply_model:` for a validation, fix or apply turn, else its
+        checklist's `engine:` block, else `engine.default_<role>_model`.
+      observed_by: >-
+        Read from the `cli` field of each "Dispatching AI turn" record in the
+        run's JSON log file, its `role` field telling the kind of turn:
+        `prompt` for a validation turn, `fix` for a fix turn, `apply` for an
+        apply turn. The records of that role and CLI are counted; "no" is
+        zero, and a missing log file fails instead of counting zero.
 
     - term: fix loop
       technical: >-

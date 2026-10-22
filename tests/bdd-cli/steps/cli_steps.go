@@ -94,18 +94,23 @@ func Register(suite *bddgo.Suite[State]) {
 	// entries carry the same merged_steps. Implemented in
 	// registry_origin_steps.go.
 	suite.Step(`^no two scenarios in "([^"]+)" share the same steps$`, assertNoDuplicateScenarioSteps)
-	// Engine-behaviour assertions read the CLI's own structured log rather
-	// than its stdout: which framework runners it spawned and how many, and
-	// how many model turns it dispatched. Implemented in engine_log_steps.go.
+	registerEngineLogSteps(suite)
+	// The independent outcome check: the harness itself runs a shell command the
+	// scenario names, in a directory under the run's tmpdir — e.g. the host
+	// suite the fix loop was meant to make pass. See command_steps.go.
+	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+}
+
+// registerEngineLogSteps binds the assertions that read the CLI's own
+// structured log rather than its stdout: which test runners it spawned, how
+// many AI turns it dispatched, and to which AI CLI. See engine_log_steps.go.
+func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
 	suite.Step(`^the engine spawned exactly (\d+) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
-	// The independent outcome check: the harness itself runs a shell command the
-	// scenario names, in a directory under the run's tmpdir — e.g. the host
-	// suite the fix loop was meant to make pass. See command_steps.go.
-	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+)$`, assertCommandExitCode)
+	suite.Step(`^the engine dispatched (\d+|no) (validation|fix|apply) AI turns? to "([^"]+)"$`, assertAITurnsTo)
 }
 
 // registerGivenSteps binds the Given steps: the tree a scenario starts

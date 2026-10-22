@@ -20,6 +20,9 @@ const (
 	fixturesRootDir      = "../../../../tests/bdd-cli/fixtures"
 	usRefineStem         = "us-refine"
 	scenCheckStem        = "scen-check"
+	// measurableQShort is the scen-check question several fixtures narrow
+	// to: "whether this scenario includes at least one specific measurable criterion".
+	measurableQShort = "d92aa73c"
 	// vagueDescriptionQ is the us-refine vague-word-in-description prompt.
 	vagueDescriptionQ = "4fa4e82c"
 )
@@ -57,8 +60,11 @@ func declaredSelections() map[string]declaredSelection {
 		"scen-check-fix-rewrites-step-qualifier":     {Stem: scenCheckStem, QShort: "63aefa89", RequireF: true},
 		"scen-check-fix-rewrites-forbidden-verb":     {Stem: scenCheckStem, QShort: "6d955d38", RequireF: true},
 		"scen-check-fix-rewrites-implementation":     {Stem: scenCheckStem, QShort: "4ca30544", RequireF: true},
-		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: "d92aa73c", RequireF: true},
+		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-fix-rewrites-subjective-outcome": {Stem: scenCheckStem, QShort: "17ccea8c", RequireF: true},
+		"scen-check-fix-by-crush":                    {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
+		"scen-check-claude-turn-fails":               {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
+		"scen-check-crush-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
 	}
 }
 
@@ -142,6 +148,9 @@ const (
 	// overrideChecks adds `D:` prompts no shipped checklist carries yet
 	// (ADR 0015); its `Q:` prompts must still copy shipped ones.
 	overrideChecks
+	// overrideTiers gives a shipped prompt its own `model:`, `fix_model:`
+	// and `apply_model:`, which the eval key leaves out, so it still copies one.
+	overrideTiers
 	// overrideFixLoop shapes the fix loop under test (#168): its `F:` decides
 	// what a fix asks or changes and its `config:` may bound the loop, while
 	// each question or check stays a shipped one.
@@ -190,6 +199,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-records-phrase":            overrideChecks,
+		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,
 		"fix-loop-exit-terms":                     overrideFixLoop,
