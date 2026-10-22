@@ -50,3 +50,17 @@ story:
                 - but: stdout does not match SCEN CHECK
                 - and: no file outside "tmp" changed
                 - and: the engine dispatched no AI turns
+        - id: 003-every-prompt-skipped-refused
+          description: 'A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success'
+          steps:
+            - given:
+                - the "scen-check-every-prompt-skipped" project tree
+            - when:
+                - the Quality Engineer runs "scen check"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+                - and: 'stdout matches scen-check: checklist has no prompts, so every item would pass without being checked'
+                - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched no AI turns

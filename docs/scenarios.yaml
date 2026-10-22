@@ -2477,3 +2477,24 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
+
+  checklist-skip-003-every-prompt-skipped-refused:
+    description: 'A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/checklist-skip-parked-prompts.yaml
+        scenario_id: checklist-skip-003-every-prompt-skipped-refused
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "scen-check-every-prompt-skipped" project tree
+      when:
+        - the Quality Engineer runs "scen check"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Refusing to start" command="scen check"
+        - and: 'stdout matches scen-check: checklist has no prompts, so every item would pass without being checked'
+        - but: stdout does not match SCEN CHECK
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched no AI turns

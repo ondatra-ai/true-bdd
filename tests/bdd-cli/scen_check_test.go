@@ -155,6 +155,20 @@ func TestChecklistSkip002NonBooleanSkipRefused(t *testing.T) {
 	s.Done()
 }
 
+// checklist-skip-003-every-prompt-skipped-refused: A checklist whose every Prompt carries `skip: true` must be refused at startup as one with no Prompts, with no AI turn, never walked to a trivial success
+func TestChecklistSkip003EveryPromptSkippedRefused(t *testing.T) {
+	s := scenarios.New(t, "checklist-skip-003-every-prompt-skipped-refused")
+	s.Given(`the "scen-check-every-prompt-skipped" project tree`)
+	s.When(`the Quality Engineer runs "scen check"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
+	s.And(`stdout matches scen-check: checklist has no prompts, so every item would pass without being checked`)
+	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
 // engine-006-check-without-fix-refused: A `--fix` run must be refused at startup when a `D:` Prompt it would walk carries no `F:`, naming that Prompt by its check, as it is for a `Q:` Prompt
 func TestEngine006CheckWithoutFixRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-006-check-without-fix-refused")
