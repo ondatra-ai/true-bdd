@@ -28,8 +28,10 @@ glossary:
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back for one message — exactly one
-      reply per message. What a Scenario's Then block checks.
+      The text the MCP service sends back for one message. Each message
+      gets a single reply, and a Scenario observes it as the whole text
+      the service sent back. The counterpart of a message, which is the
+      one request a client sends.
 
 catalogue:
   - template: 'the mcp service is running'

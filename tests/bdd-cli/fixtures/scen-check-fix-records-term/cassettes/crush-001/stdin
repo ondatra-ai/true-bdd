@@ -53,35 +53,35 @@ Then:
 ## Target
 The `product` document — `docs/product/product.yaml` — and only its `glossary:` list.
 
-Do NOT touch the `catalogue:`, `roles:`, `title:` or `description:` sections. Do NOT touch the existing `mcp service` or `message` glossary entries. Do NOT edit the Scenario (`docs/scenarios.yaml` or any registry entry), the generated test (`tests/mcp/ping_test.go`), any step definition, or any other document.
+## What the finding says
+`scen-check/term_closure` (D: declared-terms) failed:
 
-## Why
-The scen-check `term_closure` finding is:
+- `E2E-001`: `the service answers "{reply}"` declares `reply`, which the glossary does not define.
 
-> E2E-001: "the service answers \"{reply}\"" declares "reply", which the glossary does not define
-
-The catalogue entry `the service answers "{reply}"` (block `then`) declares `terms: [mcp service, reply]`. `mcp service` is defined; `reply` is not. The fix is exactly one new glossary entry defining `reply`, spelled lower-case as the catalogue declares it.
+The catalogue entry at `docs/product/product.yaml` line 39 already declares `terms: [mcp service, reply]`. `mcp service` is defined (line 21) and `message` is defined (line 25); `reply` is defined nowhere. One new glossary entry closes the gap.
 
 ## Required Changes
 
-### Change #1: Define the term `reply` in the product glossary
+### Change #1: Define the term `reply` in the glossary
 
 **Document:** product (`docs/product/product.yaml`)
+**Action:** Append one entry to the end of the `glossary:` list, after the `message` entry and before the `catalogue:` key. Spell the term exactly `reply`, lower-case, as the catalogue entry declares it in its `terms`.
 
-**Action:** Append this entry to the end of the `glossary:` list, immediately after the `message` entry and immediately before the `catalogue:` key. Keep the existing two-space list indentation and the `>-` block scalar style used by the neighbouring entries.
+**YAML of the new entry (copy verbatim, two-space list indentation matching the existing entries):**
 
-**YAML to add (copy verbatim):**
 ```yaml
   - term: reply
     means: >-
-      The text the MCP service sends back for one message — exactly one
-      reply per message. What a Scenario's Then block checks.
+      The text the MCP service sends back for one message. Each message
+      gets a single reply, and a Scenario observes it as the whole text
+      the service sent back. The counterpart of a message, which is the
+      one request a client sends.
 ```
 
-**Exact edit:**
+**Apply it as this exact replacement:**
 
 old_string:
-```yaml
+```
   - term: message
     means: >-
       One request a client sends the MCP service, as text. The service
@@ -91,24 +91,37 @@ catalogue:
 ```
 
 new_string:
-```yaml
+```
   - term: message
     means: >-
       One request a client sends the MCP service, as text. The service
       answers each message on its own.
   - term: reply
     means: >-
-      The text the MCP service sends back for one message — exactly one
-      reply per message. What a Scenario's Then block checks.
+      The text the MCP service sends back for one message. Each message
+      gets a single reply, and a Scenario observes it as the whole text
+      the service sent back. The counterpart of a message, which is the
+      one request a client sends.
 
 catalogue:
 ```
 
-## Acceptance
-- `docs/product/product.yaml` parses as YAML, and `glossary:` holds exactly three entries: `mcp service`, `message`, `reply` — each defined exactly once.
-- `reply` is spelled `reply`, matching the `terms:` list of the catalogue entry `the service answers "{reply}"` character for character.
-- The `catalogue:` list and every other section of the document are byte-identical to before the edit.
-- No file outside `docs/product/product.yaml` is modified.
+## Why this wording
+
+- It defines what the word *is* in this product (the answer text for one message), not how the service produces it.
+- It stays silent on how a Scenario compares the reply: "exactly the quoted text" already lives in the catalogue entry's `means` (line 41) and must not be duplicated in the glossary, so the term reads true for any future Scenario that phrases a reply differently.
+- It mirrors the existing `message` entry, naming the two as counterparts: `message` is the one request in, `reply` is the one answer out.
+
+## Must not change
+
+- Do **not** touch the `catalogue:` list — `the service answers "{reply}"`, its `block`, its `means` and its `terms` stay exactly as written, including the `reply` spelling.
+- Do **not** touch the existing `mcp service` or `message` glossary entries, `title`, `description` or `roles`.
+- Do **not** add a second entry for `reply` anywhere — a term defined twice has two meanings; this entry must be the only one.
+- Do **not** edit the Scenario `E2E-001`, the story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, or any step definition. The Scenario's steps stay exactly as written.
+
+## Done when
+
+`docs/product/product.yaml` has a `glossary:` list of three entries — `mcp service`, `message`, `reply` — every term declared by the catalogue entries matching E2E-001's steps is defined exactly once, and nothing outside the `glossary:` list differs from before.
 
 ---
 
