@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
@@ -265,23 +264,9 @@ func (s *State) guardAnswered(want int, verb string) error {
 }
 
 // assertGuardReason matches the reason the guard wrote on stderr, the
-// line crush shows for a denied tool.
+// line crush shows for a denied tool: `stderr matches` in the guard's words.
 func assertGuardReason(state *State, args []string) error {
-	if state.Result == nil {
-		return state.fail("%w", ErrNoRun)
-	}
-
-	pattern, err := regexp.Compile(args[0])
-	if err != nil {
-		return state.fail("reason pattern %q does not compile: %w", args[0], err)
-	}
-
-	if !pattern.MatchString(state.Result.Stderr) {
-		return state.fail("expected the guard's reason to match %q, but it was %q",
-			args[0], strings.TrimSpace(state.Result.Stderr))
-	}
-
-	return nil
+	return assertStderr(state, args)
 }
 
 // shellQuote wraps a word in single quotes for the prep phase's bash.
