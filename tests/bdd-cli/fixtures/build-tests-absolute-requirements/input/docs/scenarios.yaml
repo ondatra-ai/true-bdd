@@ -1,0 +1,13 @@
+# Decoy: the Registry true-bdd.yaml names (documents.scenarios_yaml).
+#
+# The run names docs/specs/requirements.yaml with --requirements, which
+# must win. A run that read this file instead would refuse it, since it
+# declares no scenario.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture decoy)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Decoy for build-tests-absolute-requirements fixture"
+
+scenarios: {}

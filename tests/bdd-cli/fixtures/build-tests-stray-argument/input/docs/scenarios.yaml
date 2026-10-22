@@ -1,0 +1,31 @@
+# Seed registry for the `build-tests-stray-argument` BDD fixture.
+#
+# One scenario a Story claims, every step of which binds to a definition
+# already in tests/mcp/steps/, and its generated test already rendered:
+# a bare `build tests` here walks nothing and exits 0. The run passes this
+# file's path as an argument `build tests` does not take, so the refusal
+# is the argument's alone.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-10-22"
+  description: "Seed for build-tests-stray-argument fixture"
+
+scenarios:
+  INT-901:
+    description: "A Claude User opening a session at the MCP server is granted a ticket promptly"
+    service: "mcp-service"
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-22"
+    user_stories:
+      - story: "docs/product/stories/99.5-fixture.yaml"
+        scenario_id: "99.5-001"
+        merge_date: "2026-10-22"
+    merged_steps:
+      given:
+        - "the MCP server is running"
+      when:
+        - "the Claude User opens a session"
+      then:
+        - "the session is granted a ticket within 2 seconds"
