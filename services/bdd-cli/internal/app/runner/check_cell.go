@@ -3,7 +3,6 @@ package runner
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -16,10 +15,10 @@ func answerCheck[I any](
 	spec Spec[I],
 	item I,
 	subjectID string,
-	query *renderedPrompt,
+	query *checklistmodels.PromptWithContext,
 ) (checklistmodels.ValidationResult, error) {
-	prompt := query.Prompt
-	name := strings.TrimSpace(prompt.Prompt.Check)
+	prompt := *query
+	name := prompt.Prompt.Check
 
 	docPaths, err := spec.DocResolver.ResolveAll(prompt.GetEffectiveDocs())
 	if err != nil {
@@ -40,7 +39,7 @@ func answerCheck[I any](
 		return checklistmodels.ValidationResult{}, fmt.Errorf("check %s: %w", name, err)
 	}
 
-	result := validate.CheckResult(prompt, query.Index, verdict)
+	result := validate.CheckResult(prompt, verdict)
 
 	slog.Info("Check answered",
 		"check", name,
@@ -60,8 +59,8 @@ func answerCheck[I any](
 
 // recordSkip reports a `Q:` Cell a failed check spared as SKIP, so the
 // report still shows every prompt the item was held to.
-func recordSkip[I any](spec Spec[I], builder *reportBuilder) func(item I, query *renderedPrompt) {
-	return func(item I, query *renderedPrompt) {
+func recordSkip[I any](spec Spec[I], builder *reportBuilder) func(item I, query *checklistmodels.PromptWithContext) {
+	return func(item I, query *checklistmodels.PromptWithContext) {
 		subjectID, subjectTitle := spec.GetSubject(item)
 
 		slog.Info("Prompt skipped after a failed check",
@@ -69,12 +68,12 @@ func recordSkip[I any](spec Spec[I], builder *reportBuilder) func(item I, query 
 			"promptIndex", query.Index,
 		)
 
-		builder.Add(subjectID, subjectTitle, validate.SkippedResult(query.Prompt, query.Index))
+		builder.Add(subjectID, subjectTitle, validate.SkippedResult(*query))
 	}
 }
 
 // isCheckQuery marks a `D:` Cell as the walker's gate: its failure skips
 // the item's model Cells until a fix restarts the item.
-func isCheckQuery(query *renderedPrompt) bool {
-	return query.Prompt.Prompt.IsCheck()
+func isCheckQuery(query *checklistmodels.PromptWithContext) bool {
+	return query.Prompt.IsCheck()
 }

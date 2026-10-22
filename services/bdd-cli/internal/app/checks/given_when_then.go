@@ -1,6 +1,9 @@
 package checks
 
-import "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
+import (
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
+)
 
 // givenWhenThen passes a Scenario with at least one step of each kind:
 // one missing has no precondition, no action, or nothing asserted.
@@ -10,19 +13,19 @@ func givenWhenThen() Check[*template.ScenarioCheckData] {
 		Docs:   nil,
 		Run: func(item *template.ScenarioCheckData, _ Input) (Verdict, error) {
 			kinds := []struct {
-				name  string
+				block catalogue.Block
 				steps []string
 			}{
-				{"given", item.Steps.Given},
-				{"when", item.Steps.When},
-				{"then", item.Steps.Then},
+				{catalogue.BlockGiven, item.Steps.Given},
+				{catalogue.BlockWhen, item.Steps.When},
+				{catalogue.BlockThen, item.Steps.Then},
 			}
 
 			context := make([]string, 0, len(kinds))
 
 			for _, kind := range kinds {
 				if len(kind.steps) == 0 {
-					context = append(context, item.ID+": missing "+kind.name+" step")
+					context = append(context, item.ID+": missing "+string(kind.block)+" step")
 				}
 			}
 

@@ -14,19 +14,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
-// renderedPrompt is the Q value the engine passes around. Pairs a
-// PromptWithContext with its 1-based index so per-cell file naming
-// stays stable across walks.
-type renderedPrompt struct {
-	Prompt checklistmodels.PromptWithContext
-	Index  int
-}
-
-// renderPrompt is the engine's GenerateQFn for every us-* command.
-// The index is the prompt's file position, not its walk position: `D:`
+// renderPrompt is the engine's GenerateQFn for every command: the Prompt
+// itself, whose Index is its file position, not its walk position — `D:`
 // prompts walk first, and a Cell's artifacts must not move with them.
-func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *renderedPrompt {
-	return &renderedPrompt{Prompt: prompt, Index: prompt.Index}
+func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *checklistmodels.PromptWithContext {
+	return &prompt
 }
 
 // Spec describes one checklist-driven command: its name, the checklist
@@ -246,10 +238,10 @@ func buildSpecEngine[I any](
 	builder *reportBuilder,
 	items []I,
 	maxAttempts int,
-) *engine.Engine[I, checklistmodels.PromptWithContext, *renderedPrompt] {
+) *engine.Engine[I, checklistmodels.PromptWithContext, *checklistmodels.PromptWithContext] {
 	var latestResult checklistmodels.ValidationResult
 
-	cell := &engine.CellHandler[I, *renderedPrompt]{
+	cell := &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
 		Query:   buildQueryClosure(spec, builder, &latestResult),
 		GenFix:  buildGenFixClosure(spec, &latestResult),
 		Fix:     buildFixClosure(spec, &latestResult),
@@ -259,7 +251,7 @@ func buildSpecEngine[I any](
 	// Same budget on both loops: max_apply_attempts caps the fixes one
 	// walk may apply as well as the outer re-walks, so a cell that never
 	// converges fails with a named error instead of spinning.
-	walker := &engine.SequentialWalker[I, *renderedPrompt]{
+	walker := &engine.SequentialWalker[I, *checklistmodels.PromptWithContext]{
 		Cell:     cell,
 		MaxFixes: maxAttempts,
 		Gate:     isCheckQuery,
@@ -320,11 +312,11 @@ func buildQueryClosure[I any](
 	spec Spec[I],
 	builder *reportBuilder,
 	latestResult *checklistmodels.ValidationResult,
-) engine.QueryFn[I, *renderedPrompt] {
+) engine.QueryFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
 		item I,
-		query *renderedPrompt,
+		query *checklistmodels.PromptWithContext,
 	) (bool, error) {
 		subjectID, subjectTitle := spec.GetSubject(item)
 
@@ -337,7 +329,7 @@ func buildQueryClosure[I any](
 			result, err = answerCheck(spec, item, subjectID, query)
 		} else {
 			result, err = spec.Evaluator.EvaluateOne(
-				ctx, item, subjectID, query.Prompt, spec.TmpDir, query.Index,
+				ctx, item, subjectID, *query, spec.TmpDir,
 			)
 		}
 
@@ -358,11 +350,11 @@ func buildQueryClosure[I any](
 func buildGenFixClosure[I any](
 	spec Spec[I],
 	latestResult *checklistmodels.ValidationResult,
-) engine.GenerateFixFn[I, *renderedPrompt] {
+) engine.GenerateFixFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
 		item I,
-		_ *renderedPrompt,
+		_ *checklistmodels.PromptWithContext,
 		userAnswers map[string]string,
 		iteration int,
 	) (engine.FixResult, error) {

@@ -65,7 +65,7 @@ func promptProblem[I any](command string, set checks.Set[I], promptCtx *checklis
 		return nil
 	}
 
-	check, known := set[strings.TrimSpace(prompt.Check)]
+	check, known := set[prompt.Check]
 	if !known {
 		return fmt.Errorf("%s %w %s, which has %s", prompt.Label(), errUnknownCheck, command, set.Describe())
 	}

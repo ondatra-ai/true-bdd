@@ -101,19 +101,18 @@ func NewChecklistEvaluatorWithPaths(
 
 // EvaluateOne evaluates a single prompt against the subject and returns the
 // full ValidationResult, not just pass/fail, so the cell's `genFix` closure
-// can read it via shared closure state. promptIndex must be 1-based to match the tmp-file naming convention.
+// can read it via shared closure state. The prompt's 1-based Index names its tmp files.
 func (e *ChecklistEvaluator) EvaluateOne(
 	ctx context.Context,
 	subject any,
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
 	tmpDir string,
-	promptIndex int,
 ) (checklist.ValidationResult, error) {
 	e.tmpDir = tmpDir
 	e.subjectID = subjectID
 
-	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx, promptIndex)
+	return e.evaluatePrompt(ctx, subject, subjectID, promptCtx)
 }
 
 // evaluatePrompt evaluates a single prompt against the subject.
@@ -122,8 +121,9 @@ func (e *ChecklistEvaluator) evaluatePrompt(
 	subject any,
 	subjectID string,
 	promptCtx checklist.PromptWithContext,
-	promptIndex int,
 ) (checklist.ValidationResult, error) {
+	promptIndex := promptCtx.Index
+
 	// Load requested documents for this prompt (uses prompt-specific or defaults)
 	requestedDocs := e.loadRequestedDocs(promptCtx.GetEffectiveDocs())
 

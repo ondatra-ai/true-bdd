@@ -47,7 +47,7 @@ func Compile(entries []Entry, roles []string) (*Catalogue, []Malformation) {
 		case declared[entry.Template] > 1:
 			reason = "another entry declares the same template"
 		case !validBlock(entry.Block):
-			reason = fmt.Sprintf("its block %s is not given, when or then", quote(entry.Block))
+			reason = fmt.Sprintf("its block %s is not given, when or then", quote(string(entry.Block)))
 		}
 
 		pattern, err := compileTemplate(entry.Template, roles)

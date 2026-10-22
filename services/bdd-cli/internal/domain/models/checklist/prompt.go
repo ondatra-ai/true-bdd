@@ -23,7 +23,7 @@ var (
 // Question (`Q:`), or the built-in check its Check names (`D:`) does.
 type Prompt struct {
 	Question    string         // The validation question (Q in YAML)
-	Check       string         // The built-in check answering it instead (D in YAML)
+	Check       string         // The built-in check answering it instead (D in YAML, trimmed)
 	With        map[string]any // The check's parameters (with in YAML)
 	Rationale   string         // Why this matters
 	Skip        bool           // Parks the prompt, left out of the walk (skip: true in YAML)
@@ -50,7 +50,7 @@ func (p *Prompt) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	p.Question = getStringFromMap(raw, "Q")
-	p.Check = getStringFromMap(raw, "D")
+	p.Check = strings.TrimSpace(getStringFromMap(raw, "D"))
 
 	err = p.decodeWith(raw)
 	if err != nil {
@@ -104,7 +104,7 @@ func (p *Prompt) ShouldSkip() bool {
 // IsCheck reports whether a built-in check answers the prompt (`D:`)
 // rather than a model (`Q:`).
 func (p *Prompt) IsCheck() bool {
-	return strings.TrimSpace(p.Check) != ""
+	return p.Check != ""
 }
 
 // ShapeError reports why the prompt cannot be walked whatever checks the
@@ -128,7 +128,7 @@ func (p *Prompt) ShapeError() error {
 // first non-blank line of its question.
 func (p *Prompt) Label() string {
 	if p.IsCheck() {
-		return "D: " + strings.TrimSpace(p.Check)
+		return "D: " + p.Check
 	}
 
 	for line := range strings.SplitSeq(p.Question, "\n") {

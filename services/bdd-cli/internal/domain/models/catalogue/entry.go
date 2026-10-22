@@ -5,24 +5,28 @@
 // on, and each must be defined exactly once.
 package catalogue
 
-// The blocks a step sits in, as the Registry and a catalogue entry spell them.
+// Block is the block a step sits in, as the Registry and a catalogue entry
+// spell it.
+type Block string
+
+// The blocks a step sits in.
 const (
-	BlockGiven = "given"
-	BlockWhen  = "when"
-	BlockThen  = "then"
+	BlockGiven Block = "given"
+	BlockWhen  Block = "when"
+	BlockThen  Block = "then"
 )
 
 // Entry is one phrase of the catalogue. Template is its identity; Block is
 // the one block a step of that shape may sit in.
 type Entry struct {
 	Template string   `yaml:"template"`
-	Block    string   `yaml:"block"`
+	Block    Block    `yaml:"block"`
 	Means    string   `yaml:"means"`
 	Terms    []string `yaml:"terms"`
 }
 
 // validBlock reports whether a block is one a step can sit in.
-func validBlock(block string) bool {
+func validBlock(block Block) bool {
 	switch block {
 	case BlockGiven, BlockWhen, BlockThen:
 		return true

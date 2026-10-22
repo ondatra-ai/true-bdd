@@ -1,10 +1,6 @@
 package story
 
-import (
-	"strings"
-
-	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
-)
+import "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 
 type AcceptanceCriterion struct {
 	ID          string         `json:"id"              yaml:"id"`
@@ -27,9 +23,9 @@ func (c AcceptanceCriterion) Phrases() []catalogue.Step {
 }
 
 // appendPhrases adds one block's statements, in the order the Story lists them.
-func appendPhrases(phrases []catalogue.Step, block string, statements []StepStatement) []catalogue.Step {
+func appendPhrases(phrases []catalogue.Step, block catalogue.Block, statements []StepStatement) []catalogue.Step {
 	for _, statement := range statements {
-		phrases = append(phrases, catalogue.Step{Block: block, Text: strings.TrimSpace(statement.Statement)})
+		phrases = append(phrases, catalogue.NewStep(block, statement.Statement))
 	}
 
 	return phrases
