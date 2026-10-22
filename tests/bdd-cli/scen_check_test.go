@@ -212,15 +212,16 @@ func TestEngineChecklists002ChecklistNotYamlRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+// engine-checklists-003-check-with-not-a-mapping-refused: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
 func TestEngineChecklists003CheckWithNotAMappingRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-checklists-003-check-with-not-a-mapping-refused")
 	s.Given(`the "scen-check-check-with-not-a-mapping" project tree`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches level=ERROR msg="Refusing to start" command="scen check"`)
-	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters`)
-	s.But(`stdout does not match SCEN CHECK`)
+	s.And(`stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters`)
+	s.But(`stdout does not match interface`)
+	s.And(`stdout does not match SCEN CHECK`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()
@@ -309,7 +310,7 @@ func TestEngineRoutes003PromptTiersWin(t *testing.T) {
 	s.Done()
 }
 
-// engine-routes-004-failed-claude-turn-stops-run: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+// engine-routes-004-failed-claude-turn-stops-run: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
 func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 	s := scenarios.New(t, "engine-routes-004-failed-claude-turn-stops-run")
 	s.Given(`the "scen-check-claude-turn-fails" project tree`)
@@ -317,7 +318,9 @@ func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
 	s.And(`stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model`)
-	s.But(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
+	s.And(`stderr matches Error: scen check: walker failed on item 0: evaluator failed: `)
+	s.But(`stderr does not match command failed`)
+	s.And(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
 	s.And(`the engine dispatched 1 AI turn`)
 	s.And(`no file outside "tmp" changed`)
 	s.Done()
@@ -390,6 +393,24 @@ func TestEngineTermDocuments004ArchitectureNotYamlStopsScenCheck(t *testing.T) {
 	s.But(`stdout does not match check=step-definitions`)
 	s.And(`no file outside "tmp" changed`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// fix-loop-bounds-004-walks-exhausted-keep-term-documents: A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1
+func TestFixLoopBounds004WalksExhaustedKeepTermDocuments(t *testing.T) {
+	s := scenarios.New(t, "fix-loop-bounds-004-walks-exhausted-keep-term-documents")
+	s.Given(`the "fix-loop-walks-exhausted-terms" project tree`)
+	s.And(`the Quality Engineer answers "1" to every question`)
+	s.When(`the Quality Engineer runs "scen check --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches msg="Walk attempt started" attempt=1 max_attempts=1`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches Hit max apply attempts without convergence\.`)
+	s.And(`stdout matches msg="Fix undone in the document" document=product`)
+	s.But(`stdout does not match attempt=2`)
+	s.And(`the file "docs/product/product.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
 	s.Done()
 }
 

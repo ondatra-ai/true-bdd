@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
-	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/logging"
 	"github.com/ondatra-ai/true-bdd/scripts/enginecoverage"
@@ -88,21 +88,11 @@ func run(args []string) error {
 // counters reach it through the environment the harness hands each engine run.
 func replaySuite(root string) func(binPath string, env []string) error {
 	return func(binPath string, env []string) error {
-		argv := []string{
-			"go", "test", "-count=1", "-tags", "bdd", "./tests/bdd-cli/",
-			"-mode=services:replay,tests:replay", "-engine-bin=" + binPath,
-		}
-
-		result, err := spec.Run(argv, cli.Options{
+		err := gotool.ReplayBDD(cli.Options{
 			Dir: root, Env: cli.Inherit().Set(env...), Output: cli.Console(), Timeout: suiteTimeout,
-		})
+		}, "./tests/bdd-cli/", binPath)
 		if err != nil {
 			return fmt.Errorf("replay the suite: %w", err)
-		}
-
-		err = result.Err()
-		if err != nil {
-			return fmt.Errorf("the replay suite failed: %w", err)
 		}
 
 		return nil

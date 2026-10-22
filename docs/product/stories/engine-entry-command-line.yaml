@@ -2,7 +2,8 @@
 # reads any document.
 #
 # Printing the version, refusing an argument a command does not take,
-# and refusing to start without `true-bdd/true-bdd.yaml`. Which documents
+# printing a started command's error without its usage, and refusing to
+# start without `true-bdd/true-bdd.yaml`. Which documents
 # a command reads, from that file or from a flag, is the Story
 # engine-documents; the help and the checklist refusals every command
 # shares are the Story engine.
@@ -15,7 +16,7 @@ story:
     feature: engine
     title: Start any command from the command line, and have it refuse there what it cannot start with
     as_a: System Architect
-    i_want: true-bdd version to print the engine's version wherever I run it, a command given an argument it does not take to print what went wrong and its usage, and every other command to refuse to start where there is no true-bdd/true-bdd.yaml
+    i_want: true-bdd version to print the engine's version wherever I run it, a command given an argument it does not take to print what went wrong and its usage, a command that fails once started to print its error alone, and every other command to refuse to start where there is no true-bdd/true-bdd.yaml
     so_that: I can tell which engine a project runs and correct a mistyped command from the terminal alone, and a project that was never configured is left as it was
     status: IMPLEMENTED
     acceptance_criteria:
@@ -58,4 +59,17 @@ story:
                 - 'stderr matches Error: initialize container'
                 - and: 'stderr matches open \./true-bdd/true-bdd\.yaml: no such file or directory'
                 - but: stdout does not match SCEN CHECK
+                - and: no file outside "tmp" changed
+        - id: 004-failed-us-command-prints-no-usage
+          description: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
+          steps:
+            - given:
+                - the "us-refine-error-without-usage" project tree
+            - when:
+                - the Product Owner runs "us refine 96.9"
+            - then:
+                - the command exits with code 1
+                - 'stderr matches Error: us refine: failed to load items: story file not found — write the Story file first'
+                - but: 'stderr does not match Usage:'
+                - and: stderr does not match command failed
                 - and: no file outside "tmp" changed

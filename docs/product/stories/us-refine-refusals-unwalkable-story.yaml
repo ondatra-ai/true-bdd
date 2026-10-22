@@ -36,7 +36,7 @@ story:
                 - stdout matches no story file found for story 96\.9 in docs/product/stories
                 - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
                 - stdout matches level=ERROR msg="Refusing to start" command="us refine"
-                - but: stdout does not match us create
+                - but: stdout does not match msg="Story loaded"
                 - and: no file outside "tmp" changed
                 - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
                 - and: no file matching "docs/product/stories/96.9-*.yaml" is created

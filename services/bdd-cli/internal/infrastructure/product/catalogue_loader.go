@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
 // ErrCatalogueNotList signals a `catalogue:` key holding something other
@@ -45,7 +46,7 @@ func LoadCatalogue(path string) (Catalogue, error) {
 // decodeCatalogue reads the `catalogue:` node: absent or null is not
 // declared, an empty list is, and any other shape is refused.
 func decodeCatalogue(path string, node *yaml.Node, roles []string) (Catalogue, error) {
-	if absent(node) {
+	if docs.Absent(node) {
 		return Catalogue{Roles: roles}, nil
 	}
 

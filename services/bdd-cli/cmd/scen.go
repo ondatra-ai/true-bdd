@@ -55,7 +55,7 @@ scenario's own registry entry, or the meaning of a catalogue phrase.
 
 Example:
   true-bdd scen check
-  true-bdd scen check E2E-001 E2E-005
+  true-bdd scen check scen-check-001-claimed-scenario-passes scen-check-003-unknown-id-refused
   true-bdd scen check --requirements docs/scenarios.yaml`,
 		Args: argsWithUsage(cobra.ArbitraryArgs),
 		// A run failure shouldn't dump help text like a mistyped flag

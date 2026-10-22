@@ -33,6 +33,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// What the command line says before the log is up: a stray argument's
 	// usage, a missing true-bdd.yaml. Undelimited, as stdout is.
 	suite.Step(`^stderr matches (.+)$`, assertStderr)
+	suite.Step(`^stderr does not match (.+)$`, assertStderrNoMatch)
 	suite.Step(`^no file outside "([^"]+)" changed$`, assertNoChangesOutside)
 	// The two-directory twin of the read-only check: proves nothing moved
 	// outside either of two named scratch prefixes, e.g. a `build tests
@@ -64,7 +65,6 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the story "([^"]+)" has (\d+) acceptance criteria$`, assertStoryCriteriaExactCount)
 	suite.Step(`^every acceptance criterion in the story "([^"]+)" has given, when and then steps$`,
 		assertStoryCriteriaHaveSteps)
-	suite.Step(`^the "([^"]+)" clause of the story "([^"]+)" does not match (.+)$`, assertStoryClauseNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" does not match (.+)$`,
 		assertStoryCriterionDescNoMatch)
 	suite.Step(`^the description of acceptance criterion "([^"]+)" of the story "([^"]+)" matches (.+)$`,
@@ -124,9 +124,9 @@ func registerGivenSteps(suite *bddgo.Suite[State]) {
 	// interactive answers piped to the fix loop. Implemented below.
 	suite.Step(`^the project's (.+) dependencies are installed$`, assertDependenciesInstalled)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" to every question$`,
-		assertAnswersEveryQuestion)
+		answerEveryQuestion)
 	suite.Step(`^the (Product Owner|System Architect|Quality Engineer) answers "([^"]+)" line by line$`,
-		assertAnswersLineByLine)
+		answerLineByLine)
 	// A Given precondition that a checklist is narrowed to one named prompt;
 	// the fixture selects it via `checklist_prompts:`, and this step verifies
 	// the selection is real and singular.
@@ -377,10 +377,10 @@ func leaveOutOfTree(state *State, args []string) error {
 // the CLI cleanly).
 const everyQuestionAnswers = 64
 
-// assertAnswersEveryQuestion sets the fixture's stdin to the given answer,
+// answerEveryQuestion sets the fixture's stdin to the given answer,
 // repeated, before the When step runs the CLI and pipes it to the
 // subprocess. The captured role is discarded — validated by the pattern.
-func assertAnswersEveryQuestion(state *State, args []string) error {
+func answerEveryQuestion(state *State, args []string) error {
 	if state.Fixture == nil {
 		return state.fail("%w", ErrNoTreePrepared)
 	}
@@ -515,6 +515,25 @@ func assertStderr(state *State, args []string) error {
 
 	if !pattern.MatchString(state.Result.Stderr) {
 		return state.fail("expected stderr to match %q, but it did not:\n%s", args[0], state.Result.Stderr)
+	}
+
+	return nil
+}
+
+// assertStderrNoMatch is assertStderr's negative twin: proves stderr does
+// NOT match a pattern, such as a usage an error must not be followed by.
+func assertStderrNoMatch(state *State, args []string) error {
+	if state.Result == nil {
+		return state.fail("%w", ErrNoRun)
+	}
+
+	pattern, err := regexp.Compile(args[0])
+	if err != nil {
+		return state.fail("stderr pattern %q does not compile: %w", args[0], err)
+	}
+
+	if pattern.MatchString(state.Result.Stderr) {
+		return state.fail("expected stderr not to match %q, but it did:\n%s", args[0], state.Result.Stderr)
 	}
 
 	return nil

@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/product.yaml"
+summary: "Appended a then-block catalogue entry 'the service answers within {limit:number} milliseconds' (terms: mcp service, reply) after the quoted-reply entry, closing E2E-001's unmatched timing step."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

@@ -104,8 +104,8 @@ roles:
       - "Often the same person as the Product Owner; the accountability stays separate"
 
 # The words `us refine` rejects in stories and scenarios. The phrases a
-# step may use are the `catalogue` below. Preferred home is here; a host
-# may keep it in architecture.yaml instead (the fixtures do).
+# step may use are the `catalogue` below. The product document is its only
+# home: the architecture document holds no `vocabulary:`.
 vocabulary:
   # Vague words that must not appear in AC descriptions or steps.
   forbidden_qualifiers:
@@ -472,6 +472,14 @@ catalogue:
       pattern may name a mistyped argument, the usage printed after it, or
       a missing configuration.
     terms: [stderr, pattern]
+
+  - template: 'stderr does not match {unexpected:pattern}'
+    block: then
+    means: >-
+      Nothing the command printed on stderr has a match for the pattern:
+      proof that an error never named something, or that the usage a
+      mistyped argument earns never followed an error it did not earn.
+    terms: [command, stderr, pattern]
 
   - template: 'no file outside "{dir}" changed'
     block: then

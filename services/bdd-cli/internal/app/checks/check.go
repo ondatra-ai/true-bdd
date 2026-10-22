@@ -16,17 +16,15 @@ type Verdict struct {
 	Context []string
 }
 
-// Input is what a Cell hands its check beside the Item: the Prompt's
-// `with:` parameters, and each document it cites by key, resolved to a path.
+// Input is what a Cell hands its check beside the Item: each document
+// the Prompt cites, by key, resolved to a path.
 type Input struct {
-	SubjectID string
-	With      map[string]any
-	Docs      map[string]string
+	Docs map[string]string
 }
 
 // Check is one built-in check over Items of type I. Params lists the
-// `with:` keys it reads, Docs the document keys; a Prompt passing another
-// parameter, or not citing one of those documents, is refused at startup.
+// `with:` keys it reads (none yet), Docs the document keys; a Prompt passing
+// another parameter, or not citing one of those documents, is refused.
 type Check[I any] struct {
 	Params []string
 	Docs   []string

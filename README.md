@@ -124,11 +124,11 @@ a Claude Code session, unset `CLAUDECODE` first so the child has a
 clean environment:
 
 ```bash
-env -u CLAUDECODE ./bin/true-bdd us refine 4.1 --fix
-env -u CLAUDECODE ./bin/true-bdd us apply  4.1 --fix
+env -u CLAUDECODE ./bin/true-bdd us refine scen-check --fix
+env -u CLAUDECODE ./bin/true-bdd us apply  scen-check --fix
 env -u CLAUDECODE ./bin/true-bdd build tests --fix
 env -u CLAUDECODE ./bin/true-bdd build code  --fix
-env -u CLAUDECODE ./bin/true-bdd scen check E2E-001
+env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 ```
 
 `us refine` issues many sequential Claude calls and typically takes
@@ -478,7 +478,7 @@ go test -tags bdd -timeout=180m ./tests/bdd-cli/...
 
 The suite's contents come from `docs/scenarios.yaml`: every scenario the
 architectural spec assigns to it gets one top-level Go test named from
-its key in CamelCase (`TestE2E016`, `TestScenCheck001UnknownIdRefused`),
+its key in CamelCase (`scen-check-003-unknown-id-refused` gives `TestScenCheck003UnknownIdRefused`),
 written into the file the scenario's `path:` names
 by `true-bdd build tests --fix` and by nothing else. Its steps are bound
 by regexp to the definitions in `tests/bdd-cli/steps/`. A scenario's

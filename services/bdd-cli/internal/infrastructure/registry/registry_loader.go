@@ -55,7 +55,7 @@ type Statement struct {
 	Keyword string
 	// Block is the given/when/then list the step sits in, which an
 	// And/But keyword no longer says.
-	Block string
+	Block catalogue.Block
 	// Mode says who executes the step, resolved against the BLOCK's
 	// keyword. Text keeps any `llm:`/`judge:` prefix verbatim: the
 	// generated test quotes Text and bddgo strips the prefix there.
@@ -118,10 +118,7 @@ func (s *RegistryScenario) Phrases() []catalogue.Step {
 	steps := make([]catalogue.Step, 0, len(s.Statements))
 
 	for _, statement := range s.Statements {
-		steps = append(steps, catalogue.Step{
-			Block: statement.Block,
-			Text:  strings.TrimSpace(statement.Text),
-		})
+		steps = append(steps, catalogue.NewStep(statement.Block, statement.Text))
 	}
 
 	return steps
@@ -211,7 +208,7 @@ func (r rawMergedSteps) statements() ([]Statement, error) {
 
 	blocks := []struct {
 		keyword string
-		name    string
+		name    catalogue.Block
 		steps   []rawStatement
 	}{
 		{KeywordGiven, catalogue.BlockGiven, r.Given},

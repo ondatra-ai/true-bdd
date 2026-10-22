@@ -555,13 +555,16 @@ func TestBuildTestsSteps007UnreadableCatalogueRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-004-unknown-model-cli-refused: Multi-provider routing must fail LOUDLY, never quietly
+// engine-004-unknown-model-cli-refused: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive, naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
 func TestEngine004UnknownModelCliRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-004-unknown-model-cli-refused")
 	s.Given(`the "build-tests-unknown-cli-tier" project tree`)
 	s.When(`the System Architect runs "build tests"`)
 	s.Then(`the command exits with code 1`)
-	s.But(`no file outside "tmp" changed`)
+	s.And(`stdout matches level=ERROR msg="Refusing to start" command="build tests"`)
+	s.And(`stdout matches engine\.models\.coder: model reference names an unknown cli: \\"aider\\" \(supported: claude, crush, codex\)`)
+	s.But(`stdout does not match BUILD TESTS`)
+	s.And(`no file outside "tmp" changed`)
 	s.And(`the file "docs/scenarios.yaml" is unchanged`)
 	s.And(`the engine dispatched no AI turns`)
 	s.Done()

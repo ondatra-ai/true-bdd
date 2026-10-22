@@ -6,7 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/checks"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/runner"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/fs"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/input"
 	storyinfra "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/story"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -14,27 +20,52 @@ import (
 
 // RefineDeps bundles what `us refine` needs at the command boundary.
 type RefineDeps struct {
-	StoryCommonDeps
-
-	StoryLoader *storyinfra.StoryLoader
+	StoryLoader        *storyinfra.StoryLoader
+	ChecklistLoader    *checklist.ChecklistLoader
+	DocResolver        *docs.Resolver
+	Evaluator          *validate.ChecklistEvaluator
+	FixGenerator       *validate.FixPromptGenerator
+	FixApplier         *validate.FixApplier
+	UserInputCollector *input.UserInputCollector
+	TableRenderer      *runner.TableRenderer
+	RunDir             *fs.RunDirectory
+	StoriesDir         string
 }
 
 // RunRefine drives `us refine`. Loads a story from docs/product/stories/,
 // walks the us-refine checklist, and on convergence updates the
 // story file in place.
-func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix bool) error {
-	return runStoryCommand(
-		ctx, deps.StoryCommonDeps,
-		storyNumber, "us refine", "us-refine", fix,
-		func(versionMgr *fs.StoryVersionManager) func(context.Context) ([]*template.StoryRefineData, error) {
-			load := loadStoryFromFile(deps.StoryLoader, storyNumber, versionMgr)
-			if !fix {
-				return load
-			}
+func RunRefine(ctx context.Context, deps RefineDeps, storyID string, fix bool) error {
+	versionMgr := fs.NewStoryVersionManager(deps.RunDir, storyID)
 
-			return seedRefineDocuments(load, deps.DocResolver, deps.RunDir.GetTmpOutPath())
-		},
-	)
+	loadItems := loadStoryFromFile(deps.StoryLoader, storyID, versionMgr)
+	if fix {
+		loadItems = seedRefineDocuments(loadItems, deps.DocResolver, deps.RunDir.GetTmpOutPath())
+	}
+
+	return runner.Run(ctx, runner.Spec[*template.StoryRefineData]{
+		Name:          "us refine",
+		ChecklistName: "us-refine",
+		StoryID:       storyID,
+		Fix:           fix,
+
+		LoadItems:    loadItems,
+		PostFix:      refinePostFix(versionMgr),
+		PostCheckFix: refinePostCheckFix,
+		Finalize:     refineFinalize(runner.StoryFinalize(deps.StoriesDir, storyID, versionMgr, fix)),
+		GetSubject:   refineSubject,
+
+		Checks:       checks.ForStories(),
+		Evaluator:    deps.Evaluator,
+		FixGenerator: deps.FixGenerator,
+		FixApplier:   deps.FixApplier,
+
+		ChecklistLoader: deps.ChecklistLoader,
+		DocResolver:     deps.DocResolver,
+		Renderer:        deps.TableRenderer,
+		UI:              runner.NewFixLoopUI(deps.UserInputCollector),
+		TmpDir:          deps.RunDir.GetTmpOutPath(),
+	})
 }
 
 // loadStoryFromFile is the LoadItems factory for `us refine`. Loads
@@ -42,11 +73,11 @@ func RunRefine(ctx context.Context, deps RefineDeps, storyNumber string, fix boo
 // manager.
 func loadStoryFromFile(
 	loader *storyinfra.StoryLoader,
-	storyNumber string,
+	storyID string,
 	versionMgr *fs.StoryVersionManager,
 ) func(ctx context.Context) ([]*template.StoryRefineData, error) {
 	return func(_ context.Context) ([]*template.StoryRefineData, error) {
-		doc, err := loader.Load(storyNumber)
+		doc, err := loader.Load(storyID)
 		if err != nil {
 			// The "write it first" advice applies only when the story is
 			// genuinely absent, not when Load fails on a duplicate id, an
@@ -55,7 +86,7 @@ func loadStoryFromFile(
 				return nil, fmt.Errorf("story file not found — write the Story file first: %w", err)
 			}
 
-			return nil, fmt.Errorf("failed to load story %s: %w", storyNumber, err)
+			return nil, fmt.Errorf("failed to load story %s: %w", storyID, err)
 		}
 
 		loaded := &doc.Story

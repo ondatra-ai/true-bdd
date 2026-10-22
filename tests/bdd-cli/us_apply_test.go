@@ -152,6 +152,21 @@ func TestUsApply003ReorderKeepsKeys(t *testing.T) {
 	s.Done()
 }
 
+// us-apply-004-key-apart-from-lineage-refused: `us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story's criteria is keyed apart from that criterion's lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims
+func TestUsApply004KeyApartFromLineageRefused(t *testing.T) {
+	s := scenarios.New(t, "us-apply-004-key-apart-from-lineage-refused")
+	s.Given(`the "us-apply-key-apart-from-lineage" project tree`)
+	s.And(`the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt`)
+	s.When(`the Product Owner runs "us apply mcp-endpoint"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=ERROR msg="Scenario keyed apart from its lineage" scenario=mcp-endpoint-get-refused lineage=mcp-endpoint-002-get-refused`)
+	s.But(`stdout does not match ALL CHECKS PASSED`)
+	s.And(`the file "docs/scenarios.yaml" is unchanged`)
+	s.And(`no file outside "tmp" changed`)
+	s.And(`the engine dispatched 2 AI turns`)
+	s.Done()
+}
+
 // us-apply-refusals-001-missing-story-refused: `us apply` on a story number that has no file must be refused, and the refusal must say what filename it looked for
 func TestUsApplyRefusals001MissingStoryRefused(t *testing.T) {
 	s := scenarios.New(t, "us-apply-refusals-001-missing-story-refused")

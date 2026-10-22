@@ -20,11 +20,7 @@ type checkAnswer struct {
 
 // CheckResult builds a `D:` Cell's result from its check's verdict. On a
 // fail the prompt's own `F:` is the fix prompt, which a model would copy.
-func CheckResult(
-	promptCtx checklist.PromptWithContext,
-	promptIndex int,
-	verdict checks.Verdict,
-) checklist.ValidationResult {
+func CheckResult(promptCtx checklist.PromptWithContext, verdict checks.Verdict) checklist.ValidationResult {
 	answer, status, fixPrompt := AnswerPass, checklist.StatusPass, ""
 	if !verdict.Pass {
 		answer, status = AnswerFail, checklist.StatusFail
@@ -34,13 +30,13 @@ func CheckResult(
 	return checklist.ValidationResult{
 		SectionPath:    promptCtx.GetFullSectionPath(),
 		Question:       promptCtx.Prompt.Label(),
-		Check:          strings.TrimSpace(promptCtx.Prompt.Check),
+		Check:          promptCtx.Prompt.Check,
 		ActualAnswer:   answer,
 		Context:        verdict.Context,
 		Status:         status,
 		Rationale:      promptCtx.Prompt.Rationale,
 		FixPrompt:      fixPrompt,
-		PromptIndex:    promptIndex,
+		PromptIndex:    promptCtx.Index,
 		Docs:           promptCtx.GetEffectiveDocs(),
 		FixModelTier:   promptCtx.EffectiveFixTier(),
 		ApplyModelTier: promptCtx.EffectiveApplyTier(),
@@ -49,13 +45,13 @@ func CheckResult(
 
 // SkippedResult is the report row of a `Q:` Cell a failed check spared,
 // its question shown as the row of an answered one would show it.
-func SkippedResult(promptCtx checklist.PromptWithContext, promptIndex int) checklist.ValidationResult {
+func SkippedResult(promptCtx checklist.PromptWithContext) checklist.ValidationResult {
 	return checklist.ValidationResult{
 		SectionPath: promptCtx.GetFullSectionPath(),
 		Question:    promptCtx.Prompt.Question,
 		Status:      checklist.StatusSkip,
 		Rationale:   promptCtx.Prompt.Rationale,
-		PromptIndex: promptIndex,
+		PromptIndex: promptCtx.Index,
 		Docs:        promptCtx.GetEffectiveDocs(),
 	}
 }

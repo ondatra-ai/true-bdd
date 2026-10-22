@@ -89,8 +89,9 @@ invocation:
   # `argv`. A map entry is a run of arguments sent only when `when` holds.
   args: list(any(str(), include('conditional_args')), min=1)
   # What the child reads on stdin, then EOF. `with_system` applies when the
-  # turn has a system prompt, `without_system` when it has none.
-  stdin: include('stdin')
+  # turn has a system prompt, `without_system` when it has none. Absent when
+  # the child reads nothing there (its prompts travel in argv).
+  stdin: include('stdin', required=False)
   # What each `{name}` token stands for.
   values: map(str(), min=1)
   # The child's working directory.

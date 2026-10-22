@@ -1,7 +1,8 @@
 # Story `us-apply`: `us apply` merging a Story into the Registry.
 #
 # The merge: criteria missing from the Registry added, duplicate entries
-# collapsed, keys kept across a reorder. The startup refusals of a Story
+# collapsed, keys kept across a reorder, and no Registry written whose
+# Scenario for a criterion is keyed apart from its lineage id. The startup refusals of a Story
 # the command cannot merge are the Story `us-apply-refusals`; where the
 # Registry lives comes from `true-bdd.yaml` for every command alike, so
 # that Scenario is the `engine` Story's.
@@ -15,7 +16,7 @@ story:
     title: Merge a refined Story into the Registry with us apply, one Scenario per criterion keyed by its id
     as_a: Product Owner
     i_want: to merge each Acceptance Criterion of a refined Story into the Registry as one Scenario keyed by the Story's id and the criterion's id, with duplicate entries collapsed and the walk repeated until nothing is left to add
-    so_that: the Registry holds exactly one Scenario per criterion, under a key that survives reordering the Story's criteria
+    so_that: the Registry holds exactly one Scenario per criterion, under a key that survives reordering the Story's criteria and that no model chooses
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-missing-criteria-added
@@ -88,3 +89,18 @@ story:
                 - and: the engine dispatched 4 AI turns
                 - but: no file outside "tmp" changed
                 - and: stdout does not match RE-WALK
+        - id: 004-key-apart-from-lineage-refused
+          description: '`us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story''s criteria is keyed apart from that criterion''s lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims'
+          steps:
+            - given:
+                - the "us-apply-key-apart-from-lineage" project tree
+                - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+            - when:
+                - the Product Owner runs "us apply mcp-endpoint"
+            - then:
+                - the command exits with code 1
+                - stdout matches level=ERROR msg="Scenario keyed apart from its lineage" scenario=mcp-endpoint-get-refused lineage=mcp-endpoint-002-get-refused
+                - but: stdout does not match ALL CHECKS PASSED
+                - and: the file "docs/scenarios.yaml" is unchanged
+                - and: no file outside "tmp" changed
+                - and: the engine dispatched 2 AI turns

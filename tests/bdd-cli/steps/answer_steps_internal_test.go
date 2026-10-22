@@ -13,7 +13,7 @@ func TestAnswersLineByLineFeedsEachPieceInTurn(t *testing.T) {
 
 	state := &State{T: t, Fixture: &runner.Fixture{}}
 
-	err := assertAnswersLineByLine(state, []string{"Quality Engineer", "2 / Name the slot limit / / 1"})
+	err := answerLineByLine(state, []string{"Quality Engineer", "2 / Name the slot limit / / 1"})
 	if err != nil {
 		t.Fatalf("answers line by line: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestAnswersLineByLineFeedsEachPieceInTurn(t *testing.T) {
 func TestAnswersLineByLineNeedsATree(t *testing.T) {
 	t.Parallel()
 
-	err := assertAnswersLineByLine(&State{T: t}, []string{"Quality Engineer", "1"})
+	err := answerLineByLine(&State{T: t}, []string{"Quality Engineer", "1"})
 	if err == nil {
 		t.Fatal("answers line by line without a tree: want an error")
 	}

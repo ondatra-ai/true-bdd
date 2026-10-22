@@ -17,12 +17,27 @@ var errPromptsNotWalkable = errors.New("checklist has prompts the engine cannot 
 // errTiersUnresolved is validateModelTiers' error, likewise free of them.
 var errTiersUnresolved = errors.New("checklist has prompts whose model tier engine.models cannot resolve")
 
-// Why a well-shaped `D:` prompt still cannot be walked by this command.
-var (
-	errUnknownCheck      = errors.New("names no built-in check of")
-	errUnknownCheckParam = errors.New("has no with: parameter")
-	errCheckDocUnlisted  = errors.New("so its docs: must list")
-)
+// checkRefusalError is why a well-shaped `D:` prompt still cannot be walked by
+// this command: one whole sentence naming the prompt.
+type checkRefusalError string
+
+// Error is the sentence.
+func (r checkRefusalError) Error() string { return string(r) }
+
+// unknownCheck refuses a prompt naming a check its command does not hold.
+func unknownCheck(label, command, held string) error {
+	return checkRefusalError(fmt.Sprintf("%s names no built-in check of %s, which has %s", label, command, held))
+}
+
+// unreadParam refuses a prompt passing its check a parameter it never reads.
+func unreadParam(label, key, takes string) error {
+	return checkRefusalError(fmt.Sprintf("%s has no with: parameter %s; it takes %s", label, key, takes))
+}
+
+// uncitedDocument refuses a prompt not citing a document its check reads.
+func uncitedDocument(label, key string) error {
+	return checkRefusalError(fmt.Sprintf("%s reads the %s document, so its docs: must list %s", label, key, key))
+}
 
 // validatePrompts refuses a checklist holding a prompt nothing could
 // answer as written, naming each by its position, before any turn is paid.
@@ -65,9 +80,9 @@ func promptProblem[I any](command string, set checks.Set[I], promptCtx *checklis
 		return nil
 	}
 
-	check, known := set[strings.TrimSpace(prompt.Check)]
+	check, known := set[prompt.Check]
 	if !known {
-		return fmt.Errorf("%s %w %s, which has %s", prompt.Label(), errUnknownCheck, command, set.Describe())
+		return unknownCheck(prompt.Label(), command, set.Describe())
 	}
 
 	keys := make([]string, 0, len(prompt.With))
@@ -79,8 +94,7 @@ func promptProblem[I any](command string, set checks.Set[I], promptCtx *checklis
 
 	for _, key := range keys {
 		if !slices.Contains(check.Params, key) {
-			return fmt.Errorf("%s %w %s; it takes %s",
-				prompt.Label(), errUnknownCheckParam, key, describeParams(check.Params))
+			return unreadParam(prompt.Label(), key, describeParams(check.Params))
 		}
 	}
 
@@ -94,8 +108,7 @@ func uncitedDoc(promptCtx *checklistmodels.PromptWithContext, reads []string) er
 
 	for _, key := range reads {
 		if !slices.Contains(cited, key) {
-			return fmt.Errorf("%s reads the %s document, %w %s",
-				promptCtx.Prompt.Label(), key, errCheckDocUnlisted, key)
+			return uncitedDocument(promptCtx.Prompt.Label(), key)
 		}
 	}
 

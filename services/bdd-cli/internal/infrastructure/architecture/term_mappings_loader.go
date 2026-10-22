@@ -3,12 +3,11 @@ package architecture
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
 // ErrTermsNotList signals an `architecture.terms:` key holding something
@@ -27,28 +26,15 @@ type termsDocument struct {
 // architecture document at path, a term mapped twice listed twice. No
 // document, or no `architecture.terms:` key, maps nothing.
 func LoadTermMappings(path string) ([]catalogue.Mapping, error) {
-	if path == "" {
-		return nil, nil
-	}
-
-	data, err := disk.Read(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("read architecture document %s: %w", path, err)
-	}
-
 	var doc termsDocument
 
-	err = yaml.Unmarshal(data, &doc)
-	if err != nil {
-		return nil, fmt.Errorf("parse architecture document %s: %w", path, err)
+	found, err := docs.ReadYAML(path, "architecture document", &doc)
+	if err != nil || !found {
+		return nil, err
 	}
 
 	terms := &doc.Architecture.Terms
-	if terms.Kind == 0 || terms.Tag == "!!null" {
+	if docs.Absent(terms) {
 		return nil, nil
 	}
 

@@ -127,12 +127,12 @@ records the current position.
 
 | Milestone | Position |
 |---|---|
-| 1 — code + tests exist | Done. 46 bdd-cli scenarios over 46 fixture trees. |
+| 1 — code + tests exist | Done. Every bdd-cli Scenario drives a fixture tree of its own. |
 | 2 — generate code from tests | Done. `build code` walks each suite's declared `replay` command and drives a fix turn per failure. |
-| 3 — generate GWT tests | Done. `build tests` renders one `func Test<Id>` per scenario into the file that scenario's `path:` names — deterministic codegen, verified without `--fix` by regenerating and comparing. It covers all 55 registry scenarios. |
-| 4 — scenarios → tests + steps + judgements | **Partly done.** `build tests --fix` authors a step definition per gap, and that mechanism works: every step of every registry scenario binds, so all of them are rendered *and* runnable. Judgements: the `judge:` prefix exists and 12 of 46 bdd-cli scenarios use it. Vocabulary and features: not started. |
+| 3 — generate GWT tests | Done. `build tests` renders one `func Test<Key>` per scenario into the file that scenario's `path:` names — deterministic codegen, verified without `--fix` by regenerating and comparing. It covers every Registry Scenario. |
+| 4 — scenarios → tests + steps + judgements | **Partly done.** `build tests --fix` authors a step definition per gap, and that mechanism works: every step of every registry scenario binds, so all of them are rendered *and* runnable. Judgements: the `judge:` prefix exists and the Scenarios that need a model's ruling use it. Vocabulary and features: done for this repository — the product document holds the forbidden `vocabulary:`, the step-phrase `catalogue:` and the `glossary:`, every Scenario belongs to a Story and is keyed by its lineage (ADR 0014), each Story carries a `feature:`, and `scen check` holds every Scenario to them. |
 
-That number is now zero: every step of all 55 registry scenarios binds, and `build tests`
+That number is now zero: every step of every Registry Scenario binds, and `build tests`
 on this repository dispatches no AI turn at all.
 Step coverage itself stopped being a test — the engine reads the `steps/` packages
 directly, so there is no step-coverage gate to join.

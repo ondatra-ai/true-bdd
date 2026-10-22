@@ -80,7 +80,7 @@ story:
                 - and: the engine dispatched 5 AI turns
                 - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
         - id: 004-failed-claude-turn-stops-run
-          description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+          description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
           steps:
             - given:
                 - the "scen-check-claude-turn-fails" project tree
@@ -90,7 +90,9 @@ story:
             - then:
                 - the command exits with code 1
                 - stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model
-                - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+                - and: 'stderr matches Error: scen check: walker failed on item 0: evaluator failed: '
+                - but: stderr does not match command failed
+                - and: stdout does not match CHECK FAILED|ALL CHECKS PASSED
                 - and: the engine dispatched 1 AI turn
                 - and: no file outside "tmp" changed
         - id: 005-failed-crush-turn-stops-run

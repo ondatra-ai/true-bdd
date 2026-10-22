@@ -4,17 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-)
 
-// Prefixes marking a step no regexp can settle. Mirrors bddgo's own
-// vocabulary rather than importing it: pkg/testkit reaches the roots,
-// never the other way round.
-const (
-	// PrefixAct marks a step a model PERFORMS. Legal in given:/when: only.
-	PrefixAct = "llm:"
-
-	// PrefixRule marks a clause a model RULES ON. Legal in then: only.
-	PrefixRule = "judge:"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 )
 
 // StepMode says who executes a step.
@@ -45,21 +36,21 @@ var ErrEmptyClause = errors.New("model-run step has no text after its prefix")
 // step's own And/But. Byte-for-byte the rule bddgo.Classify applies.
 func classify(text, blockKeyword string) (StepMode, string, error) {
 	switch {
-	case strings.HasPrefix(text, PrefixAct):
+	case strings.HasPrefix(text, catalogue.PrefixAct):
 		if blockKeyword == KeywordThen {
 			return 0, "", fmt.Errorf("%w: %q acts, and then: asserts — use %q for a clause to be ruled on",
-				ErrPrefixWrongBlock, PrefixAct, PrefixRule)
+				ErrPrefixWrongBlock, catalogue.PrefixAct, catalogue.PrefixRule)
 		}
 
-		return ModeAct, strings.TrimSpace(strings.TrimPrefix(text, PrefixAct)), nil
+		return ModeAct, strings.TrimSpace(strings.TrimPrefix(text, catalogue.PrefixAct)), nil
 
-	case strings.HasPrefix(text, PrefixRule):
+	case strings.HasPrefix(text, catalogue.PrefixRule):
 		if blockKeyword != KeywordThen {
 			return 0, "", fmt.Errorf("%w: %q is a verdict, and only then: follows the run — use %q to make something happen",
-				ErrPrefixWrongBlock, PrefixRule, PrefixAct)
+				ErrPrefixWrongBlock, catalogue.PrefixRule, catalogue.PrefixAct)
 		}
 
-		return ModeRule, strings.TrimSpace(strings.TrimPrefix(text, PrefixRule)), nil
+		return ModeRule, strings.TrimSpace(strings.TrimPrefix(text, catalogue.PrefixRule)), nil
 
 	default:
 		return ModeDeterministic, text, nil

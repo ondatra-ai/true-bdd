@@ -14,19 +14,11 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
-// renderedPrompt is the Q value the engine passes around. Pairs a
-// PromptWithContext with its 1-based index so per-cell file naming
-// stays stable across walks.
-type renderedPrompt struct {
-	Prompt checklistmodels.PromptWithContext
-	Index  int
-}
-
-// renderPrompt is the engine's GenerateQFn for every us-* command.
-// The index is the prompt's file position, not its walk position: `D:`
+// renderPrompt is the engine's GenerateQFn for every command: the Prompt
+// itself, whose Index is its file position, not its walk position — `D:`
 // prompts walk first, and a Cell's artifacts must not move with them.
-func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *renderedPrompt {
-	return &renderedPrompt{Prompt: prompt, Index: prompt.Index}
+func renderPrompt(_ int, prompt checklistmodels.PromptWithContext) *checklistmodels.PromptWithContext {
+	return &prompt
 }
 
 // Spec describes one checklist-driven command: its name, the checklist
@@ -39,9 +31,9 @@ type Spec[I any] struct {
 	// ChecklistName is the checklist YAML stem (e.g. "us-refine").
 	// Resolved by ChecklistLoader.
 	ChecklistName string
-	// StoryNumber is the positional CLI argument, the Story id: a slug
+	// StoryID is the positional CLI argument, the Story id: a slug
 	// (`scen-check`, `96.2`), refused at startup when it is not one.
-	StoryNumber string
+	StoryID string
 	// Fix mirrors the --fix flag. Propagated into the engine's
 	// CellHandler.FixMode.
 	Fix bool
@@ -108,7 +100,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 	}
 
 	// Execution phase.
-	slog.Info("Walk starting", "header", headerLine(spec.Name, spec.StoryNumber))
+	slog.Info("Walk starting", "header", headerLine(spec.Name, spec.StoryID))
 
 	items, err := loadAndPrepare(ctx, spec)
 	if err != nil {
@@ -137,7 +129,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		// `stdout matches` step reads (#168).
 		slog.Error("Walk stopped", "command", spec.Name, "error", err)
 
-		return fmt.Errorf("%s command failed: %w", spec.Name, err)
+		return err
 	}
 
 	builder.RenderAll(spec.Renderer, spec.Fix)
@@ -160,31 +152,31 @@ func validateSpec[I any](spec Spec[I]) (
 ) {
 	err := validateGenerators(spec)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
-	if spec.StoryNumber != "" {
-		err = validateStoryID(spec.StoryNumber)
+	if spec.StoryID != "" {
+		err = validateStoryID(spec.StoryID)
 		if err != nil {
-			return nil, nil, refuseStartup(spec.Name, err)
+			return nil, nil, RefuseStartup(spec.Name, err)
 		}
 	}
 
 	doc, err := spec.ChecklistLoader.LoadFull(spec.ChecklistName)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
+		return nil, nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load checklist: %w", err))
 	}
 
 	prompts := flattenChecklistPrompts(doc, spec.ChecklistName)
 
 	err = validateChecklistHasPrompts(spec.ChecklistName, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validatePrompts(spec.Name, spec.Checks, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validateRequiredDocs(prompts, spec.DocResolver)
@@ -206,12 +198,12 @@ func validateSpec[I any](spec Spec[I]) (
 	// turn, rather than discovered one fix at a time.
 	err = validateFixTemplates(spec.Fix, spec.ChecklistName, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	err = validateModelTiers(spec, prompts)
 	if err != nil {
-		return nil, nil, refuseStartup(spec.Name, err)
+		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
 	return doc, prompts, nil
@@ -223,7 +215,7 @@ func validateSpec[I any](spec Spec[I]) (
 func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 	items, err := spec.LoadItems(ctx)
 	if err != nil {
-		return nil, refuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
+		return nil, RefuseStartup(spec.Name, fmt.Errorf("failed to load items: %w", err))
 	}
 
 	if spec.Prepare == nil {
@@ -232,7 +224,7 @@ func loadAndPrepare[I any](ctx context.Context, spec Spec[I]) ([]I, error) {
 
 	items, err = spec.Prepare(ctx, items)
 	if err != nil {
-		return nil, refuseStartup(spec.Name, err)
+		return nil, RefuseStartup(spec.Name, err)
 	}
 
 	return items, nil
@@ -246,10 +238,10 @@ func buildSpecEngine[I any](
 	builder *reportBuilder,
 	items []I,
 	maxAttempts int,
-) *engine.Engine[I, checklistmodels.PromptWithContext, *renderedPrompt] {
+) *engine.Engine[I, checklistmodels.PromptWithContext, *checklistmodels.PromptWithContext] {
 	var latestResult checklistmodels.ValidationResult
 
-	cell := &engine.CellHandler[I, *renderedPrompt]{
+	cell := &engine.CellHandler[I, *checklistmodels.PromptWithContext]{
 		Query:   buildQueryClosure(spec, builder, &latestResult),
 		GenFix:  buildGenFixClosure(spec, &latestResult),
 		Fix:     buildFixClosure(spec, &latestResult),
@@ -259,7 +251,7 @@ func buildSpecEngine[I any](
 	// Same budget on both loops: max_apply_attempts caps the fixes one
 	// walk may apply as well as the outer re-walks, so a cell that never
 	// converges fails with a named error instead of spinning.
-	walker := &engine.SequentialWalker[I, *renderedPrompt]{
+	walker := &engine.SequentialWalker[I, *checklistmodels.PromptWithContext]{
 		Cell:     cell,
 		MaxFixes: maxAttempts,
 		Gate:     isCheckQuery,
@@ -320,11 +312,11 @@ func buildQueryClosure[I any](
 	spec Spec[I],
 	builder *reportBuilder,
 	latestResult *checklistmodels.ValidationResult,
-) engine.QueryFn[I, *renderedPrompt] {
+) engine.QueryFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
 		item I,
-		query *renderedPrompt,
+		query *checklistmodels.PromptWithContext,
 	) (bool, error) {
 		subjectID, subjectTitle := spec.GetSubject(item)
 
@@ -337,7 +329,7 @@ func buildQueryClosure[I any](
 			result, err = answerCheck(spec, item, subjectID, query)
 		} else {
 			result, err = spec.Evaluator.EvaluateOne(
-				ctx, item, subjectID, query.Prompt, spec.TmpDir, query.Index,
+				ctx, item, subjectID, *query, spec.TmpDir,
 			)
 		}
 
@@ -358,11 +350,11 @@ func buildQueryClosure[I any](
 func buildGenFixClosure[I any](
 	spec Spec[I],
 	latestResult *checklistmodels.ValidationResult,
-) engine.GenerateFixFn[I, *renderedPrompt] {
+) engine.GenerateFixFn[I, *checklistmodels.PromptWithContext] {
 	return func(
 		ctx context.Context,
 		item I,
-		_ *renderedPrompt,
+		_ *checklistmodels.PromptWithContext,
 		userAnswers map[string]string,
 		iteration int,
 	) (engine.FixResult, error) {
@@ -425,14 +417,14 @@ func buildFixClosure[I any](
 // headerLine builds the opening banner for one runner.Run. Story-based
 // commands append "— Story <number>"; story-less commands (build-*) get
 // just the upper-cased name.
-func headerLine(name, storyNumber string) string {
+func headerLine(name, storyID string) string {
 	upper := strings.ToUpper(name)
 
-	if storyNumber == "" {
+	if storyID == "" {
 		return upper
 	}
 
-	return upper + " — Story " + storyNumber
+	return upper + " — Story " + storyID
 }
 
 // flattenChecklistPrompts walks a Checklist's sections and emits the

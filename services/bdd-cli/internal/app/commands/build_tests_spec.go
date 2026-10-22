@@ -60,7 +60,7 @@ func (p *buildTestsPrep) specify(
 		specs[scenario.ID] = spec
 
 		slog.Info("Unbound steps specified", "subjectID", scenario.ID,
-			"steps", len(spec.Steps), "phrases", len(spec.Phrases), "terms", len(spec.Words))
+			"steps", len(spec.Steps), "phrases", len(spec.Phrases), "terms", len(spec.Terms))
 	}
 
 	return specs, nil

@@ -9,7 +9,7 @@ import (
 )
 
 // A model answer the engine cannot read used to grade StatusFail, which
-// reports a verdict the model never gave. See E2E-024's judge history for
+// reports a verdict the model never gave. See engine-003's judge history for
 // the same defect class one layer up.
 func TestParseResultFileRefusesUnusableAnswers(t *testing.T) {
 	t.Parallel()

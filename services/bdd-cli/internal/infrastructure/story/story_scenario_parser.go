@@ -123,13 +123,13 @@ type rawStoryFile struct {
 }
 
 // ParseStoryScenarios reads the Story file FindStoryFile resolves
-// storyNumber to, validates the canonical AC-with-steps shape, and returns
+// storyID to (the one declaring that id), validates the canonical AC-with-steps shape, and returns
 // one ScenarioApplyData per AC plus the resolved story path.
 func (p *StoryScenarioParser) ParseStoryScenarios(
-	storyNumber string,
+	storyID string,
 	requirementsScratchPath string,
 ) ([]*template.ScenarioApplyData, string, error) {
-	storyFile, err := FindStoryFile(p.storiesDir, storyNumber)
+	storyFile, err := FindStoryFile(p.storiesDir, storyID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -150,9 +150,6 @@ func (p *StoryScenarioParser) ParseStoryScenarios(
 	if len(raw.Story.AcceptanceCriteria) == 0 {
 		return nil, storyPath, fmt.Errorf("%s: %w", storyPath, ErrNoAcceptanceCriteria)
 	}
-
-	// FindStoryFile picked this file because it declares storyNumber.
-	storyID := raw.Story.ID
 
 	scenarios := make([]*template.ScenarioApplyData, 0, len(raw.Story.AcceptanceCriteria))
 

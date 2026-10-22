@@ -545,7 +545,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-004-unknown-model-cli-refused:
-    description: Multi-provider routing must fail LOUDLY, never quietly
+    description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive, naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
@@ -559,7 +559,10 @@ scenarios:
         - the System Architect runs "build tests"
       then:
         - the command exits with code 1
-        - but: no file outside "tmp" changed
+        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+        - and: 'stdout matches engine\.models\.coder: model reference names an unknown cli: \\"aider\\" \(supported: claude, crush, codex\)'
+        - but: stdout does not match BUILD TESTS
+        - and: no file outside "tmp" changed
         - and: the file "docs/scenarios.yaml" is unchanged
         - and: the engine dispatched no AI turns
   engine-001-help-prints-command-tree:
@@ -982,7 +985,7 @@ scenarios:
         - stdout matches no story file found for story 96\.9 in docs/product/stories
         - 'stdout matches \(expected format: 96\.9-<slug>\.yaml\)'
         - stdout matches level=ERROR msg="Refusing to start" command="us refine"
-        - but: stdout does not match us create
+        - but: stdout does not match msg="Story loaded"
         - and: no file outside "tmp" changed
         - and: the file "docs/product/stories/96.1-document-summary-refined.yaml" is unchanged
         - and: no file matching "docs/product/stories/96.9-*.yaml" is created
@@ -1316,6 +1319,28 @@ scenarios:
         - and: the engine dispatched 4 AI turns
         - but: no file outside "tmp" changed
         - and: stdout does not match RE-WALK
+  us-apply-004-key-apart-from-lineage-refused:
+    description: '`us apply` must refuse to write the Registry, exiting 1 and leaving it unchanged, when a Scenario claiming one of the Story''s criteria is keyed apart from that criterion''s lineage id, even though every Prompt passed, naming that Scenario and the lineage it claims'
+    service: bdd-cli
+    path: tests/bdd-cli/us_apply_test.go
+    user_stories:
+      - story: docs/product/stories/us-apply-registry-merge.yaml
+        scenario_id: us-apply-004-key-apart-from-lineage-refused
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "us-apply-key-apart-from-lineage" project tree
+        - and: the "us-apply" checklist is narrowed to its "already appear as a scenario in the registry" prompt
+      when:
+        - the Product Owner runs "us apply mcp-endpoint"
+      then:
+        - the command exits with code 1
+        - stdout matches level=ERROR msg="Scenario keyed apart from its lineage" scenario=mcp-endpoint-get-refused lineage=mcp-endpoint-002-get-refused
+        - but: stdout does not match ALL CHECKS PASSED
+        - and: the file "docs/scenarios.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 2 AI turns
   checklist-checks-002-check-and-question-refused:
     description: A checklist Prompt carrying both `D:` and `Q:` must be refused at startup, naming the Prompt, because a built-in check or a model answers a Prompt and never both
     service: bdd-cli
@@ -3294,6 +3319,26 @@ scenarios:
         - but: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
 
+  engine-entry-004-failed-us-command-prints-no-usage:
+    description: A `us` command that fails once it has started must exit 1 printing its error on stderr once, after the command's name alone, and not its usage, as the `build` and `scen` commands do, and must change no file
+    service: bdd-cli
+    path: tests/bdd-cli/us_refine_test.go
+    user_stories:
+      - story: docs/product/stories/engine-entry-command-line.yaml
+        scenario_id: engine-entry-004-failed-us-command-prints-no-usage
+        merge_date: '2026-10-22'
+    merged_steps:
+      given:
+        - the "us-refine-error-without-usage" project tree
+      when:
+        - the Product Owner runs "us refine 96.9"
+      then:
+        - the command exits with code 1
+        - 'stderr matches Error: us refine: failed to load items: story file not found — write the Story file first'
+        - but: 'stderr does not match Usage:'
+        - and: stderr does not match command failed
+        - and: no file outside "tmp" changed
+
   engine-documents-002-missing-architecture-flag-refused:
     description: '`build code --architecture` naming a file that does not exist must be refused before it starts a test runner, naming that file, even where the architectural spec `true-bdd.yaml` names exists'
     service: bdd-cli
@@ -3581,6 +3626,31 @@ scenarios:
         - and: no file outside "tmp" and "tests" changed
         - and: the engine dispatched 2 AI turns
 
+  fix-loop-bounds-004-walks-exhausted-keep-term-documents:
+    description: 'A `scen check --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts, and must put the term document that fix wrote back as it was, exiting 1'
+    service: bdd-cli
+    path: tests/bdd-cli/scen_check_test.go
+    user_stories:
+      - story: docs/product/stories/fix-loop-bounds-max-apply-attempts.yaml
+        scenario_id: fix-loop-bounds-004-walks-exhausted-keep-term-documents
+        merge_date: '2026-10-22'
+    timeout: 10m
+    merged_steps:
+      given:
+        - the "fix-loop-walks-exhausted-terms" project tree
+        - the Quality Engineer answers "1" to every question
+      when:
+        - the Quality Engineer runs "scen check --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches msg="Walk attempt started" attempt=1 max_attempts=1
+        - and: stdout matches msg="Fix recorded in the document" document=product
+        - and: stdout matches Hit max apply attempts without convergence\.
+        - and: stdout matches msg="Fix undone in the document" document=product
+        - but: stdout does not match attempt=2
+        - and: the file "docs/product/product.yaml" is unchanged
+        - and: no file outside "tmp" changed
+        - and: the engine dispatched 2 AI turns
   fix-loop-bounds-001-one-walk-keeps-story:
     description: A `us refine --fix` run whose checklist allows one walk must stop after the walk that applied a fix, before the re-walk that would confirm it, saying it hit max apply attempts and leaving the Story file as it was
     service: bdd-cli
@@ -3748,7 +3818,7 @@ scenarios:
         - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
 
   engine-routes-004-failed-claude-turn-stops-run:
-    description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+    description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
@@ -3765,7 +3835,9 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches msg="AI turn failed" turn=1 label=claude-turn001 role=prompt cli=claude model=claude-no-such-model
-        - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+        - and: 'stderr matches Error: scen check: walker failed on item 0: evaluator failed: '
+        - but: stderr does not match command failed
+        - and: stdout does not match CHECK FAILED|ALL CHECKS PASSED
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
 
@@ -4224,7 +4296,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-checklists-003-check-with-not-a-mapping-refused:
-    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file and that `with:` takes a mapping, rather than run the check without the parameters it was given
+    description: A command must be refused at startup when a `D:` Prompt of its checklist passes its check a `with:` that is not a mapping, naming the checklist file, the Prompt, what its `with:` is and that `with:` takes a mapping, rather than run the check without the parameters it was given
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
@@ -4239,8 +4311,9 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="scen check"
-        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: with: takes a mapping of check parameters'
-        - but: stdout does not match SCEN CHECK
+        - and: 'stdout matches checklist true-bdd/checklists/scen-check\.yaml: D: step-phrases carries a with: that is a list, but with: takes a mapping of check parameters'
+        - but: stdout does not match interface
+        - and: stdout does not match SCEN CHECK
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-term-documents-001-glossary-not-a-list-stops-scen-check:

@@ -14,20 +14,8 @@ import (
 // step definition of its suite, each reached by that template alone,
 // over the steps of every checked Scenario sharing the suite.
 func stepDefinitions() Check[*template.ScenarioCheckData] {
-	return Check[*template.ScenarioCheckData]{
-		Params: nil,
-		Docs:   []string{docs.KeyProduct},
-		Run: func(item *template.ScenarioCheckData, input Input) (Verdict, error) {
-			source, err := product.LoadCatalogue(input.Docs[docs.KeyProduct])
-			if err != nil {
-				return Verdict{}, fmt.Errorf("read the catalogue: %w", err)
-			}
-
-			verdict, unchecked := activation(item, source)
-			if unchecked {
-				return verdict, nil
-			}
-
+	return closureCheck([]string{docs.KeyProduct},
+		func(item *template.ScenarioCheckData, _ Input, source product.Catalogue) (Verdict, error) {
 			dir := stepcoverage.StepsDir(item.Path)
 
 			suite, err := stepcoverage.LoadSuite(dir)
@@ -36,8 +24,7 @@ func stepDefinitions() Check[*template.ScenarioCheckData] {
 			}
 
 			return reviewDefinitions(item, source, suite.Bind, dir), nil
-		},
-	}
+		})
 }
 
 // reviewDefinitions holds one Item's templates to its suite's step

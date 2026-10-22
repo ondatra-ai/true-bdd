@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
 // ErrGlossaryNotList signals a `glossary:` key holding something other
@@ -18,7 +19,7 @@ var ErrGlossaryNotList = errors.New("glossary: must hold a list of terms")
 // defines nothing.
 func LoadGlossary(path string) ([]catalogue.Definition, error) {
 	doc, found, err := readDocument(path)
-	if err != nil || !found || absent(&doc.Glossary) {
+	if err != nil || !found || docs.Absent(&doc.Glossary) {
 		return nil, err
 	}
 

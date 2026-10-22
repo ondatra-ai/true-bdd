@@ -8,6 +8,10 @@
 # exit of each command whose fix loop writes a document. The bounds on the
 # loop are the Story fix-loop-bounds.
 #
+# Its criteria run `scen check` (three), `us refine`, `us apply` and
+# `build tests`; a Story's role is the one that runs its command (Q25), so
+# with mixed commands it is the role that runs most of them.
+#
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `fix-loop-choices-<id>` (ADR 0014), and its steps are that Scenario's steps.
 
@@ -15,7 +19,7 @@ story:
     id: fix-loop-choices
     feature: engine
     title: Settle each failed check in the --fix loop by applying, refining or exiting, in my own words
-    as_a: Product Owner
+    as_a: Quality Engineer
     i_want: every --fix run to let me apply the fix it proposes, refine it with feedback I type, or exit without applying, to keep a clarifying answer I type in my own words exactly as I typed it, and on exit to leave every document it would write as it was
     so_that: a fix lands only once I approve it, worded as I meant it, and walking away from a fix never leaves a half-fixed Story, Registry or term document behind
     status: IMPLEMENTED
