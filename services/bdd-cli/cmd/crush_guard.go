@@ -71,9 +71,9 @@ type crushHookPayload struct {
 // environment variables and falling back to the stdin payload.
 func crushToolCall(stdin io.Reader) (string, string) {
 	toolName := strings.TrimSpace(os.Getenv(ai.CrushToolNameEnvVar))
-	targetPath := strings.TrimSpace(os.Getenv(ai.CrushToolFilePathEnvVar))
+	targetPath := os.Getenv(ai.CrushToolFilePathEnvVar)
 
-	if toolName != "" && targetPath != "" {
+	if toolName != "" && strings.TrimSpace(targetPath) != "" {
 		return toolName, targetPath
 	}
 
@@ -83,11 +83,11 @@ func crushToolCall(stdin io.Reader) (string, string) {
 		toolName = payload.ToolName
 	}
 
-	if targetPath == "" {
+	if strings.TrimSpace(targetPath) == "" {
 		targetPath = payload.Input.FilePath
 	}
 
-	if targetPath == "" {
+	if strings.TrimSpace(targetPath) == "" {
 		targetPath = payload.Input.Path
 	}
 

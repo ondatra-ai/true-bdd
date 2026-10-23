@@ -10,9 +10,9 @@ go run ./scripts/cmd/drill oracle a --iteration <dir>
 go run ./scripts/cmd/drill audit a --iteration <dir>
 ```
 
-`run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
+`run` accepts exactly `-- build tests --fix` or `-- build code --fix`; every other command line is refused. Each maps to its own typed engine operation. `run` and `oracle` return after launching a detached worker. Read the run's log and state under `record.json`; the worker keeps the three-hour limit, including clarification pauses, without a terminal or launcher. Only one unfinished run is permitted per iteration. Tags cannot be reused. Each rerun remains an operator decision. The fix menu receives `1`; a clarification receives nothing automatically.
 
-A paused run records the printed question, options and a private answer filename. Publish a JSON object at that filename with one line of answer and the exact Specification citation:
+A paused run records the printed question, options and a private answer filename. If the engine exits while waiting, the wait ends immediately, the question stays unanswered in the record, and terminal cleanup runs. Publish a JSON object at that filename with one line of answer and the exact Specification citation:
 
 ```json
 {

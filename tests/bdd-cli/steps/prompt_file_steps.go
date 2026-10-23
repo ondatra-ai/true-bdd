@@ -34,7 +34,12 @@ func assertEveryFileMatches(state *State, args []string) error {
 	}
 
 	for _, file := range files {
-		content, readErr := disk.Read(file)
+		resolved, err := state.containedMatch(args[0], file)
+		if err != nil {
+			return err
+		}
+
+		content, readErr := disk.Read(resolved)
 		if readErr != nil {
 			return state.fail("read %s: %v", file, readErr)
 		}

@@ -14,6 +14,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/scripts/drill"
 )
 
+const fixArgument = "--fix"
+
 func prepare(t *testing.T, script string) (drill.Runner, drill.Record, drill.Cut) {
 	t.Helper()
 	runner, next := fixtureEngine(t, script)
@@ -40,13 +42,14 @@ read answer
 [ "$answer" = 'Write from specification' ] || exit 13
 `)
 
-	run, err := runner.Prepare(t.Context(), record.Directory, "a", "menu", []string{buildCommand, codeArgument, "--fix"})
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "menu",
+		[]string{buildCommand, codeArgument, fixArgument})
 	must(t, err)
 
 	ended := make(chan error, 1)
 	go func() { ended <- runner.Supervise(t.Context(), record.Directory, run.Tag) }()
 
-	paused := waitRun(t, record.Directory, run.Tag, func(run drill.Run) bool { return run.Status == pausedStatus })
+	paused := waitRun(t, record.Directory, run.Tag, func(run drill.Attempt) bool { return run.Status == pausedStatus })
 	if len(paused.Questions) != 1 {
 		t.Fatalf("questions: %+v", paused.Questions)
 	}
@@ -93,7 +96,8 @@ func TestEveryTerminalPathCleansMarkedProcesses(t *testing.T) {
 				runner.Limit = 50 * time.Millisecond
 			}
 
-			run, err := runner.Prepare(t.Context(), record.Directory, "a", mode, []string{buildCommand, codeArgument})
+			run, err := runner.Prepare(t.Context(), record.Directory, "a", mode,
+				[]string{buildCommand, codeArgument, fixArgument})
 			must(t, err)
 
 			if mode == launchMode {
@@ -156,5 +160,33 @@ func terminalScript(mode string) string {
 		return "#!/bin/sh\nexit 7\n"
 	default:
 		return "#!/bin/sh\nsleep 30\n"
+	}
+}
+
+func TestRebuildCommandsAreExplicit(t *testing.T) {
+	for _, command := range []struct {
+		args    []string
+		allowed bool
+	}{
+		{[]string{buildCommand, "tests", fixArgument}, true},
+		{[]string{buildCommand, codeArgument, fixArgument}, true},
+		{[]string{buildCommand}, false},
+		{[]string{buildCommand, codeArgument}, false},
+		{[]string{"scen", "check", fixArgument}, false},
+		{[]string{buildCommand, "tests", fixArgument, "--help"}, false},
+		{[]string{"oracle"}, false},
+	} {
+		t.Run(strings.Join(command.args, " "), func(t *testing.T) {
+			runner, record, _ := prepare(t, "#!/bin/sh\n[ \"$*\" = '"+strings.Join(command.args, " ")+"' ]\n")
+
+			attempt, err := runner.Prepare(t.Context(), record.Directory, "a", "allowed-command", command.args)
+			if (err == nil) != command.allowed {
+				t.Fatalf("Prepare(%q): %v", command.args, err)
+			}
+
+			if command.allowed {
+				must(t, runner.Supervise(t.Context(), record.Directory, attempt.Tag))
+			}
+		})
 	}
 }

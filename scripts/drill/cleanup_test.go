@@ -36,7 +36,8 @@ exec "$DRILL_REAL_PS" "$@"
 
 	childFile := filepath.Join(t.TempDir(), "child")
 	t.Setenv("DRILL_CHILD_FILE", childFile)
-	run, err := runner.Prepare(t.Context(), record.Directory, "a", "detached", []string{buildCommand, codeArgument})
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "detached",
+		[]string{buildCommand, codeArgument, fixArgument})
 	must(t, err)
 	must(t, runner.Supervise(t.Context(), record.Directory, run.Tag))
 
@@ -77,7 +78,8 @@ func TestDrillProcessFixture(t *testing.T) {
 
 func TestFailedCleanupNeverPublishesEndOrExitCode(t *testing.T) {
 	runner, record, _ := prepare(t, "#!/bin/sh\nexit 0\n")
-	run, err := runner.Prepare(t.Context(), record.Directory, "a", "bad-ps", []string{buildCommand, codeArgument})
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "bad-ps",
+		[]string{buildCommand, codeArgument, fixArgument})
 	must(t, err)
 	bin := t.TempDir()
 	put(t, filepath.Join(bin, "ps"), "#!/bin/sh\nexit 5\n")
@@ -109,7 +111,8 @@ func TestMismatchedCutAndChangedBinaryAreRefused(t *testing.T) {
 	must(t, err)
 	put(t, filepath.Join(record.Directory, "record.json"), string(data))
 
-	_, err = runner.Prepare(t.Context(), record.Directory, "a", "mismatch", []string{buildCommand})
+	_, err = runner.Prepare(t.Context(), record.Directory, "a", "mismatch",
+		[]string{buildCommand, codeArgument, fixArgument})
 	if err == nil {
 		t.Fatal("base mismatch accepted")
 	}
@@ -126,7 +129,8 @@ func TestMismatchedCutAndChangedBinaryAreRefused(t *testing.T) {
 	must(t, err)
 	put(t, filepath.Join(record.Directory, "record.json"), string(data))
 
-	_, err = runner.Prepare(t.Context(), record.Directory, "a", "digest", []string{buildCommand})
+	_, err = runner.Prepare(t.Context(), record.Directory, "a", "digest",
+		[]string{buildCommand, codeArgument, fixArgument})
 	if err == nil {
 		t.Fatal("binary mismatch accepted")
 	}

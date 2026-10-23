@@ -27,21 +27,21 @@ type Oracle struct {
 }
 
 // PrepareOracle reserves a supervised oracle run with a unique tag.
-func (r Runner) PrepareOracle(ctx context.Context, directory, cut string) (Run, error) {
+func (r Runner) PrepareOracle(ctx context.Context, directory, cut string) (Attempt, error) {
 	tag := "oracle-" + cut + "-" + time.Now().UTC().Format("20060102-150405.000000000")
 
-	run, err := r.Prepare(ctx, directory, cut, tag, []string{"oracle"})
+	run, err := r.prepare(ctx, directory, cut, tag, []string{"oracle"})
 	if err != nil {
 		return run, err
 	}
 
 	run.Oracle = &Oracle{Binary: filepath.Join(directory, "runs", tag, "engine"), Failures: []string{}}
-	err = changeRun(directory, tag, func(saved *Run) { saved.Oracle = run.Oracle })
+	err = changeRun(directory, tag, func(saved *Attempt) { saved.Oracle = run.Oracle })
 
 	return run, err
 }
 
-func (r Runner) executeOracle(ctx context.Context, record Record, run Run, cut Cut) (int, error) {
+func (r Runner) executeOracle(ctx context.Context, record Record, run Attempt, cut Cut) (int, error) {
 	oracle := *run.Oracle
 
 	tree, err := privateDirectory(record.Repository)
@@ -71,7 +71,7 @@ func (r Runner) executeOracle(ctx context.Context, record Record, run Run, cut C
 		return -1, err
 	}
 
-	err = changeRun(record.Directory, run.Tag, func(saved *Run) { saved.Oracle = &oracle })
+	err = changeRun(record.Directory, run.Tag, func(saved *Attempt) { saved.Oracle = &oracle })
 	if err != nil {
 		return -1, err
 	}
@@ -92,7 +92,7 @@ func (r Runner) executeOracle(ctx context.Context, record Record, run Run, cut C
 	opt.Output = fileWriter{replayLog}
 	code, err = gotool.ReplayOracle(ctx, oracle.Binary, opt)
 	summaryErr := oracle.summarize(tree, replayLog)
-	saveErr := changeRun(record.Directory, run.Tag, func(saved *Run) { saved.Oracle = &oracle })
+	saveErr := changeRun(record.Directory, run.Tag, func(saved *Attempt) { saved.Oracle = &oracle })
 
 	return code, errors.Join(err, summaryErr, saveErr)
 }

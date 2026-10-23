@@ -53,7 +53,7 @@ func (r Runner) Start(ctx context.Context, base string) (Record, error) {
 			"engine"),
 		StartedAt: time.Now().UTC(),
 		Cuts:      map[string]Cut{},
-		Runs:      map[string]Run{},
+		Runs:      map[string]Attempt{},
 		Audits:    map[string][]Audit{}}
 
 	record.Digest, err = buildBase(ctx, record)

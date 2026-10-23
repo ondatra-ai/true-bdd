@@ -385,9 +385,6 @@ scenarios:
       when:
         - the System Architect runs "build code --fix"
       then:
-        - 'every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter'
-        - 'every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter'
-        - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
         - the command exits with code 0
         - stdout matches msg="Suite failures" failures=1 framework=jest
         - stdout matches msg="Fix applied; re-running this test in isolation"
@@ -402,6 +399,9 @@ scenarios:
         # Independent outcome check, last: the suite run appends to
         # suite-runs.log after the line-count clause.
         - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
+        - 'every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter'
+        - 'every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter'
+        - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
   build-code-frameworks-003-playwright-fix-reruns-test-by-grep:
     description: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
     service: bdd-cli

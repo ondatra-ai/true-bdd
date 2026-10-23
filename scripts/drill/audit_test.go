@@ -20,7 +20,7 @@ func TestAuditExplicitlyExcludesEveryOracleReplayForTheCut(t *testing.T) {
 	record, err := drill.Read(record.Directory)
 	must(t, err)
 
-	record.Runs = map[string]drill.Run{
+	record.Runs = map[string]drill.Attempt{
 		"oracle-a-1": {Cut: "a", Oracle: &drill.Oracle{Directory: "/oracle/first"}},
 		"oracle-a-2": {Cut: "a", Oracle: &drill.Oracle{Directory: "/oracle/second"}},
 		"oracle-b-1": {Cut: "b", Oracle: &drill.Oracle{Directory: "/oracle/other-cut"}},
@@ -135,4 +135,24 @@ esac
 	if len(audit.Unknown) == 0 {
 		t.Fatal("audit claims certainty")
 	}
+}
+
+func TestAuditResolvesRelativeGlobAgainstCut(t *testing.T) {
+	runner, record, cut := prepare(t, "#!/bin/sh\nexit 0\n")
+	put(t, filepath.Join(cut.Directory, "tmp/true-bdd.log.json"),
+		`{"msg":"ToolUseBlock details","content":"{\"name\":\"Glob\",\"input\":{\"pattern\":\"**/*.go\"}}"}`+"\n")
+	audit, err := runner.Audit(t.Context(), record.Directory, "a")
+	must(t, err)
+
+	for _, entry := range audit.Entries {
+		if entry.Tool == "Glob" {
+			if entry.Target != filepath.Join(cut.Directory, "**/*.go") || entry.Group != "inside" {
+				t.Fatalf("relative glob misreported: %+v", entry)
+			}
+
+			return
+		}
+	}
+
+	t.Fatalf("Glob call missing: %+v", audit)
 }

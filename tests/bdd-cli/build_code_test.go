@@ -124,10 +124,7 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s.And(`the project's test dependencies are installed`)
 	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build code --fix"`)
-	s.Then(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter`)
-	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter`)
-	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
-	s.And(`the command exits with code 0`)
+	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
 	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -139,6 +136,9 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s.And(`the file "tests/unit/canary.test.js" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.And(`the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
 	s.Done()
 }
 

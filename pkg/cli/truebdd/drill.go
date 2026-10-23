@@ -19,9 +19,18 @@ type Options struct {
 	Grace     time.Duration
 }
 
-// Rebuild runs an iteration's engine in its own session.
-// It closes opt.Input when stdin forwarding ends so answer writers cannot outlive their reader.
-func Rebuild(ctx context.Context, binary string, args []string, opt Options) (int, error) {
+// BuildTests authors and verifies step definitions with the iteration's engine.
+func BuildTests(ctx context.Context, binary string, opt Options) (int, error) {
+	return rebuild(ctx, binary, []string{"build", "tests", "--fix"}, opt)
+}
+
+// BuildCode repairs production code with the iteration's engine.
+func BuildCode(ctx context.Context, binary string, opt Options) (int, error) {
+	return rebuild(ctx, binary, []string{"build", "code", "--fix"}, opt)
+}
+
+// rebuild closes stdin forwarding so answer writers cannot outlive their reader.
+func rebuild(ctx context.Context, binary string, args []string, opt Options) (int, error) {
 	process, err := shell.Start(context.WithoutCancel(ctx), append([]string{binary}, args...), shell.Options{
 		Dir: opt.Directory,
 		Env: shell.Inherit().Strip("CLAUDECODE",

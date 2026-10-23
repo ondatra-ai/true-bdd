@@ -89,7 +89,7 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 	return audit, err
 }
 
-func (a *Audit) oracleLimitations(runs map[string]Run, cut string) {
+func (a *Audit) oracleLimitations(runs map[string]Attempt, cut string) {
 	tags := make([]string, 0, len(runs))
 	for tag, run := range runs {
 		if run.Cut == cut && run.Oracle != nil {
