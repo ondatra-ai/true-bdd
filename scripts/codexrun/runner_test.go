@@ -46,6 +46,7 @@ if [ "$GIT_FAIL_ADD" = yes ] && [ "$1" = worktree ] && [ "$2" = add ]; then exit
 exec "$CODEX_TEST_GIT" "$@"
 `,
 		"codex": `#!/bin/sh
+[ "$1" = --fixture-ready ] && exit 0
 if [ "$1" = login ]; then
  case "$LOGIN" in silent) sleep 5;; out) echo 'Not logged in'; exit 1;; *) echo 'Logged in using ChatGPT';; esac
  exit 0
@@ -65,6 +66,7 @@ fi
 printf 'finished report' > "$report"
 `,
 		crushAgent: `#!/bin/sh
+[ "$1" = --fixture-ready ] && exit 0
 printf '%s\n' "$TRUE_BDD_CODEX_RUN" > "$CAPTURE.marker"
 printf '%s\n' "$@" > "$CAPTURE.crush"
 cat > "$CAPTURE.stdin"
@@ -89,6 +91,18 @@ printf '{"number":175,"title":"Delegation","body":"saved issue body","comments":
 	t.Setenv("CODEX_HOME", filepath.Join(root, "home"))
 	t.Setenv("CAPTURE", filepath.Join(root, "capture"))
 
+	prepareFakeAgents(t, bin)
+
+	seedFixture(t, root)
+	brief := filepath.Join(root, "brief.md")
+	write(t, brief, "Review issue #175")
+
+	return root, codexrun.Options{Name: "review-175", Kind: "review", Brief: brief}
+}
+
+func seedFixture(t *testing.T, root string) {
+	t.Helper()
+
 	for _, args := range [][]string{
 		{"init", "-b", mainBranch}, {"config", "user.email", "test@example.com"}, {"config", "user.name", "Test"},
 	} {
@@ -98,10 +112,21 @@ printf '{"number":175,"title":"Delegation","body":"saved issue body","comments":
 	write(t, filepath.Join(root, ".gitignore"), "tmp/\nbin/\ncapture*\nhome/\nbrief.md\n")
 	git(t, root, "add", ".gitignore")
 	git(t, root, "commit", "-m", "seed")
-	brief := filepath.Join(root, "brief.md")
-	write(t, brief, "Review issue #175")
+}
 
-	return root, codexrun.Options{Name: "review-175", Kind: "review", Brief: brief}
+// Prepare executables before watchdog timing: first execution of a new
+// script can exceed 200ms on macOS (observed during #183's gate run).
+func prepareFakeAgents(t *testing.T, bin string) {
+	t.Helper()
+
+	for _, name := range []string{codexCommand, crushAgent} {
+		cmd := exec.CommandContext(t.Context(), filepath.Join(bin, name), "--fixture-ready")
+
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("prepare fake %s: %s %v", name, data, err)
+		}
+	}
 }
 
 func git(t *testing.T, root string, args ...string) string {

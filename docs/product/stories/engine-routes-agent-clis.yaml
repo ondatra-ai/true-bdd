@@ -28,14 +28,14 @@ story:
             - then:
                 - the command exits with code 0
                 - stdout matches BUILD CODE COMPLETE
-                - and: the engine dispatched 3 validation AI turns to "codex"
+                - and: the engine dispatched 1 validation AI turn to "codex"
                 - and: the engine dispatched 1 fix AI turn to "codex"
                 - and: the engine dispatched 1 apply AI turn to "codex"
-                - and: the engine dispatched 5 AI turns
+                - and: the engine dispatched 3 AI turns
                 - and: stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only
                 - and: stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only
                 - and: stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write
-                - but: stdout does not match label=codex-turn00[1245] sandbox=workspace-write
+                - but: stdout does not match label=codex-turn00[12] sandbox=workspace-write
                 - and: the file "services/calc/calc.go" is modified
                 - but: the file "tests/suite/add_test.go" is unchanged
                 - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"time"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/generators/validate"
@@ -48,6 +47,7 @@ func RunBuildCode(
 	fix bool,
 ) error {
 	tmpDir := deps.RunDir.GetTmpOutPath()
+	execution := newBuildCodeExecution(deps, architectureFile)
 
 	err := runner.Run(ctx, runner.Spec[*testrunner.FailingTest]{
 		Name:          "build code",
@@ -55,11 +55,14 @@ func RunBuildCode(
 		StoryID:       "",
 		Fix:           fix,
 
-		LoadItems:   loadFailingTests(deps, architectureFile),
-		PostFix:     buildCodePostFix(deps),
-		Finalize:    finalizeBuildCode,
-		GetSubject:  testrunner.Subject,
-		OnItemStart: buildCodeOnItemStart,
+		LoadItems:      execution.discover,
+		ReloadItems:    execution.discover,
+		BeforeEvaluate: execution.beforeEvaluate,
+		PostFix:        execution.postFix,
+		PostNotApplied: execution.postNotApplied,
+		Finalize:       finalizeBuildCode,
+		GetSubject:     testrunner.Subject,
+		OnItemStart:    buildCodeOnItemStart,
 
 		Evaluator:    deps.BuildCodeEvaluator,
 		FixGenerator: deps.BuildCodeFixPromptGenerator,
@@ -213,42 +216,11 @@ func buildCodeOnItemStart(idx, total int, item *testrunner.FailingTest) {
 	slog.Info("test", "index", idx+1, "total", total, "id", item.ID)
 }
 
-// buildCodePostFix re-runs the failing test and refreshes LastRunPassed /
-// FailureOutput / LastRunAt on the item, so the engine's next Query
-// iteration reads the refreshed state via the same pointer.
-func buildCodePostFix(
-	deps BuildCodeDeps,
-) func(ctx context.Context, item *testrunner.FailingTest, applierContent string) (*testrunner.FailingTest, error) {
-	return func(
-		ctx context.Context,
-		item *testrunner.FailingTest,
-		_ string,
-	) (*testrunner.FailingTest, error) {
-		slog.Info("Fix applied; re-running this test in isolation")
-
-		runnerImpl, err := deps.TestRunnerDispatcher.For(item.Framework)
-		if err != nil {
-			return item, fmt.Errorf("postfix dispatch %s: %w", item.Framework, err)
-		}
-
-		passed, output, runErr := runnerImpl.RunOne(ctx, item)
-		if runErr != nil {
-			return item, fmt.Errorf("postfix rerun %s: %w", item.ID, runErr)
-		}
-
-		item.LastRunPassed = passed
-		item.FailureOutput = testrunner.TruncateTail(output, testrunner.FailureOutputCap)
-		item.LastRunAt = time.Now()
-
-		return item, nil
-	}
-}
-
 // finalizeBuildCode is the Finalize closure for `build code`. Non-nil
 // error iff the walk did not converge so the CLI exits non-zero on any
 // still-failing test.
 func finalizeBuildCode(result *engine.Result[*testrunner.FailingTest]) error {
-	if result.Reason == engine.Converged {
+	if result.Reason == engine.Converged && len(result.Items) == 0 {
 		return nil
 	}
 

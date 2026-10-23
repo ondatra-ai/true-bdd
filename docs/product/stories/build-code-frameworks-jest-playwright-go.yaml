@@ -57,9 +57,9 @@ story:
                 - stdout matches msg="Fix applied; re-running this test in isolation"
                 - stdout matches BUILD CODE COMPLETE
                 - and: the file "services/greeter/greeting.js" is modified
-                - and: the file "tests/unit/suite-runs.log" has exactly 1 line
+                - and: the file "tests/unit/suite-runs.log" has exactly 2 lines
                 - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$
-                - and: the engine spawned exactly 2 test runners
+                - and: the engine spawned exactly 3 test runners
                 - but: the file "tests/unit/greeting.test.js" is unchanged
                 - and: the file "tests/unit/canary.test.js" is unchanged
                 - and: the file "docs/architecture/architecture.yaml" is unchanged
@@ -83,7 +83,7 @@ story:
                 - stdout matches BUILD CODE COMPLETE
                 - and: the file "services/web/server.js" is modified
                 - and: the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading
-                - and: the engine spawned exactly 2 test runners
+                - and: the engine spawned exactly 3 test runners
                 - but: the file "tests/integration/home.spec.ts" is unchanged
                 - and: the file "docs/architecture/architecture.yaml" is unchanged
                 - and: no file outside "tmp" and "services/web" changed
@@ -103,8 +103,8 @@ story:
                 - stdout matches msg="Fix applied; re-running this test in isolation"
                 - stdout matches BUILD CODE COMPLETE
                 - and: the file "services/calc/calc.go" is modified
-                - and: the file "tests/suite/suite-runs.log" has exactly 1 line
-                - and: the engine spawned exactly 2 test runners
+                - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
+                - and: the engine spawned exactly 3 test runners
                 - but: the file "tests/suite/multiply_test.go" is unchanged
                 - and: the file "tests/suite/add_test.go" is unchanged
                 - and: the file "tests/suite/canary_test.go" is unchanged
@@ -112,3 +112,44 @@ story:
                 # Independent outcome check, last: the suite run appends to
                 # suite-runs.log after the line-count clause.
                 - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - id: 005-not-applied-revalidated
+          description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
+          steps:
+          - given:
+            - the "build-code-not-applied" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - and: stdout matches level=WARN msg="Fix was NOT applied"
+            - but: stdout does not match msg="Walk stopped"
+            - and: the engine dispatched 2 validation AI turns to "claude"
+            - and: the engine dispatched 2 fix AI turns to "claude"
+            - and: the engine dispatched 2 apply AI turns to "crush"
+            - and: the engine dispatched 6 AI turns
+            - and: the engine spawned exactly 4 test runners
+            - and: the file "services/calc/prepared.txt" matches ^prepared
+            - but: the file "tests/suite/calc_test.go" is unchanged
+            - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - id: 006-not-applied-hits-fix-bound
+          description: Not-applied turns in build code --fix must consume the configured per-test fix allowance and stop at the unchanged non-converging fix bound
+          steps:
+          - given:
+            - the "build-code-not-applied-bound" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 1
+            - and: stdout matches level=WARN msg="Fix was NOT applied"
+            - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+            - and: the engine dispatched 3 validation AI turns to "claude"
+            - and: the engine dispatched 3 fix AI turns to "claude"
+            - and: the engine dispatched 3 apply AI turns to "crush"
+            - and: the engine dispatched 9 AI turns
+            - and: the engine spawned exactly 3 test runners
+            - and: the file "services/calc/prepared-first.txt" matches ^prepared
+            - and: the file "services/calc/prepared-second.txt" matches ^prepared
+            - but: the file "tests/suite/calc_test.go" is unchanged
