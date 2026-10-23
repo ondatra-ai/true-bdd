@@ -369,7 +369,7 @@ scenarios:
         - and: the engine spawned exactly 1 test runner
         - and: the engine dispatched 1 AI turn
   build-code-frameworks-002-jest-fix-reruns-test-by-name:
-    description: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+    description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -385,6 +385,9 @@ scenarios:
       when:
         - the System Architect runs "build code --fix"
       then:
+        - 'every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter'
+        - 'every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter'
+        - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
         - the command exits with code 0
         - stdout matches msg="Suite failures" failures=1 framework=jest
         - stdout matches msg="Fix applied; re-running this test in isolation"
@@ -4842,6 +4845,85 @@ scenarios:
       - and: the engine spawned no test runner
       - and: the engine dispatched no AI turns
       - but: stdout does not match BUILD TESTS COMPLETE
+  build-code-spec-005-matched-scenario-embedded:
+    description: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-spec-refusals.yaml
+      scenario_id: build-code-spec-005-matched-scenario-embedded
+      merge_date: '2026-10-23'
+    timeout: 10m
+    merged_steps:
+      given:
+      - the "build-code-spec-scenario" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return
+      - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+      - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
+      - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
+      - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
+      - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
+      - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
+      - every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.
+      - every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-code-spec-006-unreadable-product-warned:
+    description: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-spec-refusals.yaml
+      scenario_id: build-code-spec-006-unreadable-product-warned
+      merge_date: '2026-10-23'
+    timeout: 10m
+    merged_steps:
+      given:
+      - the "build-code-spec-missing-product" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - stdout matches level=WARN.*document=product.*error=.*docs/product/missing.yaml
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+      - every file matching "tmp/*/*fix-iter*-user.txt" does not match What the spec says
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-code-spec-007-unreadable-registry-warned:
+    description: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-spec-refusals.yaml
+      scenario_id: build-code-spec-007-unreadable-registry-warned
+      merge_date: '2026-10-23'
+    timeout: 10m
+    merged_steps:
+      given:
+      - the "build-code-spec-missing-registry" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - stdout matches level=WARN.*document=scenarios_yaml.*error=.*docs/missing.yaml
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
+      - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
   build-tests-run-006-identical-failures-grouped:
     description: Two bound Scenarios failing with the same runtime output must give one whole failure block naming both in the next fix prompt and one selection list
     service: bdd-cli

@@ -3,12 +3,17 @@ package testrunner
 import (
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
 
 // FailingTest is one engine item walked by `build code`. Produced by a
 // Runner's Discover; refreshed in-place by RunOne during the engine's
 // PostFix hook.
 type FailingTest struct {
+	Scenario      *registry.RegistryScenario
+	Spec          catalogue.Specification
 	ID            string    // "<service>/<suite>/<sanitized framework id>"
 	Service       string    // architecture.yaml service.name — the suite's `service:`
 	Suite         string    // architecture.yaml testing.suites[].name

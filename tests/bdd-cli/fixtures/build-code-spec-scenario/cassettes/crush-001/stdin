@@ -1,0 +1,211 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/stepsrun/tests/calc::TestCalc001Double
+**Source File:** fixture/stepsrun/tests/calc
+
+### Last Failure Output
+```
+=== RUN   TestCalc001Double
+    calc_test.go:31: calc-001-double
+          step 3/3 failed: Then the result is 6
+          expected 6, got 3
+          not run: (none)
+--- FAIL: TestCalc001Double (0.00s)
+
+```
+
+
+## Subject — Registry Scenario
+
+**Scenario ID:** calc-001-double
+**Description:** Doubling a number returns twice its value
+**Service:** calc
+**Path:** tests/calc/calc_test.go
+
+### Steps
+Given:
+  - the number is 3
+When:
+  - the number is doubled
+Then:
+  - the result is 6
+
+
+## What the spec says these steps mean
+
+The Specification defines the contract the production code must satisfy.
+Use these phrases, glossary meanings and word mappings with the whole
+Scenario above when repairing the failing test.
+
+### Scenario steps and their phrases
+
+- given step "the number is 3" matches `the number is {value:number}`
+- when step "the number is doubled" matches `the number is doubled`
+- then step "the result is 6" matches `the result is {value:number}`
+
+### Phrases
+
+- `the number is {value:number}` (given step): The number supplies the input to double.
+  Words: number
+- `the number is doubled` (when step): The calculator doubles the supplied number.
+  Words: number
+- `the result is {value:number}` (then step): The result equals twice the supplied number.
+  Words: number
+
+### Words
+
+#### number
+
+- Means: An integer operand whose double is its sum with itself.
+- In the implementation: The integer argument to services/calc.Double.
+- Observed by: The step calls Double and compares its integer return with the expected value.
+
+
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test /go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double
+
+## Target
+Apply the change(s) under `services/*` only. The test at
+`tests/calc/calc_test.go` (scenario `calc-001-double`) is the contract; do NOT
+modify it, the step definitions under `tests/calc/steps/`, or anything under
+`docs/`.
+
+## Root Cause
+`services/calc/calc.go` declares:
+
+```go
+func Double(value int) int { return value }
+```
+
+It returns the operand unchanged instead of twice the operand. The step
+`the number is doubled` calls `calc.Double(state.Value)` (see
+`tests/calc/steps/register.go:17`), so with input `3` the state stays `3` and
+the `Then the result is 6` step fails with `expected 6, got 3`.
+
+Per the specification, the word **number** means "an integer operand whose
+double is its sum with itself", and the phrase `the number is doubled` means
+"the calculator doubles the supplied number". `Double` must return
+`value + value`.
+
+## Required Changes
+
+### Change #1: Make `Double` return twice its argument
+**File:** `services/calc/calc.go`
+**Action:** Use the Edit tool on this existing file.
+
+**old_string:**
+```
+func Double(value int) int { return value }
+```
+
+**new_string:**
+```
+func Double(value int) int { return value + value }
+```
+
+## Notes / Constraints
+- This is the entire fix — one line, one file. Do not add new files, packages,
+  or exported symbols.
+- Keep the `package calc` declaration and the existing signature
+  `func Double(value int) int` exactly as-is; `tests/calc/steps/register.go`
+  imports `fixture/stepsrun/services/calc` and calls `calc.Double(state.Value)`
+  with an `int` and assigns the `int` result.
+- Do not weaken, skip, or remove any assertion; no test file changes at all.
+
+## Verification (for the next stage, not for you to run)
+After the edit, `go test -tags bdd -json -count=1 ./tests/calc/...` should show
+`TestCalc001Double` passing: `3` → `Double` → `6`, matching the expected `6`.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

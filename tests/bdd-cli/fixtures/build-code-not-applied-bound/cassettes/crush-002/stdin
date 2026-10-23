@@ -66,7 +66,11 @@ Never modify tests or documents. Only services/calc/ is writable.
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
 
 ## Target
-Apply the change(s) under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go` file, any `services/*/__tests__/` directory, or anything under `docs/`.
+Apply the change(s) under `services/*` only. The test at
+`tests/suite/calc_test.go` (subject source `fixture/buildcodefix/tests/suite`)
+is the contract; do NOT modify it, and do NOT modify anything under `tests/`,
+any `*_test.go` file, any `services/*/__tests__/` directory, or anything under
+`docs/`.
 
 ## Root Cause
 `tests/suite/calc_test.go` asserts:
@@ -77,19 +81,25 @@ if got := calc.Add(2, 3); got != 5 {
 }
 ```
 
-The production implementation in `services/calc/calc.go` performs subtraction instead of addition:
+The production implementation in `services/calc/calc.go` performs subtraction
+instead of addition:
 
 ```go
 func Add(a, b int) int { return a - b }
 ```
 
-So `Add(2, 3)` evaluates to `-1`, which matches the observed failure output `Add(2, 3) = -1, want 5`. The single operator is the entire defect; the signature, package name (`calc`), and import path (`fixture/buildcodefix/services/calc`) are already correct and must stay unchanged.
+So `Add(2, 3)` evaluates to `-1`, which matches the recorded failure output
+`Add(2, 3) = -1, want 5`. The smallest correct production change is to make
+`Add` actually add its operands. The function name, signature, package name,
+and import path (`fixture/buildcodefix/services/calc`) are all already correct
+and must stay unchanged.
 
 ## Required Changes
-
-### Change #1: Make `Add` actually add its two operands
+### Change #1: Make `calc.Add` return the sum instead of the difference
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the `old_string` below with the `new_string` below. Do not create a new file, do not rename the function, and do not alter the `package calc` declaration.
+**Action:** Use the Edit tool on this existing file. Replace the `old_string`
+below with the `new_string` below. This is a one-line change; do not alter the
+`package calc` line, the signature, or anything else in the file.
 
 **old_string:**
 ```
@@ -101,22 +111,28 @@ func Add(a, b int) int { return a - b }
 func Add(a, b int) int { return a + b }
 ```
 
-If for any reason the Edit tool cannot anchor on that exact slice, use the Write tool to write `services/calc/calc.go` with exactly this full content (note the trailing newline):
+After the edit, the complete contents of `services/calc/calc.go` must be
+exactly:
 
-```
+```go
 package calc
 
 func Add(a, b int) int { return a + b }
 ```
 
-## Why This Is Minimal And Sufficient
-- Exactly one operator changes (`-` -> `+`) in exactly one production file inside the declared service write root `services/calc`.
-- After the change, `calc.Add(2, 3)` returns `5`, so the condition `got != 5` is false and `TestAdd` passes.
-- No assertion is weakened, skipped, or removed; no test file or doc is touched.
-- Do not add new files, edit `services/calc/prepared-first.txt`, add helpers, or add build tags — nothing else is needed.
+## Constraints Recap
+- Only `services/calc/calc.go` may be touched. No other file may be created,
+  edited, or deleted — in particular, leave `services/calc/prepared-first.txt`,
+  `go.mod`, and `tests/suite/calc_test.go` untouched.
+- No test assertion is weakened, skipped, or removed: the single assertion
+  `calc.Add(2, 3) == 5` now holds because `2 + 3 == 5`.
+- Do not add new exported functions, helper files, or build tags; the fix is
+  the single operator change from `-` to `+`.
 
-## Verification
-Do NOT run the test yourself. The Go-side runner re-executes `go test -json -count=1 ./tests/suite/...` (per `docs/architecture/architecture.yaml`) and is authoritative; its verdict is mirrored from `LastRunPassed`.
+## Verification (for the applier's confirmation block only)
+Do not run the test yourself — the Go-side runner is authoritative. Just
+confirm that `services/calc/calc.go` now reads `return a + b` and that no file
+outside `services/calc/` was modified.
 
 Return this confirmation with the correct boolean:
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

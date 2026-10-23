@@ -1,5 +1,7 @@
+Shell execution is blocked by a guard hook, so verification is limited to the file content — the edit succeeded and `services/calc/calc.go` now reads `func Add(a, b int) int { return a + b }`.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAAdd-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed calc.Add to add its operands (a - b → a + b) so Add(2,3)=5 and Add(4,3)=7"
+summary: "Changed Add to add its operands (a + b) instead of subtracting (a - b)"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAAdd-iter1-result.yaml ===

@@ -49,6 +49,7 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
 	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
 	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
+	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
 	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
 	// A count-of-files-matching-a-glob assertion, distinct from the named-path
 	// `is created` above: the fix loop chooses the new file's name, so a

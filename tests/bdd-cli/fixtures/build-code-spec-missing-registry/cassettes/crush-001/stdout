@@ -1,0 +1,7 @@
+Edit applied successfully to `services/calc/calc.go`; shell execution is blocked by a guard hook, so the test couldn't be run directly, but the change matches the fix prompt exactly.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Changed calc.Double to return value * 2 instead of value"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

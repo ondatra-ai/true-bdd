@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 19649,
+  "request_hash": "sha256:0428129182bddfcab92fe974a1b39750a7531b1cc4f77bb77218defaf7c84976",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-23T17:27:36Z"
+}

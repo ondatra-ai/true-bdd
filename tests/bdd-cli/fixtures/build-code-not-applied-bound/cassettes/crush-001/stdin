@@ -66,32 +66,30 @@ Never modify tests or documents. Only services/calc/ is writable.
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
 
 ## Target
-Apply the change(s) under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it (nor anything under `tests/`, any `*_test.go`, `services/*/__tests__/`, or `docs/`).
+Apply the change(s) under `services/*` only. The test at `tests/suite/calc_test.go` (test ID source `fixture/buildcodefix/tests/suite`) is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go`, `services/*/__tests__/`, or `docs/`.
 
 ## Root Cause
-`tests/suite/calc_test.go` asserts `calc.Add(2, 3) == 5`:
+`tests/suite/calc_test.go` asserts:
 
 ```go
-func TestAdd(t *testing.T) {
-	if got := calc.Add(2, 3); got != 5 {
-		t.Fatalf("Add(2, 3) = %d, want 5", got)
-	}
+if got := calc.Add(2, 3); got != 5 {
+	t.Fatalf("Add(2, 3) = %d, want 5", got)
 }
 ```
 
-But the production implementation in `services/calc/calc.go` subtracts instead of adding:
+The production implementation in `services/calc/calc.go` subtracts instead of adds:
 
 ```go
 func Add(a, b int) int { return a - b }
 ```
 
-So `Add(2, 3)` returns `-1`, exactly matching the failure output `Add(2, 3) = -1, want 5`. The minimal production fix is to make `Add` actually add.
+`Add(2, 3)` therefore returns `-1`, matching the recorded failure output `Add(2, 3) = -1, want 5`. The smallest correct production change is to make `Add` actually add.
 
 ## Required Changes
 
-### Change #1: Make `calc.Add` return the sum of its operands
+### Change #1: Make `calc.Add` return the sum of its arguments
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file (single-line replacement; do not alter the `package calc` line or add imports).
+**Action:** Use the Edit tool on this existing file. Replace the single `old_string` below with the `new_string` below. Change nothing else in the file (keep the `package calc` line and the file's formatting exactly as-is).
 
 **old_string:**
 ```
@@ -103,8 +101,8 @@ func Add(a, b int) int { return a - b }
 func Add(a, b int) int { return a + b }
 ```
 
-## Expected Result
-After this edit, `services/calc/calc.go` reads in full:
+## Resulting File Content (for verification only)
+After the edit, `services/calc/calc.go` must read exactly:
 
 ```go
 package calc
@@ -112,11 +110,9 @@ package calc
 func Add(a, b int) int { return a + b }
 ```
 
-`calc.Add(2, 3)` now returns `5`, so `TestAdd` passes with no change to the test and no assertion weakened, skipped, or removed.
-
-## Notes for the applier
-- This is the only change required. Do not create new files, do not change the function signature or name (`Add(a, b int) int`), and do not change the package name — the test imports `fixture/buildcodefix/services/calc` and calls `calc.Add`.
-- Do not run the test yourself; the Go-side runner is authoritative and will re-execute it.
+## Notes
+- This is the only change required. Do not create new files, do not add helpers, and do not alter the package name or the exported signature `Add(a, b int) int` — the test imports `fixture/buildcodefix/services/calc` and calls `calc.Add(2, 3)` with that exact shape.
+- No test assertion is weakened, skipped, or removed; `Add(2, 3)` now evaluates to `5` and `TestAdd` passes.
 
 Return this confirmation with the correct boolean:
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

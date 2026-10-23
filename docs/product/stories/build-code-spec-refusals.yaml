@@ -1,4 +1,4 @@
-# Story `build-code-spec`: `build code` refusals of a malformed architectural spec.
+# Story `build-code-spec`: `build code` reads the Specification and refuses an unusable architecture.
 #
 # The architecture document is undecodable, declares no services, never
 # says how its tests run, or omits the command the suite runs in replay:
@@ -14,10 +14,10 @@
 story:
     id: build-code-spec
     feature: build-code
-    title: Refuse an architectural spec that declares nothing build code can build or run
+    title: Read the Specification and refuse an unusable architecture
     as_a: System Architect
-    i_want: build code to refuse an architecture document it cannot read, one that declares no services, one that never says how its tests run, and a suite that never says how it runs in replay, before it spawns a test runner or dispatches an AI turn
-    so_that: a spec that declares nothing to build or to test is never walked to a trivial success, and the refusal tells me which part of the architecture document to write
+    i_want: build code to refuse an unusable architecture and hand each fix the declared Specification of its failing Scenario, warning when optional documents cannot be read
+    so_that: repairs follow the Specification and an unavailable optional document never prevents a repair
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-malformed-spec-refused
@@ -79,3 +79,65 @@ story:
                 - but: no file outside "tmp" changed
                 - and: the engine spawned no test runner
                 - and: the engine dispatched no AI turns
+
+        - id: 005-matched-scenario-embedded
+          description: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+          steps:
+          - given:
+            - the "build-code-spec-scenario" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return
+            - every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+            - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc
+            - every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go
+            - every file matching "tmp/*/apply-*-user.txt" matches the number is doubled
+            - every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.
+            - every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.
+            - every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.
+            - every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return
+            - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+
+        - id: 006-unreadable-product-warned
+          description: A declared product document that cannot be read must be warned about while the fix still repairs the failing
+            test
+          steps:
+          - given:
+            - the "build-code-spec-missing-product" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - stdout matches level=WARN.*document=product.*error=.*docs/product/missing.yaml
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
+            - every file matching "tmp/*/*fix-iter*-user.txt" does not match What the spec says
+            - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+
+        - id: 007-unreadable-registry-warned
+          description: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
+          steps:
+          - given:
+            - the "build-code-spec-missing-registry" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - stdout matches level=WARN.*document=scenarios_yaml.*error=.*docs/missing.yaml
+            - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
+            - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
+            - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0

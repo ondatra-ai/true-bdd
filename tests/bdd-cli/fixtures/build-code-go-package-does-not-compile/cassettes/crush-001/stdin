@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodecompile/tests/suite::<build>
@@ -72,6 +72,8 @@ FAIL	fixture/buildcodecompile/tests/suite [build failed]
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -80,20 +82,25 @@ FAIL	fixture/buildcodecompile/tests/suite [build failed]
 
 ## Diagnosis
 
-The suite package `tests/suite` (package `suite_test`) does not compile:
+The suite package `fixture/buildcodecompile/tests/suite` fails to **build**, not to assert:
 
 ```
 tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
 FAIL	fixture/buildcodecompile/tests/suite [build failed]
 ```
 
-`tests/suite/multiply_test.go` imports `fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`, asserting the result is `6`. The production package at `services/calc/calc.go` declares only `Add`; `Multiply` is missing. That missing declaration is the entire defect — it is a build failure, not a logic failure, so `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun` in the same package are also blocked until it is declared.
+`tests/suite/multiply_test.go` imports `fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`, expecting `6`. The production package at `services/calc/calc.go` (`package calc`) declares only `Add` — `Multiply` is never declared, so the whole test package (including `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun`) cannot compile.
 
-The smallest production change is to declare an exported `Multiply(a, b int) int` in the existing `calc` package that returns `a * b`. No test file, no `docs/` file, and no other service needs to change.
+The contract asserted by the test:
+- Exported identifier `Multiply` in package `calc`.
+- Signature callable as `calc.Multiply(2, 3)` with two untyped int constants, returning a single value comparable to `6` via `!=` and printable with `%d` → `func Multiply(a, b int) int`.
+- `Multiply(2, 3) == 6` → integer multiplication.
+
+The smallest production change is to declare that function in `services/calc/calc.go`. No test file, no `docs/`, nothing outside `services/*` is touched.
 
 ## Target
 
-Apply the change under `services/*` only. The test at `tests/suite/multiply_test.go` is the contract; do NOT modify it, and do NOT weaken, skip, or remove any assertion.
+Apply the change under `services/*` only. The test at `fixture/buildcodecompile/tests/suite` (`tests/suite/multiply_test.go`) is the contract; do NOT modify it, and do NOT weaken, skip, or remove any assertion.
 
 ## Required Changes
 
@@ -101,9 +108,9 @@ Apply the change under `services/*` only. The test at `tests/suite/multiply_test
 
 **File:** `services/calc/calc.go`
 
-**Action:** Use the **Edit** tool on this existing file. Replace the trailing comment block that describes the planted defect with the real `Multiply` declaration.
+**Action:** Use the **Edit** tool on this existing file. Replace the trailing comment block that documents the planted defect with the real `Multiply` declaration.
 
-**old_string** (verbatim slice to replace — copy exactly, including the leading `// Multiply,` line):
+**old_string** (verbatim slice currently at the end of the file — copy exactly):
 ```
 // Multiply, which the suite calls, is not declared: that is the planted
 // defect, in PRODUCTION source. The suite's package does not compile
@@ -118,17 +125,8 @@ func Multiply(a, b int) int {
 }
 ```
 
-**Notes for the applier:**
-- Use a real TAB character for the indentation of `return a * b` (gofmt uses tabs, and the existing `Add` body above it is tab-indented).
-- Keep the `package calc` clause and the existing `Add` function exactly as they are; add nothing else.
-- Do not add any imports — none are needed.
-- Signature must be exactly `func Multiply(a, b int) int`: the test calls `calc.Multiply(2, 3)` with untyped int constants and compares the single return value against `6` with `!=`, so a single `int` return is required (no `error`, no named struct, no generics).
-
-## Expected Result After the Fix
-
-`services/calc/calc.go` should read:
-
-```
+**Resulting full content of `services/calc/calc.go`** (use this if you prefer the Write tool over Edit — the file must end up byte-for-byte equivalent to this, with tab indentation inside the function bodies):
+```go
 // Package calc is the fixture host project's production source. The
 // build-code fix loop is allowed to edit exactly this tree.
 package calc
@@ -144,14 +142,17 @@ func Multiply(a, b int) int {
 }
 ```
 
-With that in place the `tests/suite` package compiles and all three tests in it run: `TestMultiplyMultipliesItsArguments` (2 * 3 == 6), `TestAddSumsItsArguments`, and `TestCanaryRecordsEachSuiteRun`.
+## Notes for the applier
 
-## Do NOT
+- Keep `package calc` as the first non-comment line; the test imports `fixture/buildcodecompile/services/calc`, which resolves through the module `fixture/buildcodecompile` declared in the run-dir `go.mod`, so the directory `services/calc` must keep package name `calc` and must not move.
+- Use a **tab** for the `return a * b` indentation to match `Add` and keep the file gofmt-clean.
+- Do not add a new file such as `services/calc/multiply.go` unless the Edit above cannot be applied; a single declaration in the existing `calc.go` is the minimal change and mirrors how `Add` is declared.
+- Do not create or modify anything under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`.
+- Once `Multiply` exists, the package compiles and all three tests in `tests/suite` run: `TestMultiplyMultipliesItsArguments` (2*3 == 6), `TestAddSumsItsArguments` (already satisfied by `Add`), and `TestCanaryRecordsEachSuiteRun` (writes `suite-runs.log`).
 
-- Do not edit `tests/suite/multiply_test.go`, `tests/suite/add_test.go`, `tests/suite/canary_test.go`, or any other file under `tests/` or matching `*_test.go`.
-- Do not edit anything under `docs/` (including `docs/architecture/architecture.yaml` or `docs/scenarios.yaml`).
-- Do not edit `go.mod` or add a new module/package path; `services/calc` already resolves to the imported `fixture/buildcodecompile/services/calc`.
-- Do not create a new file such as `services/calc/multiply.go` — editing the existing `calc.go` is the smaller change and keeps the package single-file as written.
+## Confirmation
+
+After applying, confirm with a FILE_START / FILE_END block listing `services/calc/calc.go` as the only edited path.
 
 ---
 

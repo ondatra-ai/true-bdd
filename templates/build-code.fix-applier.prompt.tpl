@@ -1,7 +1,7 @@
 ## Subject — Failing Test
 
 **Test ID:** {{.Subject.ID}}
-**Service:** {{.Subject.Service}}
+**Service:** {{if .Subject.Service}}{{.Subject.Service}}{{else}}none is known{{end}}
 **Suite:** {{.Subject.Suite}}
 **Framework:** {{.Subject.Framework}}
 **Test Name:** {{.Subject.TestName}}
@@ -11,6 +11,49 @@
 ```
 {{.Subject.FailureOutput}}
 ```
+
+{{ if .Subject.Scenario }}
+## Subject — Registry Scenario
+
+**Scenario ID:** {{.Subject.Scenario.ID}}
+**Description:** {{.Subject.Scenario.Description}}
+**Service:** {{.Subject.Scenario.Service}}
+**Path:** {{.Subject.Scenario.Path}}
+
+### Steps
+{{.Subject.Scenario.FormatSteps}}
+{{ if .Subject.Spec.Declared }}
+## What the spec says these steps mean
+
+The Specification defines the contract the production code must satisfy.
+Use these phrases, glossary meanings and word mappings with the whole
+Scenario above when repairing the failing test.
+
+### Scenario steps and their phrases
+{{ range .Subject.Spec.Steps }}
+- {{ .Block }} step "{{ .Text }}"{{ range .Templates }} matches `{{ . }}`{{ else }} matches no catalogue phrase{{ end }}
+{{- end }}
+
+### Phrases
+{{ range .Subject.Spec.Phrases }}
+- `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
+  Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
+{{- end }}
+
+### Words
+{{ range .Subject.Spec.Terms }}
+#### {{ .Term }}
+
+{{ if .Means }}{{ range .Means }}- Means: {{ . }}
+{{ end }}{{ else }}- The glossary does not define it.
+{{ end }}
+{{- range .Mappings }}- In the implementation: {{ .Technical }}
+- Observed by: {{ .ObservedBy }}
+{{ else }}- The architecture's word mapping does not map it.
+{{ end }}
+{{- end }}
+{{ end }}
+{{ end }}
 
 ---
 

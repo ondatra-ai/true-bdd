@@ -43,7 +43,7 @@ story:
                 - and: the engine spawned exactly 1 test runner
                 - and: the engine dispatched 1 AI turn
         - id: 002-jest-fix-reruns-test-by-name
-          description: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+          description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
           steps:
             - given:
                 - the "build-code-jest-fix-named-test" project tree
@@ -66,6 +66,9 @@ story:
                 # Independent outcome check, last: the suite run appends to
                 # suite-runs.log after the line-count clause.
                 - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
+                - 'every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter'
+                - 'every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter'
+                - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
         - id: 003-playwright-fix-reruns-test-by-grep
           description: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
           steps:

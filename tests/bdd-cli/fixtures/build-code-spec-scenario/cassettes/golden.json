@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-spec-scenario",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 66,
+      "sha256": "35741799a500f4e7e82e5598c5fc3d9258d4c1718c7660247e9d67bfbf97ce07",
+      "text": "package calc\n\nfunc Double(value int) int { return value + value }\n"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+  testing:
+    framework: go-test
+    commands:
+      record: go test -tags bdd -json -count=1 ./tests/calc/...
+      replay: go test -tags bdd -json -count=1 ./tests/calc/...
+      live: go test -tags bdd -json -count=1 ./tests/calc/...
+  terms:
+    - term: number
+      technical: The integer argument to services/calc.Double.
+      observed_by: The step calls Double and compares its integer return with the expected value.

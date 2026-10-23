@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -72,15 +72,13 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
 
-LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-
-Edit only `services/calc/calc.go`. The test at `tests/suite/add_test.go` requires Add(2, 3) to return 5; the implementation currently subtracts.
-
-Replace this exact code:
+In `services/calc/calc.go`, use Edit to replace exactly:
 ```go
 func Add(a, b int) int {
 	return a - b
@@ -92,8 +90,9 @@ func Add(a, b int) int {
 	return a + b
 }
 ```
+This corrects the subtraction causing Add(2, 3) to return -1; the test requires 5. Make no other changes. Do not modify tests, *_test.go files, services/*/__tests__/, docs/, or true-bdd/. Do not execute tests; the runner performs validation.
 
-Make no other changes. Do not modify tests, any `*_test.go`, `services/*/__tests__/`, docs, or true-bdd/. Do not run tests; the authoritative runner handles validation.
+LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
 ---
 

@@ -1,5 +1,7 @@
-Both preparation files exist, so applying the fix to calc.go.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
+Both preparation files exist — applying the fix to calc.go.```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Both preparation files present; changed Add to return a + b so Add(2,3)==5"
+summary: "Both preparation files present; changed Add from subtraction to addition so Add(2, 3) returns 5"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
+```
