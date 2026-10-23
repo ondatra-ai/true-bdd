@@ -30,6 +30,7 @@ architecture:
   testing: include('testing')
   services: list(include('service'), min=1)
   terms: list(include('term_mapping'), required=False)
+  prompt_data: map(include('prompt_data'), required=False)
 
 ---
 # How one product glossary word turns into the implementation, and how a
@@ -144,3 +145,9 @@ commands:
   replay: str()
   # Real AI CLIs, nothing recorded.
   live: str()
+
+---
+# One entry per templates.prompts key; the Go guard holds fields to template reads.
+prompt_data:
+  rendering: str()
+  fields: map(str())
