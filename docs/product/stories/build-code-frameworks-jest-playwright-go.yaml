@@ -144,8 +144,7 @@ story:
           - then:
             - the command exits with code 1
             - and: stdout matches level=WARN msg="Fix was NOT applied"
-            - and: stdout matches FIX_LOOP_NOT_CONVERGING
-            - and: stdout matches gave up after 3 applied fix
+            - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
             - and: the engine dispatched 3 validation AI turns to "claude"
             - and: the engine dispatched 3 fix AI turns to "claude"
             - and: the engine dispatched 3 apply AI turns to "crush"

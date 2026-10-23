@@ -22,6 +22,45 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
+// build-tests-prebuilt-001-placeholder-required: A prebuilt engine argument without the placeholder must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+func TestBuildTestsPrebuilt001PlaceholderRequired(t *testing.T) {
+	s := scenarios.New(t, "build-tests-prebuilt-001-placeholder-required")
+	s.Given(`the "build-tests-prebuilt-missing" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`stdout does not match BUILD TESTS COMPLETE`)
+	s.Done()
+}
+
+// build-tests-prebuilt-002-placeholder-exactly-once: A prebuilt engine argument with the placeholder twice must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+func TestBuildTestsPrebuilt002PlaceholderExactlyOnce(t *testing.T) {
+	s := scenarios.New(t, "build-tests-prebuilt-002-placeholder-exactly-once")
+	s.Given(`the "build-tests-prebuilt-twice" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`stdout does not match BUILD TESTS COMPLETE`)
+	s.Done()
+}
+
+// build-tests-prebuilt-003-empty-declaration-refused: An empty prebuilt engine argument must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+func TestBuildTestsPrebuilt003EmptyDeclarationRefused(t *testing.T) {
+	s := scenarios.New(t, "build-tests-prebuilt-003-empty-declaration-refused")
+	s.Given(`the "build-tests-prebuilt-empty" project tree`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once`)
+	s.And(`the engine spawned no test runner`)
+	s.And(`the engine dispatched no AI turns`)
+	s.But(`stdout does not match BUILD TESTS COMPLETE`)
+	s.Done()
+}
+
 // build-tests-run-001-failed-definition-repaired: After writing a step definition, build tests --fix must run its Scenarios through the declared replay command and repair a definition that fails before reporting COMPLETE
 func TestBuildTestsRun001FailedDefinitionRepaired(t *testing.T) {
 	s := scenarios.New(t, "build-tests-run-001-failed-definition-repaired")
@@ -77,5 +116,21 @@ func TestBuildTestsRun004SelectedPackageMustPass(t *testing.T) {
 	s.And(`stdout matches fixture/stepsrun/tests/calc::TestCalc001Double`)
 	s.But(`stdout does not match BUILD TESTS COMPLETE`)
 	s.And(`the engine spawned exactly 1 test runner`)
+	s.Done()
+}
+
+// build-tests-run-005-prebuilt-engine-without-source: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
+func TestBuildTestsRun005PrebuiltEngineWithoutSource(t *testing.T) {
+	s := scenarios.New(t, "build-tests-run-005-prebuilt-engine-without-source")
+	s.Given(`the "build-tests-run-prebuilt" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.But(`stdout does not match bring the suite up|authored step definitions still fail`)
+	s.And(`the engine spawned a test runner with its own prebuilt engine path`)
+	s.And(`the file "tests/calc/steps/steps.go" is modified`)
+	s.And(`the shell command "test ! -d services/calc" run in "." exits with code 0`)
+	s.And(`the shell command "test ! -f tmp/service-build-attempted" run in "." exits with code 0`)
 	s.Done()
 }

@@ -4641,8 +4641,7 @@ scenarios:
       then:
       - the command exits with code 1
       - and: stdout matches level=WARN msg="Fix was NOT applied"
-      - and: stdout matches FIX_LOOP_NOT_CONVERGING
-      - and: stdout matches gave up after 3 applied fix
+      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
       - and: the engine dispatched 3 validation AI turns to "claude"
       - and: the engine dispatched 3 fix AI turns to "claude"
       - and: the engine dispatched 3 apply AI turns to "crush"
@@ -4651,3 +4650,83 @@ scenarios:
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
+  build-tests-run-005-prebuilt-engine-without-source:
+    description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 15m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-005-prebuilt-engine-without-source
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-run-prebuilt" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - but: stdout does not match bring the suite up|authored step definitions still fail
+      - and: the engine spawned a test runner with its own prebuilt engine path
+      - and: the file "tests/calc/steps/steps.go" is modified
+      - and: the shell command "test ! -d services/calc" run in "." exits with code 0
+      - and: the shell command "test ! -f tmp/service-build-attempted" run in "." exits with code 0
+  build-tests-prebuilt-001-placeholder-required:
+    description: A prebuilt engine argument without the placeholder must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
+      scenario_id: build-tests-prebuilt-001-placeholder-required
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-prebuilt-missing" project tree
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE
+  build-tests-prebuilt-002-placeholder-exactly-once:
+    description: A prebuilt engine argument with the placeholder twice must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
+      scenario_id: build-tests-prebuilt-002-placeholder-exactly-once
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-prebuilt-twice" project tree
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE
+  build-tests-prebuilt-003-empty-declaration-refused:
+    description: An empty prebuilt engine argument must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    user_stories:
+    - story: docs/product/stories/build-tests-prebuilt-argument-validation.yaml
+      scenario_id: build-tests-prebuilt-003-empty-declaration-refused
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-prebuilt-empty" project tree
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE

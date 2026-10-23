@@ -20,6 +20,9 @@ architecture:
   # service and file are the scenario's own.
   testing:
     framework: go-test
+    # build tests verifies authored definitions against its running binary;
+    # the harness consumes this argument and skips building service source.
+    prebuilt_engine_arg: "-engine-bin={engine_bin}"
     # Gated behind //go:build bdd with a -mode flag naming a mode per
     # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
@@ -679,12 +682,17 @@ architecture:
         a filter of the engine's own appended when it re-runs one test after
         a fix. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
-        `args`.
+        `args`. Optional `testing.prebuilt_engine_arg` is one argument
+        containing `{engine_bin}` exactly once; only `build tests --fix`
+        verification substitutes the running binary's absolute, symlink-resolved
+        path and appends it after splitting the literal replay command.
       observed_by: >-
         Read the "Spawning test runner" records in the run's JSON log file:
         count them, compare `binary` with the quoted program, or match the
         `args` joined by single spaces against the pattern. A missing log
-        file fails instead of counting zero.
+        file fails instead of counting zero. For the prebuilt engine path,
+        compare one complete argument with `-engine-bin=` plus the harness
+        binary's absolute, symlink-resolved path.
 
     - term: shell command
       technical: >-

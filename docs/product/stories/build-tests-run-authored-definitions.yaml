@@ -1,7 +1,3 @@
-# Execution after step authoring needs three criteria together.
-# build-tests-steps already has seven; the other build-tests Stories
-# cover startup or file-shape refusals and have at most one free slot.
-
 story:
   id: build-tests-run
   feature: build-tests
@@ -69,3 +65,19 @@ story:
       - and: stdout matches fixture/stepsrun/tests/calc::TestCalc001Double
       - but: stdout does not match BUILD TESTS COMPLETE
       - and: the engine spawned exactly 1 test runner
+  - id: 005-prebuilt-engine-without-source
+    description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
+    steps:
+    - given:
+      - the "build-tests-run-prebuilt" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - but: stdout does not match bring the suite up|authored step definitions still fail
+      - and: the engine spawned a test runner with its own prebuilt engine path
+      - and: the file "tests/calc/steps/steps.go" is modified
+      - and: the shell command "test ! -d services/calc" run in "." exits with code 0
+      - and: the shell command "test ! -f tmp/service-build-attempted" run in "." exits with code 0
