@@ -3864,7 +3864,7 @@ scenarios:
         - and: no file outside "tmp" changed
 
   crush-guard-001-read-only-tool-allowed:
-    description: A tool call to a tool that only reads must be allowed whatever file it reads, inside the turn's write roots or not
+    description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
     service: bdd-cli
     path: tests/bdd-cli/crush_guard_test.go
     user_stories:
@@ -4650,6 +4650,118 @@ scenarios:
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
+  crush-guard-reads-001-outside-project-denied:
+    description: A view of an absolute path outside the project must be denied, naming the path and the read root
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-001-outside-project-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-outside" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "view"
+      - crush names the path "/true-bdd-neighbour/secrets.txt" as written
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target /true-bdd-neighbour/secrets\.txt is outside read root \S*/crush-guard-read-outside
+  crush-guard-reads-002-relative-escape-denied:
+    description: A glob whose path leaves the project through ../ must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-002-relative-escape-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-relative-escape" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush pipes the hook payload naming the tool "glob" and the path "../neighbour"
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target \S*/neighbour is outside read root \S*/crush-guard-read-relative-escape
+  crush-guard-reads-003-symlink-escape-denied:
+    description: A read through a symbolic link inside the project pointing outside it must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-003-symlink-escape-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-symlink-escape" project tree
+      - crush's write policy lets the turn write under "tests"
+      - the project tree's "node_modules/shared" is a symbolic link to "../../"
+      - crush names the tool "grep"
+      - crush names the file "node_modules/shared/notes.md" of the project tree
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target \S*/notes\.md is outside read root \S*/crush-guard-read-symlink-escape
+  crush-guard-reads-004-unnamed-path-allowed:
+    description: An ls call naming no path must be allowed to read the project
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-004-unnamed-path-allowed
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-unnamed-path" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "ls"
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  crush-guard-reads-005-missing-read-root-denied:
+    description: A tool call must be denied when crush hands the guard a write policy with no read root, naming what is missing
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-005-missing-read-root-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-missing-root" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush hands the guard a write policy with no read root
+      - crush names the tool "view"
+      - crush names the file "docs/README.md" of the project tree
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches crush guard policy names no read root
+  crush-guard-reads-006-relative-path-allowed:
+    description: A relative read path inside the project must be allowed outside every write root
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-006-relative-path-allowed
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-relative-path" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "diagnostics"
+      - crush names the path "docs/README.md" as written
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard allows the tool call
   build-tests-run-005-prebuilt-engine-without-source:
     description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
     service: bdd-cli
