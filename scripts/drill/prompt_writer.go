@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -26,13 +27,14 @@ type promptWriter struct {
 	input     io.Writer
 	pending   string
 	failure   error
+	failureMu sync.Mutex
+	answers   sync.WaitGroup
 }
 
 func (p *promptWriter) Write(data []byte) (int, error) {
 	count, err := p.write(data)
 	if err != nil {
-		p.failure = err
-		p.cancel()
+		p.fail(err)
 	}
 
 	return count, err
@@ -98,7 +100,7 @@ func (p *promptWriter) clarify(prompt string) error {
 
 	err = changeRun(p.directory,
 		p.tag,
-		func(run *Run) {
+		func(run *Attempt) {
 			run.Status = "paused"
 			run.Questions = append(run.Questions,
 				question)
@@ -107,12 +109,30 @@ func (p *promptWriter) clarify(prompt string) error {
 		return err
 	}
 
+	p.answers.Go(func() {
+		err := p.answerQuestion(index, question)
+		if err != nil {
+			p.fail(err)
+		}
+	})
+
+	return nil
+}
+
+func (p *promptWriter) fail(err error) {
+	p.failureMu.Lock()
+	p.failure = errors.Join(p.failure, err)
+	p.failureMu.Unlock()
+	p.cancel()
+}
+
+func (p *promptWriter) answerQuestion(index int, question Question) error {
 	answer, err := p.waitAnswer(question.AnswerFile)
 	if err != nil {
 		return err
 	}
 
-	err = changeRun(p.directory, p.tag, func(run *Run) {
+	err = changeRun(p.directory, p.tag, func(run *Attempt) {
 		run.Status = "running"
 		run.Questions[index].Answer = answer.Answer
 		run.Questions[index].Document = answer.Document

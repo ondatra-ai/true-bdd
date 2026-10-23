@@ -25,7 +25,7 @@ type Record struct {
 	StartedAt    time.Time          `json:"started_at"`
 	AllowedRoots []string           `json:"allowed_roots"`
 	Cuts         map[string]Cut     `json:"cuts"`
-	Runs         map[string]Run     `json:"runs"`
+	Runs         map[string]Attempt `json:"runs"`
 	Audits       map[string][]Audit `json:"audits"`
 }
 

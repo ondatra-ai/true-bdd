@@ -36,7 +36,7 @@ read answer
 		"--",
 		buildCommand,
 		codeArgument,
-		"--fix")
+		fixArgument)
 
 	output, err = command.CombinedOutput()
 	if err != nil {
@@ -53,7 +53,7 @@ read answer
 	final := waitRun(t,
 		record.Directory,
 		"detached-worker",
-		func(run drill.Run) bool { return run.Status == pausedStatus })
+		func(run drill.Attempt) bool { return run.Status == pausedStatus })
 	if final.WorkerPID == 0 {
 		t.Fatal("worker PID not recorded")
 	}
@@ -67,7 +67,7 @@ read answer
 
 	must(t, runner.Stop(t.Context(), record.Directory, final.Tag))
 
-	finished := waitRun(t, record.Directory, final.Tag, func(run drill.Run) bool { return !run.EndedAt.IsZero() })
+	finished := waitRun(t, record.Directory, final.Tag, func(run drill.Attempt) bool { return !run.EndedAt.IsZero() })
 	if finished.ExitCode == nil || finished.CleanupError != "" {
 		t.Fatalf("stop did not finalize cleanup: %+v", finished)
 	}
@@ -75,7 +75,7 @@ read answer
 	waitNoWorkers(t, final.Marker)
 }
 
-func waitRun(t *testing.T, directory, tag string, ready func(drill.Run) bool) drill.Run {
+func waitRun(t *testing.T, directory, tag string, ready func(drill.Attempt) bool) drill.Attempt {
 	t.Helper()
 
 	deadline := time.Now().Add(10 * time.Second)
@@ -92,7 +92,7 @@ func waitRun(t *testing.T, directory, tag string, ready func(drill.Run) bool) dr
 
 	t.Fatal("run did not reach expected state")
 
-	return drill.Run{}
+	return drill.Attempt{}
 }
 
 func waitNoWorkers(t *testing.T, marker string) {

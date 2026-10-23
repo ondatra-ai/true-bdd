@@ -168,7 +168,7 @@ func (a *Audit) textReferences(value, evidence, tree string, roots []string, ver
 
 func pathKey(key string) bool {
 	switch key {
-	case "file_path", "path", "target_path", "url", "directory":
+	case "file_path", "path", "target_path", "url", "directory", "pattern":
 		return true
 	default:
 		return false

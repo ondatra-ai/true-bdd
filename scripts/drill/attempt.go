@@ -18,8 +18,8 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// Run records one command, including its operator pauses and cleanup evidence.
-type Run struct {
+// Attempt records one command, including its operator pauses and cleanup evidence.
+type Attempt struct {
 	Tag             string     `json:"tag"`
 	Cut             string     `json:"cut"`
 	Base            string     `json:"base"`
@@ -39,20 +39,30 @@ type Run struct {
 	Oracle          *Oracle    `json:"oracle,omitempty"`
 }
 
-// Prepare reserves a tag before any process starts.
-func (r Runner) Prepare(ctx context.Context, directory, cut, tag string, args []string) (Run, error) {
+// Prepare reserves a tag for one of the drill's two rebuild operations.
+func (r Runner) Prepare(ctx context.Context, directory, cut, tag string, args []string) (Attempt, error) {
+	_, err := rebuildOperation(args)
+	if err != nil {
+		return Attempt{}, err
+	}
+
+	return r.prepare(ctx, directory, cut, tag, args)
+}
+
+// prepare also reserves the internal oracle operation.
+func (r Runner) prepare(ctx context.Context, directory, cut, tag string, args []string) (Attempt, error) {
 	record, err := Read(directory)
 	if err != nil {
-		return Run{}, err
+		return Attempt{}, err
 	}
 
 	_, err = record.cut(cut)
 	if err != nil {
-		return Run{}, err
+		return Attempt{}, err
 	}
 
 	if !regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`).MatchString(tag) || len(args) == 0 {
-		return Run{}, fmt.Errorf("%w: invalid tag or empty command", errRefused)
+		return Attempt{}, fmt.Errorf("%w: invalid tag or empty command", errRefused)
 	}
 
 	const markerBytes = 16
@@ -61,10 +71,10 @@ func (r Runner) Prepare(ctx context.Context, directory, cut, tag string, args []
 
 	_, err = rand.Read(token)
 	if err != nil {
-		return Run{}, fmt.Errorf("minting marker: %w", err)
+		return Attempt{}, fmt.Errorf("minting marker: %w", err)
 	}
 
-	run := Run{Tag: tag,
+	run := Attempt{Tag: tag,
 		Cut:    cut,
 		Base:   record.Base,
 		Digest: record.Digest,
@@ -125,7 +135,7 @@ func (r Runner) Launch(ctx context.Context, directory, tag, executable string) e
 		return r.finish(directory, tag, -1, err)
 	}
 
-	return changeRun(directory, tag, func(run *Run) { run.WorkerPID = pid })
+	return changeRun(directory, tag, func(run *Attempt) { run.WorkerPID = pid })
 }
 
 // Supervise owns the deadline until all marked descendants are gone.
@@ -165,7 +175,7 @@ func (r Runner) claim(directory, tag string) error {
 	})
 }
 
-func (r Runner) execute(ctx context.Context, record Record, run Run) (int, error) {
+func (r Runner) execute(ctx context.Context, record Record, run Attempt) (int, error) {
 	_, err := Read(record.Directory)
 	if err != nil {
 		return -1, err
@@ -207,15 +217,23 @@ func (r Runner) execute(ctx context.Context, record Record, run Run) (int, error
 		log:       run.Log,
 		input:     answer}
 
-	code, err := truebdd.Rebuild(ctx,
+	operation, err := rebuildOperation(run.Args)
+	if err != nil {
+		return -1, err
+	}
+
+	code, err := operation(ctx,
 		record.Binary,
-		run.Args,
 		truebdd.Options{Directory: cut.Directory,
 			Marker: run.Marker,
 			Input:  input,
 			Output: writer,
 			Limit:  r.Limit,
 			Grace:  r.Grace})
+
+	cancel()
+	closePipes()
+	writer.answers.Wait()
 
 	return code, errors.Join(err, writer.failure)
 }
@@ -254,7 +272,7 @@ func (r Runner) finish(directory, tag string, code int, reason error) error {
 
 	cleanup := ps.StopMarked(ctx, "TRUE_BDD_DRILL_RUN", run.Marker, r.Grace)
 
-	err = changeRun(directory, tag, func(run *Run) {
+	err = changeRun(directory, tag, func(run *Attempt) {
 		if reason != nil {
 			run.Reason = reason.Error()
 		}
@@ -286,7 +304,7 @@ func (r Runner) finish(directory, tag string, code int, reason error) error {
 	return errors.Join(reason, cleanup, err)
 }
 
-func changeRun(directory, tag string, edit func(*Run)) error {
+func changeRun(directory, tag string, edit func(*Attempt)) error {
 	return change(directory, func(record *Record) error {
 		run, ok := record.Runs[tag]
 		if !ok {

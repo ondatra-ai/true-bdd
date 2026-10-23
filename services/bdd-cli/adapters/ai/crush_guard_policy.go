@@ -26,10 +26,19 @@ const (
 	crushNoWriteRootsReason = "this mode grants no write roots"
 )
 
-// crushReadOnlyTools lists local and network readers. Local readers are
-// confined to ReadRoot; network readers retain their existing allowance.
+// crushLocalReadTools are confined to ReadRoot.
+func crushLocalReadTools() []string {
+	return []string{"view", "ls", "grep", "glob", "diagnostics"}
+}
+
+// crushNetworkReadTools retain their existing allowance.
+func crushNetworkReadTools() []string {
+	return []string{"sourcegraph", "fetch"}
+}
+
+// crushReadOnlyTools supplies crush's combined local and network tool allowlist.
 func crushReadOnlyTools() []string {
-	return []string{"view", "ls", "grep", "glob", "sourcegraph", "diagnostics", "fetch"}
+	return append(crushLocalReadTools(), crushNetworkReadTools()...)
 }
 
 // crushFileTools are the tools that create or modify files.
@@ -117,11 +126,11 @@ func LoadCrushGuardPolicy() (CrushGuardPolicy, error) {
 func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 	name := strings.ToLower(strings.TrimSpace(toolName))
 
-	if slices.Contains([]string{"view", "ls", "grep", "glob", "diagnostics"}, name) {
+	if slices.Contains(crushLocalReadTools(), name) {
 		return p.allowsReadFrom(targetPath)
 	}
 
-	if isCrushReadOnlyTool(name) {
+	if isCrushNetworkReadTool(name) {
 		return true, ""
 	}
 
@@ -210,9 +219,9 @@ func pathWithinRoot(target, root string) bool {
 	return strings.HasPrefix(target, root+string(os.PathSeparator))
 }
 
-// isCrushReadOnlyTool reports whether the tool can only read.
-func isCrushReadOnlyTool(name string) bool {
-	if slices.Contains(crushReadOnlyTools(), name) {
+// isCrushNetworkReadTool reports whether the tool reads network sources.
+func isCrushNetworkReadTool(name string) bool {
+	if slices.Contains(crushNetworkReadTools(), name) {
 		return true
 	}
 

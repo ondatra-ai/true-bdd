@@ -360,17 +360,21 @@ glossary:
       The engine's own check that crush runs before each tool call of a
       turn. It answers allow or deny, holding the call to the turn's write
       policy, and gives a reason for a denial. It denies whatever it cannot
-      decide, so a crush turn never reads a local file outside the project
-      or changes a file the engine did not let it change.
+      decide. It confines the five local read tools (`view`, `ls`, `grep`,
+      `glob`, `diagnostics`) to the project and writes to the granted roots.
+      Network readers keep their own allowance. The engine's own turns
+      never receive a shell grant.
 
   - term: write policy
     means: >-
       What one crush turn may read and change: its read root is the project
-      tree, the only directory local reads may use, with symbolic links
-      resolved. Relative reads start there; a read naming no path uses the
+      tree, the only directory the five local read tools (`view`, `ls`,
+      `grep`, `glob`, `diagnostics`) may read, with symbolic links resolved.
+      Relative reads start there; a read naming no path uses the
       project. It also names the directories it may write under, none for
       a turn that only reads,
-      and whether it may run shell commands, which could write anywhere.
+      and whether it may run shell commands, which could read or write
+      anywhere. The engine never grants the shell to its own crush turns.
       The engine derives it from what the command lets that turn change
       and hands it to crush with the turn.
 

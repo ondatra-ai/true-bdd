@@ -56,7 +56,7 @@ architecture:
         FailedCheck.Context: &failedcheck-context >-
           Failed result observation strings in original list order, without trimming or joining; built-in checks supply their finding lines. Template prefixes each with "- "; an empty list produces no findings.
         FailedCheck.FixPrompt: &failedcheck-fixprompt >-
-          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F. Build-tests runtime review overrides it with the literal repair instruction (not failure output); template inserts it unchanged, even if empty.
+          Failed model result fix_prompt is TrimSpace after JSON/YAML decoding; pass discards it. Built-in failure uses TrimSpace of F. Build-tests runtime review overrides it with the literal "Repair the failing step definitions from the runtime evidence. Do not change the Registry, generated tests, suite command or scenario shim." (not failure output); template inserts it unchanged, even if empty.
         FailedCheck.Question: &failedcheck-question >-
           Failed Q text unchanged, including a trailing YAML block newline; for a built-in check, "D: " plus the trimmed D name.
         FailedCheck.Rationale: &failedcheck-rationale >-
@@ -238,7 +238,7 @@ architecture:
         Structured: *structured
         Subject.Description: *registry-description
         Subject.Failures: >-
-          Run evidence after verification, initially nil. Scan errors become "Scenario <id>: step definitions cannot run: <error>". For changed packages, plan-file order then Scenario order yields unexamined/unbound lines and runner-error lines first; failing selections follow as "Selection Scenarios: <ids joined by comma-space>" once per selection. Then groups in first-seen order: "Failure affecting Scenarios: <unique affected ids joined by comma-space>\n<whole first output>". Failure identity matches selection test exactly or a /subtest, else affects all selected ids. Comparison only normalises qualified and short test ids to <test>, source file:line[:column] prefixes away retaining indentation, a singleton Scenario heading to <scenario>, and FAIL/PASS/SKIP elapsed seconds away. Distinct remaining text stays separate. Representative output retains EVERY original byte; no truncation. Empty removes the section. Runtime review sets FailedCheck.FixPrompt to the repair instruction, keeping this evidence only here.
+          Run evidence after verification, initially nil. Scan errors become "Scenario <id>: step definitions cannot run: <error>". For changed packages, plan-file order then Scenario order yields "Scenario <id>: step definitions were not examined" for an unexamined Scenario, or "Scenario <id>: unbound <block> step: <text>" per unbound step in scan order. Runner lookup errors contribute the error text unchanged; runner discovery errors contribute "Scenarios <ids joined by comma-space>: <error>". These lines come first; failing selections follow as "Selection Scenarios: <ids joined by comma-space>" once per selection. Then groups in first-seen order: "Failure affecting Scenarios: <unique affected ids joined by comma-space>\n<whole first output>". Failure identity matches selection test exactly or a /subtest, else affects all selected ids. Comparison only normalises qualified and short test ids to <test>, source file:line[:column] prefixes away retaining indentation, a singleton Scenario heading to <scenario>, and FAIL/PASS/SKIP elapsed seconds away. Distinct remaining text stays separate. Representative output retains EVERY original byte; no truncation. Empty removes the section. Runtime review sets FailedCheck.FixPrompt to the repair instruction, keeping this evidence only here.
         Subject.FormatSteps: *registry-steps
         Subject.ID: *registry-id
         Subject.Requirement: *subject-requirement
@@ -999,6 +999,11 @@ architecture:
         the files currently on disk, requires exactly one regular file inside
         the run directory (including after resolving symbolic links), reads
         its complete contents, and counts non-overlapping regexp matches.
+        The `every file matching "{glob}" ...` phrase instead expands the glob
+        over files currently on disk, fails on no matches, and holds each
+        match inside the project after resolving symbolic links, rejecting
+        escaping links and non-regular files before reading its complete
+        contents and testing the regexp.
         Saved rendered prompts under `tmp/<run>/` are observable files; the
         fix-generator request is named `<index>-<Scenario>-fix-iter<n>-user.txt`.
 
@@ -1157,6 +1162,9 @@ architecture:
         containing `{engine_bin}` exactly once; only `build tests --fix`
         verification substitutes the running binary's absolute, symlink-resolved
         path and appends it after splitting the literal replay command.
+        Every command that loads the architecture, including `build code`,
+        refuses an empty declaration or a placeholder count other than one,
+        even when that command never uses the argument.
       observed_by: >-
         Read the "Spawning test runner" records in the run's JSON log file:
         count them, compare `binary` with the quoted program, or match the
@@ -1205,7 +1213,8 @@ architecture:
         to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
         stderr for a denial. A missing or unreadable policy, or a readable
         policy naming no read root, denies before the tool call is read, each
-        with its own reason. `view`, `ls`, `grep`, `glob` and `diagnostics`
+        with its own reason. A relative `read_root` is refused as a malformed
+        policy. `view`, `ls`, `grep`, `glob` and `diagnostics`
         may read only inside `read_root`, resolving symbolic links on both
         sides and comparing whole path components. Relative reads start at
         that root; reads naming no path are allowed to use the project.
@@ -1234,7 +1243,9 @@ architecture:
         `read_root`, the absolute project working directory, `write_roots`,
         a list of absolute directory paths, and `allow_bash`, true or false. The engine derives it per turn from the turn's write
         globs, each cut at its first wildcard and made absolute against the
-        project root, and from whether the turn may run the shell.
+        project root, and from whether the turn may run the shell. Every engine
+        execution mode disallows `Bash`, so its own crush turns always set
+        `allow_bash` to false. A relative `read_root` is malformed and refused.
       observed_by: >-
         Built by the Given steps for the When step: `read_root` is the run
         directory, and each write-under step adds
