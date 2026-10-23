@@ -16,7 +16,7 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 ## Acceptance criteria
 
-Every ticket's acceptance criteria carry one item of their own: the change is checked for divergence from the Specification (the doc universe: the product document, the architecture document and the Registry, `GLOSSARY.md`). The check looks for four kinds of divergence:
+Every ticket's acceptance criteria carry one item of their own: the change is checked for divergence from the Specification, the doc universe (`GLOSSARY.md`, **Specification**: the product document, the architecture document and the Registry). The check looks for four kinds of divergence:
 
 - behaviour no Specification document describes;
 - code that contradicts a Scenario, a catalogue phrase, a glossary meaning or the architecture's word mapping;
