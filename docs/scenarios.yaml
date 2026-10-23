@@ -118,7 +118,7 @@ scenarios:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-004-fix-reruns-fixed-test
         merge_date: '2026-10-21'
-    timeout: 15m
+    timeout: 10m
     merged_steps:
       given:
         - the "build-code-fix-named-test" project tree
@@ -133,7 +133,7 @@ scenarios:
         - stdout matches msg="Fix applied; re-running this test in isolation"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/calc/calc.go" is modified
-        - and: the file "tests/suite/suite-runs.log" has exactly 1 line
+        - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
         - and: the engine spawned a test runner with arguments matching TestAddSumsItsArguments
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the file "tests/suite/canary_test.go" is unchanged
@@ -255,7 +255,7 @@ scenarios:
       - story: docs/product/stories/build-code-run-fix-loop.yaml
         scenario_id: build-code-run-005-playwright-fix-loop-converges
         merge_date: '2026-10-21'
-    timeout: 25m
+    timeout: 20m
     merged_steps:
       given:
         - the "build-code-playwright-nextjs" project tree
@@ -376,7 +376,7 @@ scenarios:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-002-jest-fix-reruns-test-by-name
         merge_date: '2026-10-22'
-    timeout: 15m
+    timeout: 10m
     merged_steps:
       given:
         - the "build-code-jest-fix-named-test" project tree
@@ -390,9 +390,9 @@ scenarios:
         - stdout matches msg="Fix applied; re-running this test in isolation"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/greeter/greeting.js" is modified
-        - and: the file "tests/unit/suite-runs.log" has exactly 1 line
+        - and: the file "tests/unit/suite-runs.log" has exactly 2 lines
         - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$
-        - and: the engine spawned exactly 2 test runners
+        - and: the engine spawned exactly 3 test runners
         - but: the file "tests/unit/greeting.test.js" is unchanged
         - and: the file "tests/unit/canary.test.js" is unchanged
         - and: the file "docs/architecture/architecture.yaml" is unchanged
@@ -407,7 +407,7 @@ scenarios:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-003-playwright-fix-reruns-test-by-grep
         merge_date: '2026-10-22'
-    timeout: 20m
+    timeout: 10m
     merged_steps:
       given:
         - the "build-code-playwright-failing-assertion" project tree
@@ -423,7 +423,7 @@ scenarios:
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/web/server.js" is modified
         - and: the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading
-        - and: the engine spawned exactly 2 test runners
+        - and: the engine spawned exactly 3 test runners
         - but: the file "tests/integration/home.spec.ts" is unchanged
         - and: the file "docs/architecture/architecture.yaml" is unchanged
         - and: no file outside "tmp" and "services/web" changed
@@ -436,7 +436,7 @@ scenarios:
       - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
         scenario_id: build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered
         merge_date: '2026-10-22'
-    timeout: 15m
+    timeout: 10m
     merged_steps:
       given:
         - the "build-code-go-package-does-not-compile" project tree
@@ -450,8 +450,8 @@ scenarios:
         - stdout matches msg="Fix applied; re-running this test in isolation"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/calc/calc.go" is modified
-        - and: the file "tests/suite/suite-runs.log" has exactly 1 line
-        - and: the engine spawned exactly 2 test runners
+        - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
+        - and: the engine spawned exactly 3 test runners
         - but: the file "tests/suite/multiply_test.go" is unchanged
         - and: the file "tests/suite/add_test.go" is unchanged
         - and: the file "tests/suite/canary_test.go" is unchanged
@@ -3739,7 +3739,7 @@ scenarios:
       - story: docs/product/stories/engine-routes-agent-clis.yaml
         scenario_id: engine-routes-001-codex-sandbox-per-turn
         merge_date: '2026-10-22'
-    timeout: 20m
+    timeout: 10m
     merged_steps:
       given:
         - the "build-code-fix-by-codex" project tree
@@ -3749,14 +3749,14 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches BUILD CODE COMPLETE
-        - and: the engine dispatched 3 validation AI turns to "codex"
+        - and: the engine dispatched 1 validation AI turn to "codex"
         - and: the engine dispatched 1 fix AI turn to "codex"
         - and: the engine dispatched 1 apply AI turn to "codex"
-        - and: the engine dispatched 5 AI turns
+        - and: the engine dispatched 3 AI turns
         - and: stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only
         - and: stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only
         - and: stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write
-        - but: stdout does not match label=codex-turn00[1245] sandbox=workspace-write
+        - but: stdout does not match label=codex-turn00[12] sandbox=workspace-write
         - and: the file "services/calc/calc.go" is modified
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
@@ -3864,7 +3864,7 @@ scenarios:
         - and: no file outside "tmp" changed
 
   crush-guard-001-read-only-tool-allowed:
-    description: A tool call to a tool that only reads must be allowed whatever file it reads, inside the turn's write roots or not
+    description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
     service: bdd-cli
     path: tests/bdd-cli/crush_guard_test.go
     user_stories:
@@ -4542,6 +4542,226 @@ scenarios:
       - and: stdout matches fixture/stepsrun/tests/calc::TestCalc001Double
       - but: stdout does not match BUILD TESTS COMPLETE
       - and: the engine spawned exactly 1 test runner
+  build-code-run-006-shared-fix-skips-green-peer:
+    description: Two tests failing at discovery whose shared defect the first repair fixes must complete without an AI turn for the now passing second test
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-run-fix-loop.yaml
+      scenario_id: build-code-run-006-shared-fix-skips-green-peer
+      merge_date: '2026-10-23'
+    timeout: 10m
+    merged_steps:
+      given:
+      - the "build-code-shared-fix" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - and: stdout matches msg="Suite failures" failures=2 framework=go-test
+      - and: the engine dispatched 1 validation AI turn to "claude"
+      - and: the engine dispatched 1 fix AI turn to "claude"
+      - and: the engine dispatched 1 apply AI turn to "crush"
+      - and: the engine dispatched 3 AI turns
+      - and: the engine spawned exactly 4 test runners
+      - but: the file "tests/suite/calc_test.go" is unchanged
+      - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  build-code-run-007-next-walk-finds-regression:
+    description: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that regression before the command exits successfully
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-run-fix-loop.yaml
+      scenario_id: build-code-run-007-next-walk-finds-regression
+      merge_date: '2026-10-23'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-cross-walk" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - and: stdout matches msg="Suite failures" failures=0 framework=go-test
+      - and: stdout matches msg=test index=1 total=1 id=.*TestBCompatibility
+      - and: the engine dispatched 2 validation AI turns to "claude"
+      - and: the engine dispatched 2 fix AI turns to "claude"
+      - and: the engine dispatched 2 apply AI turns to "crush"
+      - and: the engine dispatched 6 AI turns
+      - and: the engine spawned exactly 5 test runners
+      - but: the file "tests/suite/calc_test.go" is unchanged
+      - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  build-code-frameworks-005-not-applied-revalidated:
+    description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
+      scenario_id: build-code-frameworks-005-not-applied-revalidated
+      merge_date: '2026-10-23'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-not-applied" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - and: stdout matches level=WARN msg="Fix was NOT applied"
+      - but: stdout does not match msg="Walk stopped"
+      - and: the engine dispatched 2 validation AI turns to "claude"
+      - and: the engine dispatched 2 fix AI turns to "claude"
+      - and: the engine dispatched 2 apply AI turns to "crush"
+      - and: the engine dispatched 6 AI turns
+      - and: the engine spawned exactly 4 test runners
+      - and: the file "services/calc/prepared.txt" matches ^prepared
+      - but: the file "tests/suite/calc_test.go" is unchanged
+      - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  build-code-frameworks-006-not-applied-hits-fix-bound:
+    description: Not-applied turns in build code --fix must consume the configured per-test fix allowance and stop at the unchanged non-converging fix bound
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-frameworks-jest-playwright-go.yaml
+      scenario_id: build-code-frameworks-006-not-applied-hits-fix-bound
+      merge_date: '2026-10-23'
+    timeout: 20m
+    merged_steps:
+      given:
+      - the "build-code-not-applied-bound" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 1
+      - and: stdout matches level=WARN msg="Fix was NOT applied"
+      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - and: the engine dispatched 3 validation AI turns to "claude"
+      - and: the engine dispatched 3 fix AI turns to "claude"
+      - and: the engine dispatched 3 apply AI turns to "crush"
+      - and: the engine dispatched 9 AI turns
+      - and: the engine spawned exactly 3 test runners
+      - and: the file "services/calc/prepared-first.txt" matches ^prepared
+      - and: the file "services/calc/prepared-second.txt" matches ^prepared
+      - but: the file "tests/suite/calc_test.go" is unchanged
+  crush-guard-reads-001-outside-project-denied:
+    description: A view of an absolute path outside the project must be denied, naming the path and the read root
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-001-outside-project-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-outside" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "view"
+      - crush names the path "/true-bdd-neighbour/secrets.txt" as written
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target /true-bdd-neighbour/secrets\.txt is outside read root \S*/crush-guard-read-outside
+  crush-guard-reads-002-relative-escape-denied:
+    description: A glob whose path leaves the project through ../ must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-002-relative-escape-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-relative-escape" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush pipes the hook payload naming the tool "glob" and the path "../neighbour"
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target \S*/neighbour is outside read root \S*/crush-guard-read-relative-escape
+  crush-guard-reads-003-symlink-escape-denied:
+    description: A read through a symbolic link inside the project pointing outside it must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-003-symlink-escape-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-symlink-escape" project tree
+      - crush's write policy lets the turn write under "tests"
+      - the project tree's "node_modules/shared" is a symbolic link to "../../"
+      - crush names the tool "grep"
+      - crush names the file "node_modules/shared/notes.md" of the project tree
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches read target \S*/notes\.md is outside read root \S*/crush-guard-read-symlink-escape
+  crush-guard-reads-004-unnamed-path-allowed:
+    description: An ls call naming no path must be allowed to read the project
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-004-unnamed-path-allowed
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-unnamed-path" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "ls"
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  crush-guard-reads-005-missing-read-root-denied:
+    description: A tool call must be denied when crush hands the guard a write policy with no read root, naming what is missing
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-005-missing-read-root-denied
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-missing-root" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush hands the guard a write policy with no read root
+      - crush names the tool "view"
+      - crush names the file "docs/README.md" of the project tree
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches crush guard policy names no read root
+  crush-guard-reads-006-relative-path-allowed:
+    description: A relative read path inside the project must be allowed outside every write root
+    service: bdd-cli
+    path: tests/bdd-cli/crush_guard_test.go
+    user_stories:
+    - story: docs/product/stories/crush-guard-reads-project-root.yaml
+      scenario_id: crush-guard-reads-006-relative-path-allowed
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "crush-guard-read-relative-path" project tree
+      - crush's write policy lets the turn write under "tests"
+      - crush names the tool "diagnostics"
+      - crush names the path "docs/README.md" as written
+      when:
+      - crush asks the guard about the tool call
+      then:
+      - the guard allows the tool call
   build-tests-run-005-prebuilt-engine-without-source:
     description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
     service: bdd-cli

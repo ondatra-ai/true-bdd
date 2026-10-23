@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	checklistmodels "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
+	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
 // renderPrompt is the engine's GenerateQFn for every command: the Prompt
@@ -44,6 +46,13 @@ type Spec[I any] struct {
 	// docs/product/stories/, us apply parses the refined story into one
 	// item per AC and seeds the scratch registry.
 	LoadItems func(ctx context.Context) ([]I, error)
+	// ReloadItems refreshes discovery at each subsequent outer walk.
+	ReloadItems func(ctx context.Context) ([]I, error)
+	// BeforeEvaluate refreshes execution evidence; true skips a passing Cell.
+	BeforeEvaluate func(ctx context.Context, item I) (bool, error)
+	// PostNotApplied counts a completed not-applied turn for code commands.
+	// Document commands leave it nil so their commit hooks cannot run.
+	PostNotApplied func(ctx context.Context, item I) (I, error)
 	// Prepare, if non-nil, runs after items load and before the first AI
 	// turn: it may refuse the run or narrow the item set. `build tests`
 	// narrows to unbound scenarios so a converged repo costs zero AI turns.
@@ -266,14 +275,29 @@ func buildSpecEngine[I any](
 		OnSkip:   recordSkip(spec, builder),
 	}
 
-	return engine.New(
+	eng := engine.New(
 		renderPrompt, walker,
 		engine.Options{
 			MaxApplyAttempts: maxAttempts,
 			OnAttemptStart:   reWalkBanner,
-			OnItemStart:      itemBannerDispatcher(spec, items),
+			OnItemStart: func(idx, total int) {
+				if spec.OnItemStart != nil {
+					spec.OnItemStart(idx, total, items[idx])
+				}
+			},
 		},
 	)
+	if spec.ReloadItems != nil {
+		eng.ReloadItems = func(ctx context.Context) ([]I, error) {
+			var err error
+
+			items, err = spec.ReloadItems(ctx)
+
+			return items, err
+		}
+	}
+
+	return eng
 }
 
 // reWalkBanner emits the "RE-WALK N/M (fixes applied — verifying)"
@@ -293,26 +317,6 @@ func reWalkBanner(attempt, maxAttempts int) {
 		"attempt", attempt, "max_attempts", maxAttempts)
 }
 
-// itemBannerDispatcher adapts the engine's index-only OnItemStart to
-// the spec's typed one, looking up the live item from the captured
-// slice. A nil spec hook returns nil, so unused commands pay nothing.
-func itemBannerDispatcher[I any](
-	spec Spec[I],
-	items []I,
-) func(idx, total int) {
-	if spec.OnItemStart == nil {
-		return nil
-	}
-
-	return func(idx, total int) {
-		if idx < 0 || idx >= len(items) {
-			return
-		}
-
-		spec.OnItemStart(idx, total, items[idx])
-	}
-}
-
 // buildQueryClosure produces the engine.QueryFn that calls the Spec's
 // Evaluator and side-effects into the report builder; the shared
 // *latestResult slot lets buildGenFixClosure read the failing check.
@@ -326,6 +330,17 @@ func buildQueryClosure[I any](
 		item I,
 		query *checklistmodels.PromptWithContext,
 	) (bool, error) {
+		if spec.BeforeEvaluate != nil {
+			passed, err := spec.BeforeEvaluate(ctx, item)
+			if err != nil {
+				return false, err
+			}
+
+			if passed {
+				return true, recordExecutionPass(spec, builder, item, query)
+			}
+		}
+
 		subjectID, subjectTitle := spec.GetSubject(item)
 
 		var (
@@ -418,6 +433,10 @@ func buildFixClosure[I any](
 			ModelTier: latestResult.ApplyModelTier,
 		})
 		if err != nil {
+			if errors.Is(err, pkgerrors.ErrFixNotApplied) && spec.PostNotApplied != nil {
+				return spec.PostNotApplied(ctx, item)
+			}
+
 			return item, fmt.Errorf("fix applier failed: %w", err)
 		}
 

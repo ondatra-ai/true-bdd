@@ -42,6 +42,8 @@ func registerCrushGuardSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^crush's write policy lets the turn run the shell$`, grantShell)
 	suite.Step(`^crush hands the guard no write policy$`, withholdPolicy)
 	suite.Step(`^crush hands the guard an unreadable write policy$`, garblePolicy)
+	suite.Step(`^crush hands the guard a write policy with no read root$`, omitReadRoot)
+	suite.Step(`^crush pipes the hook payload naming the tool "([^"]+)" and the path "([^"]+)"$`, pipePathPayload)
 	suite.Step(`^crush names the tool "([^"]+)"$`, nameTool)
 	suite.Step(`^crush names the file "([^"]+)" of the project tree$`, nameTreeFile)
 	suite.Step(`^crush names the path "([^"]+)" as written$`, nameLiteralPath)
@@ -61,6 +63,7 @@ type guardCall struct {
 	shell      bool
 	withheld   bool
 	unreadable bool
+	noReadRoot bool
 
 	tool      string
 	target    string
@@ -68,10 +71,12 @@ type guardCall struct {
 	piped     bool
 	pipedTool string
 	pipedFile string
+	pipedPath string
 }
 
 // guardPolicy is the JSON shape the engine exports in guardPolicyVar.
 type guardPolicy struct {
+	ReadRoot   string   `json:"read_root"`
 	WriteRoots []string `json:"write_roots"`
 	AllowBash  bool     `json:"allow_bash"`
 }
@@ -83,7 +88,8 @@ type guardPayload struct {
 }
 
 type guardPayloadInput struct {
-	FilePath string `json:"file_path"`
+	FilePath string `json:"file_path,omitempty"`
+	Path     string `json:"path,omitempty"`
 }
 
 // guard is this scenario's tool call, started empty: a policy no step
@@ -117,6 +123,19 @@ func withholdPolicy(state *State, _ []string) error {
 
 func garblePolicy(state *State, _ []string) error {
 	state.guard().unreadable = true
+
+	return nil
+}
+
+func omitReadRoot(state *State, _ []string) error {
+	state.guard().noReadRoot = true
+
+	return nil
+}
+
+func pipePathPayload(state *State, args []string) error {
+	call := state.guard()
+	call.piped, call.pipedTool, call.pipedPath = true, args[0], args[1]
 
 	return nil
 }
@@ -186,7 +205,7 @@ func askGuard(state *State, _ []string) error {
 	if call.piped {
 		payload, payloadErr := json.Marshal(guardPayload{
 			ToolName: call.pipedTool,
-			Input:    guardPayloadInput{FilePath: filepath.Join(runDir, call.pipedFile)},
+			Input:    call.payloadInput(runDir),
 		})
 		if payloadErr != nil {
 			return state.fail("rendering the hook payload: %w", payloadErr)
@@ -199,6 +218,14 @@ func askGuard(state *State, _ []string) error {
 		guardPolicyVar+"="+policy,
 		guardToolVar+"="+call.tool,
 		guardFilePathVar+"="+call.targetPath(runDir))
+}
+
+func (c *guardCall) payloadInput(runDir string) guardPayloadInput {
+	if c.pipedPath != "" {
+		return guardPayloadInput{Path: c.pipedPath}
+	}
+
+	return guardPayloadInput{FilePath: filepath.Join(runDir, c.pipedFile)}
 }
 
 // policy renders the write policy crush would export, its roots made
@@ -216,7 +243,12 @@ func (c *guardCall) policy(runDir string) (string, error) {
 		roots = append(roots, filepath.Join(runDir, root))
 	}
 
-	encoded, err := json.Marshal(guardPolicy{WriteRoots: roots, AllowBash: c.shell})
+	readRoot := runDir
+	if c.noReadRoot {
+		readRoot = ""
+	}
+
+	encoded, err := json.Marshal(guardPolicy{ReadRoot: readRoot, WriteRoots: roots, AllowBash: c.shell})
 	if err != nil {
 		return "", fmt.Errorf("encode policy: %w", err)
 	}

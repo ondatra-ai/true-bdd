@@ -21,6 +21,8 @@ type Options struct {
 	// Group makes the child its own process group leader and cancels it by
 	// killing the group, so a cancelled context takes its children too.
 	Group bool
+	// Session detaches the child into a new session and process group.
+	Session bool
 	// WaitDelay bounds how long Wait lingers once the context has ended.
 	WaitDelay time.Duration
 }

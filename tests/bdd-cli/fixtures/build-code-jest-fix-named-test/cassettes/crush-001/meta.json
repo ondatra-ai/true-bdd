@@ -10,7 +10,7 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 23652,
+  "duration_ms": 12,
   "request_hash": "sha256:61ef088279172008e2bbe27bff34b504e5369f139a8377b1b160d7de306df354",
   "fsdiff": {
     "created": [],
@@ -19,5 +19,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-22T16:38:42Z"
+  "recorded_at": "2026-10-23T16:33:55Z"
 }

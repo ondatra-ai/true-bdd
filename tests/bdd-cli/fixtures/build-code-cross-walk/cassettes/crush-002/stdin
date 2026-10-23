@@ -1,0 +1,168 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Failing Test
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility
+**Service:** 
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestBCompatibility
+**Source File:** fixture/buildcodefix/tests/suite
+
+### Last Failure Output
+```
+=== RUN   TestBCompatibility
+    calc_test.go:16: version 2 requires compatibility support
+--- FAIL: TestBCompatibility (0.00s)
+
+```
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility
+
+## Target
+Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it (or anything under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`).
+
+## Context (already verified)
+`tests/suite/calc_test.go` contains:
+
+```go
+func TestAVersion(t *testing.T) {
+	if got := calc.Version(); got != 2 {
+		t.Fatalf("Version() = %d, want 2", got)
+	}
+}
+
+func TestBCompatibility(t *testing.T) {
+	if calc.Version() != 1 && !calc.Compatible() {
+		t.Fatal("version 2 requires compatibility support")
+	}
+}
+```
+
+Current production source `services/calc/calc.go`:
+
+```go
+package calc
+
+func Version() int     { return 2 }
+func Compatible() bool { return false }
+```
+
+Stage A of the migration is already done (`Version()` returns 2). `TestBCompatibility` fails because `Version() != 1` is true and `Compatible()` returns `false`. The staged migration's stage B is: make `Compatible()` return `true` while preserving `Version()` at 2 (so `TestAVersion` keeps passing).
+
+## Required Changes
+
+### Change #1: Enable compatibility support in the calc service
+**File:** `services/calc/calc.go`
+**Action:** Use the Edit tool on this existing file. Replace only the `Compatible` function body; leave the `Version` function exactly as it is (returning 2).
+
+**old_string:**
+```
+func Compatible() bool { return false }
+```
+
+**new_string:**
+```
+func Compatible() bool { return true }
+```
+
+## Resulting file content (for verification only — do not add anything else)
+```go
+package calc
+
+func Version() int     { return 2 }
+func Compatible() bool { return true }
+```
+
+## Constraints
+- Do not change `Version()`; it must stay `return 2` so `TestAVersion` continues to pass.
+- Do not create any new files; this single one-line edit is the smallest change that satisfies the contract.
+- Do not weaken, skip, or remove any assertion in `tests/suite/calc_test.go`.
+- Do not touch `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, or any other file outside `services/calc/calc.go`.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the production source the fix prompt targets.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file under `services/*` when the fix
+     prompt says so.
+   - Use Edit to modify an existing file under `services/*` when the
+     fix prompt says so.
+3. You MAY only modify files under `services/*`.
+4. You MUST NOT touch any of the following:
+   - Anything under `tests/`
+   - Any file matching `*_test.go`
+   - Anything under `services/*/__tests__/`
+   - Anything under `docs/`
+5. Do not weaken, skip, or remove any assertion in the failing test.
+   The test is the contract; the production code must conform to it.
+6. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===

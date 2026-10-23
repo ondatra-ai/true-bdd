@@ -37,7 +37,7 @@ func (Binary) Path() (string, error) {
 }
 
 // ProbeCrushGuard runs the guard once under a caller's environment and hands
-// back its exit code. crush FAILS OPEN on a hook it cannot run, so what the
+// back its exit code and reason. crush FAILS OPEN on a hook it cannot run, so what the
 // caller does with the code is the whole point of asking.
 func (b Binary) ProbeCrushGuard(env shell.Env) (shell.Result, error) {
 	path, err := b.Path()
@@ -46,7 +46,7 @@ func (b Binary) ProbeCrushGuard(env shell.Env) (shell.Result, error) {
 	}
 
 	result, err := shell.Run(context.Background(), []string{path, CrushGuardSubcommand},
-		shell.Options{Stdin: strings.NewReader(""), Env: env, Output: shell.Discard()})
+		shell.Options{Stdin: strings.NewReader(""), Env: env, Output: shell.Capture()})
 	if err != nil {
 		return result, fmt.Errorf("probing %s: %w", CrushGuardSubcommand, err)
 	}

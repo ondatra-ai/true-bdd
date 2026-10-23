@@ -2,6 +2,7 @@ package ai_test
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +27,10 @@ func TestCrushGuardPolicyDerivesWriteRoots(t *testing.T) {
 	want := filepath.Join(guardWorkDir, "tmp") + string(filepath.Separator)
 	if len(policy.WriteRoots) != 1 || policy.WriteRoots[0] != want {
 		t.Fatalf("WriteRoots = %v, want [%s]", policy.WriteRoots, want)
+	}
+
+	if policy.ReadRoot != guardWorkDir {
+		t.Errorf("ReadRoot = %q, want %q", policy.ReadRoot, guardWorkDir)
 	}
 
 	if policy.AllowBash {
@@ -132,6 +137,10 @@ func TestLoadCrushGuardPolicyRoundTrip(t *testing.T) {
 		t.Fatalf("LoadCrushGuardPolicy: %v", err)
 	}
 
+	if loaded.ReadRoot != guardWorkDir {
+		t.Errorf("round-tripped read root = %q, want %q", loaded.ReadRoot, guardWorkDir)
+	}
+
 	if len(loaded.WriteRoots) != 1 || loaded.WriteRoots[0] != original.WriteRoots[0] {
 		t.Errorf("round-tripped roots = %v, want %v", loaded.WriteRoots, original.WriteRoots)
 	}
@@ -150,5 +159,48 @@ func TestLoadCrushGuardPolicyRejectsMissingAndMalformed(t *testing.T) {
 	_, err = ai.LoadCrushGuardPolicy()
 	if !errors.Is(err, pkgerrors.ErrCrushPolicyInvalid) {
 		t.Fatalf("malformed policy error = %v, want ErrCrushPolicyInvalid", err)
+	}
+}
+
+func TestLoadCrushGuardPolicyRequiresReadRoot(t *testing.T) {
+	for _, raw := range []string{`{}`, `null`, `{"read_root":""}`, `{"read_root":"  "}`} {
+		t.Run(raw, func(t *testing.T) {
+			t.Setenv(ai.CrushPolicyEnvVar, raw)
+
+			_, err := ai.LoadCrushGuardPolicy()
+			if !errors.Is(err, pkgerrors.ErrCrushReadRootMissing) {
+				t.Fatalf("policy %s: error = %v, want ErrCrushReadRootMissing", raw, err)
+			}
+		})
+	}
+}
+
+func TestLoadCrushGuardPolicyRejectsRelativeReadRoot(t *testing.T) {
+	t.Setenv(ai.CrushPolicyEnvVar, `{"read_root":"project"}`)
+
+	_, err := ai.LoadCrushGuardPolicy()
+	if !errors.Is(err, pkgerrors.ErrCrushPolicyInvalid) {
+		t.Fatalf("relative read root: error = %v, want ErrCrushPolicyInvalid", err)
+	}
+}
+
+func TestCrushGuardKeepsWriteRootCleaning(t *testing.T) {
+	t.Parallel()
+	project, outside := t.TempDir(), t.TempDir()
+
+	link := filepath.Join(project, "shared")
+
+	err := os.Symlink(outside, link)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	policy := ai.CrushGuardPolicy{ReadRoot: project, WriteRoots: []string{link + "/.."}}
+	if allowed, reason := policy.Decide("write", filepath.Join(project, "fine.txt")); !allowed {
+		t.Errorf("write inside the cleaned write root denied: %s", reason)
+	}
+
+	if allowed, reason := policy.Decide("write", filepath.Join(outside, "secret.txt")); allowed {
+		t.Errorf("write outside the cleaned write root allowed: %s", reason)
 	}
 }

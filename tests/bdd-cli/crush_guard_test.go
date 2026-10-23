@@ -22,7 +22,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
-// crush-guard-001-read-only-tool-allowed: A tool call to a tool that only reads must be allowed whatever file it reads, inside the turn's write roots or not
+// crush-guard-001-read-only-tool-allowed: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
 func TestCrushGuard001ReadOnlyToolAllowed(t *testing.T) {
 	s := scenarios.New(t, "crush-guard-001-read-only-tool-allowed")
 	s.Given(`the "crush-guard-read-only-tool" project tree`)
@@ -103,6 +103,82 @@ func TestCrushGuard007PayloadNamesTheCall(t *testing.T) {
 	s.Given(`the "crush-guard-hook-payload" project tree`)
 	s.And(`crush's write policy lets the turn write under "tests"`)
 	s.And(`crush pipes the hook payload naming the tool "write" and the file "tests/notes.md"`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard allows the tool call`)
+	s.Done()
+}
+
+// crush-guard-reads-001-outside-project-denied: A view of an absolute path outside the project must be denied, naming the path and the read root
+func TestCrushGuardReads001OutsideProjectDenied(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-001-outside-project-denied")
+	s.Given(`the "crush-guard-read-outside" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`crush names the tool "view"`)
+	s.And(`crush names the path "/true-bdd-neighbour/secrets.txt" as written`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard denies the tool call`)
+	s.And(`the guard's reason matches read target /true-bdd-neighbour/secrets\.txt is outside read root \S*/crush-guard-read-outside`)
+	s.Done()
+}
+
+// crush-guard-reads-002-relative-escape-denied: A glob whose path leaves the project through ../ must be denied
+func TestCrushGuardReads002RelativeEscapeDenied(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-002-relative-escape-denied")
+	s.Given(`the "crush-guard-read-relative-escape" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`crush pipes the hook payload naming the tool "glob" and the path "../neighbour"`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard denies the tool call`)
+	s.And(`the guard's reason matches read target \S*/neighbour is outside read root \S*/crush-guard-read-relative-escape`)
+	s.Done()
+}
+
+// crush-guard-reads-003-symlink-escape-denied: A read through a symbolic link inside the project pointing outside it must be denied
+func TestCrushGuardReads003SymlinkEscapeDenied(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-003-symlink-escape-denied")
+	s.Given(`the "crush-guard-read-symlink-escape" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`the project tree's "node_modules/shared" is a symbolic link to "../../"`)
+	s.And(`crush names the tool "grep"`)
+	s.And(`crush names the file "node_modules/shared/notes.md" of the project tree`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard denies the tool call`)
+	s.And(`the guard's reason matches read target \S*/notes\.md is outside read root \S*/crush-guard-read-symlink-escape`)
+	s.Done()
+}
+
+// crush-guard-reads-004-unnamed-path-allowed: An ls call naming no path must be allowed to read the project
+func TestCrushGuardReads004UnnamedPathAllowed(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-004-unnamed-path-allowed")
+	s.Given(`the "crush-guard-read-unnamed-path" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`crush names the tool "ls"`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard allows the tool call`)
+	s.Done()
+}
+
+// crush-guard-reads-005-missing-read-root-denied: A tool call must be denied when crush hands the guard a write policy with no read root, naming what is missing
+func TestCrushGuardReads005MissingReadRootDenied(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-005-missing-read-root-denied")
+	s.Given(`the "crush-guard-read-missing-root" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`crush hands the guard a write policy with no read root`)
+	s.And(`crush names the tool "view"`)
+	s.And(`crush names the file "docs/README.md" of the project tree`)
+	s.When(`crush asks the guard about the tool call`)
+	s.Then(`the guard denies the tool call`)
+	s.And(`the guard's reason matches crush guard policy names no read root`)
+	s.Done()
+}
+
+// crush-guard-reads-006-relative-path-allowed: A relative read path inside the project must be allowed outside every write root
+func TestCrushGuardReads006RelativePathAllowed(t *testing.T) {
+	s := scenarios.New(t, "crush-guard-reads-006-relative-path-allowed")
+	s.Given(`the "crush-guard-read-relative-path" project tree`)
+	s.And(`crush's write policy lets the turn write under "tests"`)
+	s.And(`crush names the tool "diagnostics"`)
+	s.And(`crush names the path "docs/README.md" as written`)
 	s.When(`crush asks the guard about the tool call`)
 	s.Then(`the guard allows the tool call`)
 	s.Done()
