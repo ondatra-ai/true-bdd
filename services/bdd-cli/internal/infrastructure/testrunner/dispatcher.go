@@ -38,6 +38,8 @@ type Config struct {
 	// from the spec's `commands:` block — whichever mode the caller
 	// selected at the LoadItems boundary.
 	Command string
+	// Arguments are appended after splitting Command and are never split themselves.
+	Arguments []string
 	// Tests narrows a generated Go Scenario run by package::function names.
 	Tests []string
 }

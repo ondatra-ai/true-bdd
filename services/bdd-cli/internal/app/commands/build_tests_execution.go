@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -35,6 +36,7 @@ type buildTestsExecution struct {
 	snapshots  map[string]string
 	dirty      map[string]bool
 	failures   []string
+	arguments  []string
 }
 
 func (e *buildTestsExecution) prepare(
@@ -58,6 +60,11 @@ func (e *buildTestsExecution) prepare(
 	}
 
 	err = validateSuites(e.dispatcher, arch.Testing)
+	if err != nil {
+		return err
+	}
+
+	e.arguments, err = verificationArguments(arch.Testing.PrebuiltEngineArg)
 	if err != nil {
 		return err
 	}
@@ -143,7 +150,7 @@ func (e *buildTestsExecution) runBound(ctx context.Context, answer *stepcoverage
 
 func (e *buildTestsExecution) runSelection(ctx context.Context, path string, names, ids []string) []string {
 	cfg := testrunner.Config{Framework: e.arch.Testing.Framework, ConfigFile: e.arch.Testing.ConfigFile,
-		Command: replayCommand(e.arch.Testing), Path: filepath.Dir(path), Tests: names}
+		Command: replayCommand(e.arch.Testing), Arguments: e.arguments, Path: filepath.Dir(path), Tests: names}
 
 	suiteRunner, err := e.dispatcher.For(cfg.Framework)
 	if err != nil {
@@ -229,4 +236,27 @@ func unboundScenario(answer *stepcoverage.Answer, scenarioID string) []string {
 	}
 
 	return failures
+}
+
+func verificationArguments(argument string) ([]string, error) {
+	if argument == "" {
+		return nil, nil
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("locate running engine: %w", err)
+	}
+
+	executable, err = filepath.Abs(executable)
+	if err != nil {
+		return nil, fmt.Errorf("resolve running engine absolute path: %w", err)
+	}
+
+	executable, err = filepath.EvalSymlinks(executable)
+	if err != nil {
+		return nil, fmt.Errorf("resolve running engine symlinks: %w", err)
+	}
+
+	return []string{strings.Replace(argument, "{engine_bin}", executable, 1)}, nil
 }

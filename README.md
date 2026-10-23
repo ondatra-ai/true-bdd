@@ -436,6 +436,7 @@ AI-dependency mode:
 architecture:
   testing:
     framework: go-test            # go-test | jest | playwright
+    prebuilt_engine_arg: "-engine-bin={engine_bin}" # optional; runner must consume it
     commands:
       record: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 ./tests/bdd-cli/ -mode=services:replay,tests:replay"
@@ -460,6 +461,7 @@ The rules, all enforced at startup rather than discovered mid-run:
 - **Quoting is honoured, nothing else.** `-run '^TestGreen$'` survives
   as one argument; there is no expansion, substitution or piping. A
   command needing a shell belongs in a script the spec then names.
+- **One bounded exception: `prebuilt_engine_arg`.** This optional field is one argv element containing `{engine_bin}` exactly once. Only `build tests --fix` verification appends it, replacing that placeholder with the running binary's absolute, symlink-resolved path. Spaces and quotes in that path stay in the same argument. Empty declarations or zero or repeated placeholders are refused at startup. The replay entry point must consume the argument and skip building its service; this repository's harness does so with `-engine-bin`. Native Jest or Playwright runners need a wrapper, otherwise omit the field. `commands.*` stay literal, hosts without the field keep their existing verification, and `build code` runs its declared command unchanged.
 - **The working directory** is the one holding the suite's `config:`
   file — which is what lets `npx` resolve a suite's own local install.
   A suite that declares no `config:` inherits the directory `true-bdd`

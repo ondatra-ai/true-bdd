@@ -55,7 +55,7 @@ func (r *GoTestRunner) Discover(
 	cfg Config,
 	service, suite string,
 ) ([]*FailingTest, error) {
-	argv, err := SplitCommand(cfg.Command)
+	argv, err := cfg.argv()
 	if err != nil {
 		return nil, fmt.Errorf("go-test command for %s/%s: %w", service, suite, err)
 	}
