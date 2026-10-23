@@ -1,7 +1,9 @@
-Applying the two edits to `tests/calc/steps/steps.go`:Verifying the file and compiling:Both edits applied successfully; the file compiles cleanly per inspection (shell is denied by the guard hook, but the change is pure Go using already-imported `fmt`/`strconv` and matches the suite's `Registrar` signature).
+Edits applied. Verifying the package compiles and checking for the replay command:Shell is blocked by a guard hook; verifying by reading the final file instead:Both edits applied exactly as specified in `tests/calc/steps/steps.go`; the new `scaled` registration and implementation are in place alongside the untouched existing definitions. (Shell is hook-blocked in this mode, so the replay command could not be executed here.)
 
+```
 === FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/steps.go"
-summary: "Registered and implemented the scaled step (doubled|tripled|quadrupled) multiplying State.Value by the matching factor"
+summary: "Registered ^the number is (doubled|tripled|halved)$ to new scaled step function mutating State.Value in place"
 === FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+```

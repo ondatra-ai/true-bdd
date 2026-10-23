@@ -53,7 +53,7 @@ func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *testrunne
 		}
 
 		item.LastRunPassed = passed
-		item.FailureOutput = testrunner.TruncateTail(output, testrunner.FailureOutputCap)
+		item.FailureOutput = output
 		item.LastRunAt = time.Now()
 		e.verdicts[item] = e.generation
 	}
@@ -62,7 +62,7 @@ func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *testrunne
 }
 
 func (e *buildCodeExecution) postFix(
- _ context.Context, item *testrunner.FailingTest, _ string,
+	_ context.Context, item *testrunner.FailingTest, _ string,
 ) (*testrunner.FailingTest, error) {
 	slog.Info("Fix applied; re-running this test in isolation")
 
@@ -72,7 +72,7 @@ func (e *buildCodeExecution) postFix(
 }
 
 func (e *buildCodeExecution) postNotApplied(
- _ context.Context, item *testrunner.FailingTest,
+	_ context.Context, item *testrunner.FailingTest,
 ) (*testrunner.FailingTest, error) {
 	e.generation++
 

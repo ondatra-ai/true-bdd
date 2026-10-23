@@ -4924,3 +4924,55 @@ scenarios:
       - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
       - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+  build-tests-run-006-identical-failures-grouped:
+    description: Two bound Scenarios failing with the same runtime output must give one whole failure block naming both in the next fix prompt and one selection list
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-006-identical-failures-grouped
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-run-grouped" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Selection Scenarios: calc-001-double, calc-002-peer$'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios:'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)EVIDENCE-BEGIN\n(?:[ \t]*full runtime evidence\n){600}[ \t]*EVIDENCE-END'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 0 matches for truncated'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 4, got 6'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-001-double, calc-002-peer$'
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
+  build-tests-run-007-distinct-failures-whole:
+    description: Two different runtime failures in one selection must give two whole failure blocks in the next fix prompt, each naming only the Scenario it hit
+    service: bdd-cli
+    path: tests/bdd-cli/build_tests_run_test.go
+    timeout: 20m
+    user_stories:
+    - story: docs/product/stories/build-tests-run-authored-definitions.yaml
+      scenario_id: build-tests-run-007-distinct-failures-whole
+      merge_date: '2026-10-23'
+    merged_steps:
+      given:
+      - the "build-tests-run-distinct" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build tests --fix"
+      then:
+      - the command exits with code 0
+      - and: stdout matches BUILD TESTS COMPLETE
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Selection Scenarios: calc-001-double, calc-002-peer$'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 2 matches for (?m)^Failure affecting Scenarios:'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 2 matches for (?m)EVIDENCE-BEGIN\n(?:[ \t]*full runtime evidence\n){600}[ \t]*EVIDENCE-END'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 0 matches for truncated'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 4, got 6'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-001-double$'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-002-peer$'
+      - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 8, got 12'
+      - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0

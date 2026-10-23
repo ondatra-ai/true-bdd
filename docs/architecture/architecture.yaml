@@ -531,7 +531,12 @@ architecture:
         at all, so neither the no-files step nor a count of none can pass on
         it. Only then is it matched against the path of every file the run's
         diff marks created, never modified or deleted ones, and the matches
-        are counted.
+        are counted. A content-match count instead resolves the glob against
+        the files currently on disk, requires exactly one regular file inside
+        the run directory (including after resolving symbolic links), reads
+        its complete contents, and counts non-overlapping regexp matches.
+        Saved rendered prompts under `tmp/<run>/` are observable files; the
+        fix-generator request is named `<index>-<Scenario>-fix-iter<n>-user.txt`.
 
     - term: Story
       technical: >-

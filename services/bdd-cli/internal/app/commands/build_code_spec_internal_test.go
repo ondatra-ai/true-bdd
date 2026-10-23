@@ -12,7 +12,10 @@ import (
 )
 
 func TestCodeFailureMatchesGeneratedNameAndOwningPackage(t *testing.T) {
-	const matchedName = "host/tests/calc::TestCalc001Double"
+	const (
+		matchedName     = "host/tests/calc::TestCalc001Double"
+		fallbackService = "sole-service"
+	)
 
 	root := t.TempDir()
 	t.Chdir(root)
@@ -56,7 +59,7 @@ func TestCodeFailureMatchesGeneratedNameAndOwningPackage(t *testing.T) {
 	} {
 		t.Run(example.framework+example.name, func(t *testing.T) {
 			failure := &testrunner.FailingTest{TestName: example.name, Framework: example.framework}
-			arch := &architecture.Architecture{Services: []architecture.Service{{Name: "first"}, {Name: "second"}}}
+			arch := &architecture.Architecture{Services: []architecture.Service{{Name: fallbackService}, {Name: "second"}}}
 			specifyCodeFailures(deps, arch, "", []*testrunner.FailingTest{failure})
 
 			if (failure.Scenario != nil) != example.matched {
@@ -76,7 +79,7 @@ func TestCodeFailureMatchesGeneratedNameAndOwningPackage(t *testing.T) {
 				arch.Services = arch.Services[:1]
 				specifyCodeFailures(deps, arch, "", []*testrunner.FailingTest{failure})
 
-				if failure.Service != "first" {
+				if failure.Service != fallbackService {
 					t.Fatalf("only-service fallback: got %q", failure.Service)
 				}
 			}

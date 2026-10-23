@@ -134,3 +134,41 @@ func TestBuildTestsRun005PrebuiltEngineWithoutSource(t *testing.T) {
 	s.And(`the shell command "test ! -f tmp/service-build-attempted" run in "." exits with code 0`)
 	s.Done()
 }
+
+// build-tests-run-006-identical-failures-grouped: Two bound Scenarios failing with the same runtime output must give one whole failure block naming both in the next fix prompt and one selection list
+func TestBuildTestsRun006IdenticalFailuresGrouped(t *testing.T) {
+	s := scenarios.New(t, "build-tests-run-006-identical-failures-grouped")
+	s.Given(`the "build-tests-run-grouped" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Selection Scenarios: calc-001-double, calc-002-peer$`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios:`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)EVIDENCE-BEGIN\n(?:[ \t]*full runtime evidence\n){600}[ \t]*EVIDENCE-END`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 0 matches for truncated`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 4, got 6`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-001-double, calc-002-peer$`)
+	s.And(`the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-tests-run-007-distinct-failures-whole: Two different runtime failures in one selection must give two whole failure blocks in the next fix prompt, each naming only the Scenario it hit
+func TestBuildTestsRun007DistinctFailuresWhole(t *testing.T) {
+	s := scenarios.New(t, "build-tests-run-007-distinct-failures-whole")
+	s.Given(`the "build-tests-run-distinct" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build tests --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD TESTS COMPLETE`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Selection Scenarios: calc-001-double, calc-002-peer$`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 2 matches for (?m)^Failure affecting Scenarios:`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 2 matches for (?m)EVIDENCE-BEGIN\n(?:[ \t]*full runtime evidence\n){600}[ \t]*EVIDENCE-END`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 0 matches for truncated`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 4, got 6`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-001-double$`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-002-peer$`)
+	s.And(`the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 8, got 12`)
+	s.And(`the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0`)
+	s.Done()
+}

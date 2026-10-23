@@ -1,18 +1,12 @@
 package testrunner
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
-
-// FailureOutputCap is the maximum number of bytes of failure output
-// retained on a FailingTest. Output is tail-truncated so the most
-// recent failure context survives.
-const FailureOutputCap = 8 * 1024
 
 // FailingTest is one engine item walked by `build code`. Produced by a
 // Runner's Discover; refreshed in-place by RunOne during the engine's
@@ -26,7 +20,7 @@ type FailingTest struct {
 	Framework     string    // "go-test" | "playwright" | "jest"
 	TestName      string    // framework-native re-run identifier
 	FilePath      string    // repo-relative path of the test source
-	FailureOutput string    // tail of stdout/stderr from last run (cap 8 KB)
+	FailureOutput string    // complete stdout/stderr from last run
 	LastRunPassed bool      // updated by RunOne in PostFix
 	LastRunAt     time.Time // updated by RunOne in PostFix
 	// RunnerConfig captures the original architecture.yaml block that
@@ -50,16 +44,4 @@ func BuildID(service, suite, framework, frameworkID string) string {
 	safe = strings.ReplaceAll(safe, " ", "_")
 
 	return service + "/" + suite + "/" + framework + ":" + safe
-}
-
-// TruncateTail returns the last `maxBytes` bytes of `payload`, leaving
-// a marker when truncation occurred. Used for FailingTest.FailureOutput
-// so prompts stay within token budgets when test output is verbose.
-func TruncateTail(payload string, maxBytes int) string {
-	if len(payload) <= maxBytes {
-		return payload
-	}
-
-	return fmt.Sprintf("... [truncated %d bytes] ...\n%s",
-		len(payload)-maxBytes, payload[len(payload)-maxBytes:])
 }
