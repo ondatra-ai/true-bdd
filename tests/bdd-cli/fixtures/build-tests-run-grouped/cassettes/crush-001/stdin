@@ -1,0 +1,210 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
+
+**Your Task:**
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** calc-001-double
+**Description:** Double a number
+**Service:** calc
+
+### Steps
+Given:
+  - the number is 2
+When:
+  - the number is doubled
+Then:
+  - the result is 4
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario calc-001-double: Double a number
+
+## Suite Resolution
+
+`docs/architecture/architecture.yaml` declares service `calc`
+(`services/calc`, Go). The suite that owns scenarios with
+`service: calc` is the tree `tests/calc/`; its step definitions live in
+`tests/calc/steps/`. That package is the ONLY tree you may write.
+
+Existing contents (already read — do not re-create them):
+
+- `tests/calc/steps/state.go` — `type State struct { Value int }` and
+  `type Registrar interface { Step(string, func(*State, []string) error) }`
+- `tests/calc/steps/steps.go` — `func Register(suite Registrar)` with two
+  definitions: `^the number is (\d+)$` → `number`, and
+  `^the result is (\d+)$` → `result`
+
+## Binding Analysis
+
+Subject `calc-001-double`:
+
+- `the number is 2` -> `^the number is (\d+)$` (already bound)
+- `the number is doubled` -> UNDEFINED
+- `the result is 4` -> `^the result is (\d+)$` (already bound)
+
+Neighbour sweep over `docs/scenarios.yaml` — the only other `service: calc`
+scenario is `calc-002-peer` ("Double a peer number"), whose steps are
+identical (`the number is 2` / `the number is doubled` / `the result is 4`).
+So exactly one new definition closes both scenarios; there is no further
+`calc` vocabulary left unbound after this change.
+
+No step opens with `llm:` or `judge:`, so none is MODEL-RUN.
+
+## Required Changes
+
+### Change #1: Register and implement the scaling (When) step
+
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the **Edit** tool on the existing file. Do not create a new
+file and do not add a second `Register` function — the new definition goes
+into the existing one.
+
+**old_string** (verbatim slice to replace):
+```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
+ suite.Step(`^the result is (\d+)$`, result)
+}
+```
+
+**new_string:**
+```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
+ suite.Step(`^the number is (doubled|tripled|quadrupled)$`, scaled)
+ suite.Step(`^the result is (\d+)$`, result)
+}
+
+// multipliers maps the registry's scaling vocabulary to its factor, so one
+// definition serves every scenario phrasing "the number is <operation>"
+// instead of a pattern copied from a single scenario's line.
+var multipliers = map[string]int{"doubled": 2, "tripled": 3, "quadrupled": 4}
+
+func scaled(state *State, args []string) error {
+ factor, ok := multipliers[args[0]]
+ if !ok {
+  return fmt.Errorf("expected one of doubled, tripled, quadrupled; got %q", args[0])
+ }
+ state.Value *= factor
+ return nil
+}
+```
+
+## Notes for the applier
+
+- **No import changes.** The file already imports `fmt` and `strconv`
+  (`import ("fmt"; "strconv")`); `scaled` uses only `fmt`, and `strconv`
+  stays in use by `number` and `result`. Leave the import line untouched —
+  adding or removing anything there will break the build.
+- **Capture group, not a literal.** The pattern captures the operation word
+  so the same definition serves `tripled`/`quadrupled` phrasings without a
+  new fix cycle. Keep the alternation explicit — do **not** widen it to
+  `(\w+)` or `(.+)`, because `\w+` also matches `2` and would make
+  `the number is 2` resolve to TWO patterns, turning a pass into an
+  ambiguity failure.
+- **Anchors are required.** Keep `^` and `$` exactly as written.
+- **Do not weaken existing definitions.** `^the number is (\d+)$` and
+  `^the result is (\d+)$` keep their current patterns and bodies verbatim;
+  the fix is purely additive.
+- **Do not touch** `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
+  `tests/calc/scenarios/scenarios.go`, `tests/calc/steps/state.go`, or
+  anything outside `tests/calc/steps/`.
+- `scaled` is a When step, so it acts (mutates `state.Value`) and asserts
+  nothing; the `then` assertion stays the job of `result`, which already
+  names expected vs. got. With `Value = 2` set by the Given, `state.Value *= 2`
+  yields `4` and satisfies `the result is 4` for both scenarios.
+
+## Expected Post-Fix Verdict
+```
+step: the number is 2 -> ^the number is (\d+)$
+step: the number is doubled -> ^the number is (doubled|tripled|quadrupled)$
+step: the result is 4 -> ^the result is (\d+)$
+Verdict: executable
+```
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

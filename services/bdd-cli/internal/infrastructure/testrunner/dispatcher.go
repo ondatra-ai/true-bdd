@@ -54,8 +54,8 @@ type Runner interface {
 	Discover(ctx context.Context, cfg Config, service, suite string) ([]*FailingTest, error)
 
 	// RunOne re-executes one failing test in isolation by its framework-native
-	// TestName, returning pass/fail, raw output (tail-truncated by the
-	// caller), and a non-nil error only on infrastructure problems.
+	// TestName, returning pass/fail, complete output, and a non-nil error
+	// only on infrastructure problems.
 	RunOne(ctx context.Context, ft *FailingTest) (passed bool, output string, err error)
 }
 

@@ -851,3 +851,15 @@ catalogue:
       of the engine running the command, with symbolic links resolved.
       The complete argument arrives as one element.
     terms: [engine, test runner, symbolic link, template]
+
+  - template: 'the file matching "{glob}" has exactly {count:number} match[es] for {expected:pattern}'
+    block: then
+    means: >-
+      After the command ends, exactly one file of the project tree must
+      match the glob, and its entire content must contain exactly that
+      many non-overlapping matches for the pattern. The file may be a
+      saved request sent to a model: counting its failure headings and
+      matching its whole evidence observes what the model was given.
+      A missing file, several matching files or an invalid pattern fails
+      the step, even when the expected count is zero.
+    terms: [project tree, glob, pattern, template]

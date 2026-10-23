@@ -237,7 +237,7 @@ func buildCodePostFix(
 		}
 
 		item.LastRunPassed = passed
-		item.FailureOutput = testrunner.TruncateTail(output, testrunner.FailureOutputCap)
+		item.FailureOutput = output
 		item.LastRunAt = time.Now()
 
 		return item, nil

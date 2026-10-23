@@ -118,6 +118,8 @@ func (e *buildTestsExecution) postFix(ctx context.Context, item *BuildTestsItem,
 func (e *buildTestsExecution) runBound(ctx context.Context, answer *stepcoverage.Answer) []string {
 	var failures []string
 
+	report := &runtimeFailureReport{}
+
 	for _, file := range e.plan.Files {
 		if !e.dirty[stepcoverage.StepsDir(file.Path)] {
 			continue
@@ -142,13 +144,15 @@ func (e *buildTestsExecution) runBound(ctx context.Context, answer *stepcoverage
 			continue
 		}
 
-		failures = append(failures, e.runSelection(ctx, file.Path, names, ids)...)
+		failures = append(failures, e.runSelection(ctx, file.Path, names, ids, report)...)
 	}
 
-	return failures
+	return append(failures, report.render()...)
 }
 
-func (e *buildTestsExecution) runSelection(ctx context.Context, path string, names, ids []string) []string {
+func (e *buildTestsExecution) runSelection(
+	ctx context.Context, path string, names, ids []string, report *runtimeFailureReport,
+) []string {
 	cfg := testrunner.Config{Framework: e.arch.Testing.Framework, ConfigFile: e.arch.Testing.ConfigFile,
 		Command: replayCommand(e.arch.Testing), Arguments: e.arguments, Path: filepath.Dir(path), Tests: names}
 
@@ -165,13 +169,9 @@ func (e *buildTestsExecution) runSelection(ctx context.Context, path string, nam
 		return []string{fmt.Sprintf("Scenarios %s: %s", strings.Join(ids, ", "), err)}
 	}
 
-	context := make([]string, 0, len(failures))
-	for _, failure := range failures {
-		context = append(context, fmt.Sprintf("Scenarios %s; test %s:\n%s",
-			strings.Join(ids, ", "), failure.TestName, failure.FailureOutput))
-	}
+	report.addSelection(names, ids, failures)
 
-	return context
+	return nil
 }
 
 func (e *buildTestsExecution) reviewResult(
