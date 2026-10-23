@@ -244,7 +244,7 @@ architecture:
         Subject.Requirement: *subject-requirement
         Subject.Service: *registry-service
         Subject.Spec.Declared: &subject-spec-declared >-
-          Subject specification comes from config documents.product catalogue and glossary, and documents.architecture_yaml word mappings. An absent/null catalogue is undeclared; an empty list is declared. Build-tests reads it under --fix for own unbound steps (and suite peers); decoding failure refuses before AI. Build-code reads it for Registry Scenarios during discovery, warns and omits invalid optional spec, uses all Scenario steps and no peer sweep. False hides all spec text; build-code additionally requires a matched Scenario.
+          Subject specification comes from config documents.product catalogue and glossary, and documents.architecture_yaml word mappings. An absent/null catalogue is undeclared; an empty list is declared. Build-tests reads it under --fix for own unbound steps (and suite peers); decoding failure refuses before AI. Build-code reads it for Registry Scenarios during discovery, warns and omits invalid optional spec, uses all Scenario steps and no peer sweep. An unavailable or unreadable product document, an absent/null catalogue or invalid optional spec leaves build-code Subject.Spec empty while retaining any matched Subject.Scenario and its steps. False hides all spec text; build-code additionally requires a matched Scenario.
         Subject.Spec.Phrases: &subject-spec-phrases >-
           Subject catalogue entries reached by exactly one match, excluding model-run steps, unique by template string in first-reached order: own steps first, then build-tests suite gaps in ascending Registry id and step order; build-code has no sweep. No sorting by term or phrase.
         Subject.Spec.Phrases[].Block: &subject-spec-phrasesitem-block >-
@@ -340,7 +340,7 @@ architecture:
         Subject.Framework: *subject-framework
         Subject.ID: *failing-test-id
         Subject.Scenario: &subject-scenario >-
-          Optional subject Registry Scenario matched only for Go, by exact module-aware package::CamelCase test identity; no match, unreadable optional documents, non-Go, subtest or package-build failure leaves nil. Template if suppresses the whole Scenario/spec section when nil; no guessing from filename.
+          Optional subject Registry Scenario matched only for Go, by exact module-aware package::CamelCase test identity; an unavailable or unreadable Registry or failed identity match (including non-Go, subtest or package-build failure) leaves nil. An unreadable or catalogue-less product document only empties Subject.Spec; the matched Scenario and its steps remain set. Template if suppresses the whole Scenario/spec section when nil; no guessing from filename.
         Subject.Scenario.Description: *registry-description
         Subject.Scenario.FormatSteps: *registry-steps
         Subject.Scenario.ID: *registry-id
