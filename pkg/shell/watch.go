@@ -144,3 +144,31 @@ func (w activityWriter) Write(data []byte) (int, error) {
 
 	return count, nil
 }
+
+// Supervise bounds a started process and stops its group on every exit.
+// A caller using interactive stdin owns its pipe, so Wait has no stdin copier.
+func (p *Process) Supervise(ctx context.Context, limit, grace time.Duration) (Result, error) {
+	ended := make(chan error, 1)
+	go func() { ended <- p.cmd.Wait() }()
+
+	var activity atomic.Int64
+	activity.Store(time.Now().UnixNano())
+
+	waitErr, stopped := watchProcess(ctx, p.cmd, ended, &activity, Watchdog{Limit: limit, Grace: grace})
+	if errors.Is(waitErr, exec.ErrWaitDelay) {
+		waitErr = nil
+	}
+
+	code, signal, _ := classify(waitErr)
+
+	result := Result{Code: code, Signal: signal, Stdout: p.stdout.String(), Stderr: p.stderr.String()}
+	if stopped != nil {
+		return result, fmt.Errorf("%s: %w", label(p.argv), stopped)
+	}
+
+	if waitErr != nil && code == NotStarted && signal == 0 {
+		return result, fmt.Errorf("waiting for %s: %w", label(p.argv), waitErr)
+	}
+
+	return result, nil
+}
