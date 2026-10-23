@@ -8,6 +8,10 @@ The engine that drives Claude-mediated checklists over a host project's specific
 The project whose specification documents the engine walks and whose code it builds. This repository is its own Host project: the engine's next version is specified and built by its previous one, while for anyone else the Host project is their own application.
 _Avoid_: host application, host product, target project
 
+**Specification**:
+The three documents a Host project's system is built from, and the only source of how it is built: the product document, the architecture document and the Registry. The tests and the code are recovered from it; a rebuild preserves the system's behaviour, not its code.
+_Avoid_: spec files, sources, the docs
+
 **Registry**:
 The single YAML file holding every Scenario, resolved from `documents.scenarios_yaml` (conventionally `docs/scenarios.yaml`).
 _Avoid_: requirements file, scenarios file, spec file
