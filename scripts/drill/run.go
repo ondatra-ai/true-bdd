@@ -190,7 +190,13 @@ func (r Runner) execute(ctx context.Context, record Record, run Run) (int, error
 	}
 
 	input, answer := io.Pipe()
-	defer func() { _ = input.Close(); _ = answer.Close() }()
+
+	closePipes := func() { _ = input.Close(); _ = answer.Close() }
+	defer closePipes()
+
+	// Wait joins the output copier, so cancellation must unblock its answer writes before Wait returns.
+	stopClosing := context.AfterFunc(ctx, closePipes)
+	defer stopClosing()
 
 	writer := &promptWriter{ctx: ctx,
 		cancel:    cancel,
