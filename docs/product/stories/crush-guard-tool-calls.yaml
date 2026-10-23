@@ -5,7 +5,8 @@
 # it runs the guard the engine wired into the turn's config. This Story
 # holds which tools the guard lets through, the shell grant, the refusal of
 # a missing or unreadable write policy, and the hook payload crush pipes.
-# Where a write may land is the Story crush-guard-writes.
+# Where a write may land is the Story crush-guard-writes; local reads
+# and a policy naming no read root belong to crush-guard-reads.
 #
 # Each criterion's id is the second half of its Scenario's Registry key,
 # `crush-guard-<id>` (ADR 0014), and its steps are that Scenario's steps.
@@ -15,12 +16,12 @@ story:
     feature: engine
     title: Let crush run a tool only when the engine's write guard allows it, and deny whatever the guard cannot decide
     as_a: System Architect
-    i_want: every tool crush wants to run during a turn to be decided by the engine's write guard, which allows a tool that only reads, allows the shell only when the turn's write policy lets the turn run it, denies a tool it does not know as a writer, denies everything when the write policy is missing or unreadable, and reads from the hook payload what crush named nowhere else
-    so_that: a crush turn, whose CLI has no permission check of its own, never changes the project beyond what its command allowed, even when crush is started outside the engine or its policy is damaged
+    i_want: every tool crush wants to run during a turn to be decided by the engine's write guard, which allows a local read only inside the project, allows the shell only when the turn's write policy lets the turn run it, denies a tool it does not know as a writer, denies everything when the write policy is missing or unreadable, and reads from the hook payload what crush named nowhere else
+    so_that: a crush turn, whose CLI has no permission check of its own, never reads outside the project or changes it beyond what its command allowed, even when crush is started outside the engine or its policy is damaged
     status: IMPLEMENTED
     acceptance_criteria:
         - id: 001-read-only-tool-allowed
-          description: A tool call to a tool that only reads must be allowed whatever file it reads, inside the turn's write roots or not
+          description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
           steps:
             - given:
                 - the "crush-guard-read-only-tool" project tree

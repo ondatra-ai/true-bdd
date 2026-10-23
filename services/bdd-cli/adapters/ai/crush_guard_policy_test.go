@@ -28,6 +28,10 @@ func TestCrushGuardPolicyDerivesWriteRoots(t *testing.T) {
 		t.Fatalf("WriteRoots = %v, want [%s]", policy.WriteRoots, want)
 	}
 
+	if policy.ReadRoot != guardWorkDir {
+		t.Errorf("ReadRoot = %q, want %q", policy.ReadRoot, guardWorkDir)
+	}
+
 	if policy.AllowBash {
 		t.Error("AllowBash = true although the mode disallows Bash")
 	}
@@ -132,6 +136,10 @@ func TestLoadCrushGuardPolicyRoundTrip(t *testing.T) {
 		t.Fatalf("LoadCrushGuardPolicy: %v", err)
 	}
 
+	if loaded.ReadRoot != guardWorkDir {
+		t.Errorf("round-tripped read root = %q, want %q", loaded.ReadRoot, guardWorkDir)
+	}
+
 	if len(loaded.WriteRoots) != 1 || loaded.WriteRoots[0] != original.WriteRoots[0] {
 		t.Errorf("round-tripped roots = %v, want %v", loaded.WriteRoots, original.WriteRoots)
 	}
@@ -150,5 +158,27 @@ func TestLoadCrushGuardPolicyRejectsMissingAndMalformed(t *testing.T) {
 	_, err = ai.LoadCrushGuardPolicy()
 	if !errors.Is(err, pkgerrors.ErrCrushPolicyInvalid) {
 		t.Fatalf("malformed policy error = %v, want ErrCrushPolicyInvalid", err)
+	}
+}
+
+func TestLoadCrushGuardPolicyRequiresReadRoot(t *testing.T) {
+	for _, raw := range []string{`{}`, `null`, `{"read_root":""}`, `{"read_root":"  "}`} {
+		t.Run(raw, func(t *testing.T) {
+			t.Setenv(ai.CrushPolicyEnvVar, raw)
+
+			_, err := ai.LoadCrushGuardPolicy()
+			if !errors.Is(err, pkgerrors.ErrCrushReadRootMissing) {
+				t.Fatalf("policy %s: error = %v, want ErrCrushReadRootMissing", raw, err)
+			}
+		})
+	}
+}
+
+func TestLoadCrushGuardPolicyRejectsRelativeReadRoot(t *testing.T) {
+	t.Setenv(ai.CrushPolicyEnvVar, `{"read_root":"project"}`)
+
+	_, err := ai.LoadCrushGuardPolicy()
+	if !errors.Is(err, pkgerrors.ErrCrushPolicyInvalid) {
+		t.Fatalf("relative read root: error = %v, want ErrCrushPolicyInvalid", err)
 	}
 }

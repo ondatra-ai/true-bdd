@@ -360,13 +360,16 @@ glossary:
       The engine's own check that crush runs before each tool call of a
       turn. It answers allow or deny, holding the call to the turn's write
       policy, and gives a reason for a denial. It denies whatever it cannot
-      decide, so a crush turn never changes a file the engine did not let
-      it change.
+      decide, so a crush turn never reads a local file outside the project
+      or changes a file the engine did not let it change.
 
   - term: write policy
     means: >-
-      What one crush turn may do beyond reading: the directories of the
-      project tree it may write under, none for a turn that only reads,
+      What one crush turn may read and change: its read root is the project
+      tree, the only directory local reads may use, with symbolic links
+      resolved. Relative reads start there; a read naming no path uses the
+      project. It also names the directories it may write under, none for
+      a turn that only reads,
       and whether it may run shell commands, which could write anywhere.
       The engine derives it from what the command lets that turn change
       and hands it to crush with the turn.
@@ -771,6 +774,21 @@ catalogue:
       or whether it may run the shell.
     terms: [crush, write guard, write policy]
 
+  - template: 'crush hands the guard a write policy with no read root'
+    block: given
+    means: >-
+      crush hands the write guard a readable write policy that names no
+      project directory for local reads, so every tool call is refused.
+    terms: [crush, write guard, write policy, tool call]
+
+  - template: 'crush pipes the hook payload naming the tool "{tool}" and the path "{path}"'
+    block: given
+    means: >-
+      crush writes the hook payload naming the tool and the path exactly
+      as quoted, including a relative path. The write guard uses these
+      names where crush did not otherwise name the tool or its target.
+    terms: [crush, hook payload, write guard, tool call, template]
+
   - template: 'crush names the tool "{tool}"'
     block: given
     means: >-
@@ -790,8 +808,8 @@ catalogue:
     block: given
     means: >-
       The tool call crush asks about targets the path exactly as quoted,
-      left relative rather than made absolute, so it does not say which
-      directory it starts from.
+      kept as written rather than made absolute. A relative read starts
+      at the policy's read root; a relative write is denied.
     terms: [crush, tool call, template]
 
   - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
@@ -808,7 +826,7 @@ catalogue:
     means: >-
       Before the run, the named path of the project tree is a symbolic link
       pointing at the target, a path relative to the link's own directory,
-      so a write through the link lands at the target instead. Creating it
+      so a read or write through the link reaches the target instead. Creating it
       is no file change of the run.
     terms: [symbolic link, project tree, file change, template]
 

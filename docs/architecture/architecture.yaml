@@ -84,13 +84,15 @@ architecture:
                 this executable's path in single quotes, a space and
                 `crush-guard`, with a 15-second timeout.
               TRUE_BDD_CRUSH_POLICY: >-
-                The JSON write policy `crush-guard` enforces: the turn's write
-                roots and whether it may run bash.
+                The JSON write policy `crush-guard` enforces: `read_root`, the
+                absolute project working directory for local reads, the
+                turn's `write_roots` and whether it may run bash (`allow_bash`).
             notes:
               - >-
                 crush has no permission gate of its own and runs a tool when its
                 hook cannot run, so the engine probes `crush-guard` before every
-                turn and refuses the turn unless the probe is denied.
+                turn with a valid policy including its read root and no write roots,
+                and refuses the turn unless the prohibited write is denied.
               - >-
                 crush silently ignores a model it does not know when the model is
                 named in config, so the model travels only as `-m`.
@@ -724,10 +726,13 @@ architecture:
         The engine binary's hidden `crush-guard` subcommand, run with no
         arguments. It reads the write policy, then the tool call, and exits 0
         to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
-        stderr for a denial. A missing or unreadable policy denies before the
-        tool call is read. `view`, `ls`, `grep`, `glob`, `sourcegraph`,
-        `diagnostics`, `fetch` and the `context7` MCP tools only read and are
-        allowed; `bash` is allowed only when the policy allows the shell; the
+        stderr for a denial. A missing or unreadable policy, or a readable
+        policy naming no read root, denies before the tool call is read, each
+        with its own reason. `view`, `ls`, `grep`, `glob` and `diagnostics`
+        may read only inside `read_root`, resolving symbolic links on both
+        sides and comparing whole path components. Relative reads start at
+        that root; reads naming no path are allowed to use the project.
+        `sourcegraph`, `fetch` and the `context7` MCP tools remain allowed; `bash` is allowed only when the policy allows the shell; the
         file tools `edit`, `write`, `multiedit`, `patch`, `create` and
         `download` are allowed only for an absolute target inside a write
         root, with symbolic links resolved on both sides (through the deepest
@@ -749,14 +754,16 @@ architecture:
     - term: write policy
       technical: >-
         A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
-        `write_roots`, a list of absolute directory paths, and `allow_bash`,
-        true or false. The engine derives it per turn from the turn's write
+        `read_root`, the absolute project working directory, `write_roots`,
+        a list of absolute directory paths, and `allow_bash`, true or false. The engine derives it per turn from the turn's write
         globs, each cut at its first wildcard and made absolute against the
         project root, and from whether the turn may run the shell.
       observed_by: >-
-        Built by the Given steps for the When step: each write-under step adds
+        Built by the Given steps for the When step: `read_root` is the run
+        directory, and each write-under step adds
         the quoted directory joined to the run directory, the shell step sets
-        `allow_bash`, and with neither the policy grants nothing. The
+        `allow_bash`, and with neither the policy allows project reads only. The
+        no-read-root step sets `read_root` to an empty string. The
         no-policy step leaves the variable blank, which the guard reads as
         unset, and the unreadable step sets it to text that is not JSON.
 
@@ -780,7 +787,9 @@ architecture:
       observed_by: >-
         The When step writes `{"tool_name": <tool>, "input": {"file_path":
         <the file joined to the run directory>}}` to the guard's stdin; with
-        no payload step the guard's stdin is empty.
+        no payload step the guard's stdin is empty. The path payload step instead
+        writes `input.path` exactly as quoted, without joining it to the run
+        directory.
 
     - term: symbolic link
       technical: >-
