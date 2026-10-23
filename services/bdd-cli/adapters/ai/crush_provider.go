@@ -57,7 +57,7 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 	// crush fails OPEN on a hook it cannot run, and the hook is the
 	// only write gate a crush turn has. Prove it denies before letting
 	// the turn start.
-	err = verifyCrushGuardEnforces(executable)
+	err = verifyCrushGuardEnforces(executable, req.WorkDir)
 	if err != nil {
 		return "", err
 	}

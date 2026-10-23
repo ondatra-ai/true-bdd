@@ -1,0 +1,85 @@
+story:
+    id: crush-guard-reads
+    feature: engine
+    title: Hold crush local reads to the project root
+    as_a: System Architect
+    i_want: the write guard to allow local reads only inside the project read root, resolving relative paths and symbolic links, and to refuse a policy that names no read root
+    so_that: a crush turn cannot copy files from a neighbouring project into the host project
+    status: IMPLEMENTED
+    acceptance_criteria:
+    -   id: 001-outside-project-denied
+        description: A view of an absolute path outside the project must be denied, naming the path and the read root
+        steps:
+        -   given:
+            - the "crush-guard-read-outside" project tree
+            - crush's write policy lets the turn write under "tests"
+            - crush names the tool "view"
+            - crush names the path "/true-bdd-neighbour/secrets.txt" as written
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard denies the tool call
+            -   and: the guard's reason matches read target /true-bdd-neighbour/secrets\.txt is outside read root \S*/crush-guard-read-outside
+    -   id: 002-relative-escape-denied
+        description: A glob whose path leaves the project through ../ must be denied
+        steps:
+        -   given:
+            - the "crush-guard-read-relative-escape" project tree
+            - crush's write policy lets the turn write under "tests"
+            - crush pipes the hook payload naming the tool "glob" and the path "../neighbour"
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard denies the tool call
+            -   and: the guard's reason matches read target \S*/neighbour is outside read root \S*/crush-guard-read-relative-escape
+    -   id: 003-symlink-escape-denied
+        description: A read through a symbolic link inside the project pointing outside it must be denied
+        steps:
+        -   given:
+            - the "crush-guard-read-symlink-escape" project tree
+            - crush's write policy lets the turn write under "tests"
+            - the project tree's "node_modules/shared" is a symbolic link to "../../"
+            - crush names the tool "grep"
+            - crush names the file "node_modules/shared/notes.md" of the project tree
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard denies the tool call
+            -   and: the guard's reason matches read target \S*/notes\.md is outside read root \S*/crush-guard-read-symlink-escape
+    -   id: 004-unnamed-path-allowed
+        description: An ls call naming no path must be allowed to read the project
+        steps:
+        -   given:
+            - the "crush-guard-read-unnamed-path" project tree
+            - crush's write policy lets the turn write under "tests"
+            - crush names the tool "ls"
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard allows the tool call
+    -   id: 005-missing-read-root-denied
+        description: A tool call must be denied when crush hands the guard a write policy with no read root, naming what is missing
+        steps:
+        -   given:
+            - the "crush-guard-read-missing-root" project tree
+            - crush's write policy lets the turn write under "tests"
+            - crush hands the guard a write policy with no read root
+            - crush names the tool "view"
+            - crush names the file "docs/README.md" of the project tree
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard denies the tool call
+            -   and: the guard's reason matches crush guard policy names no read root
+    -   id: 006-relative-path-allowed
+        description: A relative read path inside the project must be allowed outside every write root
+        steps:
+        -   given:
+            - the "crush-guard-read-relative-path" project tree
+            - crush's write policy lets the turn write under "tests"
+            - crush names the tool "diagnostics"
+            - crush names the path "docs/README.md" as written
+        -   when:
+            - crush asks the guard about the tool call
+        -   then:
+            - the guard allows the tool call
