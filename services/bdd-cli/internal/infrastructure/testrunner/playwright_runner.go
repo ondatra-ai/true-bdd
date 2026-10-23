@@ -58,7 +58,7 @@ func (r *PlaywrightRunner) Discover(
 	cfg Config,
 	service, suite string,
 ) ([]*FailingTest, error) {
-	argv, err := SplitCommand(cfg.Command)
+	argv, err := cfg.argv()
 	if err != nil {
 		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, suite, err)
 	}

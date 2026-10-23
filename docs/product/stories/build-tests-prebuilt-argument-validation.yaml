@@ -1,0 +1,48 @@
+story:
+  id: build-tests-prebuilt
+  feature: build-tests
+  title: Refuse invalid prebuilt engine arguments before verification
+  as_a: System Architect
+  i_want: invalid prebuilt engine argument declarations refused before any runner or model starts
+  so_that: a malformed verification configuration cannot author or verify definitions
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-placeholder-required
+    description: A prebuilt engine argument without the placeholder must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    steps:
+    - given:
+      - the "build-tests-prebuilt-missing" project tree
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE
+  - id: 002-placeholder-exactly-once
+    description: A prebuilt engine argument with the placeholder twice must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    steps:
+    - given:
+      - the "build-tests-prebuilt-twice" project tree
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE
+  - id: 003-empty-declaration-refused
+    description: An empty prebuilt engine argument must be refused at startup, naming the field and its required placeholder, before any runner or AI turn
+    steps:
+    - given:
+      - the "build-tests-prebuilt-empty" project tree
+    - when:
+      - the System Architect runs "build tests --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches prebuilt_engine_arg must contain \{engine_bin\} exactly once
+      - and: the engine spawned no test runner
+      - and: the engine dispatched no AI turns
+      - but: stdout does not match BUILD TESTS COMPLETE

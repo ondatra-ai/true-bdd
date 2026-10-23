@@ -108,6 +108,7 @@ func Register(suite *bddgo.Suite[State]) {
 func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
+	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)
 	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)
