@@ -22,14 +22,23 @@ const (
 	CrushToolFilePathEnvVar = "CRUSH_TOOL_INPUT_FILE_PATH"
 	// CrushGuardDenyExitCode is crush's hook contract: 0 allows the
 	// tool call, 2 denies it with stderr carrying the reason.
-	CrushGuardDenyExitCode = 2
+	CrushGuardDenyExitCode  = 2
+	crushNoWriteRootsReason = "this mode grants no write roots"
 )
 
-// crushReadOnlyTools are tools that cannot mutate anything, so they're
-// always safe. Everything else is DENIED by default (fail closed): a
-// deny-list would let an unlisted writer like `download` slip through.
+// crushLocalReadTools are confined to ReadRoot.
+func crushLocalReadTools() []string {
+	return []string{"view", "ls", "grep", "glob", "diagnostics"}
+}
+
+// crushNetworkReadTools retain their existing allowance.
+func crushNetworkReadTools() []string {
+	return []string{"sourcegraph", "fetch"}
+}
+
+// crushReadOnlyTools supplies crush's combined local and network tool allowlist.
 func crushReadOnlyTools() []string {
-	return []string{"view", "ls", "grep", "glob", "sourcegraph", "diagnostics", "fetch"}
+	return append(crushLocalReadTools(), crushNetworkReadTools()...)
 }
 
 // crushFileTools are the tools that create or modify files.
@@ -46,6 +55,8 @@ func crushReadOnlyToolPrefixes() []string {
 // PreToolUse hook — crush run has no permission gate of its own — and
 // derived from the same ExecutionMode that backs Claude's --allowedTools.
 type CrushGuardPolicy struct {
+	// ReadRoot is the absolute working directory for local read tools.
+	ReadRoot string `json:"read_root"`
 	// WriteRoots are absolute directory prefixes a file-writing tool
 	// may target. Empty means no writes at all.
 	WriteRoots []string `json:"write_roots"`
@@ -68,7 +79,7 @@ func NewCrushGuardPolicy(mode ExecutionMode, workDir string) CrushGuardPolicy {
 		}
 	}
 
-	return CrushGuardPolicy{WriteRoots: roots, AllowBash: mode.AllowsBash()}
+	return CrushGuardPolicy{ReadRoot: workDir, WriteRoots: roots, AllowBash: mode.AllowsBash()}
 }
 
 // Encode renders the policy as the environment entry crush passes down
@@ -98,16 +109,28 @@ func LoadCrushGuardPolicy() (CrushGuardPolicy, error) {
 		return CrushGuardPolicy{}, pkgerrors.ErrCrushPolicyInvalid
 	}
 
+	if strings.TrimSpace(policy.ReadRoot) == "" {
+		return CrushGuardPolicy{}, pkgerrors.ErrCrushReadRootMissing
+	}
+
+	if !filepath.IsAbs(policy.ReadRoot) {
+		return CrushGuardPolicy{}, pkgerrors.ErrCrushPolicyInvalid
+	}
+
 	return policy, nil
 }
 
 // Decide returns whether crush may run the tool, and why not when it
 // may not. toolName is crush's lowercase tool id; targetPath is the
-// file a write tool wants to touch (empty for non-file tools).
+// path a file tool wants to read or write (empty for non-file tools).
 func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 	name := strings.ToLower(strings.TrimSpace(toolName))
 
-	if isCrushReadOnlyTool(name) {
+	if slices.Contains(crushLocalReadTools(), name) {
+		return p.allowsReadFrom(targetPath)
+	}
+
+	if isCrushNetworkReadTool(name) {
 		return true, ""
 	}
 
@@ -131,7 +154,7 @@ func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 // a granted root (`<tmp>/link` → `/etc`) pass the prefix test and escape.
 func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	if len(p.WriteRoots) == 0 {
-		return false, "this mode grants no write roots"
+		return false, crushNoWriteRootsReason
 	}
 
 	if strings.TrimSpace(targetPath) == "" {
@@ -145,7 +168,7 @@ func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	resolved := resolveThroughSymlinks(filepath.Clean(targetPath))
 
 	for _, root := range p.WriteRoots {
-		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+		if pathWithinRoot(resolved, resolveThroughSymlinks(filepath.Clean(root))) {
 			return true, ""
 		}
 	}
@@ -154,11 +177,11 @@ func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 }
 
 // resolveThroughSymlinks resolves the deepest existing ancestor and
-// re-appends what doesn't exist: a write target usually doesn't exist
-// yet, so plain EvalSymlinks on the full path would fail outright.
+// re-appends what does not exist, preserving .. until links resolve.
+// A target need not exist yet, so EvalSymlinks on the full path can fail.
 func resolveThroughSymlinks(path string) string {
 	remainder := ""
-	current := filepath.Clean(path)
+	current := path
 
 	for {
 		resolved, err := filepath.EvalSymlinks(current)
@@ -166,14 +189,20 @@ func resolveThroughSymlinks(path string) string {
 			return filepath.Join(resolved, remainder)
 		}
 
-		parent := filepath.Dir(current)
+		parent, leaf := filepath.Split(current)
+
+		parent = strings.TrimSuffix(parent, string(os.PathSeparator))
+		if parent == "" {
+			parent = string(os.PathSeparator)
+		}
+
 		if parent == current {
 			// Reached the root without finding anything that exists;
 			// the lexical form is all there is.
 			return filepath.Clean(path)
 		}
 
-		remainder = filepath.Join(filepath.Base(current), remainder)
+		remainder = filepath.Join(leaf, remainder)
 		current = parent
 	}
 }
@@ -190,9 +219,9 @@ func pathWithinRoot(target, root string) bool {
 	return strings.HasPrefix(target, root+string(os.PathSeparator))
 }
 
-// isCrushReadOnlyTool reports whether the tool can only read.
-func isCrushReadOnlyTool(name string) bool {
-	if slices.Contains(crushReadOnlyTools(), name) {
+// isCrushNetworkReadTool reports whether the tool reads network sources.
+func isCrushNetworkReadTool(name string) bool {
+	if slices.Contains(crushNetworkReadTools(), name) {
 		return true
 	}
 

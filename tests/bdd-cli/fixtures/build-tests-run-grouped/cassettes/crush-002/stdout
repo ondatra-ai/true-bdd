@@ -1,0 +1,7 @@
+Current state matches the diagnosis. Writing the corrected `steps.go` now.Shell execution is blocked by the environment guard, so the replay run cannot be performed here; the file change itself is applied exactly as specified.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===
+applied: true
+target: "tests/calc/steps/steps.go"
+summary: "Fixed doubling to multiply by 2, repaired Given parse order and error, and reduced assertion message to a single expected/got line"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter2-result.yaml ===

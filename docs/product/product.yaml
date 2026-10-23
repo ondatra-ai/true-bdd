@@ -360,14 +360,21 @@ glossary:
       The engine's own check that crush runs before each tool call of a
       turn. It answers allow or deny, holding the call to the turn's write
       policy, and gives a reason for a denial. It denies whatever it cannot
-      decide, so a crush turn never changes a file the engine did not let
-      it change.
+      decide. It confines the five local read tools (`view`, `ls`, `grep`,
+      `glob`, `diagnostics`) to the project and writes to the granted roots.
+      Network readers keep their own allowance. The engine's own turns
+      never receive a shell grant.
 
   - term: write policy
     means: >-
-      What one crush turn may do beyond reading: the directories of the
-      project tree it may write under, none for a turn that only reads,
-      and whether it may run shell commands, which could write anywhere.
+      What one crush turn may read and change: its read root is the project
+      tree, the only directory the five local read tools (`view`, `ls`,
+      `grep`, `glob`, `diagnostics`) may read, with symbolic links resolved.
+      Relative reads start there; a read naming no path uses the
+      project. It also names the directories it may write under, none for
+      a turn that only reads,
+      and whether it may run shell commands, which could read or write
+      anywhere. The engine never grants the shell to its own crush turns.
       The engine derives it from what the command lets that turn change
       and hands it to crush with the turn.
 
@@ -562,6 +569,15 @@ catalogue:
       match for the pattern somewhere: proof that a command wrote a file
       that says the right thing.
     terms: [project tree, pattern, template]
+
+  - template: 'every file matching "{glob}" [matches|does not match] {expected:pattern}'
+    block: then
+    means: >-
+      At least one file in the project tree matches the glob, and every
+      matching file's content satisfies the named pattern comparison.
+      Scratch files count, so a Scenario can inspect saved rendered prompts.
+      An invalid glob or pattern fails the step.
+    terms: [glob, project tree, pattern, template]
 
   - template: 'exactly {count:number} file[s] matching "{glob}" [is|are] created'
     block: then
@@ -771,6 +787,21 @@ catalogue:
       or whether it may run the shell.
     terms: [crush, write guard, write policy]
 
+  - template: 'crush hands the guard a write policy with no read root'
+    block: given
+    means: >-
+      crush hands the write guard a readable write policy that names no
+      project directory for local reads, so every tool call is refused.
+    terms: [crush, write guard, write policy, tool call]
+
+  - template: 'crush pipes the hook payload naming the tool "{tool}" and the path "{path}"'
+    block: given
+    means: >-
+      crush writes the hook payload naming the tool and the path exactly
+      as quoted, including a relative path. The write guard uses these
+      names where crush did not otherwise name the tool or its target.
+    terms: [crush, hook payload, write guard, tool call, template]
+
   - template: 'crush names the tool "{tool}"'
     block: given
     means: >-
@@ -790,8 +821,8 @@ catalogue:
     block: given
     means: >-
       The tool call crush asks about targets the path exactly as quoted,
-      left relative rather than made absolute, so it does not say which
-      directory it starts from.
+      kept as written rather than made absolute. A relative read starts
+      at the policy's read root; a relative write is denied.
     terms: [crush, tool call, template]
 
   - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
@@ -808,7 +839,7 @@ catalogue:
     means: >-
       Before the run, the named path of the project tree is a symbolic link
       pointing at the target, a path relative to the link's own directory,
-      so a write through the link lands at the target instead. Creating it
+      so a read or write through the link reaches the target instead. Creating it
       is no file change of the run.
     terms: [symbolic link, project tree, file change, template]
 
@@ -843,3 +874,23 @@ catalogue:
       prints on its standard error for crush to show beside a denied tool,
       has a match for the pattern somewhere.
     terms: [write guard, crush, pattern, template]
+
+  - template: 'the engine spawned a test runner with its own prebuilt engine path'
+    block: then
+    means: >-
+      A test runner argument is -engine-bin= followed by the absolute path
+      of the engine running the command, with symbolic links resolved.
+      The complete argument arrives as one element.
+    terms: [engine, test runner, symbolic link, template]
+
+  - template: 'the file matching "{glob}" has exactly {count:number} match[es] for {expected:pattern}'
+    block: then
+    means: >-
+      After the command ends, exactly one file of the project tree must
+      match the glob, and its entire content must contain exactly that
+      many non-overlapping matches for the pattern. The file may be a
+      saved request sent to a model: counting its failure headings and
+      matching its whole evidence observes what the model was given.
+      A missing file, several matching files or an invalid pattern fails
+      the step, even when the expected count is zero.
+    terms: [project tree, glob, pattern, template]

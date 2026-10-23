@@ -12,6 +12,8 @@ type Engine[I, P, Q any] struct {
 	generateQ GenerateQFn[P, Q]
 	walker    Walker[I, Q]
 	opts      Options
+	// ReloadItems, when set, discovers the next walk after a fix.
+	ReloadItems func(context.Context) ([]I, error)
 }
 
 // New constructs an Engine.
@@ -54,6 +56,15 @@ func (e *Engine[I, P, Q]) Run(
 			e.opts.OnAttemptStart(attempt, maxAttempts)
 		}
 
+		if attempt > 1 {
+			var err error
+
+			items, err = e.reload(ctx, items)
+			if err != nil {
+				return nil, fmt.Errorf("reload items: %w", err)
+			}
+		}
+
 		summary, err := e.walkAllItems(ctx, items, queries)
 		if err != nil {
 			return nil, err
@@ -65,6 +76,15 @@ func (e *Engine[I, P, Q]) Run(
 	}
 
 	return &Result[I]{Items: items, Reason: MaxAttemptsExhausted}, nil
+}
+
+// reload preserves the current items for commands without fresh discovery.
+func (e *Engine[I, P, Q]) reload(ctx context.Context, items []I) ([]I, error) {
+	if e.ReloadItems == nil {
+		return items, nil
+	}
+
+	return e.ReloadItems(ctx)
 }
 
 // walkSummary captures one outer-walk pass: did every item pass, was

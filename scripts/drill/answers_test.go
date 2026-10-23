@@ -1,0 +1,126 @@
+package drill_test
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
+	"github.com/ondatra-ai/true-bdd/scripts/drill"
+)
+
+func TestAnswerCannotCiteSymlinkOutsideSpecification(t *testing.T) {
+	runner, record, cut := prepare(t, `#!/bin/sh
+printf '\nCLARIFICATION NEEDED\n[1/1] Question?\n\n    Your answer: '
+read answer
+`)
+	outside := filepath.Join(t.TempDir(), "secret")
+	put(t, outside, "not specification")
+	must(t, os.Symlink(outside, filepath.Join(cut.Directory, "docs/product/escape")))
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "citation",
+		[]string{buildCommand, codeArgument, fixArgument})
+	must(t, err)
+
+	ended := make(chan error, 1)
+	go func() { ended <- runner.Supervise(t.Context(), record.Directory, run.Tag) }()
+
+	paused := waitRun(t, record.Directory, run.Tag, func(run drill.Attempt) bool { return run.Status == pausedStatus })
+	data,
+		err := json.Marshal(drill.Answer{Answer: "copy it",
+		Document: "docs/product/escape",
+		Passage:  "not specification"})
+	must(t, err)
+	put(t, paused.Questions[0].AnswerFile, string(data))
+
+	err = <-ended
+	if err == nil {
+		t.Fatal("outside citation accepted")
+	}
+
+	final, err := drill.Read(record.Directory)
+	must(t, err)
+
+	if !strings.Contains(final.Runs[run.Tag].Reason, "Specification") {
+		t.Fatalf("reason: %s", final.Runs[run.Tag].Reason)
+	}
+}
+
+func TestLimitClosesBlockedAnswerPipe(t *testing.T) {
+	runner, record, _ := prepare(t, `#!/bin/sh
+exec 0<&-
+printf 'Your choice (1/2/3): '
+sleep 0.05
+printf 'Your choice (1/2/3): '
+sleep 30
+`)
+	runner.Limit = 200 * time.Millisecond
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "closed-input",
+		[]string{buildCommand, codeArgument, fixArgument})
+	must(t, err)
+
+	err = runner.Supervise(t.Context(), record.Directory, run.Tag)
+	if err == nil {
+		t.Fatal("engine ignored the command limit")
+	}
+
+	final, err := drill.Read(record.Directory)
+	must(t, err)
+
+	if final.Runs[run.Tag].EndedAt.IsZero() {
+		t.Fatal("blocked answer prevented cleanup")
+	}
+}
+
+func TestEngineExitEndsUnansweredClarificationAndCleansUp(t *testing.T) {
+	runner, record, _ := prepare(t, `#!/bin/sh
+printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n\n    Your answer: '
+exec "$DRILL_TEST_BINARY" -test.run=^TestDrillProcessFixture$
+`)
+	t.Setenv("DRILL_TEST_BINARY", os.Args[0])
+	t.Setenv("DRILL_PROCESS_MODE", "parent")
+	childFile := filepath.Join(t.TempDir(), "child")
+	t.Setenv("DRILL_CHILD_FILE", childFile)
+
+	runner.Limit = 10 * time.Second
+	run, err := runner.Prepare(t.Context(), record.Directory, "a", "unanswered",
+		[]string{buildCommand, codeArgument, fixArgument})
+	must(t, err)
+
+	began := time.Now()
+
+	_ = runner.Supervise(t.Context(), record.Directory, run.Tag)
+	if time.Since(began) >= 5*time.Second {
+		t.Fatal("engine exit waited for the deadline")
+	}
+
+	_, err = os.Stat(childFile)
+	must(t, err)
+
+	final, err := drill.Read(record.Directory)
+	must(t, err)
+
+	saved := final.Runs[run.Tag]
+	assertUnansweredQuestion(t, saved)
+
+	if saved.EndedAt.IsZero() || saved.ExitCode == nil || *saved.ExitCode != 0 || saved.CleanupError != "" {
+		t.Fatalf("exit did not finalize cleanup: %+v", saved)
+	}
+
+	processes, err := ps.Marked(t.Context(), "TRUE_BDD_DRILL_RUN", []string{run.Marker})
+	must(t, err)
+
+	if len(processes) != 0 {
+		t.Fatalf("marked processes remain: %v", processes)
+	}
+}
+
+func assertUnansweredQuestion(t *testing.T, saved drill.Attempt) {
+	t.Helper()
+
+	if len(saved.Questions) != 1 || saved.Questions[0].Answer != "" || !saved.Questions[0].AnsweredAt.IsZero() {
+		t.Fatalf("question was not retained unanswered: %+v", saved.Questions)
+	}
+}

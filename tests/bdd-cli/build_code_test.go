@@ -117,7 +117,7 @@ func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
 	s.Done()
 }
 
-// build-code-frameworks-002-jest-fix-reruns-test-by-name: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+// build-code-frameworks-002-jest-fix-reruns-test-by-name: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
 func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
 	s.Given(`the "build-code-jest-fix-named-test" project tree`)
@@ -129,13 +129,16 @@ func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
 	s.And(`the file "services/greeter/greeting.js" is modified`)
-	s.And(`the file "tests/unit/suite-runs.log" has exactly 1 line`)
+	s.And(`the file "tests/unit/suite-runs.log" has exactly 2 lines`)
 	s.And(`the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$`)
-	s.And(`the engine spawned exactly 2 test runners`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.But(`the file "tests/unit/greeting.test.js" is unchanged`)
 	s.And(`the file "tests/unit/canary.test.js" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.And(`the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
 	s.Done()
 }
 
@@ -153,7 +156,7 @@ func TestBuildCodeFrameworks003PlaywrightFixRerunsTestByGrep(t *testing.T) {
 	s.And(`stdout matches BUILD CODE COMPLETE`)
 	s.And(`the file "services/web/server.js" is modified`)
 	s.And(`the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading`)
-	s.And(`the engine spawned exactly 2 test runners`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.But(`the file "tests/integration/home.spec.ts" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.And(`no file outside "tmp" and "services/web" changed`)
@@ -173,13 +176,54 @@ func TestBuildCodeFrameworks004GoPackageNotCompilingRerunUnfiltered(t *testing.T
 	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
 	s.And(`the file "services/calc/calc.go" is modified`)
-	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
-	s.And(`the engine spawned exactly 2 test runners`)
+	s.And(`the file "tests/suite/suite-runs.log" has exactly 2 lines`)
+	s.And(`the engine spawned exactly 3 test runners`)
 	s.But(`the file "tests/suite/multiply_test.go" is unchanged`)
 	s.And(`the file "tests/suite/add_test.go" is unchanged`)
 	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
 	s.And(`the file "docs/architecture/architecture.yaml" is unchanged`)
 	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-frameworks-005-not-applied-revalidated: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
+func TestBuildCodeFrameworks005NotAppliedRevalidated(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-005-not-applied-revalidated")
+	s.Given(`the "build-code-not-applied" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches level=WARN msg="Fix was NOT applied"`)
+	s.But(`stdout does not match msg="Walk stopped"`)
+	s.And(`the engine dispatched 2 validation AI turns to "claude"`)
+	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 2 apply AI turns to "crush"`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine spawned exactly 4 test runners`)
+	s.And(`the file "services/calc/prepared.txt" matches ^prepared`)
+	s.But(`the file "tests/suite/calc_test.go" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-frameworks-006-not-applied-hits-fix-bound: Not-applied turns in build code --fix must consume the configured per-test fix allowance and stop at the unchanged non-converging fix bound
+func TestBuildCodeFrameworks006NotAppliedHitsFixBound(t *testing.T) {
+	s := scenarios.New(t, "build-code-frameworks-006-not-applied-hits-fix-bound")
+	s.Given(`the "build-code-not-applied-bound" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 1`)
+	s.And(`stdout matches level=WARN msg="Fix was NOT applied"`)
+	s.And(`stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix`)
+	s.And(`the engine dispatched 3 validation AI turns to "claude"`)
+	s.And(`the engine dispatched 3 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 3 apply AI turns to "crush"`)
+	s.And(`the engine dispatched 9 AI turns`)
+	s.And(`the engine spawned exactly 3 test runners`)
+	s.And(`the file "services/calc/prepared-first.txt" matches ^prepared`)
+	s.And(`the file "services/calc/prepared-second.txt" matches ^prepared`)
+	s.But(`the file "tests/suite/calc_test.go" is unchanged`)
 	s.Done()
 }
 
@@ -245,7 +289,7 @@ func TestBuildCodeRun004FixRerunsFixedTest(t *testing.T) {
 	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
 	s.And(`the file "services/calc/calc.go" is modified`)
-	s.And(`the file "tests/suite/suite-runs.log" has exactly 1 line`)
+	s.And(`the file "tests/suite/suite-runs.log" has exactly 2 lines`)
 	s.And(`the engine spawned a test runner with arguments matching TestAddSumsItsArguments`)
 	s.But(`the file "tests/suite/add_test.go" is unchanged`)
 	s.And(`the file "tests/suite/canary_test.go" is unchanged`)
@@ -273,6 +317,45 @@ func TestBuildCodeRun005PlaywrightFixLoopConverges(t *testing.T) {
 	s.And(`the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0`)
 	s.And(`judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server`)
 	s.And(`judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server`)
+	s.Done()
+}
+
+// build-code-run-006-shared-fix-skips-green-peer: Two tests failing at discovery whose shared defect the first repair fixes must complete without an AI turn for the now passing second test
+func TestBuildCodeRun006SharedFixSkipsGreenPeer(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-006-shared-fix-skips-green-peer")
+	s.Given(`the "build-code-shared-fix" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches msg="Suite failures" failures=2 framework=go-test`)
+	s.And(`the engine dispatched 1 validation AI turn to "claude"`)
+	s.And(`the engine dispatched 1 fix AI turn to "claude"`)
+	s.And(`the engine dispatched 1 apply AI turn to "crush"`)
+	s.And(`the engine dispatched 3 AI turns`)
+	s.And(`the engine spawned exactly 4 test runners`)
+	s.But(`the file "tests/suite/calc_test.go" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-run-007-next-walk-finds-regression: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that regression before the command exits successfully
+func TestBuildCodeRun007NextWalkFindsRegression(t *testing.T) {
+	s := scenarios.New(t, "build-code-run-007-next-walk-finds-regression")
+	s.Given(`the "build-code-cross-walk" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches msg="Suite failures" failures=0 framework=go-test`)
+	s.And(`stdout matches msg=test index=1 total=1 id=.*TestBCompatibility`)
+	s.And(`the engine dispatched 2 validation AI turns to "claude"`)
+	s.And(`the engine dispatched 2 fix AI turns to "claude"`)
+	s.And(`the engine dispatched 2 apply AI turns to "crush"`)
+	s.And(`the engine dispatched 6 AI turns`)
+	s.And(`the engine spawned exactly 5 test runners`)
+	s.But(`the file "tests/suite/calc_test.go" is unchanged`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
 	s.Done()
 }
 
@@ -335,6 +418,64 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 	s.Done()
 }
 
+// build-code-spec-005-matched-scenario-embedded: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-005-matched-scenario-embedded")
+	s.Given(`the "build-code-spec-scenario" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches the number is doubled`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-spec-006-unreadable-product-warned: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
+func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-006-unreadable-product-warned")
+	s.Given(`the "build-code-spec-missing-product" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches level=WARN.*document=product.*error=.*docs/product/missing.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match What the spec says`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-spec-007-unreadable-registry-warned: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
+func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-007-unreadable-registry-warned")
+	s.Given(`the "build-code-spec-missing-registry" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches level=WARN.*document=scenarios_yaml.*error=.*docs/missing.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
 // engine-config-005-checklist-tiers-unconfigured-refused: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the validation, fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
 func TestEngineConfig005ChecklistTiersUnconfiguredRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-config-005-checklist-tiers-unconfigured-refused")
@@ -388,14 +529,14 @@ func TestEngineRoutes001CodexSandboxPerTurn(t *testing.T) {
 	s.When(`the System Architect runs "build code --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
-	s.And(`the engine dispatched 3 validation AI turns to "codex"`)
+	s.And(`the engine dispatched 1 validation AI turn to "codex"`)
 	s.And(`the engine dispatched 1 fix AI turn to "codex"`)
 	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
-	s.And(`the engine dispatched 5 AI turns`)
+	s.And(`the engine dispatched 3 AI turns`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only`)
 	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write`)
-	s.But(`stdout does not match label=codex-turn00[1245] sandbox=workspace-write`)
+	s.But(`stdout does not match label=codex-turn00[12] sandbox=workspace-write`)
 	s.And(`the file "services/calc/calc.go" is modified`)
 	s.But(`the file "tests/suite/add_test.go" is unchanged`)
 	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)

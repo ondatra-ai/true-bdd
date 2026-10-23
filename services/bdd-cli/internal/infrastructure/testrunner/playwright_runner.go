@@ -58,7 +58,7 @@ func (r *PlaywrightRunner) Discover(
 	cfg Config,
 	service, suite string,
 ) ([]*FailingTest, error) {
-	argv, err := SplitCommand(cfg.Command)
+	argv, err := cfg.argv()
 	if err != nil {
 		return nil, fmt.Errorf("playwright command for %s/%s: %w", service, suite, err)
 	}
@@ -106,7 +106,7 @@ func newPlaywrightStartupFailure(
 		Framework:     FrameworkPlaywright,
 		TestName:      playwrightStartupMarker,
 		FilePath:      cfg.Path,
-		FailureOutput: TruncateTail(stderrText, FailureOutputCap),
+		FailureOutput: stderrText,
 	}
 }
 
@@ -219,7 +219,7 @@ func (r *PlaywrightRunner) runOneStartup(
 		output = rerunFailures[0].FailureOutput
 	}
 
-	return false, TruncateTail(output, FailureOutputCap), nil
+	return false, output, nil
 }
 
 // exec runs the suite's command with the supplied argv. cwd is the config
@@ -356,7 +356,7 @@ func (c *playwrightCollector) collectSpec(spec dto.PlaywrightSpec, titleChain, f
 			Framework:     FrameworkPlaywright,
 			TestName:      name,
 			FilePath:      file,
-			FailureOutput: TruncateTail(formatPlaywrightFailure(test.Results), FailureOutputCap),
+			FailureOutput: formatPlaywrightFailure(test.Results),
 		})
 	}
 }

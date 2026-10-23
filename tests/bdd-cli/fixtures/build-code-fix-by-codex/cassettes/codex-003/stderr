@@ -7,7 +7,7 @@ approval: never
 sandbox: workspace-write [workdir, /tmp, $TMPDIR]
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a162bf-7428-7643-8e9c-5ccffe5bd092
+session id: 01a169de-cbb7-7ce1-a230-a6ed4b1de00b
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -70,7 +70,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -84,15 +84,13 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
 
-LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-
-Edit only `services/calc/calc.go`. The test at `tests/suite/add_test.go` requires Add(2, 3) to return 5; the implementation currently subtracts.
-
-Replace this exact code:
+In `services/calc/calc.go`, use Edit to replace exactly:
 ```go
 func Add(a, b int) int {
 	return a - b
@@ -104,8 +102,9 @@ func Add(a, b int) int {
 	return a + b
 }
 ```
+This corrects the subtraction causing Add(2, 3) to return -1; the test requires 5. Make no other changes. Do not modify tests, *_test.go files, services/*/__tests__/, docs/, or true-bdd/. Do not execute tests; the runner performs validation.
 
-Make no other changes. Do not modify tests, any `*_test.go`, `services/*/__tests__/`, docs, or true-bdd/. Do not run tests; the authoritative runner handles validation.
+LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
 ---
 
@@ -139,15 +138,15 @@ codex
 I’ll inspect `services/calc/calc.go` and apply the exact replacement. I won’t run tests, as requested.
 
 exec
-/bin/zsh -lc "pwd; rg --files -g 'AGENTS.md' -g '.claude/rules/*.md' -g 'docs/agents/domain.md' -g 'services/calc/calc.go'" in {{CWD}}
+/bin/zsh -lc "pwd; rg --files -g 'AGENTS.md' -g '.claude/rules/*.md' -g 'calc.go' -g 'domain.md' -g 'go.mod'" in {{CWD}}
  succeeded in 0ms:
 {{CWD}}
 services/calc/calc.go
 AGENTS.md
+go.mod
 
 exec
-/bin/zsh -lc "cat services/calc/calc.go
-rg --files --hidden .claude docs/agents services -g '*.md'" in {{CWD}}
+/bin/zsh -lc 'cat services/calc/calc.go; rg --files --hidden .claude/rules docs/agents 2>/dev/null' in {{CWD}}
  exited 2 in 0ms:
 // Package calc is the fixture host project's production source. The
 // build-code fix loop is allowed to edit exactly this tree.
@@ -162,16 +161,14 @@ package calc
 func Add(a, b int) int {
 	return a - b
 }
-rg: .claude: No such file or directory (os error 2)
-rg: docs/agents: No such file or directory (os error 2)
 
 apply patch
 patch: completed
 {{CWD}}/services/calc/calc.go
-diff --git a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+diff --git a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 index 952bf0691a8e352c5e5c19c75ca5a0feff1978d3..de0a4199bcfedc0abcbae7584cb0eb967759e066
---- a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
-+++ b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+--- a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
++++ b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 @@ -9,5 +9,5 @@
  // the test asserting 5 is right, and repairing the code rather than the
  // assertion is the whole contract of `build code`.
@@ -180,10 +177,10 @@ index 952bf0691a8e352c5e5c19c75ca5a0feff1978d3..de0a4199bcfedc0abcbae7584cb0eb96
 +	return a + b
  }
 
-diff --git a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+diff --git a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 index 952bf0691a8e352c5e5c19c75ca5a0feff1978d3..de0a4199bcfedc0abcbae7584cb0eb967759e066
---- a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
-+++ b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+--- a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
++++ b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 @@ -9,5 +9,5 @@
  // the test asserting 5 is right, and repairing the code rather than the
  // assertion is the whole contract of `build code`.
@@ -198,10 +195,10 @@ applied: true
 target: "services/calc/calc.go"
 summary: "Changed Add to return a + b instead of a - b."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
-diff --git a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+diff --git a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 index 952bf0691a8e352c5e5c19c75ca5a0feff1978d3..de0a4199bcfedc0abcbae7584cb0eb967759e066
---- a/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
-+++ b/tmp/test_run/2026-10-22_10-34-03/build-code-fix-by-codex/services/calc/calc.go
+--- a/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
++++ b/tmp/test_run/2026-10-23_19-27-55/build-code-fix-by-codex/services/calc/calc.go
 @@ -9,5 +9,5 @@
  // the test asserting 5 is right, and repairing the code rather than the
  // assertion is the whole contract of `build code`.
@@ -211,4 +208,4 @@ index 952bf0691a8e352c5e5c19c75ca5a0feff1978d3..de0a4199bcfedc0abcbae7584cb0eb96
  }
 
 tokens used
-22,263
+17,840

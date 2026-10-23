@@ -12,9 +12,9 @@
     {
       "path": "tests/calc/steps/steps.go",
       "kind": "modified",
-      "size": 705,
-      "sha256": "4bfc4b2c83194cd666425d5777c6befe047958652b5d51dff665160b27e217af",
-      "text": "package steps\n\nimport (\"fmt\"; \"strconv\")\n\nfunc Register(suite Registrar) {\n suite.Step(`^the number is (\\d+)$`, number)\n suite.Step(`^the number is doubled$`, double)\n suite.Step(`^the result is (\\d+)$`, result)\n}\nfunc number(state *State, args []string) error {\n value, err := strconv.Atoi(args[0])\n if err != nil { return fmt.Errorf(\"expected a number, got %q\", args[0]) }\n state.Value = value\n return nil\n}\nfunc double(state *State, _ []string) error {\n state.Value *= 2\n return nil\n}\nfunc result(state *State, args []string) error {\n want, err := strconv.Atoi(args[0]); if err != nil { return err }\n if state.Value != want { return fmt.Errorf(\"expected %d, got %d\", want, state.Value) }; return nil\n}\n"
+      "size": 907,
+      "sha256": "04cd399b3e554913fe41d573de196853ef49cbb84a3d29cc06b986bb5c2712d4",
+      "text": "package steps\n\nimport (\"fmt\"; \"strconv\")\n\nfunc Register(suite Registrar) {\n suite.Step(`^the number is (\\d+)$`, number)\n suite.Step(`^the number is doubled$`, doubled)\n suite.Step(`^the result is (\\d+)$`, result)\n}\n\n// number prepares the state: it stores the captured number and nothing else.\nfunc number(state *State, args []string) error {\n value, err := strconv.Atoi(args[0])\n if err != nil {\n  return fmt.Errorf(\"the number is %q: expected an integer, got an unparsable value: %w\", args[0], err)\n }\n state.Value = value\n return nil\n}\n\n// doubled acts on the state: it multiplies the current number by two.\nfunc doubled(state *State, _ []string) error {\n state.Value *= 2\n return nil\n}\nfunc result(state *State, args []string) error {\n want, err := strconv.Atoi(args[0]); if err != nil { return err }\n if state.Value != want { return fmt.Errorf(\"expected %d, got %d\", want, state.Value) }; return nil\n}\n"
     }
   ]
 }

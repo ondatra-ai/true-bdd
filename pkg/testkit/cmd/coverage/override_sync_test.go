@@ -43,7 +43,7 @@ type declaredSelection struct {
 // via checklist_prompts, with the shipped prompt it must select.
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
-		"engine-claude-minimal": {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
 		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
@@ -167,6 +167,7 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
+		"build-code-not-applied-bound":            overrideFixLoop,
 		"build-tests-empty-checklist":             overrideEmpty,
 		"scen-check-every-prompt-skipped":         overrideEmpty,
 		"scen-check-prompt-with-both-kinds":       overrideRefused,
@@ -211,11 +212,11 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,
 		"fix-loop-exit-terms":                     overrideFixLoop,
-		"fix-loop-walks-exhausted-terms":           overrideFixLoop,
+		"fix-loop-walks-exhausted-terms":          overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,
-		"build-tests-run-bound": overrideFixLoop,
-		"build-tests-run-package": overrideFixLoop,
- "fix-loop-refix-stops":                    overrideFixLoop,
+		"build-tests-run-bound":                   overrideFixLoop,
+		"build-tests-run-package":                 overrideFixLoop,
+		"fix-loop-refix-stops":                    overrideFixLoop,
 		"fix-loop-unsettled":                      overrideFixLoop,
 	}
 }

@@ -186,3 +186,41 @@ func TestLoadKeepsEverySuite(t *testing.T) {
 		t.Errorf("ServicePath(web) = %q, %v", path, ok)
 	}
 }
+
+func TestLoadRejectsInvalidPrebuiltEngineArgument(t *testing.T) {
+	t.Parallel()
+
+	for _, value := range []string{`""`, `"   "`, `null`, `"-engine-bin=literal"`, `"{engine_bin}{engine_bin}"`} {
+		t.Run(value, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := architecture.Load(writeSpec(t, specWith(allThreeCommands+"    prebuilt_engine_arg: "+value+"\n")))
+			if err == nil ||
+				!strings.Contains(err.Error(), "prebuilt_engine_arg") || !strings.Contains(err.Error(), "exactly once") {
+				t.Fatalf("invalid declaration must name the placeholder requirement: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadKeepsPrebuiltArgumentAndLiteralCommands(t *testing.T) {
+	t.Parallel()
+
+	const argument = `--engine path={engine_bin}`
+
+	body := specWith(allThreeCommands + "    prebuilt_engine_arg: '" + argument + "'\n")
+	body = strings.ReplaceAll(body, "-mode=replay", "-mode=replay {engine_bin}")
+
+	arch, err := architecture.Load(writeSpec(t, body))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if arch.Testing.PrebuiltEngineArg != argument {
+		t.Fatalf("argument changed: %q", arch.Testing.PrebuiltEngineArg)
+	}
+
+	if arch.Testing.Commands.Replay != "go test -json ./... -mode=replay {engine_bin}" {
+		t.Fatalf("commands must stay literal: %q", arch.Testing.Commands.Replay)
+	}
+}

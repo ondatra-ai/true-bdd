@@ -75,7 +75,7 @@ job is to translate the `LastRunPassed` flag into the `answer:` field.
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments

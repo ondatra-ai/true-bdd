@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -173,4 +174,26 @@ func requireExecutionSuccess(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestVerificationUsesResolvedRunningEngine(t *testing.T) {
+	execution, item := executionFixture(t)
+	executable, err := os.Executable()
+	requireExecutionSuccess(t, err)
+	executable, err = filepath.EvalSymlinks(executable)
+	requireExecutionSuccess(t, err)
+
+	execution.arch.Testing.PrebuiltEngineArg = "-engine-bin={engine_bin}"
+	execution.arch.Testing.Commands.Replay = "sh verify.sh -json"
+	requireExecutionSuccess(t, execution.prepare(execution.arch, execution.scenarios, execution.plan, execution.root))
+	requireExecutionSuccess(t, disk.Write("expected-engine", []byte("-engine-bin="+executable), disk.Shared))
+	requireExecutionSuccess(t, disk.Write("verify.sh", []byte(`#!/bin/sh
+[ "$2" = "$(cat expected-engine)" ] || exit 1
+exec go test -tags bdd -json -count=1 ./tests/calc/ "$3" "$4"
+`), disk.Shared))
+	writeRepair(t, `\d+`, false)
+
+	_, err = execution.postFix(context.Background(), item, "")
+	requireExecutionSuccess(t, err)
+	requireExecutionSuccess(t, execution.finish(nil))
 }

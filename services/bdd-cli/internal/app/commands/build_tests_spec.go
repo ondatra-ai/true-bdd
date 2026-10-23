@@ -36,18 +36,11 @@ func (p *buildTestsPrep) specify(
 		return specs, nil
 	}
 
-	definitions, err := product.LoadGlossary(p.productFile)
+	compiled, definitions, mappings, err := compileStepSpecification(source, p.productFile, p.architectureFile)
 	if err != nil {
-		return nil, fmt.Errorf("read the glossary: %w", err)
+		return nil, err
 	}
 
-	mappings, err := architecture.LoadTermMappings(p.architectureFile)
-	if err != nil {
-		return nil, fmt.Errorf("read the word mapping: %w", err)
-	}
-
-	// No template here is malformed: holdToCatalogue refused the run if one was.
-	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
 	sweeps := unboundBySuite(scenarios, answer)
 
 	for _, scenario := range scenarios {
@@ -80,4 +73,24 @@ func unboundBySuite(
 	}
 
 	return sweeps
+}
+
+// compileStepSpecification reads the glossary and word mapping shared by
+// build tests and build code. Both turns use Catalogue.Specify unchanged.
+func compileStepSpecification(source product.Catalogue, productFile, architectureFile string) (
+	*catalogue.Catalogue, []catalogue.Definition, []catalogue.Mapping, error,
+) {
+	definitions, err := product.LoadGlossary(productFile)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("read the glossary: %w", err)
+	}
+
+	mappings, err := architecture.LoadTermMappings(architectureFile)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("read the word mapping: %w", err)
+	}
+
+	compiled, _ := catalogue.Compile(source.Entries, source.Roles)
+
+	return compiled, definitions, mappings, nil
 }

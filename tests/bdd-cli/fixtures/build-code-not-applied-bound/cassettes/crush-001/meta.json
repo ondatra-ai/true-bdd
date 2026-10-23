@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 11728,
+  "request_hash": "sha256:52bed06c95447614d4f9347c910676cb644dbe8f78102f18655d232a6ec74454",
+  "fsdiff": {
+    "created": [
+      "services/calc/prepared-first.txt"
+    ],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-23T17:35:20Z"
+}

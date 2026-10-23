@@ -36,9 +36,9 @@ func (r Repository) BranchExists(ctx context.Context, branch string) bool {
 
 // AddWorktree creates a new branch and its checkout, or reattaches an existing branch.
 func (r Repository) AddWorktree(ctx context.Context, path, branch, since string, existing bool) error {
-	args := []string{"worktree", "add", "-b", branch, path, since}
+	args := []string{"worktree", addVerb, "-b", branch, path, since}
 	if existing {
-		args = []string{"worktree", "add", path, branch}
+		args = []string{"worktree", addVerb, path, branch}
 	}
 
 	_, err := r.output(ctx, args...)

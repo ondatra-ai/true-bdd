@@ -4,6 +4,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/truebdd"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
+	"strings"
 )
 
 // crushGuardProbePath is a path no policy can ever grant, so a working
@@ -13,14 +14,20 @@ const crushGuardProbePath = "/true-bdd-guard-probe/must-be-denied"
 // verifyCrushGuardEnforces proves the guard hook actually denies before any
 // crush turn starts: crush FAILS OPEN if the hook can't execute — observed
 // directly, a binary with no `crush-guard` subcommand let a write through silently.
-func verifyCrushGuardEnforces(executable string) error {
+func verifyCrushGuardEnforces(executable, workDir string) error {
+	policyEntry, err := (CrushGuardPolicy{ReadRoot: workDir, WriteRoots: []string{}}).Encode()
+	if err != nil {
+		return pkgerrors.ErrCrushGuardNotEnforcingAt(executable)
+	}
+
 	result, err := truebdd.Self().ProbeCrushGuard(cli.Inherit().Set(
 		// A policy that grants nothing: every write must be denied.
-		CrushPolicyEnvVar+`={"write_roots":[],"allow_bash":false}`,
+		policyEntry,
 		CrushToolNameEnvVar+"=write",
 		CrushToolFilePathEnvVar+"="+crushGuardProbePath,
 	))
-	if err == nil && result.Code == CrushGuardDenyExitCode {
+	if err == nil && result.Code == CrushGuardDenyExitCode &&
+		strings.TrimSpace(result.Stderr) == "true-bdd guard: "+crushNoWriteRootsReason {
 		return nil
 	}
 

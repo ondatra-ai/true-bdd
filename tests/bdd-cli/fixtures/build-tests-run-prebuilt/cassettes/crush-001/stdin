@@ -1,0 +1,230 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Step Definition Editor applying fixes that bind a registry
+scenario's unbound steps to executable code.
+
+**Your Task:**
+1. Read the step definitions already registered by the suite the fix
+   prompt names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to extend an existing one, inside
+   that suite's `steps/` package.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file in the suite's steps package.
+- Use Edit to mutate an existing file in the suite's steps package.
+- Do NOT touch the scenario registry.
+- Do NOT write to any path outside the steps package the fix prompt
+  names. That path came from the architectural spec: it is the one tree
+  the spec says holds this suite's tests.
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only add the
+  registration and the function the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify content beyond what the fix prompt
+  specifies.
+- Do NOT duplicate a definition whose pattern already matches the same
+  step, and do NOT loosen an existing pattern to make it match — a
+  definition that matches two steps is refused by the runner for the
+  same reason as one that matches none.
+- Register every new definition in the suite's existing `Register`
+  function.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** calc-001-help
+**Description:** The running engine lists its commands
+**Service:** calc
+
+### Steps
+Given:
+  - the engine is available
+When:
+  - the engine help is requested
+Then:
+  - the help lists build
+
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario calc-001-help: The running engine lists its commands
+
+## Target
+`tests/calc/steps/steps.go` — the suite for service `calc` (resolved from
+`docs/architecture/architecture.yaml`; suite root `tests/calc`, step package
+`tests/calc/steps/`).
+
+## Context the applier must respect
+- State type already shared by the siblings: `type State struct { EngineBin string; Help string }`
+  in `tests/calc/steps/state.go`. Do NOT add fields, do NOT create a second state type.
+- Registrar signature: `Step(string, func(*State, []string) error)`.
+- `when`-step `help` already populates `state.Help` with the engine's `--help` stdout.
+  The new `Then` definition must READ `state.Help` — it must not re-run the engine.
+- All new registrations go into the EXISTING `Register` function in
+  `tests/calc/steps/steps.go`. Do not create a new `Register`.
+- Do not touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
+  `tests/calc/scenarios/scenarios.go`, or anything outside `tests/calc/steps/`.
+- Do not weaken `^the engine is available$` or `^the engine help is requested$`.
+
+## Unbound-step survey (scenario + registry neighbours)
+`docs/scenarios.yaml` declares exactly ONE scenario with `service: calc`
+(`calc-001-help`), so there are no following neighbours to sweep in. Bound/unbound
+status of every step in the `calc` vocabulary:
+
+- `the engine is available` -> bound by `^the engine is available$`
+- `the engine help is requested` -> bound by `^the engine help is requested$`
+- `the help lists build` -> **UNDEFINED** — this is the one definition to author.
+
+The new pattern is parameterised on the listed command name (`^the help lists "?([^"]+)"?$`),
+so any future `the help lists <command>` / `the help lists "<command>"` phrasing
+resolves without a further fix cycle.
+
+## Required Changes
+
+### Change #1: widen the import block of the steps file
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the Edit tool.
+**old_string:**
+```
+import (
+ "errors"
+
+ "github.com/ondatra-ai/true-bdd/pkg/cli"
+ "github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+)
+```
+**new_string:**
+```
+import (
+ "errors"
+ "fmt"
+ "strings"
+
+ "github.com/ondatra-ai/true-bdd/pkg/cli"
+ "github.com/ondatra-ai/true-bdd/pkg/cli/spec"
+)
+```
+
+### Change #2: register the missing step in the existing `Register`
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the Edit tool.
+**old_string:**
+```
+ suite.Step(`^the engine help is requested$`, help)
+}
+```
+**new_string:**
+```
+ suite.Step(`^the engine help is requested$`, help)
+ suite.Step(`^the help lists "?([^"]+)"?$`, helpLists)
+}
+```
+
+### Change #3: implement the `Then` assertion against the shared state
+**File:** `tests/calc/steps/steps.go`
+**Action:** Use the Edit tool to append the new function after the existing
+`help` function (the `old_string` below is the verbatim tail of `help`; the
+`new_string` reproduces it and adds the new function beneath it).
+**old_string:**
+```
+ state.Help = result.Stdout
+ return result.Err()
+}
+```
+**new_string:**
+```
+ state.Help = result.Stdout
+ return result.Err()
+}
+
+// helpLists asserts that the help output captured by the help step lists the
+// command named in the step text.
+func helpLists(state *State, args []string) error {
+	if len(args) == 0 {
+		return errors.New(`step "the help lists ...": expected one captured command name, got no captures`)
+	}
+	// The suite hands over the pattern's capture groups; reading the last
+	// element yields this pattern's single group whether or not the full
+	// match is prepended.
+	want := strings.TrimSpace(args[len(args)-1])
+	if want == "" {
+		return errors.New(`step "the help lists ...": expected a non-empty command name, got an empty capture`)
+	}
+	if state.Help == "" {
+		return fmt.Errorf("expected the engine help output to list %q, got no help output at all: the help request step did not run or produced nothing on stdout", want)
+	}
+	if !strings.Contains(state.Help, want) {
+		return fmt.Errorf("expected the engine help output to list %q, got help output without it:\n%s", want, state.Help)
+	}
+	return nil
+}
+```
+
+## Acceptance
+- `the help lists build` now resolves to exactly one registered pattern
+  (`^the help lists "?([^"]+)"?$`); the other two steps still resolve to their
+  original, unmodified patterns.
+- The new function compiles against `*State` as declared in
+  `tests/calc/steps/state.go` — no new state fields, no new helpers duplicating
+  `spec.Run`.
+- On failure the returned error names both the expected command and the actual
+  help output (or its absence), so the test failure text is self-explanatory.
+- Optional verification, from the suite root: `go build -tags bdd ./tests/calc/...`
+  (or `sh replay.sh -json`). No files outside `tests/calc/steps/` were changed.
+
+---
+
+## Instructions
+
+1. Use the Read, Glob, and Grep tools to inspect the current state of
+   the file(s) the fix prompt targets, and the sibling step definitions
+   beside them.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above:
+   - Use Write to create a new file when the fix prompt says so.
+   - Use Edit to extend an existing file when the fix prompt says so.
+3. You MAY only modify files under the `steps/` package of the test
+   suite the fix prompt names. That path came from the architectural
+   spec; do not write anywhere else, and do not invent a sibling
+   directory when the named one does not exist — report the failure
+   instead.
+4. You MUST NOT touch the scenario registry.
+5. Each new definition MUST be registered in the suite's existing
+   `Register` function, so a single call site still lists everything the
+   suite binds.
+6. Do not duplicate a definition whose pattern already matches the same
+   step, and do not loosen an existing pattern to make it match.
+7. After the changes succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path of the file you wrote/edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===

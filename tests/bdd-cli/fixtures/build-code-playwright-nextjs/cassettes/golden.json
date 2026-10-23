@@ -5,23 +5,30 @@
     {
       "path": "services/frontend/.dockerignore",
       "kind": "created",
-      "size": 43,
-      "sha256": "e2544fad7571acce42c84f2b2b570707b139a7fde1fa14cdf3ba9cae663db667",
-      "text": "node_modules\n.next\nnpm-debug.log\n.DS_Store\n"
+      "size": 53,
+      "sha256": "4dee500f6cc535cba4ad5639a806355b7cd1bf3c4ff78b42ff9d28114d29d21d",
+      "text": "node_modules\n.next\nout\nnpm-debug.log*\n.git\n.DS_Store\n"
+    },
+    {
+      "path": "services/frontend/.gitignore",
+      "kind": "created",
+      "size": 40,
+      "sha256": "f9a3c7990c86a8d254039ea690f2c7af73ccadeb9acfea2f64b25d02918f78d9",
+      "text": "node_modules/\n.next/\nout/\n*.tsbuildinfo\n"
     },
     {
       "path": "services/frontend/Dockerfile",
       "kind": "created",
-      "size": 610,
-      "sha256": "b8dc60533866a09661193ba3eb6b0381462c641f5d3fe0f78ecd7fa4d4731f6a",
-      "text": "FROM node:20-bookworm-slim\n\nWORKDIR /app\n\nENV NEXT_TELEMETRY_DISABLED=1\nENV NODE_ENV=production\nENV PORT=3000\nENV HOSTNAME=0.0.0.0\n\n# No lockfile is committed, so `npm install` (not `npm ci`). NODE_ENV=production\n# would normally omit devDependencies, but `next build` needs typescript and the\n# @types packages, so include them explicitly.\nCOPY package.json ./\nRUN npm install --include=dev --no-audit --no-fund\n\nCOPY . .\n\n# Built with NODE_ENV=production, served with NODE_ENV=production: the artifact in\n# .next matches what `next start` expects.\nRUN npm run build\n\nEXPOSE 3000\n\nCMD [\"npm\", \"run\", \"start\"]\n"
+      "size": 316,
+      "sha256": "a6afb78f64e42e8bce2364d6e1ebfa1df735a0cafc63221fd289bf3048d34746",
+      "text": "FROM node:22-alpine\n\nWORKDIR /app\n\nENV NEXT_TELEMETRY_DISABLED=1\n\n# Install dependencies first so the layer caches across source edits.\n# devDependencies are needed: `next build` type-checks with typescript.\nCOPY package.json ./\nRUN npm install\n\nCOPY . .\n\nRUN npm run build\n\nEXPOSE 3000\n\nCMD [\"npm\", \"run\", \"start\"]\n"
     },
     {
       "path": "services/frontend/app/layout.tsx",
       "kind": "created",
-      "size": 426,
-      "sha256": "ab4c859445955ae1f14dedb4e15d9a66777a2c2c29e01270df09ee2a50d09470",
-      "text": "import type { Metadata, Viewport } from 'next';\nimport type { ReactNode } from 'react';\n\nexport const metadata: Metadata = {\n  title: 'Frontend',\n  description: 'Frontend service',\n};\n\nexport const viewport: Viewport = {\n  width: 'device-width',\n  initialScale: 1,\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
+      "size": 332,
+      "sha256": "53ad4ca7b883f77f10e85b7ef2fdc36eb93d4143038aa204cf9e4f188a083e86",
+      "text": "import type { Metadata } from 'next';\nimport type { ReactNode } from 'react';\n\nexport const metadata: Metadata = {\n  title: 'Frontend',\n  description: 'Frontend service',\n};\n\nexport default function RootLayout({ children }: { children: ReactNode }) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
     },
     {
       "path": "services/frontend/app/page.tsx",
@@ -31,25 +38,32 @@
       "text": "export default function HomePage() {\n  return (\n    \u003cmain\u003e\n      \u003ch1\u003eHello world\u003c/h1\u003e\n    \u003c/main\u003e\n  );\n}\n"
     },
     {
+      "path": "services/frontend/next-env.d.ts",
+      "kind": "created",
+      "size": 81,
+      "sha256": "879741880b6ab48da99dcc06dcc674d381c9826137b0496bf7bb368f302de9fc",
+      "text": "/// \u003creference types=\"next\" /\u003e\n/// \u003creference types=\"next/image-types/global\" /\u003e\n"
+    },
+    {
       "path": "services/frontend/next.config.mjs",
       "kind": "created",
-      "size": 411,
-      "sha256": "f7a7ef3ee3abcabf84cb5937c5cb502ead00c9591346bda9e9baf89008fcdbb2",
-      "text": "/** @type {import('next').NextConfig} */\nconst nextConfig = {\n  reactStrictMode: true,\n  // ESLint is not a dependency of this service; the architecture quality gate runs\n  // type checking separately via services/frontend/tsconfig.json. Keep `next build`\n  // from failing the container build on lint tooling that is intentionally absent.\n  eslint: { ignoreDuringBuilds: true },\n};\n\nexport default nextConfig;\n"
+      "size": 92,
+      "sha256": "1e3206cb200e264fdddb4dbb2e4772daebc839fdbc94b78316d74892a0de6fa2",
+      "text": "/** @type {import('next').NextConfig} */\nconst nextConfig = {};\n\nexport default nextConfig;\n"
     },
     {
       "path": "services/frontend/package.json",
       "kind": "created",
-      "size": 444,
-      "sha256": "2621a96c939fb7838c07e6f99e18b9c6e127451f05ed15dea0c7d8b979c2c991",
-      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"15.1.6\",\n    \"react\": \"19.0.0\",\n    \"react-dom\": \"19.0.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"22.10.7\",\n    \"@types/react\": \"19.0.7\",\n    \"@types/react-dom\": \"19.0.3\",\n    \"typescript\": \"5.7.3\"\n  }\n}\n"
+      "size": 451,
+      "sha256": "2267a33b62856b265cc18733bc8022eb7a853af8723ec4976e43f033fcc982aa",
+      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"^15.1.6\",\n    \"react\": \"^19.0.0\",\n    \"react-dom\": \"^19.0.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"^22.10.0\",\n    \"@types/react\": \"^19.0.0\",\n    \"@types/react-dom\": \"^19.0.0\",\n    \"typescript\": \"^5.7.3\"\n  }\n}\n"
     },
     {
       "path": "services/frontend/tsconfig.json",
       "kind": "created",
-      "size": 573,
-      "sha256": "74872fb5eabbe86f32d5054235386faf040059a24fd9bba8e730bbeea00adf58",
-      "text": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"lib\": [\"dom\", \"dom.iterable\", \"ES2022\"],\n    \"allowJs\": false,\n    \"skipLibCheck\": true,\n    \"strict\": true,\n    \"noEmit\": true,\n    \"esModuleInterop\": true,\n    \"module\": \"esnext\",\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"jsx\": \"preserve\",\n    \"incremental\": true,\n    \"plugins\": [{ \"name\": \"next\" }],\n    \"paths\": {\n      \"@/*\": [\"./*\"]\n    }\n  },\n  \"include\": [\"next-env.d.ts\", \"**/*.ts\", \"**/*.tsx\", \".next/types/**/*.ts\"],\n  \"exclude\": [\"node_modules\"]\n}\n"
+      "size": 572,
+      "sha256": "f376074b41f9ea59f63682af69f0a3b19879dc22751dc68479e8cacf83255600",
+      "text": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2017\",\n    \"lib\": [\"dom\", \"dom.iterable\", \"esnext\"],\n    \"allowJs\": true,\n    \"skipLibCheck\": true,\n    \"strict\": true,\n    \"noEmit\": true,\n    \"esModuleInterop\": true,\n    \"module\": \"esnext\",\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"jsx\": \"preserve\",\n    \"incremental\": true,\n    \"plugins\": [{ \"name\": \"next\" }],\n    \"paths\": {\n      \"@/*\": [\"./*\"]\n    }\n  },\n  \"include\": [\"next-env.d.ts\", \"**/*.ts\", \"**/*.tsx\", \".next/types/**/*.ts\"],\n  \"exclude\": [\"node_modules\"]\n}\n"
     }
   ]
 }

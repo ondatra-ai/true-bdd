@@ -48,7 +48,7 @@ func (r *JestRunner) Discover(
 	cfg Config,
 	service, suite string,
 ) ([]*FailingTest, error) {
-	argv, err := SplitCommand(cfg.Command)
+	argv, err := cfg.argv()
 	if err != nil {
 		return nil, fmt.Errorf("jest command for %s/%s: %w", service, suite, err)
 	}
@@ -215,7 +215,7 @@ func jestReportToFailingTests(
 				Framework:     FrameworkJest,
 				TestName:      name,
 				FilePath:      filePath,
-				FailureOutput: TruncateTail(strings.Join(assertion.FailureMessages, "\n"), FailureOutputCap),
+				FailureOutput: strings.Join(assertion.FailureMessages, "\n"),
 			})
 		}
 	}

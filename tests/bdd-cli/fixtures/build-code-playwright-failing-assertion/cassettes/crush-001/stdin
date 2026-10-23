@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
-**Service:** 
+**Service:** web
 **Suite:** playwright
 **Framework:** playwright
 **Test Name:** home.spec.ts::home.spec.ts > home page > shows the store name as its heading
@@ -83,6 +83,8 @@ Received: [31m"Welcome"[39m
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -90,22 +92,31 @@ Received: [31m"Welcome"[39m
 # Fix Prompt for Failing Test /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/integration/home.spec.ts` is the contract; do NOT modify it (or anything under `tests/`, `docs/`, `*_test.go`, or `services/*/__tests__/`).
+Apply the change(s) under `services/*` only. The test at
+`tests/integration/home.spec.ts` is the contract; do NOT modify it.
 
 ## Root Cause
-`tests/integration/home.spec.ts:9` asserts the page's `h1` text is exactly `"Corner Shop"`:
+`tests/integration/home.spec.ts:9` asserts the home page's `h1` text is
+exactly `Corner Shop`:
 
 ```ts
 expect(await page.locator('h1').textContent()).toBe('Corner Shop');
 ```
 
-The production page served by `services/web/server.js` hardcodes `<h1>Welcome</h1>` (the planted defect, flagged in that file's own header comment), so the heading reads `"Welcome"`. The sibling test (`a[href]` → `/hours`) already passes and must keep passing, so the anchor markup must stay byte-identical.
+The production page template in `services/web/server.js` hardcodes
+`<h1>Welcome</h1>`, so `textContent()` returns `"Welcome"` and the
+assertion fails. The sibling test (`links to the opening hours`,
+asserting the first `a` has `href="/hours"`) already passes against the
+same template and must keep passing — do not reorder, rename, or remove
+the `<a href="/hours">Opening hours</a>` element.
 
 ## Required Changes
 
-### Change #1: Make the home page heading the store name
+### Change #1: Render the store name as the home page heading
 **File:** `services/web/server.js`
-**Action:** Use the Edit tool (existing file).
+**Action:** Use the Edit tool on this existing file. Replace the
+`old_string` below with the `new_string` below. This is a one-line text
+change inside the `page` template literal.
 
 **old_string:**
 ```
@@ -117,9 +128,10 @@ The production page served by `services/web/server.js` hardcodes `<h1>Welcome</h
     <h1>Corner Shop</h1>
 ```
 
-### Change #2: Drop the now-stale "planted defect" comment
+### Change #2 (same file, documentation comment only — optional but preferred)
 **File:** `services/web/server.js`
-**Action:** Use the Edit tool (existing file). This is a comment-only cleanup so the file no longer claims a defect that has been fixed; it does not affect behaviour. Apply it after Change #1.
+**Action:** Use the Edit tool to update the now-stale header comment that
+describes the defect as still present.
 
 **old_string:**
 ```
@@ -131,20 +143,23 @@ The production page served by `services/web/server.js` hardcodes `<h1>Welcome</h
 **new_string:**
 ```
 // The Corner Shop's web front: one page, served on the port PORT names.
-// The heading carries the store's name, which the home page suite asserts.
+// The heading shows the store's name, which is what the home page suite
+// asserts.
 ```
 
-## Constraints / Verification
-- Do not touch `tests/integration/home.spec.ts`, `tests/playwright.config.ts`, or any other file outside `services/web/`.
-- Do not change the `<a href="/hours">Opening hours</a>` line — the second test asserts `href === '/hours'`.
-- Keep exactly one `h1` on the page; `page.locator('h1')` would fail on a strict-mode violation if a second heading were added.
-- The heading text must be exactly `Corner Shop` with no surrounding whitespace inside the `<h1>` element, because `textContent()` is compared with `toBe` (no trimming).
-- After the edit the page body should read:
-```
-    <h1>Corner Shop</h1>
-    <a href="/hours">Opening hours</a>
-```
-- No server/config/port changes are needed: Playwright starts the service itself via `webServer:` in `tests/playwright.config.ts`.
+## Constraints Recap
+- Do NOT create, edit, or delete anything under `tests/`, any
+  `*_test.go`, anything under `services/*/__tests__/`, or anything under
+  `docs/` (including `docs/scenarios.yaml` and
+  `docs/architecture/architecture.yaml`).
+- Do NOT weaken, skip, or remove any assertion.
+- `services/web/server.js` is the only file that needs to change; no new
+  files are required.
+
+## Verification Expectation
+After Change #1, `GET /` returns a document whose single `h1` has
+`textContent === "Corner Shop"`, satisfying line 9, while the first `a`
+still has `href="/hours"`, keeping line 14 passing.
 
 ---
 

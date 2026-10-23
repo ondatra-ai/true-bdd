@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a162be-fcfc-7831-a461-be2e310e17a1
+session id: 01a169de-4d5d-7172-a482-7d8266919d85
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -87,7 +87,7 @@ job is to translate the `LastRunPassed` flag into the `answer:` field.
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -172,4 +172,4 @@ markdown fences. Reasoning before the object is fine and is ignored.
 codex
 {"answer":"fail","context":["LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments"],"fix_prompt":"Fix the PRODUCTION code so that the failing test passes.\n\nHARD LIMITS (the applier enforces these via its system prompt):\n  - You may only Write or Edit files under `services/*`.\n  - You MUST NOT modify any file under `tests/`, any file\n    matching `*_test.go`, anything under\n    `services/*/__tests__/`, or anything under `docs/`.\n  - You MUST NOT weaken, skip, or remove any test assertion.\n\nSteps:\n  1. Read the failing test at the subject's `FilePath`.\n  2. Read the production source under\n     `services/<subject service>/` (and any source it\n     depends on) to understand the contract being asserted.\n  3. Identify the smallest production change that makes the\n     test pass without changing the test's intent.\n  4. Apply the change with Write (new file) or Edit (existing).\n  5. Confirm via the FILE_START / FILE_END block."}
 tokens used
-17,120
+17,711

@@ -84,6 +84,9 @@ The declared replay command ran the Scenarios using the changed step
 definitions. Binding alone is insufficient: repair the definitions until
 these Scenarios pass. Preserve the Registry, generated tests and suite
 command. Read every failing step and its expected and actual values.
+Each selection is listed once. Failures with the same text apart from
+test identity, source prefixes and elapsed time share one block, naming
+only the Scenarios they affect; its representative output is kept whole.
 {{ range .Subject.Failures }}
 {{ . }}
 {{ end }}

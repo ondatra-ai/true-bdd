@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a162bf-2763-73b0-9f7c-8bc7f0cd4e61
+session id: 01a169de-7745-7ae2-933b-d6eae3ad7f3a
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -100,8 +100,8 @@ Do NOT propose changes that violate these limits.
 Use Read, Glob, and Grep to inspect:
 - The failing test file (`fixture/buildcodefix/tests/suite`) to understand the
   contract being asserted.
-- The production source under `services//` (or the
-  service the test exercises).
+- The production source for service `calc`, at its path
+  declared in the architecture.
 - Sibling tests passing today, to mirror conventions.
 
 ## Reference Documentation
@@ -110,7 +110,7 @@ Use Read, Glob, and Grep to inspect:
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -123,6 +123,8 @@ Use Read, Glob, and Grep to inspect:
 --- FAIL: TestAddSumsItsArguments (0.00s)
 
 ```
+
+
 
 ## Validation Failure
 
@@ -231,23 +233,23 @@ wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 codex
-I’ll inspect the test, calculator source, and architecture reference, then provide a minimal fix prompt without editing files or running tests.
+I’ll read the architecture, failing test, and calc source to identify the smallest fix. I won’t edit files or run tests.
 
 exec
-/bin/zsh -lc "pwd; rg --files -g '*.go' -g '*.md' -g '*.yaml' -g 'go.mod' -g '.claude/rules/**'" in {{CWD}}
+/bin/zsh -lc "pwd; rg --files -g '*.go' -g '*.md' -g '*.yaml' -g 'go.mod' -g '.claude/rules/*'" in {{CWD}}
  succeeded in 0ms:
 {{CWD}}
 services/calc/calc.go
 tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml
 AGENTS.md
 docs/architecture/architecture.yaml
-tests/suite/canary_test.go
-tests/suite/add_test.go
 go.mod
+true-bdd/true-bdd.yaml
 true-bdd/scenarios_yaml-schema.yaml
 true-bdd/product-schema.yaml
-true-bdd/true-bdd.yaml
 true-bdd/architecture_yaml-schema.yaml
+tests/suite/canary_test.go
+tests/suite/add_test.go
 true-bdd/checklists/us-apply.yaml
 true-bdd/checklists/build-code.yaml
 true-bdd/checklists/us-refine.yaml
@@ -255,8 +257,28 @@ true-bdd/checklists/build-tests.yaml
 true-bdd/checklists/scen-check.yaml
 
 exec
-/bin/zsh -lc 'cat services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go docs/architecture/architecture.yaml go.mod; rg --files --hidden .claude docs/agents 2>/dev/null; cat tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml' in {{CWD}}
+/bin/zsh -lc 'cat docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml' in {{CWD}}
  succeeded in 0ms:
+# One Go service with one e2e suite. All three commands are identical
+# and carry -json, so the suite-command pre-pass passes and the walk
+# actually runs — unlike the build-code-* refusal fixtures, this one is
+# meant to get all the way through.
+#
+# `path: services/calc` is also the applier's write root: the fix turn
+# may edit production source there and nothing else. That is what makes
+# "never modifies tests" enforceable by the spec rather than by asking.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/suite/...
+      replay: go test -json -count=1 ./tests/suite/...
+      live: go test -json -count=1 ./tests/suite/...
+  services:
+    - name: calc
+      path: services/calc
+      language: go
 // Package calc is the fixture host project's production source. The
 // build-code fix loop is allowed to edit exactly this tree.
 package calc
@@ -327,26 +349,6 @@ func TestCanaryRecordsEachSuiteRun(t *testing.T) {
 		t.Fatalf("write canary log: %v", err)
 	}
 }
-# One Go service with one e2e suite. All three commands are identical
-# and carry -json, so the suite-command pre-pass passes and the walk
-# actually runs — unlike the build-code-* refusal fixtures, this one is
-# meant to get all the way through.
-#
-# `path: services/calc` is also the applier's write root: the fix turn
-# may edit production source there and nothing else. That is what makes
-# "never modifies tests" enforceable by the spec rather than by asking.
-
-architecture:
-  testing:
-    framework: go-test
-    commands:
-      record: go test -json -count=1 ./tests/suite/...
-      replay: go test -json -count=1 ./tests/suite/...
-      live: go test -json -count=1 ./tests/suite/...
-  services:
-    - name: calc
-      path: services/calc
-      language: go
 // Sentinel module for this fixture's own Go sources.
 //
 // Run dirs live under tmp/test_run INSIDE the repo module, so without
@@ -358,6 +360,6 @@ module fixture/buildcodefix
 go 1.25.0
 {"answer":"fail","context":["LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments"],"fix_prompt":"Fix the PRODUCTION code so that the failing test passes.\n\nHARD LIMITS (the applier enforces these via its system prompt):\n  - You may only Write or Edit files under `services/*`.\n  - You MUST NOT modify any file under `tests/`, any file\n    matching `*_test.go`, anything under\n    `services/*/__tests__/`, or anything under `docs/`.\n  - You MUST NOT weaken, skip, or remove any test assertion.\n\nSteps:\n  1. Read the failing test at the subject's `FilePath`.\n  2. Read the production source under\n     `services/<subject service>/` (and any source it\n     depends on) to understand the contract being asserted.\n  3. Identify the smallest production change that makes the\n     test pass without changing the test's intent.\n  4. Apply the change with Write (new file) or Edit (existing).\n  5. Confirm via the FILE_START / FILE_END block."}
 codex
-{"fix_prompt":"LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments\n\nEdit only `services/calc/calc.go`. The test at `tests/suite/add_test.go` requires Add(2, 3) to return 5; the implementation currently subtracts.\n\nReplace this exact code:\n```go\nfunc Add(a, b int) int {\n\treturn a - b\n}\n```\nwith:\n```go\nfunc Add(a, b int) int {\n\treturn a + b\n}\n```\n\nMake no other changes. Do not modify tests, any `*_test.go`, `services/*/__tests__/`, docs, or true-bdd/. Do not run tests; the authoritative runner handles validation.","questions":[]}
+{"fix_prompt":"In `services/calc/calc.go`, use Edit to replace exactly:\n```go\nfunc Add(a, b int) int {\n\treturn a - b\n}\n```\nwith:\n```go\nfunc Add(a, b int) int {\n\treturn a + b\n}\n```\nThis corrects the subtraction causing Add(2, 3) to return -1; the test requires 5. Make no other changes. Do not modify tests, *_test.go files, services/*/__tests__/, docs/, or true-bdd/. Do not execute tests; the runner performs validation.\n\nLastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments","questions":[]}
 tokens used
-19,563
+20,507

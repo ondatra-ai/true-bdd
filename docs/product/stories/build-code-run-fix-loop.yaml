@@ -2,7 +2,8 @@
 #
 # The suite command the architecture declares runs, a runner that cannot
 # start or a test still failing ends the run with exit code 1, and `--fix`
-# re-runs only the test each fix was for until the suite passes. Refusals
+# refreshes stale verdicts before validation and runs the suite again
+# at each outer walk until it has no failures. Refusals
 # of a malformed architecture or of a suite command the engine cannot run
 # as declared are the Stories build-code-spec and build-code-commands.
 #
@@ -14,7 +15,7 @@ story:
     feature: build-code
     title: Run the declared test suite with build code and drive the fix loop until it passes
     as_a: System Architect
-    i_want: build code to run the replay command the architecture declares for the suite, exit 1 when that command's program cannot start or a test is still failing when the walk ends, and under --fix re-run only the test each applied fix was for until the suite passes, a browser suite included
+    i_want: build code to run the replay command the architecture declares for the suite, exit 1 when that command's program cannot start or a test is still failing when the walk ends, and under --fix refresh each verdict after an apply turn and run the suite again at each outer walk until it has no failures, a browser suite included
     so_that: the services can be rebuilt from the specification, with the suite's own exit status rather than a person's reading deciding when they behave
     status: IMPLEMENTED
     acceptance_criteria:
@@ -83,7 +84,7 @@ story:
                 - stdout matches msg="Fix applied; re-running this test in isolation"
                 - stdout matches BUILD CODE COMPLETE
                 - and: the file "services/calc/calc.go" is modified
-                - and: the file "tests/suite/suite-runs.log" has exactly 1 line
+                - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
                 - and: the engine spawned a test runner with arguments matching TestAddSumsItsArguments
                 - but: the file "tests/suite/add_test.go" is unchanged
                 - and: the file "tests/suite/canary_test.go" is unchanged
@@ -117,3 +118,42 @@ story:
                 - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
                 - and: 'judge: services/frontend/package.json declares Next.js and React, and defines whichever of the dev or start scripts the created Dockerfile invokes to launch the server'
                 - and: 'judge: services/frontend/Dockerfile defines a runnable Next.js build — it installs the declared dependencies, exposes the port docker-compose.yaml maps, and starts the server'
+        - id: 006-shared-fix-skips-green-peer
+          description: Two tests failing at discovery whose shared defect the first repair fixes must complete without an AI turn for the now passing second test
+          steps:
+          - given:
+            - the "build-code-shared-fix" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - and: stdout matches msg="Suite failures" failures=2 framework=go-test
+            - and: the engine dispatched 1 validation AI turn to "claude"
+            - and: the engine dispatched 1 fix AI turn to "claude"
+            - and: the engine dispatched 1 apply AI turn to "crush"
+            - and: the engine dispatched 3 AI turns
+            - and: the engine spawned exactly 4 test runners
+            - but: the file "tests/suite/calc_test.go" is unchanged
+            - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+        - id: 007-next-walk-finds-regression
+          description: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that regression before the command exits successfully
+          steps:
+          - given:
+            - the "build-code-cross-walk" project tree
+            - the System Architect answers "1" to every question
+          - when:
+            - the System Architect runs "build code --fix"
+          - then:
+            - the command exits with code 0
+            - stdout matches BUILD CODE COMPLETE
+            - and: stdout matches msg="Suite failures" failures=0 framework=go-test
+            - and: stdout matches msg=test index=1 total=1 id=.*TestBCompatibility
+            - and: the engine dispatched 2 validation AI turns to "claude"
+            - and: the engine dispatched 2 fix AI turns to "claude"
+            - and: the engine dispatched 2 apply AI turns to "crush"
+            - and: the engine dispatched 6 AI turns
+            - and: the engine spawned exactly 5 test runners
+            - but: the file "tests/suite/calc_test.go" is unchanged
+            - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0

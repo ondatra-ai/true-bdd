@@ -462,6 +462,7 @@ var (
 	ErrResolveModelTier      = errors.New("failed to resolve model tier")
 	ErrCrushPolicyMissing    = errors.New("crush guard policy is not set")
 	ErrCrushPolicyInvalid    = errors.New("crush guard policy is malformed")
+	ErrCrushReadRootMissing  = errors.New("crush guard policy names no read root")
 )
 
 func ErrProviderNotRegisteredForCLI(cli string) error {

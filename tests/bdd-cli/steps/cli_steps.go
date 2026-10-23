@@ -49,6 +49,8 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the file "([^"]+)" is unchanged$`, assertFileUnchanged)
 	suite.Step(`^the file "([^"]+)" has exactly (\d+|no) lines?$`, assertFileLineCount)
 	suite.Step(`^the file "([^"]+)" matches (.+)$`, assertFileMatches)
+	suite.Step(`^every file matching "([^"]+)" (matches|does not match) (.+)$`, assertEveryFileMatches)
+	suite.Step(`^the file matching "([^"]+)" has exactly (\d+|no) match(?:es)? for (.+)$`, assertFileMatchCount)
 	// A count-of-files-matching-a-glob assertion, distinct from the named-path
 	// `is created` above: the fix loop chooses the new file's name, so a
 	// scenario can only pin how many .go files appeared under a directory.
@@ -108,6 +110,7 @@ func Register(suite *bddgo.Suite[State]) {
 func registerEngineLogSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^the engine spawned the test runner "([^"]+)"$`, assertTestRunnerSpawned)
 	suite.Step(`^the engine spawned a test runner with arguments matching (.+)$`, assertTestRunnerArgs)
+	suite.Step(`^the engine spawned a test runner with its own prebuilt engine path$`, assertPrebuiltEnginePath)
 	suite.Step(`^the engine spawned exactly (\d+|no) test runners?$`, assertTestRunnerCount)
 	suite.Step(`^the engine spawned no test runners?$`, assertNoTestRunnerSpawned)
 	suite.Step(`^the engine dispatched (\d+|no) AI turns?$`, assertAITurnCount)

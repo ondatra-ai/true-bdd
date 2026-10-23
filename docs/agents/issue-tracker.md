@@ -14,6 +14,17 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Acceptance criteria
+
+Every ticket's acceptance criteria carry one item of their own: the change is checked for divergence from the Specification, the doc universe (`GLOSSARY.md`, **Specification**: the product document, the architecture document and the Registry). The check looks for four kinds of divergence:
+
+- behaviour no Specification document describes;
+- code that contradicts a Scenario, a catalogue phrase, a glossary meaning or the architecture's word mapping;
+- a word, field or rule that the product glossary does not define or the word mapping does not map;
+- Specification text that claims more than the code does.
+
+Each divergence found is closed in the same change, in the code or in the Specification. The check holds whether the ticket changes the engine, a Story, the Registry or a document.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/mpc_triage` reads this flag.)_
