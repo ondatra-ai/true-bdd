@@ -25,6 +25,10 @@ The engine drives three agent CLIs — `claude`, `crush`, `codex` — picked per
 - **codex gotchas (verified live, codex-cli 0.162.1, #165):** `--output-schema` refuses a schema whose `required` leaves out any property, which claude accepts, so `CodexProvider` lists every property there before writing the schema file. codex writes its own answer file, so the cassette carries it: it is `-codex-answer.txt`, since a `.md` there fails alint's `text-final-newline` (codex ends its message with no newline).
 - **crush config discovery walks UP from cwd and merges every `.crush.json` it finds**, hooks additively — a root config would hijack every fixture's apply turn. Never add a tracked `.crush.json`/`crush.json` at the repo root.
 
+## Prompt data contract
+
+`docs/architecture/architecture.yaml` states the data each configured prompt template reads under `architecture.prompt_data`, including its source and every transformation before rendering. A change to any transformation stated there updates its `prompt_data` entry in the same change. Keep shared anchors accurate for every template using them. The field-inventory guard in `internal/infrastructure/template/prompt_inventory_internal_test.go` compares template reads with those entries in both directions; it does not verify shaping.
+
 ## Package notes
 
 - `internal/infrastructure/cli/{codex,crush,truebdd}` are the spawn wrappers only the engine uses, so they live here rather than in `pkg/cli/` and a rebuild regenerates them; they are the only engine packages the lint rules let import `pkg/shell`. The crush and codex argv and stdin they produce, and the claude argv `ClaudeProvider` builds through `pkg/cli/claude` (tools per execution mode, `--permission-mode acceptEdits`, the two `--json-schema` bodies), are stated in `docs/architecture/architecture.yaml` (`dependencies[].invocation`), because replay hashes both: change the wrapper and that statement together, and a crush change re-records every crush cassette.
