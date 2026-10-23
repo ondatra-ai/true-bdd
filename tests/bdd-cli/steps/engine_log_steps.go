@@ -273,3 +273,34 @@ func assertAITurnsTo(state *State, args []string) error {
 
 	return nil
 }
+
+func assertPrebuiltEnginePath(state *State, _ []string) error {
+	path, err := filepath.Abs(state.Harness.BinPath)
+	if err != nil {
+		return state.fail("absolute engine path: %w", err)
+	}
+
+	path, err = filepath.EvalSymlinks(path)
+	if err != nil {
+		return state.fail("resolve engine path: %w", err)
+	}
+
+	records, err := readEngineLog(state)
+	if err != nil {
+		return err
+	}
+
+	for _, record := range records {
+		if record.Msg != engineMsgSpawnTestRunner {
+			continue
+		}
+
+		for _, argument := range record.Args {
+			if argument == "-engine-bin="+path {
+				return nil
+			}
+		}
+	}
+
+	return state.fail("no runner received the running engine path %q as one argument", path)
+}

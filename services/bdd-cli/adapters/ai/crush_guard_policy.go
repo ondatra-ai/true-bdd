@@ -159,7 +159,7 @@ func (p CrushGuardPolicy) allowsWriteTo(targetPath string) (bool, string) {
 	resolved := resolveThroughSymlinks(filepath.Clean(targetPath))
 
 	for _, root := range p.WriteRoots {
-		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+		if pathWithinRoot(resolved, resolveThroughSymlinks(filepath.Clean(root))) {
 			return true, ""
 		}
 	}

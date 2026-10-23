@@ -227,10 +227,19 @@ func CommandDir(cfg Config) string {
 // naming the test in the error so a malformed command found on the
 // rerun path is still attributable to the suite that declared it.
 func commandArgv(ft *FailingTest) ([]string, error) {
-	argv, err := SplitCommand(ft.RunnerConfig.Command)
+	argv, err := ft.RunnerConfig.argv()
 	if err != nil {
 		return nil, fmt.Errorf("rerun %s: %w", ft.TestName, err)
 	}
 
 	return argv, nil
+}
+
+func (cfg Config) argv() ([]string, error) {
+	argv, err := SplitCommand(cfg.Command)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(argv, cfg.Arguments...), nil
 }

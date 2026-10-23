@@ -2,6 +2,7 @@ package ai_test
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -180,5 +181,26 @@ func TestLoadCrushGuardPolicyRejectsRelativeReadRoot(t *testing.T) {
 	_, err := ai.LoadCrushGuardPolicy()
 	if !errors.Is(err, pkgerrors.ErrCrushPolicyInvalid) {
 		t.Fatalf("relative read root: error = %v, want ErrCrushPolicyInvalid", err)
+	}
+}
+
+func TestCrushGuardKeepsWriteRootCleaning(t *testing.T) {
+	t.Parallel()
+	project, outside := t.TempDir(), t.TempDir()
+
+	link := filepath.Join(project, "shared")
+
+	err := os.Symlink(outside, link)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	policy := ai.CrushGuardPolicy{ReadRoot: project, WriteRoots: []string{link + "/.."}}
+	if allowed, reason := policy.Decide("write", filepath.Join(project, "fine.txt")); !allowed {
+		t.Errorf("write inside the cleaned write root denied: %s", reason)
+	}
+
+	if allowed, reason := policy.Decide("write", filepath.Join(outside, "secret.txt")); allowed {
+		t.Errorf("write outside the cleaned write root allowed: %s", reason)
 	}
 }

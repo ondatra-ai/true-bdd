@@ -861,3 +861,11 @@ catalogue:
       prints on its standard error for crush to show beside a denied tool,
       has a match for the pattern somewhere.
     terms: [write guard, crush, pattern, template]
+
+  - template: 'the engine spawned a test runner with its own prebuilt engine path'
+    block: then
+    means: >-
+      A test runner argument is -engine-bin= followed by the absolute path
+      of the engine running the command, with symbolic links resolved.
+      The complete argument arrives as one element.
+    terms: [engine, test runner, symbolic link, template]
