@@ -76,72 +76,57 @@ Then:
 
 # Fix Prompt for Scenario calc-001-double: Double a number
 
-## Resolved suite
+## Target
+`tests/calc/steps/steps.go` — resolved from `docs/architecture/architecture.yaml`
+(service `calc`, suite root `tests/calc`, steps package `tests/calc/steps/`).
 
-Architectural spec: `docs/architecture/architecture.yaml` → service `calc`.
-Suite root: `tests/calc`. The only tree you may write:
+This is the ONLY file to change. Do not touch `docs/scenarios.yaml`,
+`tests/calc/calc_test.go`, `tests/calc/scenarios/scenarios.go`, `replay.sh`,
+or `tests/calc/steps/state.go`.
 
-    tests/calc/steps/
+## Diagnosis (from the replay evidence — read before editing)
+Every step in both failing scenarios already **resolves**: the suite registers
+`^the number is (\d+)$`, `^the number is doubled$` and `^the result is (\d+)$`,
+all anchored and already parameterised where the text varies. Nothing is
+unbound, so **do not add new `suite.Step` registrations** and do not create a
+second `Register` function. Two existing definitions compute the wrong value:
 
-Do NOT touch `docs/scenarios.yaml`, `tests/calc/calc_test.go`,
-`tests/calc/scenarios/scenarios.go`, `replay.sh`, or anything outside
-`tests/calc/steps/`.
+1. `^the number is doubled$` is an inline closure doing `s.Value *= 3`. It
+   triples instead of doubling. With `the number is 2` this yields 6, which is
+   exactly the reported `calc-001-double … expected 4, got 6`.
+2. `^the number is (\d+)$` (`number`) carries a stray special case
+   `if value == 3 { state.Value++ }`. For `the number is 3` it stores 4, which
+   is exactly the reported `calc-002-shared … expected 3, got 4`. This is a
+   Given corrupting the state it is supposed to merely prepare.
 
-## Diagnosis (read before editing)
+`number` also assigns `state.Value = value` *before* checking `err`, so a
+non-numeric capture would silently seed 0 alongside the returned error, and the
+bare `strconv` error never names the step or the offending text.
 
-Every step of calc-001-double and calc-002-shared already resolves to
-exactly one anchored, parameterised definition in
-`tests/calc/steps/steps.go`:
+`result` is correct as written — it already reports what it expected and what it
+got. Leave it alone.
 
-- `the number is 2` / `the number is 3` -> `^the number is (\d+)$`
-- `the number is doubled`               -> `^the number is doubled$`
-- `the result is 4` / `the result is 3` -> `^the result is (\d+)$`
-
-So **no new registrations are needed** and no pattern may be widened or
-weakened. The two failures are behavioural bugs inside the shared
-definitions, and both are in the vocabulary calc-001-double and
-calc-002-shared share:
-
-1. `^the number is doubled$` does `s.Value *= 3`. calc-001-double gets
-   `2 * 3 = 6`, so `Then the result is 4` fails with
-   `expected 4, got 6`. "Doubled" must multiply by 2.
-2. `^the number is (\d+)$` carries a special case
-   `if value == 3 { state.Value++ }`. calc-002-shared's
-   `Given the number is 3` leaves the state at 4, so
-   `Then the result is 3` fails with `expected 3, got 4`. A Given that
-   prepares "the number is N" must leave the state at exactly N for
-   every N; the `== 3` branch is the drift to delete.
-
-It also swallows `strconv.Atoi`'s failure into a bare `return err` after
-already assigning the zero value; tighten it so the error names the
-input it could not read.
+Both fixes live in one contiguous block, so a single Edit does the whole job and
+covers the subject scenario and its registry neighbour `calc-002-shared`
+together.
 
 ## Required Changes
 
-### Change #1: make "doubled" double, and give it a named function
-
+### Change #1: Fix the doubling factor and remove the Given's stray mutation
 **File:** `tests/calc/steps/steps.go`
 **Action:** Use the **Edit** tool.
 
+Note: this file is indented with a **single leading space**, not a tab. Match
+`old_string` byte-for-byte, including the single-space indentation and the
+backtick-quoted regexps.
+
 **old_string:**
 ```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
  suite.Step(`^the number is doubled$`, func(s *State, _ []string) error { s.Value *= 3; return nil })
-```
-
-**new_string:**
-```
- suite.Step(`^the number is doubled$`, double)
-```
-
-### Change #2: repair the Given, and add the `double` When function
-
-**File:** `tests/calc/steps/steps.go`
-**Action:** Use the **Edit** tool. This replaces the whole `number`
-function (dropping the `value == 3` special case and reporting a bad
-argument honestly) and adds `double` next to it.
-
-**old_string:**
-```
+ suite.Step(`^the result is (\d+)$`, result)
+}
 func number(state *State, args []string) error {
  value, err := strconv.Atoi(args[0]); state.Value = value; if value == 3 { state.Value++ }; return err
 }
@@ -149,45 +134,59 @@ func number(state *State, args []string) error {
 
 **new_string:**
 ```
+func Register(suite Registrar) {
+ suite.Step(`^the number is (\d+)$`, number)
+ suite.Step(`^the number is doubled$`, doubled)
+ suite.Step(`^the result is (\d+)$`, result)
+}
+
+// number prepares the state: it stores the captured number and nothing else.
 func number(state *State, args []string) error {
  value, err := strconv.Atoi(args[0])
- if err != nil { return fmt.Errorf("expected a number, got %q", args[0]) }
+ if err != nil {
+  return fmt.Errorf("the number is %q: expected an integer, got an unparsable value: %w", args[0], err)
+ }
  state.Value = value
  return nil
 }
-func double(state *State, _ []string) error {
+
+// doubled acts on the state: it multiplies the current number by two.
+func doubled(state *State, _ []string) error {
  state.Value *= 2
  return nil
 }
 ```
 
-## Constraints and invariants
+## Notes for the applier
+- The three registrations stay inside the existing `Register` function and keep
+  their current anchored, capture-group patterns verbatim. No pattern text
+  changes, so no existing definition is weakened or made ambiguous, and no step
+  that used to resolve stops resolving.
+- The inline closure is replaced by a named `doubled` function to match the
+  `number` / `result` convention already used in this package. Its signature is
+  `func(*State, []string) error`, exactly what `Registrar.Step` in
+  `tests/calc/steps/state.go` requires.
+- Both `fmt` and `strconv` are already imported on line 3 and both remain in
+  use after this edit (`fmt` by `result` and the new error in `number`,
+  `strconv` by `number`), so the import line needs no change and the build will
+  not break on an unused import.
+- `State` is unchanged: still `struct { Value int }`, zeroed per scenario by
+  `suite.Init` in `tests/calc/scenarios/scenarios.go`.
 
-- Keep `Register` as the single registration function; do not add a
-  second one and do not reorder or re-word any of the three existing
-  `suite.Step` patterns — they stay anchored with `^…$` and keep their
-  `(\d+)` capture groups so one definition serves every `the number is
-  N` / `the result is N` phrasing.
-- Keep working against the existing state type `*State` from
-  `tests/calc/steps/state.go` (`State{ Value int }`) and the existing
-  `Registrar` interface. Do not introduce a new state type, a new
-  package, or a new file — both edits land in
-  `tests/calc/steps/steps.go`.
-- Leave `result` exactly as it is: it already asserts and already names
-  expected vs. actual (`expected %d, got %d`), which is the failure text
-  a reader gets.
-- The `fmt` and `strconv` imports are already present on line 3
-  (`import ("fmt"; "strconv")`); both remain used, so do not change the
-  import block.
+## Verification
+Run the declared replay command from the suite root:
 
-## Expected outcome
+```
+sh replay.sh -json
+```
 
-Re-run the declared replay command (`sh replay.sh -json`). Both
-scenarios must pass:
+Expected traces after the fix:
+- `calc-001-double`: `the number is 2` → `Value=2`; `the number is doubled` →
+  `Value=4`; `the result is 4` → `4 == 4`, passes.
+- `calc-002-shared`: `the number is 3` → `Value=3` (no increment);
+  `the result is 3` → `3 == 3`, passes.
 
-- calc-001-double: `the number is 2` → 2, `doubled` → 4,
-  `the result is 4` → ok.
-- calc-002-shared: `the number is 3` → 3, `the result is 3` → ok.
+Both `TestCalc001Double` and `TestCalc002Shared` must report PASS.
 
 ---
 

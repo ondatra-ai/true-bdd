@@ -1,13 +1,11 @@
 package testrunner
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"sort"
 	"strings"
 
@@ -27,9 +25,6 @@ const goTestRunFlag = "-run"
 // package fails to compile (no individual test failed because nothing
 // could run). RunOne branches on this suffix to skip the `-run` filter.
 const goBuildFailureMarker = "<build>"
-
-const goBufferInitialCap = 1024
-const goBufferMaxCap = 4 * 1024 * 1024
 
 // ErrInvalidGoTestName signals that a FailingTest.TestName intended for
 // the Go runner is not in the expected "<package>::<func>" shape.
@@ -68,10 +63,7 @@ func (r *GoTestRunner) Discover(
 			cfg.Path, runErr, stderr.String())
 	}
 
-	events, parseErr := parseGoTestEvents(stdout.Bytes())
-	if parseErr != nil {
-		slog.Warn("go test JSON stream had unparseable lines", "error", parseErr)
-	}
+	events := parseGoTestEvents(stdout.Bytes())
 
 	failures := events.toFailingTests(service, suite)
 	if len(cfg.Tests) > 0 && len(failures) == 0 {
@@ -119,10 +111,7 @@ func (r *GoTestRunner) RunOne(
 			failingTest.TestName, runErr)
 	}
 
-	events, parseErr := parseGoTestEvents(stdout.Bytes())
-	if parseErr != nil {
-		slog.Warn("go test rerun JSON had unparseable lines", "error", parseErr)
-	}
+	events := parseGoTestEvents(stdout.Bytes())
 
 	passed := !events.hasFailureFor(pkg, test)
 
@@ -218,17 +207,14 @@ func newGoEventStream() *goEventStream {
 }
 
 // parseGoTestEvents decodes the line-delimited JSON event stream from
-// `go test -json`. Malformed lines are skipped with a logged warning;
-// the function returns nil error unless the entire payload is unparseable.
-func parseGoTestEvents(payload []byte) (*goEventStream, error) {
+// `go test -json`, retaining complete events and skipping malformed lines.
+func parseGoTestEvents(payload []byte) *goEventStream {
 	stream := newGoEventStream()
-	scanner := bufio.NewScanner(bytes.NewReader(payload))
-	scanner.Buffer(make([]byte, 0, goBufferInitialCap), goBufferMaxCap)
 
-	for scanner.Scan() {
+	for _, line := range bytes.Split(payload, []byte("\n")) {
 		var event dto.GoTestEvent
 
-		err := json.Unmarshal(scanner.Bytes(), &event)
+		err := json.Unmarshal(line, &event)
 		if err != nil {
 			continue
 		}
@@ -236,12 +222,7 @@ func parseGoTestEvents(payload []byte) (*goEventStream, error) {
 		stream.absorb(event)
 	}
 
-	err := scanner.Err()
-	if err != nil {
-		return stream, fmt.Errorf("go test event scanner failed: %w", err)
-	}
-
-	return stream, nil
+	return stream
 }
 
 // absorb integrates one event into the stream's per-test/per-package
@@ -300,7 +281,7 @@ func (s *goEventStream) hasFailureFor(pkg, test string) bool {
 	return s.testFailed[pkg+"\x00"+test]
 }
 
-// outputFor returns the tail-truncated output captured for a
+// outputFor returns the complete output captured for a
 // (package, test) pair. A package's entry leads with the compiler's
 // lines for the build it failed on, which say why it did not compile.
 func (s *goEventStream) outputFor(pkg, test string) string {
@@ -315,11 +296,11 @@ func (s *goEventStream) outputFor(pkg, test string) string {
 			output.WriteString(builder.String())
 		}
 
-		return TruncateTail(output.String(), FailureOutputCap)
+		return output.String()
 	}
 
 	if builder, ok := s.testOutput[pkg+"\x00"+test]; ok {
-		return TruncateTail(builder.String(), FailureOutputCap)
+		return builder.String()
 	}
 
 	return ""

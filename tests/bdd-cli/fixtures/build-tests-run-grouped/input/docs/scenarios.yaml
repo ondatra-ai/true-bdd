@@ -1,0 +1,17 @@
+scenarios:
+  calc-001-double:
+    description: Double a number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: ['the number is 2']
+      when: ['the number is doubled']
+      then: ['the result is 4']
+  calc-002-peer:
+    description: Double a peer number
+    service: calc
+    path: tests/calc/calc_test.go
+    merged_steps:
+      given: ['the number is 2']
+      when: ['the number is doubled']
+      then: ['the result is 4']

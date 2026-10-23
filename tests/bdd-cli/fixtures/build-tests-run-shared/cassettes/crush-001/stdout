@@ -1,7 +1,7 @@
-File state matches the fix prompt. Applying the two edits.Both edits applied cleanly (the transient `undefined: transform` diagnostic resolved once the function landed; shell/lint tools are hook-blocked in this mode).
+Both edits applied verbatim to `tests/calc/steps/steps.go`; shell/replay is hook-blocked in this mode, so verification is by inspection (file content matches the fix prompt exactly, including single-space house indentation).
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
 applied: true
 target: "tests/calc/steps/steps.go"
-summary: "Registered and implemented parameterised transform step (doubled|tripled|squared|negated|halved) over State.Value"
+summary: "Registered ^the number is (doubled|tripled|halved)$ and added scale() mutating State.Value in the existing Register"
 === FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

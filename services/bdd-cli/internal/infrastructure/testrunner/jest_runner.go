@@ -215,7 +215,7 @@ func jestReportToFailingTests(
 				Framework:     FrameworkJest,
 				TestName:      name,
 				FilePath:      filePath,
-				FailureOutput: TruncateTail(strings.Join(assertion.FailureMessages, "\n"), FailureOutputCap),
+				FailureOutput: strings.Join(assertion.FailureMessages, "\n"),
 			})
 		}
 	}
