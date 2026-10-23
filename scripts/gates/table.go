@@ -99,10 +99,10 @@ var (
 			Name: "BDD cli coverage guards",
 			Command: []string{
 				goBin, testVerb, tagsFlag, bddTag, countOnce, "-run",
-				"^Test(ScenarioCoverage|FixtureTreesArePaired)$",
+				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays)$",
 				"./tests/bdd-cli/",
 			},
-			Globs: []string{registry, "tests/bdd-cli/**", testkitGlob},
+			Globs: []string{registry, "tests/bdd-cli/**", "templates/**", testkitGlob},
 		},
 		{
 			// Committed recordings must not carry the recording machine's identity.

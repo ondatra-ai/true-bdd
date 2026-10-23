@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"time"
 
+	drillcli "github.com/ondatra-ai/true-bdd/pkg/cli/drill"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/ps"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/truebdd"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -119,7 +120,7 @@ func (r Runner) Launch(ctx context.Context, directory, tag, executable string) e
 		return r.finish(directory, tag, -1, err)
 	}
 
-	pid, err := truebdd.StartSupervisor(ctx, worker, directory, tag, record.Runs[tag].Marker)
+	pid, err := drillcli.StartSupervisor(ctx, worker, directory, tag, record.Runs[tag].Marker)
 	if err != nil {
 		return r.finish(directory, tag, -1, err)
 	}

@@ -2,14 +2,63 @@ package drill_test
 
 import (
 	"encoding/json"
-	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
+	"github.com/ondatra-ai/true-bdd/pkg/logging"
+	"github.com/ondatra-ai/true-bdd/scripts/drill"
 )
 
 const messageKey = "msg"
+
+func TestAuditExplicitlyExcludesEveryOracleReplayForTheCut(t *testing.T) {
+	runner, record, _ := prepare(t, "#!/bin/sh\nexit 0\n")
+	record, err := drill.Read(record.Directory)
+	must(t, err)
+
+	record.Runs = map[string]drill.Run{
+		"oracle-a-1": {Cut: "a", Oracle: &drill.Oracle{Directory: "/oracle/first"}},
+		"oracle-a-2": {Cut: "a", Oracle: &drill.Oracle{Directory: "/oracle/second"}},
+		"oracle-b-1": {Cut: "b", Oracle: &drill.Oracle{Directory: "/oracle/other-cut"}},
+	}
+	data, err := json.Marshal(record)
+	must(t, err)
+	put(t, filepath.Join(record.Directory, "record.json"), string(data))
+
+	var output strings.Builder
+
+	prior := slog.Default()
+
+	slog.SetDefault(slog.New(logging.Handler(&output, "")))
+	t.Cleanup(func() { slog.SetDefault(prior) })
+
+	audit, err := runner.Audit(t.Context(), record.Directory, "a")
+	must(t, err)
+	saved, err := drill.Read(record.Directory)
+	must(t, err)
+
+	for label, report := range map[string]string{
+		"result": strings.Join(audit.Unknown, "\n"),
+		"record": strings.Join(saved.Audits["a"][0].Unknown, "\n"),
+		"output": output.String(),
+	} {
+		for _, want := range []string{"oracle-a-1", "oracle-a-2", "/oracle/first", "/oracle/second",
+			"not audited", "-mode=services:replay,tests:replay", "no live AI turn",
+			"recording-time paths"} {
+			if !strings.Contains(report, want) {
+				t.Errorf("%s missing %q: %s", label, want, report)
+			}
+		}
+
+		if strings.Contains(report, "oracle-b-1") {
+			t.Errorf("%s includes another cut's oracle: %s", label, report)
+		}
+	}
+}
 
 func TestAuditReportsPathsDenialsToolchainAndNetworkFromSQLite(t *testing.T) {
 	runner, record, cut := prepare(t, "#!/bin/sh\nexit 0\n")

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -60,6 +61,7 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 				"they cannot be assigned to a target without an explicit decision."}}
 	audit.engineLog(filepath.Join(cut.Directory, "tmp/true-bdd.log.json"), cut.Directory, record.AllowedRoots)
 	audit.databases(ctx, cut.Directory, record.AllowedRoots)
+	audit.oracleLimitations(record.Runs, name)
 	err = change(directory, func(record *Record) error {
 		record.Audits[name] = append(record.Audits[name], audit)
 
@@ -85,6 +87,29 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 	}
 
 	return audit, err
+}
+
+func (a *Audit) oracleLimitations(runs map[string]Run, cut string) {
+	tags := make([]string, 0, len(runs))
+	for tag, run := range runs {
+		if run.Cut == cut && run.Oracle != nil {
+			tags = append(tags, tag)
+		}
+	}
+
+	slices.Sort(tags)
+
+	for _, tag := range tags {
+		directory := runs[tag].Oracle.Directory
+		if directory == "" {
+			directory = "not created"
+		}
+
+		a.Unknown = append(a.Unknown, fmt.Sprintf(
+			"Oracle %s (directory: %s): not audited; -mode=services:replay,tests:replay runs no live AI turn, "+
+				"so there is no AI access to audit. Replayed logs contain recording-time paths, not access evidence for this run.",
+			tag, directory))
+	}
 }
 
 func (a *Audit) engineLog(path, tree string, roots []string) {

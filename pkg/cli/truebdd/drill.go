@@ -1,10 +1,9 @@
-// Package truebdd supervises the engine binary for repository tooling.
+// Package truebdd runs and supervises only the true-bdd engine binary for repository tooling.
 package truebdd
 
 import (
 	"context"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
@@ -42,26 +41,4 @@ func Rebuild(ctx context.Context, binary string, args []string, opt Options) (in
 	result, err := process.Supervise(ctx, opt.Limit, opt.Grace)
 
 	return result.Code, err
-}
-
-// StartSupervisor detaches a drill worker without inherited terminal descriptors.
-func StartSupervisor(ctx context.Context, binary, iteration, tag, marker string) (int, error) {
-	process,
-		err := shell.Start(context.WithoutCancel(ctx),
-		[]string{binary,
-			"supervise",
-			"--iteration",
-			iteration,
-			tag},
-		shell.Options{
-			Session: true, Stdin: strings.NewReader(""), Output: shell.Discard(),
-			Env: shell.Inherit().Strip("TRUE_BDD_DRILL_RUN").Set("TRUE_BDD_DRILL_WORKER=" + marker),
-		})
-	if err != nil {
-		return 0, err
-	}
-
-	go func() { _, _ = process.Wait() }()
-
-	return process.Pid(), nil
 }
