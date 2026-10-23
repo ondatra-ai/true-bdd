@@ -1,0 +1,119 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Production repair protocol
+
+Read services/calc/prepared.txt before applying this repair.
+If that file is absent, create it containing exactly `prepared` followed by a newline, leave calc.go unchanged, and report applied: false with summary "preparation only; test still fails".
+If that file exists, apply the fix below to services/calc/calc.go, keep prepared.txt, and report applied: true.
+Never modify tests or documents. Only services/calc/ is writable.
+
+# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
+
+## Target
+Apply the change(s) under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it (nor anything under `tests/`, any `*_test.go`, `services/*/__tests__/`, or `docs/`).
+
+## Root Cause
+`tests/suite/calc_test.go` asserts:
+
+```go
+if got := calc.Add(2, 3); got != 5 {
+	t.Fatalf("Add(2, 3) = %d, want 5", got)
+}
+```
+
+But the production implementation in `services/calc/calc.go` subtracts instead of adds:
+
+```go
+func Add(a, b int) int { return a - b }
+```
+
+`Add(2, 3)` therefore returns `2 - 3 = -1`, which exactly matches the reported failure `Add(2, 3) = -1, want 5`. The operator is the only defect; the signature (`func Add(a, b int) int`) and package name (`calc`) already match what the test imports (`fixture/buildcodefix/services/calc`).
+
+## Required Changes
+### Change #1: Make `Add` actually add its operands
+**File:** `services/calc/calc.go`
+**Action:** Use the Edit tool on this existing file, replacing the `old_string` below with the `new_string` below. (Equivalently, Write the full file content shown under "Full resulting file".)
+
+**old_string:**
+```
+func Add(a, b int) int { return a - b }
+```
+
+**new_string / Content:**
+```
+func Add(a, b int) int { return a + b }
+```
+
+**Full resulting file** (`services/calc/calc.go`) for reference if using Write:
+```
+package calc
+
+func Add(a, b int) int { return a + b }
+```
+
+## Notes / Constraints
+- This is the smallest possible production change: a single `-` → `+` operator swap. Do not rename the function, change its signature, change the package clause (`package calc`), or add new files.
+- Do not weaken, skip, or remove any assertion in `tests/suite/calc_test.go`.
+- After the edit, `calc.Add(2, 3)` returns `5`, satisfying the test's only assertion.
+
+Return this confirmation with the correct boolean:
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
+applied: <true or false>
+target: "services/calc/calc.go"
+summary: "<what happened>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

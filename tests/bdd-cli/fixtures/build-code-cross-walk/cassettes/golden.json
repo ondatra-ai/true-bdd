@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-cross-walk",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 89,
+      "sha256": "e324180ccc3f970ec4c2a908a56d525f3a9cdc9009bb34923a376b4ee5fbb15e",
+      "text": "package calc\n\nfunc Version() int     { return 2 }\nfunc Compatible() bool { return true }\n"
+    }
+  ]
+}
