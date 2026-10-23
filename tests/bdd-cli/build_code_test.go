@@ -117,14 +117,17 @@ func TestBuildCodeFrameworks001JestFailingTestExits1(t *testing.T) {
 	s.Done()
 }
 
-// build-code-frameworks-002-jest-fix-reruns-test-by-name: After a fix is applied to a Jest suite, `build code --fix` must re-run only the test it fixed, selected by its full name through --testNamePattern, and end with exit code 0 once that test passes
+// build-code-frameworks-002-jest-fix-reruns-test-by-name: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
 func TestBuildCodeFrameworks002JestFixRerunsTestByName(t *testing.T) {
 	s := scenarios.New(t, "build-code-frameworks-002-jest-fix-reruns-test-by-name")
 	s.Given(`the "build-code-jest-fix-named-test" project tree`)
 	s.And(`the project's test dependencies are installed`)
 	s.And(`the System Architect answers "1" to every question`)
 	s.When(`the System Architect runs "build code --fix"`)
-	s.Then(`the command exits with code 0`)
+	s.Then(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
+	s.And(`the command exits with code 0`)
 	s.And(`stdout matches msg="Suite failures" failures=1 framework=jest`)
 	s.And(`stdout matches msg="Fix applied; re-running this test in isolation"`)
 	s.And(`stdout matches BUILD CODE COMPLETE`)
@@ -412,6 +415,64 @@ func TestBuildCodeSpec004NoReplayCommandRefused(t *testing.T) {
 	s.But(`no file outside "tmp" changed`)
 	s.And(`the engine spawned no test runner`)
 	s.And(`the engine dispatched no AI turns`)
+	s.Done()
+}
+
+// build-code-spec-005-matched-scenario-embedded: A failing generated Go test must hand both fix turns its Scenario and the catalogue meanings of its steps
+func TestBuildCodeSpec005MatchedScenarioEmbedded(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-005-matched-scenario-embedded")
+	s.Given(`the "build-code-spec-scenario" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches tests/calc/calc_test.go`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches the number is doubled`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches An integer operand whose double is its sum with itself.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The integer argument to services/calc.Double.`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches The step calls Double and compares its integer return`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches tests/calc/calc_test.go`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches the number is doubled`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The calculator doubles the supplied number.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches An integer operand whose double is its sum with itself.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.`)
+	s.And(`every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-spec-006-unreadable-product-warned: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
+func TestBuildCodeSpec006UnreadableProductWarned(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-006-unreadable-product-warned")
+	s.Given(`the "build-code-spec-missing-product" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches level=WARN.*document=product.*error=.*docs/product/missing.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match What the spec says`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
+	s.Done()
+}
+
+// build-code-spec-007-unreadable-registry-warned: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
+func TestBuildCodeSpec007UnreadableRegistryWarned(t *testing.T) {
+	s := scenarios.New(t, "build-code-spec-007-unreadable-registry-warned")
+	s.Given(`the "build-code-spec-missing-registry" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches level=WARN.*document=scenarios_yaml.*error=.*docs/missing.yaml`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc`)
+	s.And(`every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:`)
+	s.And(`the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0`)
 	s.Done()
 }
 

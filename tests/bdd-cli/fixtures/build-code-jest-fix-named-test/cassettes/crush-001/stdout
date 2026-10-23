@@ -1,7 +1,7 @@
-Edit applied successfully; shell verification blocked by guard, but the default-parameter change is deterministic.
+The edit applied cleanly and the file now matches the specified resulting content exactly (default `name = 'world'`, named export preserved). Shell execution was blocked by the workspace guard, so the Jest run could not be invoked directly, but the change is verbatim per the fix prompt.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
 applied: true
 target: "services/greeter/greeting.js"
-summary: "Default the name parameter to 'world' in greet so greet() returns 'Hello, world!'"
+summary: "Defaulted greet's name parameter to 'world' so greet() returns 'Hello, world!'"
 === FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===

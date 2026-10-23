@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
-**Service:** 
+**Service:** greeter
 **Suite:** jest
 **Framework:** jest
 **Test Name:** tests/unit/greeting.test.js::greet greets the world when no name is given
@@ -73,6 +73,8 @@ Received: "Hello, undefined!"
     at Object.<anonymous> ({{CWD}}/tests/unit/greeting.test.js:7:21)
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -80,22 +82,32 @@ Received: "Hello, undefined!"
 # Fix Prompt for Failing Test /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/unit/greeting.test.js` is the contract; do NOT modify it (or anything under `tests/`, `*_test.go`, `services/*/__tests__/`, or `docs/`).
+Apply the change(s) under `services/*` only. The test at
+`tests/unit/greeting.test.js` is the contract; do NOT modify it.
 
 ## Root Cause
-`tests/unit/greeting.test.js` asserts:
+`tests/unit/greeting.test.js` calls `greet()` with no arguments and asserts the
+result is `'Hello, world!'`:
 
 ```js
+const { greet } = require('../../services/greeter/greeting');
 expect(greet()).toBe('Hello, world!');
 ```
 
-but `services/greeter/greeting.js` defines `greet(name)` with no default, so calling `greet()` leaves `name === undefined` and string concatenation yields `"Hello, undefined!"`. The planted defect is the missing default value for `name`. The named-argument behaviour (`greet('Ada') === 'Hello, Ada!'`) must be preserved.
+The production function at `services/greeter/greeting.js` has no default for
+`name`, so with no argument `name` is `undefined` and string concatenation
+yields `'Hello, undefined!'` — exactly the observed failure
+(`Expected: "Hello, world!"` / `Received: "Hello, undefined!"`).
+
+The smallest production change is to give `name` a default of `'world'`. The
+named-greeting behaviour (`greet('Ada') === 'Hello, Ada!'`) is preserved.
 
 ## Required Changes
 
-### Change #1: Default the `name` parameter to `'world'`
+### Change #1: Default `name` to `'world'` in `greet()`
 **File:** `services/greeter/greeting.js`
-**Action:** Use the Edit tool on this existing file. Replace the `old_string` below with the `new_string` below, verbatim.
+**Action:** Use the Edit tool (existing file). Replace the `old_string` below
+with the `new_string` below, verbatim.
 
 **old_string:**
 ```
@@ -115,14 +127,26 @@ function greet(name = 'world') {
 }
 ```
 
-## Notes for the Applier
-- Do not change `module.exports = { greet };` — the test imports `{ greet }` from `../../services/greeter/greeting`.
-- Do not touch `tests/unit/greeting.test.js` or any other test file; no assertion may be weakened, skipped, or removed.
-- No other production file needs to change; `services/greeter/greeting.js` is the only source file in the service.
+## Resulting File Content (for verification)
+After the edit, `services/greeter/greeting.js` must read exactly:
 
-## Expected Result
-- `greet()` → `'Hello, world!'` (satisfies the failing assertion).
-- `greet('Ada')` → `'Hello, Ada!'` (existing behaviour unchanged).
+```
+// greet greets a person by name, and the world when no name is given.
+function greet(name = 'world') {
+  return 'Hello, ' + name + '!';
+}
+
+module.exports = { greet };
+```
+
+## Constraints Reminder
+- Only `services/greeter/greeting.js` may be written.
+- Do NOT modify `tests/unit/greeting.test.js`, any file under `tests/`, any
+  `*_test.go`, anything under `services/*/__tests__/`, or anything under
+  `docs/`.
+- Do NOT weaken, skip, or remove any assertion.
+- Keep `module.exports = { greet };` intact — the test requires the named
+  export `greet`.
 
 ---
 

@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAAdd
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAAdd
@@ -72,6 +72,8 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -79,38 +81,35 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAAdd
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it (nor any file under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`).
+Apply the change(s) under `services/*` only. The test at
+`tests/suite/calc_test.go` (subject path `fixture/buildcodefix/tests/suite`) is the
+contract; do NOT modify it, and do NOT touch anything under `tests/`, any
+`*_test.go` file, `services/*/__tests__/`, or anything under `docs/`.
 
 ## Root Cause
 `tests/suite/calc_test.go` asserts the contract of `calc.Add`:
 
-```go
-func TestAAdd(t *testing.T) {
-	if got := calc.Add(2, 3); got != 5 {
-		t.Fatalf("Add(2, 3) = %d, want 5", got)
-	}
-}
+- `TestAAdd`: `calc.Add(2, 3)` must equal `5`
+- `TestBAdd`: `calc.Add(4, 3)` must equal `7`
 
-func TestBAdd(t *testing.T) {
-	if got := calc.Add(4, 3); got != 7 {
-		t.Fatalf("Add(4, 3) = %d, want 7", got)
-	}
-}
-```
-
-Both cases require addition (`2+3=5`, `4+3=7`). The production implementation in `services/calc/calc.go` subtracts instead of adds:
+The production implementation in `services/calc/calc.go` is:
 
 ```go
 func Add(a, b int) int { return a - b }
 ```
 
-`Add(2, 3)` therefore returns `-1`, which exactly matches the reported failure `Add(2, 3) = -1, want 5`.
+It **subtracts** instead of adding, so `Add(2, 3)` returns `-1`, which exactly
+matches the recorded failure output `Add(2, 3) = -1, want 5`. The smallest
+production change is to replace the `-` operator with `+`.
 
 ## Required Changes
 
-### Change #1: Make `calc.Add` actually add its operands
+### Change #1: Make `Add` actually add its two operands
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the single `old_string` occurrence with the `new_string` below. Change only the operator — do not rename the function, change its signature, add parameters, or add any other declaration.
+**Action:** Use the **Edit** tool on this existing file. Replace the single
+`old_string` occurrence below with the `new_string` below. Do not alter the
+`package calc` line and do not change the function signature (the test calls
+`calc.Add(int, int) int`).
 
 **old_string:**
 ```
@@ -122,7 +121,8 @@ func Add(a, b int) int { return a - b }
 func Add(a, b int) int { return a + b }
 ```
 
-After the edit, the complete contents of `services/calc/calc.go` must be exactly:
+## Expected Result
+After the edit, `services/calc/calc.go` reads in full:
 
 ```go
 package calc
@@ -130,11 +130,14 @@ package calc
 func Add(a, b int) int { return a + b }
 ```
 
-## Notes / Verification
-- This is the smallest possible production change: one character (`-` → `+`).
-- `TestAAdd` becomes `Add(2, 3) == 5` and the sibling `TestBAdd` becomes `Add(4, 3) == 7`, so no currently-passing test regresses.
-- Keep the `package calc` declaration unchanged — the test imports `fixture/buildcodefix/services/calc`.
-- No assertion in any test is weakened, skipped, or removed; no test file is touched.
+With this change `Add(2, 3) == 5` (satisfies `TestAAdd`) and `Add(4, 3) == 7`
+(satisfies the sibling `TestBAdd`, which must keep passing). No test assertion
+was weakened, skipped, or removed, and no file outside `services/calc/` was
+touched.
+
+## Confirmation
+Report back a FILE_START / FILE_END block naming `services/calc/calc.go` as the
+only modified file.
 
 ---
 

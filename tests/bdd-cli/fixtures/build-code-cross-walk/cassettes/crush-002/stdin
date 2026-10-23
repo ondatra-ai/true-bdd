@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestBCompatibility
@@ -72,6 +72,8 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -79,26 +81,10 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestBCompatibility
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it (or anything under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`).
+Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`.
 
-## Context (already verified)
-`tests/suite/calc_test.go` contains:
-
-```go
-func TestAVersion(t *testing.T) {
-	if got := calc.Version(); got != 2 {
-		t.Fatalf("Version() = %d, want 2", got)
-	}
-}
-
-func TestBCompatibility(t *testing.T) {
-	if calc.Version() != 1 && !calc.Compatible() {
-		t.Fatal("version 2 requires compatibility support")
-	}
-}
-```
-
-Current production source `services/calc/calc.go`:
+## Root Cause
+`services/calc/calc.go` currently reads:
 
 ```go
 package calc
@@ -107,13 +93,23 @@ func Version() int     { return 2 }
 func Compatible() bool { return false }
 ```
 
-Stage A of the migration is already done (`Version()` returns 2). `TestBCompatibility` fails because `Version() != 1` is true and `Compatible()` returns `false`. The staged migration's stage B is: make `Compatible()` return `true` while preserving `Version()` at 2 (so `TestAVersion` keeps passing).
+The failing assertion in `tests/suite/calc_test.go` is:
+
+```go
+func TestBCompatibility(t *testing.T) {
+	if calc.Version() != 1 && !calc.Compatible() {
+		t.Fatal("version 2 requires compatibility support")
+	}
+}
+```
+
+With `Version() == 2`, the first clause `calc.Version() != 1` is true, and because `Compatible()` returns `false`, `!calc.Compatible()` is also true, so the test fails. This is the compatibility-support stage of the staged migration: `Version()` must stay at `2` (as already required by `TestAVersion`, which asserts `Version() == 2`), and `Compatible()` must now report `true`.
 
 ## Required Changes
 
-### Change #1: Enable compatibility support in the calc service
+### Change #1: Make `Compatible()` report compatibility support while preserving `Version() == 2`
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace only the `Compatible` function body; leave the `Version` function exactly as it is (returning 2).
+**Action:** Use the Edit tool on this existing file. Replace the `Compatible` function body only — leave `Version()` returning `2` exactly as it is.
 
 **old_string:**
 ```
@@ -125,7 +121,7 @@ func Compatible() bool { return false }
 func Compatible() bool { return true }
 ```
 
-## Resulting file content (for verification only — do not add anything else)
+## Resulting File (for verification only — final content of `services/calc/calc.go`)
 ```go
 package calc
 
@@ -133,11 +129,16 @@ func Version() int     { return 2 }
 func Compatible() bool { return true }
 ```
 
-## Constraints
-- Do not change `Version()`; it must stay `return 2` so `TestAVersion` continues to pass.
-- Do not create any new files; this single one-line edit is the smallest change that satisfies the contract.
-- Do not weaken, skip, or remove any assertion in `tests/suite/calc_test.go`.
-- Do not touch `docs/architecture/architecture.yaml`, `docs/scenarios.yaml`, or any other file outside `services/calc/calc.go`.
+## Why This Is Minimal And Safe
+- Only one token changes (`false` → `true`) in a single production file under the declared write root `services/calc` (per `docs/architecture/architecture.yaml`).
+- `TestBCompatibility` now short-circuits: `calc.Version() != 1` is true, but `!calc.Compatible()` is false, so the `t.Fatal` branch is not taken and the test passes.
+- `TestAVersion` continues to pass because `Version()` is untouched and still returns `2`.
+- No assertion is weakened, skipped, or removed; no test file, no `__tests__/` directory, and nothing under `docs/` is modified.
+
+## Do Not
+- Do not change `Version()` to `1` (that would break `TestAVersion`, which requires `2`).
+- Do not add build tags, skips, or any new files.
+- Do not reformat or re-order the rest of `services/calc/calc.go`.
 
 ---
 

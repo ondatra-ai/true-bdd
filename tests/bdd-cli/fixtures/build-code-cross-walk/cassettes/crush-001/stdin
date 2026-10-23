@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAVersion
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAVersion
@@ -72,6 +72,8 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -79,10 +81,10 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAVersion
 
 ## Target
-Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it, and do NOT touch anything under `docs/`.
+Apply the change under `services/*` only. The test at `tests/suite/calc_test.go` is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go`, `services/*/__tests__/`, or `docs/`.
 
 ## Root Cause
-`tests/suite/calc_test.go:8-12` asserts `calc.Version() == 2`:
+`tests/suite/calc_test.go` asserts:
 
 ```go
 func TestAVersion(t *testing.T) {
@@ -92,7 +94,7 @@ func TestAVersion(t *testing.T) {
 }
 ```
 
-The production source `services/calc/calc.go` still returns the pre-migration value:
+The production source `services/calc/calc.go` currently reads:
 
 ```go
 package calc
@@ -101,18 +103,13 @@ func Version() int     { return 1 }
 func Compatible() bool { return false }
 ```
 
-Hence `Version() = 1, want 2`.
-
-## Staged Migration Scope (IMPORTANT)
-This repair is stage 1 of a staged migration and is scoped to `TestAVersion` ONLY:
-- Change `Version` to return `2`.
-- Leave `Compatible` EXACTLY as it is (`return false`). Do NOT flip it to `true` in this step — compatibility support is a separate, later repair (`TestBCompatibility`), and changing it now would jump ahead of the staged migration.
-- Do not add new files, helpers, constants, or comments. One token changes.
+`Version()` returns `1`, so the assertion fails with `Version() = 1, want 2`.
 
 ## Required Changes
-### Change #1: Bump the reported version from 1 to 2
+
+### Change #1: Bump `Version()` to return 2
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file.
+**Action:** Use the Edit tool on this existing file. Replace only the `Version` function line. Leave `Compatible` exactly as it is (`return false`) — this is a staged migration and compatibility support is a separate repair, handled when `TestBCompatibility` is the subject.
 
 **old_string:**
 ```
@@ -124,9 +121,15 @@ func Version() int     { return 1 }
 func Version() int     { return 2 }
 ```
 
-Note: preserve the existing gofmt alignment (the multiple spaces between `int` and `{` line up with the `bool` on the `Compatible` line). Copy the strings above verbatim.
+## Explicitly Out Of Scope For This Stage
+- Do NOT change `func Compatible() bool { return false }`. It must remain `false` in this change.
+- Do NOT add, rename, or remove any other declaration in `services/calc/calc.go`.
+- Do NOT create new files.
+- Do NOT weaken, skip, or remove any test assertion.
 
-## Resulting File (for verification only — do not rewrite the file wholesale)
+## Expected Result After The Change
+`services/calc/calc.go` is exactly:
+
 ```go
 package calc
 
@@ -134,14 +137,7 @@ func Version() int     { return 2 }
 func Compatible() bool { return false }
 ```
 
-## Constraints Recap
-- Only `services/calc/calc.go` may be written/edited.
-- Do NOT modify any file under `tests/`, any `*_test.go`, anything under `services/*/__tests__/`, or anything under `docs/` (including `docs/scenarios.yaml`).
-- Do NOT weaken, skip, or remove any assertion.
-- Do NOT run the test suite yourself; the Go-side runner is authoritative.
-
-## Done When
-`services/calc/calc.go` declares `func Version() int     { return 2 }` and `func Compatible() bool { return false }` is byte-for-byte unchanged.
+`TestAVersion` then observes `calc.Version() == 2` and passes.
 
 ---
 

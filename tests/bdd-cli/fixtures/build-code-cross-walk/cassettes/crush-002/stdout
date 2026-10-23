@@ -1,7 +1,7 @@
-Edit applied; shell verification is blocked by the workspace guard, but the resulting file matches the expected content exactly (`Version()` stays 2, `Compatible()` now returns `true`), which satisfies both `TestAVersion` and `TestBCompatibility`.
+The edit was applied successfully (shell verification is blocked by the guard hook, but the change is the exact single-token replacement specified).
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed Compatible() to return true; Version() untouched at 2"
+summary: "Changed Compatible() to return true so TestBCompatibility passes while Version() stays 2"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===

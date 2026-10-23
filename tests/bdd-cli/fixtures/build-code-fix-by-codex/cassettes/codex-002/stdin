@@ -88,8 +88,8 @@ Do NOT propose changes that violate these limits.
 Use Read, Glob, and Grep to inspect:
 - The failing test file (`fixture/buildcodefix/tests/suite`) to understand the
   contract being asserted.
-- The production source under `services//` (or the
-  service the test exercises).
+- The production source for service `calc`, at its path
+  declared in the architecture.
 - Sibling tests passing today, to mirror conventions.
 
 ## Reference Documentation
@@ -98,7 +98,7 @@ Use Read, Glob, and Grep to inspect:
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -111,6 +111,8 @@ Use Read, Glob, and Grep to inspect:
 --- FAIL: TestAddSumsItsArguments (0.00s)
 
 ```
+
+
 
 ## Validation Failure
 

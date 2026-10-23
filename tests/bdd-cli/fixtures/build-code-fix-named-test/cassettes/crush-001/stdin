@@ -58,7 +58,7 @@ summary: "<one-line summary>"
 ## Subject — Failing Test
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
-**Service:** 
+**Service:** calc
 **Suite:** go-test
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
@@ -72,6 +72,8 @@ summary: "<one-line summary>"
 
 ```
 
+
+
 ---
 
 ## Fix Prompt to Apply
@@ -79,38 +81,40 @@ summary: "<one-line summary>"
 # Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
 ## Target
-Apply the change(s) under `services/*` only. The test at `tests/suite/add_test.go`
-(`fixture/buildcodefix/tests/suite::TestAddSumsItsArguments`) is the contract; do NOT
-modify it, and do not touch anything under `tests/`, any `*_test.go`, any
-`services/*/__tests__/`, or anything under `docs/`.
+Apply the change(s) under `services/*` only. The test at
+`tests/suite/add_test.go` (`fixture/buildcodefix/tests/suite`) is the contract; do NOT modify it,
+and do NOT touch anything under `tests/`, any `*_test.go` file, any
+`services/*/__tests__/` directory, or anything under `docs/`.
 
 ## Root Cause
-`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`:
-
-```go
-got := calc.Add(2, 3)
-if got != 5 {
-	t.Fatalf("Add(2, 3) = %d, want 5", got)
-}
-```
-
-The production function in `services/calc/calc.go` subtracts instead of adds:
-
-```go
-func Add(a, b int) int {
-	return a - b
-}
-```
-
-`2 - 3 == -1`, which matches the observed failure `Add(2, 3) = -1, want 5`. The
-smallest production fix is to correct the operator from `-` to `+`. No test
-assertion is weakened, skipped, or removed.
+`tests/suite/add_test.go::TestAddSumsItsArguments` calls `calc.Add(2, 3)` and
+requires the result to equal `5`. The production implementation in
+`services/calc/calc.go` subtracts instead of adding, so it returns `-1`,
+matching the observed failure `Add(2, 3) = -1, want 5`.
 
 ## Required Changes
 
-### Change #1: Correct the arithmetic operator in `calc.Add`
+### Change #1: Correct the operator in `calc.Add` so it returns the sum
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file.
+**Action:** Use the Edit tool on this existing file. Replace the single
+`return` statement inside `Add` so it adds rather than subtracts.
+
+**old_string** (verbatim slice to replace):
+```
+	return a - b
+```
+
+**Content / new_string:**
+```
+	return a + b
+```
+
+Keep the leading tab exactly as shown — the file is gofmt'd with tab indentation.
+
+### Optional tidy-up (same file, only if trivially safe)
+The doc comment above `Add` currently describes the planted defect and becomes
+stale once the operator is fixed. If you update it, use the Edit tool on
+`services/calc/calc.go` with:
 
 **old_string:**
 ```
@@ -120,49 +124,26 @@ assertion is weakened, skipped, or removed.
 // defect the fix loop has to correct, and it is in PRODUCTION source —
 // the test asserting 5 is right, and repairing the code rather than the
 // assertion is the whole contract of `build code`.
-func Add(a, b int) int {
-	return a - b
-}
 ```
 
 **new_string:**
 ```
 // Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
 ```
 
-Note: the stale doc comment describing the planted defect is removed along with
-the defect itself, so the comment no longer contradicts the code. If an exact
-match on the full block above fails (e.g. the em dash or line wrapping differs),
-fall back to the minimal edit instead — replace exactly:
+This is cosmetic only; the behavioral fix is Change #1.
 
-```
-	return a - b
-```
+## Do NOT
+- Do not edit `tests/suite/add_test.go` or `tests/suite/canary_test.go`.
+- Do not change the function signature `func Add(a, b int) int` — the test
+  calls `calc.Add(2, 3)` and compares the result to an `int` literal.
+- Do not change the package name (`package calc`) or the file path — the test
+  imports `fixture/buildcodefix/services/calc`.
+- Do not weaken, skip, or remove any assertion.
 
-with:
-
-```
-	return a + b
-```
-
-## Verification Expectation
-After the edit, `services/calc/calc.go` must read (package clause and remaining
-comments aside):
-
-```go
-package calc
-
-// Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
-```
-
-`calc.Add(2, 3)` then returns `5` and `TestAddSumsItsArguments` passes. Do not run
-the test yourself — the Go-side runner is authoritative and will re-execute it.
+## Expected Result
+`calc.Add(2, 3)` returns `5`, so `TestAddSumsItsArguments` passes. No other
+test behavior changes.
 
 ---
 

@@ -106,6 +106,8 @@ func loadFailingTests(
 			return nil, err
 		}
 
+		specifyCodeFailures(deps, arch, architectureFile, failures)
+
 		sort.Slice(failures, func(i, j int) bool {
 			return failures[i].ID < failures[j].ID
 		})

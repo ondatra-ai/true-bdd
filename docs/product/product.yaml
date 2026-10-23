@@ -566,6 +566,15 @@ catalogue:
       that says the right thing.
     terms: [project tree, pattern, template]
 
+  - template: 'every file matching "{glob}" [matches|does not match] {expected:pattern}'
+    block: then
+    means: >-
+      At least one file in the project tree matches the glob, and every
+      matching file's content satisfies the named pattern comparison.
+      Scratch files count, so a Scenario can inspect saved rendered prompts.
+      An invalid glob or pattern fails the step.
+    terms: [glob, project tree, pattern, template]
+
   - template: 'exactly {count:number} file[s] matching "{glob}" [is|are] created'
     block: then
     means: >-

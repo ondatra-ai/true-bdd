@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/catalogue"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/registry"
 )
 
 // FailureOutputCap is the maximum number of bytes of failure output
@@ -15,6 +18,8 @@ const FailureOutputCap = 8 * 1024
 // Runner's Discover; refreshed in-place by RunOne during the engine's
 // PostFix hook.
 type FailingTest struct {
+	Scenario      *registry.RegistryScenario
+	Spec          catalogue.Specification
 	ID            string    // "<service>/<suite>/<sanitized framework id>"
 	Service       string    // architecture.yaml service.name — the suite's `service:`
 	Suite         string    // architecture.yaml testing.suites[].name
