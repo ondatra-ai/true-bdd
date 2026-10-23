@@ -105,8 +105,12 @@ func newCommand(ctx context.Context, argv []string, opt Options) (*exec.Cmd, err
 	cmd.Stdin = opt.Stdin
 	cmd.WaitDelay = opt.WaitDelay
 
-	if opt.Group {
+	if opt.Group || opt.Session {
 		applyGroup(cmd)
+
+		if opt.Session {
+			cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		}
 	}
 
 	return cmd, nil

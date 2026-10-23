@@ -22,7 +22,7 @@ const Bin = "go"
 // -C rather than a working directory so the caller's own cwd is untouched.
 func Build(opt shell.Options, dir, binPath, pkg string) error {
 	result, err := shell.Run(context.Background(),
-		[]string{Bin, "build", "-C", dir, "-o", binPath, pkg}, opt)
+		[]string{Bin, buildVerb, "-C", dir, "-o", binPath, pkg}, opt)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func Build(opt shell.Options, dir, binPath, pkg string) error {
 // its counters there on exit. No VCS stamp: go1.25 fails it in a git worktree.
 func BuildCovered(opt shell.Options, dir, binPath, pkg, coverPkg string) error {
 	result, err := shell.Run(context.Background(), []string{
-		Bin, "build", "-C", dir, "-buildvcs=false", "-cover", "-coverpkg=" + coverPkg, "-o", binPath, pkg,
+		Bin, buildVerb, "-C", dir, "-buildvcs=false", "-cover", "-coverpkg=" + coverPkg, "-o", binPath, pkg,
 	}, opt)
 	if err != nil {
 		return err
