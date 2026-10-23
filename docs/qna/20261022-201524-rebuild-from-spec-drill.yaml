@@ -1,0 +1,236 @@
+# Q&A log of one grilling session (mpc_grill-with-docs).
+
+intent: |
+  A one-off check, the milestone after #127: build the next version of TrueBDD from
+  the specification documents alone. Delete the code, generate the step definitions
+  as a separate stage, then generate the engine itself, and verify that the
+  previously built engine behaves exactly like the newly built one. The user asked
+  for a light grilling, and asked how step definitions are generated today.
+
+log:
+  - decision_trace:
+      research:
+        - |
+          Step definitions are written today by `build tests --fix`: stepcoverage.Scan finds
+          unbound Registry steps without a model, and build-tests.yaml's `F:` hands the model
+          the catalogue phrase, the glossary meaning, the `architecture.terms` mapping, the
+          Scenario and its neighbours; it appends a `suite.Step` under tests/bdd-cli/steps/.
+          The generated `_test.go` files render deterministically from the Registry and steps.
+        - |
+          #155's drill deleted all 55 step definitions and rebuilt them from the spec: 46 of
+          55 byte-identical, replay 196 of 197, about $30. #173 (`build tests --fix` never
+          runs what it writes) is still open.
+        - |
+          The previous session's Q1 (docs/qna/20261021-112516-self-spec-and-doc-validation-chain.yaml)
+          made steps/ committed source, never regenerated per build; only services/bdd-cli
+          is regenerated, pkg/ stays source.
+        - |
+          The engine is about 16.3K lines of non-test Go. The harness builds it in TestMain
+          (tests/bdd-cli/scenarios/scenarios.go:400) and accepts `-engine-bin` to run the same
+          suite against any prebuilt binary.
+      recommendation: |
+        (b): steps and engine, in sequence, the old engine as oracle. Stage 1 rebuilds steps/
+        with the old binary's `build tests --fix` and replays them against the old engine;
+        stage 2 deletes services/bdd-cli and rebuilds it with `build code --fix` against the
+        new steps. One suspect per stage for every red test.
+      settled: |
+        (b), as a research spike: the goal is to find where the spec-only rebuild breaks and
+        collect the findings, possibly across several tasks. Two runs are done separately:
+        one deletes only services/bdd-cli and keeps the committed steps; the other deletes
+        services/bdd-cli and steps/ too. The generated test files are regenerated as well.
+        Fixtures are open: the user first said delete them, then keep, then delete.
+    question: |
+      Q1 - What is deleted and regenerated: (a) only the engine, steps stay committed as the
+      previous session's Q1 decided; (b) steps and engine in sequence with the old engine as
+      oracle: stage 1 rebuilds steps/ with the old binary and replays them against the old
+      engine, stage 2 deletes services/bdd-cli and rebuilds it with `build code --fix` against
+      the new steps; (c) both at once, a red test cannot be attributed to either.
+    answer: |
+      Стой, подожди. Мы же в прошлый раз... Нет, смотри. Это валидационный текст. Я хотел бы это проверить. Да? То есть не спрашивай меня как. То есть смотри, мы удаляем сервис BDD CLI, мы удаляем steps и пытаемся все сгенерить. И смотрим, на каком этапе что поломается. Вот. То есть какая-то такая задача. То есть эта задача, она найти и... Ну, то есть это такой большой research spike, который нужно сделать, наверное, на несколько задач, потом собрать информацию, что где поломалось. Хотя задача маленькая. Смотри, удаляем просто services, там, BDD CLI, удаляем steps и пытаемся как-то, короче, удаляем фикстуры, все удаляем и пытаемся запустить это дело, ну, вот на реальном. Ой, нет, не удаляем фикстуры. А, да, удаляем фикстуры, потому что, смотри, нам нужно будет как-то сгенерить тесты, там еще что-то, потом сгенерить код. Вот. Короче, steps тоже удаляем. Мне хочется посмотреть, что будет, если даже steps мы удалим. А вообще, если еще точнее, то хотелось бы отдельно проверить с удалением steps и отдельно без удаления steps. Вот даже так. То есть, вот. То есть это скорее B. Кстати, ты как-то очень правильно все это дело прочитала. Я потом додумался. Ну, додумался уже самостоятельно, как бы, к этому же самому пришел.
+  - decision_trace:
+      research:
+        - |
+          197 fixtures, 15 MB: 616 files under `input/` (designed host projects: docs/,
+          Next.js apps, prep.sh) and 1214 cassette files.
+        - |
+          No engine command or checklist creates a fixture; the spec says how a fixture is
+          used (docs/architecture/architecture.yaml:343), not what each `input/` holds.
+        - |
+          Replay refuses a fixture with no cassettes; re-recording means live models on every
+          Scenario, and loses the byte-level comparison of old and new prompts.
+      recommendation: |
+        (a): keep fixtures whole, input and cassettes, as source beside the spec; the
+        cassettes make the old-versus-new comparison exact. Record "the spec does not
+        describe fixture contents" as the spike's first finding without a run.
+      settled: |
+        Rejects (a) as the only variant: fixtures are run both ways, kept and deleted, and
+        cassettes may be re-recorded live whatever it costs. The ideal setup is the three
+        spec documents alone (product, architecture, Registry), from which tests and code are
+        always fully recovered; neither tests nor code would be kept. This task only
+        validates how far that holds today and what is missing, through several cuts. A cut
+        is run until it is clear it will not lead to generation, not necessarily to the end.
+    question: |
+      Q2 - Fixtures: (a) keep them whole, input and cassettes, as source; (b) keep input,
+      delete cassettes and re-record live with the new engine; (c) delete everything, the run
+      breaks at the first "project tree" Given step since nothing describes fixture contents.
+    answer: |
+      Слушай, смотри, я бы с фикстурами, ну, то есть это вот как со степсами, да, надо как-то проверить, а как это будет работать, если мы их удалим, как будет работать, если не удалим, потому что и вообще все перегенерим на живо, даже несмотря на то, сколько это будет стоить, ну, и как долго этот процесс будет происходить. Вот. То есть... я бы хотел запустить этот research. То есть провернуть несколько вариантов и найти какие-то проблемы. Сами по себе тесты, да, смотри, нужно прогонять, скорее всего, будет не все, а до того момента, пока станет понятно, что это не приведет к нужному, ну, как бы не переведет к генерации. Вообще в идеале, смотри, наш идеальный сетап, это у нас есть только спецификация, вот три документа. И мы из этих трех документов всегда можем восстановить полноценно, вот восстановить полностью тесты. И полностью восстановить код. Да, то есть, как бы, то есть, по идее, ни тестов, ни кода у нас не должно быть. И мы могли бы, ну, то есть мы должны были бы восстановить код. Но задача сейчас как-то провалидировать, а что будет происходить. То есть задача именно валидационная, вот, потому что пока не видно, как это будет работать или не будет работать. И пока не видно, чего не хватает, чтобы это начало работать. И так далее. Поэтому здесь нужны просто несколько разрезов для тестирования.
+  - decision_trace:
+      research:
+        - |
+          Besides spec, code and tests the repo holds true-bdd/ (config, checklists, schemas),
+          templates/ (the engine's prompts, which the byte-identical prompt requirement rests
+          on) and pkg/ (the pkg/testkit harness and the shared IO channels).
+        - |
+          With the engine code deleted, the rebuild is driven by the old binary built before
+          the deletion, as a compiler bootstraps.
+      recommendation: |
+        Four cuts, each deleting one layer more, from one base commit in separate worktrees,
+        nothing merged: A deletes services/bdd-cli (build code --fix, replay); B adds steps/
+        and the generated test files (build tests --fix, then build code --fix, replay); C
+        adds the cassettes, fixture input kept (both builds, live record, new cassettes
+        diffed against the committed ones); D adds the fixture input, only the spec left.
+        Every cut keeps the three documents and stories, true-bdd/, templates/, pkg/ and
+        scripts/. Run order A, B, C, D.
+      settled: |
+        The four cuts A-D as recommended, in that order. Each cut stops at its first
+        blocker: the first place where it becomes clear the goal is unreachable, which is
+        recorded; tests are not driven to the end. The goal: the three documents become the
+        only source of how the system is built, and the system is fully recovered from
+        them. Recovery means functionality, not the codebase: the code is not preserved,
+        its behaviour is.
+    question: |
+      Q3 - The cut set: A deletes services/bdd-cli; B also steps/ and the generated test
+      files; C also the cassettes, fixture input kept; D also the fixture input, only the
+      spec left. All keep the three documents and stories, true-bdd/, templates/, pkg/ and
+      scripts/; run order A, B, C, D.
+    answer: |
+      Да, окей, с этими четырьмя разрезами. Давай попробуем с ними. Смотри, важный момент, что мы не должны доводить тесты там до самого конца, а смотреть, вот где произошел какой-нибудь блокер, который не позволяет. Ну, короче, нам достаточно увидеть просто первое попавшееся место, где будет происходить разрыв в достижении цели. Ну, то есть, где станет понятно, что достижение цели будет недостижимо. Невозможно выбрать вот эту вещь, зафиксировать ее, а достижение цели ты помнишь, да, там, что мы должны научиться перегенерировать код полностью. То есть три документа должны стать единственным источником информации о том, как строить систему. Или еще можно сказать, что цель, текущий момент, да, цель – это система должна восстанавливаться, полноценно восстанавливаться из трех источников. Под восстановлением имеется в виду восстановление функционала, а не кодовой базы. То есть мы не сохраняем кодовую базу, мы сохраняем функционал.
+  - decision_trace:
+      research:
+        - |
+          The harness flag `-engine-bin` (tests/bdd-cli/scenarios/scenarios.go:387) runs any
+          suite against a prebuilt binary, so the original committed suite (old steps,
+          fixtures and cassettes, 197 Scenarios) replays against any cut's new engine in
+          minutes, at no cost.
+        - |
+          In C and D the suite is regenerated and recorded against the same new engine, so it
+          is green against it by construction; in B a regenerated step may assert less than
+          the original and let a broken engine pass.
+        - |
+          GLOSSARY.md (Host project): the engine's next version is specified and built by its
+          previous one, which the bootstrap by the old binary matches.
+      recommendation: |
+        (a): the original committed suite is the oracle, all 197 Scenarios replayed against
+        the new binary through `-engine-bin`; it is the only check independent of what the
+        cut generated, it is free, and the extra differences (c) would catch are behaviour no
+        Scenario specifies, outside the functionality the goal preserves.
+      settled: |
+        (a). In a cut that deleted tests or steps, the deleted suite is regenerated and the
+        engine built through it, then the original committed suite is restored and the new
+        engine is tested through it.
+    question: |
+      Q4 - How we check that the new engine works like the old one, in every cut that
+      reaches a built engine: (a) the original committed suite as oracle, all 197 Scenarios
+      replayed against the new binary through `-engine-bin`; (b) only the cut's own suite,
+      circular for C and D; (c) (a) plus a differential run of the same commands on the same
+      fixture inputs through both binaries, diffing full stdout and file trees.
+    answer: |
+      В общем-то, да. Только смотри, тут очень интересная штука. Нам нужно взять A, но поскольку ты помнишь, что мы ж где-то хотели, ну, то есть мы ж где-то хотели удалить тесты и степы, там, да, у тебя 4 шага, поэтому тебе как будто нужно их удалить, перегенерировать, а потом вернуть и через них протестировать. То есть такая какая-то сложная концепция, если ты понял, о чем я.
+  - decision_trace:
+      research:
+        - |
+          `build code` runs only the `replay` command; README.md:454 calls `record` and `live`
+          reserved for commands that do not exist yet. No pipeline command records cassettes
+          or creates fixture input.
+        - |
+          On the ladder, A's blocker at the `build code` stage is shared by B, C and D, which
+          can only find blockers at earlier stages: B for `build tests` from zero, C for where
+          cassettes come from, D for where fixtures come from.
+        - |
+          C's chain: `build tests --fix` needs no cassettes; the next stage needs an engine to
+          record them, and the new engine is built by `build code`, which itself needs them.
+      recommendation: |
+        (a): the missing stage is the blocker, recorded as a finding, and the cut ends there
+        with no live run; the ideal setup has no old engine to record with, and cassettes the
+        old engine records add little over B, which already builds against equivalent ones.
+      settled: |
+        (a): when a cut reaches a stage the pipeline lacks (C: recording cassettes; D:
+        creating fixture input), that stage is the cut's blocker, recorded as a finding; no
+        live recording and no hand-made fixtures. Q3's stop rule wins over Q2's willingness
+        to re-record live.
+    question: |
+      Q5 - What happens when a cut reaches a stage the pipeline lacks entirely (C: record
+      cassettes; D: create fixture input), given Q2's "re-record live whatever it costs" and
+      Q3's "stop at the first blocker": (a) stop, the missing stage is the blocker, recorded
+      as a finding, no live run; (b) work around, the old engine records cassettes in record
+      mode through `-engine-bin`, then `build code --fix` builds the new engine against them,
+      and an agent writes D's fixtures by hand from the spec.
+    answer: |
+      Да, давай, эй.
+      [Request interrupted by user]
+      A)
+  - decision_trace:
+      research:
+        - |
+          One `build code --fix` invocation is bounded: at most 5 fixes per test and 5 outer
+          re-walks (services/bdd-cli/internal/app/runner/runner.go:259), so it ends by itself.
+        - |
+          With services/bdd-cli empty the harness fails to build the engine in TestMain, so the
+          first invocation sees one broken build, not 197 failing tests; the engine would grow
+          over several invocations.
+      recommendation: |
+        (b): re-run while every invocation turns at least one more test green; blocked when an
+        invocation makes no progress, or a command refuses or crashes; then diagnose the first
+        test that stays red and record its cause (spec gap, pipeline gap, model weakness).
+      settled: |
+        Delegated: Claude decides during execution whether a cut continues or stops, balancing
+        it against the goal. The task is research more than delivery; its output is a plan
+        for the next spec, which is grilled in a separate session.
+    question: |
+      Q6 - When are A and B blocked: (a) at the first `build code --fix` (or `build tests
+      --fix`) invocation that exits non-zero; (b) re-run while each invocation turns at least
+      one more test green, blocked on no progress, a refusal or a crash, then diagnose the
+      first test that stays red; (c) as (b) with a cost or time cap per cut.
+    answer: |
+      На самом деле я хотел бы, чтобы ты сам продумывал, как это сделать, исходя из той цели, которая у нас стоит. В том числе и баланс между продолжить и остановиться. То есть я бы на самом деле прям даже в этой задаче делегировал тебе вот даже во время выполнения этой задачи делегировал бы тебе принимать решение, стоит ли продолжать или нет, исходя из того, что это research в большей степени, чем конкретная задача. Research, с которого нам нужно получить план для, например, следующей спеки, которую мы отдельно потом пойдем погрилим.
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Start from Q6 (b) and judge each cut against the goal.
+      settled: |
+        The working stop rule: re-run a build command while each invocation turns more tests
+        green; stop a cut on no progress, a refusal, a crash, or as soon as the cause of its
+        blocker is clear enough to shape the next spec, even before the loop gives up. Each
+        blocker is classed as a spec gap, a pipeline gap or a model weakness, with its
+        evidence.
+    question: |
+      What rule decides, during execution, whether a cut continues or stops?
+    answer: |
+      Claude, delegated in Q6: re-run while each invocation makes progress; stop on no
+      progress, a refusal, a crash, or once the blocker's cause is clear enough to shape the
+      next spec; class every blocker as a spec gap, a pipeline gap or a model weakness.
+  - decision_trace:
+      research:
+        - |
+          The repo has no research directory; mpc_research writes one Markdown file in the
+          repo; docs/history/ is gitignored.
+        - |
+          CLAUDE.md hands code to Codex, but in the cuts the engine writes the code through
+          `build code --fix`; the session runs the commands and reads the results, so it runs
+          the cuts itself.
+      recommendation: |
+        (a): a parent spike issue with four sub-issues A-D, each closed with its finding; the
+        parent closed with a summary committed as docs/research/<date>-rebuild-from-spec.md,
+        the input of the next grilling; worktrees and logs under tmp/, regenerated code on
+        local branches, never pushed or merged.
+      settled: |
+        One GitHub issue for the whole spike, no sub-issues per cut. What the report holds
+        and how it is written is decided after the results are in.
+    question: |
+      Q7 - What the spike delivers and where it lives: (a) a parent issue with four
+      sub-issues A-D, each closed with its finding, the parent closed with a summary committed
+      under docs/research/; (b) only a Markdown report in the repo; (c) only issues.
+    answer: |
+      Слушай, я бы вообще принял это решение уже по результатам работы самого тикета. То есть зачем об этом думать сейчас, если мы можем проанализировать это, как бы, когда получим уже все результаты. Вот. То есть вообще, в принципе, это скорее A, да, но я бы не делал что-то типа там 4 sub-issue AD, да, вот. Я бы все это записал в одну GitHub issue. Но как конкретно, и что там будет, и какие у нас будут находки, ну, надо разбираться.
