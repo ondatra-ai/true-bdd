@@ -34,12 +34,13 @@ type FixApplierData struct {
 
 // ApplyParams contains the parameters for one fix application.
 type ApplyParams struct {
-	Subject   any    // Current subject to modify
-	SubjectID string // Subject identifier
-	FixPrompt string // The concrete fix prompt to apply
-	Check     string // The failed `D:` check's name; "" for a `Q:` prompt
-	TmpDir    string // Run artifact directory
-	Iteration int    // 1-based apply counter, for file naming
+	WatchWriterResponse bool
+	Subject             any    // Current subject to modify
+	SubjectID           string // Subject identifier
+	FixPrompt           string // The concrete fix prompt to apply
+	Check               string // The failed `D:` check's name; "" for a `Q:` prompt
+	TmpDir              string // Run artifact directory
+	Iteration           int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
 	// evaluator while the prompt was in scope and carried here on the
 	// failed check; empty means engine.default_apply_model.
@@ -159,17 +160,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	a.savePromptFile(params.SubjectID, params.Iteration, "system", systemPrompt)
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
-	mode := a.selectMode()
-
-	if model.CLI == provider.CLICrush {
-		mode.TestCommand = a.testCommand
-	}
-
-	response, err := a.aiClient.ExecutePromptWithSystem(
-		// No result schema: this repo routes every apply turn to crush,
-		// which cannot enforce one (adapters/ai.SupportsResultSchema).
-		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
-	)
+	response, err := a.execute(ctx, model, systemPrompt, userPrompt, params.WatchWriterResponse)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
@@ -309,4 +300,22 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 	} else {
 		slog.Info("Prompt saved", "file", filePath)
 	}
+}
+
+func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
+	watch bool) (string, error) {
+	mode := a.selectMode()
+	options := provider.TurnOptions{}
+
+	if model.CLI == provider.CLICrush {
+		mode.TestCommand = a.testCommand
+		options.WatchWriterResponse = watch
+	}
+
+	return a.aiClient.ExecutePromptWithSystem(
+		// No result schema: this repo routes every apply turn to crush,
+		// which cannot enforce one (adapters/ai.SupportsResultSchema).
+		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
+		options,
+	)
 }

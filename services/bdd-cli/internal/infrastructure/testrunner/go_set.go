@@ -47,6 +47,10 @@ func (events *goEventStream) recordSet(members []*FailingTest) {
 		}
 
 		output := events.outputFor(pkg, test)
+		if output == "" && events.failedBuild[pkg] != "" {
+			output = events.outputFor(pkg, goBuildFailureMarker)
+		}
+
 		if !passed && !events.hasFailureFor(pkg, test) {
 			output = member.TestName + " did not run: no passing result of its own\n" + output
 		}

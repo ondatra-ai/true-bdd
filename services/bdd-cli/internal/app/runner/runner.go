@@ -41,6 +41,8 @@ type Spec[I any] struct {
 	Fix bool
 	// DeferCompletion lets a caller announce success after post-run validation.
 	DeferCompletion bool
+	// RecoverWriterFailures lets build code rerun files left by a failed writer.
+	RecoverWriterFailures bool
 
 	// LoadItems is the per-command source: us refine loads from
 	// docs/product/stories/, us apply parses the refined story into one
@@ -424,18 +426,17 @@ func buildFixClosure[I any](
 		subjectID, _ := spec.GetSubject(item)
 
 		content, err := spec.FixApplier.Apply(ctx, validate.ApplyParams{
-			Subject:   item,
-			SubjectID: subjectID,
-			FixPrompt: decision.FixPrompt,
-			Check:     latestResult.Check,
-			TmpDir:    spec.TmpDir,
-			Iteration: fixCount,
-			ModelTier: latestResult.ApplyModelTier,
+			Subject:             item,
+			SubjectID:           subjectID,
+			FixPrompt:           decision.FixPrompt,
+			Check:               latestResult.Check,
+			TmpDir:              spec.TmpDir,
+			Iteration:           fixCount,
+			ModelTier:           latestResult.ApplyModelTier,
+			WatchWriterResponse: spec.RecoverWriterFailures,
 		})
 		if err != nil {
-			if spec.Name == "build code" && spec.PostNotApplied != nil && errors.Is(err, pkgerrors.ErrFixApplierNoContent) {
-				slog.Warn("Writer confirmation missing", "error", err)
-
+			if spec.PostNotApplied != nil && recoverWriterFailure(spec.RecoverWriterFailures, err) {
 				return spec.PostNotApplied(ctx, item)
 			}
 

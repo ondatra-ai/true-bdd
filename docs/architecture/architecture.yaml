@@ -338,7 +338,7 @@ architecture:
         Subject.Groups[].IDs: >-
           Every member id in this group, in discovery order, joined with comma and space.
         Subject.Groups[].Output: >-
-          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run. Refreshed after every apply.
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run; a selected Go test with no output because its package failed to build also carries the compiler and package output. Refreshed after every apply.
         Subject.Documents: >-
           Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
         Subject.Scenarios: >-
@@ -419,7 +419,7 @@ architecture:
         Subject.Groups[].IDs: >-
           Every member id in this group, in discovery order, joined with comma and space.
         Subject.Groups[].Output: >-
-          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run. Refreshed after every apply.
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run; a selected Go test with no output because its package failed to build also carries the compiler and package output. Refreshed after every apply.
         Subject.Documents: >-
           Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
         Subject.Scenarios: >-
@@ -637,8 +637,27 @@ architecture:
                 the exit, so the turn runs as its own process group, killed as
                 one, with a 10-second bound on the wait after the exit.
               - >-
-                stdout and stderr merge into one transcript; a non-zero exit
-                fails the turn.
+                stdout and stderr merge into one transcript. Only the build code
+                applier explicitly requests a response watch through turn options
+                carried to the router's Request.WatchWriterResponse field. It reads
+                this turn's options.data_directory/logs/crush.log as JSON records:
+                ModelProvider called opens a model response; the next record of
+                any kind closes it, and Hook completed opens tool execution.
+                Only an open model response is timed. At ten minutes the engine
+                stops the process group and logs one WARN, Writer response stalled,
+                naming label, minutes and log_path. No model record means no timer;
+                tool execution is never timed. This is ADR-0020's deliberate
+                exception to unbounded AI turns, not a turn deadline. No prompt,
+                checklist or template states the bound.
+              - >-
+                A started crush turn stopped by that watch, exiting non-zero or
+                returning empty/whitespace-only output reports a distinct
+                CrushTurnError outcome. Only build code's apply routes it to
+                PostNotApplied, preserving files and rerunning the remaining set.
+                Non-stall outcomes log one Writer turn failed WARN; the stall
+                watch already logged its WARN. A process-start failure or engine
+                refusal before spawning stays fatal. Every other command and AI
+                role retains its existing behavior.
         - name: codex
           protocol: cli
           scope: third_party
@@ -1036,7 +1055,7 @@ architecture:
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false and successful responses missing the confirmation; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun; provider failures stay fatal. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles and other providers' failures stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads

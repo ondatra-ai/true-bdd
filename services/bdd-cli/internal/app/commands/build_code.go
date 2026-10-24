@@ -50,10 +50,11 @@ func RunBuildCode(
 	execution := newBuildCodeExecution(deps, architectureFile, fix)
 
 	err := runner.Run(ctx, runner.Spec[*BuildCodeItem]{
-		Name:          "build code",
-		ChecklistName: "build-code",
-		StoryID:       "",
-		Fix:           fix,
+		Name:                  "build code",
+		ChecklistName:         "build-code",
+		StoryID:               "",
+		Fix:                   fix,
+		RecoverWriterFailures: true,
 
 		LoadItems:      execution.discover,
 		ReloadItems:    execution.discover,

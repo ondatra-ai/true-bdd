@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -81,16 +82,38 @@ func (p *CrushProvider) Execute(ctx context.Context, req Request) (string, error
 		Env:     env,
 	}
 
+	if req.WatchWriterResponse {
+		turn.Watch = &crush.ResponseWatch{
+			LogPath: filepath.Join(crushDataDir(req, configDir), "logs", "crush.log"), Label: req.Label,
+		}
+	}
+
 	transcript, runErr := turn.Run()
 
 	saveTranscript(artifactPath(req, "crush.log"), transcript)
 
+	return p.turnOutcome(transcript, runErr)
+}
+
+func (p *CrushProvider) turnOutcome(transcript string, runErr error) (string, error) {
 	if runErr != nil {
-		return transcript, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
+		failure := pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
+		if errors.Is(runErr, crush.ErrTurnFailed) {
+			outcome := "non-zero exit"
+			if errors.Is(runErr, crush.ErrResponseStalled) {
+				outcome = "stalled"
+			}
+
+			return transcript, &pkgerrors.CrushTurnError{Outcome: outcome, Cause: failure}
+		}
+
+		return transcript, failure
 	}
 
 	if strings.TrimSpace(transcript) == "" {
-		return "", pkgerrors.ErrProviderProducedNoOutput(p.Name())
+		return "", &pkgerrors.CrushTurnError{
+			Outcome: "empty output", Cause: pkgerrors.ErrProviderProducedNoOutput(p.Name()),
+		}
 	}
 
 	return transcript, nil

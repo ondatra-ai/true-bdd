@@ -26,6 +26,8 @@ type Request struct {
 	TmpDir string
 	// Label distinguishes concurrent artifacts within TmpDir.
 	Label string
+	// WatchWriterResponse requests the build-code crush response watch.
+	WatchWriterResponse bool
 }
 
 // Provider runs one prompt through a single agent CLI and returns the

@@ -245,12 +245,17 @@ glossary:
       provider response without the result confirmation also counts as a
       completed apply for build code: files stay as written, the engine warns
       once with the result path and reruns the set through the not-applied
-      path. A provider failure, including empty or whitespace-only crush
-      output, a failed execution or a refused CLI, still ends the command.
-      Missing confirmations consume the same allowance; the terminal apply
+      path. A started crush writer that stalls, exits non-zero or returns empty
+      or whitespace-only output also counts as a completed apply: its files
+      stay, the outcome is logged once at WARN and the tests decide through
+      the same rerun. A stall means one model response has been open for ten
+      minutes; tool execution and the whole turn have no such bound. A crush
+      that cannot start, or an engine refusal before spawning, stays fatal.
+      Other providers retain their existing failure handling.
+      These outcomes consume the same allowance; the terminal apply
       is rerun but still ends at the non-converging bound even if it passes.
       An extracted malformed block or one without applied keeps its existing
-      handling. Other commands do not recover a missing confirmation.
+      handling. Other commands and other AI roles retain their existing failure handling, including missing confirmations.
 
   - term: failing set
     means: >-

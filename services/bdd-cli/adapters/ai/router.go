@@ -51,6 +51,7 @@ func (r *Router) ExecutePromptWithSystem(
 	model provider.ModelRef,
 	mode ExecutionMode,
 	resultSchema string,
+	options ...provider.TurnOptions,
 ) (string, error) {
 	target, ok := r.providers[model.CLI]
 	if !ok {
@@ -84,6 +85,8 @@ func (r *Router) ExecutePromptWithSystem(
 		TmpDir:       r.tmpDir,
 		Label:        label,
 		ResultSchema: resultSchema,
+		WatchWriterResponse: role == provider.RoleApply && model.CLI == provider.CLICrush &&
+			len(options) > 0 && options[0].WatchWriterResponse,
 	})
 
 	// Logged on both paths: a turn that burned twenty minutes and then

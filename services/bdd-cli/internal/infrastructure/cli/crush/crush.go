@@ -19,6 +19,7 @@ package crush
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,11 @@ const GlobalConfigVar = "CRUSH_GLOBAL_CONFIG"
 // waitDelay bounds how long Wait blocks after the exit — see the package doc.
 const waitDelay = 10 * time.Second
 
+var (
+	ErrTurnFailed      = errors.New("started crush turn failed")
+	ErrResponseStalled = errors.New("crush model response stalled")
+)
+
 // Turn is one non-interactive run. Prompt goes to stdin because crush has no
 // system-prompt flag, so a system prompt has to survive inside the user's.
 type Turn struct {
@@ -48,6 +54,8 @@ type Turn struct {
 	Prompt string
 	// Env is the COMPLETE environment, not a derivation of the parent's.
 	Env []string
+	// Watch is nil except for an explicitly watched build-code writer.
+	Watch *ResponseWatch
 }
 
 // Args is the argv this turn spawns, exported so a caller can assert on it.
@@ -68,23 +76,64 @@ func (t Turn) Args() []string {
 // Run runs the turn and returns crush's combined stdout and stderr, which is
 // returned even when the turn failed: it is the transcript a caller archives.
 func (t Turn) Run() (string, error) {
-	result, err := shell.Run(context.Background(), t.Args(), shell.Options{
-		Dir:       t.WorkDir,
-		Env:       shell.Env{}.Exact(t.Env),
-		Stdin:     strings.NewReader(t.Prompt),
-		Output:    shell.Combined(),
-		Group:     true,
-		WaitDelay: waitDelay,
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	process, err := shell.Start(ctx, t.Args(), shell.Options{
+		Dir: t.WorkDir, Env: shell.Env{}.Exact(t.Env), Stdin: strings.NewReader(t.Prompt),
+		Output: shell.Combined(), Group: true, WaitDelay: waitDelay,
 	})
 	if err != nil {
-		return result.Stdout, fmt.Errorf("%s: %w", Bin, err)
+		return "", fmt.Errorf("%s: %w", Bin, err)
 	}
 
-	if result.Code != 0 {
-		return result.Stdout, fmt.Errorf("%s: %w", Bin, result.Err())
+	return t.wait(process, cancel)
+}
+
+func (t Turn) wait(process *shell.Process, cancel context.CancelFunc) (string, error) {
+	type completed struct {
+		result shell.Result
+		err    error
 	}
 
-	return result.Stdout, nil
+	ended := make(chan completed, 1)
+
+	go func() {
+		result, err := process.Wait()
+		ended <- completed{result, err}
+	}()
+
+	const pollInterval = time.Second
+
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+
+	stalled := false
+
+	for {
+		select {
+		case done := <-ended:
+			if stalled {
+				return done.result.Stdout, fmt.Errorf("%w: %w", ErrTurnFailed, ErrResponseStalled)
+			}
+
+			if done.err != nil {
+				return done.result.Stdout, fmt.Errorf("%w: %w", ErrTurnFailed, done.err)
+			}
+
+			if done.result.Code != 0 {
+				return done.result.Stdout, fmt.Errorf("%w: %w", ErrTurnFailed, done.result.Err())
+			}
+
+			return done.result.Stdout, nil
+		case now := <-ticker.C:
+			if !stalled && t.Watch != nil && t.Watch.Check(now) {
+				stalled = true
+
+				cancel()
+			}
+		}
+	}
 }
 
 // Quote wraps a value for a hook command, which crush parses as a shell line.

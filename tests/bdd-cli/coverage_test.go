@@ -38,6 +38,12 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
+		"build-code-writer-bound/input/templates/build-code.fix-applier.prompt.tpl":                   templateReplacement,
+		"build-code-writer-bound/input/templates/build-code.fix-applier.system.prompt.tpl":            templateReplacement,
+		"build-code-writer-empty/input/templates/build-code.fix-applier.prompt.tpl":                   templateReplacement,
+		"build-code-writer-empty/input/templates/build-code.fix-applier.system.prompt.tpl":            templateReplacement,
+		"build-code-writer-nonzero/input/templates/build-code.fix-applier.prompt.tpl":                 templateReplacement,
+		"build-code-writer-nonzero/input/templates/build-code.fix-applier.system.prompt.tpl":          templateReplacement,
 		"build-code-shrinking-bound/input/templates/build-code.fix-applier.system.prompt.tpl":         templateExtension,
 		"build-code-no-confirmation-passes/input/templates/build-code.fix-applier.prompt.tpl":         templateReplacement,
 		"build-code-no-confirmation-passes/input/templates/build-code.fix-applier.system.prompt.tpl":  templateReplacement,

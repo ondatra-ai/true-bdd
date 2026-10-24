@@ -20,12 +20,19 @@ import (
 )
 
 const (
-	buildCodeCommand = "build code"
-	confirmationTier = "high"
+	usApplyCommand    = "us apply"
+	usRefineCommand   = "us refine"
+	scenCheckCommand  = "scen check"
+	buildCodeCommand  = "build code"
+	confirmationTier  = "high"
+	buildTestsCommand = "build tests"
+	blockAnswer       = "block"
 )
 
 func TestMissingConfirmationRecoversOnlyBuildCode(t *testing.T) {
-	for _, command := range []string{buildCodeCommand, "build tests", "us refine", "us apply", "scen check"} {
+	for _, command := range []string{
+		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
+	} {
 		t.Run(command, func(t *testing.T) {
 			spec := confirmationSpec(t, command, applyAnswer{response: "Changed the service."})
 			reruns := 0
@@ -47,7 +54,7 @@ func TestMissingConfirmationRecoversOnlyBuildCode(t *testing.T) {
 	}
 }
 
-func TestBuildCodeProviderFailuresStayFatal(t *testing.T) {
+func TestBuildCodeUnclassifiedProviderFailuresStayFatal(t *testing.T) {
 	executionFailure := errors.New("crush exited with code 1")
 	for _, testCase := range []struct {
 		name   string
@@ -88,9 +95,11 @@ func TestBuildCodeProviderFailuresStayFatal(t *testing.T) {
 }
 
 func TestExtractedMalformedConfirmationKeepsPostFix(t *testing.T) {
-	for _, command := range []string{buildCodeCommand, "build tests", "us refine", "us apply", "scen check"} {
+	for _, command := range []string{
+		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
+	} {
 		t.Run(command, func(t *testing.T) {
-			for _, response := range []string{"block", "no-applied"} {
+			for _, response := range []string{blockAnswer, "no-applied"} {
 				t.Run(response, func(t *testing.T) {
 					spec := confirmationSpec(t, command, applyAnswer{response: response})
 					applied := 0
@@ -132,17 +141,27 @@ func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
 }
 
 type applyAnswer struct {
+	failRole provider.Role
+	watch    *bool
 	response string
 	err      error
 }
 
 func (answer applyAnswer) ExecutePromptWithSystem(_ context.Context, role provider.Role, _, user string,
-	_ provider.ModelRef, _ provider.ExecutionMode, _ string) (string, error) {
+	_ provider.ModelRef, _ provider.ExecutionMode, _ string, options ...provider.TurnOptions) (string, error) {
+	if role == provider.RoleApply && answer.watch != nil {
+		*answer.watch = len(options) > 0 && options[0].WatchWriterResponse
+	}
+
+	if role == answer.failRole && answer.err != nil {
+		return "", answer.err
+	}
+
 	if role == provider.RoleFix {
 		return `{"fix_prompt":"Repair the service","questions":[]}`, nil
 	}
 
-	if answer.response == "block" {
+	if answer.response == blockAnswer {
 		return "=== FILE_START: " + user + " ===\napplied: true\nsummary: terms: repaired\n" +
 			"=== FILE_END: " + user + " ===", nil
 	}
@@ -198,12 +217,12 @@ sections:
 	}
 
 	defaults := map[provider.Role]string{
- provider.RolePrompt: confirmationTier, provider.RoleFix: confirmationTier, provider.RoleApply: "coder",
- }
+		provider.RolePrompt: confirmationTier, provider.RoleFix: confirmationTier, provider.RoleApply: "coder",
+	}
 
 	models, err := provider.NewRegistry(
- map[string]string{confirmationTier: "claude:test", "coder": "crush:test"}, defaults,
- )
+		map[string]string{confirmationTier: "claude:test", "coder": "crush:test"}, defaults,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,8 +236,9 @@ sections:
 
 	return runner.Spec[bool]{
 		Name: command, ChecklistName: "test", Fix: true, TmpDir: tmp,
-		LoadItems:  func(context.Context) ([]bool, error) { return []bool{false}, nil },
-		GetSubject: func(bool) (string, string) { return "failing-set", "Failing set" },
+		RecoverWriterFailures: command == buildCodeCommand,
+		LoadItems:             func(context.Context) ([]bool, error) { return []bool{false}, nil },
+		GetSubject:            func(bool) (string, string) { return "failing-set", "Failing set" },
 		Checks: checks.Set[bool]{"tests-pass": {Run: func(passed bool, _ checks.Input) (checks.Verdict, error) {
 			return checks.Verdict{Pass: passed}, nil
 		}}},
@@ -244,4 +264,92 @@ func writeConfirmationFile(t *testing.T, path, body string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestOnlyBuildCodeApplierRequestsWatch(t *testing.T) {
+	for _, command := range []string{
+		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
+	} {
+		t.Run(command, func(t *testing.T) {
+			watched := false
+
+			spec := confirmationSpec(t, command, applyAnswer{response: blockAnswer, watch: &watched})
+
+			err := runner.Run(t.Context(), spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if watched != (command == buildCodeCommand) {
+				t.Fatalf("watch requested = %v", watched)
+			}
+		})
+	}
+}
+
+func TestStartedCrushFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
+	for _, command := range []string{
+		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
+	} {
+		for _, role := range provider.Roles() {
+			for _, outcome := range []string{"non-zero exit", "empty output", "stalled"} {
+				t.Run(command+"/"+string(role)+"/"+outcome, func(t *testing.T) {
+					failure := &pkgerrors.CrushTurnError{Outcome: outcome, Cause: errors.New("writer ended")}
+					answer := applyAnswer{err: failure, failRole: role}
+					spec := confirmationSpec(t, command, answer)
+
+					useFailureRole(t, role)
+
+					reruns := 0
+					spec.PostNotApplied = func(context.Context, bool) (bool, error) {
+						reruns++
+
+						return true, nil
+					}
+
+					err := runner.Run(t.Context(), spec)
+					if command == buildCodeCommand && role == provider.RoleApply {
+						if err != nil || reruns != 1 {
+							t.Fatalf("Run = %v, reruns = %d", err, reruns)
+						}
+					} else if !errors.Is(err, failure) || reruns != 0 {
+						t.Fatalf("Run = %v, reruns = %d; want fatal", err, reruns)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestFailedWriterTerminalRerunCannotBypassBound(t *testing.T) {
+	failure := &pkgerrors.CrushTurnError{Outcome: "non-zero exit", Cause: errors.New("writer ended")}
+	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{err: failure})
+	reruns := 0
+	spec.PostNotApplied = func(context.Context, bool) (bool, error) {
+		reruns++
+
+		return reruns == 3, nil
+	}
+
+	err := runner.Run(t.Context(), spec)
+	if err == nil || !strings.Contains(err.Error(), "gave up after 3 applied fix") || reruns != 3 {
+		t.Fatalf("Run = %v, reruns = %d", err, reruns)
+	}
+}
+
+func useFailureRole(t *testing.T, role provider.Role) {
+	t.Helper()
+
+	if role != provider.RolePrompt {
+		return
+	}
+
+	path := "checklists/test.yaml"
+
+	body, err := disk.Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	writeConfirmationFile(t, path, strings.Replace(string(body), "D: tests-pass", "Q: Does the test pass?", 1))
 }

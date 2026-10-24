@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+mkdir -p ./tmp
+request=$(mktemp ./tmp/writer-request.XXXXXX)
+answer=$(mktemp ./tmp/writer-answer.XXXXXX)
+errors=$(mktemp ./tmp/writer-errors.XXXXXX)
+trap 'rm -f "$request" "$answer" "$errors"' EXIT
+cat > "$request"
+"${TRUE_BDD_RECORD_CRUSH:?Set to the installed crush path}" "$@" < "$request" > "$answer" 2> "$errors" || {
+  code=$?
+  cat "$answer"
+  cat "$errors" >&2
+  exit "$code"
+}
+if grep -q 'Fixture transport outcome: empty output' "$request"; then
+  exit 0
+fi
+cat "$answer"
+cat "$errors" >&2
+if grep -q 'Fixture transport outcome: non-zero exit' "$request"; then
+  exit 7
+fi
+exit 0
