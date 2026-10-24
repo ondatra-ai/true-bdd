@@ -66,3 +66,28 @@ func TestBuildCodeCodex002Nonzero(t *testing.T) {
 	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
 	s.Done()
 }
+
+// build-code-codex-003-missing-root: A confined codex writer creates a service from an absent edit root and converges the failing set
+func TestBuildCodeCodex003MissingRoot(t *testing.T) {
+	s := scenarios.New(t, "build-code-codex-003-missing-root")
+	s.Given(`the "build-code-codex-missing-root" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout does not match msg="Writer turn failed"`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the engine dispatched 1 fix AI turn to "claude"`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`the engine spawned exactly 3 test runners`)
+	s.And(`the file "services/calc/calc.go" is created`)
+	s.And(`the file "tests/suite/calc_test.go" is unchanged`)
+	s.And(`every file matching "tmp/*/*codex-events.jsonl" matches "command":.*go test .* -run`)
+	s.And(`every file matching "tmp/*/*codex-events.jsonl" matches "exit_code":0`)
+	s.And(`no file outside "tmp" and "services/calc" changed`)
+	s.And(`stdout matches level=INFO msg="Codex edit root created"`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 match for "msg":"Codex edit root created"`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout does not match msg="Walk stopped"`)
+	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
+	s.Done()
+}

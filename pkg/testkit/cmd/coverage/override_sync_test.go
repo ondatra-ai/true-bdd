@@ -169,6 +169,7 @@ const (
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
 		"build-code-codex-selection":              overrideTiers,
+		"build-code-codex-missing-root":           overrideTiers,
 		"build-code-codex-nonzero":                overrideTiers,
 		"build-code-writer-bound":                 overrideFixLoop,
 		"build-code-no-confirmation-bound":        overrideFixLoop,

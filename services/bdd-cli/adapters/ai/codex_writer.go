@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -131,6 +132,20 @@ func codexWritableRoots(config *strings.Builder, root string, paths []string) er
 		resolved, err := codexInsideRoot(root, path)
 		if err != nil {
 			return err
+		}
+
+		relative, err := filepath.Rel(root, resolved)
+		if err != nil {
+			return fmt.Errorf("locate codex edit root: %w", err)
+		}
+
+		created, err := disk.DirWithin(root, relative, disk.Shared)
+		if err != nil {
+			return fmt.Errorf("prepare codex edit root: %w", err)
+		}
+
+		if created {
+			slog.Info("Codex edit root created", "path", resolved)
 		}
 
 		fmt.Fprintf(config, "%s = \"write\"\n", strconv.Quote(resolved))

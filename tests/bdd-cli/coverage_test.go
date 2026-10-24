@@ -39,6 +39,8 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
+		"build-code-codex-missing-root/input/templates/build-code.fix-applier.prompt.tpl":             templateReplacement,
+		"build-code-codex-missing-root/input/templates/build-code.fix-applier.system.prompt.tpl":      templateReplacement,
 		"build-code-codex-selection/input/templates/build-code.fix-applier.prompt.tpl":                templateReplacement,
 		"build-code-codex-selection/input/templates/build-code.fix-applier.system.prompt.tpl":         templateReplacement,
 		"build-code-codex-nonzero/input/templates/build-code.fix-applier.prompt.tpl":                  templateReplacement,

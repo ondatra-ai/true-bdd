@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-codex-missing-root",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "created",
+      "size": 178,
+      "sha256": "41832954579cc35dd61e41a11c7339bb0b13961882faef02aa54918974221d85",
+      "text": "// Package calc provides the fixture calc service with two fixed values.\npackage calc\n\n// A returns one.\nfunc A() int {\n\treturn 1\n}\n\n// B returns two.\nfunc B() int {\n\treturn 2\n}\n"
+    }
+  ]
+}

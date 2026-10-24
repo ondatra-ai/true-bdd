@@ -52,3 +52,28 @@ story:
       - stdout matches BUILD CODE COMPLETE
       - stdout does not match msg="Walk stopped"
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  - id: 003-missing-root
+    description: A confined codex writer creates a service from an absent edit root and converges the failing set
+    steps:
+    - given:
+      - the "build-code-codex-missing-root" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout does not match msg="Writer turn failed"
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/calc.go" is created
+      - the file "tests/suite/calc_test.go" is unchanged
+      - every file matching "tmp/*/*codex-events.jsonl" matches "command":.*go test .* -run
+      - every file matching "tmp/*/*codex-events.jsonl" matches "exit_code":0
+      - no file outside "tmp" and "services/calc" changed
+      - stdout matches level=INFO msg="Codex edit root created"
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "msg":"Codex edit root created"
+      - stdout matches BUILD CODE COMPLETE
+      - stdout does not match msg="Walk stopped"
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0

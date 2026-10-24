@@ -740,7 +740,10 @@ architecture:
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
                 sibling cuts, user work, codex sessions and claude transcripts.
-                Symlinked edit roots escaping the host are refused before the spawn.
+                Before spawning, the engine creates each absent service edit root and its missing parents inside the host,
+                using rooted filesystem operations that cannot follow a symlink outside it, and logs each created root once at INFO.
+                Edit roots resolving outside the host are refused. The profile grants remain limited to the edit roots and host tmp;
+                creating their parents does not grant the writer any other host-root writes.
               - >-
                 Writer subprocesses inherit no environment: the profile sets PATH to
                 GOROOT/bin and system bin directories, HOME, TMPDIR and GOCACHE inside
