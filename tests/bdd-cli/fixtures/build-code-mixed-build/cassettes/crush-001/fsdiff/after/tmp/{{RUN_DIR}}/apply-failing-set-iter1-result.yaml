@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "services/calc/calc.go: changed A() to return 1 and added B() int returning 2. Ran `go test -count=1 ./tests/...`: fixture/buildcodefix/tests/broken (TestBuild, build now succeeds) and fixture/buildcodefix/tests/suite (TestA) both pass — the full failing set is green."

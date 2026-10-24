@@ -10,16 +10,14 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 55626,
-  "request_hash": "sha256:9d99623051135cb076f52a1c07eb556e5aa3cbf64522e2cb496eda42e3d8e46e",
+  "duration_ms": 37119,
+  "request_hash": "sha256:89569f7ab445f9c6a92b27b04c5a1f2fba9060d59866f4993c6e98a7c12a080a",
   "fsdiff": {
-    "created": [
-      "tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml"
-    ],
+    "created": [],
     "modified": [
       "services/calc/calc.go"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T11:19:40Z"
+  "recorded_at": "2026-10-24T13:36:43Z"
 }

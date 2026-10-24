@@ -4,7 +4,7 @@ You are the production writer repairing a whole failing set. Read the Specificat
 
 Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -40,200 +40,324 @@ Tests: /playwright/playwright:<startup>
 
 
 ## Proposed repair plan
-# Repair plan for /playwright/playwright:<startup>
+# Repair plan for /playwright/playwright:`<startup>`
 
-## Diagnosis
+## 1. Diagnosis — why the set fails
 
-`docs/architecture/architecture.yaml` declares one service, `frontend`, at
-`services/frontend` (typescript, next.js + react). **That directory does not
-exist — there is no `services/` tree in the repo at all.** The only writable
-root is `services/**` (`.claude/settings.json` allows exactly
-`Write/Edit(services/**)`).
-
-The harness chain is:
-
-1. `tests/playwright.config.ts` derives a per-worktree host port from
-   `sha256(process.cwd())` and sets `use.baseURL =
-   http://127.0.0.1:<port>`.
-2. Its `webServer` block runs `docker compose up --build frontend` with
-   `cwd: '..'` (repo root), `env: { FRONTEND_PORT: <port>,
-   COMPOSE_PROJECT_NAME: bdd-<digest> }`, and waits up to 300 s for
-   `http://127.0.0.1:<port>` to answer.
-3. `docker-compose.yaml` defines `frontend` with `build.context:
-   ./services/frontend` and maps `"${FRONTEND_PORT:-3000}:3000"` — i.e. **the
-   app must listen on port 3000 inside the container**.
-
-Because `./services/frontend` is missing, `docker compose up --build` aborts
-immediately, nothing ever binds the port, and Playwright fails during
-`webServer` startup. A startup failure yields no per-test results, which is
-why the failing set surfaces as the synthetic test id `<startup>` with an
-empty failure group.
-
-So this is not a bug to patch — the entire production service has to be
-built. Nothing in `tests/`, `docker-compose.yaml` or `docs/` may be touched;
-all work lands under `services/frontend/`.
-
-## Contract the service must satisfy
-
-- **Buildable compose context.** `services/frontend/` must contain a
-  `Dockerfile` that `docker compose up --build frontend` can build with no
-  extra build args, no host-provided env, and no files from outside that
-  directory.
-- **Listens on 3000, on all interfaces.** The compose port mapping publishes
-  container `3000` to the host port Playwright polls. The process must bind
-  `0.0.0.0:3000` (not `127.0.0.1` inside the container, or the published port
-  answers with a connection reset and Playwright times out after 300 s).
-- **`GET /` returns HTTP 200** so Playwright's URL readiness probe resolves,
-  and the container must stay up for the duration of the test run (it is a
-  foreground `docker compose up`, not detached).
-- **`GET /` renders exactly one `<h1>` whose text is `Hello world`.**
-  `tests/integration/frontend-home.spec.ts` does
-  `page.goto('/')` then
-  `expect(page.locator('h1')).toHaveText('Hello world')`. `toHaveText` with a
-  string is an exact match on normalised text, and the locator runs in strict
-  mode — a second `h1` anywhere in the document (including one injected by the
-  root layout or a dev-mode overlay) is a strict-mode violation. One `h1`,
-  text exactly `Hello world`, no extra nested markup inside it.
-- **Next.js App Router, server components by default.** The architecture's
-  `component-composition` pattern says server components by default and
-  `'use client'` only when hooks or browser APIs are needed. The home page
-  needs neither, so no `'use client'` anywhere in this change.
-- **`services/frontend/tsconfig.json` must exist**, because the architecture
-  declares it as the `typescript` code quality gate's config.
-
-## Files to create
-
-All paths relative to the repo root. Every one of these is new.
-
-### 1. `services/frontend/package.json`
-Private package for the service. Scripts must include `build` and a `start`
-that binds the right host/port, e.g. `next start -H 0.0.0.0 -p 3000`
-(`-H 0.0.0.0` explicitly, so a stray `HOSTNAME` env in the base image cannot
-make Next bind the wrong interface). Dependencies: `next`, `react`,
-`react-dom`. Dev dependencies: `typescript`, `@types/node`, `@types/react`,
-`@types/react-dom`.
-
-Pin **exact** versions (no `^`/`~`) for `next`, `react` and `react-dom` so the
-image build is reproducible and a future major cannot silently break the
-startup path. Pick a Next 15.x release with the matching React 19.x pair it is
-tested against, and a Node base image satisfying Next's engine floor (Node 20
-or 22 — do not use Node 18).
-
-*Serves:* `<startup>` (without this, the Dockerfile has nothing to install or
-run).
-
-### 2. `services/frontend/Dockerfile`
-Keep it single-stage and boring — every extra stage is another way for
-`<startup>` to fail. Intended shape:
-
-- `FROM node:22-alpine` (or the chosen LTS alpine tag), `WORKDIR /app`.
-- Copy the manifest(s) first, install dependencies, then copy the rest of the
-  service and run `npm run build`.
-- `EXPOSE 3000`, `CMD` running the `start` script.
-
-Dependency install: if you also commit a `package-lock.json` (preferred —
-generate it by running `npm install` inside `services/frontend/` and keep the
-resulting lockfile), copy it alongside `package.json` and use
-`npm ci --no-audit --no-fund`. If no lockfile is committed, use
-`npm install --no-audit --no-fund` — do **not** write a `npm ci` that will
-abort because the lockfile is absent.
-
-Do not add `output: 'standalone'` plumbing; it adds copy steps that are easy
-to get wrong and buys nothing here.
-
-*Serves:* `<startup>` — this is the file whose absence currently kills the
-run.
-
-### 3. `services/frontend/.dockerignore`
-Exclude `node_modules`, `.next`, and any local build output. The build context
-is `services/frontend` itself, so if you generate a lockfile by running
-`npm install` on the host, the host `node_modules` would otherwise be copied
-into the image and can shadow the container install (wrong platform binaries
-for `next`/`sharp` → build or start failure).
-
-*Serves:* `<startup>` (robustness of the image build).
-
-### 4. `services/frontend/next.config.mjs`
-Minimal config object exported as default. Use `.mjs` plain JavaScript rather
-than `next.config.ts`, to avoid depending on the TS-config loader.
-
-*Serves:* `<startup>`.
-
-### 5. `services/frontend/tsconfig.json`
-Standard Next.js App Router tsconfig: `strict: true`, `jsx: "preserve"`,
-`moduleResolution: "bundler"`, `module: "esnext"`, `target: "ES2022"`,
-`lib` including `dom`/`esnext`, `allowJs`, `skipLibCheck`, `esModuleInterop`,
-`isolatedModules`, `incremental`, `noEmit: true`, the `next` plugin, the
-`@/*` → `./*` path alias, `include` covering `next-env.d.ts`, `**/*.ts`,
-`**/*.tsx` and `.next/types/**/*.ts`, `exclude: ["node_modules"]`.
-
-Also commit a `services/frontend/next-env.d.ts` with the standard
-`/// <reference types="next" />` and
-`/// <reference types="next/image-types/global" />` lines, so `tsc` has the
-JSX/Next ambient types even on a checkout where `next build` has not yet run.
-
-*Serves:* the architecture's declared `typescript` quality gate; indirectly
-`<startup>`, since `next build` type-checks the app and a missing or
-inconsistent tsconfig fails the image build.
-
-### 6. `services/frontend/app/layout.tsx`
-Required root layout for the App Router — without it `next build` fails. A
-server component (no `'use client'`) exporting a default
-`RootLayout({ children })` that renders `<html lang="en"><body>{children}
-</body></html>`, plus an optional `metadata` export. **Must not render any
-`<h1>`** or other heading, or the spec's `h1` locator becomes ambiguous.
-
-*Serves:* `<startup>` (build correctness) and
-`home page greets with Hello world` (keeps the `h1` locator unique).
-
-### 7. `services/frontend/app/page.tsx`
-The home route. Default-exported server component returning exactly one
-`<h1>Hello world</h1>` — the literal string, correct capitalisation, as the
-sole text content of that element. Wrap it in at most a `<main>`; add no
-second heading.
-
-*Serves:* `home page greets with Hello world`, the spec that runs once
-`<startup>` is fixed.
-
-## Explicitly out of scope
-
-- Do not edit `tests/playwright.config.ts`, `tests/integration/*.spec.ts`,
-  `tests/package.json`, `docker-compose.yaml`, `CLAUDE.md`,
-  `docs/architecture/architecture.yaml`, or anything under `true-bdd/` or
-  `templates/`. The port derivation, the compose port mapping, the 300 s
-  startup budget and the `h1` assertion are all fixed inputs the service must
-  satisfy as-is.
-- Do not weaken, skip or relax the `toHaveText('Hello world')` assertion, and
-  do not add `test.skip`/`fixme` anywhere.
-- Do not change the published/internal port convention: the host side comes
-  from `FRONTEND_PORT`, the container side is hard-coded to `3000` in
-  `docker-compose.yaml`, so the app must listen on 3000.
-
-## Verification the writer should run
-
-From `tests/` (the directory holding the config, per the architecture's
-comment):
+The failing "test" is not a test. `<startup>` is the harness's synthetic id for
+"the suite never got as far as collecting tests". The discovery artefact
+`tmp/{{RUN_DIR}}/testrun-001-playwright-discover-stdout.json`
+shows exactly that:
 
 ```
-npx playwright test --reporter=json --config playwright.config.ts integration
+"suites": [],
+"errors": [{ "message": "Error: Process from config.webServer was not able to start. Exit code: 1" }],
+"stats": { "duration": 1097.946, "expected": 0, ... }
 ```
 
-Expect the `webServer` step to build the image and come up, then one passing
-test. If it fails:
+`tests/playwright.config.ts` boots the app under test with:
 
-- **Compose build error** → the Dockerfile/manifest pair under
-  `services/frontend/` is wrong; read the compose build log, not the
-  Playwright output.
-- **Playwright times out waiting for the URL** → the container built but the
-  process is not bound to `0.0.0.0:3000`; check the `start` script's `-H`/`-p`
-  flags and that the container stays in the foreground.
-- **Strict-mode violation on `h1`** → a second heading exists; remove it from
-  the layout or page.
-- Note `reuseExistingServer: true`: if an earlier aborted run left a container
-  from the `bdd-<digest>` compose project holding the port, Playwright will
-  reuse that stale server and you will debug a phantom. Confirm with
-  `docker compose ls` / `docker ps` and tear the old project down before
-  re-running — no file change required for that.
+```ts
+webServer: {
+  command: 'docker compose up --build frontend',
+  cwd: '..',
+  url: `http://127.0.0.1:${port}`,          // port derived from cwd hash, e.g. 23521
+  env: { FRONTEND_PORT: String(port), COMPOSE_PROJECT_NAME: project },
+  timeout: 300_000,
+  reuseExistingServer: true,
+}
+```
+
+and `docker-compose.yaml` declares:
+
+```yaml
+services:
+  frontend:
+    build:
+      context: ./services/frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+```
+
+**`services/` does not exist in this repository at all.** Verified with
+`Glob("services/**")` → "No files found". So `docker compose up --build frontend`
+fails in ~1 second with exit code 1 (cannot resolve the build context /
+no Dockerfile), Playwright aborts before collection, and the whole suite is
+reported as the single `<startup>` failure.
+
+This is not a bug in existing production code — the production service has
+never been written. `docs/architecture/architecture.yaml` declares it as
+expected, and `CLAUDE.md` confirms it:
+
+```yaml
+services:
+  - name: frontend
+    path: services/frontend
+    language: typescript
+    frameworks: [next.js, react]
+```
+
+> "Production source lives under `services/`; the frontend Next.js service is
+> expected at `services/frontend/`."
+
+**The repair is therefore a greenfield build: create the `services/frontend`
+Next.js App Router service so that the compose build succeeds and the app
+serves the home page.**
+
+## 2. Scope / guardrails
+
+- Write **only** under `services/frontend/**`. This is the sole declared
+  service root, and `.claude/settings.json` allows exactly
+  `Write/Edit/MultiEdit(services/**)`.
+- Do **not** touch `tests/**` (`playwright.config.ts`,
+  `integration/frontend-home.spec.ts`), `docker-compose.yaml`,
+  `docs/**`, `true-bdd/**`, or `templates/**`. The port derivation, the compose
+  build context, and the `3000` container port are fixed contracts that the new
+  service must satisfy — adapt the service to them, never the reverse.
+- Do not weaken, skip, or relax any assertion. The h1 assertion below must pass
+  literally.
+
+## 3. The two contracts the service must satisfy
+
+### Contract A — startup (serves `/playwright/playwright:<startup>`)
+
+`docker compose up --build frontend` must build and then serve HTTP on
+container port **3000**, reachable from the host at
+`http://127.0.0.1:${FRONTEND_PORT}/` with a 2xx/3xx on `/`, within the 300 s
+`webServer` timeout (which covers image build *and* boot).
+
+### Contract B — the home page spec (`tests/integration/frontend-home.spec.ts`)
+
+```ts
+test('home page greets with Hello world', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toHaveText('Hello world');
+});
+```
+
+Note precisely what this demands:
+
+- `/` renders successfully (no error page).
+- `page.locator('h1')` must resolve to **exactly one** `h1` in the whole
+  document. `toHaveText` with a single string against a multi-element locator
+  fails. So: exactly one `h1` anywhere in the rendered document — do not put a
+  second `h1` in the layout, a header, or a banner.
+- Its normalised text is exactly `Hello world` — not "Hello World", not
+  "Hello world!", not a substring of something longer.
+
+Once Contract A holds, discovery will stop reporting `<startup>` and will
+collect this real test, so both contracts must land in the same change.
+
+## 4. Files to create
+
+All paths relative to `services/frontend/`.
+
+### 4.1 `package.json`
+
+Declares the app, its deps, and the scripts the Dockerfile calls.
+
+- `"private": true`, `"name": "frontend"`.
+- Scripts:
+  - `"build": "next build"`
+  - `"start": "next start -H 0.0.0.0 -p 3000"` — **the `-H 0.0.0.0` is
+    essential**; see the gotcha in §6.
+  - optionally `"dev": "next dev -H 0.0.0.0 -p 3000"` and
+    `"typecheck": "tsc --noEmit"`.
+- `dependencies`: `next`, `react`, `react-dom`.
+- `devDependencies`: `typescript`, `@types/node`, `@types/react`,
+  `@types/react-dom`.
+- **Pin a concrete, mutually compatible major rather than `latest`** (a
+  floating `latest` is how this kind of scaffold silently breaks). Next 15.x
+  with React 19.x is a known-good pairing; Next 14.x with React 18.x is the
+  conservative fallback. Whichever you choose, resolve and verify it for real
+  (§7) — do not assume. Keep the React major consistent between `react`,
+  `react-dom`, and the two `@types` packages.
+
+### 4.2 `package-lock.json`
+
+Generate it by running `npm install` in `services/frontend` and commit it.
+Two reasons: the Docker build becomes reproducible (`npm ci`), and the
+TypeScript quality gate (§5) needs real `node_modules` on the host to resolve
+`next`/`react` types.
+
+### 4.3 `Dockerfile`
+
+A small, boring, single-stage image. Resist multi-stage / `output: 'standalone'`
+cleverness here; the failure mode budget matters more than image size, and the
+300 s timeout is comfortable for a plain build.
+
+Intended shape:
+
+1. `FROM node:22-alpine` (any LTS ≥ 18.18 satisfies Next 14/15; 22 is safe).
+2. `ENV NEXT_TELEMETRY_DISABLED=1` — avoids a telemetry network call and noisy
+   first-run output during build.
+3. `WORKDIR /app`.
+4. Copy manifests first for layer caching: `COPY package.json package-lock.json ./`
+   then `RUN npm ci`. (If you deliberately skip the lockfile, use
+   `COPY package*.json ./` + `RUN npm install` — but prefer the lockfile.)
+5. `COPY . .`
+6. `ENV NODE_ENV=production` **after** the install step, never before — setting
+   it earlier makes npm skip `devDependencies`, and `typescript` /
+   `@types/*` are devDependencies that `next build` needs to compile a TS app.
+   This is a classic self-inflicted build failure.
+7. `RUN npm run build`
+8. `EXPOSE 3000`
+9. `CMD ["npm", "run", "start"]`
+
+### 4.4 `.dockerignore`
+
+**Required, not optional.** Must list at least:
+
+```
+node_modules
+.next
+npm-debug.log
+```
+
+You will have run `npm install` on the host (darwin/arm64) to produce the
+lockfile and to satisfy the typecheck gate. Without `.dockerignore`, step 5
+copies those host-native binaries — notably the platform-specific
+`@next/swc-*` native module — over the correct Linux ones installed in step 4,
+and `next build` dies inside the container with a missing/invalid SWC binary.
+
+### 4.5 `next.config.ts`
+
+Minimal, typed config:
+
+```ts
+import type { NextConfig } from 'next';
+const nextConfig: NextConfig = {};
+export default nextConfig;
+```
+
+(`next.config.mjs` with a plain object and a `@type` JSDoc is an equally
+acceptable, slightly lower-risk alternative.) Do **not** set
+`typescript.ignoreBuildErrors` or `eslint.ignoreDuringBuilds` — that would be
+hiding failures rather than fixing them.
+
+### 4.6 `tsconfig.json`
+
+Standard Next.js App Router config — and note this exact path is what the
+architecture's quality gate names (`config: services/frontend/tsconfig.json`),
+so it must exist and must typecheck cleanly. Key settings:
+
+- `"target": "ES2022"`, `"lib": ["dom", "dom.iterable", "esnext"]`
+- `"jsx": "preserve"`, `"module": "esnext"`, `"moduleResolution": "bundler"`
+- `"strict": true`, `"noEmit": true`, `"esModuleInterop": true`,
+  `"skipLibCheck": true`, `"isolatedModules": true`,
+  `"resolveJsonModule": true`, `"incremental": true`, `"allowJs": true`
+- `"plugins": [{ "name": "next" }]`
+- `"paths": { "@/*": ["./*"] }` (optional; only if you actually use the alias)
+- `"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"]`
+- `"exclude": ["node_modules"]`
+
+### 4.7 `next-env.d.ts`
+
+Next normally generates this during `next build`. Commit it (the two standard
+`/// <reference types="next" />` and `next/image-types/global` lines, plus the
+"do not edit" comment) so a host-side `tsc --noEmit` is self-sufficient and
+does not fail on a missing include.
+
+### 4.8 `app/layout.tsx`
+
+Root layout — mandatory in the App Router; without it the route tree is invalid
+and `/` will not render.
+
+- A server component (no `'use client'`): the architecture's
+  `component-composition` pattern says "Use server components by default" and
+  "Add `'use client'` only when needed (hooks, browser APIs)". Nothing here
+  needs the client.
+- Default-exports `RootLayout({ children }: { children: React.ReactNode })`
+  returning `<html lang="en"><body>{children}</body></html>`.
+- May export `metadata: Metadata` with a `title`/`description`.
+- **Must not contain an `h1`** — it would make `page.locator('h1')` match two
+  elements and break Contract B.
+
+### 4.9 `app/page.tsx`
+
+The home page — the one that actually satisfies the assertion.
+
+- A server component, default-exported `Home()`.
+- Renders exactly one `h1` whose text content is precisely `Hello world`:
+  `<main><h1>Hello world</h1></main>`.
+- Keep it literal. No interpolation, no `{'Hello'} {'world'}` splitting, no
+  trailing punctuation, no extra heading elsewhere on the page.
+
+### 4.10 Optional: `app/globals.css` + import in layout
+
+Only if you want baseline styling. Not needed by either contract — skipping it
+removes a failure mode. If you do add it, import it in `layout.tsx` and keep it
+free of anything that could hide the `h1` (no `display: none`, no zero-opacity
+or off-screen heading) — `toHaveText` tolerates invisible elements, but
+`page.locator('h1')` strictness and future readability both favour a plainly
+rendered heading.
+
+## 5. Quality gate
+
+`docs/architecture/architecture.yaml` declares:
+
+```yaml
+quality_gate:
+  code:
+    - name: typescript
+      config: services/frontend/tsconfig.json
+```
+
+So `services/frontend/tsconfig.json` must exist (§4.6) and the project must
+typecheck. After `npm install`, confirm `npx tsc --noEmit` is clean from
+`services/frontend`. The committed `next-env.d.ts` and the real `node_modules`
+are what make this work on the host rather than only inside the image.
+
+## 6. Failure modes to avoid (ranked by likelihood)
+
+1. **Binding to localhost instead of `0.0.0.0`.** If the server listens on
+   `127.0.0.1` *inside* the container, the `${FRONTEND_PORT}:3000` mapping
+   yields connection-refused on the host, and Playwright burns the **full
+   300 s** before failing — a slow, confusing repeat of the same red. Always
+   `next start -H 0.0.0.0 -p 3000`. This is the single most likely way to
+   "fix" the service and still see `<startup>` fail.
+2. **Host `node_modules` leaking into the image.** Mitigated by `.dockerignore`
+   (§4.4). Symptom: SWC native-binary error during `next build`.
+3. **`NODE_ENV=production` set before `npm ci`.** Drops `devDependencies`, so
+   `typescript` is absent and `next build` fails on a TS project. Set it after
+   installing (§4.3 step 6).
+4. **More than one `h1`, or inexact text.** Breaks Contract B with a strict-mode
+   / text-mismatch error. One `h1`, exactly `Hello world`.
+5. **Wrong container port.** `docker-compose.yaml` hard-maps to `3000` inside.
+   Do not read `FRONTEND_PORT` inside the app or the Dockerfile — that variable
+   is the *host* port only. The app always listens on 3000.
+6. **Missing `app/layout.tsx`.** `/` fails to render; the dev/prod error page
+   appears instead of your heading.
+
+## 7. Verification the writer should run
+
+From the repo root, reproducing what the harness does:
+
+1. `docker compose build frontend` — must exit 0.
+2. `FRONTEND_PORT=23521 docker compose up frontend`, then
+   `curl -i http://127.0.0.1:23521/` — expect `200` and a single
+   `<h1>Hello world</h1>` in the HTML. Tear the stack down afterwards so
+   `reuseExistingServer: true` does not mask a later regression with a stale
+   container.
+3. From `services/frontend`: `npx tsc --noEmit` — clean.
+4. The real thing, from `tests/`:
+   `npx playwright test --reporter=json --config playwright.config.ts integration`
+   — expect `suites` to be non-empty, `stats.expected: 1`,
+   `stats.unexpected: 0`, and no `errors` entry.
+
+Step 4 is the authoritative check: it is verbatim the `replay`/`record`/`live`
+command from `architecture.yaml`, and it is what turns the `<startup>` group
+green and surfaces `home page greets with Hello world` as a genuine pass.
+
+## 8. Which tests each part serves
+
+| Part | Serves |
+| --- | --- |
+| `Dockerfile`, `.dockerignore`, `package.json`, `package-lock.json` | `<startup>` — makes `docker compose up --build frontend` build at all (the literal exit-code-1 cause) |
+| `start` script with `-H 0.0.0.0 -p 3000`, `EXPOSE 3000` | `<startup>` — makes the URL poll at `http://127.0.0.1:${port}` succeed instead of timing out |
+| `app/layout.tsx`, `next.config.ts` | `<startup>` + `frontend-home.spec.ts` — a valid App Router tree so `/` returns 200 rather than an error page |
+| `app/page.tsx` (single `h1`, exact `Hello world`) | `frontend-home.spec.ts` — `expect(page.locator('h1')).toHaveText('Hello world')` |
+| `tsconfig.json`, `next-env.d.ts` | the architecture's `typescript` code quality gate; also lets `next build` compile the TS sources |
 
 ## Edit roots
 
@@ -255,6 +379,8 @@ The selection is a nonempty framework regular expression. Keep the command in th
 3. After each part, run the tests that part serves and fix what fails.
 4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
 5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml ===
 applied: true

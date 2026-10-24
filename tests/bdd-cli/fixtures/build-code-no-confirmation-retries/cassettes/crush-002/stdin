@@ -1,0 +1,68 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go. If A returns 0, change only A to return 1 and leave B returning 0, even if the plan proposes both. Otherwise change B to return 2 and preserve A. Complete only that stage in this apply.
+Never modify tests or documents. Only services/calc/ is writable.
+
+This fixture deliberately exercises a completed writer response without a confirmation. After making the stage's changes, end your final message in prose describing what changed. Do not include any FILE_START or FILE_END marker, and do not write a result file.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Failing set
+
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` (service `calc`, suite `go-test`)
+- Failure: `calc_test.go:4: B needs two` — the assertion `calc.B() != 2` tripped.
+
+## What the harness and spec establish
+
+- `docs/architecture/architecture.yaml` declares one service, `calc`, with `path: services/calc`. **That directory is the only writable root for this repair.**
+- All three test commands are identical: `go test -json -count=1 ./tests/suite/...`, run from the fixture module root (`go.mod` → `module fixture/buildcodefix`, go 1.25.0).
+- The suite is `tests/suite/calc_test.go`, package `suite_test`, importing `fixture/buildcodefix/services/calc`. It contains exactly two tests:
+  - `TestA` requires `calc.A() == 1`
+  - `TestB` requires `calc.B() == 2`
+- Current production source `services/calc/calc.go` (package `calc`):
+  - `func A() int { return 1 }` — already satisfies `TestA`, which is passing and must stay passing.
+  - `func B() int { return 0 }` — this is the single defect. The contract the suite pins is that `B` yields the integer `2`; the implementation yields `0`, so `TestB` fails at `calc_test.go:4`.
+
+There is no other production file in the module, no helper package, and no configuration involved. The whole failing set reduces to one wrong return value.
+
+## The repair — one part, one file
+
+**File:** `services/calc/calc.go` (inside the declared `services/calc` write root)
+
+**Change:** make the exported function `B` honour the contract the suite asserts — a no-argument function returning `int`, whose value is `2`. Replace the hard-coded `0` in `B`'s body with the correct result so `calc.B() == 2` holds.
+
+**Constraints the writer must hold:**
+- Keep `B`'s signature exactly `func B() int` — the suite calls it with no arguments and compares the result to an untyped integer constant, so neither the arity nor the return type may change.
+- Keep `A` exactly as it is (`func A() int { return 1 }`). `TestA` currently passes and must continue to pass; do not refactor, rename, or re-derive it.
+- Keep the package clause `package calc` and the import path `fixture/buildcodefix/services/calc` intact, otherwise the suite will not compile.
+- Do not add dependencies, new files, build tags, or generated code. The module has no requires and the fix needs none.
+- Do not touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`, or `docs/architecture/architecture.yaml`. No assertion may be weakened, skipped, renamed, or removed; no `t.Skip`, no build-tag exclusion of the suite.
+
+## Which tests each part serves
+
+| Part | File | Tests served |
+|---|---|---|
+| Correct `B` return value (`2`) | `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestB` — the entire failing set |
+| `A` left untouched (regression guard) | `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestA` — currently green, must stay green |
+
+## Verification
+
+From the fixture module root, run the spec's command:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expect both `TestA` and `TestB` to report `pass` and the package result to be `pass`. A `go build ./...` / `go vet ./...` on the module should also stay clean, since the edit is a single literal change inside an existing function body.

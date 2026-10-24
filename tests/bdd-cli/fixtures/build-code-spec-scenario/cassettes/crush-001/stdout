@@ -1,5 +1,7 @@
-Harness confirms the plan: `double` stores `calc.Double(state.Value)`, and `Double` returns its argument unchanged. Applying the fix.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+Contract confirmed: harness calls `calc.Double(state.Value)` and asserts `6`. Fixing `Double`:Fixed `services/calc/calc.go:3`: `Double` now returns `value + value` per the glossary ("its sum with itself"). Signature unchanged; no other files touched. `TestCalc001Double` passes via selection run, and the whole `./tests/calc/...` suite passes with no regressions.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "services/calc/calc.go: Double now returns value + value (was returning value unchanged), matching the glossary's 'sum with itself' contract; signature, package, and name preserved. Both `go test -tags bdd -count=1 ./tests/calc/...` and the `-run 'TestCalc001Double'` selection pass; TestCalc001Double (calc-001-double) passes with all three steps run."
+summary: "Changed calc.Double's body from `return value` to `return value + value` in services/calc/calc.go, keeping the exported signature. Verified with `go test -tags bdd -count=1 ./tests/calc/... -run 'TestCalc001Double'` (ok) and the whole-suite form `go test -tags bdd -count=1 ./tests/calc/...` (ok). TestCalc001Double now passes all three steps; no other tests in the set."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

@@ -1,5 +1,7 @@
-Both packages pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+Repaired `services/calc/calc.go`: `A()` now returns 1 and added exported `B()` returning 2. `go test -count=1 ./tests/...` passes both packages — `tests/broken::<build>`/TestBuild and `tests/suite::TestA` (the stale gopls diagnostic cleared on rebuild).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "services/calc/calc.go: changed A() to return 1 and added B() int returning 2. Ran `go test -count=1 ./tests/...`: fixture/buildcodefix/tests/broken (TestBuild, build now succeeds) and fixture/buildcodefix/tests/suite (TestA) both pass — the full failing set is green."
+summary: "In services/calc/calc.go changed A() to return 1 and added exported func B() int returning 2. Saw pass: /go-test/go-test:fixture.buildcodefix.tests.broken::<build> (build ok, TestBuild green) and /go-test/go-test:fixture.buildcodefix.tests.suite::TestA via go test -count=1 ./tests/... (both packages ok)."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

@@ -10,8 +10,8 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 84381,
-  "request_hash": "sha256:eb1eb8430abbb8d754a99b41740b92ab15b259b8241c03b5d061ce59458437cc",
+  "duration_ms": 92115,
+  "request_hash": "sha256:bc010db771e5281f2f284854efe272e181c8f0dc61501c7c457401ced1c7e432",
   "fsdiff": {
     "created": [
       "services/calc/guard-calls.jsonl",
@@ -23,5 +23,5 @@
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T12:05:20Z"
+  "recorded_at": "2026-10-24T14:28:26Z"
 }

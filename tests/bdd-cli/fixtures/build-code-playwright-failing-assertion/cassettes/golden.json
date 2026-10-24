@@ -5,9 +5,9 @@
     {
       "path": "services/web/server.js",
       "kind": "modified",
-      "size": 466,
-      "sha256": "ddb7d96518320a0d4d545ecfc3763c34d9d8db71e2f9f6021c951109338a4600",
-      "text": "// The Corner Shop's web front: one page, served on the port PORT names.\nconst http = require('node:http');\n\nconst page = `\u003c!doctype html\u003e\n\u003chtml\u003e\n  \u003chead\u003e\u003ctitle\u003eCorner Shop\u003c/title\u003e\u003c/head\u003e\n  \u003cbody\u003e\n    \u003ch1\u003eCorner Shop\u003c/h1\u003e\n    \u003ca href=\"/hours\"\u003eOpening hours\u003c/a\u003e\n  \u003c/body\u003e\n\u003c/html\u003e\n`;\n\nhttp\n  .createServer((req, res) =\u003e {\n    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });\n    res.end(page);\n  })\n  .listen(Number(process.env.PORT), '127.0.0.1');\n"
+      "size": 512,
+      "sha256": "7d155c76df1fbc1c3f07ebc6224c797a8f38c6d8766697256ed5f3de815d633c",
+      "text": "// The Corner Shop's web front: one page, served on the port PORT names.\n// The heading and title both name the store.\nconst http = require('node:http');\n\nconst page = `\u003c!doctype html\u003e\n\u003chtml\u003e\n  \u003chead\u003e\u003ctitle\u003eCorner Shop\u003c/title\u003e\u003c/head\u003e\n  \u003cbody\u003e\n    \u003ch1\u003eCorner Shop\u003c/h1\u003e\n    \u003ca href=\"/hours\"\u003eOpening hours\u003c/a\u003e\n  \u003c/body\u003e\n\u003c/html\u003e\n`;\n\nhttp\n  .createServer((req, res) =\u003e {\n    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });\n    res.end(page);\n  })\n  .listen(Number(process.env.PORT), '127.0.0.1');\n"
     }
   ]
 }

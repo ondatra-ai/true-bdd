@@ -433,6 +433,12 @@ func buildFixClosure[I any](
 			ModelTier: latestResult.ApplyModelTier,
 		})
 		if err != nil {
+			if spec.Name == "build code" && spec.PostNotApplied != nil && errors.Is(err, pkgerrors.ErrFixApplierNoContent) {
+				slog.Warn("Writer confirmation missing", "error", err)
+
+				return spec.PostNotApplied(ctx, item)
+			}
+
 			if errors.Is(err, pkgerrors.ErrFixNotApplied) && spec.PostNotApplied != nil {
 				return spec.PostNotApplied(ctx, item)
 			}

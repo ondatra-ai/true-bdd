@@ -12,9 +12,9 @@
     {
       "path": "services/calc/guard-calls.jsonl",
       "kind": "created",
-      "size": 339,
-      "sha256": "363ca3abee3cec48a107e50d3652b58ff269b96354f7b67a71f50924603b898f",
-      "text": "{\"elapsed_seconds\": 0, \"input\": {\"command\": \"go test -v -count=1 ./tests/suite/... -run '^TestSlowReplay$'\", \"description\": \"Run selected replay test for TestSlowReplay\", \"run_in_background\": false, \"working_dir\": \"\u003cproject root\u003e\"}, \"tool\": \"bash\"}\n{\"elapsed_seconds\": 62, \"input\": {\"shell_id\": \"001\", \"wait\": true}, \"tool\": \"job_output\"}\n"
+      "size": 331,
+      "sha256": "16e42a3f9944de135da0250079e2b634db447e70fd1a004e096a432a9d3d8550",
+      "text": "{\"elapsed_seconds\": 0, \"input\": {\"command\": \"go test -v -count=1 ./tests/suite/... -run '^TestSlowReplay$'\", \"description\": \"Run selected slow replay test suite\", \"run_in_background\": false, \"working_dir\": \"\u003cproject root\u003e\"}, \"tool\": \"bash\"}\n{\"elapsed_seconds\": 63, \"input\": {\"shell_id\": \"001\", \"wait\": true}, \"tool\": \"job_output\"}\n"
     },
     {
       "path": "services/calc/replayed.txt",

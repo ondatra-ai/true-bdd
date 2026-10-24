@@ -1,0 +1,81 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go and services/calc/prepared.txt. If A returns 0, change only A to return 1 and leave B returning 0. Otherwise if prepared.txt is absent, create it containing prepared followed by a newline and leave calc.go unchanged. Otherwise change B to return 2 and preserve A. Complete only that stage in this apply, even if the plan proposes more.
+Never modify tests or documents. Only services/calc/ is writable.
+
+This fixture deliberately exercises a completed writer response without a confirmation. After making the stage's changes, end your final message in prose describing what changed. Do not include any FILE_START or FILE_END marker, and do not write a result file.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+The suite `tests/suite/calc_test.go` (package `suite_test`) imports the production package `fixture/buildcodefix/services/calc` and asserts two concrete return values:
+
+- `TestA` requires `calc.A() == 1`, else `t.Fatal("A needs one")`.
+- `TestB` requires `calc.B() == 2`, else `t.Fatal("B needs two")`.
+
+The production source `services/calc/calc.go` currently defines both functions as stubs that return the zero value:
+
+```
+func A() int{return 0}
+func B() int{return 0}
+```
+
+So both tests fail for the same single reason: the two exported accessors in the `calc` package are unimplemented placeholders returning `0` instead of their specified values. There is no missing file, no missing wiring, and no build error — the module (`module fixture/buildcodefix`, go 1.25.0) already resolves `services/calc` to the import path the test uses, and the harness command (`go test -json -count=1 ./tests/suite/...`, identical for record/replay/live) already discovers and runs both tests. The only defect is the function bodies.
+
+## Write root
+
+`docs/architecture/architecture.yaml` declares exactly one service: `calc` at `path: services/calc`, language `go`. That directory is the only permitted write root for this repair.
+
+**Do not touch:** `tests/suite/calc_test.go` or any `*_test.go`, `docs/architecture/architecture.yaml`, `go.mod`, `CLAUDE.md`, `true-bdd/**`, `templates/**`, or anything under `tmp/`. Do not weaken, skip, rename, or delete any assertion; do not add build tags, `t.Skip`, or any test-visible shim.
+
+## Part 1 — Implement `calc.A()` to return its specified value
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `A() int` is an exported, no-argument accessor of the `calc` package that yields the package's first constant value, `1`. It must be deterministic (same value on every call, no state, no side effects, no error path) because the test calls it once and compares with `!=`. The signature must stay exactly `func A() int` — the test calls it with no arguments in a single-value context, so changing arity, adding a second return value, or changing the result type would break compilation of the test file, which is off-limits for edits.
+
+**Intended implementation:** replace the stub body so the function returns `1` rather than `0`. Keep it a plain value-returning function; no new types, interfaces, or indirection are warranted — the package's whole surface is these two accessors. If you prefer to name the magic number, declare an unexported package-level constant inside `services/calc` and return it, but do not export new identifiers that the specification does not call for.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — turns `A needs one` green.
+
+## Part 2 — Implement `calc.B()` to return its specified value
+
+**File:** `services/calc/calc.go` (same file, second function)
+
+**Contract:** `B() int` is the exported, no-argument accessor yielding the package's second constant value, `2`. Same determinism and same fixed signature `func B() int`, for the same compilation reason as Part 1. `B` must be independent of `A` — the test asserts them separately, so do not define `B` as a derivation that couples the two values in a way that makes one assertion's correctness depend on the other's (e.g. avoid `return A() + 1`); return the value directly so each test pins its own behaviour.
+
+**Intended implementation:** replace the `return 0` stub body with the specified value `2`.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — turns `B needs two` green.
+
+## Part 3 — Keep the package compiling and idiomatic (no behaviour change)
+
+**File:** `services/calc/calc.go`
+
+The existing file keeps `package calc` as its first line; that declaration must stay unchanged, because the import path `fixture/buildcodefix/services/calc` plus the `calc.A` / `calc.B` qualifiers in the test bind to that package name. Keep both functions in this one file and keep them exported with their current names and casing. The current source is written on compressed single lines; the writer may reformat it to gofmt-standard layout (one statement per line, tabs) since that is cosmetic and inside the write root, but reformatting is optional and must not alter the two returned values or the signatures. Add no new files, no `init()`, and no dependencies — the module has none and needs none.
+
+**Serves:** both `TestA` and `TestB` (compilation prerequisite for either to run at all).
+
+## Verification
+
+From the repository root, run the architecture's declared command:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expect `TestA` and `TestB` both to report pass, with no `t.Fatal` lines for `A needs one` or `B needs two`. Confirm `git status` shows exactly one modified file, `services/calc/calc.go`, and no changes under `tests/`, `docs/`, or the repo-level `go.mod`.

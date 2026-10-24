@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "Repaired services/calc/calc.go: Add now returns a + b instead of a - b, and the stale doc paragraph describing the planted subtraction defect was removed (comment-only). Verified with `go test -count=1 ./tests/suite/... -run 'TestAddSumsItsArguments'` (ok) and the whole-suite `go test -count=1 ./tests/suite/...` (ok). TestAddSumsItsArguments passes; TestCanaryRecordsEachSuiteRun unaffected and passing. No test files or docs touched."

@@ -1,5 +1,7 @@
-Protocol stage 1: `A` returns 0, so only `A` changes to 1; `B` stays 0.Stage applied: `TestA` passes; `TestB` intentionally remains failing per the protocol. Writing the result file.=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+`A()` returns 0, so per the fixture lifecycle protocol I apply only stage one: change A to return 1, keep B at 0.Stage-one result is as the protocol expects: TestA passes, TestB remains red by design. Verifying TestA alone:Stage one applied per the fixture lifecycle protocol: `services/calc/calc.go` now has `A()` return 1; `B()` stays at 0 as instructed. Verified: `TestA` passes (`ok fixture/buildcodefix/tests/suite` with `-run 'TestA'`); `TestB` still fails ("B needs two") — the deliberate partial repair for this apply, since the protocol forbids changing B in this stage.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "Partial repair per the fixture lifecycle protocol: in services/calc/calc.go, changed only A() to return 1 (was 0) and left B() returning 0, even though the plan proposed both. Verified with 'go test -count=1 ./tests/suite/...': TestA now passes; TestB still fails with 'B needs two' and is deferred to the next apply stage."
+summary: "In services/calc/calc.go, changed A() to return 1 (stage one of the fixture lifecycle; B() intentionally left returning 0 per protocol, overriding the plan's Part 2). Saw TestA pass via `go test -count=1 ./tests/suite/... -run 'TestA'` (ok). TestB still fails with 'B needs two' — expected for this partial stage; changing B to 2 remains for the next apply."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

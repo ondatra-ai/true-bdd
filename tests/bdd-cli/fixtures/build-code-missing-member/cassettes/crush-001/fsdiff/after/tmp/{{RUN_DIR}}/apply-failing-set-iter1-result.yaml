@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "Changed services/calc/calc.go Mode() from returning 0 to returning 1, per the required fixture lifecycle protocol stage (Mode returned 0, so this apply changes it only to return 1; the broader plan's mode-two stage is left for the next apply). Ran 'go test -count=1 ./tests/suite/...': TestA no longer fails but is skipped via its t.Skip('no execution result') guard, and TestB still fails with 'B needs mode two' at calc_test.go:4. No test of the failing set passed at this intermediate stage, which is the deliberately exercised missing passing-results state."

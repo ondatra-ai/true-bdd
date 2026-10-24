@@ -1,5 +1,7 @@
-Both tests pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+Fixed: `greet` now takes `name = 'world'` in services/greeter/greeting.js:4 (stale defect comment refreshed). Full suite passes — both `greeting.test.js::greet greets the world when no name is given` (the set's failing test) and `canary.test.js`.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
 applied: true
 target: "services/greeter"
-summary: "services/greeter/greeting.js: added default parameter `name = 'world'` so greet() returns 'Hello, world!' (by-name path unchanged) and refreshed the stale header comment. `npx jest --config jest.config.js` in tests/: 2/2 suites, 2/2 tests pass, including greet greets the world when no name is given."
+summary: "Added default parameter `name = 'world'` to greet() in services/greeter/greeting.js so an omitted name yields 'Hello, world!' while supplied names are unchanged; CommonJS export shape preserved and the stale defect comment updated. Ran `npx jest --config jest.config.js` from tests/: 2 suites / 2 tests passed, including the set's test tests/unit/greeting.test.js::greet greets the world when no name is given."
 === FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===

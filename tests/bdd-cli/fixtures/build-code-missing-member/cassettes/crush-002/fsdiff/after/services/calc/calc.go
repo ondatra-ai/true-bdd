@@ -1,2 +1,5 @@
 package calc
-func Mode() int{return 2}
+
+const ModeTwo = 2
+
+func Mode() int { return ModeTwo }

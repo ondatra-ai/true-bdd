@@ -10,8 +10,8 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 258256,
-  "request_hash": "sha256:4774d181fd7dbc7a3aad2fd7fd8207ce4b66ff34669303d84ee1d0bccfef9f82",
+  "duration_ms": 185301,
+  "request_hash": "sha256:8d0fd0a60a77826c3a2acb79e493ccbceee804762d9d8726edccd727767be790",
   "fsdiff": {
     "created": [
       "services/frontend/.dockerignore",
@@ -19,15 +19,14 @@
       "services/frontend/app/layout.tsx",
       "services/frontend/app/page.tsx",
       "services/frontend/next-env.d.ts",
-      "services/frontend/next.config.mjs",
+      "services/frontend/next.config.ts",
       "services/frontend/package.json",
-      "services/frontend/tsconfig.json",
-      "tmp/{{RUN_DIR}}/apply--playwright-playwright-startup--iter1-result.yaml"
+      "services/frontend/tsconfig.json"
     ],
     "modified": [
       "tests/test-results/.last-run.json"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T11:41:42Z"
+  "recorded_at": "2026-10-24T14:10:12Z"
 }

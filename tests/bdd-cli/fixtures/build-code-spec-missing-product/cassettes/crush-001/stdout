@@ -1,5 +1,7 @@
-Diagnosis confirmed: `Double` is an identity function. Fixing it to return the operand's sum with itself, per the glossary.Suite passes. Confirming the specific test:=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+Confirmed: `Double` is a pass-through. Applying the fix.`services/calc/calc.go:3` — `Double` now returns `value * 2` instead of `value`. Whole suite and the selected `TestCalc001Double` both pass.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "Fixed calc.Double in services/calc/calc.go: it was an identity function (returned its argument); it now returns value + value, the total arithmetic doubling the glossary specifies, with the same package, name, signature, and no special-casing. Both granted command forms pass: the whole suite `go test -tags bdd -count=1 ./tests/calc/...` and the selection `-run 'TestCalc001Double'` — ok fixture/stepsrun/tests/calc, so TestCalc001Double (scenario calc-001-double, expected 6, got 3 at step 3/3) now completes all three steps. No tests or documents were modified; services/calc/calc.go is the only changed file."
+summary: "Replaced the pass-through body of calc.Double with `return value * 2` in services/calc/calc.go (single-line change; no other files touched). Verified with `go test -tags bdd -count=1 ./tests/calc/...` (whole suite ok) and `go test -tags bdd -count=1 ./tests/calc/... -run 'TestCalc001Double'` (ok). TestCalc001Double now passes all three steps: Given the number is 3, When the number is doubled (3 -> 6), Then the result is 6."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

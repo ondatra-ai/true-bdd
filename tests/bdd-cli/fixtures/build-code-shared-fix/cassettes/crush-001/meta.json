@@ -10,16 +10,14 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 52736,
-  "request_hash": "sha256:7f2d624a20fa15e2335a0b50ad09f33be2c5877093f4e502e025e043ca63b103",
+  "duration_ms": 66756,
+  "request_hash": "sha256:38c63c98c5ed5fd2fe2da9d02138113276b82d9f1ae3c733b214238002bd0ec7",
   "fsdiff": {
-    "created": [
-      "tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml"
-    ],
+    "created": [],
     "modified": [
       "services/calc/calc.go"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T11:16:38Z"
+  "recorded_at": "2026-10-24T14:12:27Z"
 }

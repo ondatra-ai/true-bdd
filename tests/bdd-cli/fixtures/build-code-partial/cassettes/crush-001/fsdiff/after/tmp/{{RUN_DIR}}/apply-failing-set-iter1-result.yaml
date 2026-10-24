@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "Partial repair per the fixture lifecycle protocol: in services/calc/calc.go, changed only A() to return 1 (was 0) and left B() returning 0, even though the plan proposed both. Verified with 'go test -count=1 ./tests/suite/...': TestA now passes; TestB still fails with 'B needs two' and is deferred to the next apply stage."

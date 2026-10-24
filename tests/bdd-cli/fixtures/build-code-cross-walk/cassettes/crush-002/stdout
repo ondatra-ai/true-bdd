@@ -1,7 +1,7 @@
-Version is 2, so the change is `Compatible() → true` only.Suite passes. Writing the requested result file.Changed only `Compatible()` in services/calc/calc.go:4 from `false` to `true` (Version already 2, left untouched). Whole suite passes (`ok fixture/buildcodefix/tests/suite`), including TestBCompatibility with TestAVersion still green.
+Version is already 2, so per the staged migration I change only `Compatible()` to return true.Fixed: `Version()` was already 2, so per the staged migration I changed only `Compatible()` to return `true` in services/calc/calc.go. TestBCompatibility now passes, and the whole suite (TestAVersion + TestBCompatibility) passes.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===
 applied: true
-target: "services/calc"
-summary: "Stage 2 of the migration: Version was already 2, so changed only Compatible() in services/calc/calc.go from false to true; Version() untouched at 2. Whole suite green via 'go test -count=1 ./tests/suite/...' and selection 'TestAVersion|TestBCompatibility': TestBCompatibility passes and TestAVersion stays passing."
+target: "services/calc/calc.go"
+summary: "Stage 2 of the migration: Version was already 2, so only Compatible() changed from returning false to returning true; Version() stayed at 2. Saw TestBCompatibility pass (selection run) and the whole suite ./tests/suite/... pass with TestAVersion and TestBCompatibility both green."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestBCompatibility-iter2-result.yaml ===

@@ -5,30 +5,30 @@
     {
       "path": "services/frontend/.dockerignore",
       "kind": "created",
-      "size": 44,
-      "sha256": "ffdcfd7ae2608bb0dd887d123554aef3e7f59862bf4a6854f19ab989ca972e64",
-      "text": "node_modules\n.next\nnpm-debug.log*\n.DS_Store\n"
+      "size": 38,
+      "sha256": "a06930ee377ae42c459e91c7a500dd5a89b8b14ad487f494aa1340587781e688",
+      "text": "node_modules\n.next\nnpm-debug.log\n.git\n"
     },
     {
       "path": "services/frontend/Dockerfile",
       "kind": "created",
-      "size": 162,
-      "sha256": "38b6b37d430d961e3fb040e2ee26419d0ef42f45698844df0664c11aa183e3b2",
-      "text": "FROM node:22-alpine\n\nWORKDIR /app\n\nCOPY package.json ./\nRUN npm install --no-audit --no-fund\n\nCOPY . .\nRUN npm run build\n\nEXPOSE 3000\nCMD [\"npm\", \"run\", \"start\"]\n"
+      "size": 198,
+      "sha256": "b38766506fa6c110f9c4f2542e59998e56d7f2bee8fed8c68f1776d06f3b1e86",
+      "text": "FROM node:22-alpine\n\nENV NEXT_TELEMETRY_DISABLED=1\n\nWORKDIR /app\n\nCOPY package.json ./\nRUN npm install\n\nCOPY . .\n\nENV NODE_ENV=production\nRUN npm run build\n\nEXPOSE 3000\n\nCMD [\"npm\", \"run\", \"start\"]\n"
     },
     {
       "path": "services/frontend/app/layout.tsx",
       "kind": "created",
-      "size": 313,
-      "sha256": "20a25d5295e36f037be6c09c66e829a8f4c14e30d76db82a1d442026d0c67899",
-      "text": "import type { Metadata } from 'next';\nimport type { ReactNode } from 'react';\n\nexport const metadata: Metadata = {\n  title: 'Frontend',\n};\n\nexport default function RootLayout({\n  children,\n}: Readonly\u003c{\n  children: ReactNode;\n}\u003e) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
+      "size": 348,
+      "sha256": "10566308eace14fff7d4ae121acd24f45e0265f512f5b6cfa33ca4fc77e6e456",
+      "text": "import type { Metadata } from 'next';\nimport type { ReactNode } from 'react';\n\nexport const metadata: Metadata = {\n  title: 'Frontend',\n  description: 'Frontend service',\n};\n\nexport default function RootLayout({\n  children,\n}: Readonly\u003c{\n  children: ReactNode;\n}\u003e) {\n  return (\n    \u003chtml lang=\"en\"\u003e\n      \u003cbody\u003e{children}\u003c/body\u003e\n    \u003c/html\u003e\n  );\n}\n"
     },
     {
       "path": "services/frontend/app/page.tsx",
       "kind": "created",
-      "size": 105,
-      "sha256": "524524977819f80b247eb85bc54868ad310bf381ac65892baeccea8200471915",
-      "text": "export default function HomePage() {\n  return (\n    \u003cmain\u003e\n      \u003ch1\u003eHello world\u003c/h1\u003e\n    \u003c/main\u003e\n  );\n}\n"
+      "size": 101,
+      "sha256": "e0444121234ad286b38064ae02de3e10dae1b91fe4b102eb6b14277b1a052fea",
+      "text": "export default function Home() {\n  return (\n    \u003cmain\u003e\n      \u003ch1\u003eHello world\u003c/h1\u003e\n    \u003c/main\u003e\n  );\n}\n"
     },
     {
       "path": "services/frontend/next-env.d.ts",
@@ -38,18 +38,18 @@
       "text": "/// \u003creference types=\"next\" /\u003e\n/// \u003creference types=\"next/image-types/global\" /\u003e\n\n// NOTE: This file should not be edited\n// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.\n"
     },
     {
-      "path": "services/frontend/next.config.mjs",
+      "path": "services/frontend/next.config.ts",
       "kind": "created",
-      "size": 51,
-      "sha256": "a9efcd4551ec4d9101da830e825a669befa315c4577d1bbf05b49683cf0454a0",
-      "text": "const nextConfig = {};\n\nexport default nextConfig;\n"
+      "size": 104,
+      "sha256": "d063bebef3a4878ae82f9f9547c2c9675b8b6945ab23702932dcb63a011a9fc9",
+      "text": "import type { NextConfig } from 'next';\n\nconst nextConfig: NextConfig = {};\n\nexport default nextConfig;\n"
     },
     {
       "path": "services/frontend/package.json",
       "kind": "created",
-      "size": 445,
-      "sha256": "607f0d17d834d017337704ea5be04415c70909083e28540e79b0cae677216891",
-      "text": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\"\n  },\n  \"dependencies\": {\n    \"next\": \"15.5.28\",\n    \"react\": \"19.1.0\",\n    \"react-dom\": \"19.1.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"22.10.2\",\n    \"@types/react\": \"19.1.0\",\n    \"@types/react-dom\": \"19.1.0\",\n    \"typescript\": \"5.8.3\"\n  }\n}\n"
+      "size": 455,
+      "sha256": "4c54d02c329af06d9355450fddd7bb9157f0d38c03d63f54bf0fdf08d62cd97e",
+      "text": "{\n  \"name\": \"frontend\",\n  \"private\": true,\n  \"scripts\": {\n    \"dev\": \"next dev -H 0.0.0.0 -p 3000\",\n    \"build\": \"next build\",\n    \"start\": \"next start -H 0.0.0.0 -p 3000\",\n    \"typecheck\": \"tsc --noEmit\"\n  },\n  \"dependencies\": {\n    \"next\": \"15.1.6\",\n    \"react\": \"19.0.0\",\n    \"react-dom\": \"19.0.0\"\n  },\n  \"devDependencies\": {\n    \"@types/node\": \"22.10.5\",\n    \"@types/react\": \"19.0.7\",\n    \"@types/react-dom\": \"19.0.3\",\n    \"typescript\": \"5.7.3\"\n  }\n}\n"
     },
     {
       "path": "services/frontend/tsconfig.json",

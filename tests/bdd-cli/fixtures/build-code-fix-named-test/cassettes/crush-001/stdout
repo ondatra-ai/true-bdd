@@ -1,5 +1,7 @@
-Both the named test and the full suite pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
+Repaired `services/calc/calc.go`: `Add` now returns `a + b` (was `a - b`), and the stale planted-defect comment paragraph was removed. `TestAddSumsItsArguments` passes (selection run ok) and the whole suite passes (`ok fixture/buildcodefix/tests/suite`).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "Repaired services/calc/calc.go: Add now returns a + b instead of a - b, and the stale doc paragraph describing the planted subtraction defect was removed (comment-only). Verified with `go test -count=1 ./tests/suite/... -run 'TestAddSumsItsArguments'` (ok) and the whole-suite `go test -count=1 ./tests/suite/...` (ok). TestAddSumsItsArguments passes; TestCanaryRecordsEachSuiteRun unaffected and passing. No test files or docs touched."
+summary: "calc.go: changed Add's operator from subtraction to addition (return a + b) and dropped the stale comment claiming the operator was deliberately wrong. Saw TestAddSumsItsArguments pass via `go test -count=1 ./tests/suite/... -run 'TestAddSumsItsArguments'`, and the whole suite (including the canary) pass via `go test -count=1 ./tests/suite/...`."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

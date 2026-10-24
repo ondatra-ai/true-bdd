@@ -82,6 +82,8 @@ No test command is granted to this writer. Report that limitation in the confirm
 4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
 5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
 
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
 === FILE_START: {{ .ResultPath }} ===
 applied: true
 target: "<repo-relative service path>"

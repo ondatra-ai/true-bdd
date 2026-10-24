@@ -4,7 +4,7 @@ You are the production writer repairing a whole failing set. Read the Specificat
 
 Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -92,75 +92,69 @@ Then:
 
 ## Diagnosis
 
-The failure is a single production defect, not a harness or wiring problem.
+The failing step is `Then the result is 6`, reporting `expected 6, got 3`. The harness is behaving correctly and the defect is entirely in production code.
 
-The harness chain is sound and needs no change:
+Trace of the scenario `calc-001-double`:
 
-- `tests/calc/calc_test.go` states the three registry steps literally and calls `s.Done()`.
-- `tests/calc/scenarios/scenarios.go` builds the `bddgo` suite against `docs/scenarios.yaml` and `docs/architecture/architecture.yaml`, seeds a zero `steps.State`, and registers the steps.
-- `tests/calc/steps/register.go` binds the three phrases correctly: the given step parses `3` into `State.Value`; the when step calls `calc.Double(state.Value)` and stores the return; the then step parses `6` and compares it against `State.Value`, reporting `expected %d, got %d`.
+1. `tests/calc/calc_test.go` (generated, do not touch) runs `Given the number is 3`, `When the number is doubled`, `Then the result is 6`.
+2. `tests/calc/steps/register.go` (test harness, do not touch) maps those phrases:
+   - `^the number is (\d+)$` -> `number`, which parses `3` into `State.Value`.
+   - `^the number is doubled$` -> `double`, which calls `state.Value = calc.Double(state.Value)`.
+   - `^the result is (\d+)$` -> `result`, which compares `State.Value` with the expected `6` and errors otherwise.
+3. `services/calc/calc.go` contains:
+   ```
+   func Double(value int) int { return value }
+   ```
+   It returns its argument unchanged, so `State.Value` stays `3` after the When step, and the Then step correctly reports `expected 6, got 3`.
 
-The reported error `step 3/3 failed: Then the result is 6 / expected 6, got 3` is therefore an accurate report of what the production function returned: the when step wrote `3` back into state because `Double` is an identity function.
+So the harness, the step bindings and the assertion are all right; `Double` simply does not double. There is exactly one production change to make.
 
-`services/calc/calc.go` currently reads:
+## Contract that production must satisfy
 
-```go
-func Double(value int) int { return value }
-```
+From `docs/product/product.yaml` and `docs/architecture/architecture.yaml`:
 
-It returns its argument unchanged. The spec requires it to return twice the argument.
+- Glossary term `number`: "An integer operand whose double is its sum with itself."
+- Phrase `the number is doubled` (when): "The calculator doubles the supplied number."
+- Phrase `the result is {value:number}` (then): "The result equals twice the supplied number."
+- Architecture term `number`, technical: "The integer argument to services/calc.Double", observed by "The step calls Double and compares its integer return with the expected value."
 
-## Contract to implement
+Therefore the contract for the single production entry point is:
 
-From the Specification:
+`services/calc.Double(value int) int` must return the doubled value — the operand's sum with itself — for any `int` input. Its exported signature (name, one `int` parameter, single `int` return, package `calc`) must stay exactly as it is, because the step binding in `tests/calc/steps/register.go` calls it as `calc.Double(state.Value)` and may not be edited.
 
-- Glossary, term `number`: "An integer operand whose double is its sum with itself."
-- Architecture `terms.number.technical`: "The integer argument to services/calc.Double."
-- Architecture `terms.number.observed_by`: "The step calls Double and compares its integer return with the expected value."
-- Catalogue, when step `the number is doubled`: "The calculator doubles the supplied number."
-- Catalogue, then step `the result is {value:number}`: "The result equals twice the supplied number."
+## Part 1 — the only change: make `Double` double
 
-So the contract for `calc.Double` is: given an integer operand `value`, return the sum of that operand with itself — i.e. `value + value`, which equals `2 * value`. The glossary's phrasing ("its sum with itself") is the authoritative definition of doubling here; expressing the implementation as `value + value` matches that wording most directly, and `2 * value` is an acceptable equivalent. Either satisfies the observable contract, since the step observes only the returned integer.
+**File:** `services/calc/calc.go` (inside the declared service root `services/calc`, the only file to be modified by this repair)
 
-The function must stay a pure, total integer function with the existing exported signature `func Double(value int) int` in package `calc`. Nothing in the Specification asks for error returns, overflow handling, negative-input special cases, state, or logging, so do not add any. Keep it a single-expression function.
+**Intended implementation:**
 
-## Changes to make
+- Keep `package calc` and the exported signature `func Double(value int) int` unchanged.
+- Change the body so it returns the operand added to itself, matching the glossary wording ("its sum with itself") rather than a multiplication-by-literal formulation: return `value + value`.
+- Keep the function total and side-effect free: no error return, no panics, no validation or clamping, no new state, no logging. The glossary places no restriction on the sign or magnitude of the operand, so negatives and zero must flow through the same arithmetic (`-4 -> -8`, `0 -> 0`); do not add special cases.
+- Do not introduce new exported identifiers, new files, new packages, or new imports — the file needs no imports. Do not touch `services/neighbour`; it plays no part in this scenario.
 
-### Part 1 — fix `Double` to double its operand
+**Why this is the right shape:** the spec names `services/calc.Double` as the single observable behaviour behind the word `number`, and the step function `double` is a thin pass-through into it. Nothing else in the production tree participates, so no interface, wiring, or configuration work is required.
 
-**File:** `services/calc/calc.go` (inside the declared service root `services/calc` from `docs/architecture/architecture.yaml`)
+**Which tests this part serves:**
 
-Change the body of `Double` so it returns the operand summed with itself rather than the operand itself. Preserve:
+- `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double` (scenario `calc-001-double`) — the entire failing set. With `Double(3) == 6`, the `When the number is doubled` step leaves `State.Value == 6`, so the `result` step's comparison `state.Value != want` is false and step 3/3 passes. The Given and When steps already pass and stay unaffected; `s.Done()` continues to verify the literal steps against `docs/scenarios.yaml`, which this change does not touch.
 
-- the `package calc` declaration,
-- the exported name `Double`,
-- the signature `func Double(value int) int`,
-- the parameter name `value` (it is referenced by the architecture term description).
+## Explicitly out of scope for the writer
 
-Do not add imports; none are needed.
+- Do not edit `tests/calc/calc_test.go`, `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, or `tests/calc/scenarios/scenarios.go`. They are harness/test code outside the declared service roots, and the generated test file is marked DO NOT EDIT.
+- Do not weaken, skip, relax or remove any assertion — in particular leave the `expected %d, got %d` comparison in `result` exactly as written.
+- Do not edit `docs/scenarios.yaml`, `docs/product/product.yaml`, or `docs/architecture/architecture.yaml`. The registry and the generated test must keep agreeing; `Done()` checks this.
+- Do not add or modify any `*_test.go` file, and do not add a new test package under `services/calc`.
 
-**Tests this part serves:** `/go-test/go-test:fixture.stepsrun.tests.calc::TestCalc001Double` (scenario `calc-001-double`). It is the only test in the failing set, and this is the only change the set requires.
+## Verification the writer should run
 
-After the change, the scenario runs as: given step sets `State.Value = 3`; when step calls `calc.Double(3)`, which returns `6`, and stores it; then step parses `6` and finds `State.Value == 6`, so it returns nil and `s.Done()` reports all three steps passed.
-
-## Explicit non-changes
-
-Do not touch any of the following — they are either correct as written or outside the writer's permitted scope:
-
-- `tests/calc/calc_test.go` — a generated test file; it is in the forbidden set and already matches the registry. If it were edited, `Done()`'s registry check would fail.
-- `tests/calc/steps/register.go`, `tests/calc/steps/state.go`, `tests/calc/scenarios/scenarios.go` — harness code under `tests/`, outside the declared service roots (`services/calc`, `services/neighbour`). The regexes, parsing and the `expected %d, got %d` assertion in `result` are all correct and must not be loosened, reordered or removed. In particular, do not change the comparison in `result` or make the when step compute the doubling itself — the architecture states the doubling is observed through `services/calc.Double`'s return value, so the logic belongs in the service.
-- `docs/scenarios.yaml`, `docs/product/product.yaml`, `docs/architecture/architecture.yaml` — specification documents, read-only here.
-- `services/neighbour` — declared in the architecture but not present on disk and not exercised by this suite (the test commands target `./tests/calc/...` only). Do not create it as part of this repair.
-
-## Verification
-
-Run the architecture's replay command from the repository root:
+Use the architecture's declared command from the repository root:
 
 ```
 go test -tags bdd -json -count=1 ./tests/calc/...
 ```
 
-Expect `TestCalc001Double` to pass with all three steps run and none skipped. No other test in the repository is affected, since `Double` has exactly one caller: the `double` step in `tests/calc/steps/register.go`.
+Expect `TestCalc001Double` to pass with all three steps reported as run, and no other test in the suite to regress. If the run still reports `expected 6, got 3`, confirm the edited `Double` is the one being compiled (module path `fixture/stepsrun`, package `fixture/stepsrun/services/calc`) rather than a stale or duplicate definition.
 
 ## Edit roots
 
@@ -184,6 +178,8 @@ The selection is a nonempty framework regular expression. Keep the command in th
 3. After each part, run the tests that part serves and fix what fails.
 4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
 5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true

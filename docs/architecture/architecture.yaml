@@ -393,6 +393,13 @@ architecture:
           The person-approved repair plan, unchanged.
         ResultPath: >-
           Per-turn apply confirmation artifact path, with the sanitized stable Item id.
+          The writer ends its final message with the FILE_START/FILE_END block
+          in the message itself. The heading names where the engine saves
+          extracted content; the writer never writes that path itself.
+          A successful response with no extractable block follows PostNotApplied
+          in build code alone, preserving files, warning once with this path
+          and rerunning the remaining set. Provider failures remain fatal;
+          malformed extracted content retains its existing handling.
         Subject.Tests: >-
           Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
         Subject.Tests[].ID: >-
@@ -1029,7 +1036,7 @@ architecture:
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false; allowance two still permits three applies before stopping. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false and successful responses missing the confirmation; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun; provider failures stay fatal. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads

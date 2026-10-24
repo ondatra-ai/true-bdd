@@ -5,9 +5,9 @@
     {
       "path": "services/greeter/greeting.js",
       "kind": "modified",
-      "size": 168,
-      "sha256": "1bdda631a8c7049797d3e6f538481df23dda7dbb9b24e3f5a1e06514f4727573",
-      "text": "// greet greets a person by name, and the world when no name is given.\nfunction greet(name = 'world') {\n  return 'Hello, ' + name + '!';\n}\n\nmodule.exports = { greet };\n"
+      "size": 236,
+      "sha256": "a26c98dcd1845c61b306f3deeacada40795a8e85ce00ecebc3eec3efe1c7ddfc",
+      "text": "// greet greets a person by name, and the world when no name is given.\n// An omitted name falls back to 'world' via the default parameter.\nfunction greet(name = 'world') {\n  return 'Hello, ' + name + '!';\n}\n\nmodule.exports = { greet };\n"
     },
     {
       "path": "tests/unit/suite-runs.log",

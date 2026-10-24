@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: 'Frontend',
+  description: 'Frontend service',
 };
 
 export default function RootLayout({

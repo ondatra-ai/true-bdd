@@ -1,3 +1,0 @@
-applied: true
-target: "services/greeter"
-summary: "services/greeter/greeting.js: gave greet a default parameter (name = 'world') so greet() and greet(undefined) return 'Hello, world!' while by-name greeting is unchanged; updated the stale header comment. Ran `npx jest --config jest.config.js` in tests/: 2/2 suites and 2/2 tests passed, including the failing-set test tests/unit/greeting.test.js::greet greets the world when no name is given (the canary also still passes)."

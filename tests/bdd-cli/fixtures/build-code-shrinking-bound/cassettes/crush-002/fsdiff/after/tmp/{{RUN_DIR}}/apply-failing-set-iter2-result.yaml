@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "A() already returned 1 in services/calc/calc.go, so per the fixture lifecycle protocol both A() and B() were left unchanged and services/calc/attempted.txt containing 'attempted' was created. TestA passes; TestB of the failing set still fails with 'B needs two', deliberately left failing by the fixture to exercise the unchanged counter. No tests or documents were modified."

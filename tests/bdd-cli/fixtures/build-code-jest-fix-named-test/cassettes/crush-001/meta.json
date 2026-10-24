@@ -10,17 +10,15 @@
     "{{CWD}}"
   ],
   "exit_code": 0,
-  "duration_ms": 26948,
-  "request_hash": "sha256:29cc8029a2feadb51b7f3bef5375d7418c10727b051783055923592090551300",
+  "duration_ms": 28328,
+  "request_hash": "sha256:a62887a464f1083a5b9870cc21995a369ae555c38e9b6b031b5f90b2a0b95c73",
   "fsdiff": {
-    "created": [
-      "tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml"
-    ],
+    "created": [],
     "modified": [
       "services/greeter/greeting.js",
       "tests/unit/suite-runs.log"
     ],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T11:27:55Z"
+  "recorded_at": "2026-10-24T13:46:52Z"
 }

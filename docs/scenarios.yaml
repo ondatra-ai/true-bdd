@@ -5386,3 +5386,100 @@ scenarios:
       - 'the file "services/calc/attempted.txt" matches attempted'
       - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestB'
       - 'every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA'
+  build-code-confirmation-001-passes:
+    description: A completed writer response without confirmation preserves its repair,
+      warns once and reruns the set to convergence
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_confirmation_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-missing-confirmation.yaml
+      scenario_id: build-code-confirmation-001-passes
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-no-confirmation-passes" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer
+        confirmation missing"
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/calc.go" is modified
+      - the file "tests/suite/calc_test.go" is unchanged
+      - stdout matches BUILD CODE COMPLETE
+      - stdout does not match msg="Walk stopped"
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
+        with code 0
+  build-code-confirmation-002-retries:
+    description: A missing confirmation with failures remaining replans only the remaining
+      tests
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_confirmation_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-missing-confirmation.yaml
+      scenario_id: build-code-confirmation-002-retries
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-no-confirmation-retries" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
+      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer
+        confirmation missing"
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine spawned exactly 4 test runners
+      - the file "services/calc/calc.go" is modified
+      - the file "tests/suite/calc_test.go" is unchanged
+      - stdout matches BUILD CODE COMPLETE
+      - stdout does not match msg="Walk stopped"
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
+        with code 0
+  build-code-confirmation-003-bound:
+    description: Missing confirmations consume the same allowance and rerun the terminal
+      repair before the non-converging bound even when it passes
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_confirmation_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-missing-confirmation.yaml
+      scenario_id: build-code-confirmation-003-bound
+      merge_date: '2026-10-24'
+    timeout: 20m
+    merged_steps:
+      given:
+      - the "build-code-no-confirmation-bound" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 1
+      - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
+      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer
+        confirmation missing"
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 3 fix AI turns to "claude"
+      - the engine dispatched 3 apply AI turns to "crush"
+      - the engine spawned exactly 4 test runners
+      - the file "services/calc/calc.go" is modified
+      - the file "tests/suite/calc_test.go" is unchanged
+      - stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - the file "services/calc/prepared.txt" matches ^prepared
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
+        with code 0

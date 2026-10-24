@@ -4,7 +4,7 @@ You are the production writer repairing a whole failing set. Read the Specificat
 
 Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -43,11 +43,11 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 
 ## Proposed repair plan
-In services/calc/calc.go, fix calc.Add(a, b int) to return a + b instead of a - b, preserving its public signature. The contract is integer addition for the supplied arguments; the current subtraction produces -1 for (2, 3), where 5 is required. This repair serves TestAddSumsItsArguments in tests/suite/add_test.go.
+In services/calc/calc.go, repair calc.Add(a, b int) to return a + b instead of a - b, preserving its signature. The contract is to sum both arguments; the current subtraction produces -1 for Add(2, 3), causing TestAddSumsItsArguments to fail. Remove the stale source comment claiming the implementation uses the wrong operator.
 
-Edit only production source under the architecture-declared services/calc root. Do not modify tests, assertions, documents, or true-bdd configuration.
+This repair serves the sole failing test, tests/suite/add_test.go::TestAddSumsItsArguments, which requires Add(2, 3) == 5. Validate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the name filter so the unrelated canary does not execute or append to suite-runs.log.
 
-Validate with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Require the existing assertion to pass. Keep validation narrowed to this failing test: the unrelated canary appends to suite-runs.log when executed.
+Edit only production source under the declared service root services/calc/. Do not modify tests, assertions, documents, architecture configuration, or true-bdd/.
 
 ## Edit roots
 
@@ -65,6 +65,8 @@ No test command is granted to this writer. Report that limitation in the confirm
 3. After each part, run the tests that part serves and fix what fails.
 4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
 5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true

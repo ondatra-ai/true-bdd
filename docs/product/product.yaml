@@ -241,7 +241,16 @@ glossary:
       itself, with no validation AI turn. After every completed apply it
       reruns the remaining set once, passing tests leave, and fresh discovery
       on the next walk finds regressions. The existing per-Item allowance
-      counts applies on the set, including an applied false reply.
+      counts applies on the set, including an applied false reply. A successful
+      provider response without the result confirmation also counts as a
+      completed apply for build code: files stay as written, the engine warns
+      once with the result path and reruns the set through the not-applied
+      path. A provider failure, including empty or whitespace-only crush
+      output, a failed execution or a refused CLI, still ends the command.
+      Missing confirmations consume the same allowance; the terminal apply
+      is rerun but still ends at the non-converging bound even if it passes.
+      An extracted malformed block or one without applied keeps its existing
+      handling. Other commands do not recover a missing confirmation.
 
   - term: failing set
     means: >-

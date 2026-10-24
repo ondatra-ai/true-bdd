@@ -38,13 +38,20 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
-		"build-code-writer-replay/input/templates/build-code.fix-applier.prompt.tpl":     templateReplacement,
-		"build-code-cross-walk/input/templates/build-code.fix-applier.prompt.tpl":      templateExtension,
-		"build-code-not-applied/input/templates/build-code.fix-applier.prompt.tpl":       templateReplacement,
-		"build-code-not-applied-bound/input/templates/build-code.fix-applier.prompt.tpl": templateReplacement,
- "build-code-shrinking-bound/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
- "build-code-missing-member/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
- "build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
+		"build-code-shrinking-bound/input/templates/build-code.fix-applier.system.prompt.tpl":         templateExtension,
+		"build-code-no-confirmation-passes/input/templates/build-code.fix-applier.prompt.tpl":         templateReplacement,
+		"build-code-no-confirmation-passes/input/templates/build-code.fix-applier.system.prompt.tpl":  templateReplacement,
+		"build-code-no-confirmation-retries/input/templates/build-code.fix-applier.prompt.tpl":        templateReplacement,
+		"build-code-no-confirmation-retries/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
+		"build-code-no-confirmation-bound/input/templates/build-code.fix-applier.prompt.tpl":          templateReplacement,
+		"build-code-no-confirmation-bound/input/templates/build-code.fix-applier.system.prompt.tpl":   templateReplacement,
+		"build-code-writer-replay/input/templates/build-code.fix-applier.prompt.tpl":                  templateReplacement,
+		"build-code-cross-walk/input/templates/build-code.fix-applier.prompt.tpl":                     templateExtension,
+		"build-code-not-applied/input/templates/build-code.fix-applier.prompt.tpl":                    templateReplacement,
+		"build-code-not-applied-bound/input/templates/build-code.fix-applier.prompt.tpl":              templateReplacement,
+		"build-code-shrinking-bound/input/templates/build-code.fix-applier.prompt.tpl":                templateExtension,
+		"build-code-missing-member/input/templates/build-code.fix-applier.prompt.tpl":                 templateExtension,
+		"build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":                        templateExtension,
 	}
 
 	roots, err := filepath.Glob("fixtures/*/input/templates")
@@ -94,7 +101,7 @@ func assertTemplateOverlay(t *testing.T, root, path string, declarations map[str
 
 		assertTemplateExtension(t, path, filepath.Join("../../templates", template))
 	case templateReplacement:
-		// These appliers force an applied:false answer (#183).
+		// These overlays deliberately control writer behavior.
 	default:
 		t.Errorf("undeclared fixture template overlay: %s; declare extension or replacement", key)
 	}

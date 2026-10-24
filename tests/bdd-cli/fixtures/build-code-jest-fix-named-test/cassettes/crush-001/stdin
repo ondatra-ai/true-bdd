@@ -4,7 +4,7 @@ You are the production writer repairing a whole failing set. Read the Specificat
 
 Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
 
 
 ### TASK
@@ -48,7 +48,7 @@ Received: "Hello, undefined!"
 
 ## Diagnosis
 
-`services/greeter/greeting.js` defines:
+`services/greeter/greeting.js` declares:
 
 ```
 function greet(name) {
@@ -56,52 +56,44 @@ function greet(name) {
 }
 ```
 
-When called with no argument, `name` is `undefined`, and string concatenation stringifies it, so `greet()` returns `"Hello, undefined!"`. The failing test (`tests/unit/greeting.test.js:7`) asserts `greet()` returns `"Hello, world!"`. The defect is entirely in production source; the harness, the Jest config (`tests/jest.config.js`, `testMatch: <rootDir>/unit/**/*.test.js`) and the test file are correct and must not be touched.
+When `greet()` is called with no argument, `name` is `undefined` and string concatenation stringifies it, producing `"Hello, undefined!"`. The failing test calls `greet()` with no argument and asserts `"Hello, world!"`. The file's own header comment states the contract: *"greet greets a person by name, and the world when no name is given"* — the missing default is the planted defect, and it is in production source, inside the only declared write root (`services/greeter`, per `docs/architecture/architecture.yaml`).
 
-The file's own header comment states the intended contract: *greet greets a person by name, and the world when no name is given.* The missing default is the planted defect. So this is a one-part repair: supply the documented default.
+No harness, config, or test change is involved. `tests/jest.config.js`, `tests/stack-frames.js`, and `tests/unit/canary.test.js` are all healthy and must be left untouched.
 
-## Scope — write root
+## Scope — files the writer may touch
 
-Per `docs/architecture/architecture.yaml`, service `greeter` has `path: services/greeter`, which is the only writable root. The single change belongs in:
+- **`services/greeter/greeting.js`** — the only file to change. This is the service root declared for service `greeter` in `docs/architecture/architecture.yaml` (`path: services/greeter`).
 
-- `services/greeter/greeting.js` — the only file to edit.
+Do **not** touch:
+- `tests/unit/greeting.test.js` or any other file under `tests/` (including `tests/jest.config.js`, `tests/stack-frames.js`, `tests/unit/canary.test.js`, `tests/node_modules/**`).
+- `docs/architecture/architecture.yaml` or any other document.
+- No assertion may be weakened, skipped, or removed; no test may be renamed or marked `.skip`/`.todo`.
 
-Do **not** modify `tests/unit/greeting.test.js`, `tests/unit/canary.test.js`, `tests/jest.config.js`, `tests/stack-frames.js`, `docs/architecture/architecture.yaml`, or anything under `tests/node_modules`. No new files are needed; no package manifest or dependency changes are needed (the module is plain CommonJS with `module.exports = { greet }`, which the test consumes via `require('../../services/greeter/greeting')`).
+## Contract for `greet`
 
-## Part 1 — default the greeting target to `world` in `greet`
+`greet(name)` returns a greeting string of the form `` `Hello, ${who}!` ``, where:
 
-**File:** `services/greeter/greeting.js`
+1. **Named case (must keep working):** when a caller supplies a name, that name is used verbatim. `greet('Ada')` → `'Hello, Ada!'`. The current behaviour for this case is already correct and must not regress — the fix is purely additive.
+2. **Default case (currently broken, the subject of this repair):** when no name is given, the greeting addresses the world. `greet()` → `'Hello, world!'`. Lowercase `world`, comma-space after `Hello`, single trailing `!`, no leading/trailing whitespace — exactly the string the test's `toBe` compares against.
 
-**Contract after the change:**
+The module must continue to export the same shape, `module.exports = { greet }`, because the test imports it by destructuring: `const { greet } = require('../../services/greeter/greeting')`. Do not convert the file to ESM — the suite runs with `transform: {}` and `testEnvironment: 'node'` under CommonJS, so an `export` statement would break the `require` at load time and fail the suite before any assertion runs.
 
-- `greet('Ada')` → `'Hello, Ada!'` — the existing by-name behaviour, preserved unchanged.
-- `greet()` → `'Hello, world!'` — a call with no argument greets the world.
-- `greet(undefined)` → `'Hello, world!'` — an explicitly-passed `undefined` is the same "no name given" case, so both call shapes agree.
+## Intended implementation
 
-**Intended implementation:** give the parameter the default value `'world'`, i.e. declare the function as `function greet(name = 'world')` and leave the body returning `'Hello, ' + name + '!'`. An ES default parameter is the right mechanism here because it fires exactly for a missing or `undefined` argument and keeps the function body a single expression. The environment supports it: `tests/jest.config.js` sets `testEnvironment: 'node'` with `transform: {}`, so the file runs on the host Node with no transpilation, and default parameters are natively available.
+In `services/greeter/greeting.js`, give the `name` parameter a default of `'world'` so that an absent argument resolves to the world greeting, e.g. an ES2015 default parameter (`function greet(name = 'world')`). Default parameters apply when the argument is `undefined`, which is exactly the omitted-argument case the test exercises, and they leave an explicitly supplied name untouched — so the named case in the contract above is preserved by construction.
 
-An equivalent explicit guard (`if (name === undefined) { name = 'world'; }`, or `const target = name === undefined ? 'world' : name;`) is acceptable if the writer prefers it, as long as the two bullet points above hold and the by-name path is untouched. Prefer the default parameter for brevity.
+An equivalent explicit guard inside the body (fall back to `'world'` when the argument is not provided) is acceptable if the writer prefers it, as long as a supplied name is never overridden. Keep the change minimal and local: one function signature or one fallback expression. Do not introduce new modules, new exports, config files, dependencies, or a `package.json` under `services/greeter` — none are needed, and `transform: {}` means the file is loaded by Node as-is (default parameters are natively supported by any Node version that runs this Jest install, so no transpilation concern arises).
 
-**Deliberately out of scope:** do not add coercion, trimming, empty-string handling, `null` handling, type validation, or a second exported helper. No test in this set exercises those, the specification documents only the by-name and no-name cases, and extra behaviour would be unrequested surface. In particular do not turn the check into a truthiness test (`name || 'world'`), which would silently rewrite `greet('')` and `greet(0)`; restrict the default to the `undefined` case so the change is exactly the documented gap.
-
-**Keep the export shape:** `module.exports = { greet };` must stay, since the test destructures `{ greet }` from the module.
-
-**Update the stale comment:** the header currently says the function "does not do the second: the missing default is the planted defect". Once the default is in place that sentence is false. Rewrite the comment to state the contract plainly — that `greet` greets a person by name and greets the world when no name is given. This is production-source documentation inside the write root, so it is in scope; it is not a specification document.
+Keep the file's explanatory header comment accurate: the first line states the two-case contract and should remain, but the following two lines describing the defect as still present ("It does not do the second: the missing default is the planted defect...") will be stale once the default exists, so the writer should update that comment to describe the implemented behaviour rather than a defect. This is a comment in production source within the declared write root, not a test or document.
 
 ## Tests each part serves
 
-- **Part 1 (default parameter in `services/greeter/greeting.js`)** serves the whole failing set, which is the single test `/jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given` — `tests/unit/greeting.test.js` → `describe('greet')` → `test('greets the world when no name is given')`, asserting `expect(greet()).toBe('Hello, world!')`. After the change `greet()` returns the exact string `'Hello, world!'` and the assertion passes as written.
-- **No other part is required.** `tests/unit/canary.test.js` only appends to `tests/unit/suite-runs.log` and does not touch `greet`; it is unaffected by this change and needs no production support. It is not the repair's subject — do not alter it or its log side effect.
+- **The default parameter / fallback in `services/greeter/greeting.js`** serves the failing test in the set: `tests/unit/greeting.test.js::greet greets the world when no name is given` (`/jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given`). After the change, `greet()` returns `'Hello, world!'` and the `toBe` comparison succeeds, turning the prompt `build-code/test-passes: D: tests-pass` from `fail` to `pass`.
+- **Preserving the named path and the CommonJS `module.exports = { greet }` shape** serves that same test's import line and guards against collateral breakage of `tests/unit/canary.test.js`, which must keep running and appending to `suite-runs.log` during full-suite walks. The canary does not import `greeting.js`, so a correctly scoped change cannot affect it — but a module-format change would break the whole suite, which is why the format constraint is called out.
 
-## Verification
+## Verification the writer should run
 
-Run the suite the way the architecture declares, from the directory holding the config (`tests/`), so `npx` resolves the Jest install under `tests/node_modules`:
-
-```
-cd tests && npx jest --json --config jest.config.js
-```
-
-Expect the previously failing `greet greets the world when no name is given` to pass, the canary to continue passing, and zero other tests to change status. Do not pass `--updateSnapshot`, do not edit any assertion, and do not add skips or `test.todo` anywhere.
+From the directory holding the Jest config (`tests/`, as the architecture comment instructs so `npx` resolves the install under `tests/node_modules`), run the declared command: `npx jest --json --config jest.config.js`. Expect both `greeting.test.js` and `canary.test.js` to pass, with no change in the number of collected tests. Do not add `-t` filters or otherwise narrow the run when confirming the final state.
 
 ## Edit roots
 
@@ -123,6 +115,8 @@ The selection is a nonempty framework regular expression. Keep the command in th
 3. After each part, run the tests that part serves and fix what fails.
 4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
 5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
 applied: true

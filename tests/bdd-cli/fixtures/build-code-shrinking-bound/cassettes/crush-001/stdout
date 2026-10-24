@@ -1,5 +1,7 @@
-A returns 0, so per the fixture lifecycle protocol I change only A to 1 and leave B at 0.=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+A returns 0, so per the lifecycle protocol I change only `A` to return 1 and leave `B` at 0.`TestA` passes; `TestB` still fails (`B needs two`) — exactly the state the lifecycle protocol authorizes, since it forbids changing B at this stage.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "Per the required fixture lifecycle protocol: A returned 0, so services/calc/calc.go was changed so only A() returns 1 while B() stays at 0. TestA passes; TestB remains failing ('B needs two') as the fixture deliberately intends. Tests and documents untouched."
+summary: "In services/calc/calc.go, changed only A's body from `return 0` to `return 1` per the required fixture lifecycle protocol; B left returning 0. Ran `go test -count=1 ./tests/suite/...`: TestA now passes; TestB still fails with `B needs two`, which is the deliberate remaining failure for this stage. No tests or documents were modified."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

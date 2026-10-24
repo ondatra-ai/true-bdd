@@ -1,5 +1,7 @@
-A already returns 1, so per the protocol I change only `B` to return 2.Suite passes. Confirming the failing-set test specifically:Both command forms pass. Writing the required confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+A already returns 1, so per the lifecycle protocol I change only B to return 2.Repaired `services/calc/calc.go:3` — `B()` now returns 2; `A()` preserved at 1. Whole suite and the `TestB` selection both pass.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
 applied: true
 target: "services/calc"
-summary: "B() in services/calc/calc.go now returns 2 (was placeholder 0); A() preserved at 1 per lifecycle protocol. TestB passes — confirmed via `go test -count=1 ./tests/suite/...` (full suite ok, TestA also green) and `go test -count=1 ./tests/suite/... -run 'TestB'` (ok)."
+summary: "A already returned 1, so per the lifecycle protocol only B was changed: func B() int now returns 2 in services/calc/calc.go, A preserved. Verified with 'go test -count=1 ./tests/suite/...' (ok) and the '-run TestB' selection (ok); TestB of the failing set passes."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

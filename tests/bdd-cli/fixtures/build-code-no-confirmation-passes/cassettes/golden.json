@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-no-confirmation-passes",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 65,
+      "sha256": "7f5c48b73510a9cf31dc792dca86eeeb5f1a67168bbc604ec19694c064941742",
+      "text": "package calc\nfunc A() int { return 1 }\nfunc B() int { return 2 }\n"
+    }
+  ]
+}

@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc/calc.go"
-summary: "Staged migration stage 1: Version() changed from returning 1 to returning 2 in services/calc/calc.go; Compatible() intentionally left returning false per the deterministic staged migration (Version was 1, so only Version changes this stage). Saw TestAVersion pass via 'go test -count=1 ./tests/suite/... -run TestAVersion'. Whole-suite run confirms the deliberate next-stage failure: TestBCompatibility now fails with 'version 2 requires compatibility support' and is left for the next discovery; no tests or documents were modified."

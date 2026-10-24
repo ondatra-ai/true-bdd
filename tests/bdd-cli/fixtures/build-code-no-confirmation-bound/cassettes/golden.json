@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "fixture": "build-code-no-confirmation-bound",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 59,
+      "sha256": "1ed90e926c8dfc97b0f0dff9aa41a4d7426f25149c9863516399e7eb93fcae54",
+      "text": "package calc\nfunc A() int{return 1}\nfunc B() int{return 2}\n"
+    },
+    {
+      "path": "services/calc/prepared.txt",
+      "kind": "created",
+      "size": 9,
+      "sha256": "cb064c1339ffa3d7777bcb0459de3dceddb9146156dde58065a4ac826b029aa7",
+      "text": "prepared\n"
+    }
+  ]
+}

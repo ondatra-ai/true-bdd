@@ -1,3 +1,0 @@
-applied: true
-target: "services/calc"
-summary: "Changed B() in services/calc/calc.go to return 2 instead of the placeholder 0, preserving the exported zero-arg int signature and leaving A() untouched at 1 per the lifecycle protocol (A already returned 1). Verified with `go test -count=1 ./tests/suite/...` (whole suite ok, TestA and TestB both pass) and `go test -count=1 ./tests/suite/... -run 'TestB'` (ok) — the set's test /go-test/go-test:fixture.buildcodefix.tests.suite::TestB now passes with no t.Fatal output and no build failure."

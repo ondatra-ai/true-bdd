@@ -1,5 +1,5 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Changed Add to return a + b, preserving its signature, and removed the obsolete defect comment. No tests were run or observed passing because no test command was granted; TestAddSumsItsArguments remains unverified."
+summary: "Changed Add to return a + b and removed the stale defect comment. No tests were run or observed passing because no test command was granted."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
