@@ -30,3 +30,35 @@ func TestCanonicalReplayCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestCanonicalReplayCommandPreservesArgumentsAfterBoundary(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct{ framework, command, want string }{
+		{
+			testrunner.FrameworkGoTest,
+			`go test -json ./... -args -json --json "" '$HOME' "test name"`,
+			`go test ./... -args -json --json '' '$HOME' 'test name'`,
+		},
+		{
+			testrunner.FrameworkJest,
+			`npx jest --json -- --json --json=true "" "test name"`,
+			`npx jest -- --json --json=true '' 'test name'`,
+		},
+		{
+			testrunner.FrameworkPlaywright,
+			`npx playwright test --reporter line,json -- --reporter=json --reporter line,json "" "test name"`,
+			`npx playwright test --reporter line -- --reporter=json --reporter line,json '' 'test name'`,
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.framework, func(t *testing.T) {
+			t.Parallel()
+
+			got, _, err := testrunner.CanonicalReplayCommand(testCase.framework, testCase.command)
+			if err != nil || got != testCase.want {
+				t.Errorf("%q: got %q, want %q, error %v", testCase.command, got, testCase.want, err)
+			}
+		})
+	}
+}

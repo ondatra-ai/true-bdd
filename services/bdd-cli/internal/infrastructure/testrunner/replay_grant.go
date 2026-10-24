@@ -21,7 +21,12 @@ func CanonicalReplayCommand(framework, command string) (string, string, error) {
 		return "", "", fmt.Errorf("%w: unknown framework %s", errReplayGrant, framework)
 	}
 
-	argv = withoutOutputFlag(argv, flag)
+	boundary := "--"
+	if framework == FrameworkGoTest {
+		boundary = "-args"
+	}
+
+	argv = withoutOutputFlag(argv, flag, boundary)
 	safe := regexp.MustCompile(`^[A-Za-z0-9_./:=,@%+\-]+$`)
 
 	for idx, arg := range argv {
@@ -43,10 +48,13 @@ func CanonicalReplayCommand(framework, command string) (string, string, error) {
 	return strings.Join(argv, " "), selectors[framework], nil
 }
 
-func withoutOutputFlag(argv []string, flag outputFlag) []string {
+func withoutOutputFlag(argv []string, flag outputFlag, boundary string) []string {
 	result := make([]string, 0, len(argv))
 	for idx := 0; idx < len(argv); idx++ {
 		arg := argv[idx]
+		if arg == boundary {
+			return append(result, argv[idx:]...)
+		}
 
 		name, value, equals := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		if !strings.HasPrefix(arg, "-") || name != flag.name {
