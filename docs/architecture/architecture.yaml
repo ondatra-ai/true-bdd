@@ -1336,8 +1336,11 @@ architecture:
         `allow_bash` to false. Only build code --fix's apply mode carries
         `test_command`, `test_selector` and `test_dir`, consumed only by crush.
         SplitCommand splits the declared replay, removes the framework's
-        machine-output flag (json from a reporter list, preserving other reporters),
-        and joins argv with one space. Arguments matching A-Za-z0-9_./:=,@%+-
+        machine-output flag only before -args for go-test or a bare -- for
+        jest and playwright (json from a reporter list, preserving other reporters),
+        and joins argv with one space. The boundary and every argument after it
+        pass through unchanged and use the same quoting rule.
+        Arguments matching A-Za-z0-9_./:=,@%+-
         stay unquoted; all others are single-quoted. Any argument containing a
         single quote, newline or NUL withholds the grant and logs one warning
         with its reason. Selectors are -run for go-test, --testNamePattern for
