@@ -1,0 +1,5 @@
+A returns 0, so per the fixture lifecycle protocol I change only A to 1 and leave B at 0.=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Per the required fixture lifecycle protocol: A returned 0, so services/calc/calc.go was changed so only A() returns 1 while B() stays at 0. TestA passes; TestB remains failing ('B needs two') as the fixture deliberately intends. Tests and documents untouched."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

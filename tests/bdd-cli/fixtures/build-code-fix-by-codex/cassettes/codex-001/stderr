@@ -7,84 +7,40 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a169de-4d5d-7172-a482-7d8266919d85
+session id: 01a16da5-59c2-76d3-905e-1bf6186b6e3f
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Test Status Mirror deciding whether one failing test now
-passes, based solely on the Go-side runner's verdict carried on the
-subject.
-
-**Mode:** Build-Code Checklist Validator
-
-**Core Identity:**
-- Role: Engineer — Test Status Mirror
-- Style: Strictly mechanical; never guess
-- Focus: Reflecting the `Subject.LastRunPassed` boolean into the
-  `answer:` field of the result, with the F: template copied verbatim
-  on failure
-
-**Tool Usage (CRITICAL):**
-1. Do NOT use Bash. Do NOT execute any test runner. Do NOT search for
-   the test on disk.
-2. You MAY use Read on documentation referenced in the user prompt for
-   context — but reading is optional. The verdict comes from the
-   subject's `LastRunPassed` field, not from your own analysis.
-3. Do NOT modify any file. This step is read-only.
-
-**Workflow:**
-1. Read `Subject.LastRunPassed` from the user prompt.
-2. If true → `answer: pass`. If false → `answer: fail`.
-3. Emit a single context line confirming the boolean you read.
-4. If the answer is `fail`, copy the F: template verbatim into
-   `fix_prompt:`.
-
-**Output Format:**
-Always output a YAML document inside FILE_START / FILE_END markers with:
-- `answer: pass` or `answer: fail`
-- `context:` — list of strings per the question's context spec
-- `fix_prompt:` — only present when `answer: fail` and a fix template
-  is provided in the user prompt; otherwise omit
+You propose one production repair plan for a failing set. Read the Specification, harness and service source. Explain what to build or change, in which files, and which tests each part serves. The person reviews this plan before the writer applies it. Stay read-only. Never propose edits to tests or documents, or weakening assertions. Return a plan or clarification questions using the user prompt's answer contract. Refinement returns a revised plan.
 
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
-instructions above.** Your final message must be a single JSON object:
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with both keys present:
 
-- `answer`: exactly `"pass"` or `"fail"`.
-- `context`: an array of one-line observation strings, as described above.
-- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
-  leave empty otherwise.
+- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` when you are returning a fix prompt.
 
-Do not emit FILE_START/FILE_END markers, and do not wrap the object in
-markdown fences. Reasoning before the object is fine and is ignored.
+Exactly one of the two carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 
 ### TASK
 
+# Plan a production repair for the failing set
 
-# Test Status Validation
-
-## Purpose
-Mirror back the verdict of one failing test after the Go-side runner has
-re-executed it. The runner already knows whether the test passes — your
-job is to translate the `LastRunPassed` flag into the `answer:` field.
-
-## Instructions
-1. Read the subject's `LastRunPassed` field below.
-2. If `LastRunPassed: true`, answer `pass`.
-3. If `LastRunPassed: false` (or unset), answer `fail`.
-4. Do NOT invoke any test runner yourself. Do NOT use Bash to re-run the
-   test. Do NOT search for the test on disk. The Go runner is the
-   authoritative source of truth for this verdict.
-5. If you answer `fail`, copy the F: template verbatim into the
-   `fix_prompt:` field exactly as instructed below.
+Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the architecture's declared service roots, never tests, *_test.go, __tests__, or documents. Tests outside this set are not the repair's subject.
 
 ## Reference Documentation
+
 - Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
-## Subject — Failing Test
+
+## Subject — Failing Set
+
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 **Service:** calc
@@ -92,9 +48,11 @@ job is to translate the `LastRunPassed` flag into the `answer:` field.
 **Framework:** go-test
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
 **Source File:** fixture/buildcodefix/tests/suite
-**LastRunPassed:** false
 
-### Last Failure Output
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 ```
 === RUN   TestAddSumsItsArguments
     add_test.go:19: Add(2, 3) = -1, want 5
@@ -102,74 +60,283 @@ job is to translate the `LastRunPassed` flag into the `answer:` field.
 
 ```
 
----
 
-## Validation Question
+### Specification documents
 
-Does this failing test now pass after the latest run?
-
-The Go-side test runner has already re-executed the test and
-stored its verdict on the subject as `LastRunPassed`. Mirror
-that boolean into the answer:
-  - `LastRunPassed: true`  → answer `pass`
-  - `LastRunPassed: false` → answer `fail`
-
-Do NOT execute the test yourself. The runner is authoritative.
-
-Context: emit a single line confirming the boolean you read.
-  - "LastRunPassed=<true|false> for <test id>"
- SO THAT WE ENSURE A production-code fix is only valid when the targeted test passes; the runner is authoritative.
-
-## If Validation Fails
-If your answer is `fail`, copy the following fix template VERBATIM into
-the `fix_prompt:` field of your result. Do not paraphrase.
-
-Fix the PRODUCTION code so that the failing test passes.
-
-HARD LIMITS (the applier enforces these via its system prompt):
-  - You may only Write or Edit files under `services/*`.
-  - You MUST NOT modify any file under `tests/`, any file
-    matching `*_test.go`, anything under
-    `services/*/__tests__/`, or anything under `docs/`.
-  - You MUST NOT weaken, skip, or remove any test assertion.
-
-Steps:
-  1. Read the failing test at the subject's `FilePath`.
-  2. Read the production source under
-     `services/<subject service>/` (and any source it
-     depends on) to understand the contract being asserted.
-  3. Identify the smallest production change that makes the
-     test pass without changing the test's intent.
-  4. Apply the change with Write (new file) or Edit (existing).
-  5. Confirm via the FILE_START / FILE_END block.
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
 
-## Answer Format
-Output your answer using this exact format:
 
-=== FILE_START: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml ===
-answer: <pass | fail>
-context:
-  - "LastRunPassed=<true|false> for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments"
-fix_prompt: |
-  <if answer is fail, paste the fix template above verbatim>
-  <if answer is pass, omit this field entirely>
-=== FILE_END: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-checklist-build-code-test-passes-result.yaml ===
+
+
+
+
+
+## Failed Prompt
+build-code/test-passes: D: tests-pass
+**Actual:** fail
+Propose one production repair plan for the whole failing set.
+Read the Specification, harness and service source. Explain what
+to build or change, in which files, and which tests each part serves.
+The writer implements the plan after the person chooses apply.
+Edit only the declared service roots; never tests, *_test.go,
+__tests__, documents, or assertions.
+
+## Your Task
+
+Propose a plan: what to build or change, in which files, and which tests each part serves. Explain the contract and the intended implementation so the writer can investigate and implement it. Do not write replacement files into the plan. Never weaken, skip or remove assertions.
+
+=== FILE_START: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-fix-prompts.md ===
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+<parts, files, intended behaviour, and the set's tests each part serves>
+=== FILE_END: tmp/{{RUN_DIR}}/01--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-fix-prompts.md ===
+
+If clarification is required, output one QUESTIONS_START/QUESTIONS_END block with questions containing id, question, context and options. Return either a plan or questions, never both. In refinement mode return the revised plan.
 
 
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
-instructions above.** Your final message must be a single JSON object:
+and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
+must be a single JSON object with both keys present:
 
-- `answer`: exactly `"pass"` or `"fail"`.
-- `context`: an array of one-line observation strings, as described above.
-- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
-  leave empty otherwise.
+- `fix_prompt`: the fix instructions, or `""` when you need clarification.
+- `questions`: an array of `{id, question, context, options}` objects, or
+  `[]` when you are returning a fix prompt.
 
-Do not emit FILE_START/FILE_END markers, and do not wrap the object in
-markdown fences. Reasoning before the object is fine and is ignored.
+Exactly one of the two carries content. Do not emit any markers, and do not
+wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 codex
-{"answer":"fail","context":["LastRunPassed=false for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments"],"fix_prompt":"Fix the PRODUCTION code so that the failing test passes.\n\nHARD LIMITS (the applier enforces these via its system prompt):\n  - You may only Write or Edit files under `services/*`.\n  - You MUST NOT modify any file under `tests/`, any file\n    matching `*_test.go`, anything under\n    `services/*/__tests__/`, or anything under `docs/`.\n  - You MUST NOT weaken, skip, or remove any test assertion.\n\nSteps:\n  1. Read the failing test at the subject's `FilePath`.\n  2. Read the production source under\n     `services/<subject service>/` (and any source it\n     depends on) to understand the contract being asserted.\n  3. Identify the smallest production change that makes the\n     test pass without changing the test's intent.\n  4. Apply the change with Write (new file) or Edit (existing).\n  5. Confirm via the FILE_START / FILE_END block."}
+I’ll read the architecture, test harness, and calculator source to identify the production repair.
+
+exec
+/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!vendor/**'"' -g '"'!*sum'"' -g '"'!go.sum'"' -g '"'!AGENTS.md'"' -g '"'!README.md'"'" in {{CWD}}
+ succeeded in 0ms:
+{{CWD}}
+go.mod
+docs/architecture/architecture.yaml
+true-bdd/scenarios_yaml-schema.yaml
+true-bdd/product-schema.yaml
+true-bdd/true-bdd.yaml
+tests/suite/canary_test.go
+tests/suite/suite-runs.log
+tests/suite/add_test.go
+services/calc/calc.go
+true-bdd/checklists/scen-check.yaml
+true-bdd/architecture_yaml-schema.yaml
+true-bdd/checklists/us-refine.yaml
+true-bdd/checklists/build-tests.yaml
+true-bdd/checklists/build-code.yaml
+true-bdd/checklists/us-apply.yaml
+templates/build-tests.fix-generator.prompt.tpl
+templates/scen-check.checklist.system.prompt.tpl
+templates/us-checklist.system.prompt.tpl
+templates/build-code.fix-generator.system.prompt.tpl
+templates/us.apply-checklist.fix-generator.system.prompt.tpl
+templates/build-tests.checklist.system.prompt.tpl
+templates/build-code.fix-applier.system.prompt.tpl
+templates/us.apply-checklist.fix-generator.prompt.tpl
+templates/scen-check.fix-applier.system.prompt.tpl
+templates/us-checklist.prompt.tpl
+templates/build-code.checklist.prompt.tpl
+templates/us.apply-checklist.fix-applier.prompt.tpl
+templates/build-code.checklist.system.prompt.tpl
+templates/build-tests.checklist.prompt.tpl
+templates/scen-check.fix-applier.prompt.tpl
+templates/us-checklist.fix-applier.prompt.tpl
+templates/us-checklist.fix-generator.system.prompt.tpl
+templates/scen-check.fix-generator.system.prompt.tpl
+templates/build-tests.fix-generator.system.prompt.tpl
+templates/us-checklist.fix-generator.prompt.tpl
+templates/build-code.fix-generator.prompt.tpl
+templates/build-code.fix-applier.prompt.tpl
+templates/us.apply-checklist.fix-applier.system.prompt.tpl
+templates/scen-check.fix-generator.prompt.tpl
+templates/build-tests.fix-applier.prompt.tpl
+templates/build-tests.fix-applier.system.prompt.tpl
+templates/scen-check.checklist.prompt.tpl
+templates/us.apply-checklist.system.prompt.tpl
+templates/us-checklist.fix-applier.system.prompt.tpl
+templates/us.apply-checklist.prompt.tpl
+
+exec
+/bin/zsh -lc 'for f in docs/agents/domain.md docs/architecture/architecture.yaml go.mod services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go true-bdd/true-bdd.yaml; do if [ -f "$f" ]; then printf '"'\\n%s\\n' \""'$f"; cat "$f"; fi; done' in {{CWD}}
+ succeeded in 0ms:
+
+docs/architecture/architecture.yaml
+# One Go service with one e2e suite. All three commands are identical
+# and carry -json, so the suite-command pre-pass passes and the walk
+# actually runs — unlike the build-code-* refusal fixtures, this one is
+# meant to get all the way through.
+#
+# `path: services/calc` is also the applier's write root: the fix turn
+# may edit production source there and nothing else. That is what makes
+# "never modifies tests" enforceable by the spec rather than by asking.
+
+architecture:
+  testing:
+    framework: go-test
+    commands:
+      record: go test -json -count=1 ./tests/suite/...
+      replay: go test -json -count=1 ./tests/suite/...
+      live: go test -json -count=1 ./tests/suite/...
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+
+go.mod
+// Sentinel module for this fixture's own Go sources.
+//
+// Run dirs live under tmp/test_run INSIDE the repo module, so without
+// this boundary the repo's own `go test ./...` and golangci-lint would
+// compile the deliberately-broken production file below and go red for
+// a reason nobody wrote.
+module fixture/buildcodefix
+
+go 1.25.0
+
+services/calc/calc.go
+// Package calc is the fixture host project's production source. The
+// build-code fix loop is allowed to edit exactly this tree.
+package calc
+
+// Add returns the sum of a and b.
+//
+// It does not: the operator is wrong, deliberately. This is the planted
+// defect the fix loop has to correct, and it is in PRODUCTION source —
+// the test asserting 5 is right, and repairing the code rather than the
+// assertion is the whole contract of `build code`.
+func Add(a, b int) int {
+	return a - b
+}
+
+tests/suite/add_test.go
+package suite_test
+
+import (
+	"testing"
+
+	"fixture/buildcodefix/services/calc"
+)
+
+// TestAddSumsItsArguments is the target of the fix loop: it fails on the
+// planted defect in calc.Add and passes once the operator is corrected.
+//
+// Deliberately trivial and NOT parallel. Its failure output is rendered
+// verbatim into the validation prompt, so it lands in the recorded
+// request hash — extra timing lines or interleaved === PAUSE / === CONT
+// markers would make the recording fragile for no gain.
+func TestAddSumsItsArguments(t *testing.T) {
+	got := calc.Add(2, 3)
+	if got != 5 {
+		t.Fatalf("Add(2, 3) = %d, want 5", got)
+	}
+}
+
+tests/suite/canary_test.go
+package suite_test
+
+import (
+	"os"
+	"testing"
+)
+
+// TestCanaryRecordsEachSuiteRun always passes, so discovery never walks
+// it and the fix loop never targets it. It appends one line every time
+// the WHOLE suite runs.
+//
+// That is the assertion this fixture exists for. After a fix is applied,
+// `build code` must re-run only the test it fixed, narrowed by name. A
+// rerun that dropped the filter would execute this test a second time
+// and leave two lines behind — a difference the golden tree catches
+// byte-for-byte, in replay, with no model involved.
+//
+// Exit code alone cannot see it: an unfiltered rerun would also find the
+// target passing and report success. Without this file the fixture would
+// prove the fix loop converges, not that it narrowed.
+//
+// The file lands next to this package because `go test` runs a test
+// binary with its own package directory as the working directory.
+func TestCanaryRecordsEachSuiteRun(t *testing.T) {
+	file, err := os.OpenFile("suite-runs.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		t.Fatalf("open canary log: %v", err)
+	}
+
+	defer func() { _ = file.Close() }()
+
+	_, err = file.WriteString("suite ran\n")
+	if err != nil {
+		t.Fatalf("write canary log: %v", err)
+	}
+}
+
+true-bdd/true-bdd.yaml
+# Engine config for the `build-code-fix-by-codex` fixture: this
+# repository's own, with every tier naming codex, so the validation, fix
+# and apply turns of the walk all go to the codex CLI.
+engine:
+  models:
+    xhigh: "codex:gpt-6.1-sol"
+    high: "codex:gpt-6.1-sol"
+    coder: "codex:gpt-6.1-sol"
+    quick: "codex:gpt-6.1-sol"
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: coder
+
+templates:
+  prompts:
+    checklist: "./templates/us-checklist.prompt.tpl"
+    checklist_system: "./templates/us-checklist.system.prompt.tpl"
+    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
+    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
+    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
+    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
+    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
+    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
+    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
+    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
+    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
+    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
+    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
+    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
+    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
+    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
+    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
+    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
+    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
+    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
+    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
+    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
+    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
+    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+    scen_check_checklist: "./templates/scen-check.checklist.prompt.tpl"
+    scen_check_checklist_system: "./templates/scen-check.checklist.system.prompt.tpl"
+    scen_check_fix_generator: "./templates/scen-check.fix-generator.prompt.tpl"
+    scen_check_fix_generator_system: "./templates/scen-check.fix-generator.system.prompt.tpl"
+    scen_check_fix_applier: "./templates/scen-check.fix-applier.prompt.tpl"
+    scen_check_fix_applier_system: "./templates/scen-check.fix-applier.system.prompt.tpl"
+
+paths:
+  tmp_dir: "./tmp"
+  tmp_glob: "./tmp/**"
+  stories_dir: "docs/product/stories"
+  checklists_dir: "./true-bdd/checklists"
+  # Roots `build tests --fix` may author into — broad because the actual
+  # write location (a suite's `path:`) is chosen by architecture.yaml, not
+  # here; ExecutionMode enforces the boundary. build code --fix needs no equivalent key.
+  test_write_globs:
+    - "./tests/**"
+    - "./services/**"
+
+documents:
+  product: "./docs/product/product.yaml"
+  architecture_yaml: "./docs/architecture/architecture.yaml"
+  scenarios_yaml: "./docs/scenarios.yaml"
+
+codex
+{"fix_prompt":"In services/calc/calc.go, fix calc.Add(a, b int) to return a + b instead of a - b, preserving its public signature. The contract is integer addition for the supplied arguments; the current subtraction produces -1 for (2, 3), where 5 is required. This repair serves TestAddSumsItsArguments in tests/suite/add_test.go.\n\nEdit only production source under the architecture-declared services/calc root. Do not modify tests, assertions, documents, or true-bdd configuration.\n\nValidate with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Require the existing assertion to pass. Keep validation narrowed to this failing test: the unrelated canary appends to suite-runs.log when executed.","questions":[]}
 tokens used
-17,711
+20,253

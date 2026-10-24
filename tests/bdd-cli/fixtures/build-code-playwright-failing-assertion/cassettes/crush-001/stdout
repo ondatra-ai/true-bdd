@@ -1,7 +1,5 @@
-Both edits applied to `services/web/server.js`: the `<h1>` now reads `Corner Shop` (services/web/server.js:10) and the stale defect comment was refreshed; the `/hours` link is untouched.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
 applied: true
-target: "services/web/server.js"
-summary: "Changed home page h1 from Welcome to Corner Shop and updated the stale header comment"
+target: "services/web"
+summary: "services/web/server.js: replaced the home page heading text `<h1>Welcome</h1>` with `<h1>Corner Shop</h1>` (single line, exact text) and dropped the now-stale defect comment; everything else (title, /hours anchor, server plumbing) untouched. Whole-suite run `npx playwright test --config playwright.config.ts integration`: 2 passed, 0 failed — including the failing-set member `home.spec.ts > home page > shows the store name as its heading` and sibling `links to the opening hours`."
 === FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===

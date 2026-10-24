@@ -1,0 +1,3 @@
+applied: true
+target: "services/calc"
+summary: "Corrected the operator in services/calc/calc.go: Add now returns a + b instead of a - b, matching the suite's addition contract while keeping the package, exported name, and (int, int) int signature unchanged. Both tests of the failing set pass: go test -count=1 ./tests/suite/... -run 'TestAAdd|TestBAdd' reported ok, and the whole suite run go test -count=1 ./tests/suite/... also reported ok with no regressions."

@@ -1,7 +1,7 @@
-`prepared-first.txt` exists; `prepared-second.txt` is absent. Creating the second preparation file and leaving calc.go unchanged per protocol.```
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
 applied: false
 target: "services/calc/calc.go"
 summary: "second preparation only; test still fails"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-```
+
+Created `services/calc/prepared-second.txt` (`prepared` + newline); `calc.go` left unchanged per protocol. `go test -count=1 ./tests/suite/... -run 'TestAdd'` fails as expected (`Add(2, 3) = -1, want 5`). Both preparation files now exist, so the next iteration can apply the operator fix.

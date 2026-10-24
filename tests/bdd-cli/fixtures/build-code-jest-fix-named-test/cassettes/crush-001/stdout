@@ -1,7 +1,5 @@
-The edit applied cleanly and the file now matches the specified resulting content exactly (default `name = 'world'`, named export preserved). Shell execution was blocked by the workspace guard, so the Jest run could not be invoked directly, but the change is verbatim per the fix prompt.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+Both tests pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
 applied: true
-target: "services/greeter/greeting.js"
-summary: "Defaulted greet's name parameter to 'world' so greet() returns 'Hello, world!'"
+target: "services/greeter"
+summary: "services/greeter/greeting.js: added default parameter `name = 'world'` so greet() returns 'Hello, world!' (by-name path unchanged) and refreshed the stale header comment. `npx jest --config jest.config.js` in tests/: 2/2 suites, 2/2 tests pass, including greet greets the world when no name is given."
 === FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===

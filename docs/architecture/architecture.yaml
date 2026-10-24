@@ -35,7 +35,7 @@ architecture:
         Rationale: &rationale >-
           Checklist rationale scalar, YAML-decoded unchanged; empty omits the suffix, otherwise the template appends " SO THAT WE ENSURE " and this value without trimming.
         ResultPath: &validation-result-path >-
-          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, runner BuildID for build code. A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
+          Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
         Structured: &structured >-
           Run boolean from the resolved role model CLI: true for claude and codex, false for crush. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
@@ -298,117 +298,174 @@ architecture:
       fields: *apply-fix-applier-system-fields
     build_code_checklist:
       rendering: *prompt-rendering
-      fields:
-        Docs: *docs
-        Docs[].FilePath: *document-file-path
-        FixTemplate: *fixtemplate
-        Question: *question
-        Rationale: *rationale
-        ResultPath: *validation-result-path
-        Structured: *structured
-        Subject.FailureOutput: &subject-failureoutput >-
-          Complete last runner output, never truncated or trimmed. Discovery Go concatenates Output events for package/test; build failure prepends compiler output to package output. Jest joins failureMessages with newline. Playwright failed/timedOut attempts emit "--- attempt <1-based>: <status> ---\n", each error message and nonempty stack followed by newline, then stdout text then stderr text. Startup uses stderr. Before a stale test is evaluated, RunOne replaces output with its latest result: Go the selected package/test event output (empty for a passing build marker); Jest matching failure or raw runner payload; Playwright matching failure or runner output (startup rerun uses its first failure). Inserted as-is inside template fences.
-        Subject.FilePath: &subject-filepath >-
-          Runner source location: Go package import path (NOT a .go filename); Jest file rebased against process cwd if absolute, falling back to original on error; Playwright deepest nonempty suite/spec file, startup uses runner config Path (empty for build-code discovery). No template path normalisation.
-        Subject.Framework: &subject-framework >-
-          Config architecture.testing.framework string, go-test, jest or playwright, copied to the runner result unchanged.
-        Subject.ID: &failing-test-id >-
-          Runner BuildID at discovery: service+"/"+suite+"/"+framework+":"+native id, replacing / with . and spaces with _ in the native id only. Discovery passes empty service and framework as suite, so id starts /<framework>/ even when Service is enriched afterwards; never rebuilt after enrichment.
-        Subject.LastRunPassed: >-
-          Run boolean initially false for discovered failures. A verdict invalidated by any completed apply is refreshed through RunOne before evaluation; true skips the Item, false renders false. No model runs tests to compute it.
-        Subject.Service: &failing-test-service >-
-          Initially empty from discovery; set to the sole architecture service name when there is exactly one, then overridden by a matched Registry Scenario service. With multiple services and no match stays empty; checklist prints blank, fix templates print "none is known".
-        Subject.Suite: &subject-suite >-
-          Run discovery suite label is architecture.testing.framework, e.g. go-test, unchanged (there is no testing.suites entry).
-        Subject.TestName: &subject-testname >-
-          Runner native id: Go package+"::"+test name (or <build>); Jest repo-relative file+"::"+assertion fullName; Playwright file+"::"+nonempty suite/spec titles joined by " > ". Startup Playwright failure uses <startup>. No template trim.
+      fields: {}
     build_code_checklist_system:
       rendering: *prompt-rendering
-      fields: *checklist-system-fields
+      fields: {}
     build_code_fix_generator:
       rendering: *prompt-rendering
       fields:
-        DocPaths: *docpaths
-        FailedCheck.ActualAnswer: *failedcheck-actualanswer
-        FailedCheck.FixPrompt: *failedcheck-fixprompt
-        FailedCheck.Question: *failedcheck-question
-        FailedCheck.SectionPath: *failedcheck-sectionpath
-        ResultPath: *generation-result-path
-        Structured: *structured
-        Subject.FailureOutput: *subject-failureoutput
-        Subject.FilePath: *subject-filepath
-        Subject.Framework: *subject-framework
-        Subject.ID: *failing-test-id
-        Subject.Scenario: &subject-scenario >-
-          Optional subject Registry Scenario matched only for Go, by exact module-aware package::CamelCase test identity; an unavailable or unreadable Registry or failed identity match (including non-Go, subtest or package-build failure) leaves nil. An unreadable or catalogue-less product document only empties Subject.Spec; the matched Scenario and its steps remain set. Template if suppresses the whole Scenario/spec section when nil; no guessing from filename.
-        Subject.Scenario.Description: *registry-description
-        Subject.Scenario.FormatSteps: *registry-steps
-        Subject.Scenario.ID: *registry-id
-        Subject.Scenario.Path: &subject-scenario-path >-
-          Subject path from the Registry, YAML-decoded unchanged; missing strings are empty. Registry Items walk in ascending id order.
-        Subject.Scenario.Service: *registry-service
-        Subject.Service: *failing-test-service
-        Subject.Spec.Declared: *subject-spec-declared
-        Subject.Spec.Phrases: *subject-spec-phrases
-        Subject.Spec.Phrases[].Block: *subject-spec-phrasesitem-block
-        Subject.Spec.Phrases[].Means: *subject-spec-phrasesitem-means
-        Subject.Spec.Phrases[].Template: *subject-spec-phrasesitem-template
-        Subject.Spec.Phrases[].Terms: *subject-spec-phrasesitem-terms
-        Subject.Spec.Steps: *subject-spec-steps
-        Subject.Spec.Steps[].Block: *subject-spec-stepsitem-block
-        Subject.Spec.Steps[].Templates: *subject-spec-stepsitem-templates
-        Subject.Spec.Steps[].Text: *subject-spec-stepsitem-text
-        Subject.Spec.Terms: *subject-spec-terms
-        Subject.Spec.Terms[].Mappings: *subject-spec-termsitem-mappings
-        Subject.Spec.Terms[].Mappings[].ObservedBy: *subject-spec-termsitem-mappingsitem-observedby
-        Subject.Spec.Terms[].Mappings[].Technical: *subject-spec-termsitem-mappingsitem-technical
-        Subject.Spec.Terms[].Means: *subject-spec-termsitem-means
-        Subject.Spec.Terms[].Term: *subject-spec-termsitem-term
-        Subject.Suite: *subject-suite
-        Subject.TestName: *subject-testname
+        DocPaths: >-
+          Resolved configured Specification paths, keyed by document key.
+        FailedCheck.ActualAnswer: >-
+          Engine verdict, fail.
+        FailedCheck.FixPrompt: >-
+          Shipped F: plan guidance, unchanged.
+        FailedCheck.Question: >-
+          D: tests-pass.
+        FailedCheck.SectionPath: >-
+          Checklist stem and section, unchanged.
+        ResultPath: >-
+          Cell generation artifact path, with the sanitized stable Item id; clarification iteration artifacts are overwritten by a later repair of the same Cell.
+        Structured: >-
+          Provider result-schema support; controls the JSON answer contract.
+        Subject.Tests: >-
+          Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
+        Subject.Tests[].ID: >-
+          Discovery BuildID: empty service + / + framework + / + framework + : + native id with slashes folded to dots and spaces to underscores. Enrichment never rebuilds it.
+        Subject.Tests[].Service: >-
+          Sole architecture service name when one exists, overridden by an exactly matched Go Registry Scenario service; otherwise empty, displayed as none is known.
+        Subject.Tests[].Suite: >-
+          Architecture testing.framework, unchanged.
+        Subject.Tests[].Framework: >-
+          Architecture testing.framework: go-test, jest or playwright.
+        Subject.Tests[].TestName: >-
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+        Subject.Tests[].FilePath: >-
+          Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
+        Subject.Groups: >-
+          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+        Subject.Groups[].IDs: >-
+          Every member id in this group, in discovery order, joined with comma and space.
+        Subject.Groups[].Output: >-
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run. Refreshed after every apply.
+        Subject.Documents: >-
+          Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
+        Subject.Scenarios: >-
+          Each matched remaining Registry Scenario once, in member order; only exact module-aware Go package::CamelCase matches enrich members. No guessing for subtests, synthetic or non-Go members.
+        Subject.Scenarios[].ID: >-
+          Registry key, unchanged.
+        Subject.Scenarios[].Description: >-
+          Registry description, unchanged.
+        Subject.Scenarios[].Service: >-
+          Registry service, unchanged.
+        Subject.Scenarios[].Path: >-
+          Registry path, unchanged.
+        Subject.Scenarios[].FormatSteps: >-
+          All original Given, When and Then steps, in Registry order, with their block headings.
+        Subject.Specification: >-
+          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+        Subject.Specification.Declared: >-
+          True when any remaining member has a declared catalogue.
+        Subject.Specification.Phrases: >-
+          Each reached catalogue phrase once, in first-reached order across members.
+        Subject.Specification.Phrases[].Template: >-
+          Catalogue template, unchanged.
+        Subject.Specification.Phrases[].Block: >-
+          Catalogue block, unchanged.
+        Subject.Specification.Phrases[].Means: >-
+          Catalogue meaning, unchanged.
+        Subject.Specification.Phrases[].Terms: >-
+          Declared words in catalogue order, joined by comma and space, or none.
+        Subject.Specification.Terms: >-
+          Each declared word once, in first-reached order across members.
+        Subject.Specification.Terms[].Term: >-
+          Declared word, unchanged.
+        Subject.Specification.Terms[].Means: >-
+          All glossary definitions for this word in source order, or a missing-definition sentence.
+        Subject.Specification.Terms[].Mappings: >-
+          All architecture word mappings in source order, or a missing-mapping sentence.
+        Subject.Specification.Terms[].Mappings[].Technical: >-
+          Mapping technical text, unchanged.
+        Subject.Specification.Terms[].Mappings[].ObservedBy: >-
+          Mapping observed_by text, unchanged.
         SubjectID: >-
-          Run subject identifier, unchanged for display: runner BuildID (keeps its original empty-service prefix after enrichment). Only artifact filenames sanitise it.
-        UserAnswers: *useranswers
+          Stable Item id: discovery BuildID for a singleton, failing-set otherwise. Membership changes do not change it within the walk.
+        UserAnswers: >-
+          Clarification answers by question id; _user_refinement carries the persons feedback.
     build_code_fix_generator_system:
       rendering: *prompt-rendering
       fields: *checklist-system-fields
     build_code_fix_applier:
       rendering: *prompt-rendering
       fields:
-        FixPrompt: *fixprompt
-        ResultPath: *application-result-path
-        Subject.FailureOutput: *subject-failureoutput
-        Subject.FilePath: *subject-filepath
-        Subject.Framework: *subject-framework
-        Subject.ID: *failing-test-id
-        Subject.Scenario: *subject-scenario
-        Subject.Scenario.Description: *registry-description
-        Subject.Scenario.FormatSteps: *registry-steps
-        Subject.Scenario.ID: *registry-id
-        Subject.Scenario.Path: *subject-scenario-path
-        Subject.Scenario.Service: *registry-service
-        Subject.Service: *failing-test-service
-        Subject.Spec.Declared: *subject-spec-declared
-        Subject.Spec.Phrases: *subject-spec-phrases
-        Subject.Spec.Phrases[].Block: *subject-spec-phrasesitem-block
-        Subject.Spec.Phrases[].Means: *subject-spec-phrasesitem-means
-        Subject.Spec.Phrases[].Template: *subject-spec-phrasesitem-template
-        Subject.Spec.Phrases[].Terms: *subject-spec-phrasesitem-terms
-        Subject.Spec.Steps: *subject-spec-steps
-        Subject.Spec.Steps[].Block: *subject-spec-stepsitem-block
-        Subject.Spec.Steps[].Templates: *subject-spec-stepsitem-templates
-        Subject.Spec.Steps[].Text: *subject-spec-stepsitem-text
-        Subject.Spec.Terms: *subject-spec-terms
-        Subject.Spec.Terms[].Mappings: *subject-spec-termsitem-mappings
-        Subject.Spec.Terms[].Mappings[].ObservedBy: *subject-spec-termsitem-mappingsitem-observedby
-        Subject.Spec.Terms[].Mappings[].Technical: *subject-spec-termsitem-mappingsitem-technical
-        Subject.Spec.Terms[].Means: *subject-spec-termsitem-means
-        Subject.Spec.Terms[].Term: *subject-spec-termsitem-term
-        Subject.Suite: *subject-suite
-        Subject.TestName: *subject-testname
+        FixPrompt: >-
+          The person-approved repair plan, unchanged.
+        ResultPath: >-
+          Per-turn apply confirmation artifact path, with the sanitized stable Item id.
+        Subject.Tests: >-
+          Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
+        Subject.Tests[].ID: >-
+          Discovery BuildID: empty service + / + framework + / + framework + : + native id with slashes folded to dots and spaces to underscores. Enrichment never rebuilds it.
+        Subject.Tests[].Service: >-
+          Sole architecture service name when one exists, overridden by an exactly matched Go Registry Scenario service; otherwise empty, displayed as none is known.
+        Subject.Tests[].Suite: >-
+          Architecture testing.framework, unchanged.
+        Subject.Tests[].Framework: >-
+          Architecture testing.framework: go-test, jest or playwright.
+        Subject.Tests[].TestName: >-
+          Native id: Go package::function or package::<build>; Jest repository-relative file::fullName; Playwright file::title chain joined by > with surrounding spaces, or <startup>.
+        Subject.Tests[].FilePath: >-
+          Go package import path; Jest file rebased against process cwd when absolute; Playwright deepest nonempty suite/spec file, or startup config Path.
+        Subject.Groups: >-
+          Remaining failures grouped by build tests runtime normalization: test identity, Scenario heading, source prefixes and runner elapsed times are ignored for comparison only. Group order follows first member.
+        Subject.Groups[].IDs: >-
+          Every member id in this group, in discovery order, joined with comma and space.
+        Subject.Groups[].Output: >-
+          The whole first member output, untrimmed. Go concatenates test output or compiler and package output; Jest joins failureMessages by newline; Playwright retains failed attempts with errors, stacks, stdout and stderr. Missing own results say did not run. Refreshed after every apply.
+        Subject.Documents: >-
+          Configured product, architecture_yaml and scenarios_yaml paths available through the resolver, with architecture from the command argument. Optional unavailable documents warn and are omitted; map renders in key order.
+        Subject.Scenarios: >-
+          Each matched remaining Registry Scenario once, in member order; only exact module-aware Go package::CamelCase matches enrich members. No guessing for subtests, synthetic or non-Go members.
+        Subject.Scenarios[].ID: >-
+          Registry key, unchanged.
+        Subject.Scenarios[].Description: >-
+          Registry description, unchanged.
+        Subject.Scenarios[].Service: >-
+          Registry service, unchanged.
+        Subject.Scenarios[].Path: >-
+          Registry path, unchanged.
+        Subject.Scenarios[].FormatSteps: >-
+          All original Given, When and Then steps, in Registry order, with their block headings.
+        Subject.Specification: >-
+          Union of the remaining members catalogue Specifications in discovery order. Optional unreadable or catalogue-less product leaves it undeclared without dropping matched Scenarios.
+        Subject.Specification.Declared: >-
+          True when any remaining member has a declared catalogue.
+        Subject.Specification.Phrases: >-
+          Each reached catalogue phrase once, in first-reached order across members.
+        Subject.Specification.Phrases[].Template: >-
+          Catalogue template, unchanged.
+        Subject.Specification.Phrases[].Block: >-
+          Catalogue block, unchanged.
+        Subject.Specification.Phrases[].Means: >-
+          Catalogue meaning, unchanged.
+        Subject.Specification.Phrases[].Terms: >-
+          Declared words in catalogue order, joined by comma and space, or none.
+        Subject.Specification.Terms: >-
+          Each declared word once, in first-reached order across members.
+        Subject.Specification.Terms[].Term: >-
+          Declared word, unchanged.
+        Subject.Specification.Terms[].Means: >-
+          All glossary definitions for this word in source order, or a missing-definition sentence.
+        Subject.Specification.Terms[].Mappings: >-
+          All architecture word mappings in source order, or a missing-mapping sentence.
+        Subject.Specification.Terms[].Mappings[].Technical: >-
+          Mapping technical text, unchanged.
+        Subject.Specification.Terms[].Mappings[].ObservedBy: >-
+          Mapping observed_by text, unchanged.
+        WriteRoots: >-
+          Every architecture service path, in declaration order.
+        TestCommand: >-
+          Only a crush writer gets the configured canonical replay grant; nil for other providers or an unrepresentable command.
+        TestCommand.Command: >-
+          Canonical replay command without machine-output flags, per ADR-0018.
+        TestCommand.Selector: >-
+          Framework selector: -run, --testNamePattern or --grep.
+        TestCommand.Dir: >-
+          Absolute suite working directory from testing.config, or the project root.
     build_code_fix_applier_system:
       rendering: *prompt-rendering
-      fields: *apply-fix-applier-system-fields
+      fields: {}
     scen_check_checklist:
       rendering: *prompt-rendering
       fields:
@@ -424,7 +481,8 @@ architecture:
         Subject.FormatUserStories: &subject-formatuserstories >-
           Subject lineage projected from Registry user_stories in list order, dropping merge_date. Empty returns "(none — no story claims this scenario)\n"; otherwise each line is "  - <story> (<scenario_id>)\n", with strings unchanged.
         Subject.ID: *registry-id
-        Subject.Path: *subject-scenario-path
+        Subject.Path: &subject-scenario-path >-
+          Registry path, YAML-decoded unchanged.
         Subject.Service: *registry-service
     scen_check_checklist_system:
       rendering: *prompt-rendering
@@ -954,12 +1012,24 @@ architecture:
         apply turn. The records of that role and CLI are counted; "no" is
         zero, and a missing log file fails instead of counting zero.
 
+    - term: failing set
+      technical: >-
+        One build code Item containing every discovered failure, its latest
+        runner evidence and matched Specification context. Discovery sorts
+        members by id and yields zero or one Item. After each apply a single
+        set rerun replaces verdicts, passing members leave and evidence is
+        grouped afresh. A new outer walk always discovers the full suite.
+      observed_by: >-
+        Read Suite failures and Loaded prompts items in the engine log,
+        grouped fix requests, tests-pass Check answered records and the
+        selected runner arguments after each completed apply.
+
     - term: fix loop
       technical: >-
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false; allowance two still permits three applies before stopping. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads
@@ -1159,8 +1229,15 @@ architecture:
         A subprocess the engine starts from the suite command the
         architecture document declares under `testing.commands` (`replay`
         for `build code`), split into arguments by shell quoting rules, with
-        a filter of the engine's own appended when it re-runs one test after
-        a fix. Before each start it writes one log record, msg="Spawning
+        one runner start after every completed build-code apply, applied or
+        not applied, including the terminal attempt. The remaining failing
+        set is selected by joining member selectors with alternation: Go
+        -run, Jest --testNamePattern, Playwright --grep. A Go <build> or
+        Playwright <startup> member makes the rerun unfiltered. Every
+        ordinary member needs its own passing result; missing or skipped
+        members remain failing with a did-not-run finding. Synthetic members
+        require their package or startup success. A new outer walk discovers
+        the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
         `args`. Optional `testing.prebuilt_engine_arg` is one argument
         containing `{engine_bin}` exactly once; only `build tests --fix`

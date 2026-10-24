@@ -39,9 +39,12 @@ func TestFixtureTreesArePaired(t *testing.T) {
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
 		"build-code-writer-replay/input/templates/build-code.fix-applier.prompt.tpl":     templateReplacement,
-		"build-code-cross-walk/input/templates/build-code.fix-generator.prompt.tpl":      templateExtension,
+		"build-code-cross-walk/input/templates/build-code.fix-applier.prompt.tpl":      templateExtension,
 		"build-code-not-applied/input/templates/build-code.fix-applier.prompt.tpl":       templateReplacement,
 		"build-code-not-applied-bound/input/templates/build-code.fix-applier.prompt.tpl": templateReplacement,
+ "build-code-shrinking-bound/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
+ "build-code-missing-member/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
+ "build-code-partial/input/templates/build-code.fix-applier.prompt.tpl":templateExtension,
 	}
 
 	roots, err := filepath.Glob("fixtures/*/input/templates")

@@ -1,7 +1,5 @@
-Shell execution is blocked by a guard hook, so verification is limited to the file content — the edit succeeded and `services/calc/calc.go` now reads `func Add(a, b int) int { return a + b }`.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAAdd-iter1-result.yaml ===
+Both the whole suite and the `TestAAdd|TestBAdd` selection pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
-target: "services/calc/calc.go"
-summary: "Changed Add to add its operands (a + b) instead of subtracting (a - b)"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAAdd-iter1-result.yaml ===
+target: "services/calc"
+summary: "Corrected the operator in services/calc/calc.go: Add now returns a + b instead of a - b, matching the suite's addition contract while keeping the package, exported name, and (int, int) int signature unchanged. Both tests of the failing set pass: go test -count=1 ./tests/suite/... -run 'TestAAdd|TestBAdd' reported ok, and the whole suite run go test -count=1 ./tests/suite/... also reported ok with no regressions."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

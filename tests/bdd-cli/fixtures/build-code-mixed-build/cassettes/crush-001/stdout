@@ -1,0 +1,5 @@
+Both packages pass. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "services/calc/calc.go: changed A() to return 1 and added B() int returning 2. Ran `go test -count=1 ./tests/...`: fixture/buildcodefix/tests/broken (TestBuild, build now succeeds) and fixture/buildcodefix/tests/suite (TestA) both pass — the full failing set is green."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

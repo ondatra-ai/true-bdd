@@ -1,0 +1,147 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestA
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestA
+**Source File:** fixture/buildcodefix/tests/suite
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestB
+**Source File:** fixture/buildcodefix/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestA, /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
+```
+=== RUN   TestA
+    calc_test.go:3: SHARED-FAILURE-EVIDENCE
+--- FAIL: TestA (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failing tests live in one file, `tests/suite/calc_test.go` (package `suite_test`), and both assert on the `fixture/buildcodefix/services/calc` package:
+
+- `TestA` calls `calc.A()` and fails with `t.Fatal("SHARED-FAILURE-EVIDENCE")` unless the return value is `1`.
+- `TestB` calls `calc.B()` and fails with the same message unless the return value is `2`.
+
+The only production file in the declared write root is `services/calc/calc.go`:
+
+```
+package calc
+func A() int{return 0}
+func B() int{return 0}
+```
+
+Both exported functions are stubs returning `0`, so both assertions fail. The shared `SHARED-FAILURE-EVIDENCE` string is why the harness grouped the two tests into a single failure group — it is not evidence of a single shared root cause beyond "the `calc` package is unimplemented". There is one defect class (stubbed return values) and two concrete contract violations, one per test.
+
+There is no missing dependency, no build failure, and no wiring problem: `go.mod` declares module `fixture/buildcodefix`, the test imports `fixture/buildcodefix/services/calc`, and that path resolves to the existing `services/calc` package. Compilation already succeeds (the failures are assertion failures at `calc_test.go:3`, not a load error). So the repair is purely about return values, not about package layout, module paths, or new files.
+
+## Scope
+
+Exactly one file may change: `services/calc/calc.go` — the sole production source under the architecture's declared write root `services/calc` (per `docs/architecture/architecture.yaml`, service `calc`, `path: services/calc`).
+
+Do **not** touch:
+- `tests/suite/calc_test.go` or any `*_test.go` — tests are out of scope and their assertions must stay byte-for-byte as they are.
+- `docs/architecture/architecture.yaml`, `CLAUDE.md`, or anything under `true-bdd/`, `templates/`, `tmp/`.
+- `go.mod` — the module boundary is intentional (see its header comment) and already correct.
+
+No new files or packages are needed. Do not add a second package, a constants file, or a helper module; the contract is satisfied inside the existing file.
+
+## Part 1 — `calc.A()` must return 1
+
+**File:** `services/calc/calc.go`
+
+**Contract:** exported function `A()` keeps its current signature `func A() int` and must evaluate to `1`.
+
+**Intended implementation:** change the body of `A` so it yields `1` instead of `0`. The simplest honest form is a direct `return 1`. Keep the function exported, keep the `int` return type, keep it in `package calc` — the test calls it as `calc.A()` with no arguments and compares to an untyped integer constant, so any change to arity, receiver, or return type would break compilation of the test file, which is forbidden.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`.
+
+## Part 2 — `calc.B()` must return 2
+
+**File:** `services/calc/calc.go`
+
+**Contract:** exported function `B()` keeps its current signature `func B() int` and must evaluate to `2`.
+
+**Intended implementation:** change the body of `B` so it yields `2` instead of `0`, again as a direct `return 2`. Same signature constraints as Part 1: exported, no parameters, single `int` result, in `package calc`.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`.
+
+## Implementation notes for the writer
+
+- Make both edits in the same pass over `services/calc/calc.go`. Fixing only one leaves the other test red, and the harness evaluates the set as a whole.
+- Preserve the file's existing shape: `package calc` declaration first, then the two functions. The original file uses a terse brace-on-same-line style with no blank lines; either keep that or write conventional `gofmt`-clean Go — both compile, and `gofmt`-clean is preferable. Do not reorder or rename the functions.
+- Do not add imports, `init()`, package-level mutable state, or any side effects. These are pure constant-returning functions and the tests call them directly with no setup; anything stateful would be unjustified by the contract and could make results order-dependent under `-count=1` reruns.
+- Do not add a `main` package, build tags, or anything that changes how `./tests/suite/...` is selected by the configured commands (`go test -json -count=1 ./tests/suite/...` for record, replay, and live — all three identical).
+
+## Verification
+
+From the run directory, the architecture's own command is the check:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expected after the repair: both `TestA` and `TestB` report `pass` in the JSON stream, no occurrence of `SHARED-FAILURE-EVIDENCE` in the output, and the package-level result is `ok`. A plain `go test ./tests/suite/...` is a fine human-readable sanity check. Also confirm `git status` shows exactly one modified path, `services/calc/calc.go`, and that `tests/suite/calc_test.go` is untouched.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

@@ -1,61 +1,16 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Editor applying a fix to `services/*` so that
-one failing test passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Your Task:**
-1. Read the relevant production source file(s) named in the fix prompt.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new file or the Edit tool to modify an existing one, under
-   the single allowed root `services/*`.
-4. Emit a short YAML confirmation block.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Tool Usage:**
-- Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file under `services/*`.
-- Use Edit to mutate an existing file under `services/*`.
-
-**ALLOWED root:** `services/*`
-
-**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
-- Anything under `tests/`
-- Any file matching `*_test.go`
-- Anything under `services/*/__tests__/`
-- Anything under `docs/`
-
-**Output Requirements:**
-- After your Write/Edit calls succeed, output a YAML confirmation
-  inside FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
-  - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only apply the
-  change the fix prompt specifies.
-
-**Output Format:**
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
-applied: true
-target: "<repo-relative path>"
-summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
-```
-
-**CRITICAL:**
-- Apply changes EXACTLY as described in the fix prompt.
-- Never weaken, skip, or remove a test assertion as part of the fix.
-- Do NOT modify any file in the FORBIDDEN list above, even if the fix
-  prompt or your own analysis suggests it would help. Refuse the
-  change and emit `applied: false` if doing so is the only path the
-  fix prompt offers.
-- Make all file changes during this turn — the confirmation block is
-  informational only.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
 
 
 ### TASK
 
-## Subject — Failing Test
+## Subject — Failing Set
+
 
 **Test ID:** /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 **Service:** web
@@ -64,7 +19,10 @@ summary: "<one-line summary>"
 **Test Name:** home.spec.ts::home.spec.ts > home page > shows the store name as its heading
 **Source File:** home.spec.ts
 
-### Last Failure Output
+
+### Failure groups
+
+Tests: /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 ```
 --- attempt 1: failed ---
 Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
@@ -84,107 +42,131 @@ Received: [31m"Welcome"[39m
 ```
 
 
+### Specification documents
 
----
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
-## Fix Prompt to Apply
 
-# Fix Prompt for Failing Test /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 
-## Target
-Apply the change(s) under `services/*` only. The test at
-`tests/integration/home.spec.ts` is the contract; do NOT modify it.
 
-## Root Cause
-`tests/integration/home.spec.ts:9` asserts the home page's `h1` text is
-exactly `Corner Shop`:
 
-```ts
-expect(await page.locator('h1').textContent()).toBe('Corner Shop');
-```
 
-The production page template in `services/web/server.js` hardcodes
-`<h1>Welcome</h1>`, so `textContent()` returns `"Welcome"` and the
-assertion fails. The sibling test (`links to the opening hours`,
-asserting the first `a` has `href="/hours"`) already passes against the
-same template and must keep passing — do not reorder, rename, or remove
-the `<a href="/hours">Opening hours</a>` element.
 
-## Required Changes
 
-### Change #1: Render the store name as the home page heading
-**File:** `services/web/server.js`
-**Action:** Use the Edit tool on this existing file. Replace the
-`old_string` below with the `new_string` below. This is a one-line text
-change inside the `page` template literal.
+## Proposed repair plan
+# Repair plan for /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
 
-**old_string:**
-```
-    <h1>Welcome</h1>
-```
+## Diagnosis
 
-**new_string:**
-```
+The failing assertion is a straightforward production content defect, not a
+structural or wiring problem.
+
+- `tests/playwright.config.ts` starts the service itself (`webServer.command:
+  node ../services/web/server.js`) on a path-derived port and sets `baseURL`
+  to the same port, so the page under test is unambiguously served by
+  `services/web/server.js`. No fixture, proxy or build step sits in between.
+- `services/web/server.js` serves a single hard-coded HTML string for every
+  request. Its `<h1>` element contains the literal text `Welcome`.
+- `tests/integration/home.spec.ts:9` reads `page.locator('h1').textContent()`
+  once (no retry/auto-wait on text) and requires it to equal exactly
+  `Corner Shop`.
+
+So `received: "Welcome"` is literally the `<h1>` body in the served markup.
+The source file even carries a comment on lines 1-3 naming this as the planted
+defect in production source. The contract the test states is: the home page's
+single top-level heading is the store's name, `Corner Shop` — not a generic
+greeting.
+
+## The one change
+
+**File: `services/web/server.js` (the only declared write root for service
+`web`, per `docs/architecture/architecture.yaml` → `services[0].path:
+services/web`).**
+
+In the `page` template literal, change the heading element's text content from
+`Welcome` to `Corner Shop`, so the markup reads:
+
     <h1>Corner Shop</h1>
-```
 
-### Change #2 (same file, documentation comment only — optional but preferred)
-**File:** `services/web/server.js`
-**Action:** Use the Edit tool to update the now-stale header comment that
-describes the defect as still present.
+Requirements on the edit:
 
-**old_string:**
-```
-// The Corner Shop's web front: one page, served on the port PORT names.
-// Its heading says "Welcome" where the store's name belongs: that is the
-// planted defect, in PRODUCTION source, which the fix loop has to correct.
-```
+- The text node must be exactly `Corner Shop` — one space, that
+  capitalisation, and **no surrounding whitespace or newlines inside the `h1`
+  element**. `textContent()` returns the raw text node verbatim, and the
+  assertion is `toBe`, not a trimmed or substring match. Writing the element
+  across multiple lines (e.g. `<h1>\n  Corner Shop\n</h1>`) would return
+  `"\n  Corner Shop\n"` and keep the test red. Keep it on a single line
+  exactly as the current `Welcome` heading is.
+- Keep it a single `h1` in the document. The locator is the bare `h1`
+  selector; adding a second `h1` anywhere in the page would make the locator
+  strict-mode-ambiguous and fail with a different error.
+- Do not change anything else in the served markup. In particular leave the
+  `<a href="/hours">Opening hours</a>` element exactly as it is, and leave
+  `<title>Corner Shop</title>` alone (the title already says the store name;
+  it is not what the test reads, and it is not the defect).
+- Do not touch the server plumbing: the `http.createServer` handler, the
+  `Content-Type` header, the `200` status, or
+  `.listen(Number(process.env.PORT), '127.0.0.1')`. The harness depends on the
+  server binding the `PORT` env var on loopback and answering `/` with a 200,
+  because `webServer.url` polling is how Playwright decides the service is up.
+  Any change there risks a start-up timeout rather than a passing test.
+- Optionally update the now-stale comment block on lines 1-3 of
+  `services/web/server.js`, which describes the heading as a planted defect
+  still present. This is cosmetic and safe (it is production source, not a
+  document under `docs/` or `true-bdd/`); it is not required for the test to
+  pass, and the writer may skip it. No other comment or code edits.
 
-**new_string:**
-```
-// The Corner Shop's web front: one page, served on the port PORT names.
-// The heading shows the store's name, which is what the home page suite
-// asserts.
-```
+No new files, no new dependencies, no config change. The repair is confined to
+one line of one existing production file.
 
-## Constraints Recap
-- Do NOT create, edit, or delete anything under `tests/`, any
-  `*_test.go`, anything under `services/*/__tests__/`, or anything under
-  `docs/` (including `docs/scenarios.yaml` and
-  `docs/architecture/architecture.yaml`).
-- Do NOT weaken, skip, or remove any assertion.
-- `services/web/server.js` is the only file that needs to change; no new
-  files are required.
+## Which tests each part serves
 
-## Verification Expectation
-After Change #1, `GET /` returns a document whose single `h1` has
-`textContent === "Corner Shop"`, satisfying line 9, while the first `a`
-still has `href="/hours"`, keeping line 14 passing.
+- **Heading text `Corner Shop` in `services/web/server.js`** — serves the
+  failing-set member `home.spec.ts > home page > shows the store name as its
+  heading` (`tests/integration/home.spec.ts:9`). After the change,
+  `page.locator('h1').textContent()` returns `"Corner Shop"` and the `toBe`
+  comparison holds.
+- **Leaving the anchor, the single-`h1` structure and the listen/response
+  plumbing untouched** — protects the already-passing sibling
+  `home.spec.ts > home page > links to the opening hours`
+  (`tests/integration/home.spec.ts:14`), which asserts
+  `a[href] === '/hours'`, and protects the `webServer` readiness probe both
+  tests depend on.
 
----
+## Verification
 
-## Instructions
+From the directory holding the config (`tests/`), per
+`architecture.yaml → testing.commands.replay`:
 
-1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the production source the fix prompt targets.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above:
-   - Use Write to create a new file under `services/*` when the fix
-     prompt says so.
-   - Use Edit to modify an existing file under `services/*` when the
-     fix prompt says so.
-3. You MAY only modify files under `services/*`.
-4. You MUST NOT touch any of the following:
-   - Anything under `tests/`
-   - Any file matching `*_test.go`
-   - Anything under `services/*/__tests__/`
-   - Anything under `docs/`
-5. Do not weaken, skip, or remove any assertion in the failing test.
-   The test is the contract; the production code must conform to it.
-6. After the changes succeed, output the confirmation block below.
+    npx playwright test --reporter=json --config playwright.config.ts integration
+
+Expect both tests in `home.spec.ts` to pass. No test file, `__tests__`
+directory, `*_test.go`, document under `docs/`, or anything in `true-bdd/` is
+to be modified, and no assertion is to be weakened, skipped or removed.
+
+## Edit roots
+
+- `services/web`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}/tests` using exactly one of these forms:
+- Whole suite: `npx playwright test --config playwright.config.ts integration`
+- Selection: `npx playwright test --config playwright.config.ts integration --grep '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
 applied: true
-target: "<repo-relative path of the file you wrote/edited>"
-summary: "<one-line summary of what changed>"
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===

@@ -1,5 +1,8 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
+Spec confirmed: service root `services/calc`, suite asserts `Version() == 2` and the cross-walk invariant. Per the deterministic staged migration (Version is 1), this stage changes **only** `Version()` to return 2, leaving `Compatible()` false.Stage complete: `TestAVersion` passes; `TestBCompatibility` regresses exactly as the staged migration dictates (Compatible left false for the next discovery). Writing the confirmation file.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Bumped Version() return value from 1 to 2; Compatible() left unchanged"
+summary: "Staged migration stage 1: Version() changed from returning 1 to returning 2; Compatible() intentionally left false per the deterministic migration (Version was 1, so only Version changes this stage). Saw TestAVersion pass via 'go test -count=1 ./tests/suite/... -run TestAVersion'. Whole suite shows the deliberate next-stage failure TestBCompatibility ('version 2 requires compatibility support'), left for the next discovery; no tests or documents modified."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
+
+- `services/calc/calc.go:3` — `Version()` now returns 2; `Compatible()` untouched (returns false) per the staged migration.
+- Failing set: `TestAVersion` passes. `TestBCompatibility` regresses by design and is out of this set's scope.

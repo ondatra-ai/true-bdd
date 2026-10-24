@@ -1,56 +1,10 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Editor applying a fix to `services/*` so that
-one failing test passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Your Task:**
-1. Read the relevant production source file(s) named in the fix prompt.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new file or the Edit tool to modify an existing one, under
-   the single allowed root `services/*`.
-4. Emit a short YAML confirmation block.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Tool Usage:**
-- Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file under `services/*`.
-- Use Edit to mutate an existing file under `services/*`.
-
-**ALLOWED root:** `services/*`
-
-**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
-- Anything under `tests/`
-- Any file matching `*_test.go`
-- Anything under `services/*/__tests__/`
-- Anything under `docs/`
-
-**Output Requirements:**
-- After your Write/Edit calls succeed, output a YAML confirmation
-  inside FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
-  - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only apply the
-  change the fix prompt specifies.
-
-**Output Format:**
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
-applied: true
-target: "<repo-relative path>"
-summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
-```
-
-**CRITICAL:**
-- Apply changes EXACTLY as described in the fix prompt.
-- Never weaken, skip, or remove a test assertion as part of the fix.
-- Do NOT modify any file in the FORBIDDEN list above, even if the fix
-  prompt or your own analysis suggests it would help. Refuse the
-  change and emit `applied: false` if doing so is the only path the
-  fix prompt offers.
-- Make all file changes during this turn — the confirmation block is
-  informational only.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
 
 
 ### TASK
@@ -63,56 +17,41 @@ Otherwise if prepared-second.txt is absent, create it containing exactly `prepar
 If both files exist, apply the fix below to services/calc/calc.go, keep both preparation files, and report applied: true.
 Never modify tests or documents. Only services/calc/ is writable.
 
-# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd
 
-## Target
-Apply the change(s) under `services/*` only. The test at `tests/suite/calc_test.go` (test ID source `fixture/buildcodefix/tests/suite`) is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go`, `services/*/__tests__/`, or `docs/`.
+## Diagnosis
 
-## Root Cause
-`tests/suite/calc_test.go` asserts:
+The failure is a single wrong operator in the `calc` service's production source, not a missing feature or a harness problem.
 
-```go
-if got := calc.Add(2, 3); got != 5 {
-	t.Fatalf("Add(2, 3) = %d, want 5", got)
-}
-```
+- Harness: `docs/architecture/architecture.yaml` declares one Go service, `calc`, at `services/calc`, with all three testing commands identical: `go test -json -count=1 ./tests/suite/...`. That is the only write root the repair may touch.
+- Test (read-only, do not edit): `tests/suite/calc_test.go` is `package suite_test`, imports `fixture/buildcodefix/services/calc`, and asserts `calc.Add(2, 3) == 5`, failing with `Add(2, 3) = %d, want 5`.
+- Production source: `services/calc/calc.go` is `package calc` with one declaration:
+  `func Add(a, b int) int { return a - b }`
+- Observed output `Add(2, 3) = -1, want 5` is exactly `2 - 3`. So the signature, package name, module path (`module fixture/buildcodefix` in `go.mod`), and import path are all already correct; only the arithmetic is wrong. Subtraction was used where addition is required.
 
-The production implementation in `services/calc/calc.go` subtracts instead of adds:
+## Contract to implement
 
-```go
-func Add(a, b int) int { return a - b }
-```
+`calc.Add(a, b int) int` must return the integer sum of its two arguments — the standard two's-complement `int` addition, with no special-casing, clamping, or error path. Concretely `Add(2, 3) == 5`, and more generally `Add(a, b) == a + b` for all `int` inputs, with the usual properties implied by that: commutative (`Add(a, b) == Add(b, a)`), `Add(x, 0) == x`, and negative operands handled naturally (`Add(-2, 3) == 1`). No wrapping of overflow behaviour beyond what Go's native `int` addition already does.
 
-`Add(2, 3)` therefore returns `-1`, matching the recorded failure output `Add(2, 3) = -1, want 5`. The smallest correct production change is to make `Add` actually add.
+## Part 1 — fix the operator in `Add`
 
-## Required Changes
+- **File:** `services/calc/calc.go` (inside the declared `calc` service root — the only file this repair changes).
+- **Change:** in the body of `func Add(a, b int) int`, replace the subtraction with addition so the function returns the sum of `a` and `b` instead of their difference. This is a one-token change to the single return expression.
+- **Leave untouched:** the package clause (`package calc`), the function name, its exported-ness, the parameter names and order, and the `int, int -> int` signature. The test imports and calls through all of these, so any change there would break compilation rather than fix the assertion.
+- **Do not** add new files, helper functions, a second `Add` variant, generics, overflow checks, or logging. The contract is satisfied by the corrected expression alone, and extra surface area is not exercised by the suite.
+- **Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestAdd` (`tests/suite/calc_test.go::TestAdd`). This part is the whole repair for the whole failing set — the set contains exactly this one test, and the corrected sum makes `calc.Add(2, 3)` evaluate to `5`, so the `got != 5` guard no longer trips and `t.Fatalf` is never reached.
 
-### Change #1: Make `calc.Add` return the sum of its arguments
-**File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the single `old_string` below with the `new_string` below. Change nothing else in the file (keep the `package calc` line and the file's formatting exactly as-is).
+## Out of scope / guardrails
 
-**old_string:**
-```
-func Add(a, b int) int { return a - b }
-```
+- Do not edit `tests/suite/calc_test.go` or any `*_test.go`, and do not relax, skip, or delete the `got != 5` check or the `t.Fatalf` message. The assertion is correct as written; the production code is what is wrong.
+- Do not edit `docs/architecture/architecture.yaml` or any other document, and do not change the recorded test commands.
+- Do not edit `go.mod` — the module path `fixture/buildcodefix` is what makes the test's import resolve, and the file documents that it is a deliberate sentinel boundary.
+- Writes are confined to `services/calc` per the architecture's declared service root.
 
-**new_string:**
-```
-func Add(a, b int) int { return a + b }
-```
+## Verification
 
-## Resulting File Content (for verification only)
-After the edit, `services/calc/calc.go` must read exactly:
-
-```go
-package calc
-
-func Add(a, b int) int { return a + b }
-```
-
-## Notes
-- This is the only change required. Do not create new files, do not add helpers, and do not alter the package name or the exported signature `Add(a, b int) int` — the test imports `fixture/buildcodefix/services/calc` and calls `calc.Add(2, 3)` with that exact shape.
-- No test assertion is weakened, skipped, or removed; `Add(2, 3)` now evaluates to `5` and `TestAdd` passes.
+From the run directory, the architecture's own command reproduces the check:
+`go test -json -count=1 ./tests/suite/...` — expect `TestAdd` to report pass, with no other test in the suite affected (it is the only one).
 
 Return this confirmation with the correct boolean:
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

@@ -1,0 +1,7 @@
+Current value is `1`; both the plan and the lifecycle stage agree the next value is `2`, which is also the value both tests require. Applying the single edit:Both tests pass with the one-line fix in `services/calc/calc.go:2` — `Mode()` now returns `2`, so TestA's `==1` skip guard is not taken and neither test reaches its fatal. Whole suite: `ok`; `TestA` and `TestB` selections each `ok`. Nothing outside `services/calc/` was touched.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "services/calc/calc.go: changed Mode() to return 2 (was 1), keeping package calc and the func Mode() int signature; no other files touched. Ran 'go test -count=1 ./tests/suite/...' (ok) plus -run 'TestA' and -run 'TestB' selections (both ok): fixture.buildcodefix.tests.suite::TestA passes outright (skip guard ==1 no longer fires) and fixture.buildcodefix.tests.suite::TestB passes."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

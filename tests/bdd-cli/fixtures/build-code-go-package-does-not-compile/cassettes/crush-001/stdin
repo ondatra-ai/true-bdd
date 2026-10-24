@@ -1,61 +1,16 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Editor applying a fix to `services/*` so that
-one failing test passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Your Task:**
-1. Read the relevant production source file(s) named in the fix prompt.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new file or the Edit tool to modify an existing one, under
-   the single allowed root `services/*`.
-4. Emit a short YAML confirmation block.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Tool Usage:**
-- Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file under `services/*`.
-- Use Edit to mutate an existing file under `services/*`.
-
-**ALLOWED root:** `services/*`
-
-**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
-- Anything under `tests/`
-- Any file matching `*_test.go`
-- Anything under `services/*/__tests__/`
-- Anything under `docs/`
-
-**Output Requirements:**
-- After your Write/Edit calls succeed, output a YAML confirmation
-  inside FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
-  - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only apply the
-  change the fix prompt specifies.
-
-**Output Format:**
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-applied: true
-target: "<repo-relative path>"
-summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-```
-
-**CRITICAL:**
-- Apply changes EXACTLY as described in the fix prompt.
-- Never weaken, skip, or remove a test assertion as part of the fix.
-- Do NOT modify any file in the FORBIDDEN list above, even if the fix
-  prompt or your own analysis suggests it would help. Refuse the
-  change and emit `applied: false` if doing so is the only path the
-  fix prompt offers.
-- Make all file changes during this turn — the confirmation block is
-  informational only.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
 
 
 ### TASK
 
-## Subject — Failing Test
+## Subject — Failing Set
+
 
 **Test ID:** /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
 **Service:** calc
@@ -64,7 +19,10 @@ summary: "<one-line summary>"
 **Test Name:** fixture/buildcodecompile/tests/suite::<build>
 **Source File:** fixture/buildcodecompile/tests/suite
 
-### Last Failure Output
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
 ```
 # fixture/buildcodecompile/tests/suite_test [fixture/buildcodecompile/tests/suite.test]
 tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
@@ -73,111 +31,98 @@ FAIL	fixture/buildcodecompile/tests/suite [build failed]
 ```
 
 
+### Specification documents
 
----
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
-## Fix Prompt to Apply
 
-# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
 
-## Diagnosis
 
-The suite package `fixture/buildcodecompile/tests/suite` fails to **build**, not to assert:
+
+
+
+
+## Proposed repair plan
+# Repair plan for /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
+
+## What is failing and why
+
+The failing subject is a **package build failure**, not an assertion failure:
 
 ```
+# fixture/buildcodecompile/tests/suite_test [fixture/buildcodecompile/tests/suite.test]
 tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
 FAIL	fixture/buildcodecompile/tests/suite [build failed]
 ```
 
-`tests/suite/multiply_test.go` imports `fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`, expecting `6`. The production package at `services/calc/calc.go` (`package calc`) declares only `Add` — `Multiply` is never declared, so the whole test package (including `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun`) cannot compile.
+`tests/suite/multiply_test.go` imports `fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`. The production package at `services/calc/calc.go` (module `fixture/buildcodecompile`, see `go.mod`) declares only `Add`, and its trailing comment explicitly states that `Multiply` is the planted, production-side defect. Because Go compiles an external test package as a single unit, the one undefined identifier takes down the whole `suite_test` package: `TestAddSumsItsArguments` and `TestCanaryRecordsEachSuiteRun` never run either. One build error, one failing set — fixing the single missing declaration clears all of it.
 
-The contract asserted by the test:
-- Exported identifier `Multiply` in package `calc`.
-- Signature callable as `calc.Multiply(2, 3)` with two untyped int constants, returning a single value comparable to `6` via `!=` and printable with `%d` → `func Multiply(a, b int) int`.
-- `Multiply(2, 3) == 6` → integer multiplication.
+## Scope
 
-The smallest production change is to declare that function in `services/calc/calc.go`. No test file, no `docs/`, nothing outside `services/*` is touched.
+Edit **only** `services/calc/` (the single declared service root, `calc`, per `docs/architecture/architecture.yaml`). Do **not** touch `tests/suite/**` (any `*_test.go`), `docs/architecture/architecture.yaml`, `true-bdd/`, `templates/`, `CLAUDE.md`, or `go.mod`. No assertion may be weakened, skipped, renamed or deleted; do not add anything under `tests/` either (no helper or stub files).
 
-## Target
+## The one part to build
 
-Apply the change under `services/*` only. The test at `fixture/buildcodecompile/tests/suite` (`tests/suite/multiply_test.go`) is the contract; do NOT modify it, and do NOT weaken, skip, or remove any assertion.
+### Part 1 — declare the exported `Multiply` function in package `calc`
 
-## Required Changes
+**File:** `services/calc/calc.go` (preferred: extend the existing file, which already holds `Add`, so the package stays one cohesive unit. A new file in the same directory and the same `package calc`, e.g. `services/calc/multiply.go`, is equally acceptable if the writer prefers one declaration per file — either satisfies the build, so pick one and do not do both.)
 
-### Change #1: Declare `Multiply` in the `calc` production package
+**Contract the test fixes in place (read off `tests/suite/multiply_test.go`):**
 
-**File:** `services/calc/calc.go`
+- Name and visibility: exported identifier `Multiply` in `package calc`, so the external test package `suite_test` can reach it as `calc.Multiply`.
+- Signature: two `int` parameters, one `int` result — the call site is `calc.Multiply(2, 3)` and the result is compared with `got != 6` and formatted with `%d`, so the result must be an `int` (not `int64`, not a `(int, error)` pair, not a generic type parameter that would need explicit instantiation). Mirror `Add`'s existing shape: `func Multiply(a, b int) int`.
+- Behaviour: return the arithmetic product of the two arguments, `a * b`. It must be a real multiplication, not a value hard-coded or special-cased so that `Multiply(2, 3) == 6`; the test asserts `6` for inputs `2, 3`, and the honest implementation is the one-line product. No side effects, no I/O, no panics, no logging.
+- Keep `Add` exactly as it is — `TestAddSumsItsArguments` asserts `Add(2, 3) == 5` and already holds.
 
-**Action:** Use the **Edit** tool on this existing file. Replace the trailing comment block that documents the planted defect with the real `Multiply` declaration.
+**Housekeeping in the same edit:**
 
-**old_string** (verbatim slice currently at the end of the file — copy exactly):
+- Replace the now-stale trailing comment block in `services/calc/calc.go` that says `Multiply, which the suite calls, is not declared: that is the planted defect...`. Once the function exists that comment is false; swap it for a normal doc comment on the new function in the style of `Add`'s (`// Multiply returns the product of a and b.`). Leave the package doc comment at the top of the file intact.
+
+**Tests this part serves:** all of `/go-test/go-test:fixture.buildcodecompile.tests.suite::<build>`, i.e. the whole `fixture/buildcodecompile/tests/suite` package:
+
+- `TestMultiplyMultipliesItsArguments` (`tests/suite/multiply_test.go`) — directly: the undefined-identifier build error disappears and the `Multiply(2, 3) == 6` assertion passes.
+- `TestAddSumsItsArguments` (`tests/suite/add_test.go`) — indirectly: it is already correct but blocked by the package-level build failure; it runs and passes once the package compiles.
+- `TestCanaryRecordsEachSuiteRun` (`tests/suite/canary_test.go`) — indirectly: same package, blocked by the same build error; it compiles and runs, appending to `suite-runs.log`. No production change is needed for it.
+
+## No other change is warranted
+
+- `go.mod` is correct: module `fixture/buildcodecompile`, so `services/calc` resolves to the imported path `fixture/buildcodecompile/services/calc`. No new module, replace directive, dependency or `go` directive bump is needed — this is a pure standard-library, intra-module fix.
+- No new package, interface, constructor or wiring layer is needed. Resist adding abstraction (a `Calculator` type, an options struct, error returns) — the test's call shape fixes the API as a plain free function, and anything else either fails to compile against the test or adds unused surface.
+- There is no second defect hiding behind the build error worth pre-emptively coding around: once the package compiles, the remaining two tests exercise only `Add` (already present) and local file I/O (standard library).
+
+## Verification the writer should run
+
+From the fixture workspace root, exactly the command the architecture declares for `record`/`replay`/`live`:
+
 ```
-// Multiply, which the suite calls, is not declared: that is the planted
-// defect, in PRODUCTION source. The suite's package does not compile
-// until it is.
-```
-
-**new_string:**
-```
-// Multiply returns the product of a and b.
-func Multiply(a, b int) int {
-	return a * b
-}
-```
-
-**Resulting full content of `services/calc/calc.go`** (use this if you prefer the Write tool over Edit — the file must end up byte-for-byte equivalent to this, with tab indentation inside the function bodies):
-```go
-// Package calc is the fixture host project's production source. The
-// build-code fix loop is allowed to edit exactly this tree.
-package calc
-
-// Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
-
-// Multiply returns the product of a and b.
-func Multiply(a, b int) int {
-	return a * b
-}
+go test -json -count=1 ./tests/suite/...
 ```
 
-## Notes for the applier
+Expect no `build failed` line, and all three tests reporting `pass`. A plain `go build ./...` / `go vet ./...` is a useful quick pre-check that the new declaration compiles before the suite runs.
 
-- Keep `package calc` as the first non-comment line; the test imports `fixture/buildcodecompile/services/calc`, which resolves through the module `fixture/buildcodecompile` declared in the run-dir `go.mod`, so the directory `services/calc` must keep package name `calc` and must not move.
-- Use a **tab** for the `return a * b` indentation to match `Add` and keep the file gofmt-clean.
-- Do not add a new file such as `services/calc/multiply.go` unless the Edit above cannot be applied; a single declaration in the existing `calc.go` is the minimal change and mirrors how `Add` is declared.
-- Do not create or modify anything under `tests/`, any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`.
-- Once `Multiply` exists, the package compiles and all three tests in `tests/suite` run: `TestMultiplyMultipliesItsArguments` (2*3 == 6), `TestAddSumsItsArguments` (already satisfied by `Add`), and `TestCanaryRecordsEachSuiteRun` (writes `suite-runs.log`).
+## Edit roots
 
-## Confirmation
+- `services/calc`
 
-After applying, confirm with a FILE_START / FILE_END block listing `services/calc/calc.go` as the only edited path.
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
 
----
 
-## Instructions
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
 
-1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the production source the fix prompt targets.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above:
-   - Use Write to create a new file under `services/*` when the fix
-     prompt says so.
-   - Use Edit to modify an existing file under `services/*` when the
-     fix prompt says so.
-3. You MAY only modify files under `services/*`.
-4. You MUST NOT touch any of the following:
-   - Anything under `tests/`
-   - Any file matching `*_test.go`
-   - Anything under `services/*/__tests__/`
-   - Anything under `docs/`
-5. Do not weaken, skip, or remove any assertion in the failing test.
-   The test is the contract; the production code must conform to it.
-6. After the changes succeed, output the confirmation block below.
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
 applied: true
-target: "<repo-relative path of the file you wrote/edited>"
-summary: "<one-line summary of what changed>"
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===

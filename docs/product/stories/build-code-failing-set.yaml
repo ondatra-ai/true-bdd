@@ -1,0 +1,91 @@
+story:
+  id: build-code-set
+  feature: build-code
+  title: Repair the failing set with one plan and writer
+  as_a: System Architect
+  i_want: one repair plan and writer for the whole failing set, with an engine-owned verdict and fresh selected reruns
+  so_that: shared repairs avoid repeated investigation while missing results and regressions remain visible
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-partial-repair
+    description: A partial repair removes the passing member from the next plan
+    steps:
+    - given:
+      - the "build-code-partial" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine spawned exactly 4 test runners
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the engine spawned a test runner with arguments matching -run \^TestA\$\|\^TestB\$
+  - id: 002-shared-evidence
+    description: Shared failure output is shown once with both ids in the set request
+    steps:
+    - given:
+      - the "build-code-grouped" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine spawned exactly 3 test runners
+      - the file matching "tmp/*/*fix-iter1-user.txt" has exactly 1 match for SHARED-FAILURE-EVIDENCE
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches Tests: .*TestA, .*TestB'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Whole suite:'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Selection:'
+  - id: 003-mixed-synthetic
+    description: A build failure and a named test form one set whose rerun is unfiltered
+    steps:
+    - given:
+      - the "build-code-mixed-build" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches msg="Suite failures" failures=2 framework=go-test
+      - the engine spawned exactly 3 test runners
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "crush"
+      - stdout does not match Spawning test runner.*-run
+      - the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0
+  - id: 004-missing-result
+    description: A skipped selected member stays failing until its own passing result
+    steps:
+    - given:
+      - the "build-code-missing-member" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine spawned exactly 4 test runners
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches did not run
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestA
+  - id: 005-shrinking-counter
+    description: Shrinking the set does not reset its existing attempt counter and the last apply is rerun
+    steps:
+    - given:
+      - the "build-code-shrinking-bound" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches gave up after 2 applied fix
+      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/attempted.txt" matches attempted
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA

@@ -1,9 +1,5 @@
-The edit applied; the gopls diagnostic looks stale. Verifying the build:File matches the specified content exactly (tab-indented, gofmt-clean). The earlier gopls diagnostic was stale — the edit was made in the same event that reported it.
-
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
+All green. Writing the confirmation file:=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
 applied: true
-target: "services/calc/calc.go"
-summary: "Declared func Multiply(a, b int) int returning a*b, replacing the planted-defect comment so the suite compiles."
+target: "services/calc"
+summary: "Declared exported Multiply(a, b int) int returning a*b in services/calc/calc.go and replaced the stale planted-defect comment with a doc comment; Add unchanged. Saw go test -count=1 ./tests/suite/... pass (ok fixture/buildcodecompile/tests/suite) and the selection TestMultiplyMultipliesItsArguments|TestAddSumsItsArguments|TestCanaryRecordsEachSuiteRun pass: the package now compiles and all three tests of the set pass."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-```

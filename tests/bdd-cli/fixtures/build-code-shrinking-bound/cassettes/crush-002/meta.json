@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 43479,
+  "request_hash": "sha256:6a96fc69f0b0de8c4bac7c68fca9f1aea0a6096112c3972b27e72b2b377829c3",
+  "fsdiff": {
+    "created": [
+      "services/calc/attempted.txt",
+      "tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml"
+    ],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-24T12:03:02Z"
+}

@@ -1,0 +1,3 @@
+applied: true
+target: "services/calc"
+summary: "Stage 2 of the migration: Version was already 2, so changed only Compatible() in services/calc/calc.go from false to true; Version() untouched at 2. Whole suite green via 'go test -count=1 ./tests/suite/...' and selection 'TestAVersion|TestBCompatibility': TestBCompatibility passes and TestAVersion stays passing."

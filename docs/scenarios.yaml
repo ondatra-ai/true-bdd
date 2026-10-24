@@ -85,6 +85,7 @@ scenarios:
         - stdout matches msg="Suite failures" failures=0 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=0'
         - stdout matches BUILD CODE COMPLETE
+        - 'stdout matches msg="Loaded prompts" command="build code" items=0'
         - but: no file outside "tmp" changed
         - and: the engine spawned a test runner with arguments matching -run \^TestGreen\$
         - and: the engine spawned exactly 1 test runner
@@ -111,7 +112,7 @@ scenarios:
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
   build-code-run-004-fix-reruns-fixed-test:
-    description: After a fix is applied, `build code` must re-run THE TEST IT FIXED — not the whole suite
+    description: After a fix is applied, build code reruns the failing set in one selection before fresh outer discovery
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -130,11 +131,12 @@ scenarios:
         - stdout matches msg="Running tests" framework=go-test
         - stdout matches msg="Suite failures" failures=1 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=1'
-        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches msg="Fix applied; re-running the failing set"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/calc/calc.go" is modified
-        - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
         - and: the engine spawned a test runner with arguments matching TestAddSumsItsArguments
+        - and: the engine spawned exactly 3 test runners
+        - and: the engine dispatched 2 AI turns
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the file "tests/suite/canary_test.go" is unchanged
         - and: the file "docs/architecture/architecture.yaml" is unchanged
@@ -244,9 +246,10 @@ scenarios:
         - stdout matches msg="Suite failures" failures=1 framework=go-test
         - 'stdout matches msg="Total failing tests across architecture" failures=1'
         - stdout matches BUILD CODE COMPLETE
+        - 'stdout matches msg="Check answered" check=tests-pass.*answer=fail'
         - but: no file outside "tmp" changed
         - and: the engine spawned the test runner "go"
-        - and: the engine dispatched 1 AI turn
+        - and: the engine dispatched no AI turns
   build-code-run-005-playwright-fix-loop-converges:
     description: A Playwright suite whose app does not exist yet must drive the fix loop until the browser assertion passes
     service: bdd-cli
@@ -367,7 +370,7 @@ scenarios:
         - but: no file outside "tmp" changed
         - and: the engine spawned the test runner "npx"
         - and: the engine spawned exactly 1 test runner
-        - and: the engine dispatched 1 AI turn
+        - and: the engine dispatched no AI turns
   build-code-frameworks-002-jest-fix-reruns-test-by-name:
     description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
     service: bdd-cli
@@ -387,10 +390,9 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches msg="Suite failures" failures=1 framework=jest
-        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches msg="Fix applied; re-running the failing set"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/greeter/greeting.js" is modified
-        - and: the file "tests/unit/suite-runs.log" has exactly 2 lines
         - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$
         - and: the engine spawned exactly 3 test runners
         - but: the file "tests/unit/greeting.test.js" is unchanged
@@ -422,7 +424,7 @@ scenarios:
         - the command exits with code 0
         - stdout matches msg="Suite failures" failures=1 framework=playwright
         - stdout matches msg=test index=1 total=1 id=/playwright/playwright:home\.spec\.ts::home\.spec\.ts_>_home_page_>_shows_the_store_name_as_its_heading
-        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches msg="Fix applied; re-running the failing set"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/web/server.js" is modified
         - and: the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading
@@ -450,10 +452,9 @@ scenarios:
         - the command exits with code 0
         - stdout matches msg="Suite failures" failures=1 framework=go-test
         - stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>
-        - stdout matches msg="Fix applied; re-running this test in isolation"
+        - stdout matches msg="Fix applied; re-running the failing set"
         - stdout matches BUILD CODE COMPLETE
         - and: the file "services/calc/calc.go" is modified
-        - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
         - and: the engine spawned exactly 3 test runners
         - but: the file "tests/suite/multiply_test.go" is unchanged
         - and: the file "tests/suite/add_test.go" is unchanged
@@ -3737,7 +3738,7 @@ scenarios:
         - and: the engine dispatched 6 AI turns
 
   engine-routes-001-codex-sandbox-per-turn:
-    description: '`build code --fix` with every tier naming codex must send each validation, fix and apply turn to codex, the validation and fix turns in its read-only sandbox and the apply turn in workspace-write, where codex corrects the service code until its failing test passes'
+    description: '`build code --fix` with every tier naming codex sends the plan turn to its read-only sandbox and the writer to workspace-write, without a validation turn or test-command grant'
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -3754,14 +3755,13 @@ scenarios:
       then:
         - the command exits with code 0
         - stdout matches BUILD CODE COMPLETE
-        - and: the engine dispatched 1 validation AI turn to "codex"
+        - and: the engine dispatched no validation AI turns to "codex"
         - and: the engine dispatched 1 fix AI turn to "codex"
         - and: the engine dispatched 1 apply AI turn to "codex"
-        - and: the engine dispatched 3 AI turns
+        - and: the engine dispatched 2 AI turns
         - and: stdout matches msg="Codex turn sandboxed" label=codex-turn001 sandbox=read-only
-        - and: stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=read-only
-        - and: stdout matches msg="Codex turn sandboxed" label=codex-turn003 sandbox=workspace-write
-        - but: stdout does not match label=codex-turn00[12] sandbox=workspace-write
+        - and: stdout matches msg="Codex turn sandboxed" label=codex-turn002 sandbox=workspace-write
+        - but: stdout does not match label=codex-turn001 sandbox=workspace-write
         - and: the file "services/calc/calc.go" is modified
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
@@ -4219,7 +4219,7 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-config-005-checklist-tiers-unconfigured-refused:
-    description: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the validation, fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
+    description: A `--fix` run must be refused at startup, before it runs the suite or any AI turn, when the tiers its checklist's `engine:` block names for the fix and apply turns are not configured under `engine.models`, naming each turn, its tier and the tiers the table does configure
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4234,9 +4234,8 @@ scenarios:
       then:
         - the command exits with code 1
         - stdout matches level=ERROR msg="Refusing to start" command="build code"
-        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: prompt turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
-        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
-        - and: 'stdout matches build-code/test-passes #1 Does this failing test now pass after the latest run\?: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 D: tests-pass: fix turn: model tier is not configured under engine\.models: \\"high\\" \(configured: xhigh, quick\)'
+        - and: 'stdout matches build-code/test-passes #1 D: tests-pass: apply turn: model tier is not configured under engine\.models: \\"coder\\" \(configured: xhigh, quick\)'
         - but: no file outside "tmp" changed
         - and: the engine spawned no test runner
         - and: the engine dispatched no AI turns
@@ -4548,7 +4547,7 @@ scenarios:
       - but: stdout does not match BUILD TESTS COMPLETE
       - and: the engine spawned exactly 1 test runner
   build-code-run-006-shared-fix-skips-green-peer:
-    description: Two tests failing at discovery whose shared defect the first repair fixes must complete without an AI turn for the now passing second test
+    description: Two failing tests receive one plan and one writer for both, with one selected rerun and no validation turn
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4565,12 +4564,19 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches BUILD CODE COMPLETE
+      - 'stdout matches msg="Loaded prompts" command="build code" items=1'
+      - 'stdout matches msg="Check answered" check=tests-pass.*answer=pass'
       - and: stdout matches msg="Suite failures" failures=2 framework=go-test
-      - and: the engine dispatched 1 validation AI turn to "claude"
+      - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 1 fix AI turn to "claude"
       - and: the engine dispatched 1 apply AI turn to "crush"
-      - and: the engine dispatched 3 AI turns
-      - and: the engine spawned exactly 4 test runners
+      - and: the engine dispatched 2 AI turns
+      - and: the engine spawned exactly 3 test runners
+      - and: the engine spawned a test runner with arguments matching -run \^TestAAdd\$\|\^TestBAdd\$
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Whole suite:'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Selection:'
+      - every file matching "tmp/*/apply-*-user.txt" matches TestAAdd
+      - every file matching "tmp/*/apply-*-user.txt" matches TestBAdd
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-run-007-next-walk-finds-regression:
@@ -4593,10 +4599,10 @@ scenarios:
       - stdout matches BUILD CODE COMPLETE
       - and: stdout matches msg="Suite failures" failures=0 framework=go-test
       - and: stdout matches msg=test index=1 total=1 id=.*TestBCompatibility
-      - and: the engine dispatched 2 validation AI turns to "claude"
+      - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 2 fix AI turns to "claude"
       - and: the engine dispatched 2 apply AI turns to "crush"
-      - and: the engine dispatched 6 AI turns
+      - and: the engine dispatched 4 AI turns
       - and: the engine spawned exactly 5 test runners
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
@@ -4620,16 +4626,16 @@ scenarios:
       - stdout matches BUILD CODE COMPLETE
       - and: stdout matches level=WARN msg="Fix was NOT applied"
       - but: stdout does not match msg="Walk stopped"
-      - and: the engine dispatched 2 validation AI turns to "claude"
+      - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 2 fix AI turns to "claude"
       - and: the engine dispatched 2 apply AI turns to "crush"
-      - and: the engine dispatched 6 AI turns
+      - and: the engine dispatched 4 AI turns
       - and: the engine spawned exactly 4 test runners
       - and: the file "services/calc/prepared.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-frameworks-006-not-applied-hits-fix-bound:
-    description: Not-applied turns in build code --fix must consume the configured per-test fix allowance and stop at the unchanged non-converging fix bound
+    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged non-converging fix bound
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4647,11 +4653,11 @@ scenarios:
       - the command exits with code 1
       - and: stdout matches level=WARN msg="Fix was NOT applied"
       - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
-      - and: the engine dispatched 3 validation AI turns to "claude"
+      - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 3 fix AI turns to "claude"
       - and: the engine dispatched 3 apply AI turns to "crush"
-      - and: the engine dispatched 9 AI turns
-      - and: the engine spawned exactly 3 test runners
+      - and: the engine dispatched 6 AI turns
+      - and: the engine spawned exactly 4 test runners
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
@@ -4882,6 +4888,9 @@ scenarios:
       - every file matching "tmp/*/apply-*-user.txt" matches The integer argument to services/calc.Double.
       - every file matching "tmp/*/apply-*-user.txt" matches The step calls Double and compares its integer return
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 AI turns
+      - the engine spawned exactly 3 test runners
   build-code-spec-006-unreadable-product-warned:
     description: A declared product document that cannot be read must be warned about while the fix still repairs the failing test
     service: bdd-cli
@@ -4904,6 +4913,9 @@ scenarios:
       - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Scenario ID:\*\* calc-001-double
       - every file matching "tmp/*/*fix-iter*-user.txt" does not match What the spec says
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 AI turns
+      - the engine spawned exactly 3 test runners
   build-code-spec-007-unreadable-registry-warned:
     description: A declared Registry that cannot be read must be warned about while the fix uses the only declared service
     service: bdd-cli
@@ -4926,6 +4938,9 @@ scenarios:
       - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* calc
       - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
       - the shell command "go test -tags bdd -json -count=1 ./tests/calc/..." run in "." exits with code 0
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 AI turns
+      - the engine spawned exactly 3 test runners
   build-tests-run-006-identical-failures-grouped:
     description: Two bound Scenarios failing with the same runtime output must give one whole failure block naming both in the next fix prompt and one selection list
     service: bdd-cli
@@ -5254,3 +5269,120 @@ scenarios:
       - every file matching "tmp/*/crush-config-*/crush.json" does not match "bash"
       - every file matching "tmp/*/crush-config-*/crush.json" does not match "job_output"
     timeout: 10m
+  build-code-set-001-partial-repair:
+    description: A partial repair removes the passing member from the next plan
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-001-partial-repair
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-partial" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - 'the command exits with code 0'
+      - 'stdout matches BUILD CODE COMPLETE'
+      - 'the engine dispatched no validation AI turns to "claude"'
+      - 'the engine dispatched 2 fix AI turns to "claude"'
+      - 'the engine dispatched 2 apply AI turns to "crush"'
+      - 'the engine spawned exactly 4 test runners'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestB'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA'
+      - 'the engine spawned a test runner with arguments matching -run \^TestA\$\|\^TestB\$'
+  build-code-set-002-shared-evidence:
+    description: Shared failure output is shown once with both ids in the set request
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-002-shared-evidence
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-grouped" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - 'the command exits with code 0'
+      - 'the engine dispatched 1 fix AI turn to "claude"'
+      - 'the engine dispatched 1 apply AI turn to "crush"'
+      - 'the engine spawned exactly 3 test runners'
+      - 'the file matching "tmp/*/*fix-iter1-user.txt" has exactly 1 match for SHARED-FAILURE-EVIDENCE'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches Tests: .*TestA, .*TestB'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Whole suite:'
+      - 'every file matching "tmp/*/apply-*-user.txt" matches Selection:'
+  build-code-set-003-mixed-synthetic:
+    description: A build failure and a named test form one set whose rerun is unfiltered
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-003-mixed-synthetic
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-mixed-build" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - 'the command exits with code 0'
+      - 'stdout matches msg="Suite failures" failures=2 framework=go-test'
+      - 'the engine spawned exactly 3 test runners'
+      - 'the engine dispatched 1 fix AI turn to "claude"'
+      - 'the engine dispatched 1 apply AI turn to "crush"'
+      - 'stdout does not match Spawning test runner.*-run'
+      - 'the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0'
+  build-code-set-004-missing-result:
+    description: A skipped selected member stays failing until its own passing result
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-004-missing-result
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-missing-member" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - 'the command exits with code 0'
+      - 'the engine dispatched 2 fix AI turns to "claude"'
+      - 'the engine dispatched 2 apply AI turns to "crush"'
+      - 'the engine spawned exactly 4 test runners'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches did not run'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestA'
+  build-code-set-005-shrinking-counter:
+    description: Shrinking the set does not reset its existing attempt counter and the last apply is rerun
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-005-shrinking-counter
+      merge_date: '2026-10-24'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-shrinking-bound" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - 'the command exits with code 1'
+      - 'stdout matches gave up after 2 applied fix'
+      - 'the engine dispatched 2 apply AI turns to "crush"'
+      - 'the engine spawned exactly 3 test runners'
+      - 'the file "services/calc/attempted.txt" matches attempted'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestB'
+      - 'every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA'

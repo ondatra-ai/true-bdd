@@ -1,7 +1,7 @@
-Both preparation files exist — applying the fix to calc.go.```
+Both preparation files exist. Verifying contents, then applying the fix:Both preparation files were present, so the fix was applied: `services/calc/calc.go:3` now returns `a + b` instead of `a - b`. Test suite passes (`ok fixture/buildcodefix/tests/suite`), and both prepared files were kept.
+
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
 applied: true
 target: "services/calc/calc.go"
-summary: "Both preparation files present; changed Add from subtraction to addition so Add(2, 3) returns 5"
+summary: "Both prepared-first.txt and prepared-second.txt already existed, so the repair proceeded: changed Add's body from 'return a - b' to 'return a + b' in services/calc/calc.go, leaving package, signature, tests, go.mod, and docs untouched, and kept both preparation files. Ran 'go test -count=1 ./tests/suite/...' and saw the suite report ok, meaning TestAdd (the only test in the set) passes."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter3-result.yaml ===
-```

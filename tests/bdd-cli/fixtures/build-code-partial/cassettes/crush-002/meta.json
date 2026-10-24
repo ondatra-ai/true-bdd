@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 41202,
+  "request_hash": "sha256:e37242ef1fa05d2bb6952a302b6b333ac2f0a5d6bdfe01ca0d696ba248322d52",
+  "fsdiff": {
+    "created": [
+      "tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml"
+    ],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-24T11:53:07Z"
+}

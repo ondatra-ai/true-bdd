@@ -1,61 +1,16 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Editor applying a fix to `services/*` so that
-one failing test passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Your Task:**
-1. Read the relevant production source file(s) named in the fix prompt.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new file or the Edit tool to modify an existing one, under
-   the single allowed root `services/*`.
-4. Emit a short YAML confirmation block.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Tool Usage:**
-- Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file under `services/*`.
-- Use Edit to mutate an existing file under `services/*`.
-
-**ALLOWED root:** `services/*`
-
-**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
-- Anything under `tests/`
-- Any file matching `*_test.go`
-- Anything under `services/*/__tests__/`
-- Anything under `docs/`
-
-**Output Requirements:**
-- After your Write/Edit calls succeed, output a YAML confirmation
-  inside FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
-  - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only apply the
-  change the fix prompt specifies.
-
-**Output Format:**
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
-applied: true
-target: "<repo-relative path>"
-summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
-```
-
-**CRITICAL:**
-- Apply changes EXACTLY as described in the fix prompt.
-- Never weaken, skip, or remove a test assertion as part of the fix.
-- Do NOT modify any file in the FORBIDDEN list above, even if the fix
-  prompt or your own analysis suggests it would help. Refuse the
-  change and emit `applied: false` if doing so is the only path the
-  fix prompt offers.
-- Make all file changes during this turn — the confirmation block is
-  informational only.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
 
 
 ### TASK
 
-## Subject — Failing Test
+## Subject — Failing Set
+
 
 **Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 **Service:** calc
@@ -64,7 +19,10 @@ summary: "<one-line summary>"
 **Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments
 **Source File:** fixture/buildcodefix/tests/suite
 
-### Last Failure Output
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 ```
 === RUN   TestAddSumsItsArguments
     add_test.go:19: Add(2, 3) = -1, want 5
@@ -73,98 +31,98 @@ summary: "<one-line summary>"
 ```
 
 
+### Specification documents
 
----
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
 
-## Fix Prompt to Apply
 
-# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
 
-## Target
-Apply the change(s) under `services/*` only. The test at `tests/suite/add_test.go` is the contract; do NOT modify it, and do NOT touch anything under `tests/`, any `*_test.go` file, `services/*/__tests__/`, or `docs/`.
 
-## Root Cause
-`tests/suite/add_test.go` asserts `calc.Add(2, 3) == 5`. The failure output `Add(2, 3) = -1, want 5` is exactly `2 - 3`, because the production function in `services/calc/calc.go` subtracts instead of adds:
+
+
+
+
+## Proposed repair plan
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments
+
+## Summary
+
+One production defect, one file, one line. `calc.Add` subtracts instead of adding. The failing test asserts the correct contract; the production source is what is wrong. Change the operator in `services/calc/calc.go` and nothing else.
+
+## Scope and write boundary
+
+- `docs/architecture/architecture.yaml` declares exactly one service: `calc`, with `path: services/calc`. That path is the only tree the writer may touch.
+- Do **not** edit `tests/suite/add_test.go`, `tests/suite/canary_test.go`, any `*_test.go`, or `docs/architecture/architecture.yaml`.
+- No new files, no new packages, no signature changes, no helper indirection. The repair is strictly in-place.
+
+## The contract
+
+`services/calc/calc.go` declares:
 
 ```go
-func Add(a, b int) int {
-	return a - b
-}
+// Add returns the sum of a and b.
+func Add(a, b int) int
 ```
 
-This is a planted defect in production source. The minimal correct fix is to change the operator from `-` to `+`. No signature, package, or test change is needed.
+The doc comment already states the intended contract — *returns the sum of a and b*. The body contradicts the documented contract. `Add(a, b)` must evaluate to the integer sum of its two arguments, for all `int` inputs, with Go's native `int` wraparound semantics (no overflow handling is specified, expected, or wanted here — do not add range checks, error returns, or a second return value).
 
-## Required Changes
+The in-file comment block above `Add` explicitly describes the subtraction as a deliberately planted defect in production source, and states that the test asserting `5` is the correct side. Treat that comment as confirmation of intent, not as something to preserve verbatim in its current wording.
 
-### Change #1: Correct the arithmetic operator in `calc.Add`
+## Part 1 — correct the operator
+
 **File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the `old_string` below with the `new_string` below. This is the only edit required.
+**Function:** `Add(a, b int) int`
 
-**old_string:**
+Replace the body's `a - b` expression with `a + b`. That is the entire functional change.
+
+**Serves:** `fixture/buildcodefix/tests/suite::TestAddSumsItsArguments`. That test calls `calc.Add(2, 3)` and fails via `t.Fatalf` unless the result equals `5`. With the operator corrected, `2 + 3 = 5`, the guard does not trip, and the test passes. The reported failure line `add_test.go:19: Add(2, 3) = -1, want 5` is exactly `2 - 3 = -1`, which confirms the operator is the sole cause — there is no second contributing fault to hunt for.
+
+## Part 2 — align the doc comment with the repaired behaviour
+
+**File:** `services/calc/calc.go`
+**Location:** the comment block immediately above `Add`.
+
+The current comment contains a paragraph announcing that the function does **not** return the sum and that the wrong operator is deliberate. Once Part 1 lands, that paragraph is actively false and would mislead the next reader. Reduce the block to the accurate one-line contract — that `Add` returns the sum of `a` and `b` — and drop the now-stale "it does not / planted defect" paragraph.
+
+Keep the package-level comment at the top of the file (`Package calc is the fixture host project's production source...`) as is; it describes the tree's role, not the defect, and remains true.
+
+**Serves:** no test directly. This is documentation hygiene inside the permitted write root, required so the file does not ship a comment that contradicts its own code. It must not change any behaviour.
+
+## Explicitly out of scope
+
+- **`tests/suite/canary_test.go` / `suite-runs.log`.** The canary test appends to a log on every full-suite run and is expected to pass already. It is not in the failing set and needs no production change. Do not add, delete, or gitignore `suite-runs.log` as part of this repair.
+- **The `-run "TestAdd'|TestAdd"` filter** in the architecture's three test commands. It is part of the harness configuration, it already selects the target test, and `architecture.yaml` is a document — out of the write root either way.
+- **Defensive additions.** No overflow guards, no input validation, no logging, no new exported API. The single assertion in the set is satisfied by the correct operator alone, and extra surface would be unjustified by any test in the set.
+
+## Verification the writer should expect
+
+After the edit, the suite command from `architecture.yaml`
+
 ```
-// Add returns the sum of a and b.
-//
-// It does not: the operator is wrong, deliberately. This is the planted
-// defect the fix loop has to correct, and it is in PRODUCTION source —
-// the test asserting 5 is right, and repairing the code rather than the
-// assertion is the whole contract of `build code`.
-func Add(a, b int) int {
-	return a - b
-}
-```
-
-**new_string:**
-```
-// Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
-```
-
-## Resulting File Content
-After the edit, `services/calc/calc.go` must read exactly:
-
-```go
-// Package calc is the fixture host project's production source. The
-// build-code fix loop is allowed to edit exactly this tree.
-package calc
-
-// Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
+go test -json -count=1 ./tests/suite/... -run "TestAdd'|TestAdd"
 ```
 
-## Verification Notes (for the applier)
-- Do not run the test yourself; the Go-side runner is authoritative.
-- After the edit, `calc.Add(2, 3)` returns `5`, so the assertion `got != 5` in `tests/suite/add_test.go:18` no longer trips and `TestAddSumsItsArguments` passes.
-- No assertion has been weakened, skipped, or removed; no test file was touched.
-- If the `old_string` above does not match verbatim (e.g. comment text differs), fall back to a narrower Edit with `old_string` = `	return a - b` and `new_string` = `	return a + b` (single leading tab preserved), leaving the surrounding comments untouched.
+should report `TestAddSumsItsArguments` as passing. `git diff` should show changes confined to `services/calc/calc.go`: one operator character in the function body plus the removal of the stale comment paragraph. If the diff touches any file under `tests/` or `docs/`, the repair has overstepped its write root and must be redone.
 
----
+## Edit roots
 
-## Instructions
+- `services/calc`
 
-1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the production source the fix prompt targets.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above:
-   - Use Write to create a new file under `services/*` when the fix
-     prompt says so.
-   - Use Edit to modify an existing file under `services/*` when the
-     fix prompt says so.
-3. You MAY only modify files under `services/*`.
-4. You MUST NOT touch any of the following:
-   - Anything under `tests/`
-   - Any file matching `*_test.go`
-   - Anything under `services/*/__tests__/`
-   - Anything under `docs/`
-5. Do not weaken, skip, or remove any assertion in the failing test.
-   The test is the contract; the production code must conform to it.
-6. After the changes succeed, output the confirmation block below.
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+No test command is granted to this writer. Report that limitation in the confirmation.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
-target: "<repo-relative path of the file you wrote/edited>"
-summary: "<one-line summary of what changed>"
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

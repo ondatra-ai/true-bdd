@@ -12,9 +12,9 @@
     {
       "path": "tests/unit/suite-runs.log",
       "kind": "created",
-      "size": 20,
-      "sha256": "fc43110c30a76be3537dbe5d65c6148af11c3030c724408e1765623ee3a6f49d",
-      "text": "suite ran\nsuite ran\n"
+      "size": 30,
+      "sha256": "a560bdabae28e1dddee2b66621fcdf34165cb5424cbe7b3f52e52fd8deb7424a",
+      "text": "suite ran\nsuite ran\nsuite ran\n"
     }
   ]
 }

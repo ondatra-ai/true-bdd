@@ -1,0 +1,140 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestB
+**Source File:** fixture/buildcodefix/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestB
+```
+=== RUN   TestB
+    calc_test.go:4: B needs two
+--- FAIL: TestB (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Scope and write root
+
+`docs/architecture/architecture.yaml` declares exactly one service:
+
+- `calc`, `path: services/calc`, language `go`
+
+That path is the only writable root for this repair. Do not touch `tests/suite/calc_test.go` (or any `*_test.go`), `go.mod`, `docs/architecture/architecture.yaml`, or anything under `true-bdd/` or `tmp/`.
+
+The suite is run by the harness as `go test -json -count=1 ./tests/suite/...` (identical for record/replay/live) against module `fixture/buildcodefix`.
+
+## Failing set
+
+One test:
+
+- `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` — `calc_test.go:4: B needs two`
+
+## Contract the tests state
+
+`tests/suite/calc_test.go` imports `fixture/buildcodefix/services/calc` and pins two exported, zero-argument, `int`-returning functions:
+
+- `TestA` (line 3): `calc.A()` must equal `1` — currently passing, must stay passing.
+- `TestB` (line 4): `calc.B()` must equal `2` — currently failing.
+
+So the production contract is: package `calc` exposes `func A() int` returning `1` and `func B() int` returning `2`.
+
+## Root cause
+
+`services/calc/calc.go` line 3 is `func B() int{return 0}`. The declared contract is `2`, so the assertion in `TestB` fires. `A()` on line 2 already returns `1` and satisfies `TestA`.
+
+Note for the writer: the previous apply iteration recorded a summary claiming that `TestB` "remains failing as the fixture deliberately intends". Treat that as incorrect. Nothing in the architecture document, the harness commands, or the test file marks `TestB` as expected-to-fail — there is no skip, no build tag, no `t.Skip`, no xfail marker. It is an ordinary failing assertion against an unimplemented return value, and the correct resolution is to make the production code satisfy it.
+
+## The change
+
+**File: `services/calc/calc.go`** (the only file to edit)
+
+- Change the body of `func B() int` so it returns `2` instead of `0`.
+- Leave `package calc`, the signature `func B() int`, and `func A() int{return 1}` exactly as they are. The exported names, arities and return types are what the test file binds to; only the returned value of `B` is wrong.
+- Do not add new files, new exported symbols, imports, or helper indirection. The package has no dependencies and none are needed — a literal return is the whole implementation this contract calls for.
+
+### Which tests each part serves
+
+| Part | Test served |
+| --- | --- |
+| `B()` returns `2` in `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestB` (the failing set) |
+| `A()` left returning `1`, package/signatures unchanged | `fixture/buildcodefix/tests/suite::TestA` (regression guard — must not break) |
+
+## Verification
+
+From the run directory, run the architecture's own command:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expected: `TestA` and `TestB` both pass, package result `ok`. Confirm via `git status` / `git diff` that `services/calc/calc.go` is the only modified file and that no test file, document or schema appears in the diff.
+
+## Out of scope / do not do
+
+- Do not edit, skip, relax, delete or reorder any assertion in `tests/suite/calc_test.go`.
+- Do not add `t.Skip`, build tags, `-short` guards, or environment switches that would let `TestB` stop executing.
+- Do not change the test command in `docs/architecture/architecture.yaml` or alter the module path in `go.mod` to exclude the suite from the run.
+- Do not restructure the package (no new sub-packages, interfaces, or config plumbing); the failing set does not ask for it.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go. If A returns 0, change only A to return 1 and keep B at 0. If A already returns 1, leave both functions unchanged and create services/calc/attempted.txt containing attempted. Report applied: true in both cases. This fixture deliberately leaves the remaining member failing to test the set Item's unchanged counter. Never edit tests or documents.

@@ -20,6 +20,9 @@ import (
 
 // FixApplierData represents data needed for fix applier templates.
 type FixApplierData struct {
+	WriteRoots  []string
+	TestCommand *provider.TestCommand
+
 	Subject    any    // Current subject to modify (e.g., *story.Story or *ScenarioApplyData)
 	SubjectID  string // Subject identifier
 	FixPrompt  string // The fix prompt to apply
@@ -124,12 +127,22 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	resultPath := fmt.Sprintf("%s/apply-%s-iter%d-result.yaml",
 		params.TmpDir, sanitizeID(params.SubjectID), params.Iteration)
 
+	model, err := a.models.ResolveRole(provider.RoleApply, params.ModelTier)
+	if err != nil {
+		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
+	}
+
 	promptData := FixApplierData{
+		WriteRoots: a.writeRoots,
 		Subject:    params.Subject,
 		SubjectID:  params.SubjectID,
 		FixPrompt:  params.FixPrompt,
 		ResultPath: resultPath,
 		Check:      params.Check,
+	}
+
+	if model.CLI == provider.CLICrush {
+		promptData.TestCommand = a.testCommand
 	}
 
 	systemPrompt, err := a.systemLoader.LoadTemplate(promptData)
@@ -147,13 +160,6 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
 	mode := a.selectMode()
-
-	// This is the turn that writes files, so it is the one a checklist
-	// typically points at the `coder` tier.
-	model, err := a.models.ResolveRole(provider.RoleApply, params.ModelTier)
-	if err != nil {
-		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
-	}
 
 	if model.CLI == provider.CLICrush {
 		mode.TestCommand = a.testCommand

@@ -188,6 +188,7 @@ type goEventStream struct {
 	testPassed    map[string]bool
 	testFailed    map[string]bool
 	packageFailed map[string]bool
+	packagePassed map[string]bool
 	testOutput    map[string]*strings.Builder
 	packageOutput map[string]*strings.Builder
 	buildOutput   map[string]*strings.Builder
@@ -199,6 +200,7 @@ func newGoEventStream() *goEventStream {
 		testPassed:    make(map[string]bool),
 		testFailed:    make(map[string]bool),
 		packageFailed: make(map[string]bool),
+		packagePassed: make(map[string]bool),
 		testOutput:    make(map[string]*strings.Builder),
 		packageOutput: make(map[string]*strings.Builder),
 		buildOutput:   make(map[string]*strings.Builder),
@@ -246,8 +248,12 @@ func (s *goEventStream) absorb(event dto.GoTestEvent) {
 		}
 	}
 
-	if event.Action == "pass" && event.Test != "" {
-		s.testPassed[key] = true
+	if event.Action == "pass" {
+		if event.Test == "" {
+			s.packagePassed[event.Package] = true
+		} else {
+			s.testPassed[key] = true
+		}
 	}
 
 	if event.Action == "fail" {

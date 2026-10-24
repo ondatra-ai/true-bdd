@@ -1,4 +1,6 @@
-Preparation files are absent — creating `prepared-first.txt` only, leaving `calc.go` unchanged.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
+`prepared-first.txt` is absent. Per the protocol, I create it and leave `calc.go` unchanged.Created `services/calc/prepared-first.txt` (`prepared` + newline); left `calc.go` untouched per protocol. TestAdd still fails (`Add(2, 3) = -1, want 5`).
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
 applied: false
 target: "services/calc/calc.go"
 summary: "first preparation only; test still fails"

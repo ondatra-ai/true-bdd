@@ -1,0 +1,4 @@
+package suite_test
+import("testing";"fixture/buildcodefix/services/calc")
+func TestA(t *testing.T){if calc.A()!=1 {t.Fatal("A needs one")}}
+func TestB(t *testing.T){if calc.B()!=2 {t.Fatal("B needs two")}}

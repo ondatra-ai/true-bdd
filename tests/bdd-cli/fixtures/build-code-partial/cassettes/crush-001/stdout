@@ -1,0 +1,5 @@
+Protocol stage 1: `A` returns 0, so only `A` changes to 1; `B` stays 0.Stage applied: `TestA` passes; `TestB` intentionally remains failing per the protocol. Writing the result file.=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Partial repair per the fixture lifecycle protocol: in services/calc/calc.go, changed only A() to return 1 (was 0) and left B() returning 0, even though the plan proposed both. Verified with 'go test -count=1 ./tests/suite/...': TestA now passes; TestB still fails with 'B needs two' and is deferred to the next apply stage."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

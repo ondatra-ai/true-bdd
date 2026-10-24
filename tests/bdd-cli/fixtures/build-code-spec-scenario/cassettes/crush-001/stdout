@@ -1,7 +1,5 @@
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+Harness confirms the plan: `double` stores `calc.Double(state.Value)`, and `Double` returns its argument unchanged. Applying the fix.=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
 applied: true
-target: "services/calc/calc.go"
-summary: "Made Double return value + value so doubling 3 yields 6"
+target: "services/calc"
+summary: "services/calc/calc.go: Double now returns value + value (was returning value unchanged), matching the glossary's 'sum with itself' contract; signature, package, and name preserved. Both `go test -tags bdd -count=1 ./tests/calc/...` and the `-run 'TestCalc001Double'` selection pass; TestCalc001Double (calc-001-double) passes with all three steps run."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
-```

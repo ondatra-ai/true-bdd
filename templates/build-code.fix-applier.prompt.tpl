@@ -1,90 +1,89 @@
-## Subject — Failing Test
+## Subject — Failing Set
 
-**Test ID:** {{.Subject.ID}}
-**Service:** {{if .Subject.Service}}{{.Subject.Service}}{{else}}none is known{{end}}
-**Suite:** {{.Subject.Suite}}
-**Framework:** {{.Subject.Framework}}
-**Test Name:** {{.Subject.TestName}}
-**Source File:** {{.Subject.FilePath}}
+{{ range .Subject.Tests }}
+**Test ID:** {{ .ID }}
+**Service:** {{ if .Service }}{{ .Service }}{{ else }}none is known{{ end }}
+**Suite:** {{ .Suite }}
+**Framework:** {{ .Framework }}
+**Test Name:** {{ .TestName }}
+**Source File:** {{ .FilePath }}
+{{ end }}
 
-### Last Failure Output
+### Failure groups
+{{ range .Subject.Groups }}
+Tests: {{ join ", " .IDs }}
 ```
-{{.Subject.FailureOutput}}
+{{ .Output }}
 ```
+{{ end }}
 
-{{ if .Subject.Scenario }}
-## Subject — Registry Scenario
+### Specification documents
+{{ range $key, $path := .Subject.Documents }}
+- Read(`{{ $path }}`) — {{ $key }}
+{{ end }}
 
-**Scenario ID:** {{.Subject.Scenario.ID}}
-**Description:** {{.Subject.Scenario.Description}}
-**Service:** {{.Subject.Scenario.Service}}
-**Path:** {{.Subject.Scenario.Path}}
+{{ range .Subject.Scenarios }}
+### Registry Scenario
+**Scenario ID:** {{ .ID }}
+**Description:** {{ .Description }}
+**Service:** {{ .Service }}
+**Path:** {{ .Path }}
 
-### Steps
-{{.Subject.Scenario.FormatSteps}}
-{{ if .Subject.Spec.Declared }}
+{{ .FormatSteps }}
+{{ end }}
+
+{{ with .Subject.Specification }}
+{{ if .Declared }}
 ## What the spec says these steps mean
 
-The Specification defines the contract the production code must satisfy.
-Use these phrases, glossary meanings and word mappings with the whole
-Scenario above when repairing the failing test.
-
-### Scenario steps and their phrases
-{{ range .Subject.Spec.Steps }}
-- {{ .Block }} step "{{ .Text }}"{{ range .Templates }} matches `{{ . }}`{{ else }} matches no catalogue phrase{{ end }}
-{{- end }}
-
 ### Phrases
-{{ range .Subject.Spec.Phrases }}
+{{ range .Phrases }}
 - `{{ .Template }}` ({{ .Block }} step): {{ .Means }}
   Words: {{ if .Terms }}{{ join ", " .Terms }}{{ else }}none{{ end }}
-{{- end }}
+{{ end }}
 
 ### Words
-{{ range .Subject.Spec.Terms }}
+{{ range .Terms }}
 #### {{ .Term }}
-
-{{ if .Means }}{{ range .Means }}- Means: {{ . }}
-{{ end }}{{ else }}- The glossary does not define it.
+{{ range .Means }}- Means: {{ . }}
+{{ else }}- The glossary does not define it.
 {{ end }}
-{{- range .Mappings }}- In the implementation: {{ .Technical }}
+{{ range .Mappings }}- In the implementation: {{ .Technical }}
 - Observed by: {{ .ObservedBy }}
 {{ else }}- The architecture's word mapping does not map it.
 {{ end }}
-{{- end }}
 {{ end }}
 {{ end }}
+{{ end }}
 
----
+## Proposed repair plan
+{{ .FixPrompt }}
 
-## Fix Prompt to Apply
+## Edit roots
+{{ range .WriteRoots }}
+- `{{ . }}`
+{{ end }}
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
 
-{{.FixPrompt}}
+{{ if .TestCommand }}
+## Test commands
+Run in `{{ .TestCommand.Dir }}` using exactly one of these forms:
+- Whole suite: `{{ .TestCommand.Command }}`
+- Selection: `{{ .TestCommand.Command }} {{ .TestCommand.Selector }} '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
+{{ else }}
+No test command is granted to this writer. Report that limitation in the confirmation.
+{{ end }}
 
----
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
 
-## Instructions
-
-1. Use the Read, Glob, and Grep tools to inspect the current state of
-   the production source the fix prompt targets.
-2. Apply the changes described in the "Fix Prompt to Apply" section
-   above:
-   - Use Write to create a new file under `services/*` when the fix
-     prompt says so.
-   - Use Edit to modify an existing file under `services/*` when the
-     fix prompt says so.
-3. You MAY only modify files under `services/*`.
-4. You MUST NOT touch any of the following:
-   - Anything under `tests/`
-   - Any file matching `*_test.go`
-   - Anything under `services/*/__tests__/`
-   - Anything under `docs/`
-5. Do not weaken, skip, or remove any assertion in the failing test.
-   The test is the contract; the production code must conform to it.
-6. After the changes succeed, output the confirmation block below.
-
-=== FILE_START: {{.ResultPath}} ===
+=== FILE_START: {{ .ResultPath }} ===
 applied: true
-target: "<repo-relative path of the file you wrote/edited>"
-summary: "<one-line summary of what changed>"
-=== FILE_END: {{.ResultPath}} ===
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: {{ .ResultPath }} ===

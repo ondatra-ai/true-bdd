@@ -1,133 +1,123 @@
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
 
-You are a Production Code Editor applying a fix to `services/*` so that
-one failing test passes — without modifying the test itself.
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
 
-**Your Task:**
-1. Read the relevant production source file(s) named in the fix prompt.
-2. Read the fix prompt instructions.
-3. Apply the changes EXACTLY as described — using the Write tool to
-   create a new file or the Edit tool to modify an existing one, under
-   the single allowed root `services/*`.
-4. Emit a short YAML confirmation block.
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
 
-**Tool Usage:**
-- Use Read, Glob, Grep to inspect existing files before writing.
-- Use Write to create a new file under `services/*`.
-- Use Edit to mutate an existing file under `services/*`.
-
-**ALLOWED root:** `services/*`
-
-**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
-- Anything under `tests/`
-- Any file matching `*_test.go`
-- Anything under `services/*/__tests__/`
-- Anything under `docs/`
-
-**Output Requirements:**
-- After your Write/Edit calls succeed, output a YAML confirmation
-  inside FILE_START/FILE_END markers:
-  - `applied: true` (or `false` on failure)
-  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
-  - `summary: "<one short line describing what changed>"`
-- Preserve all other content in the target file — only apply the
-  change the fix prompt specifies.
-
-**Output Format:**
-```
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
-applied: true
-target: "<repo-relative path>"
-summary: "<one-line summary>"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
-```
-
-**CRITICAL:**
-- Apply changes EXACTLY as described in the fix prompt.
-- Never weaken, skip, or remove a test assertion as part of the fix.
-- Do NOT modify any file in the FORBIDDEN list above, even if the fix
-  prompt or your own analysis suggests it would help. Refuse the
-  change and emit `applied: false` if doing so is the only path the
-  fix prompt offers.
-- Make all file changes during this turn — the confirmation block is
-  informational only.
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass.
 
 
 ### TASK
 
 ## Production repair and replay protocol
 
-# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestSlowReplay
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestSlowReplay
 
-## Target
-Apply the change(s) under `services/*` only. The test at
-`tests/suite/replay_test.go` (`fixture/buildcodefix/tests/suite`) is the
-contract; do NOT modify it, and do NOT modify anything under `tests/`,
-any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`.
+## 1. What the test actually demands
 
-## Root Cause
-`tests/suite/replay_test.go:13` asserts:
+`tests/suite/replay_test.go` (read-only, do not touch) exercises exactly one
+production contract before anything else happens:
 
 ```go
 if calc.Add(2, 3) != 5 { t.Fatal("Add must sum its arguments") }
 ```
 
-The production implementation in `services/calc/calc.go` subtracts instead of
-adding (`return a - b`), so `calc.Add(2, 3)` returns `-1` and the assertion
-fails with `Add must sum its arguments`. This is a planted defect in
-PRODUCTION source; the assertion is correct and must stay untouched.
+The reported failure is that `t.Fatal` line, so the whole failing set reduces
+to one contract: **`calc.Add` must return the arithmetic sum of its two
+arguments.** `Add(2, 3)` must be `5`.
 
-## Required Changes
+Everything after that line in the test is harness/timing machinery, not a
+production contract — see section 4.
 
-### Change #1: Make `calc.Add` actually sum its arguments
-**File:** `services/calc/calc.go`
-**Action:** Use the Edit tool on this existing file. Replace the `old_string`
-below with the `new_string` below (single occurrence).
+## 2. Root cause
 
-**old_string:**
-```
-// Add returns the sum of a and b.
-//
-// It does not: the operator is wrong, deliberately. This is the planted
-// defect the fix loop has to correct, and it is in PRODUCTION source —
-// the test asserting 5 is right, and repairing the code rather than the
-// assertion is the whole contract of `build code`.
+`services/calc/calc.go` is the only production source in the declared service
+root (`services/calc`, per `docs/architecture/architecture.yaml`). Its `Add`
+subtracts instead of adding:
+
+```go
 func Add(a, b int) int {
 	return a - b
 }
 ```
 
-**new_string:**
+`Add(2, 3)` therefore yields `-1`, not `5`, and the first assertion fails
+immediately. The doc comment on the function states outright that the operator
+is wrong deliberately — this is the planted defect, and it lives in production
+source, which is precisely where the repair belongs.
+
+## 3. The change to make
+
+**File: `services/calc/calc.go` — the only file to edit.**
+
+Part A — fix the operator (serves `TestSlowReplay`, assertion
+`replay_test.go:13`):
+
+- In `Add`, replace the subtraction with addition so the function returns
+  `a + b`.
+- Keep everything else about the function identical: same package `calc`, same
+  exported name `Add`, same signature `func Add(a, b int) int`, same file path.
+  The test imports `fixture/buildcodefix/services/calc` and calls
+  `calc.Add(2, 3)`, so any rename, signature change, or package move breaks
+  compilation of the suite.
+- Do not add parameter validation, overflow handling, logging, panics, or any
+  other behaviour. The contract is plain integer addition and nothing more.
+
+Part B — correct the now-false documentation on that same function (no test
+depends on it; this keeps the source honest after Part A):
+
+- The existing doc comment says the operator "is wrong, deliberately" and
+  describes the defect as planted. Once Part A lands, that text contradicts the
+  code. Reduce the comment to a truthful description of the function: that
+  `Add` returns the sum of `a` and `b`.
+- Leave the package-level comment at the top of the file (the note that this
+  tree is the fix loop's write root) as it is — it remains accurate.
+
+No new files, no new packages, no new exported symbols are needed. The service
+root already contains the one function the suite calls, so this is a repair in
+place rather than a build-out.
+
+## 4. Deliberately out of scope — do not "help" here
+
+The test's tail is harness instrumentation for replay/selection timing, and the
+production repair must not interact with it:
+
+- `flag.Lookup("test.run")`, the `../../services/calc/replayed.txt` marker, the
+  65-second `time.Sleep`, and the `SELECTION COMPLETED` log are the harness's
+  own slow-replay probe. Production code must not create, pre-create, read, or
+  delete `services/calc/replayed.txt`, and must not try to shorten or
+  short-circuit the sleep. Writing that marker from production source would
+  bypass the harness's check rather than satisfy it.
+- `services/calc/guard-calls.jsonl` is appended by `replay_hook.py`. It sits
+  inside the write root but is harness-generated evidence — leave it alone,
+  do not delete or rewrite it.
+- Do not edit `tests/suite/replay_test.go` or any `*_test.go`, `go.mod`,
+  `docs/architecture/architecture.yaml`, `replay_hook.py`, `templates/`, or
+  `true-bdd/`. No assertion may be weakened, skipped, retitled, or removed —
+  the test asserting `5` is the correct specification; the code is what was
+  wrong.
+
+## 5. Verification
+
+From the project root, run the architecture's replay command:
+
 ```
-// Add returns the sum of a and b.
-func Add(a, b int) int {
-	return a + b
-}
+go test -v -json -count=1 ./tests/suite/...
 ```
 
-Note: the `a - b` → `a + b` operator change is the entire functional fix. The
-comment block is replaced only because it documented the deliberate defect that
-no longer exists; if you prefer the absolutely minimal diff, it is acceptable to
-instead Edit only the line `	return a - b` to `	return a + b` and leave the
-comment as-is. Either form must leave the function signature
-`func Add(a, b int) int` and the package declaration `package calc` unchanged,
-since the test imports `fixture/buildcodefix/services/calc` and calls
-`calc.Add(2, 3)`.
+Expect `TestSlowReplay` to pass. Note that a full-suite run (no `-run`
+selector) returns at the `test.run` check and finishes fast; a
+selection run with `-run ^TestSlowReplay$` legitimately takes ~65 seconds on
+its first pass before writing the harness marker. Both paths require the
+`Add(2, 3) == 5` assertion to hold first, so Part A is the single change that
+unblocks the set.
 
-## Do NOT do any of the following
-- Do not touch `tests/suite/replay_test.go` or any other test file.
-- Do not create, delete, or pre-seed `services/calc/replayed.txt`. That marker
-  file is written by the test itself at line 18; creating it yourself would
-  short-circuit the test's own control flow. Leave it entirely to the test.
-- Do not alter the sleep, the `flag.Lookup("test.run")` guard, or any
-  assertion.
-- Do not add new files, packages, or dependencies — no other production change
-  is needed.
+## 6. Mapping of parts to tests
 
-## Verification Expectation
-After the edit, `calc.Add(2, 3) == 5`, so line 13 no longer fatals and
-`TestSlowReplay` proceeds past the assertion. Do not run the test yourself —
-the Go-side runner is authoritative and will re-execute it.
+| Part | File | Test served |
+|---|---|---|
+| A — `Add` returns `a + b` | `services/calc/calc.go` | `fixture/buildcodefix/tests/suite::TestSlowReplay` (`replay_test.go:13`, "Add must sum its arguments") |
+| B — truthful doc comment on `Add` | `services/calc/calc.go` | none directly; removes documentation that would contradict Part A |
 
 Repair services/calc/calc.go so Add sums its arguments.
 Then run exactly this bash command ONCE, with working_dir set to the project root:

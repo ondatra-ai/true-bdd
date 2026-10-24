@@ -234,7 +234,22 @@ glossary:
       answers, then shows the fix it proposes and asks whether to apply it,
       refine it with the person's feedback, or exit. It is how a person
       settles a failure in their own words without editing a document by
-      hand.
+      hand. For build code, one proposed repair plan covers the whole failing
+      set. The person chooses apply, refine or exit as before; the writer
+      implements the plan, tests its parts and the set, and reports what
+      changed and which members it saw pass. The engine answers the verdict
+      itself, with no validation AI turn. After every completed apply it
+      reruns the remaining set once, passing tests leave, and fresh discovery
+      on the next walk finds regressions. The existing per-Item allowance
+      counts applies on the set, including an applied false reply.
+
+  - term: failing set
+    means: >-
+      All tests failing in one build code discovery, with their latest
+      failure evidence and matched Specification context. It is one Item;
+      discovery with no failures yields no Item. After an apply, members
+      leave only on their own passing result. A member with no result stays
+      failing and is reported as not having run.
 
   - term: test dependencies
     means: >-
@@ -336,8 +351,11 @@ glossary:
     means: >-
       The program a project runs its own tests with, such as `go test` or
       `npx playwright test`, as the architecture document declares it.
-      `build code` starts it to find the failing tests and again to confirm
-      a fix.
+      `build code` starts it to find the failing set and after every completed
+      apply to rerun all remaining members in one selection. Go build and
+      Playwright startup members make the rerun unfiltered. A member with
+      no passing result of its own stays failing; the next outer walk
+      discovers the whole suite afresh.
 
   - term: shell command
     means: >-

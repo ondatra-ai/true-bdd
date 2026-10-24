@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "services/calc/calc.go: A() now returns 1 and B() now returns 2 (bodies changed from stub 0s; signatures, package, and file layout preserved). go test -count=1 ./tests/suite/... and the selection -run 'TestA|TestB' both pass, confirming TestA and TestB green; no test files touched."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
