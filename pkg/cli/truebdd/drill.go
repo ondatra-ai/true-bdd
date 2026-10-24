@@ -9,14 +9,18 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
+// ModelOverride is one unchanged <tier>=<cli>:<model> flag value.
+type ModelOverride string
+
 // Options is the external policy of one drill command.
 type Options struct {
-	Directory string
-	Marker    string
-	Input     io.ReadCloser
-	Output    io.Writer
-	Limit     time.Duration
-	Grace     time.Duration
+	ModelOverrides []ModelOverride
+	Directory      string
+	Marker         string
+	Input          io.ReadCloser
+	Output         io.Writer
+	Limit          time.Duration
+	Grace          time.Duration
 }
 
 // BuildTests authors and verifies step definitions with the iteration's engine.
@@ -31,6 +35,10 @@ func BuildCode(ctx context.Context, binary string, opt Options) (int, error) {
 
 // rebuild closes stdin forwarding so answer writers cannot outlive their reader.
 func rebuild(ctx context.Context, binary string, args []string, opt Options) (int, error) {
+	for _, override := range opt.ModelOverrides {
+		args = append(args, "--model", string(override))
+	}
+
 	process, err := shell.Start(context.WithoutCancel(ctx), append([]string{binary}, args...), shell.Options{
 		Dir: opt.Directory,
 		Env: shell.Inherit().Strip("CLAUDECODE",

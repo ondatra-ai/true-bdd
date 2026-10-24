@@ -44,6 +44,7 @@ type declaredSelection struct {
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
 		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
+		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
 		"us-refine-fix-steps":                    {Stem: usRefineStem, QShort: "fa3f00d3", RequireF: true},
 		"us-refine-fix-desc-qualifier":           {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},

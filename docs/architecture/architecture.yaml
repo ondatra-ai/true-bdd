@@ -1054,12 +1054,34 @@ architecture:
         Count the "Dispatching AI turn" records in the run's JSON log file;
         "no" is zero, and a missing log file fails instead of counting zero.
 
+    - term: model override
+      technical: >-
+        Repeated command-local --model values are passed to lazy bootstrap.
+        After validating the loaded engine.models and role defaults, bootstrap
+        validates every override against those declared tiers and the same
+        model-reference parser, rejecting duplicate tiers. Only then it builds
+        the in-memory registry with the replacements and logs each once at INFO
+        as msg="Model tier overridden", tier, from and to. Role selection still
+        resolves Prompt, checklist, then role default against this registry.
+        No config or override file is written and no override environment
+        variable is exported; the resolved model reaches its CLI's argv.
+        The drill permits only repeated --model value pairs after its exact
+        build tests --fix or build code --fix prefix, stores the original
+        arguments in its run record, and forwards the values unchanged through
+        typed model-override options in its engine wrapper. Semantic validation
+        stays with the spawned engine; all other extra arguments are refused.
+      observed_by: >-
+        Read the Model tier overridden records and the cli and model fields
+        of Dispatching AI turn. A refusal has exit 1 and no dispatch records;
+        the configuration file stays unchanged. Drill checks inspect its run
+        record and the spawned engine's arguments.
+
     - term: AI CLI
       technical: >-
         The binary an AI turn is spawned as, `claude`, `crush` or `codex`
         (see `dependencies[]` above): the half before the first colon of the
         `<cli>:<model>` reference the turn's tier resolves to under
-        `engine.models`. The tier is the Prompt's own `model:`, `fix_model:`
+        `engine.models`, with any run-only model overrides applied at bootstrap. The tier is the Prompt's own `model:`, `fix_model:`
         or `apply_model:` for a validation, fix or apply turn, else its
         checklist's `engine:` block, else `engine.default_<role>_model`.
       observed_by: >-
