@@ -42,12 +42,12 @@ func (p ClaudeGuardPolicy) allowsSearch(target string) (bool, string) {
 	}
 
 	resolved := resolveThroughSymlinks(target)
-	if pathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
+	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
 
 	for _, root := range p.ExcludedRoots {
-		if pathWithinRoot(resolveThroughSymlinks(root), resolved) {
+		if claudePathWithinRoot(resolveThroughSymlinks(root), resolved) {
 			return false, "search root contains excluded module copies; choose a narrower dependency directory"
 		}
 	}

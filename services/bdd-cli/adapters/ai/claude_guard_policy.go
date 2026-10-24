@@ -69,8 +69,17 @@ func (p ClaudeGuardPolicy) allowsClaudeTestCommand(command, cwd string) (bool, s
 
 	resolved := resolveThroughSymlinks(cwd)
 	if strings.HasPrefix(command, prefix) &&
-		(resolved == resolveThroughSymlinks(p.Replay.ReadRoot) || resolved == resolveThroughSymlinks(p.Replay.TestDir)) {
+		(claudeSamePath(resolved, p.Replay.ReadRoot) || claudeSamePath(resolved, p.Replay.TestDir)) {
 		command = strings.TrimPrefix(command, prefix)
+		cwd = p.Replay.TestDir
+	}
+
+	dir := cwd
+	if !filepath.IsAbs(dir) {
+		dir = p.Replay.ReadRoot + string(filepath.Separator) + dir
+	}
+
+	if filepath.IsAbs(p.Replay.TestDir) && claudeSamePath(dir, p.Replay.TestDir) {
 		cwd = p.Replay.TestDir
 	}
 
@@ -80,18 +89,18 @@ func (p ClaudeGuardPolicy) allowsClaudeTestCommand(command, cwd string) (bool, s
 func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {
 	resolved := resolveThroughSymlinks(target)
 	// The host always wins, even inside ~/work or a module-cache copy.
-	if pathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
+	if claudePathWithinRoot(resolved, resolveThroughSymlinks(p.Replay.ReadRoot)) {
 		return true, ""
 	}
 
 	for _, root := range p.ExcludedRoots {
-		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return false, "read target is excluded: " + resolved
 		}
 	}
 
 	for _, root := range p.ReadRoots {
-		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return true, ""
 		}
 	}
@@ -141,10 +150,16 @@ func expandClaudeHome(path string) string {
 func (p ClaudeGuardPolicy) allowsWrite(target string) (bool, string) {
 	resolved := resolveThroughSymlinks(target)
 	for _, root := range p.ProtectedRoots {
-		if pathWithinRoot(resolved, resolveThroughSymlinks(root)) {
+		if claudePathWithinRoot(resolved, resolveThroughSymlinks(root)) {
 			return false, "the writer cannot change its generated guard configuration"
 		}
 	}
 
-	return p.Replay.allowsWriteTo(target)
+	for _, root := range p.Replay.WriteRoots {
+		if claudePathWithinRoot(resolved, root) {
+			return true, ""
+		}
+	}
+
+	return false, "write target is outside the claude writer roots: " + resolved
 }

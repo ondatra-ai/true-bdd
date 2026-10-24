@@ -81,7 +81,7 @@ func TestClaudeTildePathsCannotEscape(t *testing.T) {
 
 	for _, tool := range []string{claudeRead, claudeGlob, claudeGrep, claudeEdit, claudeWrite, claudeMultiEdit} {
 		for _, target := range []string{"~", "~/go/pkg/mod/github.com/ondatra-ai", "~/go/pkg/mod"} {
-			for _, field := range []string{"file_path", "path"} {
+			for _, field := range []string{"file_path", claudePathKey} {
 				raw, marshalErr := json.Marshal(map[string]any{"tool_name": tool, "cwd": claudeHost,
 					"tool_input": map[string]string{field: target}})
 				if marshalErr != nil {
