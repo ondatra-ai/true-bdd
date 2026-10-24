@@ -382,6 +382,17 @@ per-run config (pointed at via `CRUSH_GLOBAL_CONFIG`, leaving any host
 of its own. Hooks are additive, so a host config's own hooks run
 alongside it and a denial from either blocks the tool.
 
+Only `build code --fix`'s crush apply turn receives a test-command grant:
+the declared replay without its machine-output flag, alone or followed by
+the framework selector and a single-quoted nonempty selection. The guard
+matches those strings exactly and requires the suite's resolved directory.
+An argument containing a single quote, newline or NUL withholds the grant
+with one warning. Its generated tools include `bash`, `job_output` and
+`job_kill`, so a replay longer than a minute can finish in crush's background
+and be read back. General `allow_bash` remains false. Claude and codex
+permissions are unchanged. Tests execute the writer's code with the
+machine's permissions; this restricts shell use, not that code's access.
+
 Two crush behaviours the engine works around, both verified against the
 live CLI rather than assumed:
 

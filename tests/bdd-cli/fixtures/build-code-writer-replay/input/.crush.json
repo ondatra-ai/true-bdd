@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "replay-evidence",
+        "command": "python3 replay_hook.py",
+        "timeout": 15
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "binary": "crush",
+  "argv": [
+    "run",
+    "--quiet",
+    "-m",
+    "zhipu-coding/glm-5.2",
+    "--cwd",
+    "{{CWD}}"
+  ],
+  "exit_code": 0,
+  "duration_ms": 94326,
+  "request_hash": "sha256:540e22e388b3851429feb08eca740f6b2d6600aeb8a70ee773129a6bdc619d4a",
+  "fsdiff": {
+    "created": [
+      "services/calc/guard-calls.jsonl",
+      "services/calc/replayed.txt",
+      "tmp/replay-audit-start"
+    ],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-24T10:58:57Z"
+}

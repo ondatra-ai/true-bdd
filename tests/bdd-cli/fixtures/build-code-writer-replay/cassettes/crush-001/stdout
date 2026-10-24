@@ -1,0 +1,7 @@
+Fix applied to `services/calc/calc.go` (Add now returns `a + b`); test run auto-backgrounded and completed via job_output showing `SELECTION COMPLETED` and `PASS`.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Repaired Add and observed the selected replay complete through job_output"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===

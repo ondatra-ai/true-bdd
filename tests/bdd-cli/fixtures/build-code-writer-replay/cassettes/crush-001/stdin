@@ -1,0 +1,147 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Production Code Editor applying a fix to `services/*` so that
+one failing test passes — without modifying the test itself.
+
+**Your Task:**
+1. Read the relevant production source file(s) named in the fix prompt.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Write tool to
+   create a new file or the Edit tool to modify an existing one, under
+   the single allowed root `services/*`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read, Glob, Grep to inspect existing files before writing.
+- Use Write to create a new file under `services/*`.
+- Use Edit to mutate an existing file under `services/*`.
+
+**ALLOWED root:** `services/*`
+
+**FORBIDDEN paths (do not Write or Edit here under any circumstances):**
+- Anything under `tests/`
+- Any file matching `*_test.go`
+- Anything under `services/*/__tests__/`
+- Anything under `docs/`
+
+**Output Requirements:**
+- After your Write/Edit calls succeed, output a YAML confirmation
+  inside FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<repo-relative path>"` (QUOTED — the path may contain `: `)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other content in the target file — only apply the
+  change the fix prompt specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
+applied: true
+target: "<repo-relative path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Never weaken, skip, or remove a test assertion as part of the fix.
+- Do NOT modify any file in the FORBIDDEN list above, even if the fix
+  prompt or your own analysis suggests it would help. Refuse the
+  change and emit `applied: false` if doing so is the only path the
+  fix prompt offers.
+- Make all file changes during this turn — the confirmation block is
+  informational only.
+
+
+### TASK
+
+## Production repair and replay protocol
+
+# Fix Prompt for Failing Test /go-test/go-test:fixture.buildcodefix.tests.suite::TestSlowReplay
+
+## Target
+Apply the change(s) under `services/*` only. The test at
+`tests/suite/replay_test.go` (`fixture/buildcodefix/tests/suite`) is the
+contract; do NOT modify it, and do NOT modify anything under `tests/`,
+any `*_test.go`, any `services/*/__tests__/`, or anything under `docs/`.
+
+## Root Cause
+`tests/suite/replay_test.go:13` asserts:
+
+```go
+if calc.Add(2, 3) != 5 { t.Fatal("Add must sum its arguments") }
+```
+
+The production implementation in `services/calc/calc.go` subtracts instead of
+adding (`return a - b`), so `calc.Add(2, 3)` returns `-1` and the assertion
+fails with `Add must sum its arguments`. This is a planted defect in
+PRODUCTION source; the assertion is correct and must stay untouched.
+
+## Required Changes
+
+### Change #1: Make `calc.Add` actually sum its arguments
+**File:** `services/calc/calc.go`
+**Action:** Use the Edit tool on this existing file. Replace the `old_string`
+below with the `new_string` below (single occurrence).
+
+**old_string:**
+```
+// Add returns the sum of a and b.
+//
+// It does not: the operator is wrong, deliberately. This is the planted
+// defect the fix loop has to correct, and it is in PRODUCTION source —
+// the test asserting 5 is right, and repairing the code rather than the
+// assertion is the whole contract of `build code`.
+func Add(a, b int) int {
+	return a - b
+}
+```
+
+**new_string:**
+```
+// Add returns the sum of a and b.
+func Add(a, b int) int {
+	return a + b
+}
+```
+
+Note: the `a - b` → `a + b` operator change is the entire functional fix. The
+comment block is replaced only because it documented the deliberate defect that
+no longer exists; if you prefer the absolutely minimal diff, it is acceptable to
+instead Edit only the line `	return a - b` to `	return a + b` and leave the
+comment as-is. Either form must leave the function signature
+`func Add(a, b int) int` and the package declaration `package calc` unchanged,
+since the test imports `fixture/buildcodefix/services/calc` and calls
+`calc.Add(2, 3)`.
+
+## Do NOT do any of the following
+- Do not touch `tests/suite/replay_test.go` or any other test file.
+- Do not create, delete, or pre-seed `services/calc/replayed.txt`. That marker
+  file is written by the test itself at line 18; creating it yourself would
+  short-circuit the test's own control flow. Leave it entirely to the test.
+- Do not alter the sleep, the `flag.Lookup("test.run")` guard, or any
+  assertion.
+- Do not add new files, packages, or dependencies — no other production change
+  is needed.
+
+## Verification Expectation
+After the edit, `calc.Add(2, 3) == 5`, so line 13 no longer fatals and
+`TestSlowReplay` proceeds past the assertion. Do not run the test yourself —
+the Go-side runner is authoritative and will re-execute it.
+
+Repair services/calc/calc.go so Add sums its arguments.
+Then run exactly this bash command ONCE, with working_dir set to the project root:
+go test -v -count=1 ./tests/suite/... -run '^TestSlowReplay$'
+
+Set the bash input run_in_background to false explicitly. Do not proactively
+background it: this fixture verifies crush's automatic one-minute handoff.
+The selection intentionally takes 65 seconds. Crush backgrounds it after one minute.
+Use job_output on the returned job ID until the job is complete. Read the completed
+output before returning; it must show SELECTION COMPLETED and PASS.
+Do not use any other shell command. Never edit tests or documents.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
+applied: true
+target: "services/calc/calc.go"
+summary: "Repaired Add and observed the selected replay complete through job_output"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===

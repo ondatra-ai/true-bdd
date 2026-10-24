@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "fixture": "build-code-writer-replay",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 220,
+      "sha256": "aebe7aa8f678ac295ca77e70e281b49e15466287f20258749e8f2f70e192f30a",
+      "text": "// Package calc is the fixture host project's production source. The\n// build-code fix loop is allowed to edit exactly this tree.\npackage calc\n\n// Add returns the sum of a and b.\nfunc Add(a, b int) int {\n\treturn a + b\n}\n"
+    },
+    {
+      "path": "services/calc/guard-calls.jsonl",
+      "kind": "created",
+      "size": 327,
+      "sha256": "d016e037a57ddb867b8d047d8fa75794f6933bd883c823ce455a132fd82c83d4",
+      "text": "{\"elapsed_seconds\": 0, \"input\": {\"command\": \"go test -v -count=1 ./tests/suite/... -run '^TestSlowReplay$'\", \"description\": \"Run TestSlowReplay go test once\", \"run_in_background\": false, \"working_dir\": \"\u003cproject root\u003e\"}, \"tool\": \"bash\"}\n{\"elapsed_seconds\": 66, \"input\": {\"shell_id\": \"001\", \"wait\": true}, \"tool\": \"job_output\"}\n"
+    },
+    {
+      "path": "services/calc/replayed.txt",
+      "kind": "created",
+      "size": 20,
+      "sha256": "f0e87a38b95e30d68ab882284d5c69998fdfed0d2f22a97e972ba4e1495018b9",
+      "text": "SELECTION COMPLETED\n"
+    }
+  ]
+}

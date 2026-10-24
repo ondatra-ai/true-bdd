@@ -60,9 +60,13 @@ type CrushGuardPolicy struct {
 	// WriteRoots are absolute directory prefixes a file-writing tool
 	// may target. Empty means no writes at all.
 	WriteRoots []string `json:"write_roots"`
-	// AllowBash permits the shell tool. When false the shell is denied
-	// outright, because a shell command trivially bypasses WriteRoots.
+	// AllowBash permits unrestricted shell use. Engine turns keep it false;
+	// TestCommand grants only the declared replay in its suite directory.
 	AllowBash bool `json:"allow_bash"`
+	// TestCommand and its selector are the two permitted shell forms.
+	TestCommand  string `json:"test_command,omitempty"`
+	TestSelector string `json:"test_selector,omitempty"`
+	TestDir      string `json:"test_dir,omitempty"`
 }
 
 // NewCrushGuardPolicy projects an ExecutionMode onto the crush guard,
@@ -79,7 +83,14 @@ func NewCrushGuardPolicy(mode ExecutionMode, workDir string) CrushGuardPolicy {
 		}
 	}
 
-	return CrushGuardPolicy{ReadRoot: workDir, WriteRoots: roots, AllowBash: mode.AllowsBash()}
+	policy := CrushGuardPolicy{ReadRoot: workDir, WriteRoots: roots, AllowBash: mode.AllowsBash()}
+	if mode.TestCommand != nil {
+		policy.TestCommand = mode.TestCommand.Command
+		policy.TestSelector = mode.TestCommand.Selector
+		policy.TestDir = mode.TestCommand.Dir
+	}
+
+	return policy
 }
 
 // Encode renders the policy as the environment entry crush passes down
@@ -124,7 +135,13 @@ func LoadCrushGuardPolicy() (CrushGuardPolicy, error) {
 // may not. toolName is crush's lowercase tool id; targetPath is the
 // path a file tool wants to read or write (empty for non-file tools).
 func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
-	name := strings.ToLower(strings.TrimSpace(toolName))
+	return p.DecideCall(CrushToolCall{Name: toolName, TargetPath: targetPath})
+}
+
+// DecideCall judges a complete tool call, including shell command and directory.
+func (p CrushGuardPolicy) DecideCall(call CrushToolCall) (bool, string) {
+	name := strings.ToLower(strings.TrimSpace(call.Name))
+	targetPath := call.TargetPath
 
 	if slices.Contains(crushLocalReadTools(), name) {
 		return p.allowsReadFrom(targetPath)
@@ -139,7 +156,15 @@ func (p CrushGuardPolicy) Decide(toolName, targetPath string) (bool, string) {
 			return true, ""
 		}
 
-		return false, "shell is denied in this mode (it would bypass the write-root rule)"
+		return p.allowsTestCommand(call)
+	}
+
+	if name == "job_output" || name == "job_kill" {
+		if p.TestCommand != "" {
+			return true, ""
+		}
+
+		return false, "job tools require a test command"
 	}
 
 	if !slices.Contains(crushFileTools(), name) {

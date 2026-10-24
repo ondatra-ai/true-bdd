@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-unrepresentable-replay",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "modified",
+      "size": 220,
+      "sha256": "aebe7aa8f678ac295ca77e70e281b49e15466287f20258749e8f2f70e192f30a",
+      "text": "// Package calc is the fixture host project's production source. The\n// build-code fix loop is allowed to edit exactly this tree.\npackage calc\n\n// Add returns the sum of a and b.\nfunc Add(a, b int) int {\n\treturn a + b\n}\n"
+    }
+  ]
+}

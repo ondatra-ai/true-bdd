@@ -3,10 +3,12 @@ package ai
 import (
 	"encoding/json"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 )
 
 // TestCrushGuardCommandQuotesTheExecutable checks the hook command survives
@@ -92,6 +94,41 @@ func TestWriteCrushConfigIsolatesEachTurn(t *testing.T) {
 
 		if len(decoded.Hooks.PreToolUse) == 0 {
 			t.Errorf("config in %s has no PreToolUse hook — the write gate is gone", dir)
+		}
+	}
+}
+
+// TestCrushConfigReplayTools pins the generated configuration, not only the guard.
+func TestCrushConfigReplayTools(t *testing.T) {
+	t.Parallel()
+
+	for _, granted := range []bool{false, true} {
+		mode := ExecutionMode{DisallowedTools: []string{"Bash"}}
+		if granted {
+			mode.TestCommand = &provider.TestCommand{Command: "go test ./...", Selector: "-run", Dir: t.TempDir()}
+		}
+
+		dir, err := writeCrushConfig(Request{TmpDir: t.TempDir(), WorkDir: t.TempDir(), Mode: mode}, "/bin/true-bdd")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		raw, err := disk.Read(filepath.Join(dir, "crush.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var config crushConfig
+
+		err = json.Unmarshal(raw, &config)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, tool := range []string{"bash", "job_output", "job_kill"} {
+			if got := slices.Contains(config.Permissions.AllowedTools, tool); got != granted {
+				t.Errorf("%s allowed=%v grant=%v", tool, got, granted)
+			}
 		}
 	}
 }

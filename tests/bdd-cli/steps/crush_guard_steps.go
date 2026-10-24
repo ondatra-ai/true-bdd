@@ -44,6 +44,9 @@ func registerCrushGuardSteps(suite *bddgo.Suite[State]) {
 	suite.Step(`^crush hands the guard an unreadable write policy$`, garblePolicy)
 	suite.Step(`^crush hands the guard a write policy with no read root$`, omitReadRoot)
 	suite.Step(`^crush pipes the hook payload naming the tool "([^"]+)" and the path "([^"]+)"$`, pipePathPayload)
+	suite.Step(`^crush's write policy grants the test command "([^"]+)" with selector "([^"]+)" in "([^"]+)"$`,
+		grantTestCommand)
+	suite.Step(`^crush pipes a shell call in directory "([^"]+)" with command (.+)$`, pipeShellCommand)
 	suite.Step(`^crush names the tool "([^"]+)"$`, nameTool)
 	suite.Step(`^crush names the file "([^"]+)" of the project tree$`, nameTreeFile)
 	suite.Step(`^crush names the path "([^"]+)" as written$`, nameLiteralPath)
@@ -59,11 +62,16 @@ func registerCrushGuardSteps(suite *bddgo.Suite[State]) {
 // Paths stay relative to the project tree until the When step renders them,
 // since only then is the run directory they resolve against in use.
 type guardCall struct {
-	roots      []string
-	shell      bool
-	withheld   bool
-	unreadable bool
-	noReadRoot bool
+	testCommand  string
+	testSelector string
+	testDir      string
+	command      string
+	workingDir   string
+	roots        []string
+	shell        bool
+	withheld     bool
+	unreadable   bool
+	noReadRoot   bool
 
 	tool      string
 	target    string
@@ -76,20 +84,26 @@ type guardCall struct {
 
 // guardPolicy is the JSON shape the engine exports in guardPolicyVar.
 type guardPolicy struct {
-	ReadRoot   string   `json:"read_root"`
-	WriteRoots []string `json:"write_roots"`
-	AllowBash  bool     `json:"allow_bash"`
+	ReadRoot     string   `json:"read_root"`
+	WriteRoots   []string `json:"write_roots"`
+	AllowBash    bool     `json:"allow_bash"`
+	TestCommand  string   `json:"test_command,omitempty"`
+	TestSelector string   `json:"test_selector,omitempty"`
+	TestDir      string   `json:"test_dir,omitempty"`
 }
 
 // guardPayload is the subset of the JSON crush pipes to a hook on stdin.
 type guardPayload struct {
-	ToolName string            `json:"tool_name"`
-	Input    guardPayloadInput `json:"input"`
+	ToolName  string             `json:"tool_name"`
+	Input     guardPayloadInput  `json:"input"`
+	ToolInput *guardPayloadInput `json:"tool_input,omitempty"`
 }
 
 type guardPayloadInput struct {
-	FilePath string `json:"file_path,omitempty"`
-	Path     string `json:"path,omitempty"`
+	FilePath   string `json:"file_path,omitempty"`
+	Path       string `json:"path,omitempty"`
+	Command    string `json:"command,omitempty"`
+	WorkingDir string `json:"working_dir,omitempty"`
 }
 
 // guard is this scenario's tool call, started empty: a policy no step
@@ -203,10 +217,14 @@ func askGuard(state *State, _ []string) error {
 	}
 
 	if call.piped {
-		payload, payloadErr := json.Marshal(guardPayload{
-			ToolName: call.pipedTool,
-			Input:    call.payloadInput(runDir),
-		})
+		input := call.payloadInput(runDir)
+
+		hook := guardPayload{ToolName: call.pipedTool, Input: input}
+		if call.command != "" {
+			hook.ToolInput = &input
+		}
+
+		payload, payloadErr := json.Marshal(hook)
 		if payloadErr != nil {
 			return state.fail("rendering the hook payload: %w", payloadErr)
 		}
@@ -217,10 +235,15 @@ func askGuard(state *State, _ []string) error {
 	return runEngine(state, guardCommand,
 		guardPolicyVar+"="+policy,
 		guardToolVar+"="+call.tool,
-		guardFilePathVar+"="+call.targetPath(runDir))
+		guardFilePathVar+"="+call.targetPath(runDir),
+		"CRUSH_TOOL_INPUT_COMMAND=")
 }
 
 func (c *guardCall) payloadInput(runDir string) guardPayloadInput {
+	if c.command != "" {
+		return guardPayloadInput{Command: c.command, WorkingDir: c.workingDir}
+	}
+
 	if c.pipedPath != "" {
 		return guardPayloadInput{Path: c.pipedPath}
 	}
@@ -248,7 +271,13 @@ func (c *guardCall) policy(runDir string) (string, error) {
 		readRoot = ""
 	}
 
-	encoded, err := json.Marshal(guardPolicy{ReadRoot: readRoot, WriteRoots: roots, AllowBash: c.shell})
+	policy := guardPolicy{ReadRoot: readRoot, WriteRoots: roots, AllowBash: c.shell}
+	if c.testCommand != "" {
+		policy.TestCommand, policy.TestSelector = c.testCommand, c.testSelector
+		policy.TestDir = filepath.Join(runDir, c.testDir)
+	}
+
+	encoded, err := json.Marshal(policy)
 	if err != nil {
 		return "", fmt.Errorf("encode policy: %w", err)
 	}
@@ -304,4 +333,19 @@ func assertGuardReason(state *State, args []string) error {
 // shellQuote wraps a word in single quotes for the prep phase's bash.
 func shellQuote(word string) string {
 	return "'" + strings.ReplaceAll(word, "'", `'\''`) + "'"
+}
+
+func grantTestCommand(state *State, args []string) error {
+	call := state.guard()
+	call.testCommand, call.testSelector, call.testDir = args[0], args[1], args[2]
+
+	return nil
+}
+
+func pipeShellCommand(state *State, args []string) error {
+	call := state.guard()
+	call.piped, call.pipedTool = true, "bash"
+	call.workingDir, call.command = args[0], args[1]
+
+	return nil
 }

@@ -554,6 +554,10 @@ architecture:
                 The JSON write policy `crush-guard` enforces: `read_root`, the
                 absolute project working directory for local reads, the
                 turn's `write_roots` and whether it may run bash (`allow_bash`).
+                Only build code --fix's apply turn adds `test_command`,
+                `test_selector` and `test_dir`; allow_bash stays false.
+                Its generated allowed_tools additionally include bash,
+                job_output and job_kill. Other turns' tools stay unchanged.
             notes:
               - >-
                 crush has no permission gate of its own and runs a tool when its
@@ -1218,8 +1222,15 @@ architecture:
         may read only inside `read_root`, resolving symbolic links on both
         sides and comparing whole path components. Relative reads start at
         that root; reads naming no path are allowed to use the project.
-        `sourcegraph`, `fetch` and the `context7` MCP tools remain allowed; `bash` is allowed only when the policy allows the shell; the
-        file tools `edit`, `write`, `multiedit`, `patch`, `create` and
+        `sourcegraph`, `fetch` and the `context7` MCP tools remain allowed.
+        Bash requires general shell permission or an exact test-command match:
+        the canonical command alone, or that command followed by one space,
+        test_selector, one space and a nonempty single-quoted selection without
+        a single quote, newline or NUL. Its directory must resolve to test_dir,
+        resolving symbolic links on both sides and relative paths against
+        read_root; an absent directory means read_root. Every denied bash
+        reports both allowed forms. Job_output and job_kill require test_command.
+        The file tools `edit`, `write`, `multiedit`, `patch`, `create` and
         `download` are allowed only for an absolute target inside a write
         root, with symbolic links resolved on both sides (through the deepest
         part of the path that exists) and whole path components compared;
@@ -1245,12 +1256,24 @@ architecture:
         globs, each cut at its first wildcard and made absolute against the
         project root, and from whether the turn may run the shell. Every engine
         execution mode disallows `Bash`, so its own crush turns always set
-        `allow_bash` to false. A relative `read_root` is malformed and refused.
+        `allow_bash` to false. Only build code --fix's apply mode carries
+        `test_command`, `test_selector` and `test_dir`, consumed only by crush.
+        SplitCommand splits the declared replay, removes the framework's
+        machine-output flag (json from a reporter list, preserving other reporters),
+        and joins argv with one space. Arguments matching A-Za-z0-9_./:=,@%+-
+        stay unquoted; all others are single-quoted. Any argument containing a
+        single quote, newline or NUL withholds the grant and logs one warning
+        with its reason. Selectors are -run for go-test, --testNamePattern for
+        jest and --grep for playwright. Test_dir is the absolute directory of
+        testing.config, else the project root, as for the engine runner.
+        Claude and codex apply turns keep their existing permissions.
+        A relative `read_root` is malformed and refused.
       observed_by: >-
         Built by the Given steps for the When step: `read_root` is the run
         directory, and each write-under step adds
         the quoted directory joined to the run directory, the shell step sets
-        `allow_bash`, and with neither the policy allows project reads only. The
+        `allow_bash`, and the test-command step sets the three test fields.
+        With neither the policy allows project reads only. The
         no-read-root step sets `read_root` to an empty string. The
         no-policy step leaves the variable blank, which the guard reads as
         unset, and the unreadable step sets it to text that is not JSON.
@@ -1259,7 +1282,8 @@ architecture:
       technical: >-
         The tool's name in `CRUSH_TOOL_NAME` and its target file in
         `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
-        a blank or unset variable names nothing.
+        a blank or unset variable names nothing. CRUSH_TOOL_INPUT_COMMAND supplies
+        the shell command before the payload fallback.
       observed_by: >-
         The When step sets both variables and the write policy every time,
         blank where no Given step named them, so nothing the test process
@@ -1270,14 +1294,17 @@ architecture:
       technical: >-
         The JSON crush pipes to a hook's stdin. The guard reads its
         `tool_name` for a blank tool name, and its `input.file_path`, else
-        `input.path`, for a blank target; an empty or unparseable payload
-        names nothing.
+        `input.path`, for a blank target; `tool_input` is also accepted.
+        The same input's command supplies a blank CRUSH_TOOL_INPUT_COMMAND;
+        working_dir supplies the shell directory. An empty or unparseable
+        payload names nothing.
       observed_by: >-
         The When step writes `{"tool_name": <tool>, "input": {"file_path":
         <the file joined to the run directory>}}` to the guard's stdin; with
         no payload step the guard's stdin is empty. The path payload step instead
         writes `input.path` exactly as quoted, without joining it to the run
-        directory.
+        directory. The shell-command step writes tool_input.command and
+        tool_input.working_dir as written with tool_name bash.
 
     - term: symbolic link
       technical: >-

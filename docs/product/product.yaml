@@ -362,8 +362,11 @@ glossary:
       policy, and gives a reason for a denial. It denies whatever it cannot
       decide. It confines the five local read tools (`view`, `ls`, `grep`,
       `glob`, `diagnostics`) to the project and writes to the granted roots.
-      Network readers keep their own allowance. The engine's own turns
-      never receive a shell grant.
+      Network readers keep their own allowance. Only the crush apply turn of
+      build code --fix may run the declared replay command, whole or with one
+      single-quoted selection, in the suite's directory. No other engine turn
+      receives a test command. Job output and job cancellation are allowed only
+      with that grant. General shell permission stays false.
 
   - term: write policy
     means: >-
@@ -374,7 +377,18 @@ glossary:
       project. It also names the directories it may write under, none for
       a turn that only reads,
       and whether it may run shell commands, which could read or write
-      anywhere. The engine never grants the shell to its own crush turns.
+      anywhere. The engine keeps that general permission false. For build code
+      --fix's crush apply turn it additionally carries the canonical replay
+      command without machine output, the framework's selector flag, and the
+      absolute suite directory. Canonical arguments use one space between them;
+      only A-Za-z0-9_./:=,@%+- remain unquoted, all others are single-quoted.
+      A single quote, newline or NUL in an argument withholds the grant and
+      logs one warning. The two allowed forms match byte for byte: the command
+      alone, or the command plus one selector and a nonempty single-quoted value
+      containing no single quote, newline or NUL. Symbolic links resolve in the
+      working directory, relative to the read root when relative or absent.
+      Running tests executes the writer's code with the machine's permissions;
+      this grant restricts shell use, not deliberately written test-time code.
       The engine derives it from what the command lets that turn change
       and hands it to crush with the turn.
 
@@ -383,12 +397,13 @@ glossary:
       One tool crush wants to run during a turn: the tool's name, such as
       `view` to read a file, `write` or `edit` to change one, or `bash` to
       run a shell command, and, for a tool that works on a file, that
-      file's path.
+      file's path. A shell call also names its command and working directory.
 
   - term: hook payload
     means: >-
       The description of a tool call that crush writes to the write
-      guard's standard input, naming the tool and the file it targets. The
+      guard's standard input, naming the tool and the file it targets, or the
+      command and working directory for a shell call. The
       guard reads it for whatever crush did not otherwise name.
 
   - term: symbolic link
@@ -894,3 +909,17 @@ catalogue:
       A missing file, several matching files or an invalid pattern fails
       the step, even when the expected count is zero.
     terms: [project tree, glob, pattern, template]
+
+  - template: 'crush''s write policy grants the test command "{command}" with selector "{flag}" in "{dir}"'
+    block: given
+    means: >-
+      The policy carries the quoted canonical command, selector flag and suite
+      directory joined to the project tree, keeping general shell permission false.
+    terms: [crush, write policy, project tree]
+
+  - template: 'crush pipes a shell call in directory "{dir}" with command {command:pattern}'
+    block: given
+    means: >-
+      The hook payload names bash with the exact command text and working
+      directory as written. The command may itself contain quotes.
+    terms: [crush, hook payload, tool call, pattern]

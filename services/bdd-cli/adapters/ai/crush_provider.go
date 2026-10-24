@@ -193,7 +193,9 @@ func crushAllowedTools(mode ExecutionMode) []string {
 		allowed = append(allowed, crushFileTools()...)
 	}
 
-	if mode.AllowsBash() {
+	if mode.TestCommand != nil && mode.TestCommand.Command != "" {
+		allowed = append(allowed, "bash", "job_output", "job_kill")
+	} else if mode.AllowsBash() {
 		allowed = append(allowed, "bash")
 	}
 

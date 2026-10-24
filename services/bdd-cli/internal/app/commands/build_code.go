@@ -47,7 +47,7 @@ func RunBuildCode(
 	fix bool,
 ) error {
 	tmpDir := deps.RunDir.GetTmpOutPath()
-	execution := newBuildCodeExecution(deps, architectureFile)
+	execution := newBuildCodeExecution(deps, architectureFile, fix)
 
 	err := runner.Run(ctx, runner.Spec[*testrunner.FailingTest]{
 		Name:          "build code",
@@ -84,7 +84,10 @@ func RunBuildCode(
 func loadFailingTests(
 	deps BuildCodeDeps,
 	architectureFile string,
+	fix bool,
 ) func(ctx context.Context) ([]*testrunner.FailingTest, error) {
+	configured := false
+
 	return func(ctx context.Context) ([]*testrunner.FailingTest, error) {
 		arch, err := architecture.Load(architectureFile)
 		if err != nil {
@@ -100,6 +103,12 @@ func loadFailingTests(
 		// so "edits production source, never tests" is enforced by the same
 		// document that defines where production source lives.
 		deps.BuildCodeFixApplier.UseWriteRoots(servicePaths(arch.Services))
+
+		if fix && !configured {
+			configureReplayGrant(deps.BuildCodeFixApplier, arch.Testing)
+
+			configured = true
+		}
 
 		failures, err := walkSuites(ctx, deps.TestRunnerDispatcher, arch)
 		if err != nil {

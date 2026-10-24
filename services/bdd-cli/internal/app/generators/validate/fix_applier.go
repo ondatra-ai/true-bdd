@@ -45,6 +45,7 @@ type ApplyParams struct {
 
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
+	testCommand  *provider.TestCommand
 	aiClient     ports.AIPort
 	config       *config.ViperConfig
 	models       *provider.Registry
@@ -105,6 +106,11 @@ func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
 }
 
+// UseTestCommand grants only the crush applier the declared replay command.
+func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
+	a.testCommand = command
+}
+
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
 // The caller is responsible for parsing the returned content into the appropriate type.
 func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, error) {
@@ -147,6 +153,10 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	model, err := a.models.ResolveRole(provider.RoleApply, params.ModelTier)
 	if err != nil {
 		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
+	}
+
+	if model.CLI == provider.CLICrush {
+		mode.TestCommand = a.testCommand
 	}
 
 	response, err := a.aiClient.ExecutePromptWithSystem(

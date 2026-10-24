@@ -41,9 +41,9 @@ func runCrushGuard(stdin io.Reader, stderr io.Writer) {
 		denyCrushTool(stderr, "true-bdd guard: "+err.Error())
 	}
 
-	toolName, targetPath := crushToolCall(stdin)
+	call := crushToolCall(stdin)
 
-	allowed, reason := policy.Decide(toolName, targetPath)
+	allowed, reason := policy.DecideCall(call)
 	if !allowed {
 		denyCrushTool(stderr, "true-bdd guard: "+reason)
 	}
@@ -60,38 +60,50 @@ func denyCrushTool(stderr io.Writer, reason string) {
 // stdin. Environment variables are the primary channel; this is the
 // fallback for the fields they omit.
 type crushHookPayload struct {
-	ToolName string `json:"tool_name"`
-	Input    struct {
-		FilePath string `json:"file_path"`
-		Path     string `json:"path"`
-	} `json:"input"`
+	ToolName  string         `json:"tool_name"`
+	Input     crushHookInput `json:"input"`
+	ToolInput crushHookInput `json:"tool_input"`
 }
 
-// crushToolCall reads the tool name and target path, preferring the
-// environment variables and falling back to the stdin payload.
-func crushToolCall(stdin io.Reader) (string, string) {
-	toolName := strings.TrimSpace(os.Getenv(ai.CrushToolNameEnvVar))
-	targetPath := os.Getenv(ai.CrushToolFilePathEnvVar)
+type crushHookInput struct {
+	FilePath   string `json:"file_path"`
+	Path       string `json:"path"`
+	Command    string `json:"command"`
+	WorkingDir string `json:"working_dir"`
+}
 
-	if toolName != "" && strings.TrimSpace(targetPath) != "" {
-		return toolName, targetPath
-	}
-
+// crushToolCall reads environment fields first, then the hook payload.
+func crushToolCall(stdin io.Reader) ai.CrushToolCall {
 	payload := decodeCrushHookPayload(stdin)
 
-	if toolName == "" {
-		toolName = payload.ToolName
+	input := payload.ToolInput
+	if input == (crushHookInput{}) {
+		input = payload.Input
 	}
 
-	if strings.TrimSpace(targetPath) == "" {
-		targetPath = payload.Input.FilePath
+	call := ai.CrushToolCall{
+		Name:       strings.TrimSpace(os.Getenv(ai.CrushToolNameEnvVar)),
+		TargetPath: os.Getenv(ai.CrushToolFilePathEnvVar),
+		Command:    os.Getenv("CRUSH_TOOL_INPUT_COMMAND"),
+		WorkingDir: input.WorkingDir,
+	}
+	if call.Name == "" {
+		call.Name = payload.ToolName
 	}
 
-	if strings.TrimSpace(targetPath) == "" {
-		targetPath = payload.Input.Path
+	if strings.TrimSpace(call.TargetPath) == "" {
+		call.TargetPath = input.FilePath
 	}
 
-	return toolName, targetPath
+	if strings.TrimSpace(call.TargetPath) == "" {
+		call.TargetPath = input.Path
+	}
+
+	if call.Command == "" {
+		call.Command = input.Command
+	}
+
+	return call
 }
 
 // decodeCrushHookPayload best-effort parses the stdin payload. A

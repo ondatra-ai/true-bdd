@@ -592,6 +592,8 @@ func TestScenCheckFix001UnmatchedStepGetsPhrase(t *testing.T) {
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
 	s.And(`the file "docs/product/product.yaml" matches the service answers within`)
 	s.And(`the engine dispatched 3 AI turns`)
+	s.And(`every file matching "tmp/*/crush-config-*/crush.json" does not match "bash"`)
+	s.And(`every file matching "tmp/*/crush-config-*/crush.json" does not match "job_output"`)
 	s.Done()
 }
 

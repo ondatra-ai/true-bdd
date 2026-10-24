@@ -17,10 +17,10 @@ type buildCodeExecution struct {
 	verdicts   map[*testrunner.FailingTest]int
 }
 
-func newBuildCodeExecution(deps BuildCodeDeps, architectureFile string) *buildCodeExecution {
+func newBuildCodeExecution(deps BuildCodeDeps, architectureFile string, fix bool) *buildCodeExecution {
 	return &buildCodeExecution{
 		deps:     deps,
-		load:     loadFailingTests(deps, architectureFile),
+		load:     loadFailingTests(deps, architectureFile, fix),
 		verdicts: make(map[*testrunner.FailingTest]int),
 	}
 }

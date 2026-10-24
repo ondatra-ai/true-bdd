@@ -18,6 +18,8 @@ type ExecutionMode struct {
 	// writing (set only by GetSourceEditMode). Kept apart from AllowedTools:
 	// codex has no sandbox level between scratch-only and the whole workspace, so merging them would over-grant it.
 	SourceWriteRoots []string
+	// TestCommand is a restricted replay grant consumed only by crush.
+	TestCommand *TestCommand
 }
 
 // GrantsSourceWrites reports whether this mode opens any project tree
