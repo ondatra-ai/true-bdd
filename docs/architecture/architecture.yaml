@@ -463,7 +463,7 @@ architecture:
         WriteRoots: >-
           Every architecture service path, in declaration order.
         TestCommand: >-
-          Only a crush writer gets the configured canonical replay grant; nil for other providers or an unrepresentable command.
+          Only a crush or explicitly requested Claude build-code writer gets the configured canonical replay grant; nil for codex or an unrepresentable command. The explicit Claude writer selects foreground wording after rendering; crush rendering stays byte-identical.
         TestCommand.Command: >-
           Canonical replay command without machine-output flags, per ADR-0018.
         TestCommand.Selector: >-
@@ -738,11 +738,12 @@ architecture:
               - --setting-sources
               - ""
               - --strict-mcp-config
-              - --safe-mode
-              - --allowedTools
-              - "{allowed_tools}"
-              - --disallowed-tools
-              - "{disallowed_tools}"
+              - when: Every Claude turn except the build-code writer.
+                args: [--safe-mode, --allowedTools, "{allowed_tools}", --disallowed-tools, "{disallowed_tools}"]
+              - when: Only the explicitly requested build-code writer.
+                args: [--restricted, --disable-slash-commands, --tools, "Read,Glob,Grep,Edit,Write,MultiEdit,Bash", --settings, "{writer_settings}", --session-id, "{session_id}"]
+              - when: Each extra read root of the build-code writer, in order.
+                args: [--add-dir, "{read_root}"]
               - --model
               - "{model}"
               - when: >-
@@ -750,7 +751,7 @@ architecture:
                   turn's is.
                 args: [--system-prompt, "{system_prompt}"]
               - --permission-mode
-              - acceptEdits
+              - "{permission_mode}"
               - --output-format
               - stream-json
               - --verbose
@@ -764,6 +765,23 @@ architecture:
             # Safe mode excludes discovered CLAUDE.md memory, skills, plugins and hooks.
             # Auth and built-in tools remain; --bare would require API-key auth.
             values:
+              permission_mode: default for the build-code Claude writer; acceptEdits otherwise.
+              writer_settings: >-
+                {run_dir}/{label}-claude-config/settings.json. Explicit PreToolUse
+                hook runs this engine's claude-guard --policy pointing to sibling
+                policy.json, with replay (the canonical command/write-root
+                policy), read_roots, excluded_roots and protected_roots (the
+                generated configuration directory). Permissions allow Read/Glob/Grep, deny Agent/Task,
+                WebFetch/WebSearch/NotebookEdit, and never grant Bash patterns.
+                Bash and writes require the hook's explicit allow. Both Bash
+                timeouts are 600000 ms in settings and environment.
+              session_id: A fresh UUID for this writer only.
+              read_root: >-
+                go env GOROOT, GOMODCACHE, then this session's tool-results
+                directory under CLAUDE_CONFIG_DIR/projects (default ~/.claude).
+                The host cwd is always a working root. The hook denies
+                github.com/ondatra-ai and cache/download/github.com/ondatra-ai
+                outside the host even though the module cache is a working root.
               allowed_tools: >-
                 The turn's allowed tools joined by commas. A validation or fix
                 turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
@@ -831,13 +849,20 @@ architecture:
               CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
             notes:
               - >-
+                Only the build-code writer adds or strips these environment entries:
+                BASH_DEFAULT_TIMEOUT_MS/BASH_MAX_TIMEOUT_MS=600000;
+                CLAUDE_CODE_DISABLE_CLAUDE_MDS, DISABLE_AUTO_MEMORY,
+                DISABLE_BUNDLED_SKILLS, DISABLE_WORKFLOWS,
+                DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL, DISABLE_PLUGIN_FORWARDING,
+                DISABLE_BACKGROUND_TASKS each use the CLAUDE_CODE_ prefix and value 1.
+                CLAUDE_CODE_SAFE_MODE, CLAUDE_CODE_SIMPLE and inherited
+                CLAUDE_RELAUNCH_SESSION_ADD_DIRS are stripped.
+              - >-
                 No stdin: the prompts travel in argv. `CLAUDECODE` is removed
                 from the inherited environment, so the turn does not look
                 launched from a Claude session.
               - >-
-                `--setting-sources project` keeps user-scope settings (an
-                operator's advisor model, plugins) out while the project's own
-                settings still apply; `--strict-mcp-config` loads no MCP
+                `--setting-sources ""` excludes user, project and local settings; `--strict-mcp-config` loads no MCP
                 server, since the command line names none. The advisor is a
                 server-side tool `--disallowed-tools` cannot reach, so only
                 the environment entry turns it off.
@@ -849,7 +874,13 @@ architecture:
                 `structured_output` object when the turn carried a schema,
                 else its text. A schema turn whose result holds no object, or
                 a non-zero exit, fails the turn, and the turn is bounded by
-                the router's 20 minutes.
+                the router's 20 minutes, except the explicit build-code writer.
+                That writer runs with the caller's context and its own process
+                group without a router deadline. Non-zero exits, is_error or
+                api_error_status >=400 results, assistant error records, absent
+                envelopes and empty answers are started outcomes; available cost
+                and usage survive errors. Start failures and pre-spawn refusals
+                stay fatal. Other roles retain fatal provider-error handling.
 
   # How each product word the catalogue declares is built and observed, in
   # words naming no code identifier, so the steps can be rebuilt from it.
@@ -1055,7 +1086,7 @@ architecture:
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles and other providers' failures stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles and codex failures stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush/Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads
@@ -1300,6 +1331,29 @@ architecture:
         status other than the quoted one, printing the shell command's stdout
         and stderr.
 
+    - term: claude
+      technical: >-
+        Claude Code 2.1.285. The build-code applier alone explicitly requests
+        an isolated unbounded writer. Generated --settings declares a PreToolUse
+        hook for every exposed tool, invoking this binary's claude-guard with
+        --policy pointing to generated JSON. It emits an explicit allow decision
+        or exits 2 with a reason; Bash is never permission-pattern granted.
+        --restricted confines file tools to cwd and --add-dir roots, resolving
+        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and excludes module-cache
+        ondatra-ai copies, with the host taking precedence. Search roots outside
+        the host must not contain any excluded directory; Glob checks its
+        pattern's fixed root too and denies parent traversal. Read roots are the
+        host, go env GOROOT/GOMODCACHE, and only this session's tool-results
+        directory. The generated session UUID makes historical transcripts
+        inaccessible. The default sign-in is retained: an empty CLAUDE_CONFIG_DIR
+        was signed out in the live probe. No credentials are copied.
+      observed_by: >-
+        Hook Scenarios pass cwd, tool_input.command and run_in_background on
+        stdin and a policy file under scratch, without running Claude. Writer
+        Scenarios pin Sonnet 5.5, run a granted selection and assert the engine's
+        rerun, edits, exit and once-only failure warning. The recording wrapper
+        runs real Claude unchanged before injecting a non-zero exit.
+
     - term: crush
       technical: >-
         The `crush` CLI the engine spawns for a turn whose tier names it (the
@@ -1315,7 +1369,10 @@ architecture:
 
     - term: write guard
       technical: >-
-        The engine binary's hidden `crush-guard` subcommand, run with no
+        For the Claude writer, claude-guard --policy reads generated JSON and
+        the complete Claude payload, applying the restrictions in the claude
+        mapping above; an explicit hook allow object grants execution.
+        For crush, the engine binary's hidden `crush-guard` subcommand runs with no
         arguments. It reads the write policy, then the tool call, and exits 0
         to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
         stderr for a denial. A missing or unreadable policy, or a readable
@@ -1360,7 +1417,7 @@ architecture:
         project root, and from whether the turn may run the shell. Every engine
         execution mode disallows `Bash`, so its own crush turns always set
         `allow_bash` to false. Only build code --fix's apply mode carries
-        `test_command`, `test_selector` and `test_dir`, consumed only by crush.
+        `test_command`, `test_selector` and `test_dir`, consumed by crush or the explicitly requested Claude writer. Claude wraps this replay policy with extra read and exclusion roots in its generated policy file.
         SplitCommand splits the declared replay, removes the framework's
         machine-output flag only before -args for go-test or a bare -- for
         jest and playwright (json from a reporter list, preserving other reporters),
@@ -1372,7 +1429,7 @@ architecture:
         with its reason. Selectors are -run for go-test, --testNamePattern for
         jest and --grep for playwright. Test_dir is the absolute directory of
         testing.config, else the project root, as for the engine runner.
-        Claude and codex apply turns keep their existing permissions.
+        Other Claude turns and codex apply turns keep their existing permissions.
         A relative `read_root` is malformed and refused.
       observed_by: >-
         Built by the Given steps for the When step: `read_root` is the run
@@ -1386,7 +1443,7 @@ architecture:
 
     - term: tool call
       technical: >-
-        The tool's name in `CRUSH_TOOL_NAME` and its target file in
+        For Claude the tool call is tool_name and tool_input in the payload, with cwd supplying the Bash directory and run_in_background denied. For crush, the tool's name is in `CRUSH_TOOL_NAME` and its target file in
         `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
         a blank or unset variable names nothing. CRUSH_TOOL_INPUT_COMMAND supplies
         the shell command before the payload fallback.

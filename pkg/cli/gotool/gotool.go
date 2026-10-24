@@ -11,6 +11,7 @@ package gotool
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
@@ -86,4 +87,18 @@ func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
 	}
 
 	return nil
+}
+
+// ReadRoots asks the installed Go toolchain for its tool and module directories.
+func ReadRoots(ctx context.Context, dir string) ([]string, error) {
+	result, err := shell.Run(ctx, []string{Bin, "env", "GOROOT", "GOMODCACHE"}, shell.Options{Dir: dir})
+	if err != nil {
+		return nil, fmt.Errorf("locating Go read roots: %w", err)
+	}
+
+	if result.Code != 0 {
+		return nil, fmt.Errorf("locating Go read roots: %w", result.Err())
+	}
+
+	return strings.Split(strings.TrimSpace(result.Stdout), "\n"), nil
 }

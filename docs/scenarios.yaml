@@ -5573,3 +5573,142 @@ scenarios:
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  build-code-claude-001-selection:
+    description: Claude hook allows selection
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-001-selection
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "claude-guard-selection" project tree
+      - claude's write policy grants the test command "go test ./..." with selector
+        "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+        -run '^TestOne$'
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  build-code-claude-002-noncanonical:
+    description: Claude hook denies noncanonical
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-002-noncanonical
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "claude-guard-noncanonical" project tree
+      - claude's write policy grants the test command "go test ./..." with selector
+        "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...;
+        pwd
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms:'
+  build-code-claude-003-background:
+    description: Claude hook denies background
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-003-background
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "claude-guard-background" project tree
+      - claude's write policy grants the test command "go test ./..." with selector
+        "-run" in "."
+      - claude pipes a "background" shell call in directory "." with command go test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - the guard's reason matches background commands are denied
+  build-code-claude-004-directory:
+    description: Claude hook denies directory
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-004-directory
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "claude-guard-directory" project tree
+      - claude's write policy grants the test command "go test ./..." with selector
+        "-run" in "."
+      - claude pipes a "foreground" shell call in directory "../other" with command go
+        test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms:'
+  build-code-claude-005-replay:
+    description: A Claude writer runs a granted selection and the engine reruns the
+      set to convergence
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-005-replay
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "build-code-claude-replay" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "claude"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/calc.go" is modified
+      - the file "tests/suite/calc_test.go" is unchanged
+      - stdout matches BUILD CODE COMPLETE
+      - every file matching "tmp/*/*apply*user.txt" matches go test -count=1 ./tests/suite/\.\.\.
+        -run
+      - the file "tmp/true-bdd.log.json" matches Bash
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
+        with code 0
+    timeout: 15m
+  build-code-claude-006-failure:
+    description: A Claude writer keeps its repair after a started failure and the engine
+      reruns the set to convergence
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-006-failure
+      merge_date: '2026-10-24'
+    merged_steps:
+      given:
+      - the "build-code-claude-failure" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "claude"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/calc.go" is modified
+      - the file "tests/suite/calc_test.go" is unchanged
+      - stdout matches BUILD CODE COMPLETE
+      - every file matching "tmp/*/*apply*user.txt" matches go test -count=1 ./tests/suite/\.\.\.
+        -run
+      - the file "tmp/true-bdd.log.json" matches Bash
+      - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer
+        turn failed"
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
+        with code 0
+    timeout: 15m

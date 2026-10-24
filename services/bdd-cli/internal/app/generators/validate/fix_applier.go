@@ -20,8 +20,9 @@ import (
 
 // FixApplierData represents data needed for fix applier templates.
 type FixApplierData struct {
-	WriteRoots  []string
-	TestCommand *provider.TestCommand
+	ClaudeWriter bool
+	WriteRoots   []string
+	TestCommand  *provider.TestCommand
 
 	Subject    any    // Current subject to modify (e.g., *story.Story or *ScenarioApplyData)
 	SubjectID  string // Subject identifier
@@ -34,12 +35,14 @@ type FixApplierData struct {
 
 // ApplyParams contains the parameters for one fix application.
 type ApplyParams struct {
-	Subject   any    // Current subject to modify
-	SubjectID string // Subject identifier
-	FixPrompt string // The concrete fix prompt to apply
-	Check     string // The failed `D:` check's name; "" for a `Q:` prompt
-	TmpDir    string // Run artifact directory
-	Iteration int    // 1-based apply counter, for file naming
+	// ClaudeWriter requests build code's confined, unbounded Claude applier.
+	ClaudeWriter bool
+	Subject      any    // Current subject to modify
+	SubjectID    string // Subject identifier
+	FixPrompt    string // The concrete fix prompt to apply
+	Check        string // The failed `D:` check's name; "" for a `Q:` prompt
+	TmpDir       string // Run artifact directory
+	Iteration    int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
 	// evaluator while the prompt was in scope and carried here on the
 	// failed check; empty means engine.default_apply_model.
@@ -111,7 +114,7 @@ func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
 }
 
-// UseTestCommand grants only the crush applier the declared replay command.
+// UseTestCommand grants the declared replay to crush and the explicit Claude writer.
 func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
 	a.testCommand = command
 }
@@ -134,34 +137,22 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		return "", pkgerrors.ErrResolveModelTierFailed("fix application", err)
 	}
 
-	promptData := FixApplierData{
-		WriteRoots: a.writeRoots,
-		Subject:    params.Subject,
-		SubjectID:  params.SubjectID,
-		FixPrompt:  params.FixPrompt,
-		ResultPath: resultPath,
-		Check:      params.Check,
-	}
+	promptData := a.writerData(params, model, resultPath)
 
-	if model.CLI == provider.CLICrush {
-		promptData.TestCommand = a.testCommand
-	}
-
-	systemPrompt, err := a.systemLoader.LoadTemplate(promptData)
+	systemPrompt, userPrompt, err := a.writerPrompts(promptData)
 	if err != nil {
-		return "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
-	}
-
-	userPrompt, err := a.userLoader.LoadTemplate(promptData)
-	if err != nil {
-		return "", pkgerrors.ErrLoadChecklistUserPromptFailed(err)
+		return "", err
 	}
 
 	// Save prompts for debugging
 	a.savePromptFile(params.SubjectID, params.Iteration, "system", systemPrompt)
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
-	response, err := a.execute(ctx, model, systemPrompt, userPrompt, params.WatchWriterResponse)
+	turnOptions := provider.TurnOptions{
+		WatchWriterResponse: params.WatchWriterResponse, ClaudeWriter: params.ClaudeWriter,
+	}
+
+	response, err := a.execute(ctx, model, systemPrompt, userPrompt, turnOptions)
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
@@ -304,19 +295,56 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 }
 
 func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
-	watch bool) (string, error) {
+	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
-	options := provider.TurnOptions{}
 
+	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude
+	if options.ClaudeWriter {
+		mode.TestCommand = a.testCommand
+	}
+
+	options.WatchWriterResponse = options.WatchWriterResponse && model.CLI == provider.CLICrush
 	if model.CLI == provider.CLICrush {
 		mode.TestCommand = a.testCommand
-		options.WatchWriterResponse = watch
 	}
 
 	return a.aiClient.ExecutePromptWithSystem(
-		// No result schema: this repo routes every apply turn to crush,
-		// which cannot enforce one (adapters/ai.SupportsResultSchema).
+		// Confirmation markers, rather than a schema, carry every apply result.
 		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
 		options,
 	)
+}
+
+func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, resultPath string) FixApplierData {
+	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
+		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
+		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter}
+	if model.CLI == provider.CLICrush || data.ClaudeWriter {
+		data.TestCommand = a.testCommand
+	}
+
+	return data
+}
+
+func (a *FixApplier) writerPrompts(data FixApplierData) (string, string, error) {
+	system, err := a.systemLoader.LoadTemplate(data)
+	if err != nil {
+		return "", "", pkgerrors.ErrLoadChecklistSystemPromptFailed(err)
+	}
+
+	user, err := a.userLoader.LoadTemplate(data)
+	if err != nil {
+		return "", "", pkgerrors.ErrLoadChecklistUserPromptFailed(err)
+	}
+
+	if data.ClaudeWriter {
+		const (
+			crushWait  = "Keep the command in the foreground; if the tool returns a job id, use job_output to read completion."
+			claudeWait = "Run in the foreground and wait for completion. Background commands are denied."
+		)
+
+		user = strings.ReplaceAll(user, crushWait, claudeWait)
+	}
+
+	return system, user, nil
 }

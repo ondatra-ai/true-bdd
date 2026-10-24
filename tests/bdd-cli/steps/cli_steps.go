@@ -102,6 +102,7 @@ func Register(suite *bddgo.Suite[State]) {
 	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+|no)$`, assertCommandExitCode)
 	// crush, not a role, runs the write guard. See crush_guard_steps.go.
 	registerCrushGuardSteps(suite)
+	registerClaudeGuardSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own

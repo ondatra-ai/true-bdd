@@ -12,6 +12,13 @@ func recoverWriterFailure(enabled bool, err error) bool {
 		return false
 	}
 
+	var claudeFailure *pkgerrors.ClaudeTurnError
+	if errors.As(err, &claudeFailure) {
+		slog.Warn("Writer turn failed", "outcome", claudeFailure.Outcome, "error", err)
+
+		return true
+	}
+
 	var failure *pkgerrors.CrushTurnError
 	if errors.As(err, &failure) {
 		if failure.Outcome != pkgerrors.CrushTurnStalled {

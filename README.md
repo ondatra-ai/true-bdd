@@ -91,7 +91,7 @@ until those tests pass.
 | `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
 | `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. After each definition fix, it runs the bound Scenarios in every changed step package, including Scenarios that already bound every step, through `architecture.testing.commands.replay` with a Go test name filter. A selected Scenario must pass in its owning Go package; a same-named test elsewhere cannot satisfy it. A Scenario that becomes unbound remains a failure. Runtime failures feed the step-authoring loop; a definition still failing at `config.max_apply_attempts` ends non-zero, naming the Scenario and step. `BUILD TESTS COMPLETE` follows successful execution and generated-file verification. The registry itself is never modified. |
-| `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service edit roots and crush's whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. A started crush writer that stalls, exits non-zero or answers empty also warns once, keeps its files and reruns the set; the next plan sees that rerun's failures and evidence. Start failures and engine refusals before spawning remain fatal, as do other roles' and providers' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
+| `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service edit roots and crush or Claude's whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. A started crush writer that stalls, exits non-zero or answers empty also warns once, keeps its files and reruns the set; the next plan sees that rerun's failures and evidence. Start failures and engine refusals before spawning remain fatal, as do other roles' and codex failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
 
 Every command accepts `--fix` for an interactive loop in which
@@ -373,7 +373,7 @@ engine's execution mode, and projected onto each CLI:
 | | `claude` | `crush` | `codex` |
 |---|---|---|---|
 | System prompt | native flag | prepended to the prompt | prepended to the prompt |
-| Write gate | `--allowedTools` | generated `PreToolUse` hook | `-s read-only` / `workspace-write` |
+| Write gate | `--allowedTools`; generated hook for the build-code writer | generated `PreToolUse` hook | `-s read-only` / `workspace-write` |
 
 `crush run` has no permission gate of its own, so the engine generates a
 per-run config (pointed at via `CRUSH_GLOBAL_CONFIG`, leaving any host
@@ -382,15 +382,14 @@ per-run config (pointed at via `CRUSH_GLOBAL_CONFIG`, leaving any host
 of its own. Hooks are additive, so a host config's own hooks run
 alongside it and a denial from either blocks the tool.
 
-Only `build code --fix`'s crush apply turn receives a test-command grant:
+Only `build code --fix`'s crush and Claude apply turns receive a test-command grant:
 the declared replay without its machine-output flag, alone or followed by
 the framework selector and a single-quoted nonempty selection. The guard
 matches those strings exactly and requires the suite's resolved directory.
 An argument containing a single quote, newline or NUL withholds the grant
 with one warning. Its generated tools include `bash`, `job_output` and
 `job_kill`, so a replay longer than a minute can finish in crush's background
-and be read back. General `allow_bash` remains false. Claude and codex
-permissions are unchanged. Tests execute the writer's code with the
+and be read back. General `allow_bash` remains false. Codex permissions are unchanged. Tests execute the writer's code with the
 machine's permissions; this restricts shell use, not that code's access.
 The default crush writer has no router deadline and stops with the command.
 Only a `build code --fix` crush apply watches its own
@@ -400,8 +399,24 @@ execution. A response open for ten minutes stops the process group and
 warns once with the turn label, minutes and log path. Tool execution is
 never timed; without a model record nothing is timed. This deliberate
 exception to unbounded AI turns is recorded in ADR-0020. No prompt,
-checklist or template states the bound. Claude retains its 20-minute bound,
-and claude and codex receive no test-command grant.
+checklist or template states the bound. Other Claude turns retain their 20-minute bound. Codex receives no test-command grant.
+
+For a Claude writer, use a tier bound to `claude:claude-sonnet-5-5` (native
+1M context on Claude Code 2.1.284 or later). The confined writer requires
+Claude Code 2.1.285's `--restricted` mode. It uses generated `--settings`
+instead of safe mode: only the engine's `PreToolUse` hook grants Bash, with
+ADR-0018's exact command check and background execution denied. Both Bash timeouts
+are 600,000 ms. The writer has no engine turn deadline; cancelling the command
+stops its process group. Its file tools reach the host root, installed Go
+toolchain/module cache except `github.com/ondatra-ai` copies outside the host,
+and only its own session's tool-result spill directory. Writes reach scratch
+and declared service roots. Searches outside the host reject ancestors of excluded module copies; Glob also checks its fixed pattern root and denies parent traversal. The host root always remains accessible, including
+when it lies under `~/work`. User/project memory, skills, installed plugins,
+commands, workflows and MCP remain disabled. Existing sign-in is used; a fresh
+`CLAUDE_CONFIG_DIR` was signed out in the live probe. No credentials are copied.
+A started Claude writer's non-zero exit, error result (rate/usage limits included)
+or empty answer preserves edits, warns once and reruns the set. Available cost
+and token counts are logged even on failure. Start failures remain fatal.
 
 Two crush behaviours the engine works around, both verified against the
 live CLI rather than assumed:

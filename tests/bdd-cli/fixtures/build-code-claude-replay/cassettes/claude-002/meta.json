@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--restricted",
+    "--disable-slash-commands",
+    "--tools",
+    "Read,Glob,Grep,Edit,Write,MultiEdit,Bash",
+    "--settings",
+    "tmp/{{RUN_DIR}}/claude-turn002-claude-config/settings.json",
+    "--session-id",
+    "{{CLAUDE_SESSION}}",
+    "--add-dir",
+    "/opt/homebrew/Cellar/go/1.27.1/libexec",
+    "--add-dir",
+    "{{HOME}}/go/pkg/mod",
+    "--add-dir",
+    "{{CLAUDE_SPILLS}}",
+    "--model",
+    "claude-sonnet-5-5",
+    "--system-prompt",
+    "You are the production writer for a controlled fixture. Change only services/calc/, never tests or documents. Follow the requested protocol and use Bash only for the granted replay.\n",
+    "--permission-mode",
+    "default",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "-p",
+    "## Required fixture protocol\nRead services/calc/calc.go. Change A to return 1 and B to return 2. Keep both functions and make no other service change. Never modify tests or documents.\nAfter the repair you MUST use Bash to run this exact foreground selection in {{CWD}}:\ngo test -count=1 ./tests/suite/... -run '^Test(A|B)$'\nWait for its passing result. Do not use any other command or background execution.\n\n# Repair plan for failing-set\n\n## Scope and write boundary\n\nThe architecture (`docs/architecture/architecture.yaml`) declares exactly one\nservice, `calc`, with `path: services/calc`. That path is the applier's only\nwrite root. The whole repair lands in **one file**:\n\n- `services/calc/calc.go` — the sole production file of the `calc` service.\n\nDo **not** touch, and do not even open with intent to modify:\n\n- `tests/suite/calc_test.go` (the executable specification)\n- `docs/architecture/architecture.yaml`\n- `true-bdd/**`, `templates/**`, `go.mod`, `CLAUDE.md`\n\nNo new files, no new packages, no new dependencies are needed. `go.mod`\n(`module fixture/buildcodefix`, `go 1.25.0`) already resolves the test's\nimport path `fixture/buildcodefix/services/calc` to the file above, so the\npackage name and location must stay exactly as they are.\n\n## What the tests demand (the contract)\n\nThe suite under `tests/suite/calc_test.go` is in package `suite_test` and\nimports `fixture/buildcodefix/services/calc`. It exercises two exported,\nzero-argument, `int`-returning functions:\n\n- `TestA` calls `calc.A()` and fails with `\"A needs one\"` unless the returned\n  value is exactly `1`.\n- `TestB` calls `calc.B()` and fails with `\"B needs two\"` unless the returned\n  value is exactly `2`.\n\nSo the contract for the `calc` package is:\n\n| Symbol | Signature             | Required result |\n| ------ | --------------------- | --------------- |\n| `A`    | `func A() int`        | `1`             |\n| `B`    | `func B() int`        | `2`             |\n\nBoth must remain exported (capital first letter) and keep the exact\n`func() int` shape — the tests call them with no arguments and compare the\nsingle return value against an untyped integer constant. Changing arity,\nadding a second return value (e.g. an `error`), renaming, or moving them to\nanother package would break compilation of the suite, which counts as a\nfailure just as surely as a wrong value.\n\n## Root cause\n\n`services/calc/calc.go` currently reads:\n\n```\npackage calc\n\nfunc A() int { return 0 }\nfunc B() int { return 0 }\n```\n\nBoth functions are placeholder stubs returning the zero value. This is a\nsingle defect class — \"the service's two accessors were never implemented\" —\nand it accounts for both failures in the set. There is no harness, wiring, or\ndiscovery problem: the `go test -json -count=1 ./tests/suite/...` command from\nthe architecture already discovers and runs both tests, and both reach their\nassertion and report a genuine value mismatch (`calc_test.go:10` and\n`calc_test.go:15`). The failure messages are the tests' own `t.Fatal` strings,\nnot build or import errors, which confirms the package resolves and compiles\ncorrectly today. Only the returned values are wrong.\n\n## Intended implementation\n\nIn `services/calc/calc.go`, keep the `package calc` declaration and the two\nexisting function declarations in place, and change each function body so it\nyields the value its test requires:\n\n1. **`A`** — must evaluate to the integer `1` for every call. Serves\n   `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`.\n2. **`B`** — must evaluate to the integer `2` for every call. Serves\n   `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`.\n\nThe functions take no input and have no observable state, so the correct\nimplementation is a direct constant return in each body — the simplest code\nthat satisfies the contract. Resist any temptation to add indirection:\nno package-level mutable variables, no `init()` function, no configuration\nlookup, no shared helper that both functions delegate to, no build tags. Each\nof those would add behaviour the specification does not ask for and would\ncreate a way for the value to drift at runtime. Two one-line function bodies\nare the whole fix.\n\nEqually, do not introduce a `calc.A`/`calc.B` wrapper layer or a second file\nin the package. One file, two edited return expressions.\n\nPreserve the file's existing style: `package calc` on the first line, the two\nfunctions in the current `A` then `B` order, standard `gofmt` formatting\n(tabs, single-line function bodies are fine and already match the file). After\nthe edit the file must still be `gofmt`-clean and must compile with\n`go vet ./...` producing no new findings.\n\n## Coverage map\n\n| Test in the failing set | Part of the repair that serves it |\n| ----------------------- | --------------------------------- |\n| `fixture/buildcodefix/tests/suite::TestA` | `A()` in `services/calc/calc.go` returning `1` |\n| `fixture/buildcodefix/tests/suite::TestB` | `B()` in `services/calc/calc.go` returning `2` |\n\nEvery test in the set is covered, and no part of the plan exists without a\ntest that needs it.\n\n## Verification\n\nRun the architecture's own replay command from the repository root:\n\n```\ngo test -json -count=1 ./tests/suite/...\n```\n\nExpect both `TestA` and `TestB` to report `PASS`. The `-count=1` flag already\ndefeats the test cache, so no cache clearing is required. A green run must be\nachieved with the assertions in `tests/suite/calc_test.go` byte-for-byte\nunchanged — confirm with `git diff --stat` that the only modified path is\n`services/calc/calc.go`. If `git diff` shows any test file, document, or\n`true-bdd/` path in the change set, the repair is wrong regardless of whether\nthe suite is green.\n\nEnd your final message with:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\napplied: true\ntarget: \"services/calc/calc.go\"\nsummary: \"Fixed A and B and ran the granted selection.\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 10613,
+  "request_hash": "sha256:e4832579892bab38d144f28b5289d87972c4599ab36520bc8851b5e65244b292",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-24T20:23:13Z"
+}

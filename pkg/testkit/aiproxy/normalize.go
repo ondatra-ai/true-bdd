@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -59,7 +60,7 @@ func replaceHome(text string) string {
 // normalizeArgv normalizes every argument for storage in meta.json.
 func normalizeArgv(argv []string, cwd string) []string {
 	out := make([]string, len(argv))
-	for i, arg := range argv {
+	for i, arg := range stableClaudeWriterArgs(argv) {
 		out[i] = normalizeText(arg, cwd)
 	}
 
@@ -72,7 +73,7 @@ func normalizeArgv(argv []string, cwd string) []string {
 func requestHash(argv []string, stdin []byte, cwd string) string {
 	hasher := sha256.New()
 
-	for _, arg := range argv {
+	for _, arg := range stableClaudeWriterArgs(argv) {
 		_, _ = hasher.Write([]byte(normalizeText(arg, cwd)))
 		_, _ = hasher.Write([]byte{0})
 	}
@@ -81,4 +82,28 @@ func requestHash(argv []string, stdin []byte, cwd string) string {
 	_, _ = hasher.Write([]byte(normalizeText(string(stdin), cwd)))
 
 	return "sha256:" + hex.EncodeToString(hasher.Sum(nil))
+}
+
+// Only the isolated writer supplies its own session and exact spill root.
+func stableClaudeWriterArgs(argv []string) []string {
+	if !slices.Contains(argv, "--restricted") {
+		return argv
+	}
+
+	index := slices.Index(argv, "--session-id")
+	if index < 0 || index+1 >= len(argv) {
+		return argv
+	}
+
+	session := argv[index+1]
+	result := slices.Clone(argv)
+
+	result[index+1] = "{{CLAUDE_SESSION}}"
+	for idx := 1; idx < len(result); idx++ {
+		if result[idx-1] == "--add-dir" && strings.HasSuffix(result[idx], "/"+session+"/tool-results") {
+			result[idx] = "{{CLAUDE_SPILLS}}"
+		}
+	}
+
+	return result
 }

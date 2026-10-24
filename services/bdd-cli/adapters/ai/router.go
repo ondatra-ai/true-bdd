@@ -71,12 +71,20 @@ func (r *Router) ExecutePromptWithSystem(
 		"user_length", len(userPrompt),
 	)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, aiPromptTimeout)
-	defer cancel()
+	writer := role == provider.RoleApply && model.CLI == provider.CLIClaude && len(options) > 0 && options[0].ClaudeWriter
+
+	turnCtx := ctx
+	if !writer {
+		bounded, cancel := context.WithTimeout(ctx, aiPromptTimeout)
+		defer cancel()
+
+		turnCtx = bounded
+	}
 
 	started := time.Now()
 
-	response, err := target.Execute(timeoutCtx, Request{
+	response, err := target.Execute(turnCtx, Request{
+		ClaudeWriter: writer,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		Model:        model.Model,

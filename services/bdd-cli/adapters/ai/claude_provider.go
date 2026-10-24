@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -33,14 +34,23 @@ func (c *ClaudeProvider) Name() string {
 func (c *ClaudeProvider) Execute(ctx context.Context, req Request) (string, error) {
 	c.logPromptExecution(req.SystemPrompt, req.UserPrompt)
 
-	answer, err := claude.RunStream(req.UserPrompt, c.options(ctx, req), logEvent)
+	answer, err := c.executeTurn(ctx, req)
+	logClaudeAnswer(req, answer, err)
+
 	if err != nil {
+		if req.ClaudeWriter {
+			return "", claudeWriterFailure(err)
+		}
+
 		return c.handleExecutionResult("", err)
 	}
 
-	logTurnUsage(answer)
-
 	payload := answerText(answer.Data)
+	if req.ClaudeWriter && strings.TrimSpace(payload) == "" {
+		return "", &pkgerrors.ClaudeTurnError{
+			Outcome: pkgerrors.ClaudeTurnEmptyOutput, Cause: pkgerrors.ErrProviderProducedNoOutput(c.Name()),
+		}
+	}
 
 	// A schema-constrained turn that came back without its object is an
 	// infrastructure failure; falling back to the narration would grade
@@ -187,4 +197,44 @@ func (c *ClaudeProvider) handleExecutionResult(resultStr string, err error) (str
 	slog.Info("Claude returned result", "length", len(resultStr))
 
 	return resultStr, nil
+}
+
+func claudeWriterFailure(err error) error {
+	var started *claude.StartedTurnError
+	if !errors.As(err, &started) {
+		return pkgerrors.ErrProviderExecutionFailed("claude", err)
+	}
+
+	outcomes := map[claude.TurnOutcome]pkgerrors.ClaudeTurnOutcome{
+		claude.TurnNonZeroExit: pkgerrors.ClaudeTurnNonZeroExit,
+		claude.TurnErrorResult: pkgerrors.ClaudeTurnErrorResult,
+		claude.TurnEmptyOutput: pkgerrors.ClaudeTurnEmptyOutput,
+	}
+
+	return &pkgerrors.ClaudeTurnError{Outcome: outcomes[started.Outcome], Cause: err}
+}
+
+func (c *ClaudeProvider) executeTurn(ctx context.Context, req Request) (claude.Answer, error) {
+	opts := c.options(ctx, req)
+	if !req.ClaudeWriter {
+		return claude.RunStream(req.UserPrompt, opts, logEvent)
+	}
+
+	writer, err := claudeWriterOptions(ctx, req)
+	if err != nil {
+		return claude.Answer{}, pkgerrors.ErrProviderExecutionFailed(c.Name(), err)
+	}
+
+	opts.Writer = writer
+	opts.AllowedTools = ""
+	opts.DisallowedTools = nil
+	opts.PermissionMode = "default"
+
+	return claude.RunStreamContext(ctx, req.UserPrompt, opts, logEvent)
+}
+
+func logClaudeAnswer(req Request, answer claude.Answer, err error) {
+	if err == nil || (req.ClaudeWriter && (answer.CostUSD != 0 || answer.Tokens != nil)) {
+		logTurnUsage(answer)
+	}
 }

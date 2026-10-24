@@ -434,6 +434,7 @@ func buildFixClosure[I any](
 			Iteration:           fixCount,
 			ModelTier:           latestResult.ApplyModelTier,
 			WatchWriterResponse: spec.RecoverWriterFailures,
+			ClaudeWriter:        spec.RecoverWriterFailures,
 		})
 		if err != nil {
 			if spec.PostNotApplied != nil && recoverWriterFailure(spec.RecoverWriterFailures, err) {

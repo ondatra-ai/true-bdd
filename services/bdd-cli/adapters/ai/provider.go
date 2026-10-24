@@ -4,6 +4,8 @@ import "context"
 
 // Request is one single-turn prompt handed to a provider.
 type Request struct {
+ // ClaudeWriter enables build code's hooked, unbounded claude writer.
+ ClaudeWriter bool
 	// SystemPrompt is passed natively where the CLI supports it and
 	// prepended to UserPrompt where it does not (crush, codex).
 	SystemPrompt string

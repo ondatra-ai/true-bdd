@@ -179,3 +179,21 @@ func TestHomeRoundTrip(t *testing.T) {
 		t.Fatalf("round trip changed the path: %q -> %q", original, back)
 	}
 }
+
+func TestClaudeWriterSessionDoesNotStaleReplay(t *testing.T) {
+	t.Parallel()
+
+	first := []string{"--restricted", "--session-id", "11111111-1111-4111-8111-111111111111", "--add-dir",
+		"/home/.claude/projects/-first/11111111-1111-4111-8111-111111111111/tool-results", "-p", "repair"}
+
+	second := []string{"--restricted", "--session-id", "22222222-2222-4222-8222-222222222222", "--add-dir",
+		"/home/.claude/projects/-second/22222222-2222-4222-8222-222222222222/tool-results", "-p", "repair"}
+	if requestHash(first, nil, "/first") != requestHash(second, nil, "/second") {
+		t.Fatal("session-specific spill directory changed writer request identity")
+	}
+
+	second[len(second)-1] = "different plan"
+	if requestHash(first, nil, "/first") == requestHash(second, nil, "/second") {
+		t.Fatal("changed prompt was ignored")
+	}
+}

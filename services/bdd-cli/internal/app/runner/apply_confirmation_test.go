@@ -142,17 +142,18 @@ func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
 }
 
 type applyAnswer struct {
-	failRole provider.Role
-	watch    *bool
-	response string
-	err      error
+	writerCLI    provider.CLI
+	claudeWriter *bool
+	request      *string
+	failRole     provider.Role
+	watch        *bool
+	response     string
+	err          error
 }
 
 func (answer applyAnswer) ExecutePromptWithSystem(_ context.Context, role provider.Role, _, user string,
 	_ provider.ModelRef, _ provider.ExecutionMode, _ string, options ...provider.TurnOptions) (string, error) {
-	if role == provider.RoleApply && answer.watch != nil {
-		*answer.watch = len(options) > 0 && options[0].WatchWriterResponse
-	}
+	answer.observeApply(role, user, options)
 
 	if role == answer.failRole && answer.err != nil {
 		return "", answer.err
@@ -221,8 +222,13 @@ sections:
 		provider.RolePrompt: confirmationTier, provider.RoleFix: confirmationTier, provider.RoleApply: "coder",
 	}
 
+	writerCLI := answer.writerCLI
+	if writerCLI == "" {
+		writerCLI = provider.CLICrush
+	}
+
 	models, err := provider.NewRegistry(
-		map[string]string{confirmationTier: "claude:test", "coder": "crush:test"}, defaults,
+		map[string]string{confirmationTier: "claude:test", "coder": string(writerCLI) + ":test"}, defaults,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -355,4 +361,119 @@ func useFailureRole(t *testing.T, role provider.Role) {
 	}
 
 	writeConfirmationFile(t, path, strings.Replace(string(body), "D: tests-pass", "Q: Does the test pass?", 1))
+}
+
+func TestStartedClaudeFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
+	for _, command := range []string{buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand,
+		scenCheckCommand} {
+		for _, role := range provider.Roles() {
+			for _, outcome := range []pkgerrors.ClaudeTurnOutcome{pkgerrors.ClaudeTurnNonZeroExit,
+				pkgerrors.ClaudeTurnErrorResult, pkgerrors.ClaudeTurnEmptyOutput} {
+				t.Run(command+"/"+string(role)+"/"+string(outcome), func(t *testing.T) {
+					failure := &pkgerrors.ClaudeTurnError{Outcome: outcome, Cause: errors.New("rate_limit 429")}
+					spec := confirmationSpec(t, command, applyAnswer{err: failure, failRole: role})
+					useFailureRole(t, role)
+
+					reruns := 0
+					spec.PostNotApplied = func(context.Context, bool) (bool, error) {
+						reruns++
+
+						return true, nil
+					}
+
+					err := runner.Run(t.Context(), spec)
+					if command == buildCodeCommand && role == provider.RoleApply {
+						if err != nil || reruns != 1 {
+							t.Fatalf("Run=%v reruns=%d", err, reruns)
+						}
+					} else if !errors.Is(err, failure) || reruns != 0 {
+						t.Fatalf("Run=%v reruns=%d; want fatal", err, reruns)
+					}
+				})
+			}
+		}
+	}
+}
+
+func (answer applyAnswer) observeApply(role provider.Role, user string, options []provider.TurnOptions) {
+	if role == provider.RoleApply {
+		if answer.request != nil {
+			*answer.request = user
+		}
+
+		if answer.claudeWriter != nil {
+			*answer.claudeWriter = len(options) > 0 && options[0].ClaudeWriter
+		}
+	}
+
+	if role == provider.RoleApply && answer.watch != nil {
+		*answer.watch = len(options) > 0 && options[0].WatchWriterResponse
+	}
+}
+
+func TestOnlyBuildCodeClaudeApplierRequestsWriter(t *testing.T) {
+	for _, command := range []string{buildCodeCommand, buildTestsCommand, usRefineCommand,
+		usApplyCommand, scenCheckCommand} {
+		t.Run(command, func(t *testing.T) {
+			requested := false
+			spec := confirmationSpec(t, command, applyAnswer{response: blockAnswer, writerCLI: provider.CLIClaude,
+				claudeWriter: &requested})
+
+			err := runner.Run(t.Context(), spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if requested != (command == buildCodeCommand) {
+				t.Fatalf("Claude writer requested=%v for %s", requested, command)
+			}
+		})
+	}
+}
+
+func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
+	body, err := disk.Read("../../../../../templates/build-code.fix-applier.prompt.tpl")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, commands, found := strings.Cut(string(body), "## Test commands")
+	if !found {
+		t.Fatal("shipped template lost test commands")
+	}
+
+	commands = "{{ if .TestCommand }}## Test commands" + strings.Split(commands, "{{ else }}")[0] + "{{ end }}"
+
+	for _, cli := range []provider.CLI{provider.CLICrush, provider.CLIClaude, provider.CLICodex} {
+		t.Run(string(cli), func(t *testing.T) {
+			request := ""
+			spec := confirmationSpec(t, buildCodeCommand, applyAnswer{response: "changed", writerCLI: cli, request: &request})
+			writeConfirmationFile(t, "user.tpl", commands)
+			spec.FixApplier.UseTestCommand(&provider.TestCommand{Command: "go test ./tests/", Selector: "-run", Dir: "/host"})
+
+			_, applyErr := spec.FixApplier.Apply(t.Context(), validate.ApplyParams{SubjectID: "failing-set",
+				TmpDir: spec.TmpDir, FixPrompt: "repair", ClaudeWriter: true})
+			if !errors.Is(applyErr, pkgerrors.ErrFixApplierNoContent) {
+				t.Fatalf("Apply=%v", applyErr)
+			}
+
+			if cli == provider.CLICodex {
+				if strings.Contains(request, "go test") {
+					t.Fatalf("codex received grant: %s", request)
+				}
+
+				return
+			}
+
+			for _, form := range []string{"go test ./tests/", "go test ./tests/ -run '<selection>'", "Run in `/host`"} {
+				if !strings.Contains(request, form) {
+					t.Errorf("missing %s: %s", form, request)
+				}
+			}
+
+			if strings.Contains(request, "job_output") != (cli == provider.CLICrush) {
+				t.Errorf("wrong completion instructions: %s", request)
+			}
+		})
+	}
 }

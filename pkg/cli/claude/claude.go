@@ -45,6 +45,8 @@ var (
 // Options are the flags of one headless turn. The zero value runs `claude -p`
 // with no allowlist, which is only ever right for a turn that touches nothing.
 type Options struct {
+	// Writer supplies the isolated, hooked build-code writer configuration.
+	Writer *WriterOptions
 	// Minimal excludes settings, discovered memory and customizations while keeping auth and built-in tools.
 	Minimal bool
 	// AllowedTools is passed to --allowedTools, ahead of -p.
@@ -80,17 +82,21 @@ type Options struct {
 	Timeout time.Duration
 }
 
+const strictMCPFlag = "--strict-mcp-config"
+
+const settingSourcesFlag = "--setting-sources"
+
 // isolation always excludes user settings and MCP servers. Minimal turns
 // also exclude project settings and automatic memory/customizations.
 func isolation(minimal bool) []string {
 	if minimal {
-		return []string{"--setting-sources", "", "--strict-mcp-config", "--safe-mode"}
+		return []string{settingSourcesFlag, "", strictMCPFlag, "--safe-mode"}
 	}
 
 	// Not --bare: it also skips CLAUDE.md and forces API-key auth.
 	return []string{
-		"--setting-sources", "project",
-		"--strict-mcp-config",
+		settingSourcesFlag, "project",
+		strictMCPFlag,
 	}
 }
 
@@ -102,7 +108,7 @@ const AdvisorOff = "CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1"
 // Args is the argv this turn spawns, exported so a caller can assert on it.
 func (o Options) Args(prompt string) []string {
 	args := make([]string, 0, 18) //nolint:mnd // the longest form: isolation, 7 flag pairs and -p.
-	args = append(args, isolation(o.Minimal)...)
+	args = append(args, o.isolationArgs()...)
 
 	if o.AllowedTools != "" {
 		args = append(args, "--allowedTools", o.AllowedTools)
@@ -146,7 +152,12 @@ func (o Options) Args(prompt string) []string {
 // blanked as the other wrappers do, because a nested `claude -p` must look
 // entirely unlaunched-from-a-session.
 func (o Options) Env() shell.Env {
-	return shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
+	env := shell.Inherit().Strip("CLAUDECODE", roleKey).Set(roleKey+"="+o.Role, AdvisorOff)
+	if o.Writer != nil {
+		return writerEnv(env)
+	}
+
+	return env
 }
 
 // diagnosticLimit is how much of a failed turn's output is quoted back.
@@ -207,6 +218,10 @@ func RunJSON(prompt string, opts Options) (Answer, error) {
 // --output-format json or as the last line of a stream.
 func parseEnvelope(stdout []byte, role string) (Answer, error) {
 	var envelope struct {
+		IsError          bool            `json:"is_error"`
+		Errors           []string        `json:"errors"`
+		Subtype          string          `json:"subtype"`
+		APIErrorStatus   int             `json:"api_error_status"`
 		StructuredOutput json.RawMessage `json:"structured_output"`
 		Result           json.RawMessage `json:"result"`
 		CostUSD          float64         `json:"total_cost_usd"`
@@ -233,6 +248,11 @@ func parseEnvelope(stdout []byte, role string) (Answer, error) {
 	answer := Answer{Data: envelope.StructuredOutput, CostUSD: envelope.CostUSD, Tokens: counts(envelope.Usage)}
 	if isEmptyJSON(envelope.StructuredOutput) {
 		answer.Data = envelope.Result
+	}
+
+	if envelope.IsError || envelope.APIErrorStatus >= 400 {
+		return answer, fmt.Errorf("%w: %s (status %d): %s", ErrResult, envelope.Subtype,
+			envelope.APIErrorStatus, strings.Join(envelope.Errors, "; "))
 	}
 
 	return answer, nil

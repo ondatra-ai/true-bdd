@@ -62,6 +62,7 @@ func registerCrushGuardSteps(suite *bddgo.Suite[State]) {
 // Paths stay relative to the project tree until the When step renders them,
 // since only then is the run directory they resolve against in use.
 type guardCall struct {
+	background   bool
 	testCommand  string
 	testSelector string
 	testDir      string

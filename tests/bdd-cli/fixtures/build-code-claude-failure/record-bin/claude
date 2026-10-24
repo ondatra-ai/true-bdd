@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+"${TRUE_BDD_RECORD_CLAUDE:?Set to the installed claude executable}" "$@" || exit "$?"
+case " $* " in
+  *"Fixture transport outcome: non-zero exit"*) exit 7 ;;
+esac
