@@ -111,7 +111,7 @@ type Container struct {
 }
 
 // NewContainer builds the Container.
-func NewContainer() (*Container, error) {
+func NewContainer(overrides ...string) (*Container, error) {
 	cfg, err := config.NewViperConfig()
 	if err != nil {
 		return nil, pkgerrors.ErrInitializeConfigFailed(err)
@@ -124,7 +124,7 @@ func NewContainer() (*Container, error) {
 		return nil, pkgerrors.ErrCreateRunDirectoryFailed(err)
 	}
 
-	aiClient, models, err := newAIRouter(cfg, runDir)
+	aiClient, models, err := newAIRouter(cfg, runDir, overrides...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +171,10 @@ func NewContainer() (*Container, error) {
 // newAIRouter resolves the model-tier table and builds the one
 // provider router every checklist role shares — which CLI runs a turn
 // is decided per call by the tier, not by which router served it.
-func newAIRouter(cfg *config.ViperConfig, runDir *fs.RunDirectory) (*ai.Router, *provider.Registry, error) {
-	models, err := NewModelRegistry(cfg)
+func newAIRouter(
+	cfg *config.ViperConfig, runDir *fs.RunDirectory, overrides ...string,
+) (*ai.Router, *provider.Registry, error) {
+	models, err := NewModelRegistry(cfg, overrides...)
 	if err != nil {
 		// A bad tier table is a CONFIG error, not an AI-client error;
 		// saying so is the difference between a one-line fix and a hunt.
