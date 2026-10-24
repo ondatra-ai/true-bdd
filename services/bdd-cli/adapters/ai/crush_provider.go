@@ -99,9 +99,9 @@ func (p *CrushProvider) turnOutcome(transcript string, runErr error) (string, er
 	if runErr != nil {
 		failure := pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
 		if errors.Is(runErr, crush.ErrTurnFailed) {
-			outcome := "non-zero exit"
+			outcome := pkgerrors.CrushTurnNonZeroExit
 			if errors.Is(runErr, crush.ErrResponseStalled) {
-				outcome = "stalled"
+				outcome = pkgerrors.CrushTurnStalled
 			}
 
 			return transcript, &pkgerrors.CrushTurnError{Outcome: outcome, Cause: failure}
@@ -112,7 +112,7 @@ func (p *CrushProvider) turnOutcome(transcript string, runErr error) (string, er
 
 	if strings.TrimSpace(transcript) == "" {
 		return "", &pkgerrors.CrushTurnError{
-			Outcome: "empty output", Cause: pkgerrors.ErrProviderProducedNoOutput(p.Name()),
+			Outcome: pkgerrors.CrushTurnEmptyOutput, Cause: pkgerrors.ErrProviderProducedNoOutput(p.Name()),
 		}
 	}
 

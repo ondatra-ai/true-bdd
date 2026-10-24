@@ -31,21 +31,22 @@ func TestMain(m *testing.M) {
 
 func TestCrushProviderReportsStartedOutcomes(t *testing.T) {
 	for _, testCase := range []struct {
-		name, script, outcome string
-		refuse                bool
+		name, script string
+		outcome      pkgerrors.CrushTurnOutcome
+		refuse       bool
 	}{
 		{name: "cannot start"},
 		{name: "exec failure", script: "#!/missing/interpreter\n"},
 		{name: "refused before spawn", script: "#!/bin/sh\nexit 0\n", refuse: true},
-		{name: "nonzero", script: "#!/bin/sh\nprintf partial\nexit 7\n", outcome: "non-zero exit"},
-		{name: "empty", script: "#!/bin/sh\nexit 0\n", outcome: "empty output"},
-		{name: "whitespace", script: "#!/bin/sh\nprintf '  \\n'\n", outcome: "empty output"},
+		{name: "nonzero", script: "#!/bin/sh\nprintf partial\nexit 7\n", outcome: pkgerrors.CrushTurnNonZeroExit},
+		{name: "empty", script: "#!/bin/sh\nexit 0\n", outcome: pkgerrors.CrushTurnEmptyOutput},
+		{name: "whitespace", script: "#!/bin/sh\nprintf '  \\n'\n", outcome: pkgerrors.CrushTurnEmptyOutput},
 		{name: "stall", script: `#!/bin/sh
 mkdir -p "$CRUSH_GLOBAL_CONFIG/crush-data/logs"
 log="$CRUSH_GLOBAL_CONFIG/crush-data/logs/crush.log"
 printf '%s\n' '{"time":"2000-01-01T00:00:00Z","msg":"ModelProvider called"}' > "$log"
 sleep 60
-`, outcome: "stalled"},
+`, outcome: pkgerrors.CrushTurnStalled},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			root := t.TempDir()
@@ -112,10 +113,10 @@ func installCrush(t *testing.T, root, script string) {
 	}
 }
 
-func assertPromptStallStop(t *testing.T, outcome string, started time.Time) {
+func assertPromptStallStop(t *testing.T, outcome pkgerrors.CrushTurnOutcome, started time.Time) {
 	t.Helper()
 
-	if outcome == "stalled" && time.Since(started) > 5*time.Second {
+	if outcome == pkgerrors.CrushTurnStalled && time.Since(started) > 5*time.Second {
 		t.Fatal("stall did not stop the process group promptly")
 	}
 }

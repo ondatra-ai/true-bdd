@@ -61,7 +61,8 @@ func TestBuildCodeUnclassifiedProviderFailuresStayFatal(t *testing.T) {
 		answer applyAnswer
 		cause  error
 	}{
-		{"empty output", applyAnswer{err: pkgerrors.ErrProviderProducedNoOutput("crush")}, pkgerrors.ErrProviderNoOutput},
+		{string(pkgerrors.CrushTurnEmptyOutput),
+			applyAnswer{err: pkgerrors.ErrProviderProducedNoOutput("crush")}, pkgerrors.ErrProviderNoOutput},
 		{"whitespace output",
 			applyAnswer{response: " \n\t", err: pkgerrors.ErrProviderProducedNoOutput("crush")}, pkgerrors.ErrProviderNoOutput},
 		{"nonzero exit",
@@ -292,8 +293,10 @@ func TestStartedCrushFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
 		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
 	} {
 		for _, role := range provider.Roles() {
-			for _, outcome := range []string{"non-zero exit", "empty output", "stalled"} {
-				t.Run(command+"/"+string(role)+"/"+outcome, func(t *testing.T) {
+			for _, outcome := range []pkgerrors.CrushTurnOutcome{
+				pkgerrors.CrushTurnNonZeroExit, pkgerrors.CrushTurnEmptyOutput, pkgerrors.CrushTurnStalled,
+			} {
+				t.Run(command+"/"+string(role)+"/"+string(outcome), func(t *testing.T) {
 					failure := &pkgerrors.CrushTurnError{Outcome: outcome, Cause: errors.New("writer ended")}
 					answer := applyAnswer{err: failure, failRole: role}
 					spec := confirmationSpec(t, command, answer)
@@ -322,7 +325,7 @@ func TestStartedCrushFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
 }
 
 func TestFailedWriterTerminalRerunCannotBypassBound(t *testing.T) {
-	failure := &pkgerrors.CrushTurnError{Outcome: "non-zero exit", Cause: errors.New("writer ended")}
+	failure := &pkgerrors.CrushTurnError{Outcome: pkgerrors.CrushTurnNonZeroExit, Cause: errors.New("writer ended")}
 	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{err: failure})
 	reruns := 0
 	spec.PostNotApplied = func(context.Context, bool) (bool, error) {

@@ -34,17 +34,18 @@ type FixApplierData struct {
 
 // ApplyParams contains the parameters for one fix application.
 type ApplyParams struct {
-	WatchWriterResponse bool
-	Subject             any    // Current subject to modify
-	SubjectID           string // Subject identifier
-	FixPrompt           string // The concrete fix prompt to apply
-	Check               string // The failed `D:` check's name; "" for a `Q:` prompt
-	TmpDir              string // Run artifact directory
-	Iteration           int    // 1-based apply counter, for file naming
+	Subject   any    // Current subject to modify
+	SubjectID string // Subject identifier
+	FixPrompt string // The concrete fix prompt to apply
+	Check     string // The failed `D:` check's name; "" for a `Q:` prompt
+	TmpDir    string // Run artifact directory
+	Iteration int    // 1-based apply counter, for file naming
 	// ModelTier names the tier that writes the fix. Resolved by the
 	// evaluator while the prompt was in scope and carried here on the
 	// failed check; empty means engine.default_apply_model.
 	ModelTier string
+	// WatchWriterResponse requests the response watch for build code's crush writer.
+	WatchWriterResponse bool
 }
 
 // FixApplier applies fix prompts to stories using AI.
