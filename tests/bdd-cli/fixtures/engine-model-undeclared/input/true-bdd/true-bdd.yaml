@@ -1,0 +1,8 @@
+engine:
+  models:
+    high: claude:claude-opus-5
+  default_prompt_model: high
+  default_fix_model: high
+  default_apply_model: high
+paths:
+  tmp_dir: ./tmp

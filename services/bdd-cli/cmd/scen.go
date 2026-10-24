@@ -70,6 +70,8 @@ Example:
 		"Path to the requirements registry YAML "+
 			"(default: documents.scenarios_yaml from true-bdd/true-bdd.yaml)")
 	cmd.Flags().Bool("fix", false, fixFlagDescription)
+	cmd.Flags().StringArray("model", nil,
+		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 
 	return cmd
 }

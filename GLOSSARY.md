@@ -80,6 +80,10 @@ _Avoid_: SUT, subject, system, target
 All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started crush writer that stalls, exits non-zero or answers empty, and a started codex writer that exits non-zero or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
 _Avoid_: repair batch, failure queue
 
+**Model override**:
+A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one declared `engine.models` binding in memory for one run. Every command running AI turns accepts it. It changes neither project configuration nor spawned processes' environments; each applied change is logged once.
+_Avoid_: model environment variable, model config overlay
+
 ## Repository vocabulary
 
 Words for how this repository plans and executes its own work. Not the engine's domain — nothing here reaches a host project.

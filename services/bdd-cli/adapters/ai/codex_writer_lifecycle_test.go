@@ -20,12 +20,17 @@ func TestCodexWriterSequentialTurnsProtectEarlierHomesAndVCS(t *testing.T) {
 	}
 
 	root := t.TempDir()
+	outside := t.TempDir()
+	putCodexFile(t, filepath.Join(outside, "marker.txt"), "outside cut")
+	putCodexFile(t, filepath.Join(root, "outside-path.txt"), outside)
 	putCodexFile(t, filepath.Join(root, "original/auth.json"), `{"dummy":"credentials"}`)
 	t.Setenv("CODEX_HOME", filepath.Join(root, "original"))
 	bin := filepath.Join(root, "bin")
 	putCodexFile(t, filepath.Join(bin, "codex"), sequentialCodexScript)
 	cache := filepath.Join(root, "tmp/module-cache")
 	putCodexFile(t, filepath.Join(cache, "cache/vcs/dummy.git/objects/marker"), "dummy source")
+	putCodexFile(t, filepath.Join(root, "readonly/marker.txt"), "unchanged")
+
 	goEnv := `{"GOROOT":` + strconv.Quote(paths["GOROOT"]) + `,"GOMODCACHE":` + strconv.Quote(cache) + `}`
 	putCodexFile(t, filepath.Join(bin, "go"), fmt.Sprintf(dummyGoEnvironment, goEnv, cache))
 	putCodexFile(t, filepath.Join(root, "go.mod"), "module probe\n\ngo 1.26\n")
@@ -79,6 +84,31 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ] && [ -f previous-home.txt ]; then
  grep 'cache/vcs: Operation not permitted' probe.log || exit 24
  "$TRUE_BDD_CODEX_SANDBOX_PROBE" sandbox -C "$PWD" -P writer /bin/sh -c \
   "go test -count=1 ./tests/suite/... -run '^TestA$'" >> probe.log 2>&1 || exit 25
+ deny_read() {
+  printf 'COMMAND: codex sandbox -C CUT -P writer /bin/cat %s\n' "$1" >> probe.log
+  /bin/cat "$1" >/dev/null || exit 26
+  "$TRUE_BDD_CODEX_SANDBOX_PROBE" sandbox -C "$PWD" -P writer /bin/cat "$1" >> probe.log 2>&1 && exit 27
+  tail -n 1 probe.log | grep 'Operation not permitted' || exit 28
+ }
+ outside=$(cat outside-path.txt)
+ deny_read "$(printf '%s' "$outside/marker.txt" | tr '[:lower:]' '[:upper:]')"
+ deny_read "$outside/../$(basename "$outside")/marker.txt"
+ ln -s "$outside" escape-cut
+ deny_read "$PWD/escape-cut/marker.txt"
+ deny_read "$(printf '%s' "$cache/cache/vcs/dummy.git/objects/marker" | tr '[:lower:]' '[:upper:]')"
+ deny_read "$cache/Cache/VCS/dummy.git/objects/marker"
+ deny_read "$cache/cache/vcs/../vcs/dummy.git/objects/marker"
+ ln -s "$cache/cache/vcs" escape-vcs
+ deny_read "$PWD/escape-vcs/dummy.git/objects/marker"
+ deny_read "$(printf '%s' "$previous/marker.txt" | tr '[:lower:]' '[:upper:]')"
+ deny_read "$(printf '%s' "$previous/marker.txt" | sed 's,/codex-homes/,/CODEX-HOMES/,')"
+ outside="$PWD/READONLY/marker.txt"
+ printf 'COMMAND: codex sandbox -C CUT -P writer /bin/sh -c write-marker %s\n' "$outside" >> probe.log
+ [ "$(cat "$outside")" = unchanged ] || exit 29
+ "$TRUE_BDD_CODEX_SANDBOX_PROBE" sandbox -C "$PWD" -P writer /bin/sh -c \
+  'printf changed > "$1"' sh "$outside" >> probe.log 2>&1 && exit 30
+ tail -n 1 probe.log | grep 'Operation not permitted' || exit 31
+ [ "$(cat "$outside")" = unchanged ] || exit 32
  printf passed > probe-passed.txt
 fi
 while [ "$1" != '-o' ]; do shift; done

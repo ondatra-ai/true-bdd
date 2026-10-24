@@ -149,7 +149,20 @@ glossary:
       One `true-bdd` subcommand with its arguments, as a person types it
       after `true-bdd`, such as `scen check --fix`. It is what a role runs,
       and the unit whose exit code, stdout and file changes a Scenario
-      observes.
+      observes. Commands that run AI turns accept model overrides.
+
+  - term: model override
+    means: >-
+      A repeatable `--model <tier>=<cli>:<model>` flag on `us refine`,
+      `us apply`, `scen check`, `build tests` and `build code`. It replaces
+      only that tier's configured binding for one run. The tier must already
+      be declared under engine.models; references use the config's first-colon
+      split and validation, with claude, crush and codex as the known CLIs.
+      An undeclared tier, malformed reference, unknown CLI or duplicate tier
+      is a startup refusal with exit 1 before any turn. Each applied override
+      logs once at INFO with msg="Model tier overridden" and tier, from and to.
+      Apart from logs it writes no file and adds nothing to spawned processes'
+      environments, so tests the writer runs still use their own configuration.
 
   - term: project tree
     means: >-
@@ -221,9 +234,9 @@ glossary:
   - term: AI CLI
     means: >-
       The agent command-line program an AI turn runs through: `claude`,
-      `crush` or `codex`. The project's configuration names one per kind of
-      turn, and a single Prompt may name its own, so moving work to another
-      provider is a configuration edit. Each enforces a different answer
+      `crush` or `codex`. The project's configuration binds named model tiers
+      to a CLI and model, and a Prompt selects its tier. A run-only model
+      override can replace a declared binding. Each CLI enforces a different answer
       shape and write boundary, so which one ran a turn decides what that
       turn could do and what it cost.
 

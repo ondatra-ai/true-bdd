@@ -342,6 +342,26 @@ The value splits on the **first** colon, so hyphenated and
 provider-qualified model ids survive intact. Supported CLIs are
 `claude`, `crush`, and `codex`; each must be on `$PATH`.
 
+Every command that runs AI turns (`us refine`, `us apply`, `scen check`,
+`build tests`, `build code`) accepts repeated `--model <tier>=<cli>:<model>`
+flags. Each replaces only that declared tier's binding for this run, after
+validating the loaded config. An undeclared tier, malformed reference,
+unknown CLI or repeated tier refuses startup with exit 1 before any turn.
+References use the same first-colon split and validation as the config.
+Each applied override logs once at INFO, `msg="Model tier overridden"`,
+with `tier`, `from` and `to`. Overrides live in memory; apart from logs,
+they write no file and add nothing to a spawned process's environment.
+The resolved model reaches its AI CLI through that CLI's model argument.
+
+```sh
+true-bdd build code --fix --model coder=claude:claude-sonnet-5-5
+```
+
+The drill accepts repeated `--model <tier>=<cli>:<model>` pairs after
+`build code --fix` or `build tests --fix`, records them in the run's
+arguments and forwards their values unchanged through typed options.
+It still refuses other extra arguments; the engine validates the values.
+
 A checklist picks a tier per role, and any single prompt overrides it:
 
 ```yaml

@@ -1,0 +1,50 @@
+# Registry seed for `scen-check-id-filter`.
+#
+# Three scenarios, all satisfying the narrowed prompt. The run names two
+# of them in descending order on the command line; the walk must visit
+# exactly those two, ascending, and never mention the third. Replay
+# matches cassettes by sequence, so the order is what it pins.
+
+metadata:
+  title: "Test Requirements Registry (BDD fixture seed)"
+  version: "2.0"
+  last_updated: "2026-08-25"
+  description: "Three scenarios, two of which the run selects"
+
+scenarios:
+  E2E-001:
+    description: The service must answer a ping with a pong within 200 milliseconds
+    service: mcp-service
+    path: tests/mcp/ping_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a ping
+      then:
+        - the service answers pong
+  E2E-002:
+    description: The service must reject an unauthenticated request with status 401
+    service: mcp-service
+    path: tests/mcp/auth_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the mcp service is running
+      when:
+        - a client sends a request with no token
+      then:
+        - the service answers with status 401
+  E2E-003:
+    description: The service must close an idle connection after 30 seconds
+    service: mcp-service
+    path: tests/mcp/idle_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - a client is connected to the mcp service
+      when:
+        - the client sends nothing for 30 seconds
+      then:
+        - the service closes the connection

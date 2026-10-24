@@ -12,7 +12,7 @@ import (
 // containerProvider lazily builds the bootstrap container on first use.
 // `version` never calls it, so it runs in a bare folder; `us`, `build` and
 // `scen` resolve it in RunE.
-type containerProvider func() (*bootstrap.Container, error)
+type containerProvider func(...string) (*bootstrap.Container, error)
 
 // lazyContainer returns a provider that constructs the container at most
 // once, memoizing the result (and any error).
@@ -23,9 +23,9 @@ func lazyContainer() containerProvider {
 		buildErr  error
 	)
 
-	return func() (*bootstrap.Container, error) {
+	return func(overrides ...string) (*bootstrap.Container, error) {
 		once.Do(func() {
-			container, buildErr = bootstrap.NewContainer()
+			container, buildErr = bootstrap.NewContainer(overrides...)
 		})
 
 		return container, buildErr
