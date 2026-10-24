@@ -2,7 +2,9 @@ package ai
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 // ClaudeGuardPolicy confines the writer's tools; Replay reuses #193's exact check.
@@ -35,15 +37,24 @@ func (p ClaudeGuardPolicy) DecidePayload(raw []byte) (bool, string) {
 			return false, "background commands are denied; use the foreground"
 		}
 
-		return p.Replay.allowsTestCommand(CrushToolCall{Command: payload.ToolInput.Command, WorkingDir: payload.Cwd})
+		return p.allowsClaudeTestCommand(payload.ToolInput.Command, payload.Cwd)
 	}
 
 	target := claudeTarget(payload.ToolInput.FilePath, payload.ToolInput.Path, payload.Cwd, p.Replay.ReadRoot)
-	switch payload.ToolName {
+
+	return p.allowsFileTool(payload.ToolName, target, payload.ToolInput.Pattern)
+}
+
+func (p ClaudeGuardPolicy) allowsFileTool(tool, target, pattern string) (bool, string) {
+	if target == "" {
+		return false, "cannot resolve the file tool target"
+	}
+
+	switch tool {
 	case "Read":
 		return p.allowsRead(target)
 	case "Glob":
-		return p.allowsGlob(target, payload.ToolInput.Pattern)
+		return p.allowsGlob(target, pattern)
 	case "Grep":
 		return p.allowsSearch(target)
 	case "Write", "Edit", "MultiEdit":
@@ -51,6 +62,19 @@ func (p ClaudeGuardPolicy) DecidePayload(raw []byte) (bool, string) {
 	default:
 		return false, "tool is not on the claude writer allowlist"
 	}
+}
+
+func (p ClaudeGuardPolicy) allowsClaudeTestCommand(command, cwd string) (bool, string) {
+	prefix := "cd " + quoteHookArg(p.Replay.TestDir) + " && "
+
+	resolved := resolveThroughSymlinks(cwd)
+	if strings.HasPrefix(command, prefix) &&
+		(resolved == resolveThroughSymlinks(p.Replay.ReadRoot) || resolved == resolveThroughSymlinks(p.Replay.TestDir)) {
+		command = strings.TrimPrefix(command, prefix)
+		cwd = p.Replay.TestDir
+	}
+
+	return p.Replay.allowsTestCommand(CrushToolCall{Command: command, WorkingDir: cwd})
 }
 
 func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {
@@ -85,11 +109,33 @@ func claudeTarget(filePath, path, cwd, root string) string {
 		target = cwd
 	}
 
+	target = expandClaudeHome(target)
+	if target == "" {
+		return ""
+	}
+
 	if !filepath.IsAbs(target) {
+		if filepath.IsAbs(cwd) {
+			root = cwd
+		}
+
 		target = root + string(filepath.Separator) + target
 	}
 
 	return target
+}
+
+func expandClaudeHome(path string) string {
+	if path != "~" && !strings.HasPrefix(path, "~/") {
+		return path
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil || !filepath.IsAbs(home) {
+		return ""
+	}
+
+	return home + strings.TrimPrefix(path, "~")
 }
 
 func (p ClaudeGuardPolicy) allowsWrite(target string) (bool, string) {

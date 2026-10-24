@@ -323,6 +323,12 @@ func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, res
 		data.TestCommand = a.testCommand
 	}
 
+	if data.ClaudeWriter && data.TestCommand != nil {
+		command := *data.TestCommand
+		command.Command = "cd '" + strings.ReplaceAll(command.Dir, "'", `'"'"'`) + "' && " + command.Command
+		data.TestCommand = &command
+	}
+
 	return data
 }
 

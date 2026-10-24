@@ -471,9 +471,26 @@ func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 				}
 			}
 
+			assertClaudeCommandForms(t, cli, request)
+
 			if strings.Contains(request, "job_output") != (cli == provider.CLICrush) {
 				t.Errorf("wrong completion instructions: %s", request)
 			}
 		})
+	}
+}
+
+func assertClaudeCommandForms(t *testing.T, cli provider.CLI, request string) {
+	t.Helper()
+
+	if cli != provider.CLIClaude {
+		return
+	}
+
+	for _, form := range []string{"`cd '/host' && go test ./tests/`",
+ "`cd '/host' && go test ./tests/ -run '<selection>'`"} {
+		if !strings.Contains(request, form) {
+			t.Errorf("missing runnable Claude command %s: %s", form, request)
+		}
 	}
 }

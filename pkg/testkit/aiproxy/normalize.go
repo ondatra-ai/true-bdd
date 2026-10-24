@@ -84,7 +84,8 @@ func requestHash(argv []string, stdin []byte, cwd string) string {
 	return "sha256:" + hex.EncodeToString(hasher.Sum(nil))
 }
 
-// Only the isolated writer supplies its own session and exact spill root.
+// The writer supplies GOROOT, GOMODCACHE, then its exact spill root. The
+// executable is not part of argv; home paths are normalized by normalizeText.
 func stableClaudeWriterArgs(argv []string) []string {
 	if !slices.Contains(argv, "--restricted") {
 		return argv
@@ -99,9 +100,19 @@ func stableClaudeWriterArgs(argv []string) []string {
 	result := slices.Clone(argv)
 
 	result[index+1] = "{{CLAUDE_SESSION}}"
+	goRoots := []string{"{{GOROOT}}", "{{GOMODCACHE}}"}
+	rootIndex := 0
+
 	for idx := 1; idx < len(result); idx++ {
-		if result[idx-1] == "--add-dir" && strings.HasSuffix(result[idx], "/"+session+"/tool-results") {
+		if result[idx-1] != "--add-dir" {
+			continue
+		}
+
+		if strings.HasSuffix(result[idx], "/"+session+"/tool-results") {
 			result[idx] = "{{CLAUDE_SPILLS}}"
+		} else if rootIndex < len(goRoots) {
+			result[idx] = goRoots[rootIndex]
+			rootIndex++
 		}
 	}
 

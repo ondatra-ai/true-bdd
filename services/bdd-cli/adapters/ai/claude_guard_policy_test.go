@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +11,98 @@ import (
 )
 
 const claudeHost = "/host"
+const claudeRead = "Read"
+const claudeWrite = "Write"
+const claudeMultiEdit = "MultiEdit"
+const claudeGrep = "Grep"
+const claudeGlob = "Glob"
+const claudeEdit = "Edit"
+const claudeJest = "npx jest --config jest.config.js"
 const claudeReplay = "go test ./tests/ -mode=replay"
+
+func TestClaudeReplayInNestedSuite(t *testing.T) {
+	t.Parallel()
+
+	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+		TestDir: "/host/tests with 'quotes'", TestCommand: claudeJest, TestSelector: "--testNamePattern"}}
+
+	prefix := `cd '/host/tests with '"'"'quotes'"'"'' && `
+	for _, testCase := range []struct {
+		command, cwd string
+		allow        bool
+	}{
+		{prefix + claudeJest, claudeHost, true},
+		{prefix + "npx jest --config jest.config.js --testNamePattern '^works$'", claudeHost, true},
+		{prefix + "npx jest --config jest.config.js --testNamePattern '^works$'", policy.Replay.TestDir, true},
+		{claudeJest, policy.Replay.TestDir, true},
+		{claudeJest, claudeHost, false},
+		{prefix + claudeJest, "/other", false},
+		{prefix + "npx jest --config jest.config.js; pwd", claudeHost, false},
+		{prefix + "npx jest --config jest.config.js && pwd", claudeHost, false},
+		{prefix + "npx jest --config jest.config.js --testNamePattern ''", claudeHost, false},
+		{"cd /host/tests && npx jest --config jest.config.js", claudeHost, false},
+		{prefix + "cd /other && npx jest --config jest.config.js", claudeHost, false},
+	} {
+		payload := fmt.Sprintf(`{"tool_name":"Bash","cwd":%q,"tool_input":{"command":%q}}`, testCase.cwd, testCase.command)
+		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed != testCase.allow {
+			t.Errorf("%s: allowed=%v, want %v (%s)", payload, allowed, testCase.allow, reason)
+		}
+	}
+}
+
+func TestClaudeFileToolsUseDirectoryAfterReplay(t *testing.T) {
+	t.Parallel()
+
+	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+		WriteRoots: []string{"/host/services"}}}
+
+	for _, target := range []string{"services/forbidden.go", "../services/allowed.go"} {
+		payload := fmt.Sprintf(`{"tool_name":"Write","cwd":"/host/tests","tool_input":{"file_path":%q}}`, target)
+
+		want := target == "../services/allowed.go"
+		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed != want {
+			t.Errorf("file target %s after nested replay: allowed=%v want=%v (%s)", target, allowed, want, reason)
+		}
+	}
+}
+
+func TestClaudeTildePathsCannotEscape(t *testing.T) {
+	t.Parallel()
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cache := filepath.Join(home, "go/pkg/mod")
+	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+		WriteRoots: []string{claudeHost}}, ReadRoots: []string{cache},
+		ExcludedRoots: []string{filepath.Join(cache, "github.com/ondatra-ai")}}
+
+	for _, tool := range []string{claudeRead, claudeGlob, claudeGrep, claudeEdit, claudeWrite, claudeMultiEdit} {
+		for _, target := range []string{"~", "~/go/pkg/mod/github.com/ondatra-ai", "~/go/pkg/mod"} {
+			for _, field := range []string{"file_path", "path"} {
+				raw, marshalErr := json.Marshal(map[string]any{"tool_name": tool, "cwd": claudeHost,
+					"tool_input": map[string]string{field: target}})
+				if marshalErr != nil {
+					t.Fatal(marshalErr)
+				}
+				// Read may inspect the cache directory itself; searches must reject its excluded descendants.
+				want := tool == claudeRead && target == "~/go/pkg/mod"
+				if allowed, reason := policy.DecidePayload(raw); allowed != want {
+					t.Errorf("%s %s=%s: allowed=%v, want %v (%s)", tool, field, target, allowed, want, reason)
+				}
+			}
+		}
+	}
+
+	for _, pattern := range []string{"~", "~/go/pkg/mod/github.com/ondatra-ai/**", "~/go/pkg/mod/**"} {
+		payload := fmt.Sprintf(`{"tool_name":"Glob","cwd":"/host","tool_input":{"path":"/host","pattern":%q}}`, pattern)
+		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed {
+			t.Errorf("tilde glob escaped: %s (%s)", payload, reason)
+		}
+	}
+}
 
 func TestClaudeHookCanonicalReplay(t *testing.T) {
 	t.Parallel()
@@ -53,7 +145,7 @@ func TestClaudeFileToolsCannotEscape(t *testing.T) {
 	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: host,
 		WriteRoots: []string{filepath.Join(host, "services"), filepath.Join(host, "tmp")}},
 		ReadRoots: []string{"/toolchain", "/cache", "/own-spills"}, ExcludedRoots: []string{"/cache/github.com/ondatra-ai"}}
-	for _, tool := range []string{"Read", "Glob", "Grep", "Edit", "Write", "MultiEdit"} {
+	for _, tool := range []string{claudeRead, claudeGlob, claudeGrep, claudeEdit, claudeWrite, claudeMultiEdit} {
 		for _, target := range []string{outside, "/Users/owner/work/other", "/Users/owner/.claude/projects/other",
 			"/Users/owner/.codex", "/private/tmp/other", "/cache/github.com/ondatra-ai/copy", filepath.Join(host, "escape",
 				"marker")} {
@@ -101,7 +193,7 @@ func TestClaudeWriterCannotChangeItsGuard(t *testing.T) {
 	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost, WriteRoots: []string{"/host/tmp"}},
 		ProtectedRoots: []string{"/host/tmp/claude-config"}}
 
-	for _, tool := range []string{"Write", "Edit", "MultiEdit"} {
+	for _, tool := range []string{claudeWrite, claudeEdit, claudeMultiEdit} {
 		payload := fmt.Sprintf(
 			`{"tool_name":%q,"cwd":"/host","tool_input":{"file_path":"/host/tmp/claude-config/policy.json"}}`, tool)
 		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed {

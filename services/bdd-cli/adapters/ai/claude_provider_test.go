@@ -129,7 +129,7 @@ func assertClaudePolicy(t *testing.T, root string, req ai.Request) {
 		t.Fatal(err)
 	}
 
-	if len(policy.ReadRoots) != 3 || len(policy.ExcludedRoots) != 2 || len(policy.ProtectedRoots) != 1 {
+	if len(policy.ReadRoots) != 3 || len(policy.ProtectedRoots) != 1 {
 		t.Fatalf("unexpected roots: %+v", policy)
 	}
 
@@ -139,10 +139,14 @@ func assertClaudePolicy(t *testing.T, root string, req ai.Request) {
 	}
 
 	for _, target := range []string{"/cache/github.com/ondatra-ai/copy/go.mod",
-		"/cache/cache/download/github.com/ondatra-ai/copy.zip", "/Users/owner/.codex/session"} {
-		payload := fmt.Sprintf(`{"tool_name":"Read","cwd":%q,"tool_input":{"file_path":%q}}`, root, target)
-		if allowed, reason := policy.DecidePayload([]byte(payload)); allowed {
-			t.Errorf("generated policy allowed %s: %s", target, reason)
+		"/cache/cache/download/github.com/ondatra-ai/copy.zip", "/cache/cache/vcs/repository/config",
+		"/Users/owner/.codex/session"} {
+		for _, tool := range []string{claudeRead, claudeGlob, claudeGrep} {
+			payload := fmt.Sprintf(`{"tool_name":%q,"cwd":%q,"tool_input":{"file_path":%q,"path":%q}}`,
+				tool, root, target, target)
+			if allowed, reason := policy.DecidePayload([]byte(payload)); allowed {
+				t.Errorf("generated policy allowed %s %s: %s", tool, target, reason)
+			}
 		}
 	}
 }

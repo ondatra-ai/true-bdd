@@ -7,6 +7,12 @@ import (
 )
 
 func (p ClaudeGuardPolicy) allowsGlob(base, pattern string) (bool, string) {
+	expanded := expandClaudeHome(pattern)
+	if expanded == "" && pattern != "" {
+		return false, "cannot resolve the glob pattern"
+	}
+
+	pattern = expanded
 	if slices.Contains(strings.Split(pattern, "/"), "..") {
 		return false, "parent traversal in glob patterns is denied"
 	}

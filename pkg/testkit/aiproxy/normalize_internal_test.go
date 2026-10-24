@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+const claudeRestricted = "--restricted"
+const claudeSessionID = "--session-id"
+const claudeAddDir = "--add-dir"
+
 func TestNormalizeTextReplacesCwdAndRunDir(t *testing.T) {
 	t.Parallel()
 
@@ -183,10 +187,10 @@ func TestHomeRoundTrip(t *testing.T) {
 func TestClaudeWriterSessionDoesNotStaleReplay(t *testing.T) {
 	t.Parallel()
 
-	first := []string{"--restricted", "--session-id", "11111111-1111-4111-8111-111111111111", "--add-dir",
+	first := []string{claudeRestricted, claudeSessionID, "11111111-1111-4111-8111-111111111111", claudeAddDir,
 		"/home/.claude/projects/-first/11111111-1111-4111-8111-111111111111/tool-results", "-p", "repair"}
 
-	second := []string{"--restricted", "--session-id", "22222222-2222-4222-8222-222222222222", "--add-dir",
+	second := []string{claudeRestricted, claudeSessionID, "22222222-2222-4222-8222-222222222222", claudeAddDir,
 		"/home/.claude/projects/-second/22222222-2222-4222-8222-222222222222/tool-results", "-p", "repair"}
 	if requestHash(first, nil, "/first") != requestHash(second, nil, "/second") {
 		t.Fatal("session-specific spill directory changed writer request identity")
@@ -195,5 +199,29 @@ func TestClaudeWriterSessionDoesNotStaleReplay(t *testing.T) {
 	second[len(second)-1] = "different plan"
 	if requestHash(first, nil, "/first") == requestHash(second, nil, "/second") {
 		t.Fatal("changed prompt was ignored")
+	}
+}
+
+func TestClaudeWriterToolchainDoesNotStaleReplay(t *testing.T) {
+	first := []string{claudeRestricted, claudeSessionID, "first", claudeAddDir, "/opt/homebrew/Cellar/go/1.27.1/libexec",
+		claudeAddDir, "/Users/alice/go/pkg/mod", claudeAddDir, "/Users/alice/.claude/projects/host/first/tool-results",
+		"-p", "repair /Users/alice/project/services"}
+	second := []string{claudeRestricted, claudeSessionID, "second", claudeAddDir, "/usr/local/go",
+		claudeAddDir, "/var/cache/go-mod", claudeAddDir, "/home/bob/.claude/projects/host/second/tool-results",
+		"-p", "repair /home/bob/project/services"}
+
+	t.Setenv("HOME", "/Users/alice")
+
+	recorded := requestHash(first, nil, "/host")
+
+	t.Setenv("HOME", "/home/bob")
+
+	if replayed := requestHash(second, nil, "/host"); recorded != replayed {
+		t.Fatalf("writer request went stale after relocating Go and home: %s != %s", recorded, replayed)
+	}
+
+	second[len(second)-1] = "repair a different service"
+	if requestHash(second, nil, "/host") == recorded {
+		t.Fatal("changed repair request was ignored")
 	}
 }

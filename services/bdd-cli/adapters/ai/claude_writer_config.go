@@ -63,7 +63,7 @@ func claudeWriterOptions(ctx context.Context, req Request) (*claude.WriterOption
 	policy := ClaudeGuardPolicy{ProtectedRoots: []string{dir}, Replay: NewCrushGuardPolicy(req.Mode, req.WorkDir),
 		ReadRoots: roots,
 		ExcludedRoots: []string{filepath.Join(moduleCache, "github.com", "ondatra-ai"), filepath.Join(moduleCache,
-			"cache", "download", "github.com", "ondatra-ai")}}
+			"cache", "download", "github.com", "ondatra-ai"), filepath.Join(moduleCache, "cache", "vcs")}}
 
 	policyPath := filepath.Join(dir, "policy.json")
 
