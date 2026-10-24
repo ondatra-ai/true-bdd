@@ -39,7 +39,7 @@ func ToolchainRoots(ctx context.Context) ([]string, error) {
 		err := shell.Run(ctx,
 		[]string{Bin,
 			"env",
-			"-json",
+			jsonOutputFlag,
 			"GOROOT",
 			"GOMODCACHE",
 			"GOCACHE"},

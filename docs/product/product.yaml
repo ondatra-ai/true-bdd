@@ -251,7 +251,18 @@ glossary:
       the same rerun. A stall means one model response has been open for ten
       minutes; tool execution and the whole turn have no such bound. A crush
       that cannot start, or an engine refusal before spawning, stays fatal.
-      Other providers retain their existing failure handling.
+      A started codex writer that exits non-zero (including a usage limit),
+      returns empty or whitespace-only output or leaves no answer file also
+      keeps its edits and follows the same warning, allowance and rerun.
+      A codex start failure or refusal before spawning stays fatal; codex
+      has no response watch. Claude retains its existing failure handling.
+      The build-code codex writer receives whole-suite and selected replay
+      forms, polling its own process for completion. It reads the host
+      project and runtime/toolchain exceptions only, writes declared service
+      roots and host tmp only, and cannot read its generated credential home.
+      Its commands have no network. User config, MCP servers, web search,
+      history and AGENTS.md are not loaded for this writer. Its JSON events
+      are saved for audit; its final message still supplies the confirmation.
       These outcomes consume the same allowance; the terminal apply
       is rerun but still ends at the non-converging bound even if it passes.
       An extracted malformed block or one without applied keeps its existing

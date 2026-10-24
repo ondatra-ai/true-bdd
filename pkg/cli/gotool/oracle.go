@@ -28,7 +28,7 @@ func ReplayOracle(ctx context.Context, binary string, opt OracleOptions) (int, e
 		[]string{"test",
 			"-tags",
 			"bdd",
-			"-json",
+			jsonOutputFlag,
 			"-count=1",
 			"-timeout=40m",
 			"./tests/bdd-cli/",

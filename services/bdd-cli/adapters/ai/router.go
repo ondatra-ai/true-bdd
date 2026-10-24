@@ -85,6 +85,8 @@ func (r *Router) ExecutePromptWithSystem(
 		TmpDir:       r.tmpDir,
 		Label:        label,
 		ResultSchema: resultSchema,
+		CodexWriter: role == provider.RoleApply && model.CLI == provider.CLICodex &&
+			len(options) > 0 && options[0].CodexWriter,
 		WatchWriterResponse: role == provider.RoleApply && model.CLI == provider.CLICrush &&
 			len(options) > 0 && options[0].WatchWriterResponse,
 	})

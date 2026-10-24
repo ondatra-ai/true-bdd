@@ -398,7 +398,7 @@ architecture:
           extracted content; the writer never writes that path itself.
           A successful response with no extractable block follows PostNotApplied
           in build code alone, preserving files, warning once with this path
-          and rerunning the remaining set. Provider failures remain fatal;
+          and rerunning the remaining set. Started crush or codex writer failures also follow the not-applied rerun; other provider failures remain fatal;
           malformed extracted content retains its existing handling.
         Subject.Tests: >-
           Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
@@ -462,8 +462,10 @@ architecture:
           Mapping observed_by text, unchanged.
         WriteRoots: >-
           Every architecture service path, in declaration order.
+        CodexWriter: >-
+          True when the resolved apply model CLI is codex; selects native process polling while the crush rendering stays byte-identical.
         TestCommand: >-
-          Only a crush writer gets the configured canonical replay grant; nil for other providers or an unrepresentable command.
+          Crush and codex writers get the configured canonical replay forms; nil for claude or an unrepresentable command. Crush uses job_output; codex polls its native process tool.
         TestCommand.Command: >-
           Canonical replay command without machine-output flags, per ADR-0018.
         TestCommand.Selector: >-
@@ -666,12 +668,14 @@ architecture:
             binary: codex
             args:
               - exec
-              - -s
-              - "{sandbox}"
+              - when: The turn is not build code's codex writer.
+                args: [-s, "{sandbox}"]
               - --ephemeral
               - --skip-git-repo-check
               - --color
               - never
+              - when: The turn is build code's codex writer.
+                args: [--strict-config, --ignore-rules, --json]
               - -C
               - "{work_dir}"
               - -m
@@ -687,9 +691,8 @@ architecture:
             values:
               sandbox: >-
                 `workspace-write` when the turn may write a project tree outside
-                the run directory (the apply turn of `build code --fix` and
-                `build tests --fix`, which hold write roots); `read-only` for
-                every other turn. codex has no level between the two.
+                the run directory (ordinary source-edit turns such as `build tests --fix`, which hold write roots); `read-only` for
+                every other turn. Build code's writer instead selects the generated named writer permission profile, with no -s flag.
               model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
@@ -713,15 +716,58 @@ architecture:
             dir: "{work_dir}"
             notes:
               - >-
-                `-s` is mandatory: without a sandbox level `codex exec` blocks on
-                an approval prompt and hangs forever.
+                Ordinary turns select -s explicitly. The build-code writer selects default_permissions=writer and approval_policy=never in its generated configuration.
               - The trailing `-` makes codex read the prompt from stdin.
               - >-
                 `--skip-git-repo-check`: a BDD fixture's run directory is no git
                 repository, and codex refuses to run outside one without it.
               - >-
-                The environment is inherited unchanged. Process group, wait bound
-                and merged output are as for crush.
+                Ordinary turns inherit the environment and merge stdout/stderr as before.
+                Only build code's writer sets CODEX_HOME to {run_dir}/{label}-codex-home,
+                copying only auth.json with private permissions, never user config,
+                sessions, AGENTS.md, history or MCP definitions. --ephemeral remains.
+                Its generated config disables web search, apps, plugins, multi-agent,
+                memories, login shells, shell snapshots and host skill discovery;
+                project_doc_max_bytes=0 suppresses AGENTS.md and --ignore-rules
+                suppresses execpolicy files. No outer sandbox-exec wraps codex.
+              - >-
+                The writer profile grants host-root reads, service edit-root writes
+                and host tmp writes. :minimal supplies OS runtime exceptions listed
+                in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
+                Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
+                the generated home, /private/tmp and /private/var/tmp are denied.
+                The narrower host and tmp grants still work when nested under a denied root.
+                Every other filesystem path is restricted by default, including
+                sibling cuts, user work, codex sessions and claude transcripts.
+                Symlinked edit roots escaping the host are refused before the spawn.
+              - >-
+                Writer subprocesses inherit no environment: the profile sets PATH to
+                GOROOT/bin and system bin directories, HOME, TMPDIR and GOCACHE inside
+                host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
+                GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
+                and CGO_ENABLED=0. Network is disabled for commands and their children.
+                Codex's own model connection remains available. This is calibrated
+                for codex-cli 0.162.1 on macOS; no weaker fallback is supplied.
+              - >-
+                The writer config selects high reasoning and model_context_window=1050000.
+                A configured window is not a demonstrated prompt size: 1M remains
+                unverified. Model selection still comes from the resolved tier.
+              - >-
+                The writer saves stdout JSONL as {run_dir}/{label}-codex-events.jsonl
+                and stdout plus stderr as {run_dir}/{label}-codex.log. The final message
+                still comes only through -o. Drill audit reads command_execution and
+                file_change items, preserving raw evidence and marking decisions unknown;
+                commands do not prove successful reads. Invalid evidence is reported.
+                Recording excludes generated homes and shell/build scratch state.
+              - >-
+                A started codex writer exiting non-zero (including usage limits),
+                missing its answer file or returning whitespace carries CodexTurnError.
+                Build code keeps its edits, counts the attempt, warns once and runs
+                PostNotApplied. Start failures and refusals before spawning stay fatal.
+                There is no codex stall watch or engine turn bound; codex's own request
+                timeouts apply. Ordinary codex turns retain their prior arguments,
+                environment, sandbox and failure handling. Process group and wait bound
+                remain as for crush.
               - >-
                 Before the spawn the engine logs the turn's sandbox level as
                 msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
@@ -1055,7 +1101,7 @@ architecture:
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles and other providers' failures stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush-only command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty, and started codex writers that exit non-zero or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles and claude provider failures stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush or codex command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads
@@ -1372,7 +1418,7 @@ architecture:
         with its reason. Selectors are -run for go-test, --testNamePattern for
         jest and --grep for playwright. Test_dir is the absolute directory of
         testing.config, else the project root, as for the engine runner.
-        Claude and codex apply turns keep their existing permissions.
+        Claude apply turns keep their existing permissions. Codex build-code writers receive the same command forms as instructions, with confinement through their own permission profile (ADR-0021), rather than this guard.
         A relative `read_root` is malformed and refused.
       observed_by: >-
         Built by the Given steps for the When step: `read_root` is the run

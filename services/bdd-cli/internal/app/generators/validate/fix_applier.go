@@ -22,6 +22,7 @@ import (
 type FixApplierData struct {
 	WriteRoots  []string
 	TestCommand *provider.TestCommand
+	CodexWriter bool
 
 	Subject    any    // Current subject to modify (e.g., *story.Story or *ScenarioApplyData)
 	SubjectID  string // Subject identifier
@@ -46,6 +47,8 @@ type ApplyParams struct {
 	ModelTier string
 	// WatchWriterResponse requests the response watch for build code's crush writer.
 	WatchWriterResponse bool
+	// CodexWriter requests the confined build-code writer independently of crush's watch.
+	CodexWriter bool
 }
 
 // FixApplier applies fix prompts to stories using AI.
@@ -111,7 +114,7 @@ func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
 }
 
-// UseTestCommand grants only the crush applier the declared replay command.
+// UseTestCommand supplies crush and codex writers the declared replay forms.
 func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
 	a.testCommand = command
 }
@@ -143,9 +146,11 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 		Check:      params.Check,
 	}
 
-	if model.CLI == provider.CLICrush {
+	if model.CLI == provider.CLICrush || model.CLI == provider.CLICodex {
 		promptData.TestCommand = a.testCommand
 	}
+
+	promptData.CodexWriter = model.CLI == provider.CLICodex
 
 	systemPrompt, err := a.systemLoader.LoadTemplate(promptData)
 	if err != nil {
@@ -161,7 +166,9 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	a.savePromptFile(params.SubjectID, params.Iteration, "system", systemPrompt)
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
-	response, err := a.execute(ctx, model, systemPrompt, userPrompt, params.WatchWriterResponse)
+	response, err := a.execute(ctx, model, systemPrompt, userPrompt, provider.TurnOptions{
+		WatchWriterResponse: params.WatchWriterResponse, CodexWriter: params.CodexWriter,
+	})
 	if err != nil {
 		return "", pkgerrors.ErrChecklistAIEvaluationFailed(err)
 	}
@@ -304,18 +311,17 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 }
 
 func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
-	watch bool) (string, error) {
+	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
-	options := provider.TurnOptions{}
+	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
+	options.WatchWriterResponse = model.CLI == provider.CLICrush && options.WatchWriterResponse
 
 	if model.CLI == provider.CLICrush {
 		mode.TestCommand = a.testCommand
-		options.WatchWriterResponse = watch
 	}
 
 	return a.aiClient.ExecutePromptWithSystem(
-		// No result schema: this repo routes every apply turn to crush,
-		// which cannot enforce one (adapters/ai.SupportsResultSchema).
+		// Apply replies carry FILE_START/FILE_END text, not a result schema.
 		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
 		options,
 	)

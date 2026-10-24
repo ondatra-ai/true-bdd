@@ -70,7 +70,7 @@ Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or re
 Run in `{{ .TestCommand.Dir }}` using exactly one of these forms:
 - Whole suite: `{{ .TestCommand.Command }}`
 - Selection: `{{ .TestCommand.Command }} {{ .TestCommand.Selector }} '<selection>'`
-The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a job id, use job_output to read completion.
+The selection is a nonempty framework regular expression. Keep the command in the foreground; {{ if .CodexWriter }}if the tool returns a process/session id, poll that process with your native process tool until it completes.{{ else }}if the tool returns a job id, use job_output to read completion.{{ end }}
 {{ else }}
 No test command is granted to this writer. Report that limitation in the confirmation.
 {{ end }}

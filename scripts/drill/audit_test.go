@@ -15,6 +15,44 @@ import (
 
 const messageKey = "msg"
 
+func TestAuditReadsCodexCommandsAndFileChangesWithoutInferringReads(t *testing.T) {
+	runner, record, cut := prepare(t, "#!/bin/sh\nexit 0\n")
+	path := filepath.Join(cut.Directory, "tmp/turn/codex-turn002-codex-events.jsonl")
+	put(t, path, `{"type":"item.completed","item":{"type":"command_execution",
+"command":"cat /outside/marker; go test ./tests/suite","exit_code":1,"status":"completed"}}
+{"type":"item.completed","item":{"type":"file_change",
+"changes":[{"path":"services/demo/main.go","kind":"update"}],"status":"completed"}}
+{"type":"turn.completed","usage":{"input_tokens":25000}}
+invalid
+`)
+	audit, err := runner.Audit(t.Context(), record.Directory, "a")
+	must(t, err)
+
+	found := map[string]bool{}
+
+	for _, entry := range audit.Entries {
+		if entry.Evidence == path {
+			found[entry.Tool+":"+entry.Target] = true
+			if entry.Decision != "unknown" {
+				t.Fatalf("inferred read success: %+v", entry)
+			}
+		}
+	}
+
+	for _, want := range []string{
+		"codex:command_execution:/outside/marker",
+		"codex:file_change:" + filepath.Join(cut.Directory, "services/demo/main.go"),
+	} {
+		if !found[want] {
+			t.Errorf("missing %s: %+v", want, audit)
+		}
+	}
+
+	if !strings.Contains(strings.Join(audit.Unknown, "\n"), "invalid codex event") {
+		t.Fatal("invalid evidence hidden")
+	}
+}
+
 func TestAuditExplicitlyExcludesEveryOracleReplayForTheCut(t *testing.T) {
 	runner, record, _ := prepare(t, "#!/bin/sh\nexit 0\n")
 	record, err := drill.Read(record.Directory)

@@ -167,6 +167,8 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
+		"build-code-codex-selection":              overrideTiers,
+		"build-code-codex-nonzero":                overrideTiers,
 		"build-code-writer-bound":                 overrideFixLoop,
 		"build-code-no-confirmation-bound":        overrideFixLoop,
 		"build-code-shrinking-bound":              overrideFixLoop,

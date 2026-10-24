@@ -28,6 +28,8 @@ type Request struct {
 	Label string
 	// WatchWriterResponse requests the build-code crush response watch.
 	WatchWriterResponse bool
+	// CodexWriter requests the confined build-code writer profile.
+	CodexWriter bool
 }
 
 // Provider runs one prompt through a single agent CLI and returns the

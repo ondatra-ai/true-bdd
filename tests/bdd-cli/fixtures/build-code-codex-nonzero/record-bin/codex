@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+mkdir -p ./tmp
+request=$(mktemp ./tmp/codex-request.XXXXXX)
+trap 'rm -f "$request"' EXIT
+cat > "$request"
+"${TRUE_BDD_RECORD_CODEX:?Set to installed codex}" "$@" < "$request" || exit "$?"
+if grep -q 'Fixture transport outcome: non-zero exit' "$request"; then
+  exit 7
+fi

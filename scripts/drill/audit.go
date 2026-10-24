@@ -61,6 +61,7 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 				"they cannot be assigned to a target without an explicit decision."}}
 	audit.engineLog(filepath.Join(cut.Directory, "tmp/true-bdd.log.json"), cut.Directory, record.AllowedRoots)
 	audit.databases(ctx, cut.Directory, record.AllowedRoots)
+	audit.codexEvents(cut.Directory, record.AllowedRoots)
 	audit.oracleLimitations(record.Runs, name)
 	err = change(directory, func(record *Record) error {
 		record.Audits[name] = append(record.Audits[name], audit)
