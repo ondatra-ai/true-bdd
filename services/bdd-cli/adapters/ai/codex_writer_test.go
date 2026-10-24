@@ -2,6 +2,7 @@ package ai_test
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +26,8 @@ func TestCodexWriterGetsAnIsolatedHomeAndRestrictedProfile(t *testing.T) {
 	putCodexFile(t, filepath.Join(bin, "codex"), `#!/bin/sh
 printf '%s\n' "$@" > args.txt
 printf '%s\n' "$CODEX_HOME" > home.txt
+[ "$(cat "$CODEX_HOME/auth.json")" = '{"fixture":"credentials"}' ] || exit 10
+cp -p "$CODEX_HOME/auth.json" dummy-auth-copy.json
 while [ "$1" != '-o' ]; do shift; done
 printf 'done' > "$2"
 printf '{"type":"turn.completed"}\n'
@@ -43,6 +46,11 @@ printf '{"type":"turn.completed"}\n'
 
 	assertPrivateCodexHome(t, generated)
 
+	info, statErr := os.Stat(filepath.Join(root, "dummy-auth-copy.json"))
+	if statErr != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("credential mode: %v, %v", info, statErr)
+	}
+
 	config := readCodexFile(t, filepath.Join(generated, "config.toml"))
 	for _, want := range []string{`default_permissions = "writer"`, `model_reasoning_effort = "high"`,
 		`model_context_window = 1050000`, `web_search = "disabled"`, `project_doc_max_bytes = 0`,
@@ -50,15 +58,13 @@ printf '{"type":"turn.completed"}\n'
 		`"/private/tmp" = "deny"`, `"/private/var/tmp" = "deny"`,
 		`/github.com/ondatra-ai" = "deny"`, `/cache/download/github.com/ondatra-ai" = "deny"`,
 		filepath.Join(root, "services/demo") + `" = "write"`, filepath.Join(root, "tmp") + `" = "write"`,
-		generated + `" = "deny"`} {
+		filepath.Join(root, "tmp/codex-homes") + `" = "deny"`} {
 		if !strings.Contains(config, want) {
 			t.Errorf("profile missing %q: %s", want, config)
 		}
 	}
 
-	if readCodexFile(t, filepath.Join(generated, "auth.json")) != `{"fixture":"credentials"}` {
-		t.Fatal("authentication was not copied")
-	}
+	assertCodexCredentialsRemoved(t, generated)
 
 	args := readCodexFile(t, filepath.Join(root, "args.txt"))
 	if strings.Contains(args, "\n-s\n") || !strings.Contains(args, "--json\n") {
@@ -134,6 +140,8 @@ func TestCodexStartedWriterOutcomesAndStartFailures(t *testing.T) {
 				t.Fatalf("error = %v; started = %v", err, got)
 			}
 
+			assertNoCodexCredentials(t, filepath.Join(root, "tmp"))
+
 			if failure != nil && string(failure.Outcome) != testCase.outcome {
 				t.Fatalf("outcome = %q", failure.Outcome)
 			}
@@ -156,6 +164,8 @@ func TestCodexWriterRefusesAnEditRootSymlinkOutsideTheHostBeforeSpawning(t *test
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), CodexWriter: true,
 		Mode: ai.ExecutionMode{SourceWriteRoots: []string{"escape/service"}},
 	})
+
+	assertNoCodexCredentials(t, filepath.Join(root, "tmp"))
 
 	var started *pkgerrors.CodexTurnError
 	if !errors.Is(err, os.ErrPermission) || errors.As(err, &started) {
@@ -192,12 +202,35 @@ func assertPrivateCodexHome(t *testing.T, generated string) {
 	t.Helper()
 
 	entries, err := os.ReadDir(generated)
-	if err != nil || len(entries) != 2 {
-		t.Fatalf("generated home = %v, %v; want only auth.json and config.toml", entries, err)
+	if err != nil || len(entries) != 1 || entries[0].Name() != "config.toml" {
+		t.Fatalf("generated home = %v, %v; want only config.toml after turn", entries, err)
 	}
+}
 
-	info, err := os.Stat(filepath.Join(generated, "auth.json"))
-	if err != nil || info.Mode().Perm() != 0o600 {
-		t.Fatalf("credential mode: %v, %v", info, err)
+func assertCodexCredentialsRemoved(t *testing.T, home string) {
+	t.Helper()
+
+	_, err := os.Stat(filepath.Join(home, "auth.json"))
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("credentials survived turn in %s: %v", home, err)
+	}
+}
+
+func assertNoCodexCredentials(t *testing.T, root string) {
+	t.Helper()
+
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if entry.Name() == "auth.json" {
+			t.Errorf("credentials survived turn: %s", path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

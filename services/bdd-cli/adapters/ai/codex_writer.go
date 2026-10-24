@@ -15,11 +15,23 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
-// prepareCodexWriter generates credentials and policy; commands cannot read this home.
-func prepareCodexWriter(ctx context.Context, req Request) ([]string, error) {
-	home, err := filepath.Abs(artifactPath(req, "codex-home"))
+// codexWriterHome places every turn beneath the subtree denied to all writers.
+func codexWriterHome(req Request) (string, error) {
+	root, err := filepath.EvalSymlinks(req.WorkDir)
 	if err != nil {
-		return nil, fmt.Errorf("locate codex home: %w", err)
+		return "", fmt.Errorf("resolve codex workspace: %w", err)
+	}
+
+	home := filepath.Join(root, "tmp", "codex-homes", filepath.Base(req.TmpDir),
+		filepath.Base(artifactPath(req, "codex-home")))
+
+	return codexInsideRoot(root, home)
+}
+
+func prepareCodexWriter(ctx context.Context, req Request, home string) ([]string, error) {
+	err := disk.Dir(req.TmpDir, disk.Private)
+	if err != nil {
+		return nil, fmt.Errorf("create codex artifacts: %w", err)
 	}
 
 	paths, err := gotool.Environment(ctx)
@@ -37,14 +49,14 @@ func prepareCodexWriter(ctx context.Context, req Request) ([]string, error) {
 		authHome = filepath.Join(userHome, ".codex")
 	}
 
+	config, err := codexWriterConfig(req, paths)
+	if err != nil {
+		return nil, err
+	}
+
 	err = disk.Copy(filepath.Join(home, "auth.json"), filepath.Join(authHome, "auth.json"), disk.Private)
 	if err != nil {
 		return nil, fmt.Errorf("copy codex authentication: %w", err)
-	}
-
-	config, err := codexWriterConfig(req, home, paths)
-	if err != nil {
-		return nil, err
 	}
 
 	err = disk.Write(filepath.Join(home, "config.toml"), []byte(config), disk.Private)
@@ -55,7 +67,7 @@ func prepareCodexWriter(ctx context.Context, req Request) ([]string, error) {
 	return append(os.Environ(), "CODEX_HOME="+home), nil
 }
 
-func codexWriterConfig(req Request, home string, paths map[string]string) (string, error) {
+func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 	root, err := filepath.EvalSymlinks(req.WorkDir)
 	if err != nil {
 		return "", fmt.Errorf("resolve codex workspace: %w", err)
@@ -87,7 +99,8 @@ func codexWriterConfig(req Request, home string, paths map[string]string) (strin
 		return "", err
 	}
 
-	for _, path := range []string{home, "/private/tmp", "/private/var/tmp",
+	for _, path := range []string{filepath.Join(temporary, "codex-homes"), "/private/tmp", "/private/var/tmp",
+		filepath.Join(paths["GOMODCACHE"], "cache/vcs"),
 		filepath.Join(paths["GOMODCACHE"], "github.com/ondatra-ai"),
 		filepath.Join(paths["GOMODCACHE"], "cache/download/github.com/ondatra-ai")} {
 		fmt.Fprintf(&config, "%s = \"deny\"\n", strconv.Quote(path))

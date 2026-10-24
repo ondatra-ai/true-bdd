@@ -723,9 +723,10 @@ architecture:
                 repository, and codex refuses to run outside one without it.
               - >-
                 Ordinary turns inherit the environment and merge stdout/stderr as before.
-                Only build code's writer sets CODEX_HOME to {run_dir}/{label}-codex-home,
+                Only build code's writer sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
                 copying only auth.json with private permissions, never user config,
-                sessions, AGENTS.md, history or MCP definitions. --ephemeral remains.
+                sessions, AGENTS.md, history or MCP definitions. The provider removes auth.json
+                after preparation or turn completion, on success and failure, reporting cleanup errors. --ephemeral remains.
                 Its generated config disables web search, apps, plugins, multi-agent,
                 memories, login shells, shell snapshots and host skill discovery;
                 project_doc_max_bytes=0 suppresses AGENTS.md and --ignore-rules
@@ -735,7 +736,7 @@ architecture:
                 and host tmp writes. :minimal supplies OS runtime exceptions listed
                 in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
                 Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
-                the generated home, /private/tmp and /private/var/tmp are denied.
+                GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
                 sibling cuts, user work, codex sessions and claude transcripts.

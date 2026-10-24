@@ -43,11 +43,11 @@ Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArgument
 
 
 ## Proposed repair plan
-In services/calc/calc.go, repair calc.Add(a, b int) to return a + b instead of a - b, preserving its signature. The contract is to sum both arguments; the current subtraction produces -1 for Add(2, 3), causing TestAddSumsItsArguments to fail. Remove the stale source comment claiming the implementation uses the wrong operator.
+In services/calc/calc.go, repair Add(a, b int) to return a + b instead of a - b, preserving its signature. Its contract is to sum both arguments; this fixes TestAddSumsItsArguments, which requires Add(2, 3) == 5. Update the adjacent production comment so it no longer describes the defect as present.
 
-This repair serves the sole failing test, tests/suite/add_test.go::TestAddSumsItsArguments, which requires Add(2, 3) == 5. Validate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the name filter so the unrelated canary does not execute or append to suite-runs.log.
+Edit only services/calc/, the architecture’s declared service root. Do not modify tests, assertions, documents, or configuration.
 
-Edit only production source under the declared service root services/calc/. Do not modify tests, assertions, documents, architecture configuration, or true-bdd/.
+Validate only the failing test with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Confirm it passes. Keep the name filter so the unrelated canary test does not run or append to suite-runs.log.
 
 ## Edit roots
 
@@ -56,7 +56,11 @@ Edit only production source under the declared service root services/calc/. Do n
 Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
 
 
-No test command is granted to this writer. Report that limitation in the confirmation.
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
 
 
 ## How to work

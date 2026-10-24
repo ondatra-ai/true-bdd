@@ -417,7 +417,7 @@ named permission profile (ADR-0021), with high reasoning and a configured
 The home copies only sign-in credentials and is denied to writer commands;
 user config, MCP, web search, history and AGENTS.md are suppressed. Reads
 reach the host, OS runtime, Go toolchain and module cache excluding
-`github.com/ondatra-ai` (including download archives). Writes reach service
+`github.com/ondatra-ai` (including download archives) and the entire module-cache `cache/vcs` tree. All generated homes share a denied `tmp/codex-homes` subtree; authentication is removed after each turn, including failures. Writes reach service
 edit roots and host `tmp/`; `HOME`, `TMPDIR`, `GOCACHE` and controlled Go
 flags are set there. Subprocess network is off and `GOPROXY=off`.
 The profile is calibrated on macOS with codex-cli 0.162.1 and has no weaker

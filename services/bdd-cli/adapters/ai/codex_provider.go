@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -35,6 +36,26 @@ func (p *CodexProvider) Name() string {
 // Execute runs one turn and returns the final message codex wrote to
 // its output file.
 func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error) {
+	if !req.CodexWriter {
+		return p.execute(ctx, req, "")
+	}
+
+	home, err := codexWriterHome(req)
+	if err != nil {
+		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
+	}
+
+	answer, turnErr := p.execute(ctx, req, home)
+
+	cleanupErr := disk.Remove(filepath.Join(home, "auth.json"))
+	if cleanupErr != nil {
+		cleanupErr = fmt.Errorf("remove codex authentication: %w", cleanupErr)
+	}
+
+	return answer, errors.Join(turnErr, cleanupErr)
+}
+
+func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (string, error) {
 	answerPath := artifactPath(req, "codex-answer.txt")
 	if answerPath == "" {
 		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrCreateTmpDirectory)
@@ -51,7 +72,7 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 	if req.CodexWriter {
 		var err error
 
-		env, err = prepareCodexWriter(ctx, req)
+		env, err = prepareCodexWriter(ctx, req, home)
 		if err != nil {
 			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
 		}
