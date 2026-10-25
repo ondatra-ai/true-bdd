@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	doneStatus    = "done"
 	fixArgument   = "--fix"
 	testsArgument = "tests"
 	modelArgument = "--model"
@@ -41,7 +42,7 @@ printf 'Your choice (1/2/3): '
 read menu
 [ "$menu" = 1 ] || exit 12
 printf '\nCLARIFICATION NEEDED\n[1/1] How is it specified?\n    Options:\n'
-printf '      1) Restore from history\n      2) Write from specification\n\n    Your answer: '
+printf '      1) Restore from history\n      2) Write from specification\n      0) Other\n\n    Your answer: '
 
 read answer
 [ "$answer" = 'Write from specification' ] || exit 13
@@ -82,7 +83,7 @@ read answer
 	must(t, err)
 
 	final := current.Runs[run.Tag]
-	if final.Status != "done" || final.ExitCode == nil || *final.ExitCode != 0 || final.EndedAt.IsZero() {
+	if final.Status != doneStatus || final.ExitCode == nil || *final.ExitCode != 0 || final.EndedAt.IsZero() {
 		t.Fatalf("final: %+v", final)
 	}
 

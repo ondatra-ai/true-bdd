@@ -233,7 +233,7 @@ func (r Runner) execute(ctx context.Context, record Record, run Attempt) (int, e
 
 	cancel()
 	closePipes()
-	writer.answers.Wait()
+	writer.close()
 
 	return code, errors.Join(err, writer.failure)
 }
