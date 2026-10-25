@@ -2,7 +2,6 @@ package steps
 
 import (
 	"path/filepath"
-	"regexp"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
@@ -28,9 +27,9 @@ func assertEveryFileMatches(state *State, args []string) error {
 		return state.fail("no file matches %q", args[0])
 	}
 
-	pattern, err := regexp.Compile(args[2])
+	pattern, err := compileFilePattern(state, args[2])
 	if err != nil {
-		return state.fail("invalid pattern %q: %v", args[2], err)
+		return err
 	}
 
 	for _, file := range files {
