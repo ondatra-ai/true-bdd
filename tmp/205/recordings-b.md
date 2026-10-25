@@ -29,11 +29,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `build-code-writer-003-bound` | `build-code-writer-bound` | recorded | recorded on #203-b; replay passed | 3.67 |
 | `build-code-claude-005-replay` | `build-code-claude-replay` | recorded | recorded on #203-b; replay passed | 0.78 |
 | `build-code-claude-006-failure` | `build-code-claude-failure` | recorded | recorded on #203-b; replay passed | 0.76 |
-| `build-code-codex-001-selection` | `build-code-codex-selection` | remaining | pending | — |
-| `build-code-codex-002-nonzero` | `build-code-codex-nonzero` | remaining | pending | — |
-| `build-code-codex-003-missing-root` | `build-code-codex-missing-root` | remaining | pending | — |
-| `claude-guard-001-read-only-tool-allowed` | `claude-guard-read-only-tool` | remaining | pending | — |
-| `claude-guard-002-shell-denied-without-grant` | `claude-guard-shell-denied` | remaining | pending | — |
+| `build-code-codex-001-selection` | `build-code-codex-selection` | recorded | recorded on #203-b; replay passed | 1.60 |
+| `build-code-codex-002-nonzero` | `build-code-codex-nonzero` | recorded | recorded on #203-b; replay passed | 1.79 |
+| `build-code-codex-003-missing-root` | `build-code-codex-missing-root` | recorded | recorded on #203-b; replay passed | 1.62 |
+| `claude-guard-001-read-only-tool-allowed` | `claude-guard-read-only-tool` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-002-shell-denied-without-grant` | `claude-guard-shell-denied` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-004-unknown-tool-denied` | `claude-guard-unknown-tool` | remaining | pending | — |
 | `claude-guard-005-missing-policy-denied` | `claude-guard-missing-policy` | remaining | pending | — |
 | `claude-guard-006-unreadable-policy-denied` | `claude-guard-unreadable-policy` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 25 of 55; remaining: 30; service CLI minutes: 79.55.
+Recorded and replayed: 30 of 55; remaining: 25; service CLI minutes: 84.57.

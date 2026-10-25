@@ -1,4 +1,4 @@
-Updated `services/calc/calc.go`: `A()` returns `1`, and `B()` returns `2`. The requested selection and full suite both passed.
+Updated `services/calc/calc.go`: `A()` returns `1`, and `B()` returns `2`. The requested test selection passed with exit code 0.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true

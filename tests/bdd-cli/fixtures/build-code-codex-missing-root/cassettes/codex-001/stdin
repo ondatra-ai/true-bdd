@@ -9,167 +9,112 @@ Implement the failing service in services/calc/ only. Never edit tests or docume
 Test: fixture/buildcodefix/tests/suite::<build>
 
 ## Plan
-# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::&lt;build&gt;
+# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::<build>
 
 ## Diagnosis
 
-The failure is a compile/setup failure, not an assertion failure. `go test ./tests/suite/...`
-never ran a single test case:
+The failure is a **build/setup failure, not a logic failure**. Nothing is wrong
+with the test or the module wiring — the declared service root is simply absent.
+
+- `docs/architecture/architecture.yaml` declares one service: `name: calc`,
+  `path: services/calc`, `language: go`. That path is the only writable root.
+- `go.mod` at the fixture root declares `module fixture/buildcodefix` (`go 1.25.0`).
+  So the import path `fixture/buildcodefix/services/calc` must resolve to the
+  directory `services/calc` inside this module.
+- `tests/suite/calc_test.go:4` imports `fixture/buildcodefix/services/calc`.
+- A glob of `services/**` returns **no files** — the directory does not exist.
+
+Because the directory is missing, the Go toolchain cannot map the import to the
+main module and falls back to reporting it as a stdlib miss:
 
 ```
 tests/suite/calc_test.go:4:2: package fixture/buildcodefix/services/calc is not in std
-FAIL	fixture/buildcodefix/tests/suite [setup failed]
+FAIL fixture/buildcodefix/tests/suite [setup failed]
 ```
 
-Facts established by reading the tree:
+The discovery JSONL confirms the shape: `"Action":"build-fail"` with
+`"ImportPath":"fixture/buildcodefix/services/calc"`, then the package record
+`"Action":"fail"` carrying `"FailedBuild":"fixture/buildcodefix/services/calc"`.
+There are no per-test `run`/`pass`/`fail` events at all, because compilation
+never completed. Consequently **both** `TestA` and `TestB` are blocked by this
+one cause, and one new file fixes the whole set.
 
-- `go.mod` at the run-dir root declares `module fixture/buildcodefix` (`go 1.25.0`).
-- `tests/suite/calc_test.go` is `package suite_test` and imports
-  `"fixture/buildcodefix/services/calc"`.
-- `docs/architecture/architecture.yaml` declares exactly one service:
-  `name: calc`, `path: services/calc`, `language: go`.
-- **There is no `services/` directory in the tree at all** — not an empty package,
-  not a broken file: the directory is simply absent.
+## Part 1 — Create the missing `calc` package (the entire repair)
 
-Because the import path is module-relative (`fixture/buildcodefix/...` matches the
-module path), Go resolves it to the on-disk directory `./services/calc`. That
-directory does not exist, so the toolchain falls back to looking in GOROOT and
-reports "is not in std". The single repair is therefore to **create the missing
-service root and populate it with the production API the suite imports**. No
-other cause is in play — there is no vendor dir, no replace directive, no
-multi-module layout, and no stale build cache involved.
+**File to create: `services/calc/calc.go`** (new file; creates the
+`services/calc` directory as a side effect).
 
-## Scope guard
+Requirements for that file:
 
-The only writable location is the declared service root `services/calc/`.
-Do not touch `tests/suite/calc_test.go` (or any `*_test.go`), `go.mod`,
-`docs/architecture/architecture.yaml`, or anything under `tmp/`. Do not add a
-second `go.mod` inside `services/calc` — that would carve the directory out of
-the root module and reproduce the same unresolvable-import failure under a
-different message. The package must stay part of module `fixture/buildcodefix`.
+1. **Package clause must be exactly `package calc`.** The import path's last
+   element is `calc` and the test refers to the package by the selector `calc.`,
+   so the package name must match. Do not use `package main`.
+2. **Export two niladic functions, `A` and `B`**, both returning a numeric value
+   usable in a comparison against an untyped integer constant. Use `int` — it is
+   idiomatic and unambiguously satisfies `calc.A() != 1` and `calc.B() != 2`.
+   - `func A() int` must return `1`.
+   - `func B() int` must return `2`.
+   Both must be capitalised; lowercase `a`/`b` are unexported and will not
+   compile against the test package.
+3. **The file must actually build into the package.** Do not add build tags,
+   do not give it a `_test.go` suffix, and do not place it in a nested
+   subdirectory — any of those leaves the package with no buildable Go files and
+   swaps the current error for `build constraints exclude all Go files in ...`,
+   which is the same setup failure wearing a different hat.
+4. Keep the file minimal and dependency-free. No new imports, so **no `go.sum`
+   is required and `go.mod` needs no `require` directives**. Do not touch
+   `go.mod` — its module path and `go` directive are already correct and are
+   deliberately a sentinel boundary (see its header comment). In particular do
+   not bump the `go` line to match the local 1.27.1 toolchain; 1.25.0 is
+   forward-compatible and the bump is unrelated churn.
 
-## Part 1 — Create the `calc` package at the declared service root
+A short doc comment on the package and/or the two functions is welcome, but no
+other behaviour, types, constructors, or helper files should be added. There is
+no scenario or spec text asking for arithmetic, state, or configuration here —
+the architecture file describes only the service's existence and location.
 
-**File to create:** `services/calc/calc.go` (new file; create the
-`services/` and `services/calc/` directories as part of this).
+## Which tests each part serves
 
-**Package clause:** `package calc`. This is mandatory and is the part most
-likely to be got wrong: the directory name is `calc` and the test refers to the
-imported identifier as `calc.A()` / `calc.B()`, so the package name must be
-exactly `calc` (not `main`, not `services`, not `calc_test`). The file must be
-non-test production source — do not name it `calc_test.go` or put the API in a
-file ending in `_test.go`, or the suite still will not see it.
+There is exactly one part, and it serves every member of the failing set:
 
-**Serves:** the whole failing set — test ID
-`/go-test/go-test:fixture.buildcodefix.tests.suite::<build>`. This is the
-`<build>` pseudo-test, i.e. the package-level compile step. Until this package
-exists and compiles, `TestA` and `TestB` are not even reported as failing; the
-suite reports `[setup failed]`. Creating a compiling `package calc` that
-exports the two referenced identifiers is what flips `<build>` from fail to
-pass and lets the real test cases run.
+| Test | Served by |
+| --- | --- |
+| `fixture/buildcodefix/tests/suite::<build>` (the set member reported) | Existence of `services/calc/calc.go` declaring `package calc`, which makes the import at `calc_test.go:4` resolve and lets the package compile. |
+| `TestA` (`calc.A() != 1` → `t.Fatal("A needs one")`) | `func A() int` returning `1`. |
+| `TestB` (`calc.B() != 2` → `t.Fatal("B needs two")`) | `func B() int` returning `2`. |
 
-## Part 2 — Export `A` and the behaviour `TestA` asserts
+The reported failure ID is the `<build>` pseudo-test, so clearing the compile
+error is what flips the harness verdict; returning the correct values is what
+keeps `TestA`/`TestB` green once they are finally able to run. Both halves are
+needed — a package that compiles but returns the wrong numbers converts a setup
+failure into two assertion failures.
 
-**Where:** `services/calc/calc.go`.
+## Boundaries the writer must respect
 
-**Contract the writer must satisfy, read off the suite (do not modify the
-suite to learn it — read it only):**
+- Write **only** inside `services/calc/`, the single root declared in
+  `docs/architecture/architecture.yaml`.
+- Do **not** create, move, edit, or delete `tests/suite/calc_test.go` or any
+  other `*_test.go` file. The import path in the test is the contract; the
+  production code conforms to it, never the reverse. Do not "fix" the import to
+  point somewhere else.
+- Do **not** weaken, skip, relax, or remove the `t.Fatal` assertions, and do not
+  add `t.Skip`, build tags, or `-short` guards anywhere.
+- Do **not** edit `docs/architecture/architecture.yaml`, `go.mod`, the
+  `true-bdd/` checklists, or any template.
+- Do not add a `tests/` helper, a `doc.go` stub elsewhere, or a second module.
 
-```go
-if calc.A() != 1 { t.Fatal("A needs one") }
+## How to confirm
+
+From the fixture root, the architecture's own command:
+
+```
+go test -json -count=1 ./tests/suite/...
 ```
 
-So `A` must be:
-
-- **exported** (capital `A`) — a lowercase `a` is invisible to the external
-  `suite_test` package and keeps the build red;
-- a **function**, callable as `A()` with **zero arguments** — not a variable,
-  constant, or method;
-- returning **exactly one value** that is comparable to the untyped constant
-  `1`. Use the default `int` return type. A `float64`/`int64`/custom numeric
-  type would still compile against `!= 1`, but `int` is the plainest reading of
-  the contract and avoids surprising any later caller;
-- deterministic, with **no parameters and no state**: every call returns the
-  same value.
-
-**Intended implementation:** a trivial pure accessor whose body returns the
-value `1`. There is no hidden arithmetic to reconstruct here — the suite pins a
-single constant result, so the honest implementation is the constant. Do not
-invent configuration, flags, randomness, time dependence, globals that could be
-mutated, or an `init()` that computes the value; any of those add ways for the
-value to drift away from `1` without buying anything. Do not make `A` return an
-error or a second value — the call site uses it in a single-value expression
-context and extra results will not compile.
-
-**Serves:** `TestA` in `tests/suite/calc_test.go`, and (via compilation of the
-reference `calc.A`) the `<build>` pseudo-test that is the nominal subject of
-this set.
-
-## Part 3 — Export `B` and the behaviour `TestB` asserts
-
-**Where:** `services/calc/calc.go` (same file as Part 2 is fine and preferred —
-one small file for one small package; a second file in the same directory is
-acceptable only if it carries the identical `package calc` clause).
-
-**Contract, read off the suite:**
-
-```go
-if calc.B() != 2 { t.Fatal("B needs two") }
-```
-
-Same shape as `A`: exported, zero-argument function, single `int` result,
-deterministic, value `2`.
-
-**Explicitly:** `B` must be a distinct exported function from `A` and must
-return `2`, not `1`. Do not implement `B` as an alias or wrapper that delegates
-to `A`, and do not try to unify them behind a shared helper with a default —
-that creates a path where one change breaks both assertions. Two independent
-one-line functions is the correct altitude for this package.
-
-**Serves:** `TestB` in `tests/suite/calc_test.go`, plus the same `<build>` step.
-
-## Part 4 — Keep the package self-contained and lint-clean
-
-**Where:** `services/calc/calc.go`.
-
-The root `go.mod` has no `require` block and the repo deliberately isolates this
-fixture module (see the comment in `go.mod`). Therefore:
-
-- **Import nothing.** The package needs no imports; an unused import is a hard
-  compile error in Go and would re-break `<build>`. Likewise do not add any
-  third-party dependency, which would force a `go.mod` edit that is out of
-  scope.
-- Add a short doc comment on the package (and optionally on each function)
-  describing it as the fixture's `calc` service exposing two fixed values. This
-  keeps the file idiomatic without encoding anything the tests depend on.
-- Make sure the file is `gofmt`-clean (tabs for indentation, trailing newline).
-
-**Serves:** the `<build>` pseudo-test — this part is about not reintroducing a
-setup failure through a mechanical slip.
-
-## Verification the writer should run
-
-From the run directory (the one containing `go.mod`):
-
-1. `go build ./...` — must succeed; proves `services/calc` is now resolvable
-   inside module `fixture/buildcodefix`.
-2. `go vet ./...` — should be clean.
-3. `go test -json -count=1 ./tests/suite/...` — the exact `record`/`replay`/`live`
-   command from `architecture.yaml`. Expect `TestA` and `TestB` both to report
-   `"Action":"pass"` and the package result to be `ok`, with no `[setup failed]`
-   line anywhere in the output.
-
-If step 3 still reports `[setup failed]`, the cause is one of: wrong package
-clause, a stray `go.mod` added under `services/`, the API placed in a `_test.go`
-file, lowercase (unexported) identifiers, or an unused import — check those
-before considering any other change, and never resolve it by touching the suite.
-
-## Assertions
-
-Both existing assertions (`A needs one`, `B needs two`) stay exactly as written.
-This plan satisfies them by supplying the missing production package; it does
-not relax, skip, rename, or delete any test or assertion, and it adds no build
-tags or skip conditions that would stop either test from executing.
+Expect `services/calc` to no longer appear with `build-fail`, and expect
+`"Action":"pass"` events for both `TestA` and `TestB` plus a passing package
+record for `fixture/buildcodefix/tests/suite`. `go build ./services/...` and
+`go vet ./...` should also be clean.
 Implement calc.A() returning 1 and calc.B() returning 2 in services/calc/calc.go.
 Run the granted selection in `{{CWD}}`:
 `go test -count=1 ./tests/suite/... -run 'TestA|TestB'`
