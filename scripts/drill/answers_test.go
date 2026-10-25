@@ -1,9 +1,11 @@
 package drill_test
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +16,7 @@ import (
 
 func TestAnswerCannotCiteSymlinkOutsideSpecification(t *testing.T) {
 	runner, record, cut := prepare(t, `#!/bin/sh
-printf '\nCLARIFICATION NEEDED\n[1/1] Question?\n\n    Your answer: '
+printf '\nCLARIFICATION NEEDED\n[1/1] Question?\n1) Follow Specification\n0) Other\n\n    Your answer: '
 read answer
 `)
 	outside := filepath.Join(t.TempDir(), "secret")
@@ -76,7 +78,8 @@ sleep 30
 
 func TestEngineExitEndsUnansweredClarificationAndCleansUp(t *testing.T) {
 	runner, record, _ := prepare(t, `#!/bin/sh
-printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n\n    Your answer: '
+printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n1) Follow Specification\n0) Other\n\n    Your answer: '
+sleep 0.2
 exec "$DRILL_TEST_BINARY" -test.run=^TestDrillProcessFixture$
 `)
 	t.Setenv("DRILL_TEST_BINARY", os.Args[0])
@@ -91,7 +94,8 @@ exec "$DRILL_TEST_BINARY" -test.run=^TestDrillProcessFixture$
 
 	began := time.Now()
 
-	_ = runner.Supervise(t.Context(), record.Directory, run.Tag)
+	must(t, runner.Supervise(t.Context(), record.Directory, run.Tag))
+
 	if time.Since(began) >= 5*time.Second {
 		t.Fatal("engine exit waited for the deadline")
 	}
@@ -105,7 +109,8 @@ exec "$DRILL_TEST_BINARY" -test.run=^TestDrillProcessFixture$
 	saved := final.Runs[run.Tag]
 	assertUnansweredQuestion(t, saved)
 
-	if saved.EndedAt.IsZero() || saved.ExitCode == nil || *saved.ExitCode != 0 || saved.CleanupError != "" {
+	if saved.Status != doneStatus || saved.Reason != "" || saved.EndedAt.IsZero() ||
+		saved.ExitCode == nil || *saved.ExitCode != 0 || saved.CleanupError != "" {
 		t.Fatalf("exit did not finalize cleanup: %+v", saved)
 	}
 
@@ -122,5 +127,50 @@ func assertUnansweredQuestion(t *testing.T, saved drill.Attempt) {
 
 	if len(saved.Questions) != 1 || saved.Questions[0].Answer != "" || !saved.Questions[0].AnsweredAt.IsZero() {
 		t.Fatalf("question was not retained unanswered: %+v", saved.Questions)
+	}
+}
+
+func TestEngineExitPreservesOutcomeWithPendingQuestion(t *testing.T) {
+	for _, outcome := range []struct {
+		code   string
+		status string
+	}{
+		{"0", doneStatus},
+		{"7", "failed"},
+	} {
+		t.Run(outcome.status, func(t *testing.T) {
+			runner, record, _ := prepare(t, `#!/bin/sh
+printf 'What is specified?\n1) Follow Specification\n0) Other\n'
+while [ ! -f "$DRILL_EXIT_FILE" ]; do sleep 0.01; done
+exit "$DRILL_EXIT_CODE"
+`)
+			exitFile := filepath.Join(t.TempDir(), "exit")
+			t.Setenv("DRILL_EXIT_FILE", exitFile)
+			t.Setenv("DRILL_EXIT_CODE", outcome.code)
+			run, err := runner.Prepare(t.Context(), record.Directory, "a", "pending-exit",
+				[]string{buildCommand, codeArgument, fixArgument})
+			must(t, err)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+
+			ended := make(chan error, 1)
+			go func() { ended <- runner.Supervise(ctx, record.Directory, run.Tag) }()
+
+			waitRun(t, record.Directory, run.Tag, func(run drill.Attempt) bool { return run.Status == pausedStatus })
+			put(t, exitFile, "exit")
+			must(t, <-ended)
+
+			final, err := drill.Read(record.Directory)
+			must(t, err)
+
+			saved := final.Runs[run.Tag]
+			assertUnansweredQuestion(t, saved)
+
+			if saved.Status != outcome.status || saved.Reason != "" || saved.EndedAt.IsZero() ||
+				saved.ExitCode == nil || strconv.Itoa(*saved.ExitCode) != outcome.code {
+				t.Fatalf("pending question changed engine outcome: %+v", saved)
+			}
+		})
 	}
 }

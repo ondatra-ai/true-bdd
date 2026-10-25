@@ -26,7 +26,7 @@ func TestDetachedCommandSurvivesLauncherAndStopsCleanly(t *testing.T) {
 	}
 
 	runner, record, _ := prepare(t, `#!/bin/sh
-printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n\n    Your answer: '
+printf '\nCLARIFICATION NEEDED\n[1/1] What is specified?\n1) Follow Specification\n0) Other\n\n    Your answer: '
 read answer
 `)
 	command := exec.CommandContext(t.Context(),

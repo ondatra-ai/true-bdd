@@ -16,7 +16,13 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 )
 
+const promptQuiet = 50 * time.Millisecond
+
 type promptWriter struct {
+	mu        sync.Mutex
+	timer     *time.Timer
+	idle      chan struct{}
+	closed    bool
 	cancel    context.CancelFunc
 	ctx       context.Context
 	runner    Runner
@@ -42,24 +48,58 @@ func (p *promptWriter) Write(data []byte) (int, error) {
 }
 
 func (p *promptWriter) write(data []byte) (int, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	err := disk.AppendBytes(p.log, data, disk.Private)
 	if err != nil {
 		return 0, err
 	}
 
 	p.pending += string(data)
+	if p.timer != nil && p.timer.Stop() {
+		close(p.idle)
+	}
+
+	idle := make(chan struct{})
+	p.idle = idle
+	p.timer = time.AfterFunc(promptQuiet, func() { p.consumeQuiet(idle) })
+
+	return len(data), nil
+}
+
+func (p *promptWriter) consumeQuiet(idle chan struct{}) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	defer close(idle)
+
+	if p.closed || p.idle != idle || p.ctx.Err() != nil {
+		return
+	}
+
 	for !p.skipTrailer() {
 		consumed, err := p.consumePrompt()
 		if err != nil {
-			return 0, err
+			p.fail(err)
+
+			return
 		}
 
 		if !consumed {
-			break
+			return
 		}
 	}
+}
 
-	return len(data), nil
+func (p *promptWriter) close() {
+	p.mu.Lock()
+
+	p.closed = true
+	if p.timer != nil && p.timer.Stop() {
+		close(p.idle)
+	}
+	p.mu.Unlock()
+	p.answers.Wait()
 }
 
 func (p *promptWriter) consumePrompt() (bool, error) {
@@ -68,23 +108,28 @@ func (p *promptWriter) consumePrompt() (bool, error) {
 			`[ \t]*\[2\] Refine the fix prompt(?: \(provide feedback\))?[ \t]*\r?\n` +
 			`[ \t]*\[3\] Exit without applying[ \t\r\n]*(?:^[ \t]*=+[ \t]*\r?\n[ \t\r\n]*)?\z`
 		clarificationForm = `(?m)^[ \t]*1\) .+\n(?:[ \t]*[1-9][0-9]*\) .+\n)*` +
-			`[ \t]*0\) Other(?: \(type custom answer\))?[ \t]*\r?\n`
+			`[ \t]*0\) Other(?: \(type custom answer\))?([ \t\r\n]*(?:Your answer: )?)\z`
 	)
 
-	menu := strings.Index(p.pending, "Your choice (1/2/3): ")
-
-	clarify := strings.Index(p.pending, "Your answer: ")
-	clarification := regexp.MustCompile(clarificationForm).FindStringIndex(p.pending)
+	menu := regexp.MustCompile(`(?m)^[ \t]*Your choice \(1/2/3\): \z`).FindStringIndex(p.pending)
+	clarification := regexp.MustCompile(clarificationForm).FindStringSubmatchIndex(p.pending)
 
 	switch {
-	case menu >= 0 && (clarify < 0 || menu < clarify):
-		return true, p.applyMenu(menu+len("Your choice (1/2/3): "), false)
-	case clarify >= 0 && (clarification == nil || clarify < clarification[1]):
-		return true, p.pauseQuestion(clarify, clarify+len("Your answer: "), false)
+	case menu != nil:
+		return true, p.applyMenu(menu[1], false)
 	case regexp.MustCompile(menuForm).MatchString(p.pending):
 		return true, p.applyMenu(len(p.pending), true)
 	case clarification != nil:
-		return true, p.pauseQuestion(clarification[1], clarification[1], true)
+		end := clarification[2]
+		if end < len(p.pending) && p.pending[end] == '\r' {
+			end++
+		}
+
+		if end < len(p.pending) && p.pending[end] == '\n' {
+			end++
+		}
+
+		return true, p.pauseQuestion(end, len(p.pending), !strings.HasSuffix(p.pending, "Your answer: "))
 	default:
 		return false, nil
 	}
@@ -184,6 +229,10 @@ func (p *promptWriter) fail(err error) {
 
 func (p *promptWriter) answerQuestion(index int, question Question) error {
 	answer, err := p.waitAnswer(question.AnswerFile)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}

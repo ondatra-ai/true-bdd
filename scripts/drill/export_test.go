@@ -14,5 +14,21 @@ func NewPromptWriter(ctx context.Context, runner Runner, record Record,
 		directory: record.Directory, tag: run.Tag, tree: record.Cuts[run.Cut].Directory,
 		log: run.Log, input: input}
 
-	return writer, func() { cancel(); writer.answers.Wait() }
+	return writer, func() { cancel(); writer.close() }
+}
+
+// WaitPromptWriter waits for the stream's quiet-period processing before observation.
+func WaitPromptWriter(writer io.Writer) {
+	prompt, ok := writer.(*promptWriter)
+	if !ok {
+		return
+	}
+
+	prompt.mu.Lock()
+	idle := prompt.idle
+	prompt.mu.Unlock()
+
+	if idle != nil {
+		<-idle
+	}
 }
