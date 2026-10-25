@@ -38,7 +38,7 @@ func buildTestFixture() *Fixture {
 			Duration: 122623 * time.Millisecond, Status: TurnOK,
 		},
 		{
-			Number: 3, Role: roleApply, CLI: cliCrush, Model: "glm",
+			Number: 3, Role: roleApply, CLI: cliCodex, Model: "glm",
 			Started: at(base, 133.693), Ended: at(base, 198.137),
 			Duration: 64443 * time.Millisecond, Status: TurnOK,
 		},

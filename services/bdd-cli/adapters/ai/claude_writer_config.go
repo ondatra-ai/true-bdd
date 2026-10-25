@@ -17,6 +17,7 @@ import (
 )
 
 const claudeHooksKey = "hooks"
+const claudeGuardTimeoutSeconds = 15
 
 func claudeWriterOptions(ctx context.Context, req Request) (*claude.WriterOptions, error) {
 	executable, err := os.Executable()
@@ -60,7 +61,7 @@ func claudeWriterOptions(ctx context.Context, req Request) (*claude.WriterOption
 	moduleCache := roots[1]
 	roots = append(roots, spills)
 	dir := artifactPath(req, "claude-config")
-	policy := ClaudeGuardPolicy{ProtectedRoots: []string{dir}, Replay: NewCrushGuardPolicy(req.Mode, req.WorkDir),
+	policy := ClaudeGuardPolicy{ProtectedRoots: []string{dir}, Replay: NewReplayPolicy(req.Mode, req.WorkDir),
 		ReadRoots: roots,
 		ExcludedRoots: []string{filepath.Join(moduleCache, "github.com", "ondatra-ai"), filepath.Join(moduleCache,
 			"cache", "download", "github.com", "ondatra-ai"), filepath.Join(moduleCache, "cache", "vcs")}}
@@ -106,10 +107,10 @@ func newClaudeSessionID() (string, error) {
 	}
 
 	const (
-		versionMask = 0x0f
-		variantMask = 0x3f
-		versionFour = 0x40
-		variantRFC  = 0x80
+		versionMask               = 0x0f
+		variantMask               = 0x3f
+		versionFour               = 0x40
+		variantRFC                = 0x80
 	)
 
 	data[6] = (data[6] & versionMask) | versionFour
@@ -125,7 +126,8 @@ func claudeWriterSettings(command string) map[string]any {
 		"permissions": map[string]any{"defaultMode": "default", "allow": []string{"Read", "Glob", "Grep"},
 			"deny": []string{"Agent", "Task", "WebFetch", "WebSearch", "NotebookEdit"}},
 		claudeHooksKey: map[string]any{"PreToolUse": []any{map[string]any{"matcher": "*",
-			claudeHooksKey: []any{map[string]any{"type": "command", "command": command, "timeout": crushGuardTimeoutSeconds}}}}},
+			claudeHooksKey: []any{map[string]any{"type": "command", "command": command,
+ "timeout": claudeGuardTimeoutSeconds}}}}},
 		"claudeMdExcludes": []string{"**"}, "autoMemoryEnabled": false, "enabledPlugins": map[string]bool{},
 		"env": map[string]string{"BASH_DEFAULT_TIMEOUT_MS": "600000", "BASH_MAX_TIMEOUT_MS": "600000"},
 	}

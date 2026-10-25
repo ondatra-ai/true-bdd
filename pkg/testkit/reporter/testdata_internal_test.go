@@ -15,7 +15,7 @@ const (
 	refineStoryFile = "docs/product/stories/96.3-summary-service-internals.yaml"
 	scratchFile     = "tmp/run/scenarios.yaml"
 	opusModel       = "claude-opus-4-8"
-	crushModel      = "zhipu-coding/glm-5.2"
+	codexModel      = "gpt-6.1-sol"
 	firstAC         = "99.3-001"
 
 	// Engine log field names. The log's key spelling is a wire contract

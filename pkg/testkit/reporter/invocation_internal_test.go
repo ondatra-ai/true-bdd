@@ -57,11 +57,11 @@ func TestReconstructedClaudeInvocation(t *testing.T) {
 // reconstruction, which is the whole point of logging the argv.
 func TestLoggedInvocationWins(t *testing.T) {
 	turn := &Turn{
-		CLI:   cliCrush,
-		Model: "zhipu-coding/glm-5.2",
+		CLI:   cliCodex,
+		Model: "gpt-6.1-sol",
 		Invocation: Invocation{
-			Binary: "crush",
-			Args:   []string{"run", "--quiet", "-m", "zhipu-coding/glm-5.2"},
+			Binary: "codex",
+			Args:   []string{"exec", "-m", "gpt-6.1-sol"},
 			Dir:    "/tmp/run",
 			Known:  true,
 		},
@@ -73,7 +73,7 @@ func TestLoggedInvocationWins(t *testing.T) {
 		t.Error("a logged invocation must not be flagged as reconstructed")
 	}
 
-	if got, want := invocation.Command(), "crush run --quiet -m zhipu-coding/glm-5.2"; got != want {
+	if got, want := invocation.Command(), "codex exec -m gpt-6.1-sol"; got != want {
 		t.Errorf("command = %q, want %q", got, want)
 	}
 }

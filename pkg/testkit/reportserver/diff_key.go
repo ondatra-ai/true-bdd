@@ -39,9 +39,6 @@ func testKeys(tests []*reporter.Fixture) []string {
 // (tmp/2026-08-10-21-44-26-90237/…).
 var runScratchDir = regexp.MustCompile(`^tmp/\d{4}(-\d{2}){5}-\d+/`)
 
-// crushConfigDir matches the crush wrapper's generated config directory,
-// whose name embeds a per-invocation nonce.
-var crushConfigDir = regexp.MustCompile(`crush-config-\d+/`)
 
 // filePaths projects a run's file changes onto the identity they should be
 // aligned on. Two normalisations, both load-bearing:
@@ -65,5 +62,5 @@ func filePaths(files []FileChangeDTO) []string {
 func normalisePath(path string) string {
 	path = runScratchDir.ReplaceAllString(path, "tmp/<run>/")
 
-	return crushConfigDir.ReplaceAllString(path, "crush-config-<n>/")
+	return path
 }

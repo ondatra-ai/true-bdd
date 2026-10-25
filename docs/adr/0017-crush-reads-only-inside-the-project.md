@@ -1,5 +1,7 @@
 # A crush turn reads only inside the project
 
+**Superseded by [ADR-0023](0023-remove-crush-from-product.md).** Historical rationale follows; current writer recovery and confinement follow ADR-0021, ADR-0022 and ADR-0023.
+
 The write guard that every crush tool call passes through also confines crush's local reads (`view`, `ls`, `grep`, `glob`, `diagnostics`) to the project root, the directory `true-bdd` was started in, rather than relying on a CLI's default file permissions. Until now a read was allowed whatever it read. In #181's iteration 1 a crush apply turn used that twice to copy the deleted `tests/bdd-cli/steps/` into the project: once from the checkout above its worktree, once by absolute path from a scratch directory. A host's build must not depend on files no Specification document describes, and no turn may carry a neighbouring project's files into a host. So this is a product rule, not only the drill's.
 
 ## Considered Options

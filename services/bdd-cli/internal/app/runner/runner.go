@@ -426,16 +426,15 @@ func buildFixClosure[I any](
 		subjectID, _ := spec.GetSubject(item)
 
 		content, err := spec.FixApplier.Apply(ctx, validate.ApplyParams{
-			Subject:             item,
-			SubjectID:           subjectID,
-			FixPrompt:           decision.FixPrompt,
-			Check:               latestResult.Check,
-			TmpDir:              spec.TmpDir,
-			Iteration:           fixCount,
-			ModelTier:           latestResult.ApplyModelTier,
-			WatchWriterResponse: spec.RecoverWriterFailures,
-			ClaudeWriter:        spec.RecoverWriterFailures,
-			CodexWriter:         spec.RecoverWriterFailures,
+			Subject:      item,
+			SubjectID:    subjectID,
+			FixPrompt:    decision.FixPrompt,
+			Check:        latestResult.Check,
+			TmpDir:       spec.TmpDir,
+			Iteration:    fixCount,
+			ModelTier:    latestResult.ApplyModelTier,
+			ClaudeWriter: spec.RecoverWriterFailures,
+			CodexWriter:  spec.RecoverWriterFailures,
 		})
 		if err != nil {
 			if spec.PostNotApplied != nil && recoverWriterFailure(spec.RecoverWriterFailures, err) {

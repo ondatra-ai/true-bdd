@@ -1,0 +1,114 @@
+story:
+  id: claude-replay
+  feature: engine
+  title: Keep writer guard and replay invariants under Claude
+  as_a: System Architect
+  i_want: the writer guard to confine files and accept only canonical replay commands
+  so_that: a writer cannot exceed its file and command grants
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-whole-command
+    description: The write guard allows whole command
+    steps:
+    - given:
+      - the "claude-replay-whole-command" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard allows the tool call
+  - id: 002-selected-command
+    description: The write guard allows selected command
+    steps:
+    - given:
+      - the "claude-replay-selected-command" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard allows the tool call
+  - id: 003-shell-operator
+    description: The write guard denies shell operator
+    steps:
+    - given:
+      - the "claude-replay-shell-operator" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 004-assignment
+    description: The write guard denies assignment
+    steps:
+    - given:
+      - the "claude-replay-assignment" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command X=1 go test ./...
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 005-another-program
+    description: The write guard denies another program
+    steps:
+    - given:
+      - the "claude-replay-another-program" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command cat /etc/passwd
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 006-extra-flag
+    description: The write guard denies extra flag
+    steps:
+    - given:
+      - the "claude-replay-extra-flag" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -v
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 007-double-quotes
+    description: The write guard denies double quotes
+    steps:
+    - given:
+      - the "claude-replay-double-quotes" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 008-wrong-directory
+    description: The write guard denies wrong directory
+    steps:
+    - given:
+      - the "claude-replay-wrong-directory" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "tests" with command go test ./...
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  - id: 009-no-command
+    description: The write guard denies no command
+    steps:
+    - given:
+      - the "claude-replay-no-command" project tree
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''

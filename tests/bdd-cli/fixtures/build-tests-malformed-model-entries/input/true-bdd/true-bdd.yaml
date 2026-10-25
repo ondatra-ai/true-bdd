@@ -11,7 +11,7 @@ engine:
     # DELIBERATELY BROKEN: the cli before the colon is empty.
     high: ":claude-opus-5"
     # DELIBERATELY BROKEN: the model after the colon is empty.
-    coder: "crush:"
+    coder: "codex:"
     # DELIBERATELY BROKEN: `medium` is not a tier the engine knows.
     medium: "claude:claude-sonnet-5"
     # Sound: the refusal must not name it.

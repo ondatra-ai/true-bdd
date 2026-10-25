@@ -1,2 +1,0 @@
-{"elapsed_seconds": 0, "input": {"command": "go test -v -count=1 ./tests/suite/... -run '^TestSlowReplay$'", "description": "Run selected slow replay test suite", "run_in_background": false, "working_dir": "<project root>"}, "tool": "bash"}
-{"elapsed_seconds": 63, "input": {"shell_id": "001", "wait": true}, "tool": "job_output"}

@@ -48,7 +48,7 @@ func TestJudgeModelRefusesWithoutAClaudeQuickTier(t *testing.T) {
 		models string
 	}{
 		{"no quick tier", "    high: \"claude:claude-opus-4-8\"\n"},
-		{"quick bound to another cli", "    quick: \"crush:zhipu-coding/glm-5.2\"\n"},
+		{"quick bound to another cli", "    quick: \"codex:gpt-6.1-sol\"\n"},
 	}
 
 	for _, testCase := range tests {

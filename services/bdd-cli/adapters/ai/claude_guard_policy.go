@@ -9,10 +9,10 @@ import (
 
 // ClaudeGuardPolicy confines the writer's tools; Replay reuses #193's exact check.
 type ClaudeGuardPolicy struct {
-	ProtectedRoots []string         `json:"protected_roots"`
-	Replay         CrushGuardPolicy `json:"replay"`
-	ReadRoots      []string         `json:"read_roots"`
-	ExcludedRoots  []string         `json:"excluded_roots"`
+	ProtectedRoots []string     `json:"protected_roots"`
+	Replay         ReplayPolicy `json:"replay"`
+	ReadRoots      []string     `json:"read_roots"`
+	ExcludedRoots  []string     `json:"excluded_roots"`
 }
 
 // DecidePayload judges Claude Code's PreToolUse payload, failing closed.
@@ -83,7 +83,7 @@ func (p ClaudeGuardPolicy) allowsClaudeTestCommand(command, cwd string) (bool, s
 		cwd = p.Replay.TestDir
 	}
 
-	return p.Replay.allowsTestCommand(CrushToolCall{Command: command, WorkingDir: cwd})
+	return p.Replay.allowsTestCommand(command, cwd)
 }
 
 func (p ClaudeGuardPolicy) allowsRead(target string) (bool, string) {

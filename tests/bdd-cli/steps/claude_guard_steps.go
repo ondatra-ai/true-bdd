@@ -9,6 +9,16 @@ import (
 )
 
 func registerClaudeGuardSteps(suite *bddgo.Suite[State]) {
+	suite.Step(`^claude's write policy lets the turn write under "([^"]+)"$`, grantWriteRoot)
+	suite.Step(`^claude hands the guard no write policy$`, withholdPolicy)
+	suite.Step(`^claude hands the guard an unreadable write policy$`, garblePolicy)
+	suite.Step(`^claude hands the guard a write policy with no read root$`, omitReadRoot)
+	suite.Step(`^claude pipes the hook payload naming the tool "([^"]+)" and the path "([^"]+)"$`, pipePathPayload)
+	suite.Step(`^claude names the tool "([^"]+)"$`, nameTool)
+	suite.Step(`^claude names the file "([^"]+)" of the project tree$`, nameTreeFile)
+	suite.Step(`^claude names the path "([^"]+)" as written$`, nameLiteralPath)
+	suite.Step(`^claude pipes the hook payload naming the tool "([^"]+)" and the file "([^"]+)"$`, pipePayload)
+
 	suite.Step(`^claude's write policy grants the test command "([^"]+)" with selector "([^"]+)" in "([^"]+)"$`,
 		grantTestCommand)
 	suite.Step(`^claude pipes a "(foreground|background)" shell call in directory "([^"]+)" with command (.+)$`,
@@ -38,16 +48,29 @@ func askClaudeGuard(state *State, _ []string) error {
 	}
 
 	policy := `{"replay":` + replay + `}`
-	state.Fixture.PrepCmds = append(state.Fixture.PrepCmds,
-		"mkdir -p tmp && printf '%s' "+shellQuote(policy)+" > tmp/claude-guard-policy.json")
+	if call.unreadable {
+		policy = "invalid"
+	}
+
+	if call.withheld {
+		policy = "{}"
+	}
+
+	if !call.withheld {
+		state.Fixture.PrepCmds = append(state.Fixture.PrepCmds,
+			"mkdir -p tmp && printf '%s' "+shellQuote(policy)+" > tmp/claude-guard-policy.json")
+	}
 
 	cwd := call.workingDir
 	if !filepath.IsAbs(cwd) {
 		cwd = filepath.Join(dir, cwd)
 	}
 
-	payload, err := json.Marshal(map[string]any{"tool_name": "Bash", "cwd": cwd,
-		"tool_input": map[string]any{"command": call.command, "run_in_background": call.background}})
+	tool, target, path := call.claudeTarget(dir)
+
+	payload, err := json.Marshal(map[string]any{"tool_name": tool, "cwd": cwd,
+		"tool_input": map[string]any{"command": call.command, "run_in_background": call.background,
+			"file_path": target, "path": path}})
 	if err != nil {
 		return state.fail("claude hook payload: %w", err)
 	}
@@ -55,4 +78,26 @@ func askClaudeGuard(state *State, _ []string) error {
 	state.Fixture.Stdin = payload
 
 	return runEngine(state, "claude-guard --policy "+"tmp/claude-guard-policy.json")
+}
+
+func (call *guardCall) claudeTarget(dir string) (string, string, string) {
+	tool := call.tool
+	target := call.targetPath(dir)
+	path := ""
+
+	if call.piped {
+		tool = call.pipedTool
+		target = filepath.Join(dir, call.pipedFile)
+		path = call.pipedPath
+	}
+
+	if tool == "" {
+		tool = "Bash"
+	}
+
+	if path != "" {
+		target = ""
+	}
+
+	return tool, target, path
 }

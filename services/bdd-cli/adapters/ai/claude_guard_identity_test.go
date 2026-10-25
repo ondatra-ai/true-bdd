@@ -34,7 +34,7 @@ func TestClaudeFileToolsUseIdentity(t *testing.T) {
 			{filepath.Join(filepath.Dir(host), "cACHE", "Dependency", "new"), reading},
 		} {
 			t.Run(tool+testCase.target, func(t *testing.T) {
-                t.Parallel()
+				t.Parallel()
 				assertClaudeIdentityCall(t, policy, tool, host, map[string]string{
 					"file_path": testCase.target, claudePathKey: testCase.target}, testCase.allow)
 			})
@@ -80,7 +80,7 @@ func claudeIdentityPolicy(t *testing.T) ai.ClaudeGuardPolicy {
 		t.Fatal(err)
 	}
 
-	return ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: host,
+	return ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: host,
 		WriteRoots: []string{filepath.Join(host, "services"), filepath.Join(host, "tmp")}},
 		ReadRoots: []string{cache}, ExcludedRoots: []string{excluded}, ProtectedRoots: []string{protected}}
 }
@@ -127,7 +127,7 @@ func TestClaudeSuiteDirectoryUsesIdentity(t *testing.T) {
 	alias := filepath.Join(host, "sUITE")
 	requireClaudeCaseAlias(t, alias)
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: host, TestDir: suite,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: host, TestDir: suite,
 		TestCommand: claudeReplay}}
 	assertClaudeIdentityCall(t, policy, "Bash", alias+"/../sUITE/",
 		map[string]string{"command": claudeReplay}, true)

@@ -1,5 +1,5 @@
 // Command aiproxy is the record/replay PATH shim for the AI CLIs the
-// true-bdd engine spawns (claude / crush / codex). The BDD harness
+// true-bdd engine spawns (claude / codex). The BDD harness
 // installs it under those names in a shim directory prepended to the
 // engine subprocess's PATH — the engine is never modified and never
 // knows which mode it runs under (design: tmp/ai-proxy-design.md).
@@ -13,7 +13,7 @@
 //     emit the recorded stdout verbatim, exit with the recorded code.
 //
 // Cassettes are matched by arrival order per binary name (claude-001,
-// claude-002, crush-001, …); a normalized request hash verifies each
+// claude-002, codex-001, …); a normalized request hash verifies each
 // match and fails loudly on drift instead of replaying garbage.
 package main
 

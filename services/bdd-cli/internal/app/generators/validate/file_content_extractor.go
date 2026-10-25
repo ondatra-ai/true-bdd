@@ -30,7 +30,7 @@ func ExtractFileContent(response, path string) string {
 	pattern := `={2,4}\s*"?\s*FILE_START:\s*` + escapedPath + `\s*"?\s*={2,4}`
 	startRe := regexp.MustCompile(pattern)
 
-	// The path on the closing marker is optional: crush routinely closes
+	// The path on the closing marker is optional: a provider may close
 	// with a bare `=== FILE_END ===`, and requiring the path twice used to
 	// throw away an otherwise complete and correct block.
 	endPattern := `={2,4}\s*"?\s*FILE_END:?\s*(?:` + escapedPath + `)?\s*"?\s*={2,4}`

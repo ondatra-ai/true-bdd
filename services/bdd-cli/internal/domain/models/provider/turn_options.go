@@ -4,8 +4,6 @@ package provider
 type TurnOptions struct {
 	// ClaudeWriter requests the isolated, unbounded build-code applier.
 	ClaudeWriter bool
-	// WatchWriterResponse times open model responses for build code's crush writer.
-	WatchWriterResponse bool
 	// CodexWriter confines only build code's codex apply turn.
 	CodexWriter bool
 }

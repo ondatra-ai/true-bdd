@@ -23,7 +23,7 @@ const claudeReplay = "go test ./tests/ -mode=replay"
 func TestClaudeReplayInNestedSuite(t *testing.T) {
 	t.Parallel()
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost,
 		TestDir: "/host/tests with 'quotes'", TestCommand: claudeJest, TestSelector: "--testNamePattern"}}
 
 	prefix := `cd '/host/tests with '"'"'quotes'"'"'' && `
@@ -53,7 +53,7 @@ func TestClaudeReplayInNestedSuite(t *testing.T) {
 func TestClaudeFileToolsUseDirectoryAfterReplay(t *testing.T) {
 	t.Parallel()
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost,
 		WriteRoots: []string{"/host/services"}}}
 
 	for _, target := range []string{"services/forbidden.go", "../services/allowed.go"} {
@@ -75,7 +75,7 @@ func TestClaudeTildePathsCannotEscape(t *testing.T) {
 	}
 
 	cache := filepath.Join(home, "go/pkg/mod")
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost,
 		WriteRoots: []string{claudeHost}}, ReadRoots: []string{cache},
 		ExcludedRoots: []string{filepath.Join(cache, "github.com/ondatra-ai")}}
 
@@ -107,7 +107,7 @@ func TestClaudeTildePathsCannotEscape(t *testing.T) {
 func TestClaudeHookCanonicalReplay(t *testing.T) {
 	t.Parallel()
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost,
 		TestCommand: claudeReplay, TestSelector: "-" + "run", TestDir: claudeHost}}
 
 	for _, testCase := range []struct {
@@ -142,7 +142,7 @@ func TestClaudeFileToolsCannotEscape(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: host,
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: host,
 		WriteRoots: []string{filepath.Join(host, "services"), filepath.Join(host, "tmp")}},
 		ReadRoots: []string{"/toolchain", "/cache", "/own-spills"}, ExcludedRoots: []string{"/cache/github.com/ondatra-ai"}}
 	for _, tool := range []string{claudeRead, claudeGlob, claudeGrep, claudeEdit, claudeWrite, claudeMultiEdit} {
@@ -168,7 +168,7 @@ func TestClaudeFileToolsCannotEscape(t *testing.T) {
 func TestClaudeSearchCannotReachExcludedModuleCopies(t *testing.T) {
 	t.Parallel()
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost},
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost},
 		ReadRoots: []string{"/cache"}, ExcludedRoots: []string{"/cache/github.com/ondatra-ai"}}
 	for _, payload := range []string{
 		`{"tool_name":"Grep","cwd":"/host","tool_input":{"path":"/cache","pattern":"marker"}}`,
@@ -190,7 +190,7 @@ func TestClaudeSearchCannotReachExcludedModuleCopies(t *testing.T) {
 func TestClaudeWriterCannotChangeItsGuard(t *testing.T) {
 	t.Parallel()
 
-	policy := ai.ClaudeGuardPolicy{Replay: ai.CrushGuardPolicy{ReadRoot: claudeHost, WriteRoots: []string{"/host/tmp"}},
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: claudeHost, WriteRoots: []string{"/host/tmp"}},
 		ProtectedRoots: []string{"/host/tmp/claude-config"}}
 
 	for _, tool := range []string{claudeWrite, claudeEdit, claudeMultiEdit} {

@@ -1,5 +1,5 @@
 engine:
-  # "<cli>:<model>", split on the FIRST colon only. cli is claude | crush |
+  # "<cli>:<model>", split on the FIRST colon only. cli is claude | codex |
   # codex and must be on $PATH; model passes through verbatim to that CLI's
   # model flag. A checklist asks for a tier by name.
   models:

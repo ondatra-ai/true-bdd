@@ -41,7 +41,7 @@ func TestModelOverridesResolveOnlyTheirDeclaredTier(t *testing.T) {
 
 	for _, want := range []string{
 		`"level":"INFO","msg":"Model tier overridden","tier":"coder",` +
-			`"from":"crush:zhipu-coding/glm-5.2","to":"claude:other:model"`,
+			`"from":"codex:gpt-6.1-sol","to":"claude:other:model"`,
 		`"level":"INFO","msg":"Model tier overridden","tier":"quick","from":"claude:claude-sonnet-5","to":"codex:another"`,
 	} {
 		if !strings.Contains(records.String(), want) {
@@ -59,7 +59,7 @@ func TestModelOverridesResolveOnlyTheirDeclaredTier(t *testing.T) {
 		}
 	}
 
-	if got := cfg.GetStringMapString("engine.models")["coder"]; got != "crush:zhipu-coding/glm-5.2" {
+	if got := cfg.GetStringMapString("engine.models")["coder"]; got != "codex:gpt-6.1-sol" {
 		t.Fatalf("config mutated: %s", got)
 	}
 }

@@ -54,21 +54,20 @@ func TestBuildCodeApplierRequestsCodexConfinementAndNativePolling(t *testing.T) 
 	applier.UseTestCommand(&provider.TestCommand{Command: "go test ./tests/suite", Selector: "-run", Dir: root})
 
 	_, _ = applier.Apply(t.Context(), validate.ApplyParams{TmpDir: filepath.Join(root, "tmp"), CodexWriter: true})
-	if !client.confined || client.watched || !strings.Contains(client.user, "poll process go test ./tests/suite") {
-		t.Fatalf("confined=%v watch=%v prompt=%q", client.confined, client.watched, client.user)
+	if !client.confined || !strings.Contains(client.user, "poll process go test ./tests/suite") {
+		t.Fatalf("confined=%v prompt=%q", client.confined, client.user)
 	}
 }
 
 type writerCapture struct {
-	confined, watched bool
-	user              string
+	confined bool
+	user     string
 }
 
 func (c *writerCapture) ExecutePromptWithSystem(_ context.Context, _ provider.Role, _, user string,
 	_ provider.ModelRef, _ provider.ExecutionMode, _ string, options ...provider.TurnOptions) (string, error) {
 	c.user = user
 	c.confined = len(options) > 0 && options[0].CodexWriter
-	c.watched = len(options) > 0 && options[0].WatchWriterResponse
 
 	return "no confirmation", nil
 }

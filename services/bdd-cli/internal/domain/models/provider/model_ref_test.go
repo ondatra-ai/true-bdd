@@ -10,7 +10,7 @@ import (
 const (
 	fableModel  = "claude-fable-5"
 	opusModel   = "claude-opus-4-8"
-	glmModel    = "zhipu-coding/glm-5.2"
+	coderModel  = "gpt-6.1-sol"
 	sonnetModel = "claude-sonnet-5"
 )
 
@@ -28,12 +28,6 @@ func TestParseModelRefValid(t *testing.T) {
 			raw:       "claude:" + fableModel,
 			wantCLI:   provider.CLIClaude,
 			wantModel: fableModel,
-		},
-		{
-			name:      "crush with provider-qualified id",
-			raw:       "crush:" + glmModel,
-			wantCLI:   provider.CLICrush,
-			wantModel: glmModel,
 		},
 		{
 			// Only the FIRST colon splits, so a model id that itself
@@ -88,6 +82,7 @@ func TestParseModelRefRejects(t *testing.T) {
 		},
 		{name: "empty cli", raw: ":" + fableModel, wantErr: provider.ErrModelRefEmptyCLI},
 		{name: "empty model", raw: "claude:", wantErr: provider.ErrModelRefEmptyModel},
+		{name: "removed cli", raw: "crush:example", wantErr: provider.ErrModelRefUnknownCLI},
 		{name: "unknown cli", raw: "aider:some-model", wantErr: provider.ErrModelRefUnknownCLI},
 	}
 
@@ -106,9 +101,9 @@ func TestParseModelRefRejects(t *testing.T) {
 func TestModelRefString(t *testing.T) {
 	t.Parallel()
 
-	ref := provider.ModelRef{CLI: provider.CLICrush, Model: glmModel}
+	ref := provider.ModelRef{CLI: provider.CLICodex, Model: coderModel}
 
-	const want = "crush:" + glmModel
+	const want = "codex:" + coderModel
 	if ref.String() != want {
 		t.Errorf("String() = %q, want %q", ref.String(), want)
 	}

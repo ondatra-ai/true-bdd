@@ -7,16 +7,9 @@
 package truebdd
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"strings"
-
-	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
-
-// CrushGuardSubcommand is the hidden PreToolUse write gate crush calls back into.
-const CrushGuardSubcommand = "crush-guard"
 
 // Binary is which true-bdd a spawn runs: always this process's own executable.
 type Binary struct{}
@@ -34,22 +27,4 @@ func (Binary) Path() (string, error) {
 	}
 
 	return self, nil
-}
-
-// ProbeCrushGuard runs the guard once under a caller's environment and hands
-// back its exit code and reason. crush FAILS OPEN on a hook it cannot run, so what the
-// caller does with the code is the whole point of asking.
-func (b Binary) ProbeCrushGuard(env shell.Env) (shell.Result, error) {
-	path, err := b.Path()
-	if err != nil {
-		return shell.Result{Code: shell.NotStarted}, err
-	}
-
-	result, err := shell.Run(context.Background(), []string{path, CrushGuardSubcommand},
-		shell.Options{Stdin: strings.NewReader(""), Env: env, Output: shell.Capture()})
-	if err != nil {
-		return result, fmt.Errorf("probing %s: %w", CrushGuardSubcommand, err)
-	}
-
-	return result, nil
 }

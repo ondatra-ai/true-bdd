@@ -1,6 +1,6 @@
 # Confine the codex build-code writer through its own permission profile
 
-Only `build code --fix`'s codex apply turn uses a generated per-turn `CODEX_HOME` and named `writer` permission profile. This amends ADR-0018 and ADR-0019's codex exceptions and ADR-0020's restriction of failed-writer recovery to crush. Other commands and roles retain their exact sandbox arguments, inherited environment, prompts and failure handling. Crush requests render byte-identically. No outer `sandbox-exec` is used: nesting a Seatbelt profile under codex's fails.
+Only `build code --fix`'s codex apply turn uses a generated per-turn `CODEX_HOME` and named `writer` permission profile. This amends ADR-0018 and ADR-0019's codex exceptions and ADR-0020's original provider restriction. Other commands and roles retain their exact sandbox arguments, inherited environment, prompts and failure handling. No outer `sandbox-exec` is used: nesting a Seatbelt profile under codex's fails.
 
 ## Boundary
 
@@ -24,7 +24,7 @@ Writer commands inherit no environment. The profile sets PATH to GOROOT/bin and 
 
 The generated configuration selects `approval_policy=never`, disables web search, apps, plugins, multi-agent, memories, shell snapshots, login shells and host skill discovery. `project_doc_max_bytes=0` suppresses AGENTS.md discovery. A fresh home has no project trust or user MCP configuration; `--ignore-rules` suppresses execpolicy files. The turn remains `--ephemeral`, uses `--strict-config --json`, and replaces `-s` with `default_permissions=writer`. Unsupported profiles/configuration have no weaker fallback. The boundary is calibrated with real codex-cli 0.162.1 on macOS; other platforms have not been live-verified.
 
-Only this writer receives the canonical whole-suite and selected replay forms with codex process polling instead of crush's job_output. Its final message still arrives through `-o`. Stdout JSONL is archived as `{label}-codex-events.jsonl`, separately from stderr; the transcript holds both. Drill audit reads command_execution and file_change events, retains raw evidence and never infers that a referenced read succeeded. Malformed evidence is reported; encoded or computed shell paths remain an audit limitation.
+Only this writer receives the canonical whole-suite and selected replay forms with codex process polling instead of the retired job tool. Its final message still arrives through `-o`. Stdout JSONL is archived as `{label}-codex-events.jsonl`, separately from stderr; the transcript holds both. Drill audit reads command_execution and file_change events, retains raw evidence and never infers that a referenced read succeeded. Malformed evidence is reported; encoded or computed shell paths remain an audit limitation.
 
 High reasoning and a 1,050,000-token context window are configured for the trial's `codex:gpt-6.1-sol`. Successful parsing does not establish capacity or account entitlement. A verified window is the largest actual successful prompt measured in the turn's own input token counts; 1M is not verified by this change.
 
@@ -34,6 +34,6 @@ A started codex writer exiting non-zero (including usage limits), returning whit
 
 The former workspace-write `build-code-fix-by-codex` fixture is re-recorded with real codex for the writer flags and replay command forms. Replay always validates the recorded request hash without migrations. Other existing recordings remain byte-identical; the two new fixtures exercise confined codex writers.
 
-Toolchain roots, module cache, codex executable resolution and generated CODEX_HOME live only in configuration or environment, outside the request hash's argv and stdin. Host and artifact paths in requests use the harness's existing CWD, HOME and run-directory normalization. Regression checks compare writer request hashes with relocated toolchain, binary and authentication paths. Existing crush template extensions compare the shipped default crush branch, preserving their exact source bytes.
+Toolchain roots, module cache, codex executable resolution and generated CODEX_HOME live only in configuration or environment, outside the request hash's argv and stdin. Host and artifact paths in requests use the harness's existing CWD, HOME and run-directory normalization. Regression checks compare writer request hashes with relocated toolchain, binary and authentication paths. Fixture extensions preserve the shipped template prefix, including provider-specific completion wording.
 
 Decided by the Owner in #201, the codex alternative under #199 and #181. No grilling entry records this provider-specific confinement decision; the parent drill decision is recorded in `docs/qna/20261022-201524-rebuild-from-spec-drill.yaml`, Q5.

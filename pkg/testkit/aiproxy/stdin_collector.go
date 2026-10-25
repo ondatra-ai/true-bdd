@@ -125,7 +125,7 @@ func collectedEnough(size, want int, stable time.Duration) bool {
 
 // awaitClose blocks until the parent closes the shim's stdin — the engine's
 // end-of-turn signal: claude closes only after consuming the result frame;
-// crush hands EOF immediately. Exiting early truncates the response.
+// codex hands EOF immediately. Exiting early truncates the response.
 func (c *stdinCollector) awaitClose() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)

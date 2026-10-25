@@ -1,7 +1,0 @@
-No existing definitions — `steps.Register` is undefined (confirmed by diagnostics). Creating the file exactly as specified.File written; the stale diagnostic should clear after build verification.Shell is blocked by the guard hook; verifying compilation via LSP diagnostics instead.`steps.Register` now resolves with zero compiler errors (the earlier undefined error is gone; the remaining warning is just the `bdd`-tagged generated test, pre-existing). Shell verification was blocked by the guard hook, so LSP diagnostics served as the compile check — the concrete suite satisfies `Suite`, so no parameter-type adjustment was needed.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
-applied: true
-target: "tests/mcp/steps/mcp_steps.go"
-summary: "Created Register with three anchored, capture-grouped definitions binding INT-900's Given/When/Then to the existing State contract"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

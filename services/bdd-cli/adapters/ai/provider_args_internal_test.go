@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"slices"
 	"strings"
 	"testing"
 
@@ -37,20 +36,6 @@ func readOnlyMode() ExecutionMode {
 	}
 }
 
-func TestCrushAllowedToolsTracksTheMode(t *testing.T) {
-	t.Parallel()
-
-	writable := crushAllowedTools(editMode())
-	if !slices.Contains(writable, "write") || !slices.Contains(writable, "bash") {
-		t.Errorf("edit mode allowed tools = %v, want write and bash present", writable)
-	}
-
-	readOnly := crushAllowedTools(readOnlyMode())
-	if slices.Contains(readOnly, "write") || slices.Contains(readOnly, "bash") {
-		t.Errorf("read-only allowed tools = %v, want neither write nor bash", readOnly)
-	}
-}
-
 // TestCodexSandboxOnlyEscalatesForSourceWrites checks a tmp-only write grant
 // stays read-only: codex has no sandbox level between "nothing" and "all of
 // the working root," so escalating would open write access to unread source.
@@ -71,7 +56,7 @@ func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
 	}
 }
 
-// Neither crush nor codex has a system-prompt flag, so it has to
+// Codex has a system-prompt flag, so it has to
 // survive inside the user prompt.
 func TestComposePromptFoldsInTheSystemPrompt(t *testing.T) {
 	t.Parallel()

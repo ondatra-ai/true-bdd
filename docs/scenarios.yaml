@@ -549,26 +549,27 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-004-unknown-model-cli-refused:
-    description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive, naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
+    description: A command must be refused at startup when an `engine.models` tier names an AI CLI the engine does not drive,
+      naming the tier, that CLI and the CLIs it supports on stdout, rather than run the tier on another model
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
-      - story: docs/product/stories/engine-configured-commands.yaml
-        scenario_id: engine-004-unknown-model-cli-refused
-        merge_date: '2026-10-21'
+    - story: docs/product/stories/engine-configured-commands.yaml
+      scenario_id: engine-004-unknown-model-cli-refused
+      merge_date: '2026-10-21'
     merged_steps:
       given:
-        - the "build-tests-unknown-cli-tier" project tree
+      - the "build-tests-unknown-cli-tier" project tree
       when:
-        - the System Architect runs "build tests"
+      - the System Architect runs "build tests"
       then:
-        - the command exits with code 1
-        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-        - and: 'stdout matches engine\.models\.coder: model reference names an unknown cli: \\"aider\\" \(supported: claude, crush, codex\)'
-        - but: stdout does not match BUILD TESTS
-        - and: no file outside "tmp" changed
-        - and: the file "docs/scenarios.yaml" is unchanged
-        - and: the engine dispatched no AI turns
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+      - and: 'stdout matches engine\.models\.coder: model reference names an unknown cli: \\"crush\\" \(supported: claude, codex\)'
+      - but: stdout does not match BUILD TESTS
+      - and: no file outside "tmp" changed
+      - and: the file "docs/scenarios.yaml" is unchanged
+      - and: the engine dispatched no AI turns
   engine-001-help-prints-command-tree:
     description: --help must print the command tree and change nothing on disk
     service: bdd-cli
@@ -1642,34 +1643,33 @@ scenarios:
         - and: the engine dispatched no AI turns
         - and: no file outside "tmp" changed
   scen-check-fix-001-unmatched-step-gets-phrase:
-    description: '`scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user applies in the product document and never in the Scenario, and pass the re-walk'
+    description: '`scen check --fix` must propose a catalogue entry for a step that matches none, record the entry the user
+      applies in the product document and never in the Scenario, and pass the re-walk'
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
-      - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
-        scenario_id: scen-check-fix-001-unmatched-step-gets-phrase
-        merge_date: '2026-10-21'
+    - story: docs/product/stories/scen-check-fix-clarification-loop.yaml
+      scenario_id: scen-check-fix-001-unmatched-step-gets-phrase
+      merge_date: '2026-10-21'
     timeout: 10m
     merged_steps:
       given:
-        - the "scen-check-fix-records-phrase" project tree
-        - the Quality Engineer answers "1" to every question
+      - the "scen-check-fix-records-phrase" project tree
+      - the Quality Engineer answers "1" to every question
       when:
-        - the Quality Engineer runs "scen check --fix"
+      - the Quality Engineer runs "scen check --fix"
       then:
-        - the command exits with code 0
-        - stdout matches CHECK FAILED
-        - and: 'stdout matches E2E-001: then step "the service answers within 200 milliseconds" matches no template'
-        - and: stdout matches msg="AI needs clarification"
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=product
-        - and: stdout matches check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the only file changed outside "tmp" is "docs/product/product.yaml"
-        - and: the file "docs/product/product.yaml" matches the service answers within
-        - and: the engine dispatched 3 AI turns
-        - and: every file matching "tmp/*/crush-config-*/crush.json" does not match "bash"
-        - and: every file matching "tmp/*/crush-config-*/crush.json" does not match "job_output"
+      - the command exits with code 0
+      - stdout matches CHECK FAILED
+      - and: 'stdout matches E2E-001: then step "the service answers within 200 milliseconds" matches no template'
+      - and: stdout matches msg="AI needs clarification"
+      - and: stdout matches FIX PROMPT GENERATED
+      - and: stdout matches msg="Fix recorded in the document" document=product
+      - and: stdout matches check=step-phrases subjectID=E2E-001 promptIndex=1 answer=pass
+      - and: stdout matches ALL CHECKS PASSED
+      - and: the only file changed outside "tmp" is "docs/product/product.yaml"
+      - and: the file "docs/product/product.yaml" matches the service answers within
+      - and: the engine dispatched 3 AI turns
   checklist-checks-007-unlisted-document-refused:
     description: A `D:` Prompt naming a check that reads a document must be refused at startup when its `docs:` does not list that document, because the check would otherwise find no catalogue and pass every Scenario unchecked
     service: bdd-cli
@@ -3766,62 +3766,33 @@ scenarios:
         - but: the file "tests/suite/add_test.go" is unchanged
         - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
 
-  engine-routes-002-crush-asks-before-fixing:
-    description: '`scen check --fix` with every tier naming crush, a CLI that enforces no answer schema, must still read crush''s verdict and its clarifying question, ask that question, record in the Registry the fix crush then writes, and pass the re-walk'
-    service: bdd-cli
-    path: tests/bdd-cli/scen_check_test.go
-    user_stories:
-      - story: docs/product/stories/engine-routes-agent-clis.yaml
-        scenario_id: engine-routes-002-crush-asks-before-fixing
-        merge_date: '2026-10-22'
-    timeout: 15m
-    merged_steps:
-      given:
-        - the "scen-check-fix-by-crush" project tree
-        - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
-        - the Quality Engineer answers "1" to every question
-      when:
-        - the Quality Engineer runs "scen check --fix"
-      then:
-        - the command exits with code 0
-        - stdout matches CHECK FAILED
-        - and: stdout matches msg="AI needs clarification" questionCount=1
-        - and: stdout matches FIX PROMPT GENERATED
-        - and: stdout matches msg="Fix recorded in the document" document=scenarios_yaml
-        - and: stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched 3 validation AI turns to "crush"
-        - and: the engine dispatched 2 fix AI turns to "crush"
-        - and: the engine dispatched 1 apply AI turn to "crush"
-        - and: the engine dispatched 6 AI turns
-        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-
   engine-routes-003-prompt-tiers-win:
-    description: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
+    description: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply
+      turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
-      - story: docs/product/stories/engine-routes-agent-clis.yaml
-        scenario_id: engine-routes-003-prompt-tiers-win
-        merge_date: '2026-10-22'
+    - story: docs/product/stories/engine-routes-agent-clis.yaml
+      scenario_id: engine-routes-003-prompt-tiers-win
+      merge_date: '2026-10-22'
     timeout: 15m
     merged_steps:
       given:
-        - the "scen-check-prompt-names-its-tiers" project tree
-        - the Quality Engineer answers "1" to every question
+      - the "scen-check-prompt-names-its-tiers" project tree
+      - the Quality Engineer answers "1" to every question
       when:
-        - the Quality Engineer runs "scen check --fix"
+      - the Quality Engineer runs "scen check --fix"
       then:
-        - the command exits with code 0
-        - stdout matches ALL CHECKS PASSED
-        - and: the engine dispatched 3 validation AI turns to "crush"
-        - and: the engine dispatched 1 fix AI turn to "codex"
-        - and: the engine dispatched 1 apply AI turn to "claude"
-        - but: the engine dispatched no validation AI turns to "claude"
-        - and: the engine dispatched no fix AI turns to "claude"
-        - and: the engine dispatched no apply AI turns to "crush"
-        - and: the engine dispatched 5 AI turns
-        - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
-
+      - the command exits with code 0
+      - stdout matches ALL CHECKS PASSED
+      - and: the engine dispatched 3 validation AI turns to "codex"
+      - and: the engine dispatched 1 fix AI turn to "codex"
+      - and: the engine dispatched 1 apply AI turn to "claude"
+      - but: the engine dispatched no validation AI turns to "claude"
+      - and: the engine dispatched no fix AI turns to "claude"
+      - and: the engine dispatched no apply AI turns to "codex"
+      - and: the engine dispatched 5 AI turns
+      - and: the only file changed outside "tmp" is "docs/scenarios.yaml"
   engine-routes-004-failed-claude-turn-stops-run:
     description: A validation turn whose claude CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1, a log record naming the turn, its AI CLI and its model, and the error on stderr after the command's name alone, before any verdict is reported
     service: bdd-cli
@@ -3846,291 +3817,28 @@ scenarios:
         - and: the engine dispatched 1 AI turn
         - and: no file outside "tmp" changed
 
-  engine-routes-005-failed-crush-turn-stops-run:
-    description: A validation turn whose crush CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+  engine-routes-005-failed-codex-turn-stops-run:
+    description: A validation turn whose codex CLI exits non-zero, here on a model id the CLI does not know, must stop `scen
+      check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
     service: bdd-cli
     path: tests/bdd-cli/scen_check_test.go
     user_stories:
-      - story: docs/product/stories/engine-routes-agent-clis.yaml
-        scenario_id: engine-routes-005-failed-crush-turn-stops-run
-        merge_date: '2026-10-22'
+    - story: docs/product/stories/engine-routes-agent-clis.yaml
+      scenario_id: engine-routes-005-failed-codex-turn-stops-run
+      merge_date: '2026-10-22'
     timeout: 10m
     merged_steps:
       given:
-        - the "scen-check-crush-turn-fails" project tree
-        - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
+      - the "scen-check-codex-turn-fails" project tree
+      - and: the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt
       when:
-        - the Quality Engineer runs "scen check"
+      - the Quality Engineer runs "scen check"
       then:
-        - the command exits with code 1
-        - stdout matches msg="AI turn failed" turn=1 label=crush-turn001 role=prompt cli=crush model=zhipu-coding/no-such-model
-        - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
-        - and: the engine dispatched 1 AI turn
-        - and: no file outside "tmp" changed
-
-  crush-guard-001-read-only-tool-allowed:
-    description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write roots or not
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-001-read-only-tool-allowed
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-read-only-tool" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "view"
-        - crush names the file "docs/README.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard allows the tool call
-  crush-guard-002-shell-denied-without-grant:
-    description: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since a shell command can write anywhere
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-002-shell-denied-without-grant
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-shell-denied" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "bash"
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches shell is denied in this mode
-  crush-guard-003-shell-allowed-with-grant:
-    description: A tool call to the shell must be allowed when the turn's write policy lets the turn run it
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-003-shell-allowed-with-grant
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-shell-allowed" project tree
-        - crush's write policy lets the turn write under "tests"
-        - and: crush's write policy lets the turn run the shell
-        - crush names the tool "bash"
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard allows the tool call
-  crush-guard-004-unknown-tool-denied:
-    description: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside a write root
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-004-unknown-tool-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-unknown-tool" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "rename"
-        - crush names the file "tests/notes.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches tool rename is not on the allowlist \(unknown tools are treated as writers\)
-  crush-guard-005-missing-policy-denied:
-    description: A tool call must be denied when crush hands the guard no write policy, even one to a tool that only reads
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-005-missing-policy-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-missing-policy" project tree
-        - crush hands the guard no write policy
-        - crush names the tool "view"
-        - crush names the file "docs/README.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches crush guard policy is not set
-  crush-guard-006-unreadable-policy-denied:
-    description: A tool call must be denied when the guard cannot read the write policy crush hands it, even one to a tool that only reads
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-006-unreadable-policy-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-unreadable-policy" project tree
-        - crush hands the guard an unreadable write policy
-        - crush names the tool "view"
-        - crush names the file "docs/README.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches crush guard policy is malformed
-  crush-guard-007-payload-names-the-call:
-    description: When crush names neither the tool nor its file but in the hook payload, the guard must judge the tool call the payload names
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-tool-calls.yaml
-        scenario_id: crush-guard-007-payload-names-the-call
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-hook-payload" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush pipes the hook payload naming the tool "write" and the file "tests/notes.md"
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard allows the tool call
-  crush-guard-writes-001-write-inside-root-allowed:
-    description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-001-write-inside-root-allowed
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-write-inside-root" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "write"
-        - crush names the file "tests/notes.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard allows the tool call
-  crush-guard-writes-002-write-outside-roots-denied:
-    description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-002-write-outside-roots-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-write-outside-roots" project tree
-        - crush's write policy lets the turn write under "tests"
-        - and: crush's write policy lets the turn write under "services"
-        - crush names the tool "write"
-        - crush names the file "docs/notes.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches write target \S*/docs/notes\.md is outside \S*/tests, \S*/services
-  crush-guard-writes-003-symlink-escape-denied:
-    description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the link leads rather than by the path crush names
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-003-symlink-escape-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-symlink-escape" project tree
-        - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "write"
-        - crush names the file "tests/node_modules/shared/README.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches write target \S*/docs/README\.md is outside \S*/tests
-  crush-guard-writes-004-shared-prefix-denied:
-    description: A write to a sibling directory whose name starts with a write root's name must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-004-shared-prefix-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-shared-prefix" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "write"
-        - crush names the file "tests-old/notes.md" of the project tree
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches write target \S*/tests-old/notes\.md is outside \S*/tests
-  crush-guard-writes-005-relative-path-denied:
-    description: A write naming a relative path must be denied, since a relative path does not say where the write lands
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-005-relative-path-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-relative-path" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "write"
-        - crush names the path "tests/notes.md" as written
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches write target must be an absolute path, got tests/notes\.md
-  crush-guard-writes-006-unnamed-path-denied:
-    description: A write that names no file must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-006-unnamed-path-denied
-        merge_date: '2026-10-22'
-    merged_steps:
-      given:
-        - the "crush-guard-unnamed-path" project tree
-        - crush's write policy lets the turn write under "tests"
-        - crush names the tool "write"
-      when:
-        - crush asks the guard about the tool call
-      then:
-        - the guard denies the tool call
-        - and: the guard's reason matches write tool did not name a target path
-  crush-guard-writes-007-host-crush-config-reported:
-    description: A host project's own crush config declaring permissions or hooks must be reported before a crush turn, and the turn must still write only inside its write roots
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-      - story: docs/product/stories/crush-guard-writes-write-roots.yaml
-        scenario_id: crush-guard-writes-007-host-crush-config-reported
-        merge_date: '2026-10-22'
-    timeout: 15m
-    merged_steps:
-      given:
-        - the "build-tests-host-crush-config" project tree
-        - the System Architect answers "1" to every question
-      when:
-        - the System Architect runs "build tests --fix"
-      then:
-        - the command exits with code 0
-        - stdout matches level=WARN msg="Host crush config merges over the engine's generated config" file=\S*/\.crush\.json declares="\[permissions hooks\]" note="engine write-guard hook still applies"
-        - and: the file "tests/mcp/mcp_test.go" is created
-        - and: every step of scenario "INT-900" in "docs/scenarios.yaml" is matched by a step definition under "tests/mcp/steps"
-        - but: no file outside "tests" and "tmp" changed
+      - the command exits with code 1
+      - stdout matches msg="AI turn failed" turn=1 label=codex-turn001 role=prompt cli=codex model=codex-no-such-model
+      - but: stdout does not match CHECK FAILED|ALL CHECKS PASSED
+      - and: the engine dispatched 1 AI turn
+      - and: no file outside "tmp" changed
   engine-config-001-empty-model-table-refused:
     description: A command must be refused at startup when `engine.models` in true-bdd.yaml binds no tier, saying that at least one tier must be configured, before its walk starts or any AI turn
     service: bdd-cli
@@ -4152,29 +3860,31 @@ scenarios:
         - and: no file outside "tmp" changed
         - and: the engine dispatched no AI turns
   engine-config-002-malformed-model-entries-refused:
-    description: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI and one with an empty model, and none of the sound entries
+    description: A command must be refused at startup when `engine.models` holds entries it cannot parse, naming in one run
+      every such entry and why, a tier name the engine does not know, a model reference with no colon, one with an empty CLI
+      and one with an empty model, and none of the sound entries
     service: bdd-cli
     path: tests/bdd-cli/build_tests_test.go
     user_stories:
-      - story: docs/product/stories/engine-config-models-and-roots.yaml
-        scenario_id: engine-config-002-malformed-model-entries-refused
-        merge_date: '2026-10-22'
+    - story: docs/product/stories/engine-config-models-and-roots.yaml
+      scenario_id: engine-config-002-malformed-model-entries-refused
+      merge_date: '2026-10-22'
     merged_steps:
       given:
-        - the "build-tests-malformed-model-entries" project tree
+      - the "build-tests-malformed-model-entries" project tree
       when:
-        - the System Architect runs "build tests"
+      - the System Architect runs "build tests"
       then:
-        - the command exits with code 1
-        - stdout matches level=ERROR msg="Refusing to start" command="build tests"
-        - and: 'stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
-        - and: 'stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"'
-        - and: 'stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"'
-        - and: 'stdout matches engine\.models\.coder: model reference has an empty model: got \\"crush:\\"'
-        - but: stdout does not match engine\.models\.quick
-        - and: stdout does not match BUILD TESTS
-        - and: no file outside "tmp" changed
-        - and: the engine dispatched no AI turns
+      - the command exits with code 1
+      - stdout matches level=ERROR msg="Refusing to start" command="build tests"
+      - and: 'stdout matches engine\.models: unknown model tier: \\"medium\\" \(known: xhigh, high, coder, quick\)'
+      - and: 'stdout matches engine\.models\.xhigh: model reference must be \\"<cli>:<model>\\": got \\"claude-fable-5\\"'
+      - and: 'stdout matches engine\.models\.high: model reference has an empty cli: got \\":claude-opus-5\\"'
+      - and: 'stdout matches engine\.models\.coder: model reference has an empty model: got \\"codex:\\"'
+      - but: stdout does not match engine\.models\.quick
+      - and: stdout does not match BUILD TESTS
+      - and: no file outside "tmp" changed
+      - and: the engine dispatched no AI turns
   engine-config-003-unresolvable-default-tiers-refused:
     description: A command must be refused at startup when the `default_<role>_model` keys of true-bdd.yaml name a tier the engine does not know or a tier that `engine.models` does not configure, naming in one run each such key and the tier it names, and not a sound default
     service: bdd-cli
@@ -4564,12 +4274,12 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches BUILD CODE COMPLETE
-      - 'stdout matches msg="Loaded prompts" command="build code" items=1'
-      - 'stdout matches msg="Check answered" check=tests-pass.*answer=pass'
+      - stdout matches msg="Loaded prompts" command="build code" items=1
+      - stdout matches msg="Check answered" check=tests-pass.*answer=pass
       - and: stdout matches msg="Suite failures" failures=2 framework=go-test
       - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 1 fix AI turn to "claude"
-      - and: the engine dispatched 1 apply AI turn to "crush"
+      - and: the engine dispatched 1 apply AI turn to "codex"
       - and: the engine dispatched 2 AI turns
       - and: the engine spawned exactly 3 test runners
       - and: the engine spawned a test runner with arguments matching -run \^TestAAdd\$\|\^TestBAdd\$
@@ -4580,7 +4290,8 @@ scenarios:
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-run-007-next-walk-finds-regression:
-    description: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that regression before the command exits successfully
+    description: A repair that breaks a test passing at discovery must cause the next suite run to discover and repair that
+      regression before the command exits successfully
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4601,13 +4312,14 @@ scenarios:
       - and: stdout matches msg=test index=1 total=1 id=.*TestBCompatibility
       - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 2 fix AI turns to "claude"
-      - and: the engine dispatched 2 apply AI turns to "crush"
+      - and: the engine dispatched 2 apply AI turns to "codex"
       - and: the engine dispatched 4 AI turns
       - and: the engine spawned exactly 5 test runners
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-frameworks-005-not-applied-revalidated:
-    description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
+    description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate
+      that test before another repair completes the walk
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4628,14 +4340,15 @@ scenarios:
       - but: stdout does not match msg="Walk stopped"
       - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 2 fix AI turns to "claude"
-      - and: the engine dispatched 2 apply AI turns to "crush"
+      - and: the engine dispatched 2 apply AI turns to "codex"
       - and: the engine dispatched 4 AI turns
       - and: the engine spawned exactly 4 test runners
       - and: the file "services/calc/prepared.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
       - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-frameworks-006-not-applied-hits-fix-bound:
-    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged non-converging fix bound
+    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged
+      non-converging fix bound
     service: bdd-cli
     path: tests/bdd-cli/build_code_test.go
     user_stories:
@@ -4655,124 +4368,12 @@ scenarios:
       - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
       - and: the engine dispatched no validation AI turns to "claude"
       - and: the engine dispatched 3 fix AI turns to "claude"
-      - and: the engine dispatched 3 apply AI turns to "crush"
+      - and: the engine dispatched 3 apply AI turns to "codex"
       - and: the engine dispatched 6 AI turns
       - and: the engine spawned exactly 4 test runners
       - and: the file "services/calc/prepared-first.txt" matches ^prepared
       - and: the file "services/calc/prepared-second.txt" matches ^prepared
       - but: the file "tests/suite/calc_test.go" is unchanged
-  crush-guard-reads-001-outside-project-denied:
-    description: A view of an absolute path outside the project must be denied, naming the path and the read root
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-001-outside-project-denied
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-outside" project tree
-      - crush's write policy lets the turn write under "tests"
-      - crush names the tool "view"
-      - crush names the path "/true-bdd-neighbour/secrets.txt" as written
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - and: the guard's reason matches read target /true-bdd-neighbour/secrets\.txt is outside read root \S*/crush-guard-read-outside
-  crush-guard-reads-002-relative-escape-denied:
-    description: A glob whose path leaves the project through ../ must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-002-relative-escape-denied
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-relative-escape" project tree
-      - crush's write policy lets the turn write under "tests"
-      - crush pipes the hook payload naming the tool "glob" and the path "../neighbour"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - and: the guard's reason matches read target \S*/neighbour is outside read root \S*/crush-guard-read-relative-escape
-  crush-guard-reads-003-symlink-escape-denied:
-    description: A read through a symbolic link inside the project pointing outside it must be denied
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-003-symlink-escape-denied
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-symlink-escape" project tree
-      - crush's write policy lets the turn write under "tests"
-      - the project tree's "node_modules/shared" is a symbolic link to "../../"
-      - crush names the tool "grep"
-      - crush names the file "node_modules/shared/notes.md" of the project tree
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - and: the guard's reason matches read target \S*/notes\.md is outside read root \S*/crush-guard-read-symlink-escape
-  crush-guard-reads-004-unnamed-path-allowed:
-    description: An ls call naming no path must be allowed to read the project
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-004-unnamed-path-allowed
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-unnamed-path" project tree
-      - crush's write policy lets the turn write under "tests"
-      - crush names the tool "ls"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
-  crush-guard-reads-005-missing-read-root-denied:
-    description: A tool call must be denied when crush hands the guard a write policy with no read root, naming what is missing
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-005-missing-read-root-denied
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-missing-root" project tree
-      - crush's write policy lets the turn write under "tests"
-      - crush hands the guard a write policy with no read root
-      - crush names the tool "view"
-      - crush names the file "docs/README.md" of the project tree
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - and: the guard's reason matches crush guard policy names no read root
-  crush-guard-reads-006-relative-path-allowed:
-    description: A relative read path inside the project must be allowed outside every write root
-    service: bdd-cli
-    path: tests/bdd-cli/crush_guard_test.go
-    user_stories:
-    - story: docs/product/stories/crush-guard-reads-project-root.yaml
-      scenario_id: crush-guard-reads-006-relative-path-allowed
-      merge_date: '2026-10-23'
-    merged_steps:
-      given:
-      - the "crush-guard-read-relative-path" project tree
-      - crush's write policy lets the turn write under "tests"
-      - crush names the tool "diagnostics"
-      - crush names the path "docs/README.md" as written
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
   build-tests-run-005-prebuilt-engine-without-source:
     description: With a prebuilt engine argument declared and service source absent, build tests --fix must verify its authored definition against the running engine and pass its absolute symlink-resolved path as one runner argument
     service: bdd-cli
@@ -4993,282 +4594,6 @@ scenarios:
       - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for (?m)^Failure affecting Scenarios: calc-002-peer$'
       - and: 'the file matching "tmp/*/01-calc-001-double-fix-iter1-user.txt" has exactly 1 match for expected 8, got 12'
       - and: the shell command "go test -tags bdd ./tests/calc/" run in "." exits with code 0
-  crush-replay-001-whole-command:
-    description: The write guard allows whole command
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-001-whole-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-whole-command" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command go test ./...
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
-  crush-replay-002-selected-command:
-    description: The write guard allows selected command
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-002-selected-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-selected-command" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command go test ./... -run '^TestSlow$'
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
-  crush-replay-003-shell-operator:
-    description: The write guard denies shell operator
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-003-shell-operator
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-shell-operator" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command go test ./...; cat /etc/passwd
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-004-assignment:
-    description: The write guard denies assignment
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-004-assignment
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-assignment" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command X=1 go test ./...
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-005-another-program:
-    description: The write guard denies another program
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-005-another-program
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-another-program" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command cat /etc/passwd
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-006-extra-flag:
-    description: The write guard denies extra flag
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-006-extra-flag
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-extra-flag" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command go test ./... -v
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-007-double-quotes:
-    description: The write guard denies double quotes
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-007-double-quotes
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-double-quotes" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "." with command go test ./... -run "^TestSlow$"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-008-wrong-directory:
-    description: The write guard denies wrong directory
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-008-wrong-directory
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-wrong-directory" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush pipes a shell call in directory "tests" with command go test ./...
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-009-no-command:
-    description: The write guard denies no command
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-009-no-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-no-command" project tree
-      - crush pipes a shell call in directory "." with command go test ./...
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
-  crush-replay-010-job-output:
-    description: The write guard allows job output
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-010-job-output
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-job-output" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush names the tool "job_output"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
-  crush-replay-011-job-without-command:
-    description: The write guard denies job without command
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-011-job-without-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-job-without-command" project tree
-      - crush names the tool "job_output"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-  crush-replay-012-job-kill:
-    description: The write guard allows job kill
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-012-job-kill
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-job-kill" project tree
-      - crush's write policy grants the test command "go test ./..." with selector "-run" in "."
-      - crush names the tool "job_kill"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard allows the tool call
-  crush-replay-013-kill-without-command:
-    description: The write guard denies kill without command
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-013-kill-without-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "crush-replay-kill-without-command" project tree
-      - crush names the tool "job_kill"
-      when:
-      - crush asks the guard about the tool call
-      then:
-      - the guard denies the tool call
-  crush-replay-014-writer-background-result:
-    description: The build code crush writer runs its declared replay selection through bash and reads a test lasting over a minute through job_output
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-014-writer-background-result
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "build-code-writer-replay" project tree
-      - the System Architect answers "1" to every question
-      when:
-      - the System Architect runs "build code --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches BUILD CODE COMPLETE
-      - every file matching "tmp/*/crush-config-*/crush.json" matches "bash"
-      - every file matching "tmp/*/crush-config-*/crush.json" matches "job_output"
-      - every file matching "tmp/*/crush-config-*/crush.json" matches "job_kill"
-      - 'the file "services/calc/guard-calls.jsonl" matches "tool": "bash"'
-      - 'the file "services/calc/guard-calls.jsonl" matches "tool": "job_output"'
-      - 'the file "services/calc/guard-calls.jsonl" matches "elapsed_seconds": ([6-9][0-9]|[1-9][0-9]{2,})'
-      - every file matching "tmp/*/crush-turn*-crush.log" matches job_output
-      - every file matching "tmp/*/crush-turn*-crush.log" matches SELECTION COMPLETED
-      - the file "services/calc/replayed.txt" matches ^SELECTION COMPLETED
-      - the file "tests/suite/replay_test.go" is unchanged
-      - the engine dispatched 1 apply AI turn to "crush"
-    timeout: 15m
-  crush-replay-015-unrepresentable-command:
-    description: A replay argument containing a single quote withholds the writer grant with one warning
-    service: bdd-cli
-    path: tests/bdd-cli/crush_replay_test.go
-    user_stories:
-    - story: docs/product/stories/crush-writer-test-command.yaml
-      scenario_id: crush-replay-015-unrepresentable-command
-      merge_date: '2026-10-24'
-    merged_steps:
-      given:
-      - the "build-code-unrepresentable-replay" project tree
-      - the System Architect answers "1" to every question
-      when:
-      - the System Architect runs "build code --fix"
-      then:
-      - the command exits with code 0
-      - stdout matches level=WARN msg="Replay command grant unavailable"
-      - stdout matches argument contains a single quote, newline or NUL
-      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for Replay command grant unavailable
-      - every file matching "tmp/*/crush-config-*/crush.json" does not match "bash"
-      - every file matching "tmp/*/crush-config-*/crush.json" does not match "job_output"
-    timeout: 10m
   build-code-set-001-partial-repair:
     description: A partial repair removes the passing member from the next plan
     service: bdd-cli
@@ -5285,15 +4610,15 @@ scenarios:
       when:
       - the System Architect runs "build code --fix"
       then:
-      - 'the command exits with code 0'
-      - 'stdout matches BUILD CODE COMPLETE'
-      - 'the engine dispatched no validation AI turns to "claude"'
-      - 'the engine dispatched 2 fix AI turns to "claude"'
-      - 'the engine dispatched 2 apply AI turns to "crush"'
-      - 'the engine spawned exactly 4 test runners'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestB'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA'
-      - 'the engine spawned a test runner with arguments matching -run \^TestA\$\|\^TestB\$'
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "codex"
+      - the engine spawned exactly 4 test runners
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+      - the engine spawned a test runner with arguments matching -run \^TestA\$\|\^TestB\$
   build-code-set-002-shared-evidence:
     description: Shared failure output is shown once with both ids in the set request
     service: bdd-cli
@@ -5310,11 +4635,11 @@ scenarios:
       when:
       - the System Architect runs "build code --fix"
       then:
-      - 'the command exits with code 0'
-      - 'the engine dispatched 1 fix AI turn to "claude"'
-      - 'the engine dispatched 1 apply AI turn to "crush"'
-      - 'the engine spawned exactly 3 test runners'
-      - 'the file matching "tmp/*/*fix-iter1-user.txt" has exactly 1 match for SHARED-FAILURE-EVIDENCE'
+      - the command exits with code 0
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 3 test runners
+      - the file matching "tmp/*/*fix-iter1-user.txt" has exactly 1 match for SHARED-FAILURE-EVIDENCE
       - 'every file matching "tmp/*/*fix-iter1-user.txt" matches Tests: .*TestA, .*TestB'
       - 'every file matching "tmp/*/apply-*-user.txt" matches Whole suite:'
       - 'every file matching "tmp/*/apply-*-user.txt" matches Selection:'
@@ -5334,13 +4659,13 @@ scenarios:
       when:
       - the System Architect runs "build code --fix"
       then:
-      - 'the command exits with code 0'
-      - 'stdout matches msg="Suite failures" failures=2 framework=go-test'
-      - 'the engine spawned exactly 3 test runners'
-      - 'the engine dispatched 1 fix AI turn to "claude"'
-      - 'the engine dispatched 1 apply AI turn to "crush"'
-      - 'stdout does not match Spawning test runner.*-run'
-      - 'the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0'
+      - the command exits with code 0
+      - stdout matches msg="Suite failures" failures=2 framework=go-test
+      - the engine spawned exactly 3 test runners
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - stdout does not match Spawning test runner.*-run
+      - the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0
   build-code-set-004-missing-result:
     description: A skipped selected member stays failing until its own passing result
     service: bdd-cli
@@ -5357,12 +4682,12 @@ scenarios:
       when:
       - the System Architect runs "build code --fix"
       then:
-      - 'the command exits with code 0'
-      - 'the engine dispatched 2 fix AI turns to "claude"'
-      - 'the engine dispatched 2 apply AI turns to "crush"'
-      - 'the engine spawned exactly 4 test runners'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches did not run'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestA'
+      - the command exits with code 0
+      - the engine dispatched 2 fix AI turns to "claude"
+      - the engine dispatched 2 apply AI turns to "codex"
+      - the engine spawned exactly 4 test runners
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches did not run
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestA
   build-code-set-005-shrinking-counter:
     description: Shrinking the set does not reset its existing attempt counter and the last apply is rerun
     service: bdd-cli
@@ -5379,16 +4704,15 @@ scenarios:
       when:
       - the System Architect runs "build code --fix"
       then:
-      - 'the command exits with code 1'
-      - 'stdout matches gave up after 2 applied fix'
-      - 'the engine dispatched 2 apply AI turns to "crush"'
-      - 'the engine spawned exactly 3 test runners'
-      - 'the file "services/calc/attempted.txt" matches attempted'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" matches TestB'
-      - 'every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA'
+      - the command exits with code 1
+      - stdout matches gave up after 2 applied fix
+      - the engine dispatched 2 apply AI turns to "codex"
+      - the engine spawned exactly 3 test runners
+      - the file "services/calc/attempted.txt" matches attempted
+      - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
+      - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
   build-code-confirmation-001-passes:
-    description: A completed writer response without confirmation preserves its repair,
-      warns once and reruns the set to convergence
+    description: A completed writer response without confirmation preserves its repair, warns once and reruns the set to convergence
     service: bdd-cli
     path: tests/bdd-cli/build_code_confirmation_test.go
     user_stories:
@@ -5405,21 +4729,18 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
-      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer
-        confirmation missing"
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer confirmation missing"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 1 fix AI turn to "claude"
-      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine dispatched 1 apply AI turn to "codex"
       - the engine spawned exactly 3 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
       - stdout matches BUILD CODE COMPLETE
       - stdout does not match msg="Walk stopped"
-      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
-        with code 0
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-confirmation-002-retries:
-    description: A missing confirmation with failures remaining replans only the remaining
-      tests
+    description: A missing confirmation with failures remaining replans only the remaining tests
     service: bdd-cli
     path: tests/bdd-cli/build_code_confirmation_test.go
     user_stories:
@@ -5436,11 +4757,10 @@ scenarios:
       then:
       - the command exits with code 0
       - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
-      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer
-        confirmation missing"
+      - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer confirmation missing"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 fix AI turns to "claude"
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -5448,11 +4768,10 @@ scenarios:
       - stdout does not match msg="Walk stopped"
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
-      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
-        with code 0
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-confirmation-003-bound:
-    description: Missing confirmations consume the same allowance and rerun the terminal
-      repair before the non-converging bound even when it passes
+    description: Missing confirmations consume the same allowance and rerun the terminal repair before the non-converging bound
+      even when it passes
     service: bdd-cli
     path: tests/bdd-cli/build_code_confirmation_test.go
     user_stories:
@@ -5469,11 +4788,10 @@ scenarios:
       then:
       - the command exits with code 1
       - stdout matches level=WARN msg="Writer confirmation missing".*apply-failing-set-iter1-result.yaml
-      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer
-        confirmation missing"
+      - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer confirmation missing"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 3 fix AI turns to "claude"
-      - the engine dispatched 3 apply AI turns to "crush"
+      - the engine dispatched 3 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -5481,11 +4799,9 @@ scenarios:
       - the file "services/calc/prepared.txt" matches ^prepared
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
-      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits
-        with code 0
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-001-nonzero:
-    description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to
-      convergence
+    description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to convergence
     service: bdd-cli
     path: tests/bdd-cli/build_code_writer_test.go
     user_stories:
@@ -5505,7 +4821,7 @@ scenarios:
       - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 fix AI turns to "claude"
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -5535,7 +4851,7 @@ scenarios:
       - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 1 fix AI turn to "claude"
-      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine dispatched 1 apply AI turn to "codex"
       - the engine spawned exactly 3 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -5543,8 +4859,7 @@ scenarios:
       - stdout does not match msg="Walk stopped"
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   build-code-writer-003-bound:
-    description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even
-      when it passes
+    description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even when it passes
     service: bdd-cli
     path: tests/bdd-cli/build_code_writer_test.go
     user_stories:
@@ -5564,7 +4879,7 @@ scenarios:
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 3 fix AI turns to "claude"
-      - the engine dispatched 3 apply AI turns to "crush"
+      - the engine dispatched 3 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -5913,3 +5228,506 @@ scenarios:
       - stdout does not match Model tier overridden
       - no file outside "tmp" changed
       - the file "true-bdd/true-bdd.yaml" is unchanged
+  claude-guard-001-read-only-tool-allowed:
+    description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's write
+      roots or not
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-001-read-only-tool-allowed
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-only-tool" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-guard-002-shell-denied-without-grant:
+    description: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since a
+      shell command can write anywhere
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-002-shell-denied-without-grant
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-shell-denied" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Bash"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches shell is denied in this mode
+  claude-guard-004-unknown-tool-denied:
+    description: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside
+      a write root
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-004-unknown-tool-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-unknown-tool" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "rename"
+      - claude names the file "tests/notes.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches tool is not on the claude writer allowlist
+  claude-guard-005-missing-policy-denied:
+    description: A tool call must be denied when claude hands the guard no write policy, even one to a tool that only reads
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-005-missing-policy-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-missing-policy" project tree
+      - claude hands the guard no write policy
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches cannot read claude guard policy
+  claude-guard-006-unreadable-policy-denied:
+    description: A tool call must be denied when the guard cannot read the write policy claude hands it, even one to a tool
+      that only reads
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-006-unreadable-policy-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-unreadable-policy" project tree
+      - claude hands the guard an unreadable write policy
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches invalid claude guard
+  claude-guard-007-payload-names-the-call:
+    description: When claude names neither the tool nor its file but in the hook payload, the guard must judge the tool call
+      the payload names
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-preserved-invariants.yaml
+      scenario_id: claude-guard-007-payload-names-the-call
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-hook-payload" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude pipes the hook payload naming the tool "Write" and the file "tests/notes.md"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-guard-writes-001-write-inside-root-allowed:
+    description: A write to a file inside one of the turn's write roots must be allowed, even when the file does not exist yet
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
+      scenario_id: claude-guard-writes-001-write-inside-root-allowed
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-write-inside-root" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests/notes.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-guard-writes-002-write-outside-roots-denied:
+    description: A write to a file outside every one of the turn's write roots must be denied, naming the file and the roots
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
+      scenario_id: claude-guard-writes-002-write-outside-roots-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-write-outside-roots" project tree
+      - claude's write policy lets the turn write under "tests"
+      - and: claude's write policy lets the turn write under "services"
+      - claude names the tool "Write"
+      - claude names the file "docs/notes.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  claude-guard-writes-003-symlink-escape-denied:
+    description: A write through a symbolic link inside a write root that points out of it must be denied, judged by where the
+      link leads rather than by the path claude names
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
+      scenario_id: claude-guard-writes-003-symlink-escape-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-symlink-escape" project tree
+      - the project tree's "tests/node_modules/shared" is a symbolic link to "../../docs"
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests/node_modules/shared/README.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  claude-guard-writes-004-shared-prefix-denied:
+    description: A write to a sibling directory whose name starts with a write root's name must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
+      scenario_id: claude-guard-writes-004-shared-prefix-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-shared-prefix" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      - claude names the file "tests-old/notes.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  claude-guard-writes-006-unnamed-path-denied:
+    description: A Write naming no target defaults to the working directory, which is denied outside its write roots
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-writes-preserved-invariants.yaml
+      scenario_id: claude-guard-writes-006-unnamed-path-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-unnamed-path" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Write"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches write target is outside the claude writer roots
+  claude-guard-reads-001-outside-project-denied:
+    description: A Read of an absolute path outside the project must be denied, naming the path and the read root
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-001-outside-project-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-outside" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Read"
+      - claude names the path "/true-bdd-neighbour/secrets.txt" as written
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
+  claude-guard-reads-002-relative-escape-denied:
+    description: A glob whose path leaves the project through ../ must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-002-relative-escape-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-relative-escape" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude pipes the hook payload naming the tool "Glob" and the path "../neighbour"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
+  claude-guard-reads-003-symlink-escape-denied:
+    description: A read through a symbolic link inside the project pointing outside it must be denied
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-003-symlink-escape-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-symlink-escape" project tree
+      - claude's write policy lets the turn write under "tests"
+      - the project tree's "node_modules/shared" is a symbolic link to "../../"
+      - claude names the tool "Grep"
+      - claude names the file "node_modules/shared/notes.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches (read target is outside the claude writer roots|search target is outside|glob)
+  claude-guard-reads-004-unnamed-path-allowed:
+    description: A Read call naming no path must be allowed to read the project
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-004-unnamed-path-allowed
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-unnamed-path" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Read"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-guard-reads-005-missing-read-root-denied:
+    description: A tool call must be denied when claude hands the guard a write policy with no read root, naming what is missing
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-005-missing-read-root-denied
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-missing-root" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude hands the guard a write policy with no read root
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - and: the guard's reason matches invalid claude guard
+  claude-guard-reads-006-relative-path-allowed:
+    description: A relative read path inside the project must be allowed outside every write root
+    service: bdd-cli
+    path: tests/bdd-cli/claude_guard_test.go
+    user_stories:
+    - story: docs/product/stories/claude-guard-reads-preserved-invariants.yaml
+      scenario_id: claude-guard-reads-006-relative-path-allowed
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-guard-read-relative-path" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Read"
+      - claude names the path "docs/README.md" as written
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-replay-001-whole-command:
+    description: The write guard allows whole command
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-001-whole-command
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-whole-command" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-replay-002-selected-command:
+    description: The write guard allows selected command
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-002-selected-command
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-selected-command" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run '^TestSlow$'
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard allows the tool call
+  claude-replay-003-shell-operator:
+    description: The write guard denies shell operator
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-003-shell-operator
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-shell-operator" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...; cat /etc/passwd
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-004-assignment:
+    description: The write guard denies assignment
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-004-assignment
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-assignment" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command X=1 go test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-005-another-program:
+    description: The write guard denies another program
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-005-another-program
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-another-program" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command cat /etc/passwd
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-006-extra-flag:
+    description: The write guard denies extra flag
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-006-extra-flag
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-extra-flag" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -v
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-007-double-quotes:
+    description: The write guard denies double quotes
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-007-double-quotes
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-double-quotes" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "." with command go test ./... -run "^TestSlow$"
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-008-wrong-directory:
+    description: The write guard denies wrong directory
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-008-wrong-directory
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-wrong-directory" project tree
+      - claude's write policy grants the test command "go test ./..." with selector "-run" in "."
+      - claude pipes a "foreground" shell call in directory "tests" with command go test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  claude-replay-009-no-command:
+    description: The write guard denies no command
+    service: bdd-cli
+    path: tests/bdd-cli/claude_replay_test.go
+    user_stories:
+    - story: docs/product/stories/claude-replay-preserved-invariants.yaml
+      scenario_id: claude-replay-009-no-command
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "claude-replay-no-command" project tree
+      - claude pipes a "foreground" shell call in directory "." with command go test ./...
+      when:
+      - claude asks the guard about the tool call
+      then:
+      - the guard denies the tool call
+      - 'the guard''s reason matches allowed forms: .* OR .* ''<selection>'''
+  build-code-claude-007-unrepresentable:
+    description: A replay argument containing a single quote withholds the writer grant with one warning
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_claude_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-claude-writer.yaml
+      scenario_id: build-code-claude-007-unrepresentable
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "build-code-unrepresentable-replay" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches level=WARN msg="Replay command grant unavailable"
+      - stdout matches argument contains a single quote, newline or NUL
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for Replay command grant unavailable
+      - every file matching "tmp/*/*-claude-config/policy.json" does not match "test_command"
+    timeout: 10m

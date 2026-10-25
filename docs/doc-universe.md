@@ -79,7 +79,7 @@ Each service also declares what it is (`type:` — e.g. `"cli"`, `"web:frontend"
 talks to at runtime (`dependencies[]: name · protocol · scope`). `protocol` is the connection
 mechanism — cli / http / redis / …. `scope` places the dependency: `internal` (another service
 declared in this file), `self_hosted` (we run the instance — redis, postgres, kafka), or
-`third_party` (a vendor's service behind it, wherever the binary lives — crush is installed
+`third_party` (a vendor's service behind it, wherever the binary lives — a vendor CLI is installed
 locally but GLM's API is not). The scope drives dependency mocking during builds:
 `third_party` gets record/replay doubles, everything else runs live.
 

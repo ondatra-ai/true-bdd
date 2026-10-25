@@ -19,15 +19,6 @@ func recoverWriterFailure(enabled bool, err error) bool {
 		return true
 	}
 
-	var failure *pkgerrors.CrushTurnError
-	if errors.As(err, &failure) {
-		if failure.Outcome != pkgerrors.CrushTurnStalled {
-			slog.Warn("Writer turn failed", "outcome", failure.Outcome, "error", err)
-		}
-
-		return true
-	}
-
 	if errors.Is(err, pkgerrors.ErrFixApplierNoContent) {
 		slog.Warn("Writer confirmation missing", "error", err)
 

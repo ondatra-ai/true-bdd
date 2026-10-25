@@ -94,3 +94,17 @@ story:
       - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
       - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer turn failed"
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  - id: 007-unrepresentable
+    description: A replay argument containing a single quote withholds the writer grant with one warning
+    steps:
+    - given:
+      - the "build-code-unrepresentable-replay" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches level=WARN msg="Replay command grant unavailable"
+      - stdout matches argument contains a single quote, newline or NUL
+      - the file matching "tmp/true-bdd.log.json" has exactly 1 match for Replay command grant unavailable
+      - every file matching "tmp/*/*-claude-config/policy.json" does not match "test_command"

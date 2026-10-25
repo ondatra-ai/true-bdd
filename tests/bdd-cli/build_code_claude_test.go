@@ -108,3 +108,17 @@ func TestBuildCodeClaude006Failure(t *testing.T) {
 	s.And(`the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0`)
 	s.Done()
 }
+
+// build-code-claude-007-unrepresentable: A replay argument containing a single quote withholds the writer grant with one warning
+func TestBuildCodeClaude007Unrepresentable(t *testing.T) {
+	s := scenarios.New(t, "build-code-claude-007-unrepresentable")
+	s.Given(`the "build-code-unrepresentable-replay" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches level=WARN msg="Replay command grant unavailable"`)
+	s.And(`stdout matches argument contains a single quote, newline or NUL`)
+	s.And(`the file matching "tmp/true-bdd.log.json" has exactly 1 match for Replay command grant unavailable`)
+	s.And(`every file matching "tmp/*/*-claude-config/policy.json" does not match "test_command"`)
+	s.Done()
+}

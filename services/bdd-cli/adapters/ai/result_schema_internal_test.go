@@ -7,8 +7,6 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
 )
 
-// crush has no schema flag at all, so a turn routed to it can only be held
-// to the delimited contract. This repo routes every apply turn there.
 func TestSupportsResultSchema(t *testing.T) {
 	t.Parallel()
 
@@ -18,7 +16,6 @@ func TestSupportsResultSchema(t *testing.T) {
 	}{
 		{provider.CLIClaude, true},
 		{provider.CLICodex, true},
-		{provider.CLICrush, false},
 	}
 
 	for _, testCase := range tests {

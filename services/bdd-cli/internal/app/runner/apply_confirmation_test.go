@@ -55,23 +55,23 @@ func TestMissingConfirmationRecoversOnlyBuildCode(t *testing.T) {
 }
 
 func TestBuildCodeUnclassifiedProviderFailuresStayFatal(t *testing.T) {
-	executionFailure := errors.New("crush exited with code 1")
+	executionFailure := errors.New("codex exited with code 1")
 	for _, testCase := range []struct {
 		name   string
 		answer applyAnswer
 		cause  error
 	}{
-		{string(pkgerrors.CrushTurnEmptyOutput),
-			applyAnswer{err: pkgerrors.ErrProviderProducedNoOutput("crush")}, pkgerrors.ErrProviderNoOutput},
+		{string(pkgerrors.CodexTurnEmptyOutput),
+			applyAnswer{err: pkgerrors.ErrProviderProducedNoOutput("codex")}, pkgerrors.ErrProviderNoOutput},
 		{"whitespace output",
-			applyAnswer{response: " \n\t", err: pkgerrors.ErrProviderProducedNoOutput("crush")}, pkgerrors.ErrProviderNoOutput},
+			applyAnswer{response: " \n\t", err: pkgerrors.ErrProviderProducedNoOutput("codex")}, pkgerrors.ErrProviderNoOutput},
 		{"nonzero exit",
-			applyAnswer{response: "Changed files.", err: pkgerrors.ErrProviderExecutionFailed("crush", executionFailure)},
+			applyAnswer{response: "Changed files.", err: pkgerrors.ErrProviderExecutionFailed("codex", executionFailure)},
 			executionFailure},
 		{"execution error",
-			applyAnswer{err: pkgerrors.ErrProviderExecutionFailed("crush", executionFailure)}, executionFailure},
+			applyAnswer{err: pkgerrors.ErrProviderExecutionFailed("codex", executionFailure)}, executionFailure},
 		{"refused CLI",
-			applyAnswer{err: pkgerrors.ErrProviderNotRegisteredForCLI("crush")}, pkgerrors.ErrProviderNotRegistered},
+			applyAnswer{err: pkgerrors.ErrProviderNotRegisteredForCLI("codex")}, pkgerrors.ErrProviderNotRegistered},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			spec := confirmationSpec(t, buildCodeCommand, testCase.answer)
@@ -144,9 +144,9 @@ func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
 type applyAnswer struct {
 	writerCLI    provider.CLI
 	claudeWriter *bool
+ codexWriter *bool
 	request      *string
 	failRole     provider.Role
-	watch        *bool
 	response     string
 	err          error
 }
@@ -193,7 +193,7 @@ func confirmationSpec(t *testing.T, command string, answer applyAnswer) runner.S
 engine:
   models:
     high: claude:test
-    coder: crush:test
+    coder: codex:test
   default_prompt_model: high
   default_fix_model: high
   default_apply_model: coder
@@ -224,7 +224,7 @@ sections:
 
 	writerCLI := answer.writerCLI
 	if writerCLI == "" {
-		writerCLI = provider.CLICrush
+		writerCLI = provider.CLICodex
 	}
 
 	models, err := provider.NewRegistry(
@@ -273,37 +273,16 @@ func writeConfirmationFile(t *testing.T, path, body string) {
 	}
 }
 
-func TestOnlyBuildCodeApplierRequestsWatch(t *testing.T) {
-	for _, command := range []string{
-		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
-	} {
-		t.Run(command, func(t *testing.T) {
-			watched := false
-
-			spec := confirmationSpec(t, command, applyAnswer{response: blockAnswer, watch: &watched})
-
-			err := runner.Run(t.Context(), spec)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if watched != (command == buildCodeCommand) {
-				t.Fatalf("watch requested = %v", watched)
-			}
-		})
-	}
-}
-
-func TestStartedCrushFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
+func TestStartedCodexFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
 	for _, command := range []string{
 		buildCodeCommand, buildTestsCommand, usRefineCommand, usApplyCommand, scenCheckCommand,
 	} {
 		for _, role := range provider.Roles() {
-			for _, outcome := range []pkgerrors.CrushTurnOutcome{
-				pkgerrors.CrushTurnNonZeroExit, pkgerrors.CrushTurnEmptyOutput, pkgerrors.CrushTurnStalled,
+			for _, outcome := range []pkgerrors.CodexTurnOutcome{
+				pkgerrors.CodexTurnNonZeroExit, pkgerrors.CodexTurnEmptyOutput,
 			} {
 				t.Run(command+"/"+string(role)+"/"+string(outcome), func(t *testing.T) {
-					failure := &pkgerrors.CrushTurnError{Outcome: outcome, Cause: errors.New("writer ended")}
+					failure := &pkgerrors.CodexTurnError{Outcome: outcome, Cause: errors.New("writer ended")}
 					answer := applyAnswer{err: failure, failRole: role}
 					spec := confirmationSpec(t, command, answer)
 
@@ -331,7 +310,7 @@ func TestStartedCrushFailuresRecoverOnlyBuildCodeApply(t *testing.T) {
 }
 
 func TestFailedWriterTerminalRerunCannotBypassBound(t *testing.T) {
-	failure := &pkgerrors.CrushTurnError{Outcome: pkgerrors.CrushTurnNonZeroExit, Cause: errors.New("writer ended")}
+	failure := &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnNonZeroExit, Cause: errors.New("writer ended")}
 	spec := confirmationSpec(t, buildCodeCommand, applyAnswer{err: failure})
 	reruns := 0
 	spec.PostNotApplied = func(context.Context, bool) (bool, error) {
@@ -401,13 +380,13 @@ func (answer applyAnswer) observeApply(role provider.Role, user string, options 
 			*answer.request = user
 		}
 
-		if answer.claudeWriter != nil {
+		if answer.codexWriter != nil {
+ *answer.codexWriter = len(options) > 0 && options[0].CodexWriter
+ }
+
+ if answer.claudeWriter != nil {
 			*answer.claudeWriter = len(options) > 0 && options[0].ClaudeWriter
 		}
-	}
-
-	if role == provider.RoleApply && answer.watch != nil {
-		*answer.watch = len(options) > 0 && options[0].WatchWriterResponse
 	}
 }
 
@@ -431,6 +410,26 @@ func TestOnlyBuildCodeClaudeApplierRequestsWriter(t *testing.T) {
 	}
 }
 
+func TestOnlyBuildCodeCodexApplierRequestsWriter(t *testing.T) {
+	for _, command := range []string{buildCodeCommand, buildTestsCommand, usRefineCommand,
+		usApplyCommand, scenCheckCommand} {
+		t.Run(command, func(t *testing.T) {
+			requested := false
+			spec := confirmationSpec(t, command, applyAnswer{response: blockAnswer, writerCLI: provider.CLICodex,
+				codexWriter: &requested})
+
+			err := runner.Run(t.Context(), spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if requested != (command == buildCodeCommand) {
+				t.Fatalf("Codex writer requested=%v for %s", requested, command)
+			}
+		})
+	}
+}
+
 func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 	body, err := disk.Read("../../../../../templates/build-code.fix-applier.prompt.tpl")
 	if err != nil {
@@ -444,7 +443,7 @@ func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 
 	commands = "{{ if .TestCommand }}## Test commands" + strings.Split(commands, "## How to work")[0]
 
-	for _, cli := range []provider.CLI{provider.CLICrush, provider.CLIClaude, provider.CLICodex} {
+	for _, cli := range []provider.CLI{provider.CLIClaude, provider.CLICodex} {
 		t.Run(string(cli), func(t *testing.T) {
 			request := ""
 			spec := confirmationSpec(t, buildCodeCommand, applyAnswer{response: "changed", writerCLI: cli, request: &request})
@@ -468,10 +467,6 @@ func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 			}
 
 			assertClaudeCommandForms(t, cli, request)
-
-			if strings.Contains(request, "job_output") != (cli == provider.CLICrush) {
-				t.Errorf("wrong completion instructions: %s", request)
-			}
 		})
 	}
 }

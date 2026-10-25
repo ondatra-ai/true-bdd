@@ -159,8 +159,7 @@ func logToolUse(event claude.Event) {
 }
 
 // logTurnUsage logs the cost/token counters as a standalone "AI turn usage"
-// record: only the claude provider returns a usage report at all — crush
-// and codex return bare text, so this can't merge into the router's line.
+// record: only Claude returns usage; codex returns bare text.
 func logTurnUsage(answer claude.Answer) {
 	// Cache reads and cache writes are priced differently from ordinary
 	// input, so each counter is kept separate rather than summed.

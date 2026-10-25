@@ -55,7 +55,7 @@ exit 1
 	_, err = container.BuildCodeFixApplier.Apply(t.Context(), validate.ApplyParams{
 		Subject: &commands.BuildCodeItem{}, SubjectID: "failing-set", FixPrompt: "repair",
 		TmpDir: container.RunDir.GetTmpOutPath(), ModelTier: "coder",
-		ClaudeWriter: true, CodexWriter: true, WatchWriterResponse: true,
+		ClaudeWriter: true, CodexWriter: true,
 	})
 	if !errors.Is(err, pkgerrors.ErrFixApplierNoContent) {
 		t.Fatalf("writer returned %v", err)

@@ -1,7 +1,0 @@
-Repair complete: `Add` now returns `a + b` with a corrected doc comment in services/calc/calc.go. The selected run completed via job_output after automatic backgrounding: `SELECTION COMPLETED` logged, `--- PASS: TestSlowReplay (65.00s)`.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Repaired Add and observed the selected replay complete through job_output"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestSlowReplay-iter1-result.yaml ===

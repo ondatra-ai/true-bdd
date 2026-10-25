@@ -20,7 +20,7 @@ story:
       - stdout matches BUILD CODE COMPLETE
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 fix AI turns to "claude"
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
@@ -36,7 +36,7 @@ story:
     - then:
       - the command exits with code 0
       - the engine dispatched 1 fix AI turn to "claude"
-      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine dispatched 1 apply AI turn to "codex"
       - the engine spawned exactly 3 test runners
       - the file matching "tmp/*/*fix-iter1-user.txt" has exactly 1 match for SHARED-FAILURE-EVIDENCE
       - 'every file matching "tmp/*/*fix-iter1-user.txt" matches Tests: .*TestA, .*TestB'
@@ -55,7 +55,7 @@ story:
       - stdout matches msg="Suite failures" failures=2 framework=go-test
       - the engine spawned exactly 3 test runners
       - the engine dispatched 1 fix AI turn to "claude"
-      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine dispatched 1 apply AI turn to "codex"
       - stdout does not match Spawning test runner.*-run
       - the shell command "go test -json -count=1 ./tests/suite/... ./tests/broken/..." run in "." exits with code 0
   - id: 004-missing-result
@@ -69,7 +69,7 @@ story:
     - then:
       - the command exits with code 0
       - the engine dispatched 2 fix AI turns to "claude"
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - every file matching "tmp/*/*fix-iter1-user.txt" matches did not run
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestA
@@ -84,7 +84,7 @@ story:
     - then:
       - the command exits with code 1
       - stdout matches gave up after 2 applied fix
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 3 test runners
       - the file "services/calc/attempted.txt" matches attempted
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB

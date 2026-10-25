@@ -10,11 +10,10 @@ const (
 	roleJudge  = "judge"
 )
 
-// The three agent CLIs the engine can route a turn to.
+// The two agent CLIs the engine can route a turn to.
 const (
 	cliClaude = "claude"
-	cliCrush  = "crush"
-	cliCodex  = "codex"
+cliCodex = "codex"
 )
 
 // The operation a turn performs, as the report names it: a role says which

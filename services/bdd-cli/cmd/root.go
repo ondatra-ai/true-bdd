@@ -42,8 +42,8 @@ func Execute() {
 	}
 
 	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newCrushGuardCmd())
- rootCmd.AddCommand(newClaudeGuardCmd())
+
+	rootCmd.AddCommand(newClaudeGuardCmd())
 	rootCmd.AddCommand(NewUSCommand(provide))
 	rootCmd.AddCommand(NewBuildCommand(provide))
 	rootCmd.AddCommand(NewScenCommand(provide))

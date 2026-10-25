@@ -68,9 +68,8 @@ func declaredSelections() map[string]declaredSelection {
 		"scen-check-fix-rewrites-implementation":     {Stem: scenCheckStem, QShort: "4ca30544", RequireF: true},
 		"scen-check-fix-adds-measurable-criterion":   {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-fix-rewrites-subjective-outcome": {Stem: scenCheckStem, QShort: "17ccea8c", RequireF: true},
-		"scen-check-fix-by-crush":                    {Stem: scenCheckStem, QShort: measurableQShort, RequireF: true},
 		"scen-check-claude-turn-fails":               {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
-		"scen-check-crush-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
+		"scen-check-codex-turn-fails":                {Stem: scenCheckStem, QShort: measurableQShort, RequireF: false},
 	}
 }
 
