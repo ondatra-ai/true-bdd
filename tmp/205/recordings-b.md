@@ -44,11 +44,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-guard-writes-004-shared-prefix-denied` | `claude-guard-shared-prefix` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-writes-006-unnamed-path-denied` | `claude-guard-unnamed-path` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-reads-001-outside-project-denied` | `claude-guard-read-outside` | recorded | recorded on #203-b; replay passed | 0.00 |
-| `claude-guard-reads-002-relative-escape-denied` | `claude-guard-read-relative-escape` | remaining | pending | — |
-| `claude-guard-reads-003-symlink-escape-denied` | `claude-guard-read-symlink-escape` | remaining | pending | — |
-| `claude-guard-reads-004-unnamed-path-allowed` | `claude-guard-read-unnamed-path` | remaining | pending | — |
-| `claude-guard-reads-005-missing-read-root-denied` | `claude-guard-read-missing-root` | remaining | pending | — |
-| `claude-guard-reads-006-relative-path-allowed` | `claude-guard-read-relative-path` | remaining | pending | — |
+| `claude-guard-reads-002-relative-escape-denied` | `claude-guard-read-relative-escape` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-003-symlink-escape-denied` | `claude-guard-read-symlink-escape` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-004-unnamed-path-allowed` | `claude-guard-read-unnamed-path` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-005-missing-read-root-denied` | `claude-guard-read-missing-root` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-006-relative-path-allowed` | `claude-guard-read-relative-path` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-replay-001-whole-command` | `claude-replay-whole-command` | remaining | pending | — |
 | `claude-replay-002-selected-command` | `claude-replay-selected-command` | remaining | pending | — |
 | `claude-replay-003-shell-operator` | `claude-replay-shell-operator` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 40 of 55; remaining: 15; service CLI minutes: 84.57.
+Recorded and replayed: 45 of 55; remaining: 10; service CLI minutes: 84.57.
