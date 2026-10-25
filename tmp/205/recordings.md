@@ -26,11 +26,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `us-refine-fix-001-vague-description-made-measurable` | `us-refine-fix-desc-qualifier` | recorded | recorded in fix-203-record-a | 1.56 |
 | `us-refine-fix-002-gherkin-description-states-a-rule` | `us-refine-fix-descriptions` | recorded | recorded in fix-203-record-a | 1.89 |
 | `us-refine-fix-003-forbidden-verb-made-observable` | `us-refine-fix-forbidden-verb` | recorded | recorded in fix-203-record-a | 1.52 |
-| `us-refine-fix-004-vague-step-made-measurable` | `us-refine-fix-step-qualifier` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-005-missing-steps-written` | `us-refine-fix-steps` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-006-feature-label-survives` | `us-refine-fix-keeps-feature` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-007-step-outside-catalogue-gets-phrase` | `us-refine-fix-records-phrase` | remaining | unchanged / deferred | 0.00 |
-| `scen-check-fix-001-unmatched-step-gets-phrase` | `scen-check-fix-records-phrase` | remaining | unchanged / deferred | 0.00 |
+| `us-refine-fix-004-vague-step-made-measurable` | `us-refine-fix-step-qualifier` | recorded | recorded in fix-203-record-a | 1.69 |
+| `us-refine-fix-005-missing-steps-written` | `us-refine-fix-steps` | recorded | recorded in fix-203-record-a | 1.45 |
+| `us-refine-fix-006-feature-label-survives` | `us-refine-fix-keeps-feature` | recorded | recorded in fix-203-record-a | 1.75 |
+| `us-refine-fix-007-step-outside-catalogue-gets-phrase` | `us-refine-fix-records-phrase` | recorded | recorded in fix-203-record-a | 1.93 |
+| `scen-check-fix-001-unmatched-step-gets-phrase` | `scen-check-fix-records-phrase` | recorded | recorded in fix-203-record-a | 2.20 |
 | `scen-check-fix-002-undefined-term-gets-definition` | `scen-check-fix-records-term` | remaining | unchanged / deferred | 0.00 |
 | `scen-check-fix-003-unmapped-term-gets-mapping` | `scen-check-fix-records-mapping` | remaining | unchanged / deferred | 0.00 |
 | `scen-check-quality-fix-001-missing-step-added` | `scen-check-fix-adds-missing-step` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 16 of 108; pending migration fixtures: 92. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 21 of 108; pending migration fixtures: 87. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `us-refine-fix-004-vague-step-made-measurable` — `us-refine-fix-step-qualifier`
-- `us-refine-fix-005-missing-steps-written` — `us-refine-fix-steps`
-- `us-refine-fix-006-feature-label-survives` — `us-refine-fix-keeps-feature`
-- `us-refine-fix-007-step-outside-catalogue-gets-phrase` — `us-refine-fix-records-phrase`
-- `scen-check-fix-001-unmatched-step-gets-phrase` — `scen-check-fix-records-phrase`
 - `scen-check-fix-002-undefined-term-gets-definition` — `scen-check-fix-records-term`
 - `scen-check-fix-003-unmapped-term-gets-mapping` — `scen-check-fix-records-mapping`
 - `scen-check-quality-fix-001-missing-step-added` — `scen-check-fix-adds-missing-step`

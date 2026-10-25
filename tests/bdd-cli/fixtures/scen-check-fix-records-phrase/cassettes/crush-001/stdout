@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/product.yaml"
-summary: "Appended catalogue entry 'the service answers within {limit:number} milliseconds' (block: then, terms: [mcp service, reply]) after the existing 'the service answers \"{reply}\"' entry."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

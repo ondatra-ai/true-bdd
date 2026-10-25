@@ -1,0 +1,145 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Term Document Editor applying an approved fix to the working
+copy of the product document: its step-phrase catalogue.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: append an entry at the end of its list, at the
+  list's own indentation, or replace an old_string verbatim.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch the Story. A phrase is defined where every Story reads
+  it, never in the Story that lacked it.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Story
+
+**ID:** doc-outline
+**Title:** Document Outline On Demand
+
+The Story is shown for context only. This fix never edits it.
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Story doc-outline: Document Outline On Demand
+
+## Target
+The `product` document: `./docs/product/product.yaml`, its `catalogue:` list, and nothing else.
+
+## Scope and constraints
+- Do NOT edit the Story `doc-outline` or any of its steps. Its AC text stays word for word as written.
+- Do NOT edit `roles:`, `vocabulary:` or `glossary:` — the only glossary term the new entry relies on, `Google Doc`, already exists at `docs/product/product.yaml` line 30 and is spelled exactly that way.
+- Add exactly ONE new catalogue entry. Change no existing entry.
+
+## Why
+The failed check `us-refine/term_closure` (D: step-phrases) reports for AC-2:
+`then step "Claude offers to summarise the document instead" matches no template`.
+AC-1 and AC-3 are already fully phrased (3 of 3 steps each) and must stay that way.
+
+The step is a `then` step whose text is, verbatim and without its `and:` keyword:
+`Claude offers to summarise the document instead`
+
+Per the user's decisions:
+- The phrase is a **fixed literal** — no slots. One entry per alternative Claude may offer, so this entry covers only the "summarise" offer.
+- Its meaning: Claude's reply asks the Claude User whether to summarise the Google Doc instead, and no summary is produced unless the Claude User accepts.
+- `terms: [Google Doc]` — the offer is about the shared Google Doc; "summary" stays plain English and gets no glossary term.
+
+## Required Changes
+
+### Change #1: Add the catalogue entry that phrases AC-2's offer step
+**Document:** product (`./docs/product/product.yaml`)
+**Action:** Append this entry to the end of the `catalogue:` list (after the existing `Claude displays the message "{message}"` entry). Copy the YAML exactly, keeping the two-space list indentation already used in the file.
+
+**YAML to append:**
+```yaml
+  - template: 'Claude offers to summarise the document instead'
+    block: then
+    means: Claude's reply asks the Claude User whether to summarise the Google Doc instead of outlining it; no summary is produced unless the Claude User accepts.
+    terms: [Google Doc]
+```
+
+**Equivalent exact edit (use this if you prefer an anchored replacement):**
+
+old_string:
+```
+  - template: 'Claude displays the message "{message}"'
+    block: then
+    means: Claude's reply in the conversation is exactly the quoted message.
+    terms: []
+```
+
+new_string:
+```
+  - template: 'Claude displays the message "{message}"'
+    block: then
+    means: Claude's reply in the conversation is exactly the quoted message.
+    terms: []
+  - template: 'Claude offers to summarise the document instead'
+    block: then
+    means: Claude's reply asks the Claude User whether to summarise the Google Doc instead of outlining it; no summary is produced unless the Claude User accepts.
+    terms: [Google Doc]
+```
+
+Note on YAML: the `means:` value contains an apostrophe in `Claude's` and must stay a plain (unquoted) scalar, exactly as the neighbouring entries write theirs. The `template:` value is single-quoted and contains no quote characters, so it needs no escaping.
+
+## Verification after applying
+1. `Claude offers to summarise the document instead` now matches exactly one template — the new entry — and that entry's `block` is `then`, which is the step's block.
+2. No collision: the new template is all literal text with no slots, so it matches only that one sentence. In particular it does not overlap `Claude displays the message "{message}"`, which requires the literal prefix `Claude displays the message ` followed by a quoted run.
+3. Every other step of the Story still matches exactly one template, unchanged:
+   - `a Google Doc with 3 headings is shared with the Claude User` → `a Google Doc with {count:number} heading[s] is shared with the {actor:role}` (given)
+   - `a Google Doc with no headings is shared with the Claude User` → same entry, `no` as the number (given)
+   - `a Google Doc that is not shared with the Claude User` → `a Google Doc that is not shared with the {actor:role}` (given)
+   - `the Claude User asks Claude to outline the document` → `the {actor:role} asks Claude to outline the document` (when)
+   - `Claude displays an outline of 3 headings` → `Claude displays an outline of {count:number} heading[s]` (then)
+   - `Claude displays the message "This document has no headings"` and `Claude displays the message "This document is not shared with your account"` → `Claude displays the message "{message}"` (then)
+4. The Story file is untouched; `git status` should show a change to `docs/product/product.yaml` only.
+
+---
+
+## Where to write
+
+Each term document has a working copy in this run's tmp directory. Edit
+the working copy, never the document itself:
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy of the `product` document
+   and find its `catalogue:` list.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above with the Edit tool on that working copy: append a new entry at
+   the end of the list, at the list's own indentation, or replace the
+   old_string verbatim.
+3. Copy each entry's YAML exactly as the fix prompt gives it. Keep a
+   template single-quoted: it carries `{`, `[` and `"` of its own.
+4. You MAY only edit the working copies listed above. The documents
+   themselves and the Story are out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-doc-outline-iter1-result.yaml ===
