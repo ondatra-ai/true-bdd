@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
@@ -23,7 +24,7 @@ const Bin = "go"
 // -C rather than a working directory so the caller's own cwd is untouched.
 func Build(opt shell.Options, dir, binPath, pkg string) error {
 	result, err := shell.Run(context.Background(),
-		[]string{Bin, buildVerb, "-C", dir, "-o", binPath, pkg}, opt)
+		[]string{Bin, buildVerb, "-C", dir, "-o", binPath, pkg}, scrubOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -41,7 +42,7 @@ func Build(opt shell.Options, dir, binPath, pkg string) error {
 func BuildCovered(opt shell.Options, dir, binPath, pkg, coverPkg string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, buildVerb, "-C", dir, "-buildvcs=false", "-cover", "-coverpkg=" + coverPkg, "-o", binPath, pkg,
-	}, opt)
+	}, scrubOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func BuildCovered(opt shell.Options, dir, binPath, pkg, coverPkg string) error {
 func CoverProfile(opt shell.Options, dataDir, profilePath string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, "tool", "covdata", "textfmt", "-i=" + dataDir, "-o=" + profilePath,
-	}, opt)
+	}, scrubOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
 	result, err := shell.Run(context.Background(), []string{
 		Bin, "test", "-count=1", "-tags", "bdd", pkg,
 		"-mode=services:replay,tests:replay", "-engine-bin=" + engineBin,
-	}, opt)
+	}, scrubOptions(opt))
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,8 @@ func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
 
 // ReadRoots asks the installed Go toolchain for its tool and module directories.
 func ReadRoots(ctx context.Context, dir string) ([]string, error) {
-	result, err := shell.Run(ctx, []string{Bin, envVerb, goRootEnv, goModCacheEnv}, shell.Options{Dir: dir})
+	result, err := shell.Run(ctx, []string{Bin, envVerb, goRootEnv, goModCacheEnv},
+		shell.Options{Dir: dir, Env: git.Environment()})
 	if err != nil {
 		return nil, fmt.Errorf("locating Go read roots: %w", err)
 	}

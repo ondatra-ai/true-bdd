@@ -49,6 +49,16 @@ func (e Env) Set(entries ...string) Env {
 	return e
 }
 
+// Entries resolves the complete child environment so wrappers can scrub it.
+func (e Env) Entries() []string {
+	entries := e.build()
+	if entries == nil {
+		return os.Environ()
+	}
+
+	return slices.Clone(entries)
+}
+
 // build resolves the child's environment, or nil to inherit the parent's
 // untouched — which is what os/exec reads a nil Env as.
 func (e Env) build() []string {

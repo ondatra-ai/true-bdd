@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/scripts/codexrun"
 )
 
@@ -225,6 +226,7 @@ func assertResumeExitCode(t *testing.T, root, name string, pid int) {
 	binary := filepath.Join(root, "bin/codex-runner")
 
 	build := exec.CommandContext(t.Context(), "go", "build", "-o", binary, "../cmd/codex")
+	build.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	output, err := build.CombinedOutput()
 	if err != nil {

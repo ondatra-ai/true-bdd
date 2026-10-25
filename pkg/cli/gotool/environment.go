@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
 
@@ -17,7 +18,8 @@ const (
 
 // Environment resolves the installed Go runtime and module cache.
 func Environment(ctx context.Context) (map[string]string, error) {
-	result, err := shell.Run(ctx, []string{Bin, envVerb, jsonOutputFlag, goRootEnv, goModCacheEnv}, shell.Options{})
+	result, err := shell.Run(ctx, []string{Bin, envVerb, jsonOutputFlag, goRootEnv, goModCacheEnv},
+		shell.Options{Env: git.Environment()})
 	if err != nil {
 		return nil, err
 	}
@@ -34,4 +36,10 @@ func Environment(ctx context.Context) (map[string]string, error) {
 	}
 
 	return paths, nil
+}
+
+func scrubOptions(opt shell.Options) shell.Options {
+	opt.Env = shell.Inherit().Exact(git.ScrubEnvironment(opt.Env.Entries()))
+
+	return opt
 }

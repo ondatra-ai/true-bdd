@@ -14,7 +14,7 @@ import (
 	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 )
 
-// The Test gate checks raw Git setup even in build-tagged files (#206).
+// The Test gate checks Git and Go subprocesses even in build-tagged files (#206).
 func TestRawGitCallersScrubRepositoryEnvironment(t *testing.T) {
 	root := gitOutput(t, ".", "rev-parse", "--show-toplevel")
 	t.Chdir(root)
@@ -62,7 +62,7 @@ func checkGitSource(t *testing.T, path string) {
 
 			environment := commandEnvironment(function.Body, variable)
 			if !containsScrubber(environment, tree) {
-				t.Errorf("%s: %s spawns git without git.ScrubEnvironment", path, function.Name.Name)
+				t.Errorf("%s: %s spawns git or go without git.ScrubEnvironment", path, function.Name.Name)
 			}
 
 			return true
@@ -90,14 +90,58 @@ func rawGitCommand(call *ast.CallExpr, tree *ast.File) bool {
 		return false
 	}
 
-	literal, matched := call.Args[argument].(*ast.BasicLit)
-	if !matched || literal.Kind != token.STRING {
-		return false
+	binary := filepath.Base(commandProgram(call.Args[argument], tree))
+
+	return binary == gitcli.Bin || binary == "go"
+}
+
+func commandProgram(expression ast.Expr, tree *ast.File) string {
+	switch expression := expression.(type) {
+	case *ast.BasicLit:
+		if expression.Kind == token.STRING {
+			value, _ := strconv.Unquote(expression.Value)
+
+			return value
+		}
+	case *ast.Ident:
+		if expression.Obj != nil {
+			return commandProgram(declaredValue(expression.Obj.Decl), tree)
+		}
+	case *ast.CallExpr:
+		return lookedUpProgram(expression, tree)
+	default:
 	}
 
-	binary, err := strconv.Unquote(literal.Value)
+	return ""
+}
 
-	return err == nil && filepath.Base(binary) == gitcli.Bin
+func lookedUpProgram(call *ast.CallExpr, tree *ast.File) string {
+	if len(call.Args) != 1 {
+		return ""
+	}
+
+	selector, matched := call.Fun.(*ast.SelectorExpr)
+	if matched && selector.Sel.Name == "LookPath" && importPath(selector.X, tree) == "os/exec" {
+		return commandProgram(call.Args[0], tree)
+	}
+
+	return ""
+}
+
+func declaredValue(declaration any) ast.Expr {
+	switch declaration := declaration.(type) {
+	case *ast.AssignStmt:
+		if len(declaration.Rhs) == 1 {
+			return declaration.Rhs[0]
+		}
+	case *ast.ValueSpec:
+		if len(declaration.Values) == 1 {
+			return declaration.Values[0]
+		}
+	default:
+	}
+
+	return nil
 }
 
 func commandVariable(body *ast.BlockStmt, call *ast.CallExpr) string {
@@ -150,6 +194,10 @@ func commandEnvironment(body *ast.BlockStmt, variable string) ast.Expr {
 func containsScrubber(expression ast.Expr, tree *ast.File) bool {
 	if expression == nil {
 		return false
+	}
+
+	if identifier, matched := expression.(*ast.Ident); matched && identifier.Obj != nil {
+		return containsScrubber(declaredValue(identifier.Obj.Decl), tree)
 	}
 
 	scrubbed := false

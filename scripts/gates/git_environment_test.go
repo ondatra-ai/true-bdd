@@ -236,6 +236,7 @@ func buildGates(t *testing.T, root string) string {
 	binary := filepath.Join(root, "gates")
 
 	command := exec.CommandContext(t.Context(), "go", "build", "-o", binary, "../cmd/gates")
+	command.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	output, err := command.CombinedOutput()
 	if err != nil {
@@ -354,8 +355,12 @@ func TestDrillRepositoriesLeaveHookSentinelUnchanged(t *testing.T) {
 	})
 	t.Run("suite", func(t *testing.T) {
 		before := sentinelState(t, sentinel)
-		command := exec.CommandContext(t.Context(), "go", "test", "-count=1", "./scripts/drill/...")
+		local := strings.Fields(gitOutput(t, root, "rev-parse", "--local-env-vars"))
+		capture := captureIndirectGit(t, root, local)
+		executor := hookTestExecutor(t, root, sentinel)
+		command := exec.CommandContext(t.Context(), "go", "test", "-count=1", "-exec", executor, "./scripts/drill/...")
 		command.Dir = filepath.Dir(filepath.Dir(root))
+		command.Env = gitcli.ScrubEnvironment(os.Environ())
 		output, err := command.CombinedOutput()
 
 		if after := sentinelState(t, sentinel); after != before {
@@ -365,7 +370,27 @@ func TestDrillRepositoriesLeaveHookSentinelUnchanged(t *testing.T) {
 		if err != nil {
 			t.Fatalf("drill suite: %s: %v", output, err)
 		}
+
+		assertCleanEnvironment(t, capture, local)
 	})
+}
+
+func hookTestExecutor(t *testing.T, root, sentinel string) string {
+	t.Helper()
+	t.Setenv("GIT_ENV_SENTINEL", sentinel)
+	write(t, root, "hook-test", `#!/bin/sh
+export GIT_DIR="$GIT_ENV_SENTINEL/.git" GIT_WORK_TREE="$GIT_ENV_SENTINEL" GIT_INDEX_FILE="$GIT_ENV_SENTINEL/.git/index"
+exec "$@"
+`)
+
+	executor := filepath.Join(root, "hook-test")
+
+	err := os.Chmod(executor, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return executor
 }
 
 func assertCleanEnvironment(t *testing.T, capture string, local []string, kept ...string) {

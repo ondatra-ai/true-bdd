@@ -23,7 +23,7 @@ func Environment() shell.Env {
 	return shell.Inherit().Strip(localEnvVars()...)
 }
 
-// ScrubEnvironment applies the same policy to raw subprocesses in tests.
+// ScrubEnvironment applies the same policy to explicit subprocess environments.
 func ScrubEnvironment(entries []string) []string {
 	return slices.DeleteFunc(slices.Clone(entries), func(entry string) bool {
 		name, _, _ := strings.Cut(entry, "=")
