@@ -11,7 +11,6 @@ import (
 const (
 	kindCode      = "code"
 	kindFix       = "fix"
-	agentCrush    = "crush"
 	agentCodex    = "codex"
 	statusRunning = "running"
 	statusDone    = "done"

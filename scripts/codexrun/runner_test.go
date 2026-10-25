@@ -17,7 +17,6 @@ const (
 	runningStatus = "running"
 	fixKind       = "fix"
 	codeKind      = "code"
-	crushAgent    = "crush"
 	doneStatus    = "done"
 )
 
@@ -48,34 +47,33 @@ exec "$CODEX_TEST_GIT" "$@"
 		"codex": `#!/bin/sh
 [ "$1" = --fixture-ready ] && exit 0
 if [ "$1" = login ]; then
- case "$LOGIN" in silent) sleep 5;; out) echo 'Not logged in'; exit 1;; *) echo 'Logged in using ChatGPT';; esac
+ case "$LOGIN" in
+ silent) sleep 5;;
+ broken) exit 1;;
+ out) echo 'Not logged in'; exit 1;;
+ *) echo 'Logged in using ChatGPT';;
+ esac
  exit 0
 fi
 printf '%s\n' "$TRUE_BDD_CODEX_RUN" > "$CAPTURE.marker"
 printf '%s\n' "$@" > "$CAPTURE.args"
 cat > "$CAPTURE.stdin"
 echo 'session id: session-175'
-case "$MODE" in stall) sleep 10;; limit) echo "ERROR: You've hit your usage limit."; exit 1;; fail) exit 1;; esac
 while [ $# -gt 0 ]; do
  case "$1" in -C) shift; folder="$1";; -o) shift; report="$1";; esac
  shift
 done
+if [ "$PARTIAL" = yes ]; then printf 'partial edit' > "$folder/partial.go"; fi
+case "$MODE" in
+ expired) echo 'ERROR: Your access token could not be refreshed.'; exit 1;;
+ stall) sleep 10;;
+ limit) echo "ERROR: You've hit your usage limit."; exit 1;;
+ fail) exit 1;;
+esac
 if [ "$COMMIT" = yes ]; then
  git -C "$folder" -c core.hooksPath=/dev/null commit --allow-empty -m 'test commit' >/dev/null
 fi
 printf 'finished report' > "$report"
-`,
-		crushAgent: `#!/bin/sh
-[ "$1" = --fixture-ready ] && exit 0
-printf '%s\n' "$TRUE_BDD_CODEX_RUN" > "$CAPTURE.marker"
-printf '%s\n' "$@" > "$CAPTURE.crush"
-cat > "$CAPTURE.stdin"
-[ "$CRUSH_CLIENT_SERVER" = false ] || exit 3
-if [ "$MODE" = fail ]; then exit 1; fi
-if [ "$COMMIT" = yes ]; then
- git -C "$2" -c core.hooksPath=/dev/null commit --allow-empty -m 'crush commit' >/dev/null
-fi
-echo 'crush report'
 `,
 		"gh": `#!/bin/sh
 printf '{"number":175,"title":"Delegation","body":"saved issue body","comments":[{"body":"saved comment"}]}'
@@ -119,7 +117,7 @@ func seedFixture(t *testing.T, root string) {
 func prepareFakeAgents(t *testing.T, bin string) {
 	t.Helper()
 
-	for _, name := range []string{codexCommand, crushAgent} {
+	for _, name := range []string{codexCommand} {
 		cmd := exec.CommandContext(t.Context(), filepath.Join(bin, name), "--fixture-ready")
 
 		data, err := cmd.CombinedOutput()
@@ -252,35 +250,23 @@ func TestWritersAndFix(t *testing.T) {
 	}
 }
 
-func TestUnavailableAndFallback(t *testing.T) {
-	for _, mode := range []string{"out", "limit", "silent"} {
+func TestUnavailableReaders(t *testing.T) {
+	for _, mode := range []string{"out", limitStatus, "silent"} {
 		t.Run(mode, func(t *testing.T) {
 			root, opts := fixture(t)
 			runner := codexrun.New(root)
 			runner.Stall = 500 * time.Millisecond
 			runner.Grace = 10 * time.Millisecond
 
-			if mode == "limit" {
+			if mode == limitStatus {
 				t.Setenv("MODE", mode)
 			} else {
 				t.Setenv("LOGIN", mode)
 			}
 
 			record, err := runner.Start(t.Context(), opts)
-			if err != nil || record.Status != "unavailable" {
+			if err != nil || record.Status != unavailableStatus {
 				t.Fatalf("reader: %+v %v", record, err)
-			}
-
-			opts.Name = "code-fallback"
-			opts.Kind = codeKind
-			opts.Branch = "impl/fallback"
-			opts.Base = mainBranch
-
-			t.Setenv("COMMIT", "yes")
-
-			record, err = runner.Start(t.Context(), opts)
-			if err != nil || record.Status != doneStatus || record.Agent != crushAgent {
-				t.Fatalf("fallback: %+v %v", record, err)
 			}
 		})
 	}

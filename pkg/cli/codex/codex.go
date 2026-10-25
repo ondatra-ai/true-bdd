@@ -96,5 +96,5 @@ func (o Options) args(session string) []string {
 	return append(args, "-o", o.Final, "-")
 }
 
-// Watchdog is shared with preparation commands and the writer fallback.
+// Watchdog is shared with preparation commands and delegated turns.
 type Watchdog = shell.Watchdog
