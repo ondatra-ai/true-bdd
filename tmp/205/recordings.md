@@ -56,11 +56,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `fix-loop-bounds-002-refixed-prompt-stops-walk` | `fix-loop-refix-stops` | recorded | recorded in fix-203-record-a | 2.47 |
 | `engine-routes-003-prompt-tiers-win` | `scen-check-prompt-names-its-tiers` | recorded | recorded in fix-203-record-a | 0.86 |
 | `engine-routes-004-failed-claude-turn-stops-run` | `scen-check-claude-turn-fails` | recorded | recorded in fix-203-record-a | 0.03 |
-| `engine-routes-005-failed-codex-turn-stops-run` | `scen-check-codex-turn-fails` | remaining | unchanged / deferred | 0.00 |
-| `engine-config-002-malformed-model-entries-refused` | `build-tests-malformed-model-entries` | remaining | unchanged / deferred | 0.00 |
-| `engine-config-004-prompt-tier-unconfigured-refused` | `scen-check-prompt-tier-unconfigured` | remaining | unchanged / deferred | 0.00 |
-| `engine-config-006-default-write-roots` | `build-tests-fix-default-write-roots` | remaining | unchanged / deferred | 0.00 |
-| `engine-checklists-001-missing-checklist-refused` | `scen-check-checklist-missing` | remaining | unchanged / deferred | 0.00 |
+| `engine-routes-005-failed-codex-turn-stops-run` | `scen-check-codex-turn-fails` | recorded | recorded in fix-203-record-a | 0.05 |
+| `engine-config-002-malformed-model-entries-refused` | `build-tests-malformed-model-entries` | recorded | recorded in fix-203-record-a | 0.00 |
+| `engine-config-004-prompt-tier-unconfigured-refused` | `scen-check-prompt-tier-unconfigured` | recorded | recorded in fix-203-record-a | 0.00 |
+| `engine-config-006-default-write-roots` | `build-tests-fix-default-write-roots` | recorded | recorded in fix-203-record-a | 5.18 |
+| `engine-checklists-001-missing-checklist-refused` | `scen-check-checklist-missing` | recorded | recorded in fix-203-record-a | 0.00 |
 | `build-tests-run-001-failed-definition-repaired` | `build-tests-run-recovery` | remaining | unchanged / deferred | 0.00 |
 | `build-tests-run-002-attempt-bound-reports-failing-step` | `build-tests-run-bound` | remaining | unchanged / deferred | 0.00 |
 | `build-tests-run-003-shared-definition-scenarios-run` | `build-tests-run-shared` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 46 of 108; pending migration fixtures: 62. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 51 of 108; pending migration fixtures: 57. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `engine-routes-005-failed-codex-turn-stops-run` — `scen-check-codex-turn-fails`
-- `engine-config-002-malformed-model-entries-refused` — `build-tests-malformed-model-entries`
-- `engine-config-004-prompt-tier-unconfigured-refused` — `scen-check-prompt-tier-unconfigured`
-- `engine-config-006-default-write-roots` — `build-tests-fix-default-write-roots`
-- `engine-checklists-001-missing-checklist-refused` — `scen-check-checklist-missing`
 - `build-tests-run-001-failed-definition-repaired` — `build-tests-run-recovery`
 - `build-tests-run-002-attempt-bound-reports-failing-step` — `build-tests-run-bound`
 - `build-tests-run-003-shared-definition-scenarios-run` — `build-tests-run-shared`
