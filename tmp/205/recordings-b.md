@@ -54,10 +54,20 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-003-shell-operator` | `claude-replay-shell-operator` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-replay-004-assignment` | `claude-replay-assignment` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-replay-005-another-program` | `claude-replay-another-program` | recorded | recorded on #203-b; replay passed | 0.00 |
-| `claude-replay-006-extra-flag` | `claude-replay-extra-flag` | remaining | pending | — |
-| `claude-replay-007-double-quotes` | `claude-replay-double-quotes` | remaining | pending | — |
-| `claude-replay-008-wrong-directory` | `claude-replay-wrong-directory` | remaining | pending | — |
-| `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
-| `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
+| `claude-replay-006-extra-flag` | `claude-replay-extra-flag` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-007-double-quotes` | `claude-replay-double-quotes` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-008-wrong-directory` | `claude-replay-wrong-directory` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-009-no-command` | `claude-replay-no-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | recorded | recorded on #203-b; replay passed | 1.07 |
 
-Recorded and replayed: 50 of 55; remaining: 5; service CLI minutes: 84.57.
+Recorded and replayed: 55 of 55; remaining: 0; service CLI minutes: 85.64.
+
+## Verification
+
+All 55 assigned fixtures passed their isolated live recording and offline replay. They also all passed the full offline suite (252 Scenarios, 219 passed, 33 failed). Every failure belongs to the 42 pending first-half rows, outside this branch’s scope. Full-suite command: `go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay`; duration 119.660 seconds. Its log is `tmp/203-b/full-replay.log`.
+
+No fixture controls, Scenario assertions, product code, Specification documents or lint configuration changed. No usage limit occurred. One rejected setup attempt of `build-code-claude-failure` omitted `TRUE_BDD_RECORD_CLAUDE`; setting it to `/opt/homebrew/bin/claude` allowed the real recording and replay to pass. The fixture and rejected shelf were not edited.
+
+All 1,186 baseline recording files outside these 55 fixtures remain byte-identical to `d707d7ae`. The shared `tmp/205/recordings.md` is unchanged. Each batch runs alint over all existing changed files, `go build ./...` and `go run ./scripts/cmd/gates run --changed main` before a plain local commit with `--no-verify`. Gates include `go test ./...`; every batch check passed. No cassette bytes were changed by lint.
+
+Assigned remaining fixtures: none. First-half rows remain owned by the other run.
