@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -21,6 +20,16 @@ func codexWriterHome(req Request) (string, error) {
 	root, err := filepath.EvalSymlinks(req.WorkDir)
 	if err != nil {
 		return "", fmt.Errorf("resolve codex workspace: %w", err)
+	}
+
+	scratch := req.TmpDir
+	if !filepath.IsAbs(scratch) {
+		scratch = filepath.Join(root, scratch)
+	}
+
+	_, err = codexInsideRoot(root, scratch)
+	if err != nil {
+		return "", err
 	}
 
 	home := filepath.Join(root, "tmp", "codex-homes", filepath.Base(req.TmpDir),
@@ -79,12 +88,9 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 		return "", err
 	}
 
-	env := codexCommandEnvironment(temporary, paths)
-	for _, key := range []string{"HOME", "TMPDIR", codexCacheEnv} {
-		err := disk.Dir(env[key], disk.Private)
-		if err != nil {
-			return "", fmt.Errorf("create codex scratch: %w", err)
-		}
+	env, err := codexScratchEnvironment(root, temporary, paths)
+	if err != nil {
+		return "", err
 	}
 
 	var config strings.Builder
@@ -95,7 +101,12 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 		fmt.Fprintf(&config, "%s = \"read\"\n", strconv.Quote(path))
 	}
 
-	err = codexWritableRoots(&config, root, append([]string{temporary}, req.Mode.SourceWriteRoots...))
+	err = codexRuntimeGrants(&config, env, root)
+	if err != nil {
+		return "", err
+	}
+
+	err = codexWritableRoots(&config, root, codexWritePatterns(req.Mode, temporary))
 	if err != nil {
 		return "", err
 	}
@@ -122,38 +133,6 @@ inherit = "none"
 	return config.String(), nil
 }
 
-func codexWritableRoots(config *strings.Builder, root string, paths []string) error {
-	for _, path := range paths {
-		path = strings.TrimSuffix(path, "/**")
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(root, path)
-		}
-
-		resolved, err := codexInsideRoot(root, path)
-		if err != nil {
-			return err
-		}
-
-		relative, err := filepath.Rel(root, resolved)
-		if err != nil {
-			return fmt.Errorf("locate codex edit root: %w", err)
-		}
-
-		created, err := disk.DirWithin(root, relative, disk.Shared)
-		if err != nil {
-			return fmt.Errorf("prepare codex edit root: %w", err)
-		}
-
-		if created {
-			slog.Info("Codex edit root created", "path", resolved)
-		}
-
-		fmt.Fprintf(config, "%s = \"write\"\n", strconv.Quote(resolved))
-	}
-
-	return nil
-}
-
 func codexInsideRoot(root, path string) (string, error) {
 	resolved, err := resolveCodexPath(path)
 	if err != nil {
@@ -176,6 +155,11 @@ func resolveCodexPath(path string) (string, error) {
 
 	if !errors.Is(err, os.ErrNotExist) || filepath.Dir(path) == path {
 		return "", fmt.Errorf("resolve codex path: %w", err)
+	}
+
+	info, statErr := os.Lstat(path)
+	if statErr == nil && info.Mode()&os.ModeSymlink != 0 {
+		return resolveCodexLink(path)
 	}
 
 	parent, err := resolveCodexPath(filepath.Dir(path))
@@ -235,3 +219,40 @@ const codexRuntimeProfile = `
 # Its implicit scratch grants are explicitly denied below.
 ":minimal" = "read"
 `
+
+func codexScratchEnvironment(root, temporary string, paths map[string]string) (map[string]string, error) {
+	env := codexCommandEnvironment(temporary, paths)
+	for _, key := range []string{"HOME", "TMPDIR", codexCacheEnv} {
+		resolved, err := codexInsideRoot(root, env[key])
+		if err != nil {
+			return nil, err
+		}
+
+		relative, err := filepath.Rel(root, resolved)
+		if err != nil {
+			return nil, fmt.Errorf("locate codex scratch: %w", err)
+		}
+
+		env[key] = resolved
+
+		_, err = disk.DirWithin(root, relative, disk.Private)
+		if err != nil {
+			return nil, fmt.Errorf("create codex scratch: %w", err)
+		}
+	}
+
+	return env, nil
+}
+
+func resolveCodexLink(path string) (string, error) {
+	target, err := os.Readlink(path)
+	if err != nil {
+		return "", fmt.Errorf("read codex root link: %w", err)
+	}
+
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(path), target)
+	}
+
+	return resolveCodexPath(target)
+}

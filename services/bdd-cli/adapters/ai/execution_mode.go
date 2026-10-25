@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"os"
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/provider"
@@ -87,19 +88,29 @@ func (f *ModeFactory) GetEditMode() ExecutionMode {
 // outside tmp — the trees a `build` applier is told by its system prompt to
 // write into. Without this the guard denies every such write and the applier silently reports "could not apply".
 func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
+	patterns := make([]string, 0, len(roots))
+	for _, root := range roots {
+		pattern := sourceRootGlob(root)
+		if pattern != "" {
+			patterns = append(patterns, pattern)
+		}
+	}
+
+	return f.GetGlobEditMode(patterns)
+}
+
+// GetGlobEditMode preserves configured patterns, including an absent literal file.
+func (f *ModeFactory) GetGlobEditMode(patterns []string) ExecutionMode {
 	mode := f.GetEditMode()
 
-	for _, root := range roots {
-		glob := sourceRootGlob(root)
+	for _, pattern := range patterns {
+		glob := strings.TrimSpace(pattern)
 		if glob == "" {
 			continue
 		}
 
 		mode.AllowedTools = append(mode.AllowedTools,
-			"Write("+glob+")",
-			"Edit("+glob+")",
-			"MultiEdit("+glob+")",
-		)
+			"Write("+glob+")", "Edit("+glob+")", "MultiEdit("+glob+")")
 		mode.SourceWriteRoots = append(mode.SourceWriteRoots, glob)
 	}
 
@@ -107,8 +118,8 @@ func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
 }
 
 // sourceRootGlob turns a declared root (`services/frontend`, or an
-// already-globbed `./tests/**`) into a recursive write glob. Roots come
-// from architecture.yaml and host config, so both spellings show up.
+// already-globbed `./tests/**`) into a recursive write glob. Configured
+// test patterns instead use GetGlobEditMode so absent file names stay literal.
 func sourceRootGlob(root string) string {
 	root = strings.TrimSpace(root)
 	if root == "" {
@@ -116,6 +127,11 @@ func sourceRootGlob(root string) string {
 	}
 
 	if strings.ContainsAny(root, "*?[") {
+		return root
+	}
+
+	info, err := os.Stat(root)
+	if err == nil && !info.IsDir() {
 		return root
 	}
 

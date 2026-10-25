@@ -19,8 +19,8 @@ import (
 )
 
 // CodexProvider runs a turn through the `codex` CLI. codex prints only a
-// trace to stdout; the answer is read from the file named by `-o`. Sandbox
-// handling is coarser than the other providers' — see codexSandbox.
+// trace to stdout; the answer is read from the file named by `-o`. Codex
+// applies use a named profile; planning and validation stay read-only.
 type CodexProvider struct{}
 
 // NewCodexProvider creates the codex provider.
@@ -36,7 +36,7 @@ func (p *CodexProvider) Name() string {
 // Execute runs one turn and returns the final message codex wrote to
 // its output file.
 func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error) {
-	if !req.CodexWriter {
+	if !req.CodexApply && !req.CodexWriter {
 		return p.execute(ctx, req, "")
 	}
 
@@ -69,10 +69,17 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 	sandbox := codexSandbox(req.Mode)
 	env := os.Environ()
 
-	if req.CodexWriter {
+	var guard *codexGlobGuard
+
+	if req.CodexApply || req.CodexWriter {
 		var err error
 
 		env, err = prepareCodexWriter(ctx, req, home)
+		if err != nil {
+			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
+		}
+
+		guard, err = newCodexGlobGuard(req)
 		if err != nil {
 			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
 		}
@@ -90,16 +97,28 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 		Prompt:     composePrompt(req),
 		Env:        env,
 		SchemaPath: schemaPath,
-		Writer:     req.CodexWriter,
+		Writer:     req.CodexApply || req.CodexWriter,
 	}
 
 	result, runErr := turn.Run()
+
+	return finishCodexTurn(req, answerPath, result, runErr, guard)
+}
+
+func finishCodexTurn(
+	req Request, answerPath string, result codex.Result, runErr error, guard *codexGlobGuard,
+) (string, error) {
 	trace := result.Transcript
 
 	saveTranscript(artifactPath(req, "codex.log"), trace)
 
-	if req.CodexWriter {
+	if guard != nil {
 		saveTranscript(artifactPath(req, "codex-events.jsonl"), result.Events)
+
+		globErr := guard.enforce()
+		if globErr != nil {
+			return trace, pkgerrors.ErrProviderExecutionFailed("codex", globErr)
+		}
 	}
 
 	return codexAnswer(req, answerPath, result, runErr)
@@ -147,7 +166,7 @@ func codexAnswer(req Request, answerPath string, result codex.Result, runErr err
 	}
 
 	if strings.TrimSpace(string(answer)) == "" {
-		if req.CodexWriter {
+		if req.CodexApply || req.CodexWriter {
 			return "", &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
 				Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
 		}
@@ -199,13 +218,7 @@ func requireEveryProperty(node any) {
 	}
 }
 
-// codexSandbox projects an ExecutionMode onto codex's sandbox levels: there
-// is no level between read-only and workspace-write (the whole root), so a
-// scoped mode runs read-only — verified the `-o` answer file still lands there.
-func codexSandbox(mode ExecutionMode) string {
-	if mode.GrantsSourceWrites() {
-		return codex.SandboxWorkspaceWrite
-	}
-
+// codexSandbox keeps planning and validation read-only regardless of their tool specs.
+func codexSandbox(_ ExecutionMode) string {
 	return codex.SandboxReadOnly
 }

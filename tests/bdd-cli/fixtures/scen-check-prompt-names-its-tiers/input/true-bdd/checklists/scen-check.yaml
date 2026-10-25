@@ -1,9 +1,9 @@
 # Fixture checklist for `scen-check-prompt-names-its-tiers`.
 #
 # The shipped checklist's description-qualifier question, verbatim, under
-# an `engine:` block naming high, high and coder (claude, claude, crush in
+# an `engine:` block naming high, high and coder (claude, claude, codex in
 # this fixture's true-bdd.yaml). The Prompt names its own tiers, coder,
-# xhigh and high (crush, codex, claude): each of its turns must go to the
+# xhigh and high (codex, codex, claude): each of its turns must go to the
 # CLI the Prompt's tier names, never to the checklist's.
 
 version: "1.0"

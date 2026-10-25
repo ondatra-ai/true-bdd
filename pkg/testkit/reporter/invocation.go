@@ -93,7 +93,7 @@ func reconstructClaudeInvocation(turn *Turn) Invocation {
 }
 
 // resolveInvocation prefers the logged command and falls back to
-// reconstruction, which only the claude provider needs: crush and codex
+// reconstruction, which only the claude provider needs: codex
 // have logged their argv from the start.
 func resolveInvocation(turn *Turn) Invocation {
 	if turn.Invocation.Known {

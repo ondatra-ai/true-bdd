@@ -11,7 +11,7 @@ const (
 	storyPath = "docs/product/stories/96.1-story.yaml"
 	// The two CLIs a fixture can spawn, named once.
 	claudeCLI = "claude"
-	crushCLI  = "crush"
+	codexCLI  = "codex"
 )
 
 func changed(path, kind, body string) FileChange {
@@ -147,7 +147,7 @@ func TestCheckCassettesConsumed(t *testing.T) {
 	t.Parallel()
 
 	cassettes := t.TempDir()
-	for _, name := range []string{claudeCLI + "-001", claudeCLI + "-002", crushCLI + "-001"} {
+	for _, name := range []string{claudeCLI + "-001", claudeCLI + "-002", codexCLI + "-001"} {
 		err := os.MkdirAll(filepath.Join(cassettes, name), 0o755)
 		if err != nil {
 			t.Fatalf("seed cassette: %v", err)
@@ -168,13 +168,13 @@ func TestCheckCassettesConsumed(t *testing.T) {
 	}{
 		{
 			name:    "every recorded call was served",
-			cursors: map[string]string{claudeCLI: "2", crushCLI: "1"},
+			cursors: map[string]string{claudeCLI: "2", codexCLI: "1"},
 		},
 		{
 			// The divergence a request hash cannot see: the engine stops
 			// early, every call it DID make matches, and the run ends green.
 			name:         "the engine stopped a turn early",
-			cursors:      map[string]string{claudeCLI: "1", crushCLI: "1"},
+			cursors:      map[string]string{claudeCLI: "1", codexCLI: "1"},
 			wantFailures: 1,
 			wantSub:      "made 1 claude call(s) but 2 were recorded",
 		},
@@ -182,7 +182,7 @@ func TestCheckCassettesConsumed(t *testing.T) {
 			name:         "a binary was never spawned",
 			cursors:      map[string]string{claudeCLI: "2"},
 			wantFailures: 1,
-			wantSub:      "made 0 crush call(s) but 1 were recorded",
+			wantSub:      "made 0 codex call(s) but 1 were recorded",
 		},
 	}
 

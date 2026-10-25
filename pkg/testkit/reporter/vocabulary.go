@@ -10,10 +10,9 @@ const (
 	roleJudge  = "judge"
 )
 
-// The three agent CLIs the engine can route a turn to.
+// The two agent CLIs the engine can route a turn to.
 const (
 	cliClaude = "claude"
-	cliCrush  = "crush"
 	cliCodex  = "codex"
 )
 

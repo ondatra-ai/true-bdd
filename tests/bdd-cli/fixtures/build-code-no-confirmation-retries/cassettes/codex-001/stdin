@@ -1,0 +1,69 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Read services/calc/calc.go. If A returns 0, change only A to return 1 and leave B returning 0, even if the plan proposes both. Otherwise change B to return 2 and preserve A. Complete only that stage in this apply.
+Never modify tests or documents. Only services/calc/ is writable.
+
+This fixture deliberately exercises a completed writer response without a confirmation. After making the stage's changes, end your final message in prose describing what changed. Do not include any FILE_START or FILE_END marker, and do not write a result file.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failures come from one cause: the production functions in the `calc` service are unimplemented stubs that return the zero value, while the suite asserts specific non-zero results.
+
+- `services/calc/calc.go` currently declares `func A() int { return 0 }` and `func B() int { return 0 }`.
+- `tests/suite/calc_test.go` (read-only, not to be touched) imports `fixture/buildcodefix/services/calc` and asserts:
+  - `TestA` — fails with `A needs one` unless `calc.A()` returns `1`.
+  - `TestB` — fails with `B needs two` unless `calc.B()` returns `2`.
+
+There is no build, wiring, module-path or harness problem. The module `fixture/buildcodefix` (`go.mod`, Go 1.25.0) already resolves `services/calc` for the suite package, and the suite compiles and runs — both tests reach their assertion and fail on value, not on panic or import error. So the repair is purely the missing return contract in the one declared service root.
+
+## Scope
+
+Write root: `services/calc` only (the `calc` service `path` declared in `docs/architecture/architecture.yaml`). Do not touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`, or any document. Do not add build tags, skips, or any change that alters what the tests assert.
+
+## Part 1 — Make `calc.A()` satisfy its contract
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `A() int` is the service's exported accessor whose defined result is the integer `1`. Replace the stub body so the function returns `1` instead of the zero value. Keep the exported name, the empty parameter list, the `int` result type and the `package calc` declaration exactly as they are — the test imports the package by its module path and calls `calc.A()` with no arguments, so any signature or package rename breaks compilation of a file the writer may not edit.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` (`fixture/buildcodefix/tests/suite::TestA`).
+
+## Part 2 — Make `calc.B()` satisfy its contract
+
+**File:** `services/calc/calc.go`
+
+**Contract:** `B() int` is the second exported accessor, whose defined result is the integer `2`. Replace the stub body so the function returns `2`. Same signature-stability constraint as Part 1: name `B`, no parameters, single `int` result, same package.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` (`fixture/buildcodefix/tests/suite::TestB`).
+
+## Implementation notes for the writer
+
+- Both parts live in the same small file; make them in one pass. The file should remain a valid, gofmt-clean Go source file in `package calc` exporting exactly `A` and `B` with `func() int` shapes — the current one-line-per-function style is fine to keep or to reformat to standard gofmt (braces and bodies on separate lines); formatting is free, the signatures are not.
+- Return literal constants directly. There is no state, no input and no dependency here to thread through, so do not introduce parameters, package-level variables, config, init functions or new files — the suite has exactly two zero-argument call sites and nothing else in the module consumes the package.
+- Do not add a second file in `services/calc` that redeclares `A` or `B`; duplicate declarations in the same package would fail to compile and turn both value failures into a build failure.
+- Leave `go.mod` alone. Its module path `fixture/buildcodefix` is what makes the test's import `fixture/buildcodefix/services/calc` resolve, and the comment there explains it is deliberately a module boundary for this fixture.
+
+## Verification
+
+Run the architecture's declared suite command from the run root:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expect `TestA` and `TestB` both to pass (`--- PASS`), with no change to the test file's assertions and no files modified outside `services/calc`.

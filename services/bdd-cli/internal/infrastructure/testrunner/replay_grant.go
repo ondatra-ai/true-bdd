@@ -9,7 +9,7 @@ import (
 
 var errReplayGrant = errors.New("replay command cannot be granted")
 
-// CanonicalReplayCommand removes machine output and quotes argv for crush's shell.
+// CanonicalReplayCommand removes machine output and quotes argv for the writer's shell.
 func CanonicalReplayCommand(framework, command string) (string, string, error) {
 	argv, err := SplitCommand(command)
 	if err != nil {

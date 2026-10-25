@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Completed the required first stage: A returns 1; B remains 0. TestA passed individually. Ran the whole failing set; TestB still fails as expected and remains for the next stage."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

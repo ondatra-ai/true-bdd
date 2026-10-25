@@ -1,0 +1,88 @@
+story:
+  id: claude-guard
+  feature: engine
+  title: Keep writer guard and replay invariants under Claude
+  as_a: System Architect
+  i_want: the writer guard to confine files and accept only canonical replay commands
+  so_that: a writer cannot exceed its file and command grants
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-read-only-tool-allowed
+    description: A tool call to a tool that only reads must be allowed for any file inside the project, inside the turn's
+      write roots or not
+    steps:
+    - given:
+      - the "claude-guard-read-only-tool" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard allows the tool call
+  - id: 002-shell-denied-without-grant
+    description: A tool call to the shell must be denied when the turn's write policy does not let the turn run it, since
+      a shell command can write anywhere
+    steps:
+    - given:
+      - the "claude-guard-shell-denied" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "Bash"
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches shell is denied in this mode
+  - id: 004-unknown-tool-denied
+    description: A tool call to a tool the guard does not know must be denied as a writer, even when it targets a file inside
+      a write root
+    steps:
+    - given:
+      - the "claude-guard-unknown-tool" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude names the tool "rename"
+      - claude names the file "tests/notes.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches tool is not on the claude writer allowlist
+  - id: 005-missing-policy-denied
+    description: A tool call must be denied when claude hands the guard no write policy, even one to a tool that only reads
+    steps:
+    - given:
+      - the "claude-guard-missing-policy" project tree
+      - claude hands the guard no write policy
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches cannot read claude guard policy
+  - id: 006-unreadable-policy-denied
+    description: A tool call must be denied when the guard cannot read the write policy claude hands it, even one to a tool
+      that only reads
+    steps:
+    - given:
+      - the "claude-guard-unreadable-policy" project tree
+      - claude hands the guard an unreadable write policy
+      - claude names the tool "Read"
+      - claude names the file "docs/README.md" of the project tree
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard denies the tool call
+      - and: the guard's reason matches invalid claude guard
+  - id: 007-payload-names-the-call
+    description: When claude names neither the tool nor its file but in the hook payload, the guard must judge the tool call
+      the payload names
+    steps:
+    - given:
+      - the "claude-guard-hook-payload" project tree
+      - claude's write policy lets the turn write under "tests"
+      - claude pipes the hook payload naming the tool "Write" and the file "tests/notes.md"
+    - when:
+      - claude asks the guard about the tool call
+    - then:
+      - the guard allows the tool call

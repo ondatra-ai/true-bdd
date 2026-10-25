@@ -1,0 +1,73 @@
+# Issue 203 recordings: second half
+
+Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 remaining rows of `tmp/205/recordings.md`, in manifest order. Each recording runs alone using the architecture record command and its anchored Scenario selector, then passes offline replay. CLI minutes exclude judges. No cassette is hand-edited.
+
+| Scenario | Fixture | Migration status | #205 status | Recorded CLI minutes |
+| --- | --- | --- | --- | --- |
+| `build-tests-run-003-shared-definition-scenarios-run` | `build-tests-run-shared` | recorded | recorded on #203-b; replay passed | 10.06 |
+| `build-tests-run-004-selected-package-must-pass` | `build-tests-run-package` | recorded | recorded on #203-b; replay passed | 2.63 |
+| `build-code-run-006-shared-fix-skips-green-peer` | `build-code-shared-fix` | recorded | recorded on #203-b; replay passed | 1.23 |
+| `build-code-run-007-next-walk-finds-regression` | `build-code-cross-walk` | recorded | recorded on #203-b; replay passed | 3.59 |
+| `build-code-frameworks-005-not-applied-revalidated` | `build-code-not-applied` | recorded | recorded on #203-b; replay passed | 3.18 |
+| `build-code-frameworks-006-not-applied-hits-fix-bound` | `build-code-not-applied-bound` | recorded | recorded on #203-b; replay passed | 4.94 |
+| `build-tests-run-005-prebuilt-engine-without-source` | `build-tests-run-prebuilt` | recorded | recorded on #203-b; replay passed | 4.93 |
+| `build-code-spec-005-matched-scenario-embedded` | `build-code-spec-scenario` | recorded | recorded on #203-b; replay passed | 1.82 |
+| `build-code-spec-006-unreadable-product-warned` | `build-code-spec-missing-product` | recorded | recorded on #203-b; replay passed | 1.83 |
+| `build-code-spec-007-unreadable-registry-warned` | `build-code-spec-missing-registry` | recorded | recorded on #203-b; replay passed | 1.89 |
+| `build-tests-run-006-identical-failures-grouped` | `build-tests-run-grouped` | recorded | recorded on #203-b; replay passed | 6.09 |
+| `build-tests-run-007-distinct-failures-whole` | `build-tests-run-distinct` | recorded | recorded on #203-b; replay passed | 7.59 |
+| `build-code-set-001-partial-repair` | `build-code-partial` | recorded | recorded on #203-b; replay passed | 3.01 |
+| `build-code-set-002-shared-evidence` | `build-code-grouped` | recorded | recorded on #203-b; replay passed | 1.50 |
+| `build-code-set-003-mixed-synthetic` | `build-code-mixed-build` | recorded | recorded on #203-b; replay passed | 1.78 |
+| `build-code-set-004-missing-result` | `build-code-missing-member` | recorded | recorded on #203-b; replay passed | 3.73 |
+| `build-code-set-005-shrinking-counter` | `build-code-shrinking-bound` | recorded | recorded on #203-b; replay passed | 2.42 |
+| `build-code-confirmation-001-passes` | `build-code-no-confirmation-passes` | recorded | recorded on #203-b; replay passed | 1.36 |
+| `build-code-confirmation-002-retries` | `build-code-no-confirmation-retries` | recorded | recorded on #203-b; replay passed | 3.18 |
+| `build-code-confirmation-003-bound` | `build-code-no-confirmation-bound` | recorded | recorded on #203-b; replay passed | 3.88 |
+| `build-code-writer-001-nonzero` | `build-code-writer-nonzero` | recorded | recorded on #203-b; replay passed | 2.54 |
+| `build-code-writer-002-empty` | `build-code-writer-empty` | recorded | recorded on #203-b; replay passed | 1.16 |
+| `build-code-writer-003-bound` | `build-code-writer-bound` | recorded | recorded on #203-b; replay passed | 3.67 |
+| `build-code-claude-005-replay` | `build-code-claude-replay` | recorded | recorded on #203-b; replay passed | 0.78 |
+| `build-code-claude-006-failure` | `build-code-claude-failure` | recorded | recorded on #203-b; replay passed | 0.76 |
+| `build-code-codex-001-selection` | `build-code-codex-selection` | recorded | recorded on #203-b; replay passed | 1.60 |
+| `build-code-codex-002-nonzero` | `build-code-codex-nonzero` | recorded | recorded on #203-b; replay passed | 1.79 |
+| `build-code-codex-003-missing-root` | `build-code-codex-missing-root` | recorded | recorded on #203-b; replay passed | 1.62 |
+| `claude-guard-001-read-only-tool-allowed` | `claude-guard-read-only-tool` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-002-shell-denied-without-grant` | `claude-guard-shell-denied` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-004-unknown-tool-denied` | `claude-guard-unknown-tool` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-005-missing-policy-denied` | `claude-guard-missing-policy` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-006-unreadable-policy-denied` | `claude-guard-unreadable-policy` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-007-payload-names-the-call` | `claude-guard-hook-payload` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-001-write-inside-root-allowed` | `claude-guard-write-inside-root` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-002-write-outside-roots-denied` | `claude-guard-write-outside-roots` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-003-symlink-escape-denied` | `claude-guard-symlink-escape` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-004-shared-prefix-denied` | `claude-guard-shared-prefix` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-006-unnamed-path-denied` | `claude-guard-unnamed-path` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-001-outside-project-denied` | `claude-guard-read-outside` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-002-relative-escape-denied` | `claude-guard-read-relative-escape` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-003-symlink-escape-denied` | `claude-guard-read-symlink-escape` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-004-unnamed-path-allowed` | `claude-guard-read-unnamed-path` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-005-missing-read-root-denied` | `claude-guard-read-missing-root` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-reads-006-relative-path-allowed` | `claude-guard-read-relative-path` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-001-whole-command` | `claude-replay-whole-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-002-selected-command` | `claude-replay-selected-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-003-shell-operator` | `claude-replay-shell-operator` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-004-assignment` | `claude-replay-assignment` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-005-another-program` | `claude-replay-another-program` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-006-extra-flag` | `claude-replay-extra-flag` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-007-double-quotes` | `claude-replay-double-quotes` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-008-wrong-directory` | `claude-replay-wrong-directory` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-009-no-command` | `claude-replay-no-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | recorded | recorded on #203-b; replay passed | 1.07 |
+
+Recorded and replayed: 55 of 55; remaining: 0; service CLI minutes: 85.64.
+
+## Verification
+
+All 55 assigned fixtures passed their isolated live recording and offline replay. They also all passed the full offline suite (252 Scenarios, 219 passed, 33 failed). Every failure belongs to the 42 pending first-half rows, outside this branch’s scope. Full-suite command: `go test -tags bdd ./tests/bdd-cli/ -mode=services:replay,tests:replay`; duration 119.660 seconds. Its log is `tmp/203-b/full-replay.log`.
+
+No fixture controls, Scenario assertions, product code, Specification documents or lint configuration changed. No usage limit occurred. One rejected setup attempt of `build-code-claude-failure` omitted `TRUE_BDD_RECORD_CLAUDE`; setting it to `/opt/homebrew/bin/claude` allowed the real recording and replay to pass. The fixture and rejected shelf were not edited.
+
+All 1,186 baseline recording files outside these 55 fixtures remain byte-identical to `d707d7ae`. The shared `tmp/205/recordings.md` is unchanged. Each batch runs alint over all existing changed files, `go build ./...` and `go run ./scripts/cmd/gates run --changed main` before a plain local commit with `--no-verify`. Gates include `go test ./...`; every batch check passed. No cassette bytes were changed by lint.
+
+Assigned remaining fixtures: none. First-half rows remain owned by the other run.

@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "modified",
-      "size": 59,
-      "sha256": "1ed90e926c8dfc97b0f0dff9aa41a4d7426f25149c9863516399e7eb93fcae54",
-      "text": "package calc\nfunc A() int{return 1}\nfunc B() int{return 2}\n"
+      "size": 67,
+      "sha256": "5fabd689b1a436da28ab9cebccee1cdd6b7ea40759eefe2e07b3b4216e145e3d",
+      "text": "package calc\n\nfunc A() int { return 1 }\n\nfunc B() int { return 2 }\n"
     }
   ]
 }

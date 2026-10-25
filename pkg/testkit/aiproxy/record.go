@@ -21,7 +21,8 @@ import (
 // tmp/ deliberately stays IN: the AI writes result files there for the
 // engine to read back, so replay must reproduce them (isEngineOwned filters engine-owned tmp/ paths separately).
 func snapshotSkipDirs() []string {
-	return []string{".crush", ".git", "node_modules"}
+	return []string{".git", "node_modules", "tmp/codex-homes", "tmp/codex-shell-home",
+		"tmp/codex-go-build", "tmp/codex-tmp"}
 }
 
 // record runs the real CLI as a transparent proxy and persists the call

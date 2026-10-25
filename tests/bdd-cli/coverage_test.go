@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"io/fs"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
@@ -39,6 +38,9 @@ func TestFixtureTreesArePaired(t *testing.T) {
 // template byte for byte or deliberately replaces it.
 func TestFixtureTemplateOverlays(t *testing.T) {
 	declarations := map[string]string{
+ "build-code-go-package-does-not-compile/input/templates/build-code.fix-applier.prompt.tpl": templateExtension,
+		"build-code-jest-fix-named-test/input/templates/build-code.fix-applier.prompt.tpl":            templateExtension,
+		"build-code-playwright-failing-assertion/input/templates/build-code.fix-applier.prompt.tpl":   templateExtension,
 		"build-code-codex-missing-root/input/templates/build-code.fix-applier.prompt.tpl":             templateReplacement,
 		"build-code-codex-missing-root/input/templates/build-code.fix-applier.system.prompt.tpl":      templateReplacement,
 		"build-code-codex-selection/input/templates/build-code.fix-applier.prompt.tpl":                templateReplacement,
@@ -58,11 +60,10 @@ func TestFixtureTemplateOverlays(t *testing.T) {
 		"build-code-no-confirmation-retries/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
 		"build-code-no-confirmation-bound/input/templates/build-code.fix-applier.prompt.tpl":          templateReplacement,
 		"build-code-no-confirmation-bound/input/templates/build-code.fix-applier.system.prompt.tpl":   templateReplacement,
-        "build-code-claude-replay/input/templates/build-code.fix-applier.prompt.tpl": templateReplacement,
-        "build-code-claude-replay/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
-        "build-code-claude-failure/input/templates/build-code.fix-applier.prompt.tpl": templateReplacement,
-        "build-code-claude-failure/input/templates/build-code.fix-applier.system.prompt.tpl": templateReplacement,
-		"build-code-writer-replay/input/templates/build-code.fix-applier.prompt.tpl":                  templateReplacement,
+		"build-code-claude-replay/input/templates/build-code.fix-applier.prompt.tpl":                  templateReplacement,
+		"build-code-claude-replay/input/templates/build-code.fix-applier.system.prompt.tpl":           templateReplacement,
+		"build-code-claude-failure/input/templates/build-code.fix-applier.prompt.tpl":                 templateReplacement,
+		"build-code-claude-failure/input/templates/build-code.fix-applier.system.prompt.tpl":          templateReplacement,
 		"build-code-cross-walk/input/templates/build-code.fix-applier.prompt.tpl":                     templateExtension,
 		"build-code-not-applied/input/templates/build-code.fix-applier.prompt.tpl":                    templateReplacement,
 		"build-code-not-applied-bound/input/templates/build-code.fix-applier.prompt.tpl":              templateReplacement,
@@ -139,10 +140,6 @@ func assertTemplateExtension(t *testing.T, overlay, shipped string) {
 		t.Fatal(err)
 	}
 
-	// #201 adds a codex-only branch; legacy crush extensions keep the default branch verbatim.
-	branch := regexp.MustCompile(`(?s){{ if \.CodexWriter }}.*?{{ else }}(.*?){{ end }}`)
-
-	expected = branch.ReplaceAll(expected, []byte("${1}"))
 	if !bytes.HasPrefix(actual, expected) {
 		t.Errorf("fixture template extension %s differs from shipped prefix %s", overlay, shipped)
 	} else if len(actual) == len(expected) {

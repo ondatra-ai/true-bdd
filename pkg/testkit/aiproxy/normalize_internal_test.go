@@ -79,7 +79,6 @@ func TestIsEngineOwned(t *testing.T) {
 	owned := []string{
 		"tmp/true-bdd.log.json",
 		"tmp/aiproxy-state/cursor-claude",
-		"tmp/2026-08-14-21-46-41-78898/crush-config-abc/crush-data/db.sqlite",
 		"tmp/run/codex-turn002-codex-home/auth.json",
 		"tmp/codex-go-build/cache.dat",
 		"tmp/codex-shell-home/state",
@@ -118,13 +117,13 @@ func TestNextCallIndexIncrementsPerBinary(t *testing.T) {
 		}
 	}
 
-	got, err := nextCallIndex(stateDir, "crush")
+	got, err := nextCallIndex(stateDir, "codex")
 	if err != nil {
-		t.Fatalf("nextCallIndex crush: %v", err)
+		t.Fatalf("nextCallIndex codex: %v", err)
 	}
 
 	if got != 1 {
-		t.Fatalf("crush cursor not independent: got %d", got)
+		t.Fatalf("codex cursor not independent: got %d", got)
 	}
 }
 

@@ -1,6 +1,6 @@
 # Scripted Codex delegation uses typed shared CLI wrappers
 
-Repository tooling delegates code and readings through `scripts/cmd/codex` and `scripts/codexrun`. Its typed operations live in `pkg/cli/codex`, `pkg/cli/crush`, `pkg/cli/gh`, `pkg/cli/git` and `pkg/cli/ps`; only those wrappers reach `pkg/shell`. They fit the existing `pkg/cli/**` channel allowance. The engine's Codex and crush wrappers remain inside the engine: scripts cannot import them, and rebuilding the engine must not regenerate the tooling that builds it.
+Repository tooling delegates code and readings through `scripts/cmd/codex` and `scripts/codexrun`. Its typed operations live in `pkg/cli/codex`, `pkg/cli/crush`, `pkg/cli/gh`, `pkg/cli/git` and `pkg/cli/ps`; only those wrappers reach `pkg/shell`. They fit the existing `pkg/cli/**` channel allowance. The engine's Codex and self wrappers remain inside the engine: scripts cannot import them, and rebuilding the engine must not regenerate the tooling that builds it.
 
 ## Considered Options
 

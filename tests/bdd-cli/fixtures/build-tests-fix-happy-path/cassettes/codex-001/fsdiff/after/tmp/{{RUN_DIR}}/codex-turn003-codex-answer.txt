@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "tests/mcp/steps/definitions.go"
+summary: "Created exact definitions and registrations; pattern checks passed; build and BDD tests blocked by dependency access."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

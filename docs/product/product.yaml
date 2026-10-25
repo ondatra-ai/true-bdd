@@ -157,7 +157,7 @@ glossary:
       `us apply`, `scen check`, `build tests` and `build code`. It replaces
       only that tier's configured binding for one run. The tier must already
       be declared under engine.models; references use the config's first-colon
-      split and validation, with claude, crush and codex as the known CLIs.
+      split and validation, with claude and codex as the known CLIs.
       An undeclared tier, malformed reference, unknown CLI or duplicate tier
       is a startup refusal with exit 1 before any turn. Each applied override
       logs once at INFO with msg="Model tier overridden" and tier, from and to.
@@ -233,8 +233,7 @@ glossary:
 
   - term: AI CLI
     means: >-
-      The agent command-line program an AI turn runs through: `claude`,
-      `crush` or `codex`. The project's configuration binds named model tiers
+      The agent command-line program an AI turn runs through: `claude` or `codex`. The project's configuration binds named model tiers
       to a CLI and model, and a Prompt selects its tier. A run-only model
       override can replace a declared binding. Each CLI enforces a different answer
       shape and write boundary, so which one ran a turn decides what that
@@ -258,18 +257,16 @@ glossary:
       provider response without the result confirmation also counts as a
       completed apply for build code: files stay as written, the engine warns
       once with the result path and reruns the set through the not-applied
-      path. A started crush writer that stalls, exits non-zero or returns empty
-      or whitespace-only output also counts as a completed apply: its files
-      stay, the outcome is logged once at WARN and the tests decide through
-      the same rerun. A stall means one model response has been open for ten
-      minutes; tool execution and the whole turn have no such bound. A crush
-      that cannot start, or an engine refusal before spawning, stays fatal.
-      A started claude writer that exits non-zero, returns an error result or answers empty also follows this rerun and once-only warning. Its available cost and tokens are logged on failure too.
+      path. A started claude writer that exits non-zero, returns an error result or answers empty also follows this rerun and once-only warning. Its available cost and tokens are logged on failure too.
       A started codex writer that exits non-zero (including a usage limit),
       returns empty or whitespace-only output or leaves no answer file also
       keeps its edits and follows the same warning, allowance and rerun.
       A codex start failure or refusal before spawning stays fatal; codex
       has no response watch.
+      Every codex apply turn, including document and test-definition edits, uses a generated home and permission profile:
+      reads stay inside the Host project plus explicit runtime and toolchain exceptions, writes stay in that turn's own
+      file, directory or configured-glob roots and scratch, and escaping roots are refused. Plan and validation turns
+      remain read-only. Glob matches are fixed at preparation, except a terminal recursive subtree grants new descendants.
       The build-code codex writer receives whole-suite and selected replay
       forms, polling its own process for completion. It reads the host
       project and runtime/toolchain exceptions only, writes declared service
@@ -421,64 +418,31 @@ glossary:
       (including rate or usage limits) or empty answer warns once, preserves files
       and reruns the set, consuming the same attempt. Start failures stay fatal.
 
-  - term: crush
-    means: >-
-      One of the AI CLIs the engine can send an AI turn to, the one that
-      uses the engine's guard for its local tools. It has no permission check of its
-      own, so before each tool it wants to run during a turn it asks the
-      engine's write guard, and runs the tool only when the guard allows
-      it.
-
   - term: write guard
-    means: >-
-      The engine's own check that crush, or the build-code claude writer, runs before each tool call of a
-      turn. It answers allow or deny, holding the call to the turn's write
-      policy, and gives a reason for a denial. It denies whatever it cannot
-      decide. For crush it confines the five local read tools (`view`, `ls`, `grep`,
-      `glob`, `diagnostics`) to the project and writes to the granted roots.
-      Crush network readers keep their own allowance. Only the crush and claude apply turns of
-      build code --fix may run the declared replay command, whole or with one
-      single-quoted selection, in the suite's directory. Claude requires foreground execution. No other engine turn
-      receives a test command. Crush job output and job cancellation are allowed only
-      with its grant. General shell permission stays false.
+    means: The engine's check that the build-code Claude writer runs before each tool call. It answers allow or deny with a
+      reason, holding calls to the turn's write policy. File tools reach the host, declared toolchain roots and this session's
+      spill directory; writes reach declared service roots and scratch. Unknown tools and malformed policies are denied. Bash
+      accepts only the canonical whole or selected replay in the resolved suite directory, in the foreground. No other Claude
+      turn receives a replay grant. Codex build-code writers use their own permission profile.
 
   - term: write policy
-    means: >-
-      What one guarded turn may read and change. For crush, its read root is the project
-      tree, the only directory the five local read tools (`view`, `ls`,
-      `grep`, `glob`, `diagnostics`) may read, with symbolic links resolved.
-      Relative reads start there; a read naming no path uses the
-      project. It also names the directories it may write under, none for
-      a turn that only reads,
-      and whether it may run shell commands, which could read or write
-      anywhere. The engine keeps that general permission false. For build code
-      --fix's crush or claude apply turn it additionally carries the canonical replay
-      command without machine output, the framework's selector flag, and the
-      absolute suite directory. Canonical arguments use one space between them;
-      only A-Za-z0-9_./:=,@%+- remain unquoted, all others are single-quoted.
-      A single quote, newline or NUL in an argument withholds the grant and
-      logs one warning. The two allowed forms match byte for byte: the command
-      alone, or the command plus one selector and a nonempty single-quoted value
-      containing no single quote, newline or NUL. Symbolic links resolve in the
-      working directory, relative to the read root when relative or absent.
-      Running tests executes the writer's code with the machine's permissions;
-      this grant restricts shell use, not deliberately written test-time code.
-      For claude the policy is a generated file; its Bash hook receives cwd and tool_input.command and refuses run_in_background. Its file tools additionally use restricted working roots, with the host always accessible. The engine derives it from what the command lets that turn change
-      and hands it to the appropriate guard with the turn.
+    means: 'What one guarded Claude writer may read and change: the project read root, write roots, extra read roots, excluded
+      roots and protected configuration. Its replay policy carries the canonical command without machine output, framework selector
+      and absolute suite directory. Arguments use one space; only A-Za-z0-9_./:=,@%+- remain unquoted, others are single-quoted.
+      A single quote, newline or NUL withholds the grant with one warning. The guard accepts the command alone or followed by
+      one selector and a nonempty single-quoted selection with no single quote, newline or NUL. Symlinks and path identity determine
+      roots. Tests execute the writer''s code with machine permissions; this restricts shell use, not deliberately written code.
+      The generated policy file is protected from writes.'
 
   - term: tool call
-    means: >-
-      One tool crush or claude wants to run during a turn: the tool's name, such as
-      `view` to read a file, `write` or `edit` to change one, or `bash` to
-      run a shell command, and, for a tool that works on a file, that
-      file's path. A shell call also names its command and working directory.
+    means: 'One tool Claude wants to run during a writer turn: tool_name, such as Read, Write, Edit, Glob, Grep or Bash, and
+      tool_input. File tools name file_path or path; relative targets resolve against cwd and an absent target uses cwd. Bash
+      names command; cwd supplies its working directory and run_in_background is denied.'
 
   - term: hook payload
-    means: >-
-      The description of a tool call that crush or claude writes to the write
-      guard's standard input, naming the tool and the file it targets, or the
-      command and working directory for a shell call. The
-      guard reads it for whatever crush did not otherwise name.
+    means: 'The complete JSON tool call Claude writes to the guard''s standard input: tool_name, cwd and tool_input, including
+      file_path, path, command and run_in_background where applicable. A malformed payload or non-absolute policy read root
+      is denied.'
 
   - term: symbolic link
     means: >-
@@ -843,85 +807,97 @@ catalogue:
       passing in the tree the command left.
     terms: [shell command, project tree, template]
 
-  - template: 'crush''s write policy lets the turn write under "{dir}"'
+  - template: claude's write policy lets the turn write under "{dir}"
     block: given
-    means: >-
-      The write policy crush hands the write guard lets the turn write
-      anywhere under the named directory of the project tree. Each such
-      step adds one directory: without one the turn may write nowhere, and
-      without the shell step it may not run the shell.
-    terms: [crush, write policy, write guard, project tree, template]
+    means: 'The write policy claude hands the write guard lets the turn write anywhere under the named directory of the project
+      tree. Each such step adds one directory: without one the turn may write nowhere, and without the shell step it may not
+      run the shell.'
+    terms:
+    - claude
+    - write policy
+    - write guard
+    - project tree
+    - template
 
-  - template: 'crush''s write policy lets the turn run the shell'
+  - template: claude hands the guard no write policy
     block: given
-    means: >-
-      The write policy crush hands the write guard also lets the turn run
-      shell commands, so a tool call to `bash` is allowed, wherever the
-      command might write.
-    terms: [crush, write policy, write guard, tool call]
+    means: claude asks the write guard about a tool call without any write policy,  so the guard has nothing to hold the call
+      to.
+    terms:
+    - claude
+    - write guard
+    - write policy
+    - tool call
 
-  - template: 'crush hands the guard no write policy'
+  - template: claude hands the guard an unreadable write policy
     block: given
-    means: >-
-      crush asks the write guard about a tool call without any write
-      policy, as when crush is started by hand rather than by the engine,
-      so the guard has nothing to hold the call to.
-    terms: [crush, write guard, write policy, tool call]
+    means: claude hands the write guard a write policy written in a shape the guard cannot read, so the guard cannot tell where
+      the turn may write or whether it may run the shell.
+    terms:
+    - claude
+    - write guard
+    - write policy
 
-  - template: 'crush hands the guard an unreadable write policy'
+  - template: claude hands the guard a write policy with no read root
     block: given
-    means: >-
-      crush hands the write guard a write policy written in a shape the
-      guard cannot read, so the guard cannot tell where the turn may write
-      or whether it may run the shell.
-    terms: [crush, write guard, write policy]
+    means: claude hands the write guard a readable write policy that names no project directory for local reads, so every tool
+      call is refused.
+    terms:
+    - claude
+    - write guard
+    - write policy
+    - tool call
 
-  - template: 'crush hands the guard a write policy with no read root'
+  - template: claude pipes the hook payload naming the tool "{tool}" and the path "{path}"
     block: given
-    means: >-
-      crush hands the write guard a readable write policy that names no
-      project directory for local reads, so every tool call is refused.
-    terms: [crush, write guard, write policy, tool call]
+    means: claude writes the hook payload naming the tool and the path exactly as quoted, including a relative path. The write
+      guard uses these names where claude did not otherwise name the tool or its target.
+    terms:
+    - claude
+    - hook payload
+    - write guard
+    - tool call
+    - template
 
-  - template: 'crush pipes the hook payload naming the tool "{tool}" and the path "{path}"'
+  - template: claude names the tool "{tool}"
     block: given
-    means: >-
-      crush writes the hook payload naming the tool and the path exactly
-      as quoted, including a relative path. The write guard uses these
-      names where crush did not otherwise name the tool or its target.
-    terms: [crush, hook payload, write guard, tool call, template]
+    means: The tool call claude asks about runs the named tool, spelled as claude spells it, such as `Read`, `Write` or `Bash`.
+    terms:
+    - claude
+    - tool call
+    - template
 
-  - template: 'crush names the tool "{tool}"'
+  - template: claude names the file "{file}" of the project tree
     block: given
-    means: >-
-      The tool call crush asks about runs the named tool, spelled as crush
-      spells it, such as `view`, `write` or `bash`.
-    terms: [crush, tool call, template]
+    means: The tool call claude asks about targets the named file of the project tree, which claude names by its absolute path.
+      The file need not exist yet, since a write usually creates it.
+    terms:
+    - claude
+    - tool call
+    - project tree
+    - template
 
-  - template: 'crush names the file "{file}" of the project tree'
+  - template: claude names the path "{path}" as written
     block: given
-    means: >-
-      The tool call crush asks about targets the named file of the project
-      tree, which crush names by its absolute path. The file need not exist
-      yet, since a write usually creates it.
-    terms: [crush, tool call, project tree, template]
+    means: The tool call claude asks about targets the path exactly as quoted, kept as written rather than made absolute. A
+      relative target resolves against an absolute cwd, falling back to the policy's read root; a write is allowed within
+      granted write roots unless its target is protected.
+    terms:
+    - claude
+    - tool call
+    - template
 
-  - template: 'crush names the path "{path}" as written'
+  - template: claude pipes the hook payload naming the tool "{tool}" and the file "{file}"
     block: given
-    means: >-
-      The tool call crush asks about targets the path exactly as quoted,
-      kept as written rather than made absolute. A relative read starts
-      at the policy's read root; a relative write is denied.
-    terms: [crush, tool call, template]
-
-  - template: 'crush pipes the hook payload naming the tool "{tool}" and the file "{file}"'
-    block: given
-    means: >-
-      crush writes the hook payload for the tool call to the write guard:
-      the named tool, and the named file of the project tree by its
-      absolute path. The guard reads it for whichever of the two crush did
-      not name otherwise.
-    terms: [crush, hook payload, write guard, tool call, project tree, template]
+    means: 'claude writes the hook payload for the tool call to the write guard: the named tool, and the named file of the project
+      tree by its absolute path. The guard reads it for whichever of the two claude did not name otherwise.'
+    terms:
+    - claude
+    - hook payload
+    - write guard
+    - tool call
+    - project tree
+    - template
 
   - template: 'the project tree''s "{link}" is a symbolic link to "{target}"'
     block: given
@@ -932,37 +908,34 @@ catalogue:
       is no file change of the run.
     terms: [symbolic link, project tree, file change, template]
 
-  - template: 'crush asks the guard about the tool call'
-    block: when
-    means: >-
-      crush runs the engine's write guard once in the project tree, as it
-      does before running a tool during a turn, with the write policy, the
-      tool call and the hook payload the Given steps set, and the Scenario
-      waits for the guard's answer. No AI turn is sent.
-    terms: [crush, write guard, write policy, tool call, hook payload, project tree, AI turn]
-
-  - template: 'the guard allows the tool call'
+  - template: the guard allows the tool call
     block: then
-    means: >-
-      The write guard answered that the caller may run the tool: it ended with
-      status 0, which crush reads as allow.
-    terms: [write guard, tool call, crush, claude]
+    means: 'The write guard answered that the caller may run the tool: it ended with status 0, which claude reads as allow.'
+    terms:
+    - write guard
+    - tool call
+    - claude
+    - claude
 
-  - template: 'the guard denies the tool call'
+  - template: the guard denies the tool call
     block: then
-    means: >-
-      The write guard answered that the caller must not run the tool: it ended
-      with status 2, which crush reads as a denial and reports with the
-      guard's reason, rather than as a guard that failed to answer.
-    terms: [write guard, tool call, crush, claude]
+    means: 'The write guard answered that the caller must not run the tool: it ended with status 2, which claude reads as a
+      denial and reports with the guard''s reason, rather than as a guard that failed to answer.'
+    terms:
+    - write guard
+    - tool call
+    - claude
+    - claude
 
-  - template: 'the guard''s reason matches {expected:pattern}'
+  - template: the guard's reason matches {expected:pattern}
     block: then
-    means: >-
-      The reason the write guard gave for its answer, the one line it
-      prints on its standard error for crush to show beside a denied tool,
-      has a match for the pattern somewhere.
-    terms: [write guard, crush, pattern, template]
+    means: The reason the write guard gave for its answer, the one line it prints on its standard error for claude to show beside
+      a denied tool, has a match for the pattern somewhere.
+    terms:
+    - write guard
+    - claude
+    - pattern
+    - template
 
   - template: 'the engine spawned a test runner with its own prebuilt engine path'
     block: then
@@ -983,20 +956,6 @@ catalogue:
       A missing file, several matching files or an invalid pattern fails
       the step, even when the expected count is zero.
     terms: [project tree, glob, pattern, template]
-
-  - template: 'crush''s write policy grants the test command "{command}" with selector "{flag}" in "{dir}"'
-    block: given
-    means: >-
-      The policy carries the quoted canonical command, selector flag and suite
-      directory joined to the project tree, keeping general shell permission false.
-    terms: [crush, write policy, project tree]
-
-  - template: 'crush pipes a shell call in directory "{dir}" with command {command:pattern}'
-    block: given
-    means: >-
-      The hook payload names bash with the exact command text and working
-      directory as written. The command may itself contain quotes.
-    terms: [crush, hook payload, tool call, pattern]
 
   - template: 'claude''s write policy grants the test command "{command}" with selector "{flag}" in "{dir}"'
     block: given

@@ -27,7 +27,7 @@ func saveTranscript(path, transcript string) {
 }
 
 // composePrompt folds the system prompt into the user prompt for CLIs
-// with no native system-prompt flag (crush, codex). The heading makes
+// with no native system-prompt flag (codex). The heading makes
 // the precedence explicit rather than relying on position alone.
 func composePrompt(req Request) string {
 	if strings.TrimSpace(req.SystemPrompt) == "" {

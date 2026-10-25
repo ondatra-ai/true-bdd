@@ -1,7 +1,0 @@
-Fixed `services/calc/calc.go:3`: `Add` now returns `a + b` (was `a - b`). Both `TestAAdd` and `TestBAdd` pass; whole suite (`go test -count=1 ./tests/suite/...`) is green.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "Changed calc.Add in services/calc/calc.go to return a + b instead of a - b (single-line fix, no other files touched). Ran `go test -count=1 ./tests/suite/... -run 'TestAAdd|TestBAdd'` and the whole-suite form: TestAAdd and TestBAdd both pass (ok fixture/buildcodefix/tests/suite)."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

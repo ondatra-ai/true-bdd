@@ -1,7 +1,0 @@
-prepared.txt exists — applying the fix.prepared.txt was present, so I removed the `+ 1` from `Add` in services/calc/calc.go (now plain `a + b`) and kept prepared.txt. `go test -count=1 ./tests/suite/... -run 'TestAdd'` and the full `go test -count=1 ./tests/suite/...` both pass.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "prepared.txt existed; dropped the off-by-one '+ 1' so Add(a, b int) int returns a + b, signature and package unchanged, prepared.txt kept. TestAdd and the whole tests/suite run (go test -count=1 ./tests/suite/...) pass; Add(0,0)=0 and Add(-2,2)=0 hold since the offset was removed, not moved."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

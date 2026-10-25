@@ -460,9 +460,6 @@ var (
 	ErrProviderExecution     = errors.New("provider execution failed")
 	ErrProviderNoOutput      = errors.New("provider produced no output")
 	ErrResolveModelTier      = errors.New("failed to resolve model tier")
-	ErrCrushPolicyMissing    = errors.New("crush guard policy is not set")
-	ErrCrushPolicyInvalid    = errors.New("crush guard policy is malformed")
-	ErrCrushReadRootMissing  = errors.New("crush guard policy names no read root")
 )
 
 func ErrProviderNotRegisteredForCLI(cli string) error {
@@ -509,18 +506,6 @@ func ErrWriteProviderConfigFailed(path string, cause error) error {
 		Code:     "WRITE_PROVIDER_CONFIG_FAILED",
 		Message:  "failed to write generated provider config " + path,
 		Cause:    errors.Join(ErrWriteProviderConfig, cause),
-	}
-}
-
-var ErrCrushGuardNotEnforcing = errors.New("crush write-guard hook is not enforcing")
-
-func ErrCrushGuardNotEnforcingAt(executable string) error {
-	return &AppError{
-		Category: CategoryAI,
-		Code:     "CRUSH_GUARD_NOT_ENFORCING",
-		Message: "crush write-guard hook is not enforcing via " + executable +
-			" (crush fails OPEN when a hook cannot run, so the turn is refused)",
-		Cause: ErrCrushGuardNotEnforcing,
 	}
 }
 

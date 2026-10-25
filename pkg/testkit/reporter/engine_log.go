@@ -355,7 +355,7 @@ func (f *turnFolder) attachArtifact(record *LogRecord) {
 		return
 	}
 
-	// The archived transcript is crush/codex's only completion signal (see
+	// The archived transcript is codex's only completion signal (see
 	// msgTranscriptSaved); without this their turns look unsplittable AND unfinished.
 	if artifact.Kind == "CLI transcript" && target.ResultAt.IsZero() {
 		target.ResultAt = record.At

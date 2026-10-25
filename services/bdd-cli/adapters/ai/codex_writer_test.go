@@ -36,7 +36,7 @@ printf '{"type":"turn.completed"}\n'
 
 	_, err := ai.NewCodexProvider().Execute(t.Context(), ai.Request{
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), Label: codexWriterLabel, CodexWriter: true,
-		Mode: ai.ExecutionMode{SourceWriteRoots: []string{"services/demo"}},
+		Mode: ai.ExecutionMode{SourceWriteRoots: []string{"services/demo"}, AllowedTools: []string{"Write(tmp/**)"}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -104,9 +104,6 @@ printf 'answer' > "$2"
 			args := readCodexFile(t, filepath.Join(root, "args.txt"))
 
 			want := "read-only"
-			if len(roots) > 0 {
-				want = "workspace-write"
-			}
 
 			if !strings.Contains(args, "-s\n"+want+"\n") || strings.Contains(args, "--json") {
 				t.Fatalf("ordinary args=%s", args)

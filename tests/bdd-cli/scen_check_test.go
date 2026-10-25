@@ -270,27 +270,6 @@ func TestEngineEntry003MissingConfigRefused(t *testing.T) {
 	s.Done()
 }
 
-// engine-routes-002-crush-asks-before-fixing: `scen check --fix` with every tier naming crush, a CLI that enforces no answer schema, must still read crush's verdict and its clarifying question, ask that question, record in the Registry the fix crush then writes, and pass the re-walk
-func TestEngineRoutes002CrushAsksBeforeFixing(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-002-crush-asks-before-fixing")
-	s.Given(`the "scen-check-fix-by-crush" project tree`)
-	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
-	s.And(`the Quality Engineer answers "1" to every question`)
-	s.When(`the Quality Engineer runs "scen check --fix"`)
-	s.Then(`the command exits with code 0`)
-	s.And(`stdout matches CHECK FAILED`)
-	s.And(`stdout matches msg="AI needs clarification" questionCount=1`)
-	s.And(`stdout matches FIX PROMPT GENERATED`)
-	s.And(`stdout matches msg="Fix recorded in the document" document=scenarios_yaml`)
-	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 3 validation AI turns to "crush"`)
-	s.And(`the engine dispatched 2 fix AI turns to "crush"`)
-	s.And(`the engine dispatched 1 apply AI turn to "crush"`)
-	s.And(`the engine dispatched 6 AI turns`)
-	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
-	s.Done()
-}
-
 // engine-routes-003-prompt-tiers-win: A Prompt naming its own `model:`, `fix_model:` and `apply_model:` tiers must send its validation, fix and apply turns to the AI CLIs those tiers name, and none to the AI CLI its checklist's tier names for that kind of turn
 func TestEngineRoutes003PromptTiersWin(t *testing.T) {
 	s := scenarios.New(t, "engine-routes-003-prompt-tiers-win")
@@ -299,12 +278,12 @@ func TestEngineRoutes003PromptTiersWin(t *testing.T) {
 	s.When(`the Quality Engineer runs "scen check --fix"`)
 	s.Then(`the command exits with code 0`)
 	s.And(`stdout matches ALL CHECKS PASSED`)
-	s.And(`the engine dispatched 3 validation AI turns to "crush"`)
+	s.And(`the engine dispatched 3 validation AI turns to "codex"`)
 	s.And(`the engine dispatched 1 fix AI turn to "codex"`)
 	s.And(`the engine dispatched 1 apply AI turn to "claude"`)
 	s.But(`the engine dispatched no validation AI turns to "claude"`)
 	s.And(`the engine dispatched no fix AI turns to "claude"`)
-	s.And(`the engine dispatched no apply AI turns to "crush"`)
+	s.And(`the engine dispatched no apply AI turns to "codex"`)
 	s.And(`the engine dispatched 5 AI turns`)
 	s.And(`the only file changed outside "tmp" is "docs/scenarios.yaml"`)
 	s.Done()
@@ -326,14 +305,14 @@ func TestEngineRoutes004FailedClaudeTurnStopsRun(t *testing.T) {
 	s.Done()
 }
 
-// engine-routes-005-failed-crush-turn-stops-run: A validation turn whose crush CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
-func TestEngineRoutes005FailedCrushTurnStopsRun(t *testing.T) {
-	s := scenarios.New(t, "engine-routes-005-failed-crush-turn-stops-run")
-	s.Given(`the "scen-check-crush-turn-fails" project tree`)
+// engine-routes-005-failed-codex-turn-stops-run: A validation turn whose codex CLI exits non-zero, here on a model id the CLI does not know, must stop `scen check` with exit code 1 and a log record naming the turn, its AI CLI and its model, before any verdict is reported
+func TestEngineRoutes005FailedCodexTurnStopsRun(t *testing.T) {
+	s := scenarios.New(t, "engine-routes-005-failed-codex-turn-stops-run")
+	s.Given(`the "scen-check-codex-turn-fails" project tree`)
 	s.And(`the "scen-check" checklist is narrowed to its "whether this scenario includes at least one specific" prompt`)
 	s.When(`the Quality Engineer runs "scen check"`)
 	s.Then(`the command exits with code 1`)
-	s.And(`stdout matches msg="AI turn failed" turn=1 label=crush-turn001 role=prompt cli=crush model=zhipu-coding/no-such-model`)
+	s.And(`stdout matches msg="AI turn failed" turn=1 label=codex-turn001 role=prompt cli=codex model=codex-no-such-model`)
 	s.But(`stdout does not match CHECK FAILED|ALL CHECKS PASSED`)
 	s.And(`the engine dispatched 1 AI turn`)
 	s.And(`no file outside "tmp" changed`)
@@ -592,8 +571,6 @@ func TestScenCheckFix001UnmatchedStepGetsPhrase(t *testing.T) {
 	s.And(`the only file changed outside "tmp" is "docs/product/product.yaml"`)
 	s.And(`the file "docs/product/product.yaml" matches the service answers within`)
 	s.And(`the engine dispatched 3 AI turns`)
-	s.And(`every file matching "tmp/*/crush-config-*/crush.json" does not match "bash"`)
-	s.And(`every file matching "tmp/*/crush-config-*/crush.json" does not match "job_output"`)
 	s.Done()
 }
 

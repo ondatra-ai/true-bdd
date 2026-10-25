@@ -1,0 +1,2 @@
+2026-10-25T12:19:14.515588Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to read file to update {{CWD}}/services/calc/calc.go: fs sandbox helper failed with status exit status: 71: sandbox-exec: execvp() of '/opt/homebrew/bin/codex' failed: Operation not permitted
+2026-10-25T12:19:23.121202Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/bin/zsh -c 'rm -rf services/calc/.gocache\\ncat services/calc/calc.go'` rejected: rm -f style commands are not permitted. Use a safer approach\")" }

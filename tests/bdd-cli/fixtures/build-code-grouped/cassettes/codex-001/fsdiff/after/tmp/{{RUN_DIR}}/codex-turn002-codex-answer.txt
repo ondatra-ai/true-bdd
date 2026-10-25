@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Updated A() to return 1 and B() to return 2; formatted with gofmt. TestA and TestB passed individually and together using the granted test commands. No tests or documents were modified."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

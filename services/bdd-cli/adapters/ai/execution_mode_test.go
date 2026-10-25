@@ -24,8 +24,8 @@ const (
 	writeTool   = "write"
 )
 
-// ExecutionMode is the single permission source for all three CLIs, so
-// the projection helpers crush and codex depend on need direct cover.
+// ExecutionMode is the single permission source for both CLIs, so
+// the projection helpers codex depend on need direct cover.
 func TestExecutionModeWriteGlobs(t *testing.T) {
 	t.Parallel()
 
@@ -91,7 +91,7 @@ func TestExecutionModeAllowsBash(t *testing.T) {
 
 // TestSourceEditModeGrantsProjectRoots pins the grant to ExecutionMode, not
 // the applier's prompt: a prompt/ExecutionMode mismatch here once cost a
-// 30-minute fixture run when the crush guard denied every write.
+// 30-minute fixture run when the writer guard denied every write.
 func TestSourceEditModeGrantsProjectRoots(t *testing.T) {
 	factory := ai.NewModeFactory(testConfig(t))
 	mode := factory.GetSourceEditMode([]string{"services/frontend", "services/backend"})
@@ -135,20 +135,26 @@ func TestSourceEditModeNormalisesRootSpellings(t *testing.T) {
 	}
 }
 
-// End of the chain: the grant only matters if the crush guard actually
+// End of the chain: the grant only matters if the writer guard actually
 // resolves it to a writable root.
-func TestSourceEditModeReachesTheCrushGuard(t *testing.T) {
+func TestSourceEditModeReachesTheClaudeGuard(t *testing.T) {
 	factory := ai.NewModeFactory(testConfig(t))
 	mode := factory.GetSourceEditMode([]string{"services/frontend"})
-	policy := ai.NewCrushGuardPolicy(mode, "/repo")
+	policy := ai.NewReplayPolicy(mode, "/repo")
 
-	allowed, reason := policy.Decide(writeTool, "/repo/services/frontend/app/page.tsx")
+	payload := `{"tool_name":"Write","cwd":"/repo",` +
+		`"tool_input":{"file_path":"/repo/services/frontend/app/page.tsx"}}`
+	guard := ai.ClaudeGuardPolicy{Replay: policy}
+
+	allowed, reason := guard.DecidePayload([]byte(payload))
 	if !allowed {
 		t.Fatalf("guard denied the declared root: %s", reason)
 	}
 
 	// The root is a grant, not a blanket: production code only.
-	if ok, _ := policy.Decide(writeTool, "/repo/tests/integration/home.spec.ts"); ok {
+	payload = `{"tool_name":"Write","cwd":"/repo",` +
+		`"tool_input":{"file_path":"/repo/tests/integration/home.spec.ts"}}`
+	if ok, _ := guard.DecidePayload([]byte(payload)); ok {
 		t.Error("guard allowed a write outside every declared root")
 	}
 }
@@ -183,4 +189,18 @@ func testConfig(t *testing.T) *config.ViperConfig {
 	}
 
 	return cfg
+}
+
+func TestSourceEditModePreservesSingleFile(t *testing.T) {
+	factory := ai.NewModeFactory(testConfig(t))
+
+	err := disk.Write("story.yaml", []byte("story: seed\n"), disk.Shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mode := factory.GetSourceEditMode([]string{"story.yaml"})
+	if !slices.Contains(mode.WriteGlobs(), "story.yaml") {
+		t.Fatalf("file root became subtree: %v", mode.WriteGlobs())
+	}
 }

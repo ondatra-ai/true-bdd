@@ -1,7 +1,0 @@
-Both edits applied verbatim to `tests/calc/steps/steps.go`; shell/replay is hook-blocked in this mode, so verification is by inspection (file content matches the fix prompt exactly, including single-space house indentation).
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Registered ^the number is (doubled|tripled|halved)$ and added scale() mutating State.Value in the existing Register"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-double-iter1-result.yaml ===

@@ -48,9 +48,7 @@ type ApplyParams struct {
 	// evaluator while the prompt was in scope and carried here on the
 	// failed check; empty means engine.default_apply_model.
 	ModelTier string
-	// WatchWriterResponse requests the response watch for build code's crush writer.
-	WatchWriterResponse bool
-	// CodexWriter requests the confined build-code writer independently of crush's watch.
+	// CodexWriter requests the confined build-code writer.
 	CodexWriter bool
 }
 
@@ -72,6 +70,7 @@ type FixApplier struct {
 	// for the `build` commands whose whole job is authoring source. Set
 	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
 	writeRoots []string
+	writeGlobs bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -112,9 +111,16 @@ func (a *FixApplier) UseEditMode() {
 
 // UseWriteRoots grants this applier write access to project trees outside
 // tmp — the `services/*` roots for build code, test roots for build tests.
-// Without it, ExecutionMode (crush guard, codex sandbox) denies every write the system prompt instructs.
+// Without it, ExecutionMode (writer guard, codex sandbox) denies every write the system prompt instructs.
 func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
+	a.writeGlobs = false
+}
+
+// UseWriteGlobs preserves the host's configured patterns instead of interpreting bare paths as service directories.
+func (a *FixApplier) UseWriteGlobs(patterns []string) {
+	a.writeRoots = patterns
+	a.writeGlobs = true
 }
 
 // UseTestCommand supplies each writer its declared replay forms.
@@ -152,7 +158,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
 	turnOptions := provider.TurnOptions{
-		WatchWriterResponse: params.WatchWriterResponse, ClaudeWriter: params.ClaudeWriter, CodexWriter: params.CodexWriter,
+		ClaudeWriter: params.ClaudeWriter, CodexWriter: params.CodexWriter,
 	}
 
 	response, err := a.execute(ctx, model, systemPrompt, userPrompt, turnOptions)
@@ -271,6 +277,10 @@ func parseApplyResult(content string) (applyResultYAML, bool) {
 // configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
 	if len(a.writeRoots) > 0 {
+		if a.writeGlobs {
+			return a.modeFactory.GetGlobEditMode(a.writeRoots)
+		}
+
 		return a.modeFactory.GetSourceEditMode(a.writeRoots)
 	}
 
@@ -307,11 +317,6 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 		mode.TestCommand = a.testCommand
 	}
 
-	options.WatchWriterResponse = options.WatchWriterResponse && model.CLI == provider.CLICrush
-	if model.CLI == provider.CLICrush {
-		mode.TestCommand = a.testCommand
-	}
-
 	return a.aiClient.ExecutePromptWithSystem(
 		// Confirmation markers, rather than a schema, carry every apply result.
 		ctx, provider.RoleApply, systemPrompt, userPrompt, model, mode, "",
@@ -323,8 +328,8 @@ func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, res
 	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
 		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
 		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter,
-		CodexWriter:  model.CLI == provider.CLICodex}
-	if model.CLI == provider.CLICrush || data.CodexWriter || data.ClaudeWriter {
+		CodexWriter:  model.CLI == provider.CLICodex && params.CodexWriter}
+	if data.CodexWriter || data.ClaudeWriter {
 		data.TestCommand = a.testCommand
 	}
 
@@ -346,15 +351,6 @@ func (a *FixApplier) writerPrompts(data FixApplierData) (string, string, error) 
 	user, err := a.userLoader.LoadTemplate(data)
 	if err != nil {
 		return "", "", pkgerrors.ErrLoadChecklistUserPromptFailed(err)
-	}
-
-	if data.ClaudeWriter {
-		const (
-			crushWait  = "Keep the command in the foreground; if the tool returns a job id, use job_output to read completion."
-			claudeWait = "Run in the foreground and wait for completion. Background commands are denied."
-		)
-
-		user = strings.ReplaceAll(user, crushWait, claudeWait)
 	}
 
 	return system, user, nil

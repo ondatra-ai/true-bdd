@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -21,7 +22,7 @@ func newClaudeGuardCmd() *cobra.Command {
 
 		allowed, reason := decideClaudeHook(policyPath, cmd.InOrStdin())
 		if !allowed {
-			denyCrushTool(cmd.ErrOrStderr(), "true-bdd guard: "+reason)
+			denyClaudeTool(cmd.ErrOrStderr(), "true-bdd guard: "+reason)
 		}
 
 		const decision = `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`
@@ -55,4 +56,12 @@ func decideClaudeHook(path string, input io.Reader) (bool, string) {
 	}
 
 	return policy.DecidePayload(payload)
+}
+
+// denyClaudeTool writes the hook reason and exits with Claude's denial status.
+func denyClaudeTool(stderr io.Writer, reason string) {
+	_, _ = io.WriteString(stderr, reason+"\n")
+
+	const denyExitCode = 2
+	os.Exit(denyExitCode)
 }

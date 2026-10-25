@@ -1,7 +1,0 @@
-`A()` already returns `1`, so per the lifecycle protocol both functions stay unchanged and I create the marker file.Protocol followed: `A()` already returned `1`, so `calc.go` is untouched and `services/calc/attempted.txt` was created with `attempted`. Observed: `TestA` passes; `TestB` still fails (`B needs two`) — deliberately left failing by this stage.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "Lifecycle stage only: services/calc/calc.go already had A() returning 1, so both A() and B() were left unchanged and services/calc/attempted.txt was created containing 'attempted'. Ran go test -count=1 ./tests/suite/...: TestA passes; TestB (the set's failing member) still fails with 'B needs two', as this stage intends."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

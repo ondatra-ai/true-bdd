@@ -1,5 +1,7 @@
 # The build code writer may replay tests inside its turn
 
+**Superseded by [ADR-0023](0023-remove-crush-from-product.md).** Historical rationale follows; current writer recovery and confinement follow ADR-0021, ADR-0022 and ADR-0023.
+
 Only `build code --fix`'s crush apply turn receives the declared replay command without machine output, its framework selector and the suite's absolute working directory. ADR-0017's read root remains the project; this amends its boundary only for executing that test command. All engine turns keep general shell permission false. ADR-0022 extends this grant to the Claude build-code writer through its own hook; ADR-0021 grants the codex build-code writer replay through its own permission profile.
 
 ## Considered Options

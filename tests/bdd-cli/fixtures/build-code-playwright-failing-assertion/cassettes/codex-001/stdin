@@ -1,0 +1,168 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
+**Service:** web
+**Suite:** playwright
+**Framework:** playwright
+**Test Name:** home.spec.ts::home.spec.ts > home page > shows the store name as its heading
+**Source File:** home.spec.ts
+
+
+### Failure groups
+
+Tests: /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
+```
+--- attempt 1: failed ---
+Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+Expected: [32m"Corner Shop"[39m
+Received: [31m"Welcome"[39m
+
+   7 |   test('shows the store name as its heading', async ({ page }) => {
+   8 |     await page.goto('/');
+>  9 |     expect(await page.locator('h1').textContent()).toBe('Corner Shop');
+     |                                                    ^
+  10 |   });
+  11 |
+  12 |   test('links to the opening hours', async ({ page }) => {
+    at {{CWD}}/tests/integration/home.spec.ts:9:52
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for /playwright/playwright:home.spec.ts::home.spec.ts_>_home_page_>_shows_the_store_name_as_its_heading
+
+## Diagnosis
+
+The failing assertion reads the rendered `h1` of the home page:
+
+```
+tests/integration/home.spec.ts:9
+expect(await page.locator('h1').textContent()).toBe('Corner Shop');
+```
+
+Playwright boots the service itself (`webServer.command: 'node ../services/web/server.js'` in `tests/playwright.config.ts`), so the page under test is the exact HTML that `services/web/server.js` serves. That file holds one hard-coded HTML document and its top-level heading currently reads `Welcome`:
+
+```
+services/web/server.js:10
+    <h1>Welcome</h1>
+```
+
+`textContent()` on the single `h1` therefore returns `"Welcome"`, while the spec expects the store's name, `"Corner Shop"` — exactly the `Expected "Corner Shop" / Received "Welcome"` diff in the report. The defect is in production source; the test is correct and must not be touched.
+
+The `<title>Corner Shop</title>` already in the same document (line 8) confirms the intended store name, so there is no ambiguity about the expected string: it is `Corner Shop`, spelled and cased that way.
+
+## Scope
+
+Write root: `services/web` only (per `docs/architecture/architecture.yaml` → `services[0].path: services/web`). One file changes:
+
+- `services/web/server.js`
+
+Do **not** touch `tests/integration/home.spec.ts`, `tests/playwright.config.ts`, `tests/package.json`, or anything under `docs/`.
+
+## Part 1 — Serve the store name as the home page heading
+
+**File:** `services/web/server.js`
+
+**Contract:** a `GET /` response must contain exactly one top-level heading element whose text content is the literal string `Corner Shop` — no surrounding whitespace, no nested markup, no extra inline elements inside the `h1`. `page.locator('h1').textContent()` must return `"Corner Shop"` precisely; note the locator resolves strictly, so there must remain exactly one `h1` in the document.
+
+**Intended implementation:** in the `page` template literal, change the heading line from `<h1>Welcome</h1>` to `<h1>Corner Shop</h1>`. Keep the heading's text as a direct, single text node on one line — do not reformat it across lines or indent the text inside the tag, because `textContent()` is compared with `toBe` and would then pick up newlines and spaces and fail again.
+
+If you prefer to remove the duplication between `<title>` and `<h1>`, it is acceptable to introduce a single module-level constant (for example `const storeName = 'Corner Shop';`) and interpolate it into both the `<title>` and the `<h1>`. That is optional; the interpolation must produce byte-identical output to the literal form — in particular no template-literal newline leaks into the `h1`. Keep it simple; a one-word literal edit is sufficient and lowest risk.
+
+**Tests served:** `home.spec.ts > home page > shows the store name as its heading` — the sole member of the failing set. This is the only change required to turn that assertion green.
+
+## Part 2 — Preserve the already-passing behaviour of the same document
+
+**File:** `services/web/server.js` (same edit site, constraints rather than new code)
+
+**Contract / constraints to hold while making Part 1's edit:**
+
+- The document must keep exactly one anchor element, with `href="/hours"`, so `page.locator('a').getAttribute('href')` still resolves strictly and returns `/hours`. Do not add a second link (for example a nav link, a logo link, or a home link) — the locator is unqualified and a second `a` would make the sibling test fail with a strict-mode violation.
+- The server must keep responding `200` with `Content-Type: text/html; charset=utf-8` for every request, and keep listening on `Number(process.env.PORT)` at `127.0.0.1`. `playwright.config.ts` derives the port from `process.cwd()` and polls `http://127.0.0.1:<port>/` as its `webServer.url` readiness probe; changing the bind host, the port source, or making `/` return a non-2xx/3xx status would make the whole suite fail to start rather than fail an assertion.
+- Keep the file a CommonJS script using `require('node:http')` with no new dependencies — it is launched directly as `node ../services/web/server.js` with no build step and `tests/package.json` does not install anything for the service.
+
+**Tests served:** `home.spec.ts > home page > links to the opening hours` (currently passing — must stay passing), and the startup of both tests via the `webServer` readiness probe.
+
+## Part 3 — Correct the stale source comment
+
+**File:** `services/web/server.js`, lines 1–3
+
+The header comment currently documents the defect as deliberate:
+
+> `Its heading says "Welcome" where the store's name belongs: that is the planted defect, in PRODUCTION source, which the fix loop has to correct.`
+
+After Part 1 that sentence is false. Replace those two sentences with a plain description of the file's behaviour — one page, heading carrying the store name, link to the opening hours, served on the port `PORT` names. This is a comment in production source, inside the allowed write root; it changes no behaviour and serves no test, but leaves the file honest.
+
+## Verification
+
+From the directory holding the config (`tests/`, per `architecture.yaml` → `testing.config: tests/playwright.config.ts`):
+
+```
+npx playwright test --reporter=json --config playwright.config.ts integration
+```
+
+Expect 2 passed, 0 failed in the `chromium` project. Confirm specifically that the heading test's received value is now `Corner Shop` and that the opening-hours test did not regress into a strict-mode "resolved to 2 elements" error.
+
+## Guardrails
+
+- No test file, `__tests__` directory, `*_test.go`, or document may be edited.
+- No assertion may be weakened, skipped, retried, relaxed to `toContain`/`toMatch`, or deleted — the repair is entirely in `services/web/server.js`.
+- No change to `tests/playwright.config.ts` (baseURL, port derivation, timeouts, retries, workers) is part of this repair.
+
+## Edit roots
+
+- `services/web`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}/tests` using exactly one of these forms:
+- Whole suite: `npx playwright test --config playwright.config.ts integration`
+- Selection: `npx playwright test --config playwright.config.ts integration --grep '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
+
+## Fixture confirmation protocol
+
+This Scenario exercises a completed applied repair. Make the required service change and report applied: true in the final confirmation once the service files are repaired. The engine will run the declared suite outside this writer's sandbox after your turn. If npx, Node, or a browser is unavailable inside the sandbox, state that verification limitation in summary while still reporting the completed edit as applied: true. Do not change tests, documents, dependencies, or the test runner to bypass that limitation.

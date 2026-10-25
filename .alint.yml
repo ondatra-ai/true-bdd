@@ -147,11 +147,10 @@ rules:
       exclude:
         - "pkg/shell/**"
         - "pkg/cli/**"
-        # Inside the engine ONLY these three wrappers may reach pkg/shell:
-        # codex, crush and the engine's own binary, named one by one so
+        # Inside the engine ONLY these two wrappers may reach pkg/shell:
+        # codex and the engine's own binary, named one by one so
         # any other engine package stays refused (docs/qna Q19, Q33).
         - "services/bdd-cli/internal/infrastructure/cli/codex/*.go"
-        - "services/bdd-cli/internal/infrastructure/cli/crush/*.go"
         - "services/bdd-cli/internal/infrastructure/cli/truebdd/*.go"
         - "tests/bdd-cli/fixtures/**"
         - "**/*_test.go"
@@ -336,17 +335,6 @@ rules:
     timeout: 900
     paths: "go.mod"
     command: ["go", "run", "./scripts/cmd/linters", "all"]
-
-  # crush merges every config it finds walking up from its cwd, so one here
-  # silently blocks every fixture's apply turn.
-  - id: no-root-crush-config
-    kind: file_absent
-    level: error
-    paths: [".crush.json", "crush.json"]
-    root_only: true
-    message: >-
-      A root crush config silently blocks every fixture's apply turn. Keep
-      crush configuration out of the repository root.
 
   # go-conventions.md states this convention and said "enforced through
   # review, not lint". The tree already satisfies it, so the rule costs

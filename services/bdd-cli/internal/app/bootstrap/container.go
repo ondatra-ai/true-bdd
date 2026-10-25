@@ -253,7 +253,7 @@ func newTriples(
 	// build tests authors test files outside tmp. Unlike build code it
 	// has no architecture.yaml to read roots from — its fixtures ship
 	// none — so the roots are host config.
-	buildTestsTrip.fixApplier.UseWriteRoots(testWriteGlobs(cfg))
+	buildTestsTrip.fixApplier.UseWriteGlobs(testWriteGlobs(cfg))
 
 	buildCodeTrip := newScenarioTriple(aiClient, cfg, models, scenarioTripleConfigKeys{
 		checklistSystem:    "templates.prompts.build_code_checklist_system",

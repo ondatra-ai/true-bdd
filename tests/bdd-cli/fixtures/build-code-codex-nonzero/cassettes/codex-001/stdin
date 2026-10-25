@@ -14,58 +14,52 @@ Test: fixture/buildcodefix/tests/suite::TestB
 
 ## Diagnosis
 
-Both failures are the same defect class: `services/calc/calc.go` is a stub whose exported accessors return the zero value instead of their specified values.
+Both failures are the same defect class: the `calc` package's two exported accessors are stubs that return the zero value, so every assertion in the suite compares `0` against the value the specification requires.
 
-- `services/calc/calc.go:3` — `func A() int { return 0 }`
-- `services/calc/calc.go:4` — `func B() int { return 0 }`
+- `tests/suite/calc_test.go:8-12` (`TestA`) imports `fixture/buildcodefix/services/calc` and fails with `A needs one` because `calc.A()` returns `0` where the test requires `1`.
+- `tests/suite/calc_test.go:13-17` (`TestB`) fails with `B needs two` because `calc.B()` returns `0` where the test requires `2`.
 
-The suite at `tests/suite/calc_test.go` imports the production package as `fixture/buildcodefix/services/calc` (module `fixture/buildcodefix`, declared in `go.mod`) and asserts the contract directly:
+The harness (`docs/architecture/architecture.yaml`) runs all three modes with the identical command `go test -json -count=1 ./tests/suite/...`, so there is a single compile+run path; nothing mode-specific is involved. The module is `fixture/buildcodefix` (`go.mod`), and the declared service root for `calc` is `services/calc` — that is the only writable location for this repair, and it is also where the defect lives, so no new packages, test edits, or document edits are needed.
 
-- `TestA` requires `calc.A() == 1`; it currently gets `0`, so it fails with `A needs one` (`calc_test.go:10`).
-- `TestB` requires `calc.B() == 2`; it currently gets `0`, so it fails with `B needs two` (`calc_test.go:15`).
+The tests are correct as written and must not be touched. The repair is entirely in production source.
 
-There is no missing file, no compile error, no wiring problem and no harness problem. The suite command from `docs/architecture/architecture.yaml` (`go test -json -count=1 ./tests/suite/...`, identical for record/replay/live) already discovers and runs both tests — the discovery log in `tmp/` confirms the walk completes. The only thing wrong is the returned values of the two functions.
+## Part 1 — Make `calc.A()` satisfy its contract
 
-## Write root
+**File:** `services/calc/calc.go` (package `calc`, the declared write root `services/calc`)
 
-`docs/architecture/architecture.yaml` declares exactly one service, `calc`, with `path: services/calc`. That directory is the only permitted write root for this repair. Do not touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`, `docs/architecture/architecture.yaml`, the checklists under `true-bdd/`, the templates, or anything under `tmp/`.
+**Contract:** `A()` is an exported, no-argument accessor returning `int`. Its contract value, as fixed by the suite, is `1`. It must be a pure function: no arguments, no package state, no error path, deterministic on every call (the harness runs with `-count=1`, but the function must not depend on call order or process state).
 
-## Part 1 — Make `calc.A()` honour its contract
+**Intended implementation:** replace the stub body `return 0` with a body that yields `1`. Keep the existing signature `func A() int` byte-for-byte — the test calls `calc.A()` with no arguments and compares the result directly to an untyped integer constant, so changing arity, return type, or adding a second return value would break compilation of a file the writer is forbidden to edit. Return the literal, or a package-level named constant if the writer prefers to make the contract value self-documenting; either is acceptable so long as the exported surface is unchanged.
 
-**File:** `services/calc/calc.go` (only file to change)
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`.
 
-**Contract:** `A()` is an exported, no-argument function in package `calc` returning `int`. Its specified result is the integer `1`. It must be deterministic — same value on every call, no state, no side effects, no dependence on call order or on `B()`. `-count=1` is used by the harness, so caching will not mask a wrong value; the value must be correct on a cold run.
+## Part 2 — Make `calc.B()` satisfy its contract
 
-**Intended implementation:** change the function body so it yields `1` instead of `0`. Keep the existing signature, name, exportedness and package declaration (`package calc` on line 1) exactly as they are — the test's import path and call sites depend on them. The simplest correct form is a direct `return 1`; do not introduce a package-level variable, an `init()`, a config lookup, or any indirection, because nothing in the specification asks for configurability and extra machinery would add untested surface.
+**File:** `services/calc/calc.go` (same file, same package)
 
-**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`.
+**Contract:** `B()` is an exported, no-argument accessor returning `int`, whose contract value is `2`. Same purity and stability requirements as `A()`, and independent of `A()` — calling one must not affect the other, and the two must be callable in either order within the same process (Go's test runner executes `TestA` and `TestB` sequentially in one binary).
 
-## Part 2 — Make `calc.B()` honour its contract
+**Intended implementation:** replace the stub body `return 0` with a body that yields `2`, preserving the signature `func B() int` exactly for the same compilation reason as Part 1.
 
-**File:** `services/calc/calc.go` (same file)
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`.
 
-**Contract:** `B()` is an exported, no-argument function in package `calc` returning `int`. Its specified result is the integer `2`, independent of `A()` and of any prior calls.
+## Boundaries and constraints for the writer
 
-**Intended implementation:** change the function body so it yields `2` instead of `0`, preserving the signature and name. Again a direct `return 2` is the right shape. Do not express `B()` in terms of `A()` (e.g. `A() + 1` or `A() * 2`) — the two functions are independent parts of the contract, and coupling them would make a future change to one silently break the other's test.
-
-**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`.
-
-## Explicitly out of scope
-
-- No change to assertions, test names, test files or test helpers. The two `t.Fatal` checks must survive verbatim; the repair is to satisfy them, not to relax them.
-- No new files. Package `calc` needs no additional source file to carry two constant-valued functions; adding one would spread a two-line contract across the package for no benefit.
-- No build-tag, no `//go:generate`, no dependency additions. `go.mod` stays at module `fixture/buildcodefix`, `go 1.25.0`, with no requires.
-- No changes to the suite commands in `docs/architecture/architecture.yaml`.
+- **Write root:** `services/calc` only. Do not create, modify, or delete anything under `tests/`, any `*_test.go`, `docs/`, `true-bdd/`, `templates/`, or `go.mod`. The architecture's `path: services/calc` is the enforceable boundary.
+- **Do not weaken, skip, or remove assertions.** `t.Fatal("A needs one")` and `t.Fatal("B needs two")` and their guarding `if` conditions stay exactly as they are; the production values move to meet them, never the reverse. Do not add `t.Skip`, build tags that exclude the suite, or anything that prevents either test from executing.
+- **Preserve the package clause** `package calc` and the file's doc/comment structure. Keep both functions in `services/calc/calc.go` rather than splitting them across new files — the import path `fixture/buildcodefix/services/calc` must continue to resolve to the same package with both symbols exported.
+- **No new dependencies.** `go.mod` has no requires and must gain none; both parts are pure-stdlib (in fact dependency-free).
+- **Scope discipline:** this is a two-line behavioural change. Do not refactor the package, introduce interfaces, configuration, or indirection that the suite does not exercise.
 
 ## Verification
 
-From the run directory, the harness command is already correct and should go green unchanged:
+After applying, the harness command from `architecture.yaml` is the acceptance check:
 
 ```
 go test -json -count=1 ./tests/suite/...
 ```
 
-Expect `TestA` and `TestB` both to report `pass`, with no remaining `A needs one` / `B needs two` output. `go build ./...` and `go vet ./...` should also stay clean — the edit is value-only, so neither the package's API shape nor its compilation should shift.
+Expect `TestA` and `TestB` to both report `pass` in the JSON event stream, with no remaining `--- FAIL` lines and no build errors. Both members of the failing set are covered by the single file change above; there is no residual failure that requires a second pass.
 Implement calc.A() returning 1 and calc.B() returning 2 in services/calc/calc.go.
 Run the granted selection in `{{CWD}}`:
 `go test -count=1 ./tests/suite/... -run 'TestA|TestB'`

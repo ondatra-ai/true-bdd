@@ -1,7 +1,0 @@
-Version is 1, so per the staged migration only `Version()` changes to 2 this stage.Stage 1 applied: `Version()` now returns 2; `Compatible()` left `false` per the deterministic staged migration. `TestAVersion` passes (`ok fixture/buildcodefix/tests/suite`); `TestBCompatibility` is outside this failing set and is expected to regress for the next discovery.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
-applied: true
-target: "services/calc/calc.go"
-summary: "Stage 1 of staged migration: Version() changed from 1 to 2; Compatible() left returning false. Saw TestAVersion pass via 'go test -count=1 ./tests/suite/... -run TestAVersion'."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===

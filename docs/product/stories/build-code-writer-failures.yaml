@@ -8,8 +8,7 @@ story:
   status: IMPLEMENTED
   acceptance_criteria:
   - id: 001-nonzero
-    description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence
-      to convergence
+    description: A non-zero writer preserves its files, reruns a build failure and replans from the new evidence to convergence
     steps:
     - given:
       - the "build-code-writer-nonzero" project tree
@@ -22,7 +21,7 @@ story:
       - the file matching "tmp/true-bdd.log.json" has exactly 2 matches for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 2 fix AI turns to "claude"
-      - the engine dispatched 2 apply AI turns to "crush"
+      - the engine dispatched 2 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -45,7 +44,7 @@ story:
       - the file matching "tmp/true-bdd.log.json" has exactly 1 match for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 1 fix AI turn to "claude"
-      - the engine dispatched 1 apply AI turn to "crush"
+      - the engine dispatched 1 apply AI turn to "codex"
       - the engine spawned exactly 3 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged
@@ -53,8 +52,8 @@ story:
       - stdout does not match msg="Walk stopped"
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
   - id: 003-bound
-    description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even
-      when it passes
+    description: Failed writers consume the existing allowance and rerun the terminal repair before the bound even when it
+      passes
     steps:
     - given:
       - the "build-code-writer-bound" project tree
@@ -67,7 +66,7 @@ story:
       - the file matching "tmp/true-bdd.log.json" has exactly 3 matches for "level":"WARN","msg":"Writer turn failed"
       - the engine dispatched no validation AI turns to "claude"
       - the engine dispatched 3 fix AI turns to "claude"
-      - the engine dispatched 3 apply AI turns to "crush"
+      - the engine dispatched 3 apply AI turns to "codex"
       - the engine spawned exactly 4 test runners
       - the file "services/calc/calc.go" is modified
       - the file "tests/suite/calc_test.go" is unchanged

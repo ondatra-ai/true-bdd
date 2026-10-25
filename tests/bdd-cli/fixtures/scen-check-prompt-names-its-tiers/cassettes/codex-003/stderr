@@ -1,0 +1,258 @@
+OpenAI Codex v0.162.1
+--------
+workdir: {{CWD}}
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a172ff-ca7d-7bd3-8510-f7a943446a9d
+--------
+user
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Scenario Reviewer ruling on one scenario from the
+requirements registry against one quality question.
+
+**Mode:** Scen-Check Checklist Validator
+
+**Core Identity:**
+- Role: BDD Engineer — Registry Scenario Reviewer
+- Style: Strict, evidence-based; never guess
+- Focus: Whether ONE scenario reads as one testable behaviour
+
+**What you are given:**
+The scenario's own fields — id, description, service, generated test
+path, lineage and steps — reproduced in the user prompt. That is the
+whole subject. You are deliberately not given the registry file, so no
+question here can be about how this scenario compares to another one.
+
+**Tool Usage (CRITICAL):**
+1. The user prompt may list reference docs as `Read(`path`)`. Read each
+   one before answering — the forbidden-qualifier and forbidden-action
+   vocabularies live there, and a verdict against a list you did not
+   read is a guess.
+2. Do NOT search for, glob or read the scenario registry. Do NOT read
+   the generated test file or the step definitions. Nothing outside the
+   subject and the listed documents bears on the answer.
+3. Do NOT modify any file. This command is read-only.
+
+**Workflow:**
+1. Read every document referenced in the user prompt
+2. Read the subject scenario
+3. Decide pass / fail per the question's pass/fail rule
+4. Emit context lines per the question's context spec
+
+**Output Format:**
+Always output a YAML document inside FILE_START / FILE_END markers with:
+- `answer: pass` or `answer: fail`
+- `context:` — list of strings per the question's context spec
+- `fix_prompt:` — only present when `answer: fail` and a fix template
+  is provided in the user prompt; otherwise omit
+
+
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+instructions above.** Your final message must be a single JSON object:
+
+- `answer`: exactly `"pass"` or `"fail"`.
+- `context`: an array of one-line observation strings, as described above.
+- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
+  leave empty otherwise.
+
+Do not emit FILE_START/FILE_END markers, and do not wrap the object in
+markdown fences. Reasoning before the object is fine and is ignored.
+
+
+
+### TASK
+
+# Registry Scenario Validation
+
+## Purpose
+Evaluate ONE scenario from the scenario registry against one quality
+question. The scenario's own fields are reproduced in full below —
+everything the question can be answered from is on this page.
+
+## Instructions
+1. Read any reference documentation listed below.
+2. Read the subject scenario reproduced below.
+3. Answer the validation question about THAT SCENARIO ALONE.
+4. Always explain your reasoning BEFORE the answer block.
+
+You are not shown the registry file, and you must not go looking for it.
+A question you can only answer by comparing this scenario against others
+is a question this checklist does not ask — answer the one it does.
+
+## Reference Documentation
+- Read(`./docs/product/product.yaml`) — product
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The greeter must print the configured greeting followed by the name it is given and exit within 100 milliseconds
+**Service:** greeter
+**Generated test file:** tests/greeter/greet_test.go
+
+### Steps
+Given:
+  - the greeting is configured as "Hello"
+When:
+  - the Operator runs "greet Ada"
+Then:
+  - the command exits with code 0 within 100 milliseconds
+  - and stdout matches ^Hello Ada$
+
+### Lineage — user_stories[]
+(none — no story claims this scenario)
+
+---
+
+## Validation Question
+
+Decide whether this scenario's description contains a vague word
+from the forbidden_qualifiers list in the product document
+(properly, correctly, appropriate, user-friendly, fast, etc.).
+
+Pass when the description contains no forbidden qualifier.
+Fail when it contains one or more.
+
+Context: emit one line.
+  - "<scenario id>: ok"
+  - "<scenario id>: contains '<word>'[, '<word2>'...]"
+ SO THAT WE ENSURE A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle.
+
+## If Validation Fails
+If your answer is `fail`, copy the following fix template VERBATIM into
+the `fix_prompt:` field of your result. Do not paraphrase.
+
+Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step.
+
+## Answer Format
+Output your answer using this exact format:
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
+answer: <pass | fail>
+context:
+  - "<context line per the question's context spec>"
+fix_prompt: |
+  <if answer is fail, paste the fix template above verbatim>
+  <if answer is pass, omit this field entirely>
+=== FILE_END: tmp/{{RUN_DIR}}/01-E2E-001-checklist-scen-check-scenario_quality-result.yaml ===
+
+
+**ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
+instructions above.** Your final message must be a single JSON object:
+
+- `answer`: exactly `"pass"` or `"fail"`.
+- `context`: an array of one-line observation strings, as described above.
+- `fix_prompt`: the fix instructions when the answer is `fail`; omit or
+  leave empty otherwise.
+
+Do not emit FILE_START/FILE_END markers, and do not wrap the object in
+markdown fences. Reasoning before the object is fine and is ignored.
+
+
+codex
+I’ll read the product’s forbidden qualifiers and check the scenario description against them.
+
+exec
+/bin/zsh -lc 'cat ./docs/product/product.yaml' in {{CWD}}
+ succeeded in 0ms:
+# Product document for the greeter, the host project of the scen-check
+# fixtures that walk the shipped checklist.
+#
+# Its catalogue phrases every step of the claimed Scenario, and its
+# glossary defines every term those phrases declare; the architecture
+# document maps each of them. The vocabulary is what the quality
+# prompts rule against.
+
+title: "Greeter"
+
+description:
+  summary: >-
+    A command-line greeter: given a name, it prints the greeting its
+    config file sets, followed by that name.
+
+roles:
+  - name: Operator
+    definition: Runs the greeter from a terminal and reads what it prints.
+
+vocabulary:
+  # Vague words that must not appear in a scenario description or step.
+  forbidden_qualifiers:
+    - properly
+    - correctly
+    - appropriate
+    - appropriately
+    - user-friendly
+    - fast
+    - quickly
+    - helpful
+
+  # Action verbs too abstract to automate: they hide the interaction
+  # mechanism.
+  forbidden_actions:
+    - name: "handle"
+      reason: "Hides what the program observably does with the input."
+      replacement: "Name the observable action: prints, exits, writes."
+    - name: "process"
+      reason: "Does not specify the mechanism or the visible outcome."
+      replacement: "Name the observable action: prints, exits, writes."
+    - name: "parse"
+      reason: "Describes internal mechanics, not observable behaviour."
+      replacement: "Name what the user sees: prints, exits."
+
+glossary:
+  - term: greeting
+    means: >-
+      The word the greeter prints before a name, read from the project's
+      config file. It is what a user changes to make the greeter speak
+      differently.
+  - term: command
+    means: >-
+      One command line a user types to run the greeter, its arguments
+      included. Everything a user sees of the greeter follows from one.
+  - term: exit code
+    means: >-
+      The number the command ends with: 0 when it succeeded, anything
+      else when it did not. Scripts calling the greeter branch on it.
+  - term: standard output
+    means: >-
+      The lines the command prints for its user, its answer and its log
+      records alike. It is the greeter's only visible output.
+
+catalogue:
+  - template: 'the greeting is configured as "{greeting}"'
+    block: given
+    means: >-
+      The project's config file sets the greeting, the word the greeter
+      prints before a name, to the quoted text.
+    terms: [greeting]
+  - template: 'the {actor:role} runs "{command}"'
+    block: when
+    means: >-
+      That role runs the quoted command line once, in the project
+      directory, and waits for it to exit.
+    terms: [command]
+  - template: 'the command exits with code {code:number}'
+    block: then
+    means: >-
+      The command that role ran ended with that exit code; 0 means it
+      succeeded.
+    terms: [command, exit code]
+  - template: 'stdout matches {expected:pattern}'
+    block: then
+    means: >-
+      A line the command printed to its standard output matches the
+      pattern, a regular expression: either the answer line the command
+      prints for its user, or a log record's message or fields.
+    terms: [command, standard output]
+
+codex
+The description contains none of the listed forbidden qualifiers. “Within 100 milliseconds” states a measurable limit.
+
+codex
+{"answer":"pass","context":["E2E-001: ok"] , "fix_prompt":""}
+tokens used
+18,183

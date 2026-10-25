@@ -117,7 +117,7 @@ type Fixture struct {
 	// suite from the scenario's `judge:` clauses — written for the report's
 	// expected-vs-actual column, not read by the judge itself (see Clauses).
 	JudgeSpec string
-	Stdin     []byte   // interactive input, set by the scenario's Given step
+	Stdin     []byte // interactive input, set by the scenario's Given step
 	// Absent: run-dir paths a Given step says the tree has no copy of,
 	// deleted once the run dir is assembled (see dropAbsentPaths).
 	Absent   []string
@@ -483,5 +483,6 @@ func runSnapshotSkipDirs() []string {
 	return []string{
 		".git", "node_modules", ".next",
 		"test-results", "playwright-report",
+		"tmp/codex-homes", "tmp/codex-shell-home", "tmp/codex-go-build", "tmp/codex-tmp",
 	}
 }

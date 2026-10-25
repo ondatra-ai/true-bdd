@@ -44,7 +44,7 @@ func TestCellFromArtifact(t *testing.T) {
 			wantSection: "us-apply-scenarios",
 			wantOK:      true,
 		},
-		{name: "transcript names no cell", file: "crush-turn003-crush.log"},
+		{name: "transcript names no cell", file: "codex-turn003-codex.log"},
 	}
 
 	for _, testCase := range cases {
@@ -162,9 +162,9 @@ func TestSpawnAttachesToTheOpenTurn(t *testing.T) {
 		turnRecord(step(0), msgDispatch, 1, cliClaude),
 		spawn(step(0), cliClaude),
 		turnRecord(step(1), msgReturned, 1, cliClaude),
-		turnRecord(step(2), msgDispatch, 2, cliCrush),
-		spawn(step(2), cliCrush),
-		turnRecord(step(3), msgReturned, 2, cliCrush),
+		turnRecord(step(2), msgDispatch, 2, cliCodex),
+		spawn(step(2), cliCodex),
+		turnRecord(step(3), msgReturned, 2, cliCodex),
 	}}
 
 	turns := log.Turns(t.TempDir())
@@ -173,7 +173,7 @@ func TestSpawnAttachesToTheOpenTurn(t *testing.T) {
 		t.Fatalf("got %d turns, want 2", len(turns))
 	}
 
-	for index, want := range []string{cliClaude, cliCrush} {
+	for index, want := range []string{cliClaude, cliCodex} {
 		got := turns[index].Invocation.Binary
 		if got != want {
 			t.Errorf("turn %d spawned %q, want %q — spawn records are off by one",

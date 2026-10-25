@@ -1,0 +1,139 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
+**Service:** greeter
+**Suite:** jest
+**Framework:** jest
+**Test Name:** tests/unit/greeting.test.js::greet greets the world when no name is given
+**Source File:** tests/unit/greeting.test.js
+
+
+### Failure groups
+
+Tests: /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: "Hello, world!"
+Received: "Hello, undefined!"
+    at Object.<anonymous> ({{CWD}}/tests/unit/greeting.test.js:7:21)
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for /jest/jest:tests.unit.greeting.test.js::greet_greets_the_world_when_no_name_is_given
+
+## Diagnosis
+
+The failing set contains a single test:
+
+- `tests/unit/greeting.test.js` → `describe('greet') > test('greets the world when no name is given')`, asserting `expect(greet()).toBe('Hello, world!')`.
+
+The test requires production source: `require('../../services/greeter/greeting')`.
+
+In `services/greeter/greeting.js`, `greet(name)` unconditionally concatenates its parameter:
+
+```
+function greet(name) {
+  return 'Hello, ' + name + '!';
+}
+```
+
+Called with no argument, `name` is `undefined`, string concatenation stringifies it, and the function returns `"Hello, undefined!"` — exactly the observed failure (`Expected: "Hello, world!"` / `Received: "Hello, undefined!"`). The file's own header comment states the intended contract ("greet greets a person by name, and the world when no name is given") and flags the missing default as the planted production defect.
+
+So this is a single-site production defect, not a harness or configuration problem: `tests/jest.config.js` (`testMatch: ['<rootDir>/unit/**/*.test.js']`, `testEnvironment: 'node'`, `transform: {}`) and the architecture commands already resolve and run the suite correctly, and the failure is a genuine assertion failure rather than a module-resolution or discovery error.
+
+## Contract to implement
+
+`greet` in the `greeter` service must satisfy:
+
+1. **No name given** → return the world greeting `'Hello, world!'`. This is the case the failing test exercises. "No name given" must at minimum cover the call form the test uses: `greet()` with zero arguments, i.e. `name === undefined`.
+2. **A name given** → keep existing behaviour: return `'Hello, ' + name + '!'` (e.g. `greet('Ada')` → `'Hello, Ada!'`). The named path is already correct and must not regress; the repair only adds the missing default — it does not change the greeting format, punctuation, or capitalisation.
+3. The module keeps its public shape: a CommonJS `module.exports = { greet }` named export from `services/greeter/greeting.js`, so the test's `const { greet } = require('../../services/greeter/greeting')` keeps working. Do not convert the file to ESM, rename it, or change the export to a default/function export.
+
+## Files to change
+
+### `services/greeter/greeting.js` — the only file to touch
+
+This is the single declared service root for `greeter` per `docs/architecture/architecture.yaml` (`services: - name: greeter, path: services/greeter`), and the applier's write root. The whole repair lives here; no other production file needs to exist or change.
+
+Intended implementation: give `greet` a default for the absent name, then build the greeting from the resolved value. The natural, smallest form is a default parameter — `function greet(name = 'world')` — which makes `greet()` and `greet(undefined)` resolve to `'world'` while leaving every explicit name untouched. An equivalent explicit guard at the top of the body (resolve `name` to `'world'` when it is `undefined`, then concatenate once) is acceptable if the writer prefers it; either way there should be exactly one return expression building `'Hello, ' + <resolved name> + '!'`, so the default and named paths cannot drift apart.
+
+The writer should first read the file to confirm the body is still the single concatenation shown above, and should keep the leading comment accurate: it currently advertises the missing default as a planted defect, so once the default exists that comment should simply describe the contract (name given → greet the name; no name → greet the world). That is a comment-accuracy touch-up in production source only.
+
+Scope notes for the writer:
+
+- The test pins only the zero-argument case, so do not invent coercion policy the spec does not ask for (e.g. treating `''`, `null`, whitespace-only strings, or non-string arguments as "no name"). A default parameter already handles `undefined`; leaving other inputs on the existing concatenation path keeps behaviour conservative. If the writer picks the explicit-guard form, guard on `undefined` only, not on general falsiness — a falsiness guard would change `greet('')` beyond the plan.
+- Do not add validation that throws, logging, or new exports. Nothing requires them, and extra exports widen the public surface for no reason.
+- No new dependency, config, or build step is needed: the file is plain CommonJS run by Jest with `transform: {}` on Node, so a default parameter is supported natively with no transpilation.
+
+## Tests each part serves
+
+- **The default-name branch in `services/greeter/greeting.js`** serves the one failing test, `tests/unit/greeting.test.js::greet greets the world when no name is given`. With `greet()` returning `'Hello, world!'`, `expect(greet()).toBe('Hello, world!')` passes on exact string equality — no assertion is weakened, skipped, or removed.
+- **Preserving the named-greeting path and the `module.exports = { greet }` shape** serves the same test's `require` of the module (a load failure or renamed export would error the suite before the assertion) and protects the other test collected by this config, `tests/unit/canary.test.js::canary records each suite run`, which must keep running and passing untouched. That canary appends to `tests/unit/suite-runs.log`; nothing in this repair touches it, the Jest config, the architecture file, or any test file.
+
+## Out of scope / prohibited
+
+- Do not edit `tests/unit/greeting.test.js`, `tests/unit/canary.test.js`, `tests/jest.config.js`, `tests/stack-frames.js`, anything else under `tests/` or `tests/node_modules/`, or `docs/architecture/architecture.yaml`.
+- Do not change the architecture's test commands (`npx jest --json --config jest.config.js`) or the `testMatch` pattern to skip or narrow the suite.
+- Do not add `test.skip`, snapshot baselines, or any mechanism that makes the assertion pass by anything other than correct production behaviour.
+
+## Verification
+
+From the directory holding the config (`tests/`, per the architecture note, so `npx` finds the local Jest install), run the declared command: `npx jest --json --config jest.config.js`. Both tests should report passing — `greet greets the world when no name is given` newly green, `canary records each suite run` still green — with no test file in the diff. The final diff should be confined to `services/greeter/greeting.js`.
+
+## Edit roots
+
+- `services/greeter`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}/tests` using exactly one of these forms:
+- Whole suite: `npx jest --config jest.config.js`
+- Selection: `npx jest --config jest.config.js --testNamePattern '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--jest-jest-tests.unit.greeting.test.js-greet_greets_the_world_when_no_name_is_given-iter1-result.yaml ===
+
+## Fixture confirmation protocol
+
+This Scenario exercises a completed applied repair. Make the required service change and report applied: true in the final confirmation once the service files are repaired. The engine will run the declared suite outside this writer's sandbox after your turn. If npx, Node, or a browser is unavailable inside the sandbox, state that verification limitation in summary while still reporting the completed edit as applied: true. Do not change tests, documents, dependencies, or the test runner to bypass that limitation.

@@ -37,7 +37,7 @@ architecture:
         ResultPath: &validation-result-path >-
           Run result path: run_dir is the cleaned paths.tmp_dir/date-pid join described in invocation.values.run_dir (./tmp yields tmp/<run>, relative; an absolute configured tmp_dir stays absolute); cassettes normalise its date-pid segment to {{RUN_DIR}}. Filename sanitising replaces each run of characters outside [A-Za-z0-9._-] with one hyphen; no other escaping. Format is <run_dir>/<index zero-padded to at least 2 digits>-<safe subject id>-checklist-<safe checklist-stem[/section-id]>-result.yaml. Index counts non-skipped Prompts from 1 in file section/Prompt order, before D Prompts are moved ahead of Q Prompts for walking. Subject id is Story id for us refine, lineage id for us apply, Registry key for build tests/scen check, the stable failing-set Item id for build code (discovery BuildID for a singleton, failing-set otherwise). A build-code id begins with / and sanitises to a leading hyphen, producing 01--go-test-...; an empty id likewise leaves two hyphens.
         Structured: &structured >-
-          Run boolean from the resolved role model CLI: true for claude and codex, false for crush. Validation and generation pass the same populated data to both templates; appliers never receive this field.
+          Run boolean from the resolved role model CLI: true for both supported CLIs, claude and codex. Validation and generation pass the same populated data to both templates; appliers never receive this field.
         Subject: >-
           Subject is StoryRefineData with the loaded Story inlined and TermDocuments excluded from YAML. toYaml is yaml.v3 Marshal, returning its string including the final newline, not TrimSpace and not wrapped in story:. Serialised field order is id, feature (omitted when empty), title, as_a, i_want, so_that, status, acceptance_criteria. Each criterion is id, description, steps (omitted when empty); each step emits given, when, then in that order, omitting empty blocks. A statement is a scalar when its Type is empty, else a one-key and/but map. Strings and block chomping follow yaml.v3; default indentation is four spaces. Empty acceptance_criteria is retained (as []); TermDocuments never serialises. Marshal failure becomes "# Error marshaling to YAML: <error>".
     checklist_system:
@@ -398,7 +398,7 @@ architecture:
           extracted content; the writer never writes that path itself.
           A successful response with no extractable block follows PostNotApplied
           in build code alone, preserving files, warning once with this path
-          and rerunning the remaining set. Started crush, codex or Claude writer failures also follow the not-applied rerun; other provider failures remain fatal;
+          and rerunning the remaining set. Started codex or Claude writer failures also follow the not-applied rerun; other provider failures remain fatal;
           malformed extracted content retains its existing handling.
         Subject.Tests: >-
           Remaining failing members, sorted by discovery id; passing members leave after each completed apply.
@@ -463,9 +463,9 @@ architecture:
         WriteRoots: >-
           Every architecture service path, in declaration order.
         CodexWriter: >-
-          True when the resolved apply model CLI is codex; selects native process polling while the crush rendering stays byte-identical.
+          True only for an explicitly requested build-code codex writer; selects native process polling; the Claude branch requires foreground completion.
         TestCommand: >-
-          Crush, codex and explicitly requested Claude build-code writers get the configured canonical replay forms; nil for other Claude turns or an unrepresentable command. Crush uses job_output; codex polls its native process tool. Claude gets foreground wording and the shell-quoted suite-directory cd prefix after rendering; each provider preserves its existing request bytes.
+          Codex and explicitly requested Claude build-code writers get the configured canonical replay forms; nil for other Claude turns or an unrepresentable command. Codex polls its native process tool; Claude requires foreground completion and receives the shell-quoted suite-directory cd prefix before rendering.
         TestCommand.Command: >-
           Canonical replay command without machine-output flags, per ADR-0018.
         TestCommand.Selector: >-
@@ -574,92 +574,12 @@ architecture:
       #	internal    — another service declared in this file
       #	self_hosted — we run the instance (redis, postgres, kafka); builds
       #	              use the real thing
-      #	third_party — a vendor's service, wherever the binary lives (crush is
+      #	third_party — a vendor's service, wherever the binary lives (a vendor CLI is
       #	              local, GLM's API is not); builds mock these (record/replay)
       dependencies:
         # Replay hashes every AI turn's argv and stdin, so each CLI states its
         # invocation exactly (docs/qna Q2, Q19): a rebuilt engine must send
         # the same requests.
-        - name: crush
-          protocol: cli
-          scope: third_party
-          # binary and args match every crush cassette's `binary` and `argv`.
-          invocation:
-            binary: crush
-            args: [run, --quiet, -m, "{model}", --cwd, "{work_dir}"]
-            # Neither CLI has a system-prompt flag, so the system prompt is
-            # folded into stdin when it is not blank after trimming whitespace.
-            stdin: &folded-prompt
-              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
-              without_system: "{user_prompt}"
-            values:
-              model: >-
-                The model half of the `<cli>:<model>` reference the turn's tier
-                resolves to under `engine.models`, split on the first colon:
-                `zhipu-coding/glm-5.2` in every crush cassette.
-              work_dir: &work-dir >-
-                The directory true-bdd was started in, as an absolute path: the
-                host project root. Cassettes record it as `{{CWD}}`.
-              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
-              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
-              run_dir: &run-dir >-
-                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
-                created at startup. The join is cleaned and stays relative to
-                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
-                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
-                `{{RUN_DIR}}`.
-            dir: "{work_dir}"
-            env:
-              CRUSH_GLOBAL_CONFIG: >-
-                A new `{run_dir}/crush-config-<random>` directory per turn holding
-                the generated `crush.json`: `options.data_directory` under that
-                directory, `permissions.allowed_tools` for the turn's mode, and
-                one `PreToolUse` hook named `true-bdd-guard` whose command is
-                this executable's path in single quotes, a space and
-                `crush-guard`, with a 15-second timeout.
-              TRUE_BDD_CRUSH_POLICY: >-
-                The JSON write policy `crush-guard` enforces: `read_root`, the
-                absolute project working directory for local reads, the
-                turn's `write_roots` and whether it may run bash (`allow_bash`).
-                Only build code --fix's apply turn adds `test_command`,
-                `test_selector` and `test_dir`; allow_bash stays false.
-                Its generated allowed_tools additionally include bash,
-                job_output and job_kill. Other turns' tools stay unchanged.
-            notes:
-              - >-
-                crush has no permission gate of its own and runs a tool when its
-                hook cannot run, so the engine probes `crush-guard` before every
-                turn with a valid policy including its read root and no write roots,
-                and refuses the turn unless the prohibited write is denied.
-              - >-
-                crush silently ignores a model it does not know when the model is
-                named in config, so the model travels only as `-m`.
-              - >-
-                A grandchild of crush's embedded shell can hold stdout open past
-                the exit, so the turn runs as its own process group, killed as
-                one, with a 10-second bound on the wait after the exit.
-              - >-
-                stdout and stderr merge into one transcript. Only the build code
-                applier explicitly requests a response watch through turn options
-                carried to the router's Request.WatchWriterResponse field. It reads
-                this turn's options.data_directory/logs/crush.log as JSON records:
-                ModelProvider called opens a model response; the next record of
-                any kind closes it, and Hook completed opens tool execution.
-                Only an open model response is timed. At ten minutes the engine
-                stops the process group and logs one WARN, Writer response stalled,
-                naming label, minutes and log_path. No model record means no timer;
-                tool execution is never timed. This is ADR-0020's deliberate
-                exception to unbounded AI turns, not a turn deadline. No prompt,
-                checklist or template states the bound.
-              - >-
-                A started crush turn stopped by that watch, exiting non-zero or
-                returning empty/whitespace-only output reports a distinct
-                CrushTurnError outcome. Only build code's apply routes it to
-                PostNotApplied, preserving files and rerunning the remaining set.
-                Non-stall outcomes log one Writer turn failed WARN; the stall
-                watch already logged its WARN. A process-start failure or engine
-                refusal before spawning stays fatal. Every other command and AI
-                role retains its existing behavior.
         - name: codex
           protocol: cli
           scope: third_party
@@ -668,13 +588,13 @@ architecture:
             binary: codex
             args:
               - exec
-              - when: The turn is not build code's codex writer.
+              - when: The turn is a plan or validation turn.
                 args: [-s, "{sandbox}"]
               - --ephemeral
               - --skip-git-repo-check
               - --color
               - never
-              - when: The turn is build code's codex writer.
+              - when: The turn is an apply turn of any command.
                 args: [--strict-config, --ignore-rules, --json]
               - -C
               - "{work_dir}"
@@ -687,20 +607,28 @@ architecture:
               - -o
               - "{answer_path}"
               - "-"
-            stdin: *folded-prompt
+            stdin: &folded-prompt
+              with_system: "### SYSTEM INSTRUCTIONS (authoritative — follow exactly)\n\n{system_prompt}\n\n### TASK\n\n{user_prompt}"
+              without_system: "{user_prompt}"
             values:
               sandbox: >-
-                `workspace-write` when the turn may write a project tree outside
-                the run directory (ordinary source-edit turns such as `build tests --fix`, which hold write roots); `read-only` for
-                every other turn. Build code's writer instead selects the generated named writer permission profile, with no -s flag.
+                `read-only` for every plan and validation turn, independently of scratch tool permissions.
+                Every apply turn instead selects its generated named writer permission profile, with no -s flag.
               model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
                 `gpt-6.1-sol` in every codex cassette.
-              work_dir: *work-dir
-              system_prompt: *system-prompt
-              user_prompt: *user-prompt
-              run_dir: *run-dir
+              work_dir: &work-dir >-
+                The directory true-bdd was started in, as an absolute path: the
+                host project root. Cassettes record it as `{{CWD}}`.
+              system_prompt: &system-prompt The turn's system prompt, rendered from templates/.
+              user_prompt: &user-prompt The turn's user prompt, rendered from templates/.
+              run_dir: &run-dir >-
+                The run's artifact directory, `<paths.tmp_dir>/<YYYY-MM-DD-HH-MM-SS>-<pid>`,
+                created at startup. The join is cleaned and stays relative to
+                `{work_dir}`, so `paths.tmp_dir: ./tmp` gives `tmp/<...>`.
+                Cassettes record the `<YYYY-MM-DD-HH-MM-SS>-<pid>` part as
+                `{{RUN_DIR}}`.
               label: >-
                 `codex-turn<NNN>`: NNN is this turn's number, from 1 and
                 zero-padded to three digits, among every AI turn the run
@@ -716,14 +644,14 @@ architecture:
             dir: "{work_dir}"
             notes:
               - >-
-                Ordinary turns select -s explicitly. The build-code writer selects default_permissions=writer and approval_policy=never in its generated configuration.
+                Plan and validation turns select -s read-only explicitly. Every apply turn selects default_permissions=writer and approval_policy=never in its generated configuration.
               - The trailing `-` makes codex read the prompt from stdin.
               - >-
                 `--skip-git-repo-check`: a BDD fixture's run directory is no git
                 repository, and codex refuses to run outside one without it.
               - >-
                 Ordinary turns inherit the environment and merge stdout/stderr as before.
-                Only build code's writer sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
+                Every apply turn sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
                 copying only auth.json with private permissions, never user config,
                 sessions, AGENTS.md, history or MCP definitions. The provider removes auth.json
                 after preparation or turn completion, on success and failure, reporting cleanup errors. --ephemeral remains.
@@ -732,24 +660,23 @@ architecture:
                 project_doc_max_bytes=0 suppresses AGENTS.md and --ignore-rules
                 suppresses execpolicy files. No outer sandbox-exec wraps codex.
               - >-
-                The writer profile grants host-root reads, service edit-root writes
-                and host tmp writes. :minimal supplies OS runtime exceptions listed
+                The apply profile grants host-root reads, that execution mode's exact file or directory roots, and host tmp writes. :minimal supplies OS runtime exceptions listed
                 in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
                 Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
                 GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
                 sibling cuts, user work, codex sessions and claude transcripts.
-                Before spawning, the engine creates each absent service edit root and its missing parents inside the host,
+                Before spawning, the engine creates missing directory roots and literal parents of file roots inside the host,
                 using rooted filesystem operations that cannot follow a symlink outside it, and logs each created root once at INFO.
                 Edit roots resolving outside the host are refused. The profile grants remain limited to the edit roots and host tmp;
-                creating their parents does not grant the writer any other host-root writes.
+                creating their parents does not grant the writer any other host-root writes. Existing files stay files; missing files are not made into directories. Configured globs authorize creating and changing matching files even without existing matches. Terminal /** grants its literal subtree; other wildcards grant their narrowest literal directory and enforce the original patterns after every turn, including failed turns. Newly created non-matching files are removed; a changed, deleted, renamed or permission-changed pre-existing non-matching file fails the turn with one WARN naming it. Overlapping grants authorize their union. Such violations are fatal even for build code, with changed pre-existing contents retained for diagnosis. Non-matching files can be changed during the turn; this boundary is enforced afterward. Generated homes are excluded from comparison. Malformed patterns, host-root grants and escapes refuse (ADR-0024).
               - >-
                 Writer subprocesses inherit no environment: the profile sets PATH to
-                GOROOT/bin and system bin directories, HOME, TMPDIR and GOCACHE inside
+                GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm, npx and docker links; HOME, TMPDIR and GOCACHE inside
                 host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
                 GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
-                and CGO_ENABLED=0. Network is disabled for commands and their children.
+                and CGO_ENABLED=0. Optional node/npm/npx/docker executables, npm's validated package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm/npx JavaScript package grants require bin/npm-cli.js or bin/npx-cli.js beneath a package.json naming npm, outside the host and authentication roots and the user's sensitive .codex, .claude, work, .ssh, .aws and .config roots and their ancestors. An unsafe or unverifiable runtime is refused with a WARN and no link or grant. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
                 Codex's own model connection remains available. This is calibrated
                 for codex-cli 0.162.1 on macOS; no weaker fallback is supplied.
               - >-
@@ -769,9 +696,8 @@ architecture:
                 Build code keeps its edits, counts the attempt, warns once and runs
                 PostNotApplied. Start failures and refusals before spawning stay fatal.
                 There is no codex stall watch or engine turn bound; codex's own request
-                timeouts apply. Ordinary codex turns retain their prior arguments,
-                environment, sandbox and failure handling. Process group and wait bound
-                remain as for crush.
+                timeouts apply. Plan and validation turns retain their inherited environment and read-only sandbox. Other commands' confined applies retain fatal failure handling; build code alone requests recovery and replay forms. Process group and wait bound
+                remain as for the other writers.
               - >-
                 Before the spawn the engine logs the turn's sandbox level as
                 msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
@@ -1097,7 +1023,7 @@ architecture:
 
     - term: AI turn
       technical: >-
-        One request through the engine's AI router to claude, crush or codex,
+        One request through the engine's AI router to claude or codex,
         logged once as msg="Dispatching AI turn" before the CLI is spawned; in
         replay the answer comes from a cassette.
       observed_by: >-
@@ -1128,7 +1054,7 @@ architecture:
 
     - term: AI CLI
       technical: >-
-        The binary an AI turn is spawned as, `claude`, `crush` or `codex`
+        The binary an AI turn is spawned as, `claude` or `codex`
         (see `dependencies[]` above): the half before the first colon of the
         `<cli>:<model>` reference the turn's tier resolves to under
         `engine.models`, with any run-only model overrides applied at bootstrap. The tier is the Prompt's own `model:`, `fix_model:`
@@ -1158,7 +1084,7 @@ architecture:
         The engine's interactive answer to a failed Prompt under `--fix`. A
         clarifying question prints its suggested answers numbered from 1,
         plus `0) Other`, then reads one line of stdin as the answer, a number
-        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started crush writer turns that stall, exit non-zero or answer empty, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and crush, codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
+        picking that suggestion. For build code the Item is the whole failing set, zero Items when discovery is green. Its tests-pass D: Prompt passes exactly when every remaining member passed its latest run; failing findings group every still-failing id beside the whole first output using runtime-failure normalization. No validation model runs. The unchanged walker allowance counts applies on that set Item, including applied false, successful responses missing the confirmation, and started codex writers that exit non-zero or answer empty, and started Claude writer turns that exit non-zero, return error results or answer empty; allowance two still permits three applies before stopping. Each missing confirmation warns once with the result path and follows the not-applied rerun. Each started writer failure logs one WARN and follows the same rerun, preserving its files. Start failures, engine refusals before spawning, failures in other roles stay fatal. The next plan sees the rerun's remaining set and rebuilt grouped evidence, including build failures. The terminal attempt is rerun but still stops at the bound even if it passed. The proposed repair plan names changes, files and served tests. The writer gets the same set, Specification, edit roots and codex and Claude command forms, implements the service, tests each part and the whole set, then reports changes and observed passes without a stated time, turn, token or cost budget. The proposed
         fix is then followed by `[1] Apply this fix to working copy`, `[2]
         Refine the fix prompt` and `[3] Exit without applying`, and one line
         is read: `1` or `apply` applies the fix, `2` or `refine` reads
@@ -1426,120 +1352,40 @@ architecture:
         rerun, edits, exit and once-only failure warning. The recording wrapper
         runs real Claude unchanged before injecting a non-zero exit.
 
-    - term: crush
-      technical: >-
-        The `crush` CLI the engine spawns for a turn whose tier names it (the
-        crush dependency above), with a per-turn generated config whose
-        `PreToolUse` hook runs this binary's `crush-guard` subcommand and with
-        the turn's write policy in that hook's environment. Hooks from a host
-        project's own `.crush.json` or `crush.json` run beside it, and a
-        denial from either stops the tool.
-      observed_by: >-
-        A Scenario about the write guard never starts crush: its Given steps
-        record what crush would hand the guard, and its When step runs the
-        guard the way crush does, so it spends no AI turn and needs no CLI.
-
     - term: write guard
-      technical: >-
-        For the Claude writer, claude-guard --policy reads generated JSON and
-        the complete Claude payload, applying the restrictions in the claude
-        mapping above; an explicit hook allow object grants execution.
-        For crush, the engine binary's hidden `crush-guard` subcommand runs with no
-        arguments. It reads the write policy, then the tool call, and exits 0
-        to allow or 2 to deny, writing one line `true-bdd guard: <reason>` to
-        stderr for a denial. A missing or unreadable policy, or a readable
-        policy naming no read root, denies before the tool call is read, each
-        with its own reason. A relative `read_root` is refused as a malformed
-        policy. `view`, `ls`, `grep`, `glob` and `diagnostics`
-        may read only inside `read_root`, resolving symbolic links on both
-        sides and comparing whole path components. Relative reads start at
-        that root; reads naming no path are allowed to use the project.
-        `sourcegraph`, `fetch` and the `context7` MCP tools remain allowed.
-        Bash requires general shell permission or an exact test-command match:
-        the canonical command alone, or that command followed by one space,
-        test_selector, one space and a nonempty single-quoted selection without
-        a single quote, newline or NUL. Its directory must resolve to test_dir,
-        resolving symbolic links on both sides and relative paths against
-        read_root; an absent directory means read_root. Every denied bash
-        reports both allowed forms. Job_output and job_kill require test_command.
-        The file tools `edit`, `write`, `multiedit`, `patch`, `create` and
-        `download` are allowed only for an absolute target inside a write
-        root, with symbolic links resolved on both sides (through the deepest
-        part of the path that exists) and whole path components compared;
-        any other tool is denied as a writer.
-      observed_by: >-
-        Run once by the When step as the engine binary's subprocess in the
-        run directory, under the Scenario's timeout, its exit status, stdout,
-        stderr and file changes kept as a command's are. As a command's run
-        is, the guard's run is handed to the harness's run recorder as soon
-        as it returns, before the step passes or fails, a run that could not
-        complete included, so the Scenario's `bdd-cli-logs/harness.json` in
-        the run directory records its run directory, output files and file
-        changes, and its exit status once it completed, for the BDD report.
-        The allow and deny steps compare the status with 0 and 2, failing
-        with the reason it gave; the reason step matches its pattern anywhere
-        in the kept stderr.
+      technical: claude-guard --policy reads generated JSON and the complete Claude payload. An explicit hook allow object grants
+        execution; denial exits 2 with one true-bdd guard reason on stderr. Read, Glob and Grep use host/toolchain/spill roots
+        and module exclusions; Write, Edit and MultiEdit use declared write roots and cannot change protected configuration. Symlinks
+        and file identity prevent escapes and shared-prefix confusion. Bash accepts exactly the canonical whole-suite command
+        or one nonempty single-quoted selector in the resolved suite directory, including the shell-quoted cd prefix from the
+        host or suite. Background commands and unknown tools are denied.
+      observed_by: The When step runs the hidden hook in the prepared project with a generated policy file and complete payload.
+        Then steps assert exit 0 or 2 and match the denial reason. File boundary Scenarios cover inside, outside, relative and
+        symbolic-link paths. No model runs for hook-only Scenarios.
 
     - term: write policy
-      technical: >-
-        A JSON object in the environment variable `TRUE_BDD_CRUSH_POLICY`:
-        `read_root`, the absolute project working directory, `write_roots`,
-        a list of absolute directory paths, and `allow_bash`, true or false. The engine derives it per turn from the turn's write
-        globs, each cut at its first wildcard and made absolute against the
-        project root, and from whether the turn may run the shell. Every engine
-        execution mode disallows `Bash`, so its own crush turns always set
-        `allow_bash` to false. Only build code --fix's apply mode carries
-        `test_command`, `test_selector` and `test_dir`, consumed by crush or the explicitly requested Claude writer. Claude wraps this replay policy with extra read and exclusion roots in its generated policy file.
-        SplitCommand splits the declared replay, removes the framework's
-        machine-output flag only before -args for go-test or a bare -- for
-        jest and playwright (json from a reporter list, preserving other reporters),
-        and joins argv with one space. The boundary and every argument after it
-        pass through unchanged and use the same quoting rule.
-        Arguments matching A-Za-z0-9_./:=,@%+-
-        stay unquoted; all others are single-quoted. Any argument containing a
-        single quote, newline or NUL withholds the grant and logs one warning
-        with its reason. Selectors are -run for go-test, --testNamePattern for
-        jest and --grep for playwright. Test_dir is the absolute directory of
-        testing.config, else the project root, as for the engine runner.
-        Other Claude turns keep their existing permissions. Codex build-code writers receive the same command forms as instructions, with confinement through their own permission profile (ADR-0021), rather than this guard.
-        A relative `read_root` is malformed and refused.
-      observed_by: >-
-        Built by the Given steps for the When step: `read_root` is the run
-        directory, and each write-under step adds
-        the quoted directory joined to the run directory, the shell step sets
-        `allow_bash`, and the test-command step sets the three test fields.
-        With neither the policy allows project reads only. The
-        no-read-root step sets `read_root` to an empty string. The
-        no-policy step leaves the variable blank, which the guard reads as
-        unset, and the unreadable step sets it to text that is not JSON.
+      technical: Generated JSON carries replay.read_root, replay.write_roots, replay.test_command, replay.test_selector and replay.test_dir,
+        with extra read_roots, excluded_roots and protected_roots. The write globs are reduced to their fixed prefixes against
+        the host root. CanonicalReplayCommand removes machine flags before -args or --, preserves the boundary and later arguments,
+        joins with one space and quotes all but A-Za-z0-9_./:=,@%+-. Quotes, newline and NUL withhold the grant with one warning.
+        Selectors are -run, --testNamePattern or --grep. The suite directory follows testing.config. Codex receives these forms
+        as instructions and uses ADR-0021's profile; only the explicit Claude build-code writer uses the hook.
+      observed_by: Given steps build the replay policy with absolute run and write roots. The test-command step supplies command,
+        selector and suite. Missing policy omits the file; unreadable policy writes invalid JSON; missing read root writes an
+        empty root. Guard Scenarios observe the resulting refusal.
 
     - term: tool call
-      technical: >-
-        For Claude the tool call is tool_name and tool_input in the payload, with cwd supplying the Bash directory and run_in_background denied. For crush, the tool's name is in `CRUSH_TOOL_NAME` and its target file in
-        `CRUSH_TOOL_INPUT_FILE_PATH`, the variables crush exports to a hook;
-        a blank or unset variable names nothing. CRUSH_TOOL_INPUT_COMMAND supplies
-        the shell command before the payload fallback.
-      observed_by: >-
-        The When step sets both variables and the write policy every time,
-        blank where no Given step named them, so nothing the test process
-        exports reaches the guard. A file of the project tree is joined to
-        the run directory; a path as written passes unchanged.
+      technical: Claude's tool_name and tool_input in its hook payload; cwd supplies the Bash working directory and relative file
+        base, and run_in_background is denied. File tools resolve file_path, then path, then cwd. The complete payload is decoded
+        as one call.
+      observed_by: Given steps name a tool and a tree file or literal path, or a shell command with foreground/background mode.
+        The When step serializes the fields to stdin every time so exported environment cannot supply a different call.
 
     - term: hook payload
-      technical: >-
-        The JSON crush pipes to a hook's stdin. The guard reads its
-        `tool_name` for a blank tool name, and its `input.file_path`, else
-        `input.path`, for a blank target; `tool_input` is also accepted.
-        The same input's command supplies a blank CRUSH_TOOL_INPUT_COMMAND;
-        working_dir supplies the shell directory. An empty or unparseable
-        payload names nothing.
-      observed_by: >-
-        The When step writes `{"tool_name": <tool>, "input": {"file_path":
-        <the file joined to the run directory>}}` to the guard's stdin; with
-        no payload step the guard's stdin is empty. The path payload step instead
-        writes `input.path` exactly as quoted, without joining it to the run
-        directory. The shell-command step writes tool_input.command and
-        tool_input.working_dir as written with tool_name bash.
+      technical: JSON with tool_name, cwd and tool_input containing file_path, path, command and run_in_background. The generated
+        policy path is a required --policy argument. Unreadable policy, malformed JSON or a non-absolute read root fails closed.
+      observed_by: The When step pipes that complete JSON into claude-guard. Tree-file paths join the run root; literal paths
+        remain unchanged until the guard resolves them.
 
     - term: symbolic link
       technical: >-

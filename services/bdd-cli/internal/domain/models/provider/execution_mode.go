@@ -15,10 +15,9 @@ type ExecutionMode struct {
 	AllowedTools    []string
 	DisallowedTools []string
 	// SourceWriteRoots are project trees outside tmp this mode opens for
-	// writing (set only by GetSourceEditMode). Kept apart from AllowedTools:
-	// codex has no sandbox level between scratch-only and the whole workspace, so merging them would over-grant it.
+	// writing (set by ModeFactory); tool patterns also carry scratch and exact file grants.
 	SourceWriteRoots []string
-	// TestCommand is a restricted replay grant consumed by crush and the explicit Claude build-code writer.
+	// TestCommand is a restricted replay grant consumed by the explicit Claude build-code writer.
 	TestCommand *TestCommand
 }
 
@@ -29,15 +28,14 @@ func (m ExecutionMode) GrantsSourceWrites() bool {
 }
 
 // writeToolNames lists the tools that create or modify files. Used to
-// project the Claude-style tool specs onto the coarser sandboxes of
-// the crush and codex CLIs.
+// project Claude-style tool specs onto the codex apply permission profile.
 func writeToolNames() []string {
 	return []string{"Write", "Edit", "MultiEdit", "NotebookEdit"}
 }
 
 // WriteGlobs returns the path patterns this mode lets file-writing tools
 // touch, parsed out of the Claude tool specs (`Write(./tmp/**)` →
-// `./tmp/**`). Empty means the turn may not write at all; crush and codex derive their sandbox from this.
+// `./tmp/**`). Codex apply profiles consume these patterns; role independently keeps plans read-only.
 func (m ExecutionMode) WriteGlobs() []string {
 	globs := make([]string, 0, len(m.AllowedTools))
 

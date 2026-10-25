@@ -36,7 +36,7 @@ func TestExtractFileContent(t *testing.T) {
 			wantOK:   true,
 		},
 		{
-			// crush routinely closes with a bare marker. The opening one
+			// a provider may close with a bare marker. The opening one
 			// already named the file, so this block is complete.
 			name:     "closing marker omits the path",
 			response: "=== FILE_START: " + path + " ===\n- id: AC-1\n=== FILE_END ===",

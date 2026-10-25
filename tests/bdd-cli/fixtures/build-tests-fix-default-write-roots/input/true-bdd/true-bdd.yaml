@@ -11,7 +11,7 @@ engine:
   models:
     xhigh: "claude:claude-fable-5"
     high: "claude:claude-opus-5"
-    # claude, not crush: its argv names the write roots, and replay hashes it.
+    # claude, not codex: its argv names the write roots, and replay hashes it.
     coder: "claude:claude-sonnet-5"
     quick: "claude:claude-sonnet-5"
   default_prompt_model: high

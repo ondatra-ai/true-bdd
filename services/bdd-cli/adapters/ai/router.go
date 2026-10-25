@@ -33,7 +33,6 @@ type Router struct {
 func NewRouter(workDir, tmpDir string) *Router {
 	providers := map[provider.CLI]Provider{
 		provider.CLIClaude: NewClaudeProvider(),
-		provider.CLICrush:  NewCrushProvider(),
 		provider.CLICodex:  NewCodexProvider(),
 	}
 
@@ -84,6 +83,7 @@ func (r *Router) ExecutePromptWithSystem(
 	started := time.Now()
 
 	response, err := target.Execute(turnCtx, Request{
+		CodexApply:   role == provider.RoleApply && model.CLI == provider.CLICodex,
 		ClaudeWriter: turnOptions.ClaudeWriter,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
@@ -93,8 +93,7 @@ func (r *Router) ExecutePromptWithSystem(
 		TmpDir:       r.tmpDir,
 		Label:        label,
 		ResultSchema: resultSchema,
-		CodexWriter: turnOptions.CodexWriter,
-		WatchWriterResponse: turnOptions.WatchWriterResponse,
+		CodexWriter:  turnOptions.CodexWriter,
 	})
 
 	// Logged on both paths: a turn that burned twenty minutes and then
@@ -128,13 +127,12 @@ func (r *Router) ExecutePromptWithSystem(
 }
 
 func writerOptions(role provider.Role, cli provider.CLI, options []provider.TurnOptions) provider.TurnOptions {
- if role != provider.RoleApply || len(options) == 0 {
-  return provider.TurnOptions{}
- }
+	if role != provider.RoleApply || len(options) == 0 {
+		return provider.TurnOptions{}
+	}
 
- return provider.TurnOptions{
-  ClaudeWriter: cli == provider.CLIClaude && options[0].ClaudeWriter,
-  CodexWriter: cli == provider.CLICodex && options[0].CodexWriter,
-  WatchWriterResponse: cli == provider.CLICrush && options[0].WatchWriterResponse,
- }
+	return provider.TurnOptions{
+		ClaudeWriter: cli == provider.CLIClaude && options[0].ClaudeWriter,
+		CodexWriter:  cli == provider.CLICodex && options[0].CodexWriter,
+	}
 }

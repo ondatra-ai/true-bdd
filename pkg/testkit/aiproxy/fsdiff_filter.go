@@ -8,7 +8,7 @@ import (
 )
 
 // isEngineOwned reports workdir paths that must never enter a cassette's
-// fs-diff: the engine's own slog file, the shim's cursor state, and crush's
+// fs-diff: the engine's own slog file, the shim's cursor state, and codex's
 // per-turn runtime state — each written independently in every mode.
 func isEngineOwned(rel string) bool {
 	if rel == filepath.Join("tmp", "true-bdd.log.json") {
@@ -20,10 +20,6 @@ func isEngineOwned(rel string) bool {
 	}
 
 	for _, segment := range strings.Split(rel, string(filepath.Separator)) {
-		if strings.HasPrefix(segment, "crush-config-") {
-			return true
-		}
-
 		if strings.HasSuffix(segment, "-codex-home") || segment == "codex-go-build" ||
 			segment == "codex-shell-home" || segment == "codex-tmp" {
 			return true

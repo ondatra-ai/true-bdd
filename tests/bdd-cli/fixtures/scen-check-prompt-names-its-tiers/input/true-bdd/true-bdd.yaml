@@ -1,13 +1,13 @@
 # Engine config for the `scen-check-prompt-names-its-tiers` fixture: one
 # CLI per tier, so the CLI a turn went to tells which tier it resolved.
 # The checklist's `engine:` block and the defaults below name high, high
-# and coder (claude, claude, crush); its one Prompt names coder, xhigh and
-# high (crush, codex, claude), and the Prompt's own tiers win.
+# and coder (claude, claude, codex); its one Prompt names coder, xhigh and
+# high (codex, codex, claude), and the Prompt's own tiers win.
 engine:
   models:
     xhigh: "codex:gpt-6.1-sol"
     high: "claude:claude-opus-5"
-    coder: "crush:zhipu-coding/glm-5.2"
+    coder: "codex:gpt-6.1-sol"
     quick: "claude:claude-sonnet-5"
   default_prompt_model: high
   default_fix_model: high

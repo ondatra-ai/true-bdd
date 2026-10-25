@@ -1,160 +1,151 @@
-# Story `build-code-frameworks`: `build code` running a Jest, a Playwright
-# or a go test suite, and re-running a failing test the way its framework
-# selects one.
-#
-# Each framework's report names the failing tests; a Go package that does
-# not compile is one failure. Under `--fix` the test a fix was for runs
-# again through the framework's own filter: Jest's --testNamePattern,
-# Playwright's --grep, and for a package that did not compile the whole
-# command, unfiltered. Refusing a suite command is the Story
-# build-code-commands; the fix loop on a failing go test and a Playwright
-# app that does not start yet are the Story build-code-run. This Story
-# also covers completed not-applied turns: their files stay, their verdicts
-# are refreshed, and each consumes the same per-test fix allowance.
-#
-# Each criterion's id is the second half of its Scenario's Registry key,
-# `build-code-frameworks-<id>` (ADR 0014), and its steps are that
-# Scenario's steps.
-
 story:
-    id: build-code-frameworks
-    feature: build-code
-    title: Run Jest, Playwright and go test suites with build code and re-run each failing test the way its framework selects it
-    as_a: System Architect
-    i_want: build code to count the failing tests of a Jest, a Playwright or a go test suite from the framework's own report, a Go package that does not compile as one failure, and under --fix to re-run only the test a fix was for through that framework's name filter, or the whole package when it did not compile, while keeping writes from completed not-applied turns, refreshing their verdicts and counting them against the same per-test fix allowance
-    so_that: whichever framework a project's suite is written in, the fix loop stops on that suite's own verdict on the test it was fixing
-    status: IMPLEMENTED
-    acceptance_criteria:
-        - id: 001-jest-failing-test-exits-1
-          description: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and naming the test by its spec file and full name
-          steps:
-            - given:
-                - the "build-code-jest-failing-test" project tree
-                - and: the project's test dependencies are installed
-            - when:
-                - the System Architect runs "build code"
-            - then:
-                - the command exits with code 1
-                - stdout matches msg="Running tests" framework=jest
-                - stdout matches msg="Suite failures" failures=1 framework=jest
-                - 'stdout matches msg="Total failing tests across architecture" failures=1'
-                - stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given
-                - stdout matches BUILD CODE COMPLETE
-                - but: no file outside "tmp" changed
-                - and: the engine spawned the test runner "npx"
-                - and: the engine spawned exactly 1 test runner
-                - and: the engine dispatched 1 AI turn
-        - id: 002-jest-fix-reruns-test-by-name
-          description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once it passes
-          steps:
-            - given:
-                - the "build-code-jest-fix-named-test" project tree
-                - and: the project's test dependencies are installed
-                - the System Architect answers "1" to every question
-            - when:
-                - the System Architect runs "build code --fix"
-            - then:
-                - the command exits with code 0
-                - stdout matches msg="Suite failures" failures=1 framework=jest
-                - stdout matches msg="Fix applied; re-running this test in isolation"
-                - stdout matches BUILD CODE COMPLETE
-                - and: the file "services/greeter/greeting.js" is modified
-                - and: the file "tests/unit/suite-runs.log" has exactly 2 lines
-                - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name is given\$
-                - and: the engine spawned exactly 3 test runners
-                - but: the file "tests/unit/greeting.test.js" is unchanged
-                - and: the file "tests/unit/canary.test.js" is unchanged
-                - and: the file "docs/architecture/architecture.yaml" is unchanged
-                # Independent outcome check, last: the suite run appends to
-                # suite-runs.log after the line-count clause.
-                - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
-                - 'every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter'
-                - 'every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter'
-                - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
-        - id: 003-playwright-fix-reruns-test-by-grep
-          description: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix` must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
-          steps:
-            - given:
-                - the "build-code-playwright-failing-assertion" project tree
-                - and: the project's browser test dependencies are installed
-                - the System Architect answers "1" to every question
-            - when:
-                - the System Architect runs "build code --fix"
-            - then:
-                - the command exits with code 0
-                - stdout matches msg="Suite failures" failures=1 framework=playwright
-                - stdout matches msg=test index=1 total=1 id=/playwright/playwright:home\.spec\.ts::home\.spec\.ts_>_home_page_>_shows_the_store_name_as_its_heading
-                - stdout matches msg="Fix applied; re-running this test in isolation"
-                - stdout matches BUILD CODE COMPLETE
-                - and: the file "services/web/server.js" is modified
-                - and: the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store name as its heading
-                - and: the engine spawned exactly 3 test runners
-                - but: the file "tests/integration/home.spec.ts" is unchanged
-                - and: the file "docs/architecture/architecture.yaml" is unchanged
-                - and: no file outside "tmp" and "services/web" changed
-                - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests" exits with code 0
-        - id: 004-go-package-not-compiling-rerun-unfiltered
-          description: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix` must re-run that package's tests without a name filter and end with exit code 0 once they pass
-          steps:
-            - given:
-                - the "build-code-go-package-does-not-compile" project tree
-                - the System Architect answers "1" to every question
-            - when:
-                - the System Architect runs "build code --fix"
-            - then:
-                - the command exits with code 0
-                - stdout matches msg="Suite failures" failures=1 framework=go-test
-                - stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>
-                - stdout matches msg="Fix applied; re-running this test in isolation"
-                - stdout matches BUILD CODE COMPLETE
-                - and: the file "services/calc/calc.go" is modified
-                - and: the file "tests/suite/suite-runs.log" has exactly 2 lines
-                - and: the engine spawned exactly 3 test runners
-                - but: the file "tests/suite/multiply_test.go" is unchanged
-                - and: the file "tests/suite/add_test.go" is unchanged
-                - and: the file "tests/suite/canary_test.go" is unchanged
-                - and: the file "docs/architecture/architecture.yaml" is unchanged
-                # Independent outcome check, last: the suite run appends to
-                # suite-runs.log after the line-count clause.
-                - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
-        - id: 005-not-applied-revalidated
-          description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate that test before another repair completes the walk
-          steps:
-          - given:
-            - the "build-code-not-applied" project tree
-            - the System Architect answers "1" to every question
-          - when:
-            - the System Architect runs "build code --fix"
-          - then:
-            - the command exits with code 0
-            - stdout matches BUILD CODE COMPLETE
-            - and: stdout matches level=WARN msg="Fix was NOT applied"
-            - but: stdout does not match msg="Walk stopped"
-            - and: the engine dispatched 2 validation AI turns to "claude"
-            - and: the engine dispatched 2 fix AI turns to "claude"
-            - and: the engine dispatched 2 apply AI turns to "crush"
-            - and: the engine dispatched 6 AI turns
-            - and: the engine spawned exactly 4 test runners
-            - and: the file "services/calc/prepared.txt" matches ^prepared
-            - but: the file "tests/suite/calc_test.go" is unchanged
-            - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
-        - id: 006-not-applied-hits-fix-bound
-          description: Not-applied turns in build code --fix must consume the configured per-test fix allowance and stop at the unchanged non-converging fix bound
-          steps:
-          - given:
-            - the "build-code-not-applied-bound" project tree
-            - the System Architect answers "1" to every question
-          - when:
-            - the System Architect runs "build code --fix"
-          - then:
-            - the command exits with code 1
-            - and: stdout matches level=WARN msg="Fix was NOT applied"
-            - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
-            - and: the engine dispatched 3 validation AI turns to "claude"
-            - and: the engine dispatched 3 fix AI turns to "claude"
-            - and: the engine dispatched 3 apply AI turns to "crush"
-            - and: the engine dispatched 9 AI turns
-            - and: the engine spawned exactly 3 test runners
-            - and: the file "services/calc/prepared-first.txt" matches ^prepared
-            - and: the file "services/calc/prepared-second.txt" matches ^prepared
-            - but: the file "tests/suite/calc_test.go" is unchanged
+  id: build-code-frameworks
+  feature: build-code
+  title: Run Jest, Playwright and go test suites with build code and re-run each failing test the way its framework selects
+    it
+  as_a: System Architect
+  i_want: build code to count the failing tests of a Jest, a Playwright or a go test suite from the framework's own report,
+    a Go package that does not compile as one failure, and under --fix to re-run only the test a fix was for through that
+    framework's name filter, or the whole package when it did not compile, while keeping writes from completed not-applied
+    turns, refreshing their verdicts and counting them against the same per-test fix allowance
+  so_that: whichever framework a project's suite is written in, the fix loop stops on that suite's own verdict on the test
+    it was fixing
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-jest-failing-test-exits-1
+    description: A Jest suite with one failing test must end `build code` with exit code 1, counting that one failure and
+      naming the test by its spec file and full name
+    steps:
+    - given:
+      - the "build-code-jest-failing-test" project tree
+      - and: the project's test dependencies are installed
+    - when:
+      - the System Architect runs "build code"
+    - then:
+      - the command exits with code 1
+      - stdout matches msg="Running tests" framework=jest
+      - stdout matches msg="Suite failures" failures=1 framework=jest
+      - stdout matches msg="Total failing tests across architecture" failures=1
+      - stdout matches msg=test index=1 total=1 id=/jest/jest:tests\.unit\.greeting\.test\.js::greet_greets_the_world_when_no_name_is_given
+      - stdout matches BUILD CODE COMPLETE
+      - but: no file outside "tmp" changed
+      - and: the engine spawned the test runner "npx"
+      - and: the engine spawned exactly 1 test runner
+      - and: the engine dispatched no AI turns
+  - id: 002-jest-fix-reruns-test-by-name
+    description: For a Jest failure with one declared service, `build code --fix` must name that service without Registry
+      content in its fix prompt, re-run the fixed test by its full name through --testNamePattern, and exit with code 0 once
+      it passes
+    steps:
+    - given:
+      - the "build-code-jest-fix-named-test" project tree
+      - and: the project's test dependencies are installed
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches msg="Suite failures" failures=1 framework=jest
+      - stdout matches msg="Fix applied; re-running the failing set"
+      - stdout matches BUILD CODE COMPLETE
+      - and: the file "services/greeter/greeting.js" is modified
+      - and: the engine spawned a test runner with arguments matching --testNamePattern \^greet greets the world when no name
+          is given\$
+      - and: the engine spawned exactly 3 test runners
+      - but: the file "tests/unit/greeting.test.js" is unchanged
+      - and: the file "tests/unit/canary.test.js" is unchanged
+      - and: the file "docs/architecture/architecture.yaml" is unchanged
+      - and: the shell command "npx jest --json --config jest.config.js" run in "tests" exits with code 0
+      - every file matching "tmp/*/*fix-iter*-user.txt" matches \*\*Service:\*\* greeter
+      - every file matching "tmp/*/apply-*-user.txt" matches \*\*Service:\*\* greeter
+      - 'every file matching "tmp/*/*fix-iter*-user.txt" does not match Scenario ID:'
+  - id: 003-playwright-fix-reruns-test-by-grep
+    description: After a fix is applied to a Playwright suite whose app started and one assertion failed, `build code --fix`
+      must re-run only that test, selected by its title through --grep, and end with exit code 0 once it passes
+    steps:
+    - given:
+      - the "build-code-playwright-failing-assertion" project tree
+      - and: the project's browser test dependencies are installed
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches msg="Suite failures" failures=1 framework=playwright
+      - stdout matches msg=test index=1 total=1 id=/playwright/playwright:home\.spec\.ts::home\.spec\.ts_>_home_page_>_shows_the_store_name_as_its_heading
+      - stdout matches msg="Fix applied; re-running the failing set"
+      - stdout matches BUILD CODE COMPLETE
+      - and: the file "services/web/server.js" is modified
+      - and: the engine spawned a test runner with arguments matching --grep home\\\.spec\\\.ts home page shows the store
+          name as its heading
+      - and: the engine spawned exactly 3 test runners
+      - but: the file "tests/integration/home.spec.ts" is unchanged
+      - and: the file "docs/architecture/architecture.yaml" is unchanged
+      - and: no file outside "tmp" and "services/web" changed
+      - and: the shell command "npx playwright test --reporter=json --config playwright.config.ts integration" run in "tests"
+          exits with code 0
+  - id: 004-go-package-not-compiling-rerun-unfiltered
+    description: A Go test package that does not compile must count as one failing test, and after a fix `build code --fix`
+      must re-run that package's tests without a name filter and end with exit code 0 once they pass
+    steps:
+    - given:
+      - the "build-code-go-package-does-not-compile" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches msg="Suite failures" failures=1 framework=go-test
+      - stdout matches msg=test index=1 total=1 id=/go-test/go-test:fixture\.buildcodecompile\.tests\.suite::<build>
+      - stdout matches msg="Fix applied; re-running the failing set"
+      - stdout matches BUILD CODE COMPLETE
+      - and: the file "services/calc/calc.go" is modified
+      - and: the engine spawned exactly 3 test runners
+      - but: the file "tests/suite/multiply_test.go" is unchanged
+      - and: the file "tests/suite/add_test.go" is unchanged
+      - and: the file "tests/suite/canary_test.go" is unchanged
+      - and: the file "docs/architecture/architecture.yaml" is unchanged
+      - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  - id: 005-not-applied-revalidated
+    description: A completed apply turn reporting applied false while its Go test still fails must keep its files and revalidate
+      that test before another repair completes the walk
+    steps:
+    - given:
+      - the "build-code-not-applied" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - and: stdout matches level=WARN msg="Fix was NOT applied"
+      - but: stdout does not match msg="Walk stopped"
+      - and: the engine dispatched no validation AI turns to "claude"
+      - and: the engine dispatched 2 fix AI turns to "claude"
+      - and: the engine dispatched 2 apply AI turns to "codex"
+      - and: the engine dispatched 4 AI turns
+      - and: the engine spawned exactly 4 test runners
+      - and: the file "services/calc/prepared.txt" matches ^prepared
+      - but: the file "tests/suite/calc_test.go" is unchanged
+      - and: the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+  - id: 006-not-applied-hits-fix-bound
+    description: Not-applied turns in build code --fix must consume the configured per-set fix allowance and stop at the unchanged
+      non-converging fix bound
+    steps:
+    - given:
+      - the "build-code-not-applied-bound" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - and: stdout matches level=WARN msg="Fix was NOT applied"
+      - and: stdout matches level=ERROR msg="Walk stopped".*gave up after 3 applied fix
+      - and: the engine dispatched no validation AI turns to "claude"
+      - and: the engine dispatched 3 fix AI turns to "claude"
+      - and: the engine dispatched 3 apply AI turns to "codex"
+      - and: the engine dispatched 6 AI turns
+      - and: the engine spawned exactly 4 test runners
+      - and: the file "services/calc/prepared-first.txt" matches ^prepared
+      - and: the file "services/calc/prepared-second.txt" matches ^prepared
+      - but: the file "tests/suite/calc_test.go" is unchanged

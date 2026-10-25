@@ -15,7 +15,6 @@ type CLI string
 
 const (
 	CLIClaude CLI = "claude"
-	CLICrush  CLI = "crush"
 	CLICodex  CLI = "codex"
 )
 
@@ -30,7 +29,7 @@ var (
 
 // SupportedCLIs lists every CLI the router can dispatch to.
 func SupportedCLIs() []CLI {
-	return []CLI{CLIClaude, CLICrush, CLICodex}
+	return []CLI{CLIClaude, CLICodex}
 }
 
 // IsSupported reports whether a provider exists for this CLI.

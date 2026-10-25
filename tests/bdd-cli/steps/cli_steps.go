@@ -100,8 +100,8 @@ func Register(suite *bddgo.Suite[State]) {
 	// scenario names, in a directory under the run's tmpdir — e.g. the host
 	// suite the fix loop was meant to make pass. See command_steps.go.
 	suite.Step(`^the shell command "([^"]+)" run in "([^"]+)" exits with code (\d+|no)$`, assertCommandExitCode)
-	// crush, not a role, runs the write guard. See crush_guard_steps.go.
-	registerCrushGuardSteps(suite)
+	// Guard Scenarios run the hidden hook directly.
+	registerGuardSteps(suite)
 	registerClaudeGuardSteps(suite)
 }
 

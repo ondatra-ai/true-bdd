@@ -85,7 +85,7 @@ type State struct {
 	judged       bool
 	judgeVerdict runner.Verdict
 
-	// guardCall is the tool call a crush-guard scenario has crush ask about.
+	// guardCall is the tool call a claude-guard scenario has claude ask about.
 	guardCall *guardCall
 }
 

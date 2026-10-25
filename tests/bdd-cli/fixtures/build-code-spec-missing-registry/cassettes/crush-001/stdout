@@ -1,7 +1,0 @@
-Diagnosis confirmed: `Double` is an identity function. Applying the glossary semantics ("sum with itself"):Repaired `services/calc/calc.go:3`: `Double` now returns `value + value` (the glossary's "sum with itself") instead of the identity. Signature, package, and all harness files untouched. Both the full suite and the `-run 'TestCalc001Double'` selection pass.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "Fixed calc.Double in services/calc/calc.go to return value + value (twice the operand, per the product glossary) instead of returning its argument unchanged. Signature func Double(value int) int and package calc unchanged; no tests, documents, or harness files touched. Saw pass with the granted commands: go test -tags bdd -count=1 ./tests/calc/... (ok, whole package) and go test -tags bdd -count=1 ./tests/calc/... -run 'TestCalc001Double' (ok), covering the failing set's sole test fixture/stepsrun/tests/calc::TestCalc001Double, whose Then the result is 6 step now succeeds."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
