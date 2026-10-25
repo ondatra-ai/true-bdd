@@ -12,11 +12,11 @@ Failure fixtures prepend their own `record-bin` to PATH and set `TRUE_BDD_RECORD
 
 | Scenario | Fixture | Reason | Old CLI minutes | Status | New CLI minutes |
 | --- | --- | --- | --- | --- | --- |
-| `build-code-run-004-fix-reruns-fixed-test` | `build-code-fix-named-test` | crush cassette / default writer changed | claude 1.01, crush 0.72 | remaining | — |
-| `build-code-run-005-playwright-fix-loop-converges` | `build-code-playwright-nextjs` | crush cassette / default writer changed | claude 2.73, crush 3.09 | remaining | — |
-| `build-code-frameworks-002-jest-fix-reruns-test-by-name` | `build-code-jest-fix-named-test` | crush cassette / default writer changed | claude 0.95, crush 0.47 | remaining | — |
-| `build-code-frameworks-003-playwright-fix-reruns-test-by-grep` | `build-code-playwright-failing-assertion` | crush cassette / default writer changed | claude 0.84, crush 0.56 | remaining | — |
-| `build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered` | `build-code-go-package-does-not-compile` | crush cassette / default writer changed | claude 1.65, crush 1.00 | remaining | — |
+| `build-code-run-004-fix-reruns-fixed-test` | `build-code-fix-named-test` | crush cassette / default writer changed | claude 1.01, crush 0.72 | recorded | 1.32 |
+| `build-code-run-005-playwright-fix-loop-converges` | `build-code-playwright-nextjs` | crush cassette / default writer changed | claude 2.73, crush 3.09 | recorded | 4.52 |
+| `build-code-frameworks-002-jest-fix-reruns-test-by-name` | `build-code-jest-fix-named-test` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 0.95, crush 0.47 | recorded | 1.75 |
+| `build-code-frameworks-003-playwright-fix-reruns-test-by-grep` | `build-code-playwright-failing-assertion` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 0.84, crush 0.56 | recorded | 1.34 |
+| `build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered` | `build-code-go-package-does-not-compile` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 1.65, crush 1.00 | recorded | 1.52 |
 | `build-tests-steps-001-unbound-scenario-gets-test-and-steps` | `build-tests-fix-happy-path` | crush cassette / default writer changed | claude 4.24, crush 1.16 | remaining | — |
 | `build-tests-refusals-003-undeclared-registry-refused` | `build-tests-unconfigured-registry` | fixture input/template/configuration changed | 0 | remaining | — |
 | `engine-004-unknown-model-cli-refused` | `build-tests-unknown-cli-tier` | fixture input/template/configuration changed; rewritten/replacement Scenario | 0 | remaining | — |
@@ -119,4 +119,4 @@ Failure fixtures prepend their own `record-bin` to PATH and set `TRUE_BDD_RECORD
 | `claude-replay-009-no-command` | `claude-replay-no-command` | fixture input/template/configuration changed; rewritten/replacement Scenario | 0 | remaining | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | crush cassette / default writer changed; fixture input/template/configuration changed; rewritten/replacement Scenario | claude 0.91, crush 0.65 | remaining | — |
 
-Recorded: 0; remaining: 106; historical service CLI minutes: 176.45; new recorded service CLI minutes: 0.00.
+Recorded: 5; remaining: 101; historical service CLI minutes: 176.45; new recorded service CLI minutes: 10.46.

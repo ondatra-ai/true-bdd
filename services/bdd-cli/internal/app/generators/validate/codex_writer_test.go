@@ -27,7 +27,7 @@ func TestBuildCodeApplierRequestsCodexConfinementAndNativePolling(t *testing.T) 
   default_fix_model: high
 `,
 		"system.tpl": "Apply.",
-		"user.tpl":   "{{if .CodexWriter}}poll process{{end}} {{.TestCommand.Command}} {{.ResultPath}}",
+		"user.tpl":   "{{if .CodexWriter}}poll process{{end}} {{with .TestCommand}}{{.Command}}{{end}} {{.ResultPath}}",
 	} {
 		err := disk.Write(path, []byte(body), disk.Shared)
 		if err != nil {
@@ -53,9 +53,15 @@ func TestBuildCodeApplierRequestsCodexConfinementAndNativePolling(t *testing.T) 
 	applier.UseWriteRoots([]string{"services/demo"})
 	applier.UseTestCommand(&provider.TestCommand{Command: "go test ./tests/suite", Selector: "-run", Dir: root})
 
-	_, _ = applier.Apply(t.Context(), validate.ApplyParams{TmpDir: filepath.Join(root, "tmp"), CodexWriter: true})
-	if !client.confined || !strings.Contains(client.user, "poll process go test ./tests/suite") {
-		t.Fatalf("confined=%v prompt=%q", client.confined, client.user)
+	for _, requested := range []bool{false, true} {
+		_, _ = applier.Apply(t.Context(), validate.ApplyParams{TmpDir: filepath.Join(root, "tmp"), CodexWriter: requested})
+		if client.confined != requested || strings.Contains(client.user, "poll process go test ./tests/suite") != requested {
+			t.Fatalf("requested=%v confined=%v prompt=%q", requested, client.confined, client.user)
+		}
+
+		if !requested && strings.Contains(client.user, "go test") {
+			t.Fatalf("ordinary apply received replay forms: %s", client.user)
+		}
 	}
 }
 

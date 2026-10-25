@@ -107,10 +107,10 @@ func newClaudeSessionID() (string, error) {
 	}
 
 	const (
-		versionMask               = 0x0f
-		variantMask               = 0x3f
-		versionFour               = 0x40
-		variantRFC                = 0x80
+		versionMask = 0x0f
+		variantMask = 0x3f
+		versionFour = 0x40
+		variantRFC  = 0x80
 	)
 
 	data[6] = (data[6] & versionMask) | versionFour
@@ -127,7 +127,7 @@ func claudeWriterSettings(command string) map[string]any {
 			"deny": []string{"Agent", "Task", "WebFetch", "WebSearch", "NotebookEdit"}},
 		claudeHooksKey: map[string]any{"PreToolUse": []any{map[string]any{"matcher": "*",
 			claudeHooksKey: []any{map[string]any{"type": "command", "command": command,
- "timeout": claudeGuardTimeoutSeconds}}}}},
+				"timeout": claudeGuardTimeoutSeconds}}}}},
 		"claudeMdExcludes": []string{"**"}, "autoMemoryEnabled": false, "enabledPlugins": map[string]bool{},
 		"env": map[string]string{"BASH_DEFAULT_TIMEOUT_MS": "600000", "BASH_MAX_TIMEOUT_MS": "600000"},
 	}

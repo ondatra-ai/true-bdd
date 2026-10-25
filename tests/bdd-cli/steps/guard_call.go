@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo"
-
 )
 
 // guardDenyExitCode is claude's hook contract: 0 lets the tool run, 2
@@ -23,10 +22,10 @@ const unreadablePolicy = "write_roots: tests"
 var ErrLinkEscapesTree = errors.New("the link must be a path inside the project tree")
 
 func registerGuardSteps(suite *bddgo.Suite[State]) {
- suite.Step(`^the project tree's "([^"]+)" is a symbolic link to "([^"]+)"$`, plantLink)
- suite.Step(`^the guard allows the tool call$`, assertGuardAllows)
- suite.Step(`^the guard denies the tool call$`, assertGuardDenies)
- suite.Step(`^the guard's reason matches (.+)$`, assertGuardReason)
+	suite.Step(`^the project tree's "([^"]+)" is a symbolic link to "([^"]+)"$`, plantLink)
+	suite.Step(`^the guard allows the tool call$`, assertGuardAllows)
+	suite.Step(`^the guard denies the tool call$`, assertGuardDenies)
+	suite.Step(`^the guard's reason matches (.+)$`, assertGuardReason)
 }
 
 // guardCall is the tool call a scenario has claude ask the guard about.
@@ -40,7 +39,6 @@ type guardCall struct {
 	command      string
 	workingDir   string
 	roots        []string
-	shell        bool
 	withheld     bool
 	unreadable   bool
 	noReadRoot   bool
@@ -58,7 +56,6 @@ type guardCall struct {
 type guardPolicy struct {
 	ReadRoot     string   `json:"read_root"`
 	WriteRoots   []string `json:"write_roots"`
-	AllowBash    bool     `json:"allow_bash"`
 	TestCommand  string   `json:"test_command,omitempty"`
 	TestSelector string   `json:"test_selector,omitempty"`
 	TestDir      string   `json:"test_dir,omitempty"`
@@ -80,7 +77,6 @@ func grantWriteRoot(state *State, args []string) error {
 
 	return nil
 }
-
 
 func withholdPolicy(state *State, _ []string) error {
 	state.guard().withheld = true
@@ -173,7 +169,7 @@ func (c *guardCall) policy(runDir string) (string, error) {
 		readRoot = ""
 	}
 
-	policy := guardPolicy{ReadRoot: readRoot, WriteRoots: roots, AllowBash: c.shell}
+	policy := guardPolicy{ReadRoot: readRoot, WriteRoots: roots}
 	if c.testCommand != "" {
 		policy.TestCommand, policy.TestSelector = c.testCommand, c.testSelector
 		policy.TestDir = filepath.Join(runDir, c.testDir)
@@ -243,4 +239,3 @@ func grantTestCommand(state *State, args []string) error {
 
 	return nil
 }
-

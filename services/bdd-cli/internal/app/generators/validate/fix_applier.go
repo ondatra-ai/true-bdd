@@ -316,7 +316,7 @@ func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, res
 	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
 		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
 		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter,
-		CodexWriter:  model.CLI == provider.CLICodex}
+		CodexWriter:  model.CLI == provider.CLICodex && params.CodexWriter}
 	if data.CodexWriter || data.ClaudeWriter {
 		data.TestCommand = a.testCommand
 	}

@@ -1,7 +1,0 @@
-Added `Multiply(a, b int) int { return a * b }` to `services/calc/calc.go:10` (after `Add`, unchanged) and removed the now-false defect comment. Whole suite passes: `ok fixture/buildcodecompile/tests/suite`, including the selection covering all three tests (`TestMultiplyMultipliesItsArguments`, `TestAddSumsItsArguments`, `TestCanaryRecordsEachSuiteRun`).
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "Declared exported func Multiply(a, b int) int returning a*b in services/calc/calc.go and removed the stale planted-defect comment; Add left untouched. go test -count=1 ./tests/suite/... and a selection run over all three test names pass: TestMultiplyMultipliesItsArguments, TestAddSumsItsArguments, TestCanaryRecordsEachSuiteRun (ok fixture/buildcodecompile/tests/suite)."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===

@@ -1,0 +1,203 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodecompile/tests/suite::<build>
+**Source File:** fixture/buildcodecompile/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
+```
+# fixture/buildcodecompile/tests/suite_test [fixture/buildcodecompile/tests/suite.test]
+tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
+FAIL	fixture/buildcodecompile/tests/suite [build failed]
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for /go-test/go-test:fixture.buildcodecompile.tests.suite::<build>
+
+## Diagnosis
+
+The failure is a **compile error**, not an assertion failure:
+
+```
+tests/suite/multiply_test.go:13:14: undefined: calc.Multiply
+FAIL	fixture/buildcodecompile/tests/suite [build failed]
+```
+
+`tests/suite/multiply_test.go` imports the production package
+`fixture/buildcodecompile/services/calc` and calls `calc.Multiply(2, 3)`.
+The production source `services/calc/calc.go` declares only `Add`; it
+carries an explicit comment saying `Multiply` is the planted defect and
+that the suite's package does not compile until it is declared.
+
+Because Go builds a test package as a unit, the one missing identifier
+takes down every test in `tests/suite` — `TestAddSumsItsArguments` and
+`TestCanaryRecordsEachSuiteRun` never execute even though they would
+pass. That is why the set reports as a single `<build>` group rather
+than one failure per test.
+
+So exactly one production symbol is missing. Nothing else in the fixture
+is broken.
+
+## Write root
+
+Per `docs/architecture/architecture.yaml`, service `calc` has
+`path: services/calc`, and that is the only tree the repair may touch.
+`CLAUDE.md` repeats this. Therefore:
+
+- **Edit only** `services/calc/calc.go` (or, if preferred, add a new
+  file in the same directory and package — see "File placement" below).
+- **Do not touch** `tests/suite/*_test.go`,
+  `docs/architecture/architecture.yaml`, `true-bdd/`, `templates/`,
+  `go.mod`, or anything under `tmp/`.
+- Do not weaken, skip, delete or rewrite any assertion. The tests are
+  the specification; the production code is what is missing.
+
+## Part 1 — Declare `calc.Multiply`
+
+**File:** `services/calc/calc.go` (package `calc`)
+
+Add one exported function whose signature and semantics are fixed by the
+call site in the test:
+
+- **Name:** `Multiply` — must be exported (capital M), because the test
+  is in the external test package `suite_test` and reaches it through
+  the import path.
+- **Parameters:** two `int` values. The test calls `calc.Multiply(2, 3)`
+  with untyped integer constants, so `func Multiply(a, b int) int`
+  matches the existing `Add` signature exactly and is the right shape.
+  Keep the two-parameter, single-return form — do not add a variadic
+  signature, an error return, a struct/receiver method, or a generic
+  type parameter, since any of those would change the call or
+  assignment shape in `multiply_test.go` and keep the package from
+  compiling.
+- **Return:** a single `int`, assigned to `got` and compared against
+  the literal `6` with `got != 6`. A multi-value return would break
+  `got := calc.Multiply(2, 3)`.
+- **Behaviour:** the arithmetic product of the two arguments, i.e.
+  `a * b`. `Multiply(2, 3)` must evaluate to `6`. Implement the real
+  operation — do not special-case the test's inputs, return a
+  hardcoded `6`, or delegate to `Add` in a loop; the generic product is
+  the contract named by the function and its test
+  (`TestMultiplyMultipliesItsArguments`, "multiplies its arguments").
+- **Doc comment:** follow the house style already in the file — a
+  sentence starting with the identifier, e.g. "Multiply returns the
+  product of a and b." This mirrors `// Add returns the sum of a and b.`
+
+Also update or remove the now-stale trailing comment block in
+`calc.go` that states `Multiply ... is not declared: that is the
+planted defect`. Once the function exists, that comment contradicts the
+code. Replacing it with the function plus its own doc comment is the
+cleanest outcome; leaving a misleading comment behind is a defect of its
+own. This is a comment in production source inside the declared write
+root, so editing it is in scope.
+
+**File placement:** adding `Multiply` directly beneath `Add` in
+`services/calc/calc.go` is preferred — the file is eight lines of
+production code and the two functions are peers. Creating
+`services/calc/multiply.go` with `package calc` is also acceptable and
+compiles identically; if the writer chooses that, the stale comment in
+`calc.go` still needs correcting.
+
+## Tests each part serves
+
+Part 1 is the only part, and it serves the entire failing set, because
+the set is a single package build:
+
+| Test | How Part 1 serves it |
+| --- | --- |
+| `TestMultiplyMultipliesItsArguments` (`tests/suite/multiply_test.go`) | Supplies the missing `calc.Multiply`, resolving the `undefined: calc.Multiply` compile error, and returns `6` for `(2, 3)` so the `got != 6` assertion holds. |
+| `TestAddSumsItsArguments` (`tests/suite/add_test.go`) | Already satisfied by the existing `Add`; it was blocked only by the package-level build failure, so it starts executing and passing once the package compiles. No change to `Add` is needed or wanted. |
+| `TestCanaryRecordsEachSuiteRun` (`tests/suite/canary_test.go`) | Same — it is unblocked by the compile fix. It appends to `suite-runs.log`; it needs no production support and must not be accommodated by any new production code. |
+
+## Verification
+
+From the fixture root, run the suite command declared in
+`architecture.yaml`:
+
+```
+go test -json -count=1 ./tests/suite/...
+```
+
+Expected: the package builds, and all three tests pass. The previous
+`[build failed]` line must be gone — a build failure, not any
+individual assertion, is what this set is reporting.
+
+As a cheaper first check, `go build ./...` or
+`go vet ./tests/suite/...` will confirm the package now compiles before
+the full suite is run.
+
+## Out of scope
+
+- No change to `Add`, to the module path in `go.mod`, or to the
+  suite commands.
+- No new packages, interfaces, dependency injection or abstraction
+  layers. The failure names one missing function; the repair is one
+  function.
+- No edits to any `*_test.go` file, to documents, or to the
+  architecture spec.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/suite/...`
+- Selection: `go test -count=1 ./tests/suite/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodecompile.tests.suite-build--iter1-result.yaml ===
+
+## Fixture confirmation protocol
+
+This Scenario exercises a completed applied repair. Make the required service change and report applied: true in the final confirmation once the service files are repaired. The engine will run the declared suite outside this writer's sandbox after your turn. The canary writes tests/suite/suite-runs.log, which this sandbox intentionally cannot write. If that canary is denied, state the verification limitation in summary while still reporting the completed service edit as applied: true. Never modify the tests, their canary, the log, or the permissions to make the in-sandbox check pass.
+
+Use the tool's existing Go runtime environment unchanged. Never set or override GOCACHE, GOTMPDIR, TMPDIR, or HOME, and never create alternate cache or build-scratch directories in the project. The engine already provides writable cache and scratch paths; alternate caches would pollute the recording with compiler artifacts.

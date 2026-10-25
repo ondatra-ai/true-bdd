@@ -1,5 +1,5 @@
 // Package truebdd is the engine's own binary spawned as a child of itself for
-// its hidden verb, and is one of the three engine wrappers that alone may reach
+// its hidden verb, and is one of the two engine wrappers that alone may reach
 // pkg/shell from inside the engine.
 //
 // Self names no path: it resolves `os.Executable()` itself, which leaves a

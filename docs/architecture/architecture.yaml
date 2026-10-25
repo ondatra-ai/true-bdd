@@ -463,7 +463,7 @@ architecture:
         WriteRoots: >-
           Every architecture service path, in declaration order.
         CodexWriter: >-
-          True when the resolved apply model CLI is codex; selects native process polling; the Claude branch requires foreground completion.
+          True only for an explicitly requested build-code codex writer; selects native process polling; the Claude branch requires foreground completion.
         TestCommand: >-
           Codex and explicitly requested Claude build-code writers get the configured canonical replay forms; nil for other Claude turns or an unrepresentable command. Codex polls its native process tool; Claude requires foreground completion and receives the shell-quoted suite-directory cd prefix before rendering.
         TestCommand.Command: >-

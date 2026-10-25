@@ -39,7 +39,6 @@ func testKeys(tests []*reporter.Fixture) []string {
 // (tmp/2026-08-10-21-44-26-90237/…).
 var runScratchDir = regexp.MustCompile(`^tmp/\d{4}(-\d{2}){5}-\d+/`)
 
-
 // filePaths projects a run's file changes onto the identity they should be
 // aligned on. Two normalisations, both load-bearing:
 //

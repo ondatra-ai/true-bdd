@@ -1,7 +1,0 @@
-Fixed `services/web/server.js`: the `h1` now reads `Corner Shop` (single line, no stray whitespace), the `/hours` anchor was left untouched, and the stale planted-defect header comment was rewritten. Both tests in `home.spec.ts > home page` pass, including the previously failing heading assertion.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===
-applied: true
-target: "services/web"
-summary: "In services/web/server.js changed the served page's single h1 from 'Welcome' to 'Corner Shop' (kept on one line so textContent is exact, still exactly one h1), left the sole <a href=\"/hours\">Opening hours</a> anchor unchanged, and rewrote the header comment that described the now-removed planted defect. Ran the full integration suite via 'npx playwright test --config playwright.config.ts integration': both tests of the set passed — 'home page > shows the store name as its heading' (previously failing, now passing) and 'home page > links to the opening hours' (stayed passing)."
-=== FILE_END: tmp/{{RUN_DIR}}/apply--playwright-playwright-home.spec.ts-home.spec.ts_-_home_page_-_shows_the_store_name_as_its_heading-iter1-result.yaml ===

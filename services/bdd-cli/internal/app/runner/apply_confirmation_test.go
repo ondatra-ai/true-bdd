@@ -144,7 +144,7 @@ func TestMissingConfirmationTerminalRerunCannotBypassBound(t *testing.T) {
 type applyAnswer struct {
 	writerCLI    provider.CLI
 	claudeWriter *bool
- codexWriter *bool
+	codexWriter  *bool
 	request      *string
 	failRole     provider.Role
 	response     string
@@ -381,10 +381,10 @@ func (answer applyAnswer) observeApply(role provider.Role, user string, options 
 		}
 
 		if answer.codexWriter != nil {
- *answer.codexWriter = len(options) > 0 && options[0].CodexWriter
- }
+			*answer.codexWriter = len(options) > 0 && options[0].CodexWriter
+		}
 
- if answer.claudeWriter != nil {
+		if answer.claudeWriter != nil {
 			*answer.claudeWriter = len(options) > 0 && options[0].ClaudeWriter
 		}
 	}

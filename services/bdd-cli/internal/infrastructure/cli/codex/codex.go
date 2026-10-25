@@ -1,4 +1,4 @@
-// Package codex is the `codex` command line, one of the three engine wrappers
+// Package codex is the `codex` command line, one of the two engine wrappers
 // that alone may reach pkg/shell from inside the engine. Only the engine spawns
 // codex, so the wrapper is engine code and a rebuild regenerates it; the argv
 // it builds is stated in docs/architecture/architecture.yaml.

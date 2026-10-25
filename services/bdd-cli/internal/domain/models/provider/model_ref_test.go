@@ -82,7 +82,6 @@ func TestParseModelRefRejects(t *testing.T) {
 		},
 		{name: "empty cli", raw: ":" + fableModel, wantErr: provider.ErrModelRefEmptyCLI},
 		{name: "empty model", raw: "claude:", wantErr: provider.ErrModelRefEmptyModel},
-		{name: "removed cli", raw: "crush:example", wantErr: provider.ErrModelRefUnknownCLI},
 		{name: "unknown cli", raw: "aider:some-model", wantErr: provider.ErrModelRefUnknownCLI},
 	}
 
