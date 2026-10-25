@@ -49,15 +49,15 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-guard-reads-004-unnamed-path-allowed` | `claude-guard-read-unnamed-path` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-reads-005-missing-read-root-denied` | `claude-guard-read-missing-root` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-reads-006-relative-path-allowed` | `claude-guard-read-relative-path` | recorded | recorded on #203-b; replay passed | 0.00 |
-| `claude-replay-001-whole-command` | `claude-replay-whole-command` | remaining | pending | — |
-| `claude-replay-002-selected-command` | `claude-replay-selected-command` | remaining | pending | — |
-| `claude-replay-003-shell-operator` | `claude-replay-shell-operator` | remaining | pending | — |
-| `claude-replay-004-assignment` | `claude-replay-assignment` | remaining | pending | — |
-| `claude-replay-005-another-program` | `claude-replay-another-program` | remaining | pending | — |
+| `claude-replay-001-whole-command` | `claude-replay-whole-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-002-selected-command` | `claude-replay-selected-command` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-003-shell-operator` | `claude-replay-shell-operator` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-004-assignment` | `claude-replay-assignment` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-replay-005-another-program` | `claude-replay-another-program` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-replay-006-extra-flag` | `claude-replay-extra-flag` | remaining | pending | — |
 | `claude-replay-007-double-quotes` | `claude-replay-double-quotes` | remaining | pending | — |
 | `claude-replay-008-wrong-directory` | `claude-replay-wrong-directory` | remaining | pending | — |
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 45 of 55; remaining: 10; service CLI minutes: 84.57.
+Recorded and replayed: 50 of 55; remaining: 5; service CLI minutes: 84.57.
