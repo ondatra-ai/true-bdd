@@ -14,11 +14,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `build-code-spec-005-matched-scenario-embedded` | `build-code-spec-scenario` | recorded | recorded on #203-b; replay passed | 1.82 |
 | `build-code-spec-006-unreadable-product-warned` | `build-code-spec-missing-product` | recorded | recorded on #203-b; replay passed | 1.83 |
 | `build-code-spec-007-unreadable-registry-warned` | `build-code-spec-missing-registry` | recorded | recorded on #203-b; replay passed | 1.89 |
-| `build-tests-run-006-identical-failures-grouped` | `build-tests-run-grouped` | remaining | pending | — |
-| `build-tests-run-007-distinct-failures-whole` | `build-tests-run-distinct` | remaining | pending | — |
-| `build-code-set-001-partial-repair` | `build-code-partial` | remaining | pending | — |
-| `build-code-set-002-shared-evidence` | `build-code-grouped` | remaining | pending | — |
-| `build-code-set-003-mixed-synthetic` | `build-code-mixed-build` | remaining | pending | — |
+| `build-tests-run-006-identical-failures-grouped` | `build-tests-run-grouped` | recorded | recorded on #203-b; replay passed | 6.09 |
+| `build-tests-run-007-distinct-failures-whole` | `build-tests-run-distinct` | recorded | recorded on #203-b; replay passed | 7.59 |
+| `build-code-set-001-partial-repair` | `build-code-partial` | recorded | recorded on #203-b; replay passed | 3.01 |
+| `build-code-set-002-shared-evidence` | `build-code-grouped` | recorded | recorded on #203-b; replay passed | 1.50 |
+| `build-code-set-003-mixed-synthetic` | `build-code-mixed-build` | recorded | recorded on #203-b; replay passed | 1.78 |
 | `build-code-set-004-missing-result` | `build-code-missing-member` | remaining | pending | — |
 | `build-code-set-005-shrinking-counter` | `build-code-shrinking-bound` | remaining | pending | — |
 | `build-code-confirmation-001-passes` | `build-code-no-confirmation-passes` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 10 of 55; remaining: 45; service CLI minutes: 36.11.
+Recorded and replayed: 15 of 55; remaining: 40; service CLI minutes: 56.07.

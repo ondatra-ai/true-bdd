@@ -1,7 +1,0 @@
-A already returns 1, so per the lifecycle protocol I change only B to return 2.Repaired `services/calc/calc.go:3` — `B()` now returns 2; `A()` preserved at 1. Whole suite and the `TestB` selection both pass.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "A already returned 1, so per the lifecycle protocol only B was changed: func B() int now returns 2 in services/calc/calc.go, A preserved. Verified with 'go test -count=1 ./tests/suite/...' (ok) and the '-run TestB' selection (ok); TestB of the failing set passes."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
