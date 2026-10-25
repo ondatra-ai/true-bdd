@@ -21,11 +21,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `build-tests-refusals-003-undeclared-registry-refused` | `build-tests-unconfigured-registry` | recorded | unchanged / deferred | 0.00 |
 | `engine-004-unknown-model-cli-refused` | `build-tests-unknown-cli-tier` | recorded | unchanged / deferred | 0.00 |
 | `us-apply-002-duplicates-collapse` | `us-apply-duplicate-collapse` | recorded | recorded on #205 | 3.04 |
-| `engine-003-locations-come-from-config` | `us-apply-relocated-registry` | remaining | unchanged / deferred | 0.00 |
-| `us-apply-001-missing-criteria-added` | `us-apply-rewalk-converges` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-001-vague-description-made-measurable` | `us-refine-fix-desc-qualifier` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-002-gherkin-description-states-a-rule` | `us-refine-fix-descriptions` | remaining | unchanged / deferred | 0.00 |
-| `us-refine-fix-003-forbidden-verb-made-observable` | `us-refine-fix-forbidden-verb` | remaining | unchanged / deferred | 0.00 |
+| `engine-003-locations-come-from-config` | `us-apply-relocated-registry` | recorded | recorded in fix-203-record-a | 2.03 |
+| `us-apply-001-missing-criteria-added` | `us-apply-rewalk-converges` | recorded | recorded in fix-203-record-a | 4.28 |
+| `us-refine-fix-001-vague-description-made-measurable` | `us-refine-fix-desc-qualifier` | recorded | recorded in fix-203-record-a | 1.56 |
+| `us-refine-fix-002-gherkin-description-states-a-rule` | `us-refine-fix-descriptions` | recorded | recorded in fix-203-record-a | 1.89 |
+| `us-refine-fix-003-forbidden-verb-made-observable` | `us-refine-fix-forbidden-verb` | recorded | recorded in fix-203-record-a | 1.52 |
 | `us-refine-fix-004-vague-step-made-measurable` | `us-refine-fix-step-qualifier` | remaining | unchanged / deferred | 0.00 |
 | `us-refine-fix-005-missing-steps-written` | `us-refine-fix-steps` | remaining | unchanged / deferred | 0.00 |
 | `us-refine-fix-006-feature-label-survives` | `us-refine-fix-keeps-feature` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 11 of 108; pending migration fixtures: 97. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 16 of 108; pending migration fixtures: 92. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `engine-003-locations-come-from-config` — `us-apply-relocated-registry`
-- `us-apply-001-missing-criteria-added` — `us-apply-rewalk-converges`
-- `us-refine-fix-001-vague-description-made-measurable` — `us-refine-fix-desc-qualifier`
-- `us-refine-fix-002-gherkin-description-states-a-rule` — `us-refine-fix-descriptions`
-- `us-refine-fix-003-forbidden-verb-made-observable` — `us-refine-fix-forbidden-verb`
 - `us-refine-fix-004-vague-step-made-measurable` — `us-refine-fix-step-qualifier`
 - `us-refine-fix-005-missing-steps-written` — `us-refine-fix-steps`
 - `us-refine-fix-006-feature-label-survives` — `us-refine-fix-keeps-feature`

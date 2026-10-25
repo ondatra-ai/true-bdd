@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Appended new scenario entry 99.3-002-mcp-get-refused (405 for GET /mcp) after 99.3-001-mcp-initialize, reusing its path and empty service; all existing content unchanged"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===

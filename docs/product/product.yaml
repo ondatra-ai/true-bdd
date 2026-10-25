@@ -861,7 +861,7 @@ catalogue:
 
   - template: claude names the tool "{tool}"
     block: given
-    means: The tool call claude asks about runs the named tool, spelled as claude spells it, such as `view`, `write` or `bash`.
+    means: The tool call claude asks about runs the named tool, spelled as claude spells it, such as `Read`, `Write` or `Bash`.
     terms:
     - claude
     - tool call
@@ -880,7 +880,8 @@ catalogue:
   - template: claude names the path "{path}" as written
     block: given
     means: The tool call claude asks about targets the path exactly as quoted, kept as written rather than made absolute. A
-      relative read starts at the policy's read root; a relative write is denied.
+      relative target resolves against an absolute cwd, falling back to the policy's read root; a write is allowed within
+      granted write roots unless its target is protected.
     terms:
     - claude
     - tool call

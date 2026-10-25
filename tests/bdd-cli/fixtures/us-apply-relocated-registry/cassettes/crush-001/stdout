@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-95.2-001-health-ok-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios.yaml"
-summary: "Added scenario 95.2-001-health-ok after E2E-960 with MCP /health given/when/then steps, story linkage, and new tests/mcp/health_test.go path"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-95.2-001-health-ok-iter1-result.yaml ===
