@@ -16,48 +16,9 @@ import (
 )
 
 func TestBuildCodeModelOverrideReachesClaudeWriter(t *testing.T) {
-	repository, err := filepath.Abs(repoRoot)
-	if err != nil {
-		t.Fatal(err)
-	}
+	container, directory := prepareWriterOverride(t, "coder=claude:claude-sonnet-5-5")
 
-	directory := modelEnvironmentProbe(t)
-	for _, name := range []string{"true-bdd", "templates"} {
-		err = disk.CopyTree(filepath.Join(directory, name), filepath.Join(repository, name), disk.Shared)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	t.Chdir(directory)
-	t.Setenv("CLAUDE_CONFIG_DIR", filepath.Join(directory, "state"))
-
-	previous := slog.Default()
-	defer slog.SetDefault(previous)
-
-	build := cmd.NewBuildCommand(nil)
-
-	code, _, err := build.Find([]string{"code"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = code.ParseFlags([]string{"--fix", "--model", "coder=claude:claude-sonnet-5-5"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	overrides, err := code.Flags().GetStringArray("model")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	container, err := bootstrap.NewContainer(overrides...)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = container.BuildCodeFixApplier.Apply(t.Context(), validate.ApplyParams{
+	_, err := container.BuildCodeFixApplier.Apply(t.Context(), validate.ApplyParams{
 		Subject: &commands.BuildCodeItem{}, SubjectID: "failing-set",
 		TmpDir: container.RunDir.GetTmpOutPath(), FixPrompt: "repair",
 		ModelTier: "coder", ClaudeWriter: true,
@@ -109,4 +70,52 @@ func assertOverriddenClaudeWriter(t *testing.T, directory, runDirectory string) 
 	if err != nil {
 		t.Fatalf("writer guard configuration missing: %v", err)
 	}
+}
+
+func prepareWriterOverride(t *testing.T, override string) (*bootstrap.Container, string) {
+	t.Helper()
+
+	repository, err := filepath.Abs(repoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	directory := modelEnvironmentProbe(t)
+	for _, name := range []string{"true-bdd", "templates"} {
+		err = disk.CopyTree(filepath.Join(directory, name), filepath.Join(repository, name), disk.Shared)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Chdir(directory)
+	t.Setenv("CLAUDE_CONFIG_DIR", filepath.Join(directory, "state"))
+
+	previous := slog.Default()
+
+	t.Cleanup(func() { slog.SetDefault(previous) })
+
+	build := cmd.NewBuildCommand(nil)
+
+	code, _, err := build.Find([]string{"code"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = code.ParseFlags([]string{"--fix", "--model", override})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	overrides, err := code.Flags().GetStringArray("model")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	container, err := bootstrap.NewContainer(overrides...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return container, directory
 }

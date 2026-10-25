@@ -77,7 +77,7 @@ The process a scenario exercises — the `true-bdd` binary for the CLI suite —
 _Avoid_: SUT, subject, system, target
 
 **Failing set**:
-All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started crush writer that stalls, exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
+All tests failing in one `build code` discovery, walked as one Item with one proposed repair plan. After each completed apply, including a started crush writer that stalls, exits non-zero or answers empty, a started codex writer that exits non-zero or answers empty, or a started Claude writer that exits non-zero, returns an error result or answers empty, the engine reruns its remaining members once; passing members leave, missing results stay failing. A green discovery yields no Item. Its `D:` Prompt answers the whole set's latest runner verdict without an AI turn.
 _Avoid_: repair batch, failure queue
 
 **Model override**:

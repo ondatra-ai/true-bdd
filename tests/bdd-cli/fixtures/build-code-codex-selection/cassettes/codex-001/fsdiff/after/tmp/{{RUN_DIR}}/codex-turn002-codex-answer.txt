@@ -1,0 +1,7 @@
+Updated `services/calc/calc.go`: `A()` returns `1`, and `B()` returns `2`. The requested selection and full suite both passed.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: services/calc/calc.go
+summary: Implemented A and B and observed both selection members passing.
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

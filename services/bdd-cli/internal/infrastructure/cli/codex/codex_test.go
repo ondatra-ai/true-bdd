@@ -8,14 +8,31 @@ import (
 )
 
 // answerPath is the -o file every turn in these tests writes to.
+const workDir = "/repo"
+
 const answerPath = "/tmp/run/answer.md"
+
+func TestOrdinaryCodexTurnKeepsItsExactArguments(t *testing.T) {
+	t.Parallel()
+
+	args := codex.Turn{
+		Sandbox: codex.SandboxWorkspaceWrite, WorkDir: workDir,
+		Model: "gpt-6.1-sol", AnswerPath: answerPath,
+	}.Args()
+
+	want := []string{"codex", "exec", "-s", "workspace-write", "--ephemeral", "--skip-git-repo-check",
+		"--color", "never", "-C", workDir, "-m", "gpt-6.1-sol", "-o", answerPath, "-"}
+	if !slices.Equal(args, want) {
+		t.Fatalf("args=%v", args)
+	}
+}
 
 func TestArgsCarryTheFlagsHeadlessCodexCannotRunWithout(t *testing.T) {
 	t.Parallel()
 
 	args := codex.Turn{
 		Sandbox:    codex.SandboxWorkspaceWrite,
-		WorkDir:    "/repo",
+		WorkDir:    workDir,
 		Model:      "gpt-5.6-sol",
 		AnswerPath: answerPath,
 	}.Args()
@@ -51,7 +68,7 @@ func TestArgsCarryTheOutputSchemaOnlyWhenAsked(t *testing.T) {
 
 	base := codex.Turn{
 		Sandbox:    codex.SandboxWorkspaceWrite,
-		WorkDir:    "/repo",
+		WorkDir:    workDir,
 		Model:      "gpt-5.6-sol",
 		AnswerPath: answerPath,
 	}

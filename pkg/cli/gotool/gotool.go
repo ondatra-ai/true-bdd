@@ -91,7 +91,7 @@ func ReplayBDD(opt shell.Options, pkg, engineBin string) error {
 
 // ReadRoots asks the installed Go toolchain for its tool and module directories.
 func ReadRoots(ctx context.Context, dir string) ([]string, error) {
-	result, err := shell.Run(ctx, []string{Bin, "env", "GOROOT", "GOMODCACHE"}, shell.Options{Dir: dir})
+	result, err := shell.Run(ctx, []string{Bin, envVerb, goRootEnv, goModCacheEnv}, shell.Options{Dir: dir})
 	if err != nil {
 		return nil, fmt.Errorf("locating Go read roots: %w", err)
 	}

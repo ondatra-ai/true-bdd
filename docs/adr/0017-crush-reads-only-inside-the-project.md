@@ -11,6 +11,6 @@ The write guard that every crush tool call passes through also confines crush's 
 
 - The network tools (`fetch`, `sourcegraph`, the Context7 tools) keep today's behaviour and remain a channel to outside sources. The drill audits them, and there a fetch of TrueBDD's own code counts as contamination.
 - `TRUE_BDD_CRUSH_POLICY` carries a `read_root`, and a policy without one is refused. Symlinks resolve on both sides, a relative read path resolves against the read root, and a read naming no path is allowed.
-- Codex turns (their sandbox) and other claude turns (Claude Code) are unchanged; ADR-0021 explicitly confines the Claude build-code writer.
+- Other codex and claude turns keep their existing permissions; ADR-0021 confines the codex build-code writer, and ADR-0022 explicitly confines the Claude build-code writer.
 
 Decided by the Owner in the triage of #187 (<https://github.com/ondatra-ai/true-bdd/issues/187#issuecomment-6367974669>). No grilling entry records it.

@@ -7,7 +7,7 @@ approval: never
 sandbox: read-only
 reasoning effort: medium
 reasoning summaries: none
-session id: 01a16e22-273c-7c02-9e5d-8369dbb135b2
+session id: 01a16faf-98a9-7a12-90c0-39e02004d652
 --------
 user
 ### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
@@ -107,13 +107,14 @@ wrap the object in markdown fences. Reasoning before the object is ignored.
 
 
 codex
-I’ll read the architecture, test harness, and calc source to identify the production repair.
+I’ll read the architecture, test harness, and calculator source, then return a production-only repair plan.
 
 exec
-/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!vendor/**'"' -g '"'!*sum'"' -g '"'!AGENTS.md'"' -g '"'!go.sum'"'" in {{CWD}}
+/bin/zsh -lc "pwd; rg --files -g '"'!tmp/**'"' -g '"'!bin/**'"' -g '"'!*cassette*'"' -g '"'!go.sum'"' -g '"'!go.work.sum'"'" in {{CWD}}
  succeeded in 0ms:
 {{CWD}}
 services/calc/calc.go
+AGENTS.md
 templates/build-tests.fix-generator.prompt.tpl
 templates/scen-check.checklist.system.prompt.tpl
 templates/us-checklist.system.prompt.tpl
@@ -160,8 +161,8 @@ true-bdd/architecture_yaml-schema.yaml
 go.mod
 
 exec
-/bin/zsh -lc 'cat docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod true-bdd/true-bdd.yaml; rg --files --hidden .claude docs/agents 2>/dev/null' in {{CWD}}
- exited 2 in 0ms:
+/bin/zsh -lc 'cat docs/architecture/architecture.yaml services/calc/calc.go tests/suite/add_test.go tests/suite/canary_test.go go.mod; if [ -f docs/agents/domain.md ]; then cat docs/agents/domain.md; fi; if [ -d .claude/rules ]; then rg --files --hidden .claude/rules; fi' in {{CWD}}
+ succeeded in 0ms:
 # One Go service with one e2e suite. All three commands are identical
 # and carry -json, so the suite-command pre-pass passes and the walk
 # actually runs — unlike the build-code-* refusal fixtures, this one is
@@ -261,70 +262,8 @@ func TestCanaryRecordsEachSuiteRun(t *testing.T) {
 module fixture/buildcodefix
 
 go 1.25.0
-# Engine config for the `build-code-fix-by-codex` fixture: this
-# repository's own, with every tier naming codex, so the validation, fix
-# and apply turns of the walk all go to the codex CLI.
-engine:
-  models:
-    xhigh: "codex:gpt-6.1-sol"
-    high: "codex:gpt-6.1-sol"
-    coder: "codex:gpt-6.1-sol"
-    quick: "codex:gpt-6.1-sol"
-  default_prompt_model: high
-  default_fix_model: high
-  default_apply_model: coder
-
-templates:
-  prompts:
-    checklist: "./templates/us-checklist.prompt.tpl"
-    checklist_system: "./templates/us-checklist.system.prompt.tpl"
-    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
-    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
-    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
-    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
-    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
-    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
-    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
-    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
-    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
-    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
-    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
-    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
-    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
-    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
-    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
-    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
-    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
-    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
-    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
-    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
-    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
-    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
-    scen_check_checklist: "./templates/scen-check.checklist.prompt.tpl"
-    scen_check_checklist_system: "./templates/scen-check.checklist.system.prompt.tpl"
-    scen_check_fix_generator: "./templates/scen-check.fix-generator.prompt.tpl"
-    scen_check_fix_generator_system: "./templates/scen-check.fix-generator.system.prompt.tpl"
-    scen_check_fix_applier: "./templates/scen-check.fix-applier.prompt.tpl"
-    scen_check_fix_applier_system: "./templates/scen-check.fix-applier.system.prompt.tpl"
-
-paths:
-  tmp_dir: "./tmp"
-  tmp_glob: "./tmp/**"
-  stories_dir: "docs/product/stories"
-  checklists_dir: "./true-bdd/checklists"
-  # Roots `build tests --fix` may author into — broad because the actual
-  # write location (a suite's `path:`) is chosen by architecture.yaml, not
-  # here; ExecutionMode enforces the boundary. build code --fix needs no equivalent key.
-  test_write_globs:
-    - "./tests/**"
-    - "./services/**"
-
-documents:
-  product: "./docs/product/product.yaml"
-  architecture_yaml: "./docs/architecture/architecture.yaml"
-  scenarios_yaml: "./docs/scenarios.yaml"
 
 codex
-{"fix_prompt":"In services/calc/calc.go, repair calc.Add(a, b int) to return a + b instead of a - b, preserving its signature. The contract is to sum both arguments; the current subtraction produces -1 for Add(2, 3), causing TestAddSumsItsArguments to fail. Remove the stale source comment claiming the implementation uses the wrong operator.\n\nThis repair serves the sole failing test, tests/suite/add_test.go::TestAddSumsItsArguments, which requires Add(2, 3) == 5. Validate with `go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'`. Keep the name filter so the unrelated canary does not execute or append to suite-runs.log.\n\nEdit only production source under the declared service root services/calc/. Do not modify tests, assertions, documents, architecture configuration, or true-bdd/.","questions":[]}
+{"fix_prompt":"In services/calc/calc.go, repair Add(a, b int) to return a + b instead of a - b, preserving its signature. Its contract is to sum both arguments; this fixes TestAddSumsItsArguments, which requires Add(2, 3) == 5. Update the adjacent production comment so it no longer describes the defect as present.\n\nEdit only services/calc/, the architecture’s declared service root. Do not modify tests, assertions, documents, or configuration.\n\nValidate only the failing test with: go test -json -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'. Confirm it passes. Keep the name filter so the unrelated canary test does not run or append to suite-runs.log.","questions":[]}
 tokens used
-20,172
+19,324

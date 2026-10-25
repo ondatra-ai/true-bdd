@@ -442,7 +442,7 @@ func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 		t.Fatal("shipped template lost test commands")
 	}
 
-	commands = "{{ if .TestCommand }}## Test commands" + strings.Split(commands, "{{ else }}")[0] + "{{ end }}"
+	commands = "{{ if .TestCommand }}## Test commands" + strings.Split(commands, "## How to work")[0]
 
 	for _, cli := range []provider.CLI{provider.CLICrush, provider.CLIClaude, provider.CLICodex} {
 		t.Run(string(cli), func(t *testing.T) {
@@ -452,23 +452,19 @@ func TestWriterRequestUsesProviderCommandForms(t *testing.T) {
 			spec.FixApplier.UseTestCommand(&provider.TestCommand{Command: "go test ./tests/", Selector: "-run", Dir: "/host"})
 
 			_, applyErr := spec.FixApplier.Apply(t.Context(), validate.ApplyParams{SubjectID: "failing-set",
-				TmpDir: spec.TmpDir, FixPrompt: "repair", ClaudeWriter: true})
+				TmpDir: spec.TmpDir, FixPrompt: "repair", ClaudeWriter: true, CodexWriter: true})
 			if !errors.Is(applyErr, pkgerrors.ErrFixApplierNoContent) {
 				t.Fatalf("Apply=%v", applyErr)
-			}
-
-			if cli == provider.CLICodex {
-				if strings.Contains(request, "go test") {
-					t.Fatalf("codex received grant: %s", request)
-				}
-
-				return
 			}
 
 			for _, form := range []string{"go test ./tests/", "go test ./tests/ -run '<selection>'", "Run in `/host`"} {
 				if !strings.Contains(request, form) {
 					t.Errorf("missing %s: %s", form, request)
 				}
+			}
+
+			if cli == provider.CLICodex && !strings.Contains(request, "poll that process with your native process tool") {
+				t.Errorf("codex polling instruction missing: %s", request)
 			}
 
 			assertClaudeCommandForms(t, cli, request)
@@ -488,7 +484,7 @@ func assertClaudeCommandForms(t *testing.T, cli provider.CLI, request string) {
 	}
 
 	for _, form := range []string{"`cd '/host' && go test ./tests/`",
- "`cd '/host' && go test ./tests/ -run '<selection>'`"} {
+		"`cd '/host' && go test ./tests/ -run '<selection>'`"} {
 		if !strings.Contains(request, form) {
 			t.Errorf("missing runnable Claude command %s: %s", form, request)
 		}

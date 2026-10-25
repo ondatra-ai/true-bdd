@@ -168,9 +168,12 @@ const (
 // the behaviour under test; every other one declares checklist_prompts.
 func allowedOverrideFixtures() map[string]overridePurpose {
 	return map[string]overridePurpose{
-		"build-code-claude-replay": overrideTiers,
- "build-code-claude-failure": overrideTiers,
- "build-code-writer-bound":                 overrideFixLoop,
+		"build-code-claude-replay":                overrideTiers,
+		"build-code-claude-failure":               overrideTiers,
+		"build-code-writer-bound":                 overrideFixLoop,
+		"build-code-codex-selection":              overrideTiers,
+		"build-code-codex-missing-root":           overrideTiers,
+		"build-code-codex-nonzero":                overrideTiers,
 		"build-code-no-confirmation-bound":        overrideFixLoop,
 		"build-code-shrinking-bound":              overrideFixLoop,
 		"build-code-not-applied-bound":            overrideFixLoop,

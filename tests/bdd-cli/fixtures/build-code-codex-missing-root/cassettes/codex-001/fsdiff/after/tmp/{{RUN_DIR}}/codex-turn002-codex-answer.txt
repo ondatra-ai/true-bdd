@@ -1,0 +1,9 @@
+Implemented `A() → 1` and `B() → 2` in `services/calc/calc.go`.
+
+Requested selection and JSON replay passed both tests. Service build and scoped vet passed. Root-wide checks were blocked by denied access to `tmp/codex-homes`.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===
+applied: true
+target: services/calc/calc.go
+summary: Implemented A and B and observed both selection members passing.
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===

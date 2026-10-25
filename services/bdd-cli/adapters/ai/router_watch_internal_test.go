@@ -26,7 +26,7 @@ func TestRouterWatchesOnlyAnExplicitCrushApply(t *testing.T) {
 
 				_, err := router.ExecutePromptWithSystem(t.Context(), role, "system", "user",
 					provider.ModelRef{CLI: cli, Model: "test"}, ExecutionMode{}, "",
-					provider.TurnOptions{WatchWriterResponse: requested})
+					provider.TurnOptions{WatchWriterResponse: requested, CodexWriter: requested})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -35,6 +35,8 @@ func TestRouterWatchesOnlyAnExplicitCrushApply(t *testing.T) {
 				if target.request.WatchWriterResponse != want {
 					t.Fatalf("role=%s cli=%s requested=%v: watch=%v", role, cli, requested, target.request.WatchWriterResponse)
 				}
+
+				assertCodexConfinement(t, target.request, role, cli, requested)
 			}
 		}
 	}
@@ -85,5 +87,14 @@ func (d *deadlineTurn) assertWriterDeadline(t *testing.T, want bool) {
 
 	if d.bounded && (d.remaining > 20*time.Minute || d.remaining < 20*time.Minute-time.Second) {
 		t.Fatalf("deadline=%s, want 20m", d.remaining)
+	}
+}
+
+func assertCodexConfinement(t *testing.T, req Request, role provider.Role, cli provider.CLI, requested bool) {
+	t.Helper()
+
+	want := requested && role == provider.RoleApply && cli == provider.CLICodex
+	if req.CodexWriter != want {
+		t.Fatalf("role=%s cli=%s requested=%v: confinement=%v", role, cli, requested, req.CodexWriter)
 	}
 }

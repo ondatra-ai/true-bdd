@@ -23,6 +23,11 @@ func isEngineOwned(rel string) bool {
 		if strings.HasPrefix(segment, "crush-config-") {
 			return true
 		}
+
+		if strings.HasSuffix(segment, "-codex-home") || segment == "codex-go-build" ||
+			segment == "codex-shell-home" || segment == "codex-tmp" {
+			return true
+		}
 	}
 
 	return false

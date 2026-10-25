@@ -3,10 +3,13 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -33,32 +36,50 @@ func (p *CodexProvider) Name() string {
 // Execute runs one turn and returns the final message codex wrote to
 // its output file.
 func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error) {
+	if !req.CodexWriter {
+		return p.execute(ctx, req, "")
+	}
+
+	home, err := codexWriterHome(req)
+	if err != nil {
+		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
+	}
+
+	answer, turnErr := p.execute(ctx, req, home)
+
+	cleanupErr := disk.Remove(filepath.Join(home, "auth.json"))
+	if cleanupErr != nil {
+		cleanupErr = fmt.Errorf("remove codex authentication: %w", cleanupErr)
+	}
+
+	return answer, errors.Join(turnErr, cleanupErr)
+}
+
+func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (string, error) {
 	answerPath := artifactPath(req, "codex-answer.txt")
 	if answerPath == "" {
 		return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrCreateTmpDirectory)
 	}
 
-	// codex takes a schema FILE, not an inline string like claude.
-	schemaPath := ""
-
-	if req.ResultSchema != "" {
-		schemaPath = artifactPath(req, "codex-schema.json")
-		if schemaPath == "" {
-			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), pkgerrors.ErrCreateTmpDirectory)
-		}
-
-		strict, strictErr := codexStrictSchema(req.ResultSchema)
-		if strictErr != nil {
-			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), strictErr)
-		}
-
-		writeErr := disk.Write(schemaPath, []byte(strict), disk.Shared)
-		if writeErr != nil {
-			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), writeErr)
-		}
+	schemaPath, err := codexSchemaPath(req)
+	if err != nil {
+		return "", err
 	}
 
 	sandbox := codexSandbox(req.Mode)
+	env := os.Environ()
+
+	if req.CodexWriter {
+		var err error
+
+		env, err = prepareCodexWriter(ctx, req, home)
+		if err != nil {
+			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
+		}
+
+		sandbox = "writer"
+	}
+
 	slog.Info("Codex turn sandboxed", "label", req.Label, "sandbox", sandbox)
 
 	turn := codex.Turn{
@@ -67,25 +88,71 @@ func (p *CodexProvider) Execute(ctx context.Context, req Request) (string, error
 		Model:      req.Model,
 		AnswerPath: answerPath,
 		Prompt:     composePrompt(req),
-		Env:        os.Environ(),
+		Env:        env,
 		SchemaPath: schemaPath,
+		Writer:     req.CodexWriter,
 	}
 
-	trace, runErr := turn.Run()
+	result, runErr := turn.Run()
+	trace := result.Transcript
 
 	saveTranscript(artifactPath(req, "codex.log"), trace)
 
+	if req.CodexWriter {
+		saveTranscript(artifactPath(req, "codex-events.jsonl"), result.Events)
+	}
+
+	return codexAnswer(req, answerPath, result, runErr)
+}
+
+func codexSchemaPath(req Request) (string, error) {
+	if req.ResultSchema == "" {
+		return "", nil
+	}
+
+	path := artifactPath(req, "codex-schema.json")
+
+	strict, err := codexStrictSchema(req.ResultSchema)
+	if err != nil {
+		return "", pkgerrors.ErrProviderExecutionFailed("codex", err)
+	}
+
+	err = disk.Write(path, []byte(strict), disk.Shared)
+	if err != nil {
+		return "", pkgerrors.ErrProviderExecutionFailed("codex", err)
+	}
+
+	return path, nil
+}
+
+func codexAnswer(req Request, answerPath string, result codex.Result, runErr error) (string, error) {
+	trace := result.Transcript
 	if runErr != nil {
-		return trace, pkgerrors.ErrProviderExecutionFailed(p.Name(), runErr)
+		if req.CodexWriter && result.Started {
+			return trace, &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnNonZeroExit,
+				Cause: pkgerrors.ErrProviderExecutionFailed("codex", runErr)}
+		}
+
+		return trace, pkgerrors.ErrProviderExecutionFailed("codex", runErr)
 	}
 
 	answer, readErr := disk.Read(answerPath)
 	if readErr != nil {
-		return trace, pkgerrors.ErrProviderExecutionFailed(p.Name(), readErr)
+		if req.CodexWriter && errors.Is(readErr, fs.ErrNotExist) {
+			return trace, &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
+				Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
+		}
+
+		return trace, pkgerrors.ErrProviderExecutionFailed("codex", readErr)
 	}
 
 	if strings.TrimSpace(string(answer)) == "" {
-		return "", pkgerrors.ErrProviderProducedNoOutput(p.Name())
+		if req.CodexWriter {
+			return "", &pkgerrors.CodexTurnError{Outcome: pkgerrors.CodexTurnEmptyOutput,
+				Cause: pkgerrors.ErrProviderProducedNoOutput("codex")}
+		}
+
+		return "", pkgerrors.ErrProviderProducedNoOutput("codex")
 	}
 
 	return string(answer), nil

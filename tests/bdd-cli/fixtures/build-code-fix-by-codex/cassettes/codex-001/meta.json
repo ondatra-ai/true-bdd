@@ -20,7 +20,7 @@
     "-"
   ],
   "exit_code": 0,
-  "duration_ms": 21189,
+  "duration_ms": 10935,
   "request_hash": "sha256:fd2be5f7e2afc1f770dda31f9889e7083d089f3ff69db160e56a749d715c11e4",
   "fsdiff": {
     "created": [
@@ -29,5 +29,5 @@
     "modified": [],
     "deleted": []
   },
-  "recorded_at": "2026-10-24T13:38:35Z"
+  "recorded_at": "2026-10-24T20:52:32Z"
 }

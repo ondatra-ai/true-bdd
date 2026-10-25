@@ -80,6 +80,10 @@ func TestIsEngineOwned(t *testing.T) {
 		"tmp/true-bdd.log.json",
 		"tmp/aiproxy-state/cursor-claude",
 		"tmp/2026-08-14-21-46-41-78898/crush-config-abc/crush-data/db.sqlite",
+		"tmp/run/codex-turn002-codex-home/auth.json",
+		"tmp/codex-go-build/cache.dat",
+		"tmp/codex-shell-home/state",
+		"tmp/codex-tmp/go-build001/output",
 	}
 	for _, path := range owned {
 		if !isEngineOwned(path) {

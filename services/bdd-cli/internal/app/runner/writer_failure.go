@@ -34,5 +34,12 @@ func recoverWriterFailure(enabled bool, err error) bool {
 		return true
 	}
 
+	var codexFailure *pkgerrors.CodexTurnError
+	if errors.As(err, &codexFailure) {
+		slog.Warn("Writer turn failed", "outcome", codexFailure.Outcome, "error", err)
+
+		return true
+	}
+
 	return false
 }

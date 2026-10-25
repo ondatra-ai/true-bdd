@@ -23,6 +23,7 @@ type FixApplierData struct {
 	ClaudeWriter bool
 	WriteRoots   []string
 	TestCommand  *provider.TestCommand
+	CodexWriter  bool
 
 	Subject    any    // Current subject to modify (e.g., *story.Story or *ScenarioApplyData)
 	SubjectID  string // Subject identifier
@@ -49,6 +50,8 @@ type ApplyParams struct {
 	ModelTier string
 	// WatchWriterResponse requests the response watch for build code's crush writer.
 	WatchWriterResponse bool
+	// CodexWriter requests the confined build-code writer independently of crush's watch.
+	CodexWriter bool
 }
 
 // FixApplier applies fix prompts to stories using AI.
@@ -114,7 +117,7 @@ func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
 }
 
-// UseTestCommand grants the declared replay to crush and the explicit Claude writer.
+// UseTestCommand supplies each writer its declared replay forms.
 func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
 	a.testCommand = command
 }
@@ -149,7 +152,7 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	a.savePromptFile(params.SubjectID, params.Iteration, "user", userPrompt)
 
 	turnOptions := provider.TurnOptions{
-		WatchWriterResponse: params.WatchWriterResponse, ClaudeWriter: params.ClaudeWriter,
+		WatchWriterResponse: params.WatchWriterResponse, ClaudeWriter: params.ClaudeWriter, CodexWriter: params.CodexWriter,
 	}
 
 	response, err := a.execute(ctx, model, systemPrompt, userPrompt, turnOptions)
@@ -297,6 +300,7 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
 	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
+	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
 
 	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude
 	if options.ClaudeWriter {
@@ -318,8 +322,9 @@ func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, syste
 func (a *FixApplier) writerData(params ApplyParams, model provider.ModelRef, resultPath string) FixApplierData {
 	data := FixApplierData{WriteRoots: a.writeRoots, Subject: params.Subject, SubjectID: params.SubjectID,
 		FixPrompt: params.FixPrompt, ResultPath: resultPath, Check: params.Check,
-		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter}
-	if model.CLI == provider.CLICrush || data.ClaudeWriter {
+		ClaudeWriter: model.CLI == provider.CLIClaude && params.ClaudeWriter,
+		CodexWriter:  model.CLI == provider.CLICodex}
+	if model.CLI == provider.CLICrush || data.CodexWriter || data.ClaudeWriter {
 		data.TestCommand = a.testCommand
 	}
 

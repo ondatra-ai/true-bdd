@@ -71,10 +71,10 @@ func (r *Router) ExecutePromptWithSystem(
 		"user_length", len(userPrompt),
 	)
 
-	writer := role == provider.RoleApply && model.CLI == provider.CLIClaude && len(options) > 0 && options[0].ClaudeWriter
+	turnOptions := writerOptions(role, model.CLI, options)
 
 	turnCtx := ctx
-	if !writer {
+	if !turnOptions.ClaudeWriter {
 		bounded, cancel := context.WithTimeout(ctx, aiPromptTimeout)
 		defer cancel()
 
@@ -84,7 +84,7 @@ func (r *Router) ExecutePromptWithSystem(
 	started := time.Now()
 
 	response, err := target.Execute(turnCtx, Request{
-		ClaudeWriter: writer,
+		ClaudeWriter: turnOptions.ClaudeWriter,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		Model:        model.Model,
@@ -93,8 +93,8 @@ func (r *Router) ExecutePromptWithSystem(
 		TmpDir:       r.tmpDir,
 		Label:        label,
 		ResultSchema: resultSchema,
-		WatchWriterResponse: role == provider.RoleApply && model.CLI == provider.CLICrush &&
-			len(options) > 0 && options[0].WatchWriterResponse,
+		CodexWriter: turnOptions.CodexWriter,
+		WatchWriterResponse: turnOptions.WatchWriterResponse,
 	})
 
 	// Logged on both paths: a turn that burned twenty minutes and then
@@ -125,4 +125,16 @@ func (r *Router) ExecutePromptWithSystem(
 	)
 
 	return response, nil
+}
+
+func writerOptions(role provider.Role, cli provider.CLI, options []provider.TurnOptions) provider.TurnOptions {
+ if role != provider.RoleApply || len(options) == 0 {
+  return provider.TurnOptions{}
+ }
+
+ return provider.TurnOptions{
+  ClaudeWriter: cli == provider.CLIClaude && options[0].ClaudeWriter,
+  CodexWriter: cli == provider.CLICodex && options[0].CodexWriter,
+  WatchWriterResponse: cli == provider.CLICrush && options[0].WatchWriterResponse,
+ }
 }
