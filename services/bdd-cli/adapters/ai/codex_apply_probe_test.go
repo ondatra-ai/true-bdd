@@ -56,6 +56,7 @@ func probeCodexApply(t *testing.T, command string, paths map[string]string) {
 	putCodexFile(t, filepath.Join(root, "user-home.txt"), userHome)
 	putCodexFile(t, filepath.Join(root, "go.mod"), "module probe\n\ngo 1.25\n")
 	putCodexFile(t, filepath.Join(root, "package.json"), `{"scripts":{"test":"node tests/runtime.cjs"}}`)
+    putCodexFile(t,filepath.Join(root,"node_modules/.bin/probe-runtime"),"#!/bin/sh\nnode tests/runtime.cjs\n")
 	putCodexFile(t, filepath.Join(root, "tests/runtime.cjs"),
 		`require('node:assert/strict').equal(2+2,4);console.log("node suite passed");`)
 	putCodexFile(t, filepath.Join(root, "tests/suite/probe_test.go"),
@@ -134,6 +135,7 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
   node --version
   npm --version
   npm test
+  npx --no-install probe-runtime
   docker --version
  ' sh "$TRUE_BDD_TEST_COMMAND" >> tmp/probe.log 2>&1
  printf 'GRANTED: command write roots, scratch, selected Go replay, node, npm, docker client\n' >> tmp/probe.log

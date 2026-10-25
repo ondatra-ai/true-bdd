@@ -101,7 +101,7 @@ func codexRuntimePaths(env map[string]string, name, executable string) ([]string
 		return nil, err
 	}
 
-	if name == "npm" && filepath.Base(resolved) == "npm-cli.js" {
+	if codexNPMPackage(name,resolved) {
 		paths = append(paths, filepath.Dir(filepath.Dir(resolved)))
 	}
 
@@ -121,4 +121,8 @@ func codexRuntimePaths(env map[string]string, name, executable string) ([]string
 	}
 
 	return paths, nil
+}
+
+func codexNPMPackage(name,path string) bool {
+ return slices.Contains([]string{"npm","npx"},name) && filepath.Base(path)==name+"-cli.js"
 }

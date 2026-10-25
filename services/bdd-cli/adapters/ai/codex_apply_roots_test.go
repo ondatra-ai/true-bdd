@@ -60,7 +60,7 @@ func TestCodexApplyProvidesOnlyInstalledRuntimeExceptions(t *testing.T) {
 	putCodexFile(t, filepath.Join(tools, "auth.json"), "{}")
 	putCodexFile(t, filepath.Join(tools, "codex"), captureCodexRequest)
 
-	for _, name := range []string{"node", "npm", "docker"} {
+	for _, name := range []string{"node", "npm", "npx", "docker"} {
 		putCodexFile(t, filepath.Join(tools, name), "#!/bin/sh\nexit 0\n")
 	}
 
@@ -75,7 +75,7 @@ func TestCodexApplyProvidesOnlyInstalledRuntimeExceptions(t *testing.T) {
 	}
 
 	config := readCodexFile(t, filepath.Join(root, "tmp/codex-homes/run/apply-codex-home/config.toml"))
-	for _, name := range []string{"node", "npm", "docker"} {
+	for _, name := range []string{"node", "npm", "npx", "docker"} {
 		if !strings.Contains(config, filepath.Join(tools, name)+`" = "read"`) {
 			t.Errorf("runtime %s unavailable", name)
 		}

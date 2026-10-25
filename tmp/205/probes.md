@@ -50,3 +50,7 @@ All four final recordings passed, in that order. Duplicate-collapse's first atte
 ## Configured literal-file regression
 
 The real build-tests applier initially treated `test_write_globs: [./tests/missing/single.txt]` as a directory root. The isolated command `TRUE_BDD_CODEX_SANDBOX_PROBE=/opt/homebrew/bin/codex go test -count=1 -v ./services/bdd-cli/adapters/ai -run '^TestCodexEveryCommandApplyConfinement/build_tests$'` failed with “Is a directory” (`red-configured-file.log`). Separating configured-pattern mode from service-directory mode made that exact command pass in 13.016 seconds (`green-configured-file.log`); the final combined pass includes it. The ordinary test also asserts that preparation never creates a directory at that literal filename.
+
+## npm companion commands
+
+Declared Jest and Playwright replay forms use npx, so the controlled runtime PATH also supplies npm’s npx companion with the same package read grant and offline cache/config. The installed-runtime unit check failed before that grant (`red-npx.log`). `TRUE_BDD_CODEX_SANDBOX_PROBE=/opt/homebrew/bin/codex go test -count=1 -v ./services/bdd-cli/adapters/ai -run '^TestCodexEveryCommandApplyConfinement$'` then passed every command in 62.946 seconds, including `npx --no-install probe-runtime` against a seeded local executable, with no download (`live-npx-probes.log`).

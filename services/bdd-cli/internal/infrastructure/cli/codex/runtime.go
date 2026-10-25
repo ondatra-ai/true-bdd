@@ -10,7 +10,7 @@ import (
 func RuntimeExecutables() map[string]string {
 	paths := make(map[string]string)
 
-	for _, name := range []string{"node", "npm", "docker"} {
+	for _, name := range []string{"node", "npm", "npx", "docker"} {
 		path, err := shell.Find(name)
 		if err == nil {
 			paths[name] = filepath.Clean(path)

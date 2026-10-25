@@ -431,7 +431,7 @@ message still comes through `-o`. Only build-code started non-zero or empty code
 turns preserve edits and rerun the set with one warning; start failures
 stay fatal. No codex stall watch is added. Plan and validation retain their
 `read-only` sandbox and recorded requests. Other commands' applies remain fatal on failure.
-Optional installed node, npm and Docker clients have explicit runtime read grants. npm stays offline, runtime state stays in scratch, and no Docker daemon/socket is granted. Glob matches are fixed at preparation; a terminal `/**` permits new descendants. Empty matches refuse instead of granting a broader directory. ADR-0024 lists library and installation-link exceptions.
+Optional installed node, npm (including npx) and Docker clients have explicit runtime read grants. npm stays offline, runtime state stays in scratch, and no Docker daemon/socket is granted. Glob matches are fixed at preparation; a terminal `/**` permits new descendants. Empty matches refuse instead of granting a broader directory. ADR-0024 lists library and installation-link exceptions.
 
 The host project's documents live under `docs/`:
 

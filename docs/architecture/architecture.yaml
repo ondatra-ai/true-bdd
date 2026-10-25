@@ -673,10 +673,10 @@ architecture:
                 creating their parents does not grant the writer any other host-root writes. Existing files stay files; missing files are not made into directories. Configured globs expand existing wildcard anchors into exact grants, with terminal /** granting a subtree and literal directory suffixes safely created. Other wildcard matches are frozen at preparation; unmatched or escaping patterns refuse rather than grant their fixed prefix (ADR-0024).
               - >-
                 Writer subprocesses inherit no environment: the profile sets PATH to
-                GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm and docker links; HOME, TMPDIR and GOCACHE inside
+                GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm, npx and docker links; HOME, TMPDIR and GOCACHE inside
                 host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
                 GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
-                and CGO_ENABLED=0. Optional node/npm/docker executables, npm's package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
+                and CGO_ENABLED=0. Optional node/npm/npx/docker executables, npm's package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
                 Codex's own model connection remains available. This is calibrated
                 for codex-cli 0.162.1 on macOS; no weaker fallback is supplied.
               - >-
