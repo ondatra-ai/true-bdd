@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/product.yaml"
+summary: 'Merged the two reply templates into one using [answers|replies], preserving all other content.'
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

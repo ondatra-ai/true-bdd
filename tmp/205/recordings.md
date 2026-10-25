@@ -41,11 +41,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `scen-check-quality-fix-006-measurable-criterion-added` | `scen-check-fix-adds-measurable-criterion` | recorded | recorded in fix-203-record-a | 2.44 |
 | `scen-check-quality-fix-007-subjective-outcome-rewritten` | `scen-check-fix-rewrites-subjective-outcome` | recorded | recorded in fix-203-record-a | 2.71 |
 | `scen-check-fix-005-restated-meaning-rewritten` | `scen-check-fix-rewrites-phrase-meaning` | recorded | recorded in fix-203-record-a | 2.93 |
-| `scen-check-fix-006-misused-phrase-step-rewritten` | `scen-check-fix-rewrites-phrase-use` | remaining | unchanged / deferred | 0.00 |
-| `scen-check-fix-004-shared-definition-merges-phrases` | `scen-check-fix-merges-phrases` | remaining | unchanged / deferred | 0.00 |
-| `build-tests-steps-006-steps-authored-from-spec` | `build-tests-fix-from-spec` | remaining | unchanged / deferred | 0.00 |
-| `scen-check-fix-007-whole-checklist-fixes-description` | `scen-check-fix-rewrites-description` | remaining | unchanged / deferred | 0.00 |
-| `engine-documents-003-undeclared-architecture-refused` | `build-tests-undeclared-architecture` | remaining | unchanged / deferred | 0.00 |
+| `scen-check-fix-006-misused-phrase-step-rewritten` | `scen-check-fix-rewrites-phrase-use` | recorded | recorded in fix-203-record-a | 2.64 |
+| `scen-check-fix-004-shared-definition-merges-phrases` | `scen-check-fix-merges-phrases` | recorded | recorded in fix-203-record-a | 1.12 |
+| `build-tests-steps-006-steps-authored-from-spec` | `build-tests-fix-from-spec` | recorded | recorded in fix-203-record-a | 6.08 |
+| `scen-check-fix-007-whole-checklist-fixes-description` | `scen-check-fix-rewrites-description` | recorded | recorded in fix-203-record-a | 5.90 |
+| `engine-documents-003-undeclared-architecture-refused` | `build-tests-undeclared-architecture` | recorded | recorded in fix-203-record-a | 0.00 |
 | `engine-documents-004-undeclared-registry-refused-by-us-apply` | `us-apply-undeclared-registry` | remaining | unchanged / deferred | 0.00 |
 | `engine-documents-005-undeclared-registry-refused-by-scen-check` | `scen-check-undeclared-registry` | remaining | unchanged / deferred | 0.00 |
 | `engine-documents-006-directory-document-refused` | `build-code-directory-architecture` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 31 of 108; pending migration fixtures: 77. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 36 of 108; pending migration fixtures: 72. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `scen-check-fix-006-misused-phrase-step-rewritten` — `scen-check-fix-rewrites-phrase-use`
-- `scen-check-fix-004-shared-definition-merges-phrases` — `scen-check-fix-merges-phrases`
-- `build-tests-steps-006-steps-authored-from-spec` — `build-tests-fix-from-spec`
-- `scen-check-fix-007-whole-checklist-fixes-description` — `scen-check-fix-rewrites-description`
-- `engine-documents-003-undeclared-architecture-refused` — `build-tests-undeclared-architecture`
 - `engine-documents-004-undeclared-registry-refused-by-us-apply` — `us-apply-undeclared-registry`
 - `engine-documents-005-undeclared-registry-refused-by-scen-check` — `scen-check-undeclared-registry`
 - `engine-documents-006-directory-document-refused` — `build-code-directory-architecture`

@@ -1,0 +1,5 @@
+2026-10-25T11:54:37.401210Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.7 seconds
+Output:
+Failed to write file {{CWD}}/tests/mcp/steps/steps.go
+
