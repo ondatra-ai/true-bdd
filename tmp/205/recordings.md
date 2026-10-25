@@ -61,8 +61,8 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `engine-config-004-prompt-tier-unconfigured-refused` | `scen-check-prompt-tier-unconfigured` | recorded | recorded in fix-203-record-a | 0.00 |
 | `engine-config-006-default-write-roots` | `build-tests-fix-default-write-roots` | recorded | recorded in fix-203-record-a | 5.18 |
 | `engine-checklists-001-missing-checklist-refused` | `scen-check-checklist-missing` | recorded | recorded in fix-203-record-a | 0.00 |
-| `build-tests-run-001-failed-definition-repaired` | `build-tests-run-recovery` | remaining | unchanged / deferred | 0.00 |
-| `build-tests-run-002-attempt-bound-reports-failing-step` | `build-tests-run-bound` | remaining | unchanged / deferred | 0.00 |
+| `build-tests-run-001-failed-definition-repaired` | `build-tests-run-recovery` | recorded | recorded in fix-203-record-a | 6.31 |
+| `build-tests-run-002-attempt-bound-reports-failing-step` | `build-tests-run-bound` | recorded | recorded in fix-203-record-a | 2.79 |
 | `build-tests-run-003-shared-definition-scenarios-run` | `build-tests-run-shared` | remaining | unchanged / deferred | 0.00 |
 | `build-tests-run-004-selected-package-must-pass` | `build-tests-run-package` | remaining | unchanged / deferred | 0.00 |
 | `build-code-run-006-shared-fix-skips-green-peer` | `build-code-shared-fix` | remaining | unchanged / deferred | 0.00 |
@@ -121,12 +121,12 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 51 of 108; pending migration fixtures: 57. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 53 of 108; pending migration fixtures: 55. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+
+`fix-203-record-a` recorded the first 42 remaining rows through `build-tests-run-bound`, in manifest order: 81.91 service CLI minutes, excluding judges. All 42 pass replay. One rejected `fix-loop-own-words` attempt spent 2.06 service CLI minutes; its checklist now preserves the clarification wording verbatim in a single YAML scalar before the successful fresh recording. No Scenario assertion changed. Every other manifest row and recording remains unchanged from `d707d7ae`.
 
 ## Pending Scenarios
 
-- `build-tests-run-001-failed-definition-repaired` — `build-tests-run-recovery`
-- `build-tests-run-002-attempt-bound-reports-failing-step` — `build-tests-run-bound`
 - `build-tests-run-003-shared-definition-scenarios-run` — `build-tests-run-shared`
 - `build-tests-run-004-selected-package-must-pass` — `build-tests-run-package`
 - `build-code-run-006-shared-fix-skips-green-peer` — `build-code-shared-fix`
