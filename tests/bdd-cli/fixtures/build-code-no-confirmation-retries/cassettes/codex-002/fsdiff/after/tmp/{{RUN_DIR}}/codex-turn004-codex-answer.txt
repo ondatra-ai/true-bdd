@@ -1,0 +1,1 @@
+Changed only B in services/calc/calc.go to return 2, preserving A returning 1. Both TestA and TestB pass.

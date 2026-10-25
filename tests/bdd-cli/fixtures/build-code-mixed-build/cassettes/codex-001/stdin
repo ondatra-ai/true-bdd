@@ -1,0 +1,137 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.broken::<build>
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/broken::<build>
+**Source File:** fixture/buildcodefix/tests/broken
+
+**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestA
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildcodefix/tests/suite::TestA
+**Source File:** fixture/buildcodefix/tests/suite
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.broken::<build>
+```
+# fixture/buildcodefix/tests/broken_test [fixture/buildcodefix/tests/broken.test]
+tests/broken/compile_test.go:3:38: undefined: calc.B
+FAIL	fixture/buildcodefix/tests/broken [build failed]
+
+```
+
+Tests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestA
+```
+=== RUN   TestA
+    calc_test.go:3: A needs one
+--- FAIL: TestA (0.00s)
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failures in the set come from a single production file, `services/calc/calc.go`, which is the only tree the writer may edit (`architecture.yaml` → `services[0].path: services/calc`; confirmed by `CLAUDE.md`). Its current content is:
+
+```
+package calc
+func A() int{return 0}
+```
+
+The two tests are the specification and must not be touched:
+
+- `tests/suite/calc_test.go` (`TestA`) imports `fixture/buildcodefix/services/calc` and asserts `calc.A() != 1` is a failure → **`A()` must return `1`**. It currently returns `0`, so the test runs and fails with `A needs one`.
+- `tests/broken/compile_test.go` (`TestBuild`) imports the same package and asserts `calc.B() != 2` is a failure → **an exported `B()` returning `2` must exist**. It does not exist at all, so the `tests/broken` package fails to compile: `tests/broken/compile_test.go:3:38: undefined: calc.B`, reported as the synthetic `<build>` failure. This is a missing-symbol build break, not a test defect: the test compiles correctly against the contract it declares; the production package simply does not provide `B`.
+
+Note the import path: the module is `fixture/buildcodefix` (see `go.mod`), so the package directory `services/calc` is imported as `fixture/buildcodefix/services/calc` and the package clause must stay `package calc`. Do not rename the package, the directory, or the module.
+
+## Part 1 — Correct `A()`'s return value
+
+**File:** `services/calc/calc.go` (only file to change)
+
+**Contract:** exported, zero-argument function `A() int` in `package calc` that returns the int value `1`.
+
+**Intended implementation:** change the existing body of `A` so it yields `1` instead of `0`. Keep the signature exactly `func A() int` — the test calls it with no arguments and compares the result to an untyped integer constant, so the return type must remain `int` (not `int64`, not a named type, not `(int, error)`).
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` — turns the current `A needs one` failure into a pass.
+
+## Part 2 — Add the missing exported `B()`
+
+**File:** `services/calc/calc.go` (same file; no new package or directory is needed, and none should be created, since the test imports `B` from the same `calc` package it imports `A` from)
+
+**Contract:** exported, zero-argument function `B() int` in `package calc` that returns the int value `2`.
+
+**Intended implementation:** declare a new top-level function alongside `A` with signature `func B() int` returning `2`. The name must be exactly `B` (capital B — it is referenced across packages, so it must be exported), arity zero, single `int` result. Adding this symbol is what makes the `fixture/buildcodefix/tests/broken` package compile again; once it compiles, `TestBuild`'s assertion is satisfied by the value `2`.
+
+**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.broken::<build>` — resolves the `undefined: calc.B` build failure for the `tests/broken` package. As a side effect the previously-unreachable `TestBuild` must also pass, which the `B() == 2` return value guarantees.
+
+## Constraints for the writer
+
+- Edit **only** `services/calc/calc.go`. Do not create, move, or delete any other file.
+- Do not touch `tests/suite/calc_test.go`, `tests/broken/compile_test.go`, any `*_test.go`, `docs/architecture/architecture.yaml`, `go.mod`, `CLAUDE.md`, or anything under `true-bdd/`. Do not weaken, skip, relax, or delete any assertion, and do not add build tags, `t.Skip`, or `//go:build ignore` anywhere.
+- Keep the file valid, gofmt-clean Go: `package calc` clause first, then the two function declarations. No imports are required; do not add any.
+- Return literal constants — the tests pin exact values (`A() == 1`, `B() == 2`); do not introduce configuration, parameters, globals, or indirection to produce them.
+
+## Verification
+
+From the fixture root run the architecture's command: `go test -json -count=1 ./tests/...`. Expect `fixture/buildcodefix/tests/broken` to compile and `TestBuild` to pass, and `fixture/buildcodefix/tests/suite`'s `TestA` to pass — both failing-set entries green, with no test file modified (`git status` should show only `services/calc/calc.go`).
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/...`
+- Selection: `go test -count=1 ./tests/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

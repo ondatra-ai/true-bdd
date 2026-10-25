@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Completed the required lifecycle stage: left calc.go unchanged because A already returns 1, and created attempted.txt containing attempted. Ran TestB; it failed with B needs two. No failing-set tests passed."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

@@ -1,7 +1,0 @@
-Mode() returns `1`; both the lifecycle protocol and the plan agree the stage is to move it to `2`. Applying the edit now.Both granted command forms pass: full suite `ok` and the `TestA|TestB` selection `ok` with `-count=1`. `Mode()` now returns the constant `2` unconditionally, so TestA no longer takes its skip branch and TestB's `Mode()==2` assertion holds.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "services/calc/calc.go: replaced the intermediate value with `const ModeTwo = 2` returned by `func Mode() int` (package calc, signature unchanged), completing the lifecycle stage 1 -> 2 in one turn. Verified with `go test -count=1 ./tests/suite/...` (ok) and `go test -count=1 ./tests/suite/... -run 'TestA|TestB'` (ok): TestA passes (no longer skips) and TestB passes."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

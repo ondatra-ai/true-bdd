@@ -1,0 +1,102 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer for a controlled lifecycle fixture. Follow the request's required stage exactly. Change only services/calc/, never tests or documents. Complete the changes during this turn and answer with nonempty prose only, without confirmation markers or a result file.
+
+
+### TASK
+
+## Required fixture lifecycle protocol
+
+Change A to return 1 and B to return 2 in services/calc/calc.go. Keep both functions and make no other service change.
+Never modify tests or documents. Only services/calc/ is writable.
+
+Fixture transport outcome: empty output
+A recording wrapper injects this transport outcome after your turn completes. Make the required file changes and end your final message with nonempty prose describing them, without a confirmation block or result file. Do not try to cause the transport failure yourself.
+
+## Remaining failing set
+Test: fixture/buildcodefix/tests/suite::TestA
+Test: fixture/buildcodefix/tests/suite::TestB
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Summary
+
+Both failures come from one file: `services/calc/calc.go`. The two exported
+functions `A()` and `B()` are stubs that both `return 0`. The suite in
+`tests/suite/calc_test.go` is the specification and states that `A()` must
+equal `1` and `B()` must equal `2`. The production constants are wrong; the
+tests are correct. The repair is to give each function the return value its
+test asserts.
+
+No new files, no new packages, no signature changes, no test edits.
+
+## Write root
+
+The architecture (`docs/architecture/architecture.yaml`) declares exactly one
+service:
+
+- `calc`, `path: services/calc`, `language: go`
+
+That path is the only tree the writer may touch. `tests/suite/**`,
+`docs/architecture/architecture.yaml`, `true-bdd/**`, `templates/**` and
+`go.mod` are all out of scope and must be left byte-identical.
+
+## Contract established by the suite
+
+`tests/suite/calc_test.go` imports the service as
+`fixture/buildcodefix/services/calc` (module `fixture/buildcodefix` per
+`go.mod`), so the package must stay at `services/calc` with package name
+`calc`, and must keep exporting:
+
+- `func A() int` — observable value must be `1`
+- `func B() int` — observable value must be `2`
+
+Both are nullary, take no state, and are called once per test, so there is no
+ordering, mutability or concurrency requirement to honour. The contract is
+purely the returned integer.
+
+## Part 1 — `A()` returns one
+
+**File:** `services/calc/calc.go`
+
+Change the body of `func A() int` so it yields `1` instead of `0`. Keep the
+exported name, the empty parameter list and the `int` result type exactly as
+they are, since the test calls `calc.A()` and compares to an untyped integer
+constant.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA`
+(currently fails with `calc_test.go:10: A needs one`).
+
+## Part 2 — `B()` returns two
+
+**File:** `services/calc/calc.go`
+
+Change the body of `func B() int` so it yields `2` instead of `0`. Same
+constraints as Part 1 — exported name, nullary signature and `int` result
+type are fixed by the caller in the suite.
+
+**Serves:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB`
+(currently fails with `calc_test.go:15: B needs two`).
+
+## Implementation notes for the writer
+
+- Edit the two existing one-line function bodies in place. Do not restructure
+  the file, do not rename the package, do not add a second file in
+  `services/calc/`, and do not introduce dependencies — the module has none
+  and the fixture expects none.
+- Do not add helper indirection (constants, vars, init) unless something in
+  the file already requires it; two literal returns are the whole repair and
+  anything more is unverified scope.
+- Leave the explanatory comments in `go.mod` and `CLAUDE.md` untouched; the
+  sentinel module boundary is intentional and must stay.
+- The suite is run with `go test -json -count=1 ./tests/suite/...` for all
+  three modes (record, replay, live), so the same change satisfies every
+  mode; there is no recorded-fixture or replay artefact to regenerate.
+
+## Expected result
+
+After the change, `TestA` observes `calc.A() == 1` and `TestB` observes
+`calc.B() == 2`; both assertions pass as written, with no assertion weakened,
+skipped or removed, and the whole failing set goes green.

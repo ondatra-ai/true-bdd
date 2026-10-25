@@ -1,0 +1,1 @@
+Updated `services/calc/calc.go`: `A()` returns the deliberately undefined `closureGlossary`, and `B()` returns `0`. This completes the required stage and leaves the intentional build failure.

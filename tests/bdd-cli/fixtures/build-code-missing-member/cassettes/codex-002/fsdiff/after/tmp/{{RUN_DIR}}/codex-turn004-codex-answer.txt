@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===
+applied: true
+target: "services/calc"
+summary: "Changed Mode() from returning 1 to returning 2. Ran go test -count=1 ./tests/suite/... successfully; TestA and TestB pass."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter2-result.yaml ===

@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "modified",
-      "size": 68,
-      "sha256": "bfbbaefe6e5d6907b33df99cfa4875da7051cc2d2d6a1e5969463b1cb891a186",
-      "text": "package calc\n\nconst ModeTwo = 2\n\nfunc Mode() int { return ModeTwo }\n"
+      "size": 39,
+      "sha256": "840c9d8c75554f9ae938e4f6a3c108601986556d4618684cb0e087ba415d9e1c",
+      "text": "package calc\nfunc Mode() int{return 2}\n"
     }
   ]
 }

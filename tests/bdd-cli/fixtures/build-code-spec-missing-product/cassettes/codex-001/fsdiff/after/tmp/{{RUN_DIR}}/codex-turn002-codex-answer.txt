@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===
+applied: false
+target: "services/calc/calc.go"
+summary: "Changed Double to return value + value. TestCalc001Double was attempted but blocked during setup by sandbox denial of the harness dependency. No tests in the failing set passed; verification remains incomplete."
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.stepsrun.tests.calc-TestCalc001Double-iter1-result.yaml ===

@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "created",
-      "size": 178,
-      "sha256": "41832954579cc35dd61e41a11c7339bb0b13961882faef02aa54918974221d85",
-      "text": "// Package calc provides the fixture calc service with two fixed values.\npackage calc\n\n// A returns one.\nfunc A() int {\n\treturn 1\n}\n\n// B returns two.\nfunc B() int {\n\treturn 2\n}\n"
+      "size": 67,
+      "sha256": "5fabd689b1a436da28ab9cebccee1cdd6b7ea40759eefe2e07b3b4216e145e3d",
+      "text": "package calc\n\nfunc A() int { return 1 }\n\nfunc B() int { return 2 }\n"
     }
   ]
 }

@@ -1,7 +1,0 @@
-`prepared.txt` is absent, so this is the preparation path. Creating it and setting the still-failing body:`prepared.txt` was absent: created it (exactly `prepared` + newline) and set `Add` to return `a + b + 1`. TestAdd still fails (`Add(2, 3) = 6, want 5`), so the real fix was not applied this turn.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
-applied: false
-target: "services/calc/calc.go"
-summary: "preparation only; test still fails"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

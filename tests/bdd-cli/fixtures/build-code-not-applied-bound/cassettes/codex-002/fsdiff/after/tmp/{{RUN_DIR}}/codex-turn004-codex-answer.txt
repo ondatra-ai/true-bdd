@@ -1,0 +1,7 @@
+Created `services/calc/prepared-second.txt` containing exactly `prepared\n`; left `calc.go` unchanged. Ran `go test -json -count=1 ./tests/suite/...`: `TestAdd` failed (`-1`, expected `5`); no tests passed.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===
+applied: false
+target: "services/calc/calc.go"
+summary: "second preparation only; test still fails"
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter2-result.yaml ===

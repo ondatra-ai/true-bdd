@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--restricted",
+    "--disable-slash-commands",
+    "--tools",
+    "Read,Glob,Grep,Edit,Write,MultiEdit,Bash",
+    "--settings",
+    "tmp/{{RUN_DIR}}/claude-turn002-claude-config/settings.json",
+    "--session-id",
+    "{{CLAUDE_SESSION}}",
+    "--add-dir",
+    "{{GOROOT}}",
+    "--add-dir",
+    "{{GOMODCACHE}}",
+    "--add-dir",
+    "{{CLAUDE_SPILLS}}",
+    "--model",
+    "claude-sonnet-5-5",
+    "--system-prompt",
+    "You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.\n\nWrite only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.\n\nMake changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.\n",
+    "--permission-mode",
+    "default",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "-p",
+    "## Subject — Failing Set\n\n\n**Test ID:** /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments\n**Service:** calc\n**Suite:** go-test\n**Framework:** go-test\n**Test Name:** fixture/buildcodefix/tests/suite::TestAddSumsItsArguments\n**Source File:** fixture/buildcodefix/tests/suite\n\n\n### Failure groups\n\nTests: /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments\n```\n=== RUN   TestAddSumsItsArguments\n    add_test.go:19: Add(2, 3) = -1, want 5\n--- FAIL: TestAddSumsItsArguments (0.00s)\n\n```\n\n\n### Specification documents\n\n- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml\n\n\n\n\n\n\n\n\n## Proposed repair plan\n# Repair plan for /go-test/go-test:fixture.buildcodefix.tests.suite::TestAddSumsItsArguments\n\n## Scope and write boundary\n\nPer `docs/architecture/architecture.yaml`, the only declared service is `calc` with `path: services/calc`. That tree is the sole write root for this repair. Do not touch `tests/suite/add_test.go`, `tests/suite/canary_test.go`, any other `*_test.go`, `go.mod`, or any document under `docs/`. No assertion may be weakened, skipped, or removed.\n\nThe whole failing set is one test, and it has one cause. This is a single-part repair.\n\n## Contract the production code must satisfy\n\n`calc.Add(a, b int) int` is specified by its own doc comment and by the suite as **the sum of its two arguments**. The suite's expectation is:\n\n- `tests/suite/add_test.go:17-20` — `calc.Add(2, 3)` must equal `5`.\n\nThe observed failure is `Add(2, 3) = -1, want 5`. `-1` is exactly `2 - 3`, so the implementation is performing subtraction where the contract requires addition. There is no missing file, no missing export, no build or import problem: the package compiles, the symbol resolves, and the test reaches its assertion. The defect is purely the arithmetic operator in the function body.\n\n## Part 1 — correct the operator in `Add`\n\n**File:** `services/calc/calc.go`\n\n**What to change:** the single `return` statement in the body of `Add` (currently at line 12) returns `a - b`. It must return the sum of the two parameters instead, i.e. the `+` operator applied to `a` and `b`. Nothing else about the function changes: keep the package name `calc`, keep the exported name `Add`, keep the signature `func Add(a, b int) int` exactly as-is — the test imports `fixture/buildcodefix/services/calc` and calls `calc.Add` with two untyped integer constants and compares the result to an int, so any change to the name, arity, parameter types, or return type would break compilation of a file the writer is not allowed to edit.\n\nDo not introduce overflow checks, error returns, generics, a second return value, helper functions, or a new file. The contract is a total function over `int` returning `int`; widening or guarding it would change the signature the test depends on. Plain integer addition is the complete and correct implementation.\n\n**Which tests this serves:** `TestAddSumsItsArguments` in `tests/suite/add_test.go` — the only test in the failing set. With `Add` summing, `calc.Add(2, 3)` yields `5`, the `got != 5` branch is not taken, `t.Fatalf` is not reached, and the test passes.\n\n## Part 2 — align the stale doc comment with the repaired behaviour (same file, no behaviour change)\n\n**File:** `services/calc/calc.go`, the doc comment immediately above `Add` (currently lines 5-10).\n\nThat comment currently declares the sum contract in its first line and then states that the function deliberately does not honour it, describing the planted defect and the fix-loop contract. Once Part 1 lands, those sentences are false: they would tell the next reader that `Add` subtracts. Reduce the comment to the accurate statement of the contract — that `Add` returns the sum of `a` and `b` — and drop the paragraph describing the planted defect.\n\nKeep the package-level comment at the top of the file (lines 1-3) as it is: it documents the fixture's write-root arrangement, which is still true after the repair.\n\nThis part is documentation hygiene inside the declared service root and must not alter any code. If the writer prefers the strictly minimal diff, Part 1 alone makes the set green; Part 2 is recommended but carries no test dependency.\n\n**Which tests this serves:** none directly; it prevents the repaired source from carrying a comment that contradicts its own behaviour.\n\n## Explicitly out of scope\n\n- `tests/suite/canary_test.go` is not in the failing set and needs no change. It is excluded by the suite's `-run \"TestAdd'|TestAdd\"` filter during the filtered runs and appends to `suite-runs.log` when the whole package is executed; that is intended harness instrumentation, not a defect.\n- The `record`, `replay`, and `live` commands in `architecture.yaml` are identical and already carry `-json`. No harness or configuration change is required for the set to pass.\n\n## Verification the writer should expect\n\nAfter Part 1, `go test -json -count=1 ./tests/suite/... -run \"TestAdd'|TestAdd\"` should report `TestAddSumsItsArguments` as pass, and no other test in the repository should change status, since `Add` has exactly one caller in the suite and no other production consumer (`services/calc/calc.go` is the only file in the service root).\n\n## Edit roots\n\n- `services/calc`\n\nNever modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.\n\n\nNo test command is granted to this writer. Report that limitation in the confirmation.\n\n\n## How to work\n1. Read the Specification and the harness first to understand the service's contract.\n2. Change the service as a whole, using the plan and your investigation.\n3. After each part, run the tests that part serves and fix what fails.\n4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.\n5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.\n\nEnd your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.\n\n=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===\napplied: true\ntarget: \"\u003crepo-relative service path\u003e\"\nsummary: \"\u003cwhat changed and which tests of the set you saw pass\u003e\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 8238,
+  "request_hash": "sha256:b98e638a341b9ffeedd35e880a9a8c41044df12247945373b515f7501510b10f",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-25T12:41:13Z"
+}
