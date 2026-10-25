@@ -12,6 +12,9 @@ import (
 
 const specificationMenu = "[1] Apply this fix to working copy\n[2] Refine the fix prompt\n[3] Exit without applying\n"
 
+const originalClarification = "[1/1] What is specified?\n    Options:\n" +
+	"      1) Build from Specification\n      0) Other (type custom answer)\n"
+
 func promptEngine(t *testing.T) (io.Writer, *bytes.Buffer, drill.Record, drill.Attempt) {
 	t.Helper()
 	runner, record, _ := prepare(t, "#!/bin/sh\nexit 0\n")
@@ -93,6 +96,32 @@ func TestPromptWriterAnswersMenuWithLegacyPromptOnce(t *testing.T) {
 	}
 }
 
+func TestPromptWriterAnswersOriginalMenuWithSeparatorOnce(t *testing.T) {
+	menu := "  [1] Apply this fix to working copy\n" +
+		"  [2] Refine the fix prompt (provide feedback)\n  [3] Exit without applying\n"
+	separator := "============================================================\n"
+
+	for _, prompt := range []string{"", "Your choice (1/2/3): "} {
+		t.Run("prompt="+prompt, func(t *testing.T) {
+			output := menu + separator + prompt
+			for name, chunks := range map[string][]string{
+				"one chunk":       {output},
+				"separate footer": {menu, separator, prompt},
+				"bytewise":        strings.Split(output, ""),
+			} {
+				t.Run(name, func(t *testing.T) {
+					writer, input, _, _ := promptEngine(t)
+					engineOutput(t, writer, chunks...)
+
+					if input.String() != "1\n" {
+						t.Fatalf("engine input = %q; want one apply answer", input.String())
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestPromptWriterMenuAcrossEveryChunkBoundary(t *testing.T) {
 	writer, input, _, _ := promptEngine(t)
 
@@ -155,8 +184,7 @@ func TestPromptWriterClarificationAllowsOriginalFormattingWithoutPrompt(t *testi
 func TestPromptWriterClarificationOneByteAtATime(t *testing.T) {
 	writer, input, record, run := promptEngine(t)
 
-	output := "[1/1] What is specified?\n    Options:\n" +
-		"      1) Build from Specification\n      0) Other (type custom answer)\n\n    Your answer: "
+	output := originalClarification + "\n    Your answer: "
 	for _, value := range []byte(output) {
 		engineOutput(t, writer, string(value))
 	}
@@ -168,21 +196,78 @@ func TestPromptWriterClarificationOneByteAtATime(t *testing.T) {
 	if saved.Runs[run.Tag].Status != pausedStatus || input.Len() != 0 {
 		t.Fatalf("did not pause: %+v, engine input %q", saved.Runs[run.Tag], input.String())
 	}
+
+	assertOriginalClarification(t, saved.Runs[run.Tag].Questions[0])
+}
+
+func TestPromptWriterClarificationWaitsForCompleteOtherLine(t *testing.T) {
+	for _, ending := range []string{"\n", "Your answer: "} {
+		t.Run("ending="+ending, func(t *testing.T) {
+			writer, input, record, run := promptEngine(t)
+
+			question := strings.TrimSuffix(originalClarification, "\n")
+			for _, chunk := range []string{strings.TrimSuffix(question, " (type custom answer)"), " (type custom answer)"} {
+				engineOutput(t, writer, chunk)
+
+				saved, err := drill.Read(record.Directory)
+				must(t, err)
+
+				if len(saved.Runs[run.Tag].Questions) != 0 {
+					t.Fatal("paused before the Other line was complete")
+				}
+			}
+
+			engineOutput(t, writer, ending)
+
+			saved, err := drill.Read(record.Directory)
+			must(t, err)
+
+			paused := saved.Runs[run.Tag]
+			assertUnansweredQuestion(t, paused)
+
+			if ending == "\n" {
+				question = originalClarification
+			}
+
+			if paused.Status != pausedStatus || input.Len() != 0 || paused.Questions[0].Prompt != question {
+				t.Fatalf("did not retain the complete clarification: %+v, engine input %q", paused, input.String())
+			}
+		})
+	}
 }
 
 func TestPromptWriterClarificationAcrossEveryChunkBoundary(t *testing.T) {
-	writer, input, record, run := promptEngine(t)
+	for _, prompt := range []string{"", "\n    Your answer: "} {
+		t.Run("prompt="+prompt, func(t *testing.T) {
+			writer, input, record, run := promptEngine(t)
 
-	output := "[1/1] What is specified?\n1) Follow the Specification\n0) Other\nYour answer: "
-	for split := range len(output) + 1 {
-		engineOutput(t, writer, "\n", output[:split], output[split:])
+			output := originalClarification + prompt
+			for split := range len(output) + 1 {
+				engineOutput(t, writer, "\n", output[:split], output[split:])
 
-		saved, err := drill.Read(record.Directory)
-		must(t, err)
+				saved, err := drill.Read(record.Directory)
+				must(t, err)
 
-		paused := saved.Runs[run.Tag]
-		if paused.Status != pausedStatus || len(paused.Questions) != split+1 || input.Len() != 0 {
-			t.Fatalf("split at %d: run %+v, engine input %q", split, paused, input.String())
-		}
+				paused := saved.Runs[run.Tag]
+				if paused.Status != pausedStatus || len(paused.Questions) != split+1 || input.Len() != 0 {
+					t.Fatalf("split at %d: run %+v, engine input %q", split, paused, input.String())
+				}
+
+				assertOriginalClarification(t, paused.Questions[split])
+			}
+		})
+	}
+}
+
+func assertOriginalClarification(t *testing.T, question drill.Question) {
+	t.Helper()
+
+	if question.Prompt != originalClarification {
+		t.Fatalf("saved prompt = %q; want %q", question.Prompt, originalClarification)
+	}
+
+	if !slices.Equal(question.Options,
+		[]string{"      1) Build from Specification", "      0) Other (type custom answer)"}) {
+		t.Fatalf("saved options = %q; want the complete printed option lines", question.Options)
 	}
 }

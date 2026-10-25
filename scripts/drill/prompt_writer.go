@@ -66,23 +66,25 @@ func (p *promptWriter) consumePrompt() (bool, error) {
 	const (
 		menuForm = `(?m)^[ \t]*\[1\] Apply this fix to working copy[ \t]*\r?\n` +
 			`[ \t]*\[2\] Refine the fix prompt(?: \(provide feedback\))?[ \t]*\r?\n` +
-			`[ \t]*\[3\] Exit without applying[ \t\r\n]*\z`
+			`[ \t]*\[3\] Exit without applying[ \t\r\n]*(?:^[ \t]*=+[ \t]*\r?\n[ \t\r\n]*)?\z`
 		clarificationForm = `(?m)^[ \t]*1\) .+\n(?:[ \t]*[1-9][0-9]*\) .+\n)*` +
-			`[ \t]*0\) Other(?: \(type custom answer\))?[ \t\r\n]*\z`
+			`[ \t]*0\) Other(?: \(type custom answer\))?[ \t]*\r?\n`
 	)
 
 	menu := strings.Index(p.pending, "Your choice (1/2/3): ")
 
 	clarify := strings.Index(p.pending, "Your answer: ")
+	clarification := regexp.MustCompile(clarificationForm).FindStringIndex(p.pending)
+
 	switch {
 	case menu >= 0 && (clarify < 0 || menu < clarify):
 		return true, p.applyMenu(menu+len("Your choice (1/2/3): "), false)
-	case clarify >= 0:
+	case clarify >= 0 && (clarification == nil || clarify < clarification[1]):
 		return true, p.pauseQuestion(clarify, clarify+len("Your answer: "), false)
 	case regexp.MustCompile(menuForm).MatchString(p.pending):
 		return true, p.applyMenu(len(p.pending), true)
-	case regexp.MustCompile(clarificationForm).MatchString(p.pending):
-		return true, p.pauseQuestion(len(p.pending), len(p.pending), true)
+	case clarification != nil:
+		return true, p.pauseQuestion(clarification[1], clarification[1], true)
 	default:
 		return false, nil
 	}
@@ -119,16 +121,6 @@ func (p *promptWriter) skipTrailer() bool {
 	}
 
 	p.pending = strings.TrimLeft(p.pending, " \t\r\n=")
-	if p.trailer == "Your answer: " && strings.HasPrefix(p.pending, "(") {
-		const otherLabel = "(type custom answer)"
-		if strings.HasPrefix(otherLabel, p.pending) {
-			return true
-		}
-
-		p.pending = strings.TrimPrefix(p.pending, otherLabel)
-		p.pending = strings.TrimLeft(p.pending, " \t\r\n")
-	}
-
 	if strings.HasPrefix(p.trailer, p.pending) {
 		return true
 	}
