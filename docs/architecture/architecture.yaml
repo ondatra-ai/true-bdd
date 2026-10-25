@@ -764,7 +764,7 @@ architecture:
 
                 {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. For writer-config-001-codex this is exactly "{host}/tmp" = "write", then "{host}/services/calc" = "write" (scratch already occurs in the mode patterns). The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
 
-                writer-config-001-codex matches the entire generated file through the existing scratch-file comparison step. Its anchored pattern substitutes {{CWD}}, {{GOROOT}} and {{GOMODCACHE}} with regex-escaped resolved host and go env paths, tolerates the :minimal comments and the optional runtime read entries, and pins every other byte, including the ordered write/deny entries and complete shell environment. No authentication or other generated-home file is read by the assertion.
+                writer-config-001-codex matches the entire generated file through the existing scratch-file comparison step. Its anchored pattern substitutes {{CWD}}, {{GOROOT}} and {{GOMODCACHE}} with resolved host and go env paths, TOML-string-escaped then regex-escaped, tolerates the :minimal comments and the optional runtime read entries, and pins every other byte, including the ordered write/deny entries and complete shell environment. No authentication or other generated-home file is read by the assertion.
 
         - name: claude
           protocol: cli
@@ -806,6 +806,13 @@ architecture:
             # Auth and built-in tools remain; --bare would require API-key auth.
             values:
               permission_mode: default for the build-code Claude writer; acceptEdits otherwise.
+              run_dir: *run-dir
+              label: >-
+                `claude-turn<NNN>`: NNN is this turn's number, from 1 and
+                zero-padded to three digits, among every AI turn the run
+                dispatched, whichever CLI ran it. The counter is shared with
+                codex, not restarted per CLI or role. Thus the Claude writer
+                after one plan turn is `claude-turn002`.
               writer_settings: >-
                 {run_dir}/{label}-claude-config/settings.json. Explicit PreToolUse
                 hook runs this engine's claude-guard --policy pointing to sibling
@@ -889,32 +896,52 @@ architecture:
               CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
             notes:
               - |
-                Generated settings.json wire form (Claude Code 2.1.285, ADR-0026). It is UTF-8 JSON with these exact keys, types and array order; the generated file uses two-space indentation and a final newline. JSON object keys are emitted lexically. {guard_command} below is a JSON string value, escaped as JSON, not a nested object.
+                Generated settings.json wire form (Claude Code 2.1.285, ADR-0026). It is UTF-8 JSON with the exact layout below: two-space indentation, one array element per line, nonempty objects expanded across lines, and a final newline. JSON object keys are emitted in sorted lexical order at every depth; empty objects stay {}. {guard_command} below is a JSON string value, escaped as JSON, not a nested object.
 
                 {
                   "autoMemoryEnabled": false,
-                  "claudeMdExcludes": ["**"],
+                  "claudeMdExcludes": [
+                    "**"
+                  ],
                   "enabledPlugins": {},
                   "env": {
                     "BASH_DEFAULT_TIMEOUT_MS": "600000",
                     "BASH_MAX_TIMEOUT_MS": "600000"
                   },
                   "hooks": {
-                    "PreToolUse": [{
-                      "hooks": [{"command": "{guard_command}", "timeout": 15, "type": "command"}],
-                      "matcher": "*"
-                    }]
+                    "PreToolUse": [
+                      {
+                        "hooks": [
+                          {
+                            "command": "{guard_command}",
+                            "timeout": 15,
+                            "type": "command"
+                          }
+                        ],
+                        "matcher": "*"
+                      }
+                    ]
                   },
                   "permissions": {
-                    "allow": ["Read", "Glob", "Grep"],
+                    "allow": [
+                      "Read",
+                      "Glob",
+                      "Grep"
+                    ],
                     "defaultMode": "default",
-                    "deny": ["Agent", "Task", "WebFetch", "WebSearch", "NotebookEdit"]
+                    "deny": [
+                      "Agent",
+                      "Task",
+                      "WebFetch",
+                      "WebSearch",
+                      "NotebookEdit"
+                    ]
                   }
                 }
 
                 The guard command is the shell-single-quoted current engine executable, then the literal ` claude-guard --policy `, then the shell-single-quoted sibling policy.json path ({run_dir}/{label}-claude-config/policy.json). A single quote inside an argument is replaced by the shell sequence '"'"' before surrounding the whole argument with single quotes. JSON escaping is applied afterward (including encoding <, > and & as Unicode escapes). Bash has no allow pattern. The hook array has exactly one command hook with numeric timeout 15 and matcher "*". These settings accompany the separately generated guard policy described under writer_settings; that policy remains the authority for allowed file roots and replay forms.
 
-                writer-config-002-claude matches the entire generated settings file through the existing scratch-file comparison step, substituting {{ENGINE}} with the regex-escaped engine executable (invoked or symlink-resolved path) and eliding only the run-directory basename in the hook command. It pins the hook arguments, arrays, deny rules, environment, empty plugin map and memory/document exclusions in record and replay alike.
+                writer-config-002-claude matches the entire generated settings file through the existing scratch-file comparison step, substituting {{ENGINE}} with the engine executable (invoked or symlink-resolved path), escaping internal single quotes for the shell, then JSON-string-escaping and regex-escaping, and eliding only the run-directory basename in the hook command. It pins the hook arguments, arrays, deny rules, environment, empty plugin map and memory/document exclusions in record and replay alike.
               - >-
                 Only the build-code writer adds or strips these environment entries:
                 BASH_DEFAULT_TIMEOUT_MS/BASH_MAX_TIMEOUT_MS=600000;
@@ -1082,8 +1109,12 @@ architecture:
         The every-file comparison expands {{CWD}} to the symlink-resolved
         run root, {{ENGINE}} to the engine executable (invoked or symlink-resolved path), and
         {{GOROOT}}/{{GOMODCACHE}} through go env -json,
-        regex-escaping each path before compilation. Other patterns and
-        files are unchanged; a lookup failure fails the step.
+        escaping each path as the matched file represents it before
+        regex-escaping: JSON string contents for .json, TOML basic string
+        contents for .toml, raw paths otherwise. In JSON hook commands,
+        {{ENGINE}} also escapes internal single quotes for the surrounding
+        shell single quotes before JSON escaping. Other patterns and files
+        are unchanged; a lookup failure fails the step.
 
     - term: file change
       technical: >-

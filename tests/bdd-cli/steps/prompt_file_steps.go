@@ -27,13 +27,13 @@ func assertEveryFileMatches(state *State, args []string) error {
 		return state.fail("no file matches %q", args[0])
 	}
 
-	pattern, err := compileFilePattern(state, args[2])
-	if err != nil {
-		return err
-	}
-
 	for _, file := range files {
 		resolved, err := state.containedMatch(args[0], file)
+		if err != nil {
+			return err
+		}
+
+		pattern, err := compileFilePattern(state, file, args[2])
 		if err != nil {
 			return err
 		}
