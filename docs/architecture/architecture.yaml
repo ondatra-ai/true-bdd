@@ -614,7 +614,7 @@ architecture:
               sandbox: >-
                 `workspace-write` when the turn may write a project tree outside
                 the run directory (ordinary source-edit turns such as `build tests --fix`, which hold write roots); `read-only` for
-                every other turn. Build code's writer instead selects the generated named writer permission profile, with no -s flag.
+                every other turn, including scratch-only document EditMode applies. Those applies currently cannot edit their scratch working copies under the default codex coder; #205 must resolve this migration blocker without widening planning/validation permissions. Build code's writer instead selects the generated named writer permission profile, with no -s flag.
               model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:

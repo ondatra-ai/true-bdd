@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
+applied: true
+target: "tests/mcp/steps/steps.go"
+summary: "Added the supplied Register function and three step definitions; package compiles and is gofmt-clean."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===

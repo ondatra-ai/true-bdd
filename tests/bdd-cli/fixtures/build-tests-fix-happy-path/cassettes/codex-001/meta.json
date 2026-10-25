@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "binary": "codex",
+  "argv": [
+    "exec",
+    "-s",
+    "workspace-write",
+    "--ephemeral",
+    "--skip-git-repo-check",
+    "--color",
+    "never",
+    "-C",
+    "{{CWD}}",
+    "-m",
+    "gpt-6.1-sol",
+    "-o",
+    "tmp/{{RUN_DIR}}/codex-turn003-codex-answer.txt",
+    "-"
+  ],
+  "exit_code": 0,
+  "duration_ms": 50196,
+  "request_hash": "sha256:bb32fb0eed606548a7c5bd1c66df6adec164f52248d27ede30f42789b9c2c113",
+  "fsdiff": {
+    "created": [
+      "tests/mcp/steps/steps.go",
+      "tmp/{{RUN_DIR}}/codex-turn003-codex-answer.txt"
+    ],
+    "modified": [],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-25T08:59:01Z"
+}

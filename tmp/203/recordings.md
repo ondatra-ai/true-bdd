@@ -17,10 +17,10 @@ Failure fixtures prepend their own `record-bin` to PATH and set `TRUE_BDD_RECORD
 | `build-code-frameworks-002-jest-fix-reruns-test-by-name` | `build-code-jest-fix-named-test` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 0.95, crush 0.47 | recorded | 1.75 |
 | `build-code-frameworks-003-playwright-fix-reruns-test-by-grep` | `build-code-playwright-failing-assertion` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 0.84, crush 0.56 | recorded | 1.34 |
 | `build-code-frameworks-004-go-package-not-compiling-rerun-unfiltered` | `build-code-go-package-does-not-compile` | crush cassette / default writer changed; explicit applied-repair confirmation protocol | claude 1.65, crush 1.00 | recorded | 1.52 |
-| `build-tests-steps-001-unbound-scenario-gets-test-and-steps` | `build-tests-fix-happy-path` | crush cassette / default writer changed | claude 4.24, crush 1.16 | remaining | — |
-| `build-tests-refusals-003-undeclared-registry-refused` | `build-tests-unconfigured-registry` | fixture input/template/configuration changed | 0 | remaining | — |
-| `engine-004-unknown-model-cli-refused` | `build-tests-unknown-cli-tier` | fixture input/template/configuration changed; rewritten/replacement Scenario | 0 | remaining | — |
-| `us-apply-002-duplicates-collapse` | `us-apply-duplicate-collapse` | crush cassette / default writer changed | claude 2.19, crush 0.68 | remaining | — |
+| `build-tests-steps-001-unbound-scenario-gets-test-and-steps` | `build-tests-fix-happy-path` | crush cassette / default writer changed | claude 4.24, crush 1.16 | recorded | 5.17 |
+| `build-tests-refusals-003-undeclared-registry-refused` | `build-tests-unconfigured-registry` | fixture input/template/configuration changed | 0 | recorded | 0.00 |
+| `engine-004-unknown-model-cli-refused` | `build-tests-unknown-cli-tier` | fixture input/template/configuration changed; rewritten/replacement Scenario | 0 | recorded | 0.00 |
+| `us-apply-002-duplicates-collapse` | `us-apply-duplicate-collapse` | crush cassette / default writer changed | claude 2.19, crush 0.68 | remaining (failed attempt) | — |
 | `engine-003-locations-come-from-config` | `us-apply-relocated-registry` | crush cassette / default writer changed; fixture input/template/configuration changed | claude 1.49, crush 0.46 | remaining | — |
 | `us-apply-001-missing-criteria-added` | `us-apply-rewalk-converges` | crush cassette / default writer changed | claude 2.56, crush 0.76 | remaining | — |
 | `us-refine-fix-001-vague-description-made-measurable` | `us-refine-fix-desc-qualifier` | crush cassette / default writer changed | claude 1.38, crush 0.36 | remaining | — |
@@ -119,4 +119,12 @@ Failure fixtures prepend their own `record-bin` to PATH and set `TRUE_BDD_RECORD
 | `claude-replay-009-no-command` | `claude-replay-no-command` | fixture input/template/configuration changed; rewritten/replacement Scenario | 0 | remaining | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | crush cassette / default writer changed; fixture input/template/configuration changed; rewritten/replacement Scenario | claude 0.91, crush 0.65 | remaining | — |
 
-Recorded: 5; remaining: 101; historical service CLI minutes: 176.45; new recorded service CLI minutes: 10.46.
+Recorded: 8; remaining: 98; historical service CLI minutes: 176.45; new recorded service CLI minutes: 15.63.
+
+## Continuation blocker
+
+Ordered recording stopped at `us-apply-002-duplicates-collapse`. The existing scratch-only EditMode resolves to codex `read-only`, so codex-turn004 could not edit the scratch Registry and returned applied false. Its recording was rejected; its committed shelf is unchanged. The brief explicitly requires keeping today’s sandboxes until #205, so no sandbox widening or substitute Claude recording was made.
+
+Evidence: `tmp/203/record-logs/us-apply-002-duplicates-collapse.log` and `tmp/test_run/2026-10-25_10-00-24/us-apply-duplicate-collapse/bdd-cli-logs/`. Resume this fixture first after #205 or an explicit revised sandbox decision; do not skip ahead in the ordered manifest. No usage limit occurred.
+
+First-batch fixture controls preserve positive applied-repair branches despite unavailable in-sandbox verification. The Go compile fixture also prohibits alternate cache directories; an earlier 71 MB cache-containing recording was replaced through a fresh real recording, never edited.

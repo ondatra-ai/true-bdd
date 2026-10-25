@@ -12,6 +12,12 @@ ADR-0017, ADR-0018 and ADR-0020 are superseded by this ADR. They remain as histo
 
 Removing the crush guard loses ADR-0017's guarantee that every turn of every command reads only inside the project. Build code's codex writer keeps ADR-0021's generated home, permission profile, credentials cleanup, offline toolchain, read boundary and service/scratch writes. The Claude writer keeps ADR-0022's guard. Other codex apply turns keep their current sandbox until #205 supports their document files and configured test globs. No broader confinement is claimed here. Cuts B to D of #181 wait for #205; cut A uses build code and can run.
 
+## Recording blocker found during migration
+
+The ticket described the other codex apply sandboxes as workspace-write. The source and live recording show a narrower distinction: source-edit turns such as build tests use workspace-write, but scratch-only EditMode uses read-only. At `us-apply-002-duplicates-collapse`, codex-turn004 logged `sandbox=read-only` and could not edit the scratch Registry, returning `applied: false`; the recording was rejected. The default coder therefore exposes an existing unsupported document-edit combination. Scenario and term-document fixes have the same scratch-only mode; Story replies that return their content need no tool write.
+
+The Owner explicitly required retaining today's sandboxes until #205. This change does not widen them, add an automatic fallback, falsify a confirmation, or weaken the Scenario. Ordered recording stops at this fixture. #205 must provide writable confined scratch before this part of the migration can finish. A person can explicitly select an existing Claude apply tier in the meantime. The recording manifest and continuation report retain the failure evidence.
+
 ## Evidence and alternatives
 
 The writer trials and the plan-reading findings are recorded in #181, #199 and #203. Keeping crush would retain a provider the Owner cannot use. Applying the build-code directory profile to all commands would misinterpret document files and globs, so #205 owns that design. #204 independently removes the repository tooling fallback and audit; this product decision does not modify that tooling.

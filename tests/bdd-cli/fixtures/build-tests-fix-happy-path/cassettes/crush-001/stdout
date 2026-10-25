@@ -1,7 +1,0 @@
-The `steps` package has only `state.go`; `steps.Register` is undefined (confirmed by diagnostics). Writing `tests/mcp/steps/steps.go` exactly as the fix prompt specifies.Diagnostics look stale; running the fix prompt's verification commands.Shell is blocked by a hook; checking compile state via LSP diagnostics instead.Hook policy blocks shell/LSP in this mode, so verification commands can't run here; the file was written exactly as specified and resolves the `undefined: steps.Register` error (its `Register(suite Suite)` matches the interface in state.go:13).
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
-applied: true
-target: "tests/mcp/steps/steps.go"
-summary: "Created steps.go with Register binding the three INT-900 step definitions (server running, JSON-RPC POST, HTTP status assert) to the shared State."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-INT-900-iter1-result.yaml ===
