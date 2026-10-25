@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "binary": "claude",
+  "argv": [
+    "--setting-sources",
+    "",
+    "--strict-mcp-config",
+    "--restricted",
+    "--disable-slash-commands",
+    "--tools",
+    "Read,Glob,Grep,Edit,Write,MultiEdit,Bash",
+    "--settings",
+    "tmp/{{RUN_DIR}}/claude-turn002-claude-config/settings.json",
+    "--session-id",
+    "{{CLAUDE_SESSION}}",
+    "--add-dir",
+    "{{GOROOT}}",
+    "--add-dir",
+    "{{GOMODCACHE}}",
+    "--add-dir",
+    "{{CLAUDE_SPILLS}}",
+    "--model",
+    "claude-sonnet-5-5",
+    "--system-prompt",
+    "You are the production writer for a controlled fixture. Change only services/calc/, never tests or documents. Follow the requested protocol and use Bash only for the granted replay.\n",
+    "--permission-mode",
+    "default",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "-p",
+    "## Required fixture protocol\nRead services/calc/calc.go. Change A to return 1 and B to return 2. Keep both functions and make no other service change. Never modify tests or documents.\nAfter the repair you MUST use Bash to run this exact foreground selection in {{CWD}}:\ncd '{{CWD}}' \u0026\u0026 go test -count=1 ./tests/suite/... -run '^Test(A|B)$'\nWait for its passing result. Do not use any other command or background execution.\n\n# Repair plan for failing-set\n\n## Diagnosis\n\nThe suite `tests/suite/calc_test.go` (package `suite_test`) imports the production package `fixture/buildcodefix/services/calc` and asserts two pure, constant-valued functions:\n\n- `TestA` requires `calc.A() == 1`, else fails with `A needs one`.\n- `TestB` requires `calc.B() == 2`, else fails with `B needs two`.\n\nThe production source `services/calc/calc.go` currently stubs both functions at zero:\n\n```\nfunc A() int { return 0 }\nfunc B() int { return 0 }\n```\n\nSo `A()` returns `0 != 1` and `B()` returns `0 != 2`, producing exactly the two observed failures. There is no wiring, build, or module problem: `go.mod` declares module `fixture/buildcodefix` at the run-dir root, the test's import path resolves to `services/calc`, and the architecture's three commands (`go test -json -count=1 ./tests/suite/...`) all run the same suite. The only defect is that the two production functions return placeholder zeros instead of their specified values.\n\n## Write scope\n\nPer `docs/architecture/architecture.yaml`, the single service is `calc` with `path: services/calc`, which is the only permitted write root. The entire repair fits inside that root — specifically one file:\n\n- `services/calc/calc.go`\n\nDo **not** touch `tests/suite/calc_test.go`, any `*_test.go`, `go.mod`, or any document. No assertion may be weakened, skipped, or removed; the fix is purely on the production side.\n\n## Part 1 — `calc.A()` must return 1\n\n**File:** `services/calc/calc.go`\n\n**Contract:** `A()` is an exported, no-argument function in package `calc` returning `int`. Its contract value, as fixed by the suite, is the integer `1`. It is pure and deterministic: every call returns the same value, with no arguments, no state, no side effects, and no error path.\n\n**Intended implementation:** keep the existing signature `func A() int` exactly as-is (the test calls it with no arguments and compares the result to an `int` literal, so the signature must not change), and change the returned constant from `0` to `1`. No new types, parameters, receivers, package-level variables, or helper functions are needed or wanted — a single literal return is the whole behaviour. Do not introduce indirection (e.g. a package var or `init`) that would make the constant mutable; the value is a fixed part of the contract.\n\n**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestA` (`fixture/buildcodefix/tests/suite::TestA`), whose failure message is `A needs one`.\n\n## Part 2 — `calc.B()` must return 2\n\n**File:** `services/calc/calc.go`\n\n**Contract:** `B()` is an exported, no-argument function in package `calc` returning `int`. Its contract value, as fixed by the suite, is the integer `2`. Like `A()`, it is pure and deterministic with no arguments, state, side effects, or error path. `B()` is independent of `A()` — it must not be defined in terms of `A()` (e.g. `A() + 1`), since the two values are separate parts of the contract and coupling them would make a future change to one silently break the other.\n\n**Intended implementation:** keep the existing signature `func B() int` unchanged and change the returned constant from `0` to `2`. Again a single literal return; no helpers, no shared state.\n\n**Tests served:** `/go-test/go-test:fixture.buildcodefix.tests.suite::TestB` (`fixture/buildcodefix/tests/suite::TestB`), whose failure message is `B needs two`.\n\n## Invariants to preserve\n\n- Package clause stays `package calc`; the file stays at `services/calc/calc.go` so the import path `fixture/buildcodefix/services/calc` keeps resolving.\n- Both functions stay exported with their current names and `func() int` signatures; the test references `calc.A` and `calc.B` directly.\n- No other files are added or modified. In particular, do not add a `go.mod` under `services/calc` — that would cut the package out of the `fixture/buildcodefix` module and break the test's import.\n- The file must remain `gofmt`-clean and compile with no unused imports (none are needed).\n\n## Verification\n\nRun the architecture's suite command from the run-dir root:\n\n```\ngo test -json -count=1 ./tests/suite/...\n```\n\nExpect `TestA` and `TestB` to both report pass, with the `A needs one` and `B needs two` fatals gone and no other test regressing. A quick `go build ./...` confirms the package still compiles for the whole module.\n\nEnd your final message with:\n=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\napplied: true\ntarget: \"services/calc/calc.go\"\nsummary: \"Fixed A and B and ran the granted selection.\"\n=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===\n"
+  ],
+  "exit_code": 0,
+  "duration_ms": 19833,
+  "request_hash": "sha256:8ff3b4714558fd26d279d1c9b0abd8838a45311dd91195c38604122875935d8a",
+  "fsdiff": {
+    "created": [],
+    "modified": [
+      "services/calc/calc.go"
+    ],
+    "deleted": []
+  },
+  "recorded_at": "2026-10-25T16:26:42Z"
+}

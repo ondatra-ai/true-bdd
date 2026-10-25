@@ -702,6 +702,70 @@ architecture:
                 Before the spawn the engine logs the turn's sandbox level as
                 msg="Codex turn sandboxed" with the turn's `label` and `sandbox`.
 
+              - |
+                Generated config.toml wire form (codex-cli 0.162.1, ADR-0026). The following template fixes every key and table, in emission order. Braced names are path substitutions, not literal TOML. Paths and values are TOML quoted strings; {runtime_read_entries} and {write_entries} expand to complete quoted-path assignments. Blank lines and the explanatory :minimal comments have no semantic effect. There is no [permissions.writer] network boolean, file_system table, type field or entries array. The filesystem table itself is the restricted path-to-access map: no :root grant or inherited workspace profile is emitted.
+
+                default_permissions = "writer"
+                approval_policy = "never"
+                model_reasoning_effort = "high"
+                model_context_window = 1050000
+                web_search = "disabled"
+                project_doc_max_bytes = 0
+                allow_login_shell = false
+                cli_auth_credentials_store = "file"
+                [history]
+                persistence = "none"
+                [features]
+                apps = false
+                plugins = false
+                multi_agent = false
+                memories = false
+                shell_snapshot = false
+                skip_host_skill_discovery = true
+
+                [permissions.writer.filesystem]
+                ":minimal" = "read"
+                "{host}" = "read"
+                "{GOROOT}" = "read"
+                "{GOMODCACHE}" = "read"
+                {runtime_read_entries}
+                {write_entries}
+                "{host}/tmp/codex-homes" = "deny"
+                "/private/tmp" = "deny"
+                "/private/var/tmp" = "deny"
+                "{GOMODCACHE}/cache/vcs" = "deny"
+                "{GOMODCACHE}/github.com/ondatra-ai" = "deny"
+                "{GOMODCACHE}/cache/download/github.com/ondatra-ai" = "deny"
+
+                [permissions.writer.network]
+                enabled = false
+                [shell_environment_policy]
+                inherit = "none"
+                [shell_environment_policy.set]
+                CGO_ENABLED = "0"
+                DOCKER_CONFIG = "{host}/tmp/codex-shell-home/.docker"
+                GOCACHE = "{host}/tmp/codex-go-build"
+                GOFLAGS = "-trimpath -buildvcs=false"
+                GOMODCACHE = "{GOMODCACHE}"
+                GOPROXY = "off"
+                GOROOT = "{GOROOT}"
+                GOSUMDB = "off"
+                GOTELEMETRY = "off"
+                GOTOOLCHAIN = "local"
+                HOME = "{host}/tmp/codex-shell-home"
+                OPENSSL_CONF = "/dev/null"
+                PATH = "{GOROOT}/bin:/usr/bin:/bin:/usr/sbin:/sbin:{host}/tmp/codex-shell-home/runtime-bin"
+                TMPDIR = "{host}/tmp/codex-tmp"
+                npm_config_cache = "{host}/tmp/codex-shell-home/npm-cache"
+                npm_config_offline = "true"
+                npm_config_userconfig = "{host}/tmp/codex-shell-home/.npmrc"
+
+                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
+
+                {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. For writer-config-001-codex this is exactly "{host}/tmp" = "write", then "{host}/services/calc" = "write" (scratch already occurs in the mode patterns). The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
+
+                writer-config-001-codex matches the entire generated file through the existing scratch-file comparison step. Its anchored pattern substitutes {{CWD}}, {{GOROOT}} and {{GOMODCACHE}} with regex-escaped resolved host and go env paths, tolerates the :minimal comments and the optional runtime read entries, and pins every other byte, including the ordered write/deny entries and complete shell environment. No authentication or other generated-home file is read by the assertion.
+
         - name: claude
           protocol: cli
           scope: third_party
@@ -824,6 +888,33 @@ architecture:
               CLAUDE_HISTORY_ROLE: Empty; the engine labels no turn.
               CLAUDE_CODE_DISABLE_ADVISOR_TOOL: "1"
             notes:
+              - |
+                Generated settings.json wire form (Claude Code 2.1.285, ADR-0026). It is UTF-8 JSON with these exact keys, types and array order; the generated file uses two-space indentation and a final newline. JSON object keys are emitted lexically. {guard_command} below is a JSON string value, escaped as JSON, not a nested object.
+
+                {
+                  "autoMemoryEnabled": false,
+                  "claudeMdExcludes": ["**"],
+                  "enabledPlugins": {},
+                  "env": {
+                    "BASH_DEFAULT_TIMEOUT_MS": "600000",
+                    "BASH_MAX_TIMEOUT_MS": "600000"
+                  },
+                  "hooks": {
+                    "PreToolUse": [{
+                      "hooks": [{"command": "{guard_command}", "timeout": 15, "type": "command"}],
+                      "matcher": "*"
+                    }]
+                  },
+                  "permissions": {
+                    "allow": ["Read", "Glob", "Grep"],
+                    "defaultMode": "default",
+                    "deny": ["Agent", "Task", "WebFetch", "WebSearch", "NotebookEdit"]
+                  }
+                }
+
+                The guard command is the shell-single-quoted current engine executable, then the literal ` claude-guard --policy `, then the shell-single-quoted sibling policy.json path ({run_dir}/{label}-claude-config/policy.json). A single quote inside an argument is replaced by the shell sequence '"'"' before surrounding the whole argument with single quotes. JSON escaping is applied afterward (including encoding <, > and & as Unicode escapes). Bash has no allow pattern. The hook array has exactly one command hook with numeric timeout 15 and matcher "*". These settings accompany the separately generated guard policy described under writer_settings; that policy remains the authority for allowed file roots and replay forms.
+
+                writer-config-002-claude matches the entire generated settings file through the existing scratch-file comparison step, substituting {{ENGINE}} with the regex-escaped engine executable (invoked or symlink-resolved path) and eliding only the run-directory basename in the hook command. It pins the hook arguments, arrays, deny rules, environment, empty plugin map and memory/document exclusions in record and replay alike.
               - >-
                 Only the build-code writer adds or strips these environment entries:
                 BASH_DEFAULT_TIMEOUT_MS/BASH_MAX_TIMEOUT_MS=600000;
@@ -988,6 +1079,11 @@ architecture:
       observed_by: >-
         Compiled by the step that holds it; one that does not compile fails
         the step rather than matching nothing.
+        The every-file comparison expands {{CWD}} to the symlink-resolved
+        run root, {{ENGINE}} to the engine executable (invoked or symlink-resolved path), and
+        {{GOROOT}}/{{GOMODCACHE}} through go env -json,
+        regex-escaping each path before compilation. Other patterns and
+        files are unchanged; a lookup failure fails the step.
 
     - term: file change
       technical: >-
