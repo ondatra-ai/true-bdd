@@ -1,7 +1,0 @@
-`Mode()` returns 0, so per the lifecycle protocol I advance it only to 1 (the intermediate stage), not 2.Stage 1 applied exactly as the lifecycle protocol requires: `Mode()` advanced 0 → 1 only. Verified with the allowed selection run: TestA now takes its skip branch ("no execution result", no failure), TestB still fails with "B needs mode two" — the deliberately incomplete intermediate state. The 1 → 2 stage remains for the next apply; I did not touch tests, docs, or anything outside `services/calc`.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
-applied: true
-target: "services/calc"
-summary: "services/calc/calc.go: Mode() changed from returning 0 to returning 1 (fixture lifecycle stage 0→1 only; the broader return-2 plan deliberately not completed this turn). Ran `go test -count=1 ./tests/suite/... -run 'TestA|TestB'`: TestA no longer fails — it now skips via its `no execution result` branch; TestB still fails with `B needs mode two`. No test of the set passes yet, as designed for this intermediate stage; next apply must change Mode() from 1 to 2."
-=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

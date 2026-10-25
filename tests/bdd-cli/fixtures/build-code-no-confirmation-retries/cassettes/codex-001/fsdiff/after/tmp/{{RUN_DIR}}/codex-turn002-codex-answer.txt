@@ -1,0 +1,1 @@
+Changed only A in services/calc/calc.go to return 1, leaving B returning 0 as required for this stage. TestA passes; TestB still fails as expected.

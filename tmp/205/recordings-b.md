@@ -19,11 +19,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `build-code-set-001-partial-repair` | `build-code-partial` | recorded | recorded on #203-b; replay passed | 3.01 |
 | `build-code-set-002-shared-evidence` | `build-code-grouped` | recorded | recorded on #203-b; replay passed | 1.50 |
 | `build-code-set-003-mixed-synthetic` | `build-code-mixed-build` | recorded | recorded on #203-b; replay passed | 1.78 |
-| `build-code-set-004-missing-result` | `build-code-missing-member` | remaining | pending | — |
-| `build-code-set-005-shrinking-counter` | `build-code-shrinking-bound` | remaining | pending | — |
-| `build-code-confirmation-001-passes` | `build-code-no-confirmation-passes` | remaining | pending | — |
-| `build-code-confirmation-002-retries` | `build-code-no-confirmation-retries` | remaining | pending | — |
-| `build-code-confirmation-003-bound` | `build-code-no-confirmation-bound` | remaining | pending | — |
+| `build-code-set-004-missing-result` | `build-code-missing-member` | recorded | recorded on #203-b; replay passed | 3.73 |
+| `build-code-set-005-shrinking-counter` | `build-code-shrinking-bound` | recorded | recorded on #203-b; replay passed | 2.42 |
+| `build-code-confirmation-001-passes` | `build-code-no-confirmation-passes` | recorded | recorded on #203-b; replay passed | 1.36 |
+| `build-code-confirmation-002-retries` | `build-code-no-confirmation-retries` | recorded | recorded on #203-b; replay passed | 3.18 |
+| `build-code-confirmation-003-bound` | `build-code-no-confirmation-bound` | recorded | recorded on #203-b; replay passed | 3.88 |
 | `build-code-writer-001-nonzero` | `build-code-writer-nonzero` | remaining | pending | — |
 | `build-code-writer-002-empty` | `build-code-writer-empty` | remaining | pending | — |
 | `build-code-writer-003-bound` | `build-code-writer-bound` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 15 of 55; remaining: 40; service CLI minutes: 56.07.
+Recorded and replayed: 20 of 55; remaining: 35; service CLI minutes: 70.64.
