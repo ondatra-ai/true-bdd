@@ -1,0 +1,113 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Scenario Editor applying an approved fix to the
+working copy of one document: the scenario registry, where a
+Scenario's description or steps are rewritten, or the product
+document, where a catalogue entry's meaning is.
+
+**Your Task:**
+1. Read the working copy the fix names.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described, with the Edit tool on the
+   working copy.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the working copy before editing.
+- Use Edit to change it: replace the current text the fix gives with
+  its new text, inside the one entry the fix names.
+- Do NOT touch the document the working copy stands for: the engine
+  replaces it with your copy once the copy parses.
+- Do NOT touch another Scenario's entry, a generated test file or a
+  step definition, and never add or remove a Scenario.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target:` — the working copy you edited (QUOTED)
+  - `summary:` — one line on what changed
+
+
+### TASK
+
+## Subject — Registry Scenario
+
+**Scenario ID:** E2E-001
+**Description:** The greeter must print the configured greeting followed by the name it is given quickly
+
+### Steps
+Given:
+  - the greeting is configured as "Hello"
+When:
+  - the Operator runs "greet Ada"
+Then:
+  - the command exits with code 0 within 100 milliseconds
+  - and stdout matches ^Hello Ada$
+
+---
+
+## Fix Prompt to Apply
+
+# Fix Prompt for Scenario E2E-001: The greeter must print the configured greeting followed by the name it is given quickly
+
+## Target
+The `E2E-001` entry of the `scenarios_yaml` document (the scenario registry), `description` field only.
+
+## Finding being fixed
+`scen-check/scenario_quality` — `E2E-001: contains 'quickly'`. `quickly` is listed in `vocabulary.forbidden_qualifiers` of the product document. The Scenario's own `then` block already states the measurable criterion the word stands for: `the command exits with code 0 within 100 milliseconds`. So the replacement is taken from the steps and nothing needs to be asked.
+
+## Required Changes
+### Change #1: Replace the forbidden qualifier 'quickly' with the 100 millisecond bound its steps state
+**Document:** scenarios_yaml
+**Field:** description (of scenario `E2E-001`)
+**Current text:**
+```
+The greeter must print the configured greeting followed by the name it is given quickly
+```
+**New text:**
+```
+The greeter must print the configured greeting followed by the name it is given within 100 milliseconds
+```
+
+## Constraints for the applier
+- Change only the `description` of `E2E-001`. Leave its id key, `service: greeter`, `path: tests/greeter/greet_test.go` and `user_stories: []` exactly as they are.
+- Change no step: `merged_steps.given`, `merged_steps.when` and `merged_steps.then` stay exactly as they are, including `the command exits with code 0 within 100 milliseconds` and `and: stdout matches ^Hello Ada$`.
+- Touch no other Scenario, and no other document — in particular do not edit `docs/product/product.yaml` (no catalogue entry's `means` is named by this finding), the generated test `tests/greeter/greet_test.go`, or any step definition. The generated test is re-rendered later by `true-bdd build tests --fix`.
+- The behaviour specified is unchanged: the same greeting-plus-name output and the same 100 millisecond exit bound, now named measurably in the description instead of as 'quickly'.
+
+---
+
+## Where to write
+
+Each document a fix may change has a working copy in this run's tmp
+directory. Edit the working copy of the document the fix prompt names,
+never the document itself:
+- `scenarios_yaml`: edit `tmp/{{RUN_DIR}}/scenarios_yaml.yaml`, the working copy of `./docs/scenarios.yaml`, the scenario registry
+- `product`: edit `tmp/{{RUN_DIR}}/product.yaml`, the working copy of `./docs/product/product.yaml`
+
+The engine replaces each document with its working copy once the copy
+reads as valid YAML, and the registry only while it still holds the
+same Scenarios, so a copy you leave unparseable changes nothing.
+
+## Instructions
+
+1. Use the Read tool to load the working copy the fix prompt names. In
+   the registry, find the `E2E-001:` entry under `scenarios:`;
+   in the product document, the catalogue entry the fix names.
+2. Apply each change with the Edit tool on that working copy: replace
+   the current text the fix prompt gives with its new text, inside that
+   entry only.
+3. Keep the YAML as it was shaped: a step keeps its `and:` or `but:`
+   key and its list indentation, and a value carrying `: ` or `#`, or
+   opening with a quote or a bracket, stays quoted.
+4. You MAY only edit the working copies listed above. The documents
+   themselves, every other Scenario's entry, a generated test file and
+   a step definition are all out of bounds.
+5. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
+applied: true
+target: "<path of the working copy you edited>"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===

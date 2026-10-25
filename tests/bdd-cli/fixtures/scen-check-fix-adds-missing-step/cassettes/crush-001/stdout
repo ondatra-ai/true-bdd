@@ -1,7 +1,0 @@
-Edit applied; shell validation is blocked by a guard hook, but the change only appends a `then:` list matching existing indentation, keeping valid YAML.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Added missing then block to E2E-001 with 'stdout matches ^Hello Ada$' and 'the command exits with code 0'; all other fields and entries unchanged"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
