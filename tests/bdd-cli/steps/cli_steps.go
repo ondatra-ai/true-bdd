@@ -103,6 +103,7 @@ func Register(suite *bddgo.Suite[State]) {
 	// Guard Scenarios run the hidden hook directly.
 	registerGuardSteps(suite)
 	registerClaudeGuardSteps(suite)
+	registerWriterLifecycleSteps(suite)
 }
 
 // registerEngineLogSteps binds the assertions that read the CLI's own

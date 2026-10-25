@@ -462,6 +462,23 @@ catalogue:
       nothing an earlier run changed is visible in it.
     terms: [project tree, command, template]
 
+  - template: 'the codex writer uses fixture-controlled authentication and CLIs'
+    block: given
+    means: >-
+      The project tree supplies dummy authentication and deterministic external
+      CLI stand-ins. The codex writer's preparation and cleanup still run in
+      the engine, and its CLI spawn is observed independently of recordings.
+    terms: [project tree, AI turn]
+
+  - template: 'the codex writer provisioned and removed its fixture authentication'
+    block: then
+    means: >-
+      Exactly one writer spawn held an exact private copy of the fixture's dummy
+      authentication in a private protected generated home, with its edit root
+      and shell scratch already created. After the AI turn no authentication
+      remains in that home, including when the CLI exited non-zero.
+    terms: [project tree, AI turn]
+
   - template: 'the {actor:role} answers "{answer}" to every question'
     block: given
     means: >-

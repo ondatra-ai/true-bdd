@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"result":"","structured_output":{"fix_prompt":"Implement calc.A returning 1 and calc.B returning 2 in services/calc/calc.go. Preserve tests.","questions":[]}}'

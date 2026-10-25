@@ -766,6 +766,35 @@ architecture:
 
                 writer-config-001-codex matches the entire generated file through the existing scratch-file comparison step. Its anchored pattern substitutes {{CWD}}, {{GOROOT}} and {{GOMODCACHE}} with resolved host and go env paths, TOML-string-escaped then regex-escaped, tolerates the :minimal comments and the optional runtime read entries, and pins every other byte, including the ordered write/deny entries and complete shell environment. No authentication or other generated-home file is read by the assertion.
 
+              - >-
+                Live-only writer provisioning is held by writer-lifecycle-001-success and
+                writer-lifecycle-002-failure (ADR-0026). Their fixtures supply only dummy
+                auth.json and deterministic external CLI stand-ins, not model credentials.
+                At the codex spawn boundary, before either recording or replaying file effects,
+                the harness shim resolves CODEX_HOME beneath host tmp/codex-homes, requires
+                a private 0700 home containing only config.toml and a regular 0600 auth.json
+                byte-identical to the declared dummy fixture, an already-created empty
+                services/calc edit root, private HOME/TMPDIR/GOCACHE scratch directories,
+                and the shared generated-home deny entry. It writes a non-secret receipt
+                outside cassette file effects. The Then step requires that receipt, exactly
+                one generated home, and no auth.json after the turn. The failure fixture's
+                CLI exits 7 after editing; its Scenario requires the non-zero-exit warning.
+                Both Scenarios compare stdout-only JSONL events exactly and require the
+                separate stderr sentinel in the combined transcript. The stand-in never
+                creates the edit root, and replay validates before applying its recorded edit.
+                The existing writer-config-001-codex pins every shell environment setting,
+                inherited-environment suppression, ordered permissions and generated config
+                content. A configured shell policy is the engine's contract; enforcement
+                by native codex remains the installation-dependent live calibration in
+                ADR-0021/0024, not something a replaying stand-in can demonstrate.
+                The shim activates this inspection only for the explicit fixture-controlled
+                Given; ordinary turns never have authentication opened by the harness.
+                Record uses the fixture's cli/ executables behind the shim. In services:live
+                these two fixtures use an observing pass-through shim and the same stand-ins,
+                without cassettes; normal live turns remain unmediated. Existing request
+                hashes are unchanged. Generated homes and runtime scratch stay excluded
+                before snapshot traversal; authentication bytes never enter a cassette or log.
+
         - name: claude
           protocol: cli
           scope: third_party
@@ -1028,7 +1057,9 @@ architecture:
         run directory `tmp/test_run/<session>/<name>/`, the command's working
         directory. Beside `input/` sit `cassettes/` (the recorded AI turns and
         the recorded outcome) and the optional `prep.sh`, `teardown.sh` and
-        `checklist-prompts.yaml`.
+        `checklist-prompts.yaml`. An explicit fixture-controlled writer Given also uses
+        auth/auth.json (declared dummy bytes only) and cli/claude and cli/codex
+        deterministic external CLI stand-ins, all outside the overlaid input tree.
       observed_by: >-
         Set up by the Given step naming the tree: it loads that fixture, and
         decides per caller where the run's AI turns come from (the fixture's
@@ -1053,6 +1084,10 @@ architecture:
         of it because the path leads out. A step about a created or modified
         file only compares the quoted path, as written, with the paths of the
         run's file changes, and reads no file.
+        The fixture-controlled writer Given inserts its cli/ behind the services
+        shim and sets CODEX_HOME to its auth/ directory. The writer lifecycle
+        Then requires the shim's per-run non-secret spawn receipt and checks
+        that exactly one generated home has no auth.json after the command.
 
     - term: exit code
       technical: >-

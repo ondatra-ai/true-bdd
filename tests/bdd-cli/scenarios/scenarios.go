@@ -345,7 +345,7 @@ func installShims(modes runner.Modes) (runner.ShimDirs, error) {
 		runner.CallerServices: modes.Services,
 		runner.CallerTests:    modes.Tests,
 	} {
-		if mode == runner.ProxyModeLive {
+		if mode == runner.ProxyModeLive && caller != runner.CallerServices {
 			continue
 		}
 

@@ -5833,3 +5833,53 @@ scenarios:
       - 'every file matching "tmp/*/*-claude-config/settings.json" matches ^\{\n  "autoMemoryEnabled": false,\n  "claudeMdExcludes": \[\n    "\*\*"\n  \],\n  "enabledPlugins": \{\},\n  "env": \{\n    "BASH_DEFAULT_TIMEOUT_MS": "600000",\n    "BASH_MAX_TIMEOUT_MS": "600000"\n  \},\n  "hooks": \{\n    "PreToolUse": \[\n      \{\n        "hooks": \[\n          \{\n            "command": "''{{ENGINE}}'' claude-guard --policy ''tmp/[^/\n]+/claude-turn002-claude-config/policy\.json''",\n            "timeout": 15,\n            "type": "command"\n          \}\n        \],\n        "matcher": "\*"\n      \}\n    \]\n  \},\n  "permissions": \{\n    "allow": \[\n      "Read",\n      "Glob",\n      "Grep"\n    \],\n    "defaultMode": "default",\n    "deny": \[\n      "Agent",\n      "Task",\n      "WebFetch",\n      "WebSearch",\n      "NotebookEdit"\n    \]\n  \}\n\}\n$'
       - the file "tests/suite/calc_test.go" is unchanged
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+
+  writer-lifecycle-001-success:
+    description: A successful codex writer provisions private fixture authentication and missing edit roots at spawn and removes authentication afterward
+    service: bdd-cli
+    path: tests/bdd-cli/writer_lifecycle_test.go
+    user_stories:
+    - story: docs/product/stories/writer-lifecycle.yaml
+      scenario_id: writer-lifecycle-001-success
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "writer-lifecycle-success" project tree
+      - the codex writer uses fixture-controlled authentication and CLIs
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - the codex writer provisioned and removed its fixture authentication
+      - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
+      - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
+      - the file "services/calc/calc.go" is created
+      - the file "tests/suite/calc_test.go" is unchanged
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+
+  writer-lifecycle-002-failure:
+    description: A failed codex writer removes its private fixture authentication after preserving edits and archiving events
+    service: bdd-cli
+    path: tests/bdd-cli/writer_lifecycle_test.go
+    user_stories:
+    - story: docs/product/stories/writer-lifecycle.yaml
+      scenario_id: writer-lifecycle-002-failure
+      merge_date: '2026-10-25'
+    merged_steps:
+      given:
+      - the "writer-lifecycle-failure" project tree
+      - the codex writer uses fixture-controlled authentication and CLIs
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches level=WARN msg="Writer turn failed" outcome="non-zero exit"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the codex writer provisioned and removed its fixture authentication
+      - every file matching "tmp/*/*codex-events.jsonl" matches ^\{"type":"item.completed","item":\{"type":"command_execution","command":"fixture writer sentinel","exit_code":0\}\}\n$
+      - every file matching "tmp/*/*codex.log" matches fixture writer stderr sentinel
+      - the file "services/calc/calc.go" is created
+      - the file "tests/suite/calc_test.go" is unchanged
+      - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0

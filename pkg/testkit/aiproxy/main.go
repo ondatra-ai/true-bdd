@@ -9,6 +9,7 @@
 //     dir), tee stdio through unmodified into a cassette, and
 //     snapshot/diff the working tree around the call so file effects
 //     are captured alongside the byte streams.
+//   - observe: verify opted-in fixture spawns and pass through without recording.
 //   - replay: never touch the real CLI — apply the cassette's fs-diff,
 //     emit the recorded stdout verbatim, exit with the recorded code.
 //
@@ -48,7 +49,24 @@ func main() {
 }
 
 func run(cfg config, name string, argv []string) (int, error) {
+	err := verifyWriterSpawn(cfg, name)
+	if err != nil {
+		return 0, err
+	}
+
 	switch cfg.Mode {
+	case "observe":
+		path, err := resolveRealBinary(name, cfg.ShimDir)
+		if err != nil {
+			return 0, err
+		}
+
+		result, err := runReal(path, argv)
+		if err != nil {
+			return 0, err
+		}
+
+		return result.ExitCode, nil
 	case modeRecord:
 		return record(cfg, name, argv)
 	case modeReplay:

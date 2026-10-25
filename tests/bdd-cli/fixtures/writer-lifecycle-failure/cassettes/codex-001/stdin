@@ -1,0 +1,22 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+Implement the failing service in services/calc/ only. Never edit tests or documents. Follow the requested replay and final-message protocol.
+
+
+### TASK
+
+## Failing set
+Test: fixture/buildcodefix/tests/suite::<build>
+
+## Plan
+Implement calc.A returning 1 and calc.B returning 2 in services/calc/calc.go. Preserve tests.
+Implement calc.A() returning 1 and calc.B() returning 2 in services/calc/calc.go.
+Run the granted selection in `{{CWD}}`:
+`go test -count=1 ./tests/suite/... -run 'TestA|TestB'`
+Poll your process with the native process tool until completion if it yields a session id. Do not stop before the selection passes.
+End your final message with this block in the message itself, never write the result file:
+=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===
+applied: true
+target: services/calc/calc.go
+summary: Implemented A and B and observed both selection members passing.
+=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===
