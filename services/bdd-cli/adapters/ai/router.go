@@ -83,6 +83,7 @@ func (r *Router) ExecutePromptWithSystem(
 	started := time.Now()
 
 	response, err := target.Execute(turnCtx, Request{
+		CodexApply:   role == provider.RoleApply && model.CLI == provider.CLICodex,
 		ClaudeWriter: turnOptions.ClaudeWriter,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,

@@ -5,7 +5,7 @@
 //
 // Headless execution facts verified against codex-cli 0.162.1:
 //
-//	permissions         ordinary turns select -s; the build-code writer
+//	permissions         plan/validation select -s; every apply
 //	                    selects its generated named profile with no approval.
 //	the answer is a file stdout carries only a trace; the final message is
 //	                    written to the path given to -o.
@@ -26,7 +26,7 @@ import (
 // Bin is the binary this package spawns.
 const Bin = "codex"
 
-// Legacy sandboxes retained by every turn except the confined build-code writer.
+// Planning and validation use the read-only sandbox; apply turns use a named profile.
 const (
 	SandboxReadOnly       = "read-only"
 	SandboxWorkspaceWrite = "workspace-write"

@@ -216,6 +216,7 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-records-phrase":            overrideChecks,
+ "codex-apply-us-refine": overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,

@@ -17,7 +17,7 @@ func (p *captureTurn) Execute(_ context.Context, request Request) (string, error
 	return "answer", nil
 }
 
-func TestRouterConfinesOnlyAnExplicitCodexApply(t *testing.T) {
+func TestRouterConfinesEveryCodexApply(t *testing.T) {
 	for _, role := range []provider.Role{provider.RoleApply, provider.RoleFix, provider.RolePrompt} {
 		for _, requested := range []bool{false, true} {
 			for _, cli := range []provider.CLI{provider.CLIClaude, provider.CLICodex} {
@@ -88,8 +88,8 @@ func (d *deadlineTurn) assertWriterDeadline(t *testing.T, want bool) {
 func assertCodexConfinement(t *testing.T, req Request, role provider.Role, cli provider.CLI, requested bool) {
 	t.Helper()
 
-	want := requested && role == provider.RoleApply && cli == provider.CLICodex
-	if req.CodexWriter != want {
-		t.Fatalf("role=%s cli=%s requested=%v: confinement=%v", role, cli, requested, req.CodexWriter)
+	want := role == provider.RoleApply && cli == provider.CLICodex
+	if req.CodexApply != want {
+		t.Fatalf("role=%s cli=%s requested=%v: confinement=%v", role, cli, requested, req.CodexApply)
 	}
 }

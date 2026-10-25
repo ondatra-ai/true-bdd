@@ -263,6 +263,10 @@ glossary:
       keeps its edits and follows the same warning, allowance and rerun.
       A codex start failure or refusal before spawning stays fatal; codex
       has no response watch.
+      Every codex apply turn, including document and test-definition edits, uses a generated home and permission profile:
+      reads stay inside the Host project plus explicit runtime and toolchain exceptions, writes stay in that turn's own
+      file, directory or configured-glob roots and scratch, and escaping roots are refused. Plan and validation turns
+      remain read-only. Glob matches are fixed at preparation, except a terminal recursive subtree grants new descendants.
       The build-code codex writer receives whole-suite and selected replay
       forms, polling its own process for completion. It reads the host
       project and runtime/toolchain exceptions only, writes declared service

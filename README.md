@@ -89,7 +89,7 @@ until those tests pass.
 | Subcommand | State |
 |---|---|
 | `us refine <id>` | **Working** — the pipeline's first step: iterates a hand-written story against the `us-refine` checklist; updates in place. When the product document declares a catalogue, every step of every acceptance criterion must match exactly one of its templates (`D: step-phrases`), checked before any model prompt; under `--fix` a step outside it gets a new catalogue entry in the product document, and the Story keeps its words. |
-| `us apply <id>` | **Working with a Claude apply override** — default codex scratch editing is blocked pending #205; walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
+| `us apply <id>` | **Working** — walks every AC in a refined story, validates against `us-apply`, and merges scenarios into the central `docs/scenarios.yaml` registry. |
 | `build tests` | **Working** — walks every scenario in the registry against the `build-tests` checklist and exits non-zero if any scenario is not executable: every one of its steps must bind to a step definition in the suite that owns it. When the product document declares a catalogue, every registry step, whether a Story claims its scenario or not, must first match exactly one of its templates, as `D: step-phrases` holds them, or the run is refused before it writes a file or spends an AI turn, naming each step outside it; a host with no catalogue walks as before. With `--fix`, failed cells drive a Claude-mediated authoring loop that writes the missing step definition; when the product document declares a catalogue, that loop is handed each unbound step's phrase, the glossary meaning of the words it relies on and their word mapping, so the definition observes what the mapping says. After each definition fix, it runs the bound Scenarios in every changed step package, including Scenarios that already bound every step, through `architecture.testing.commands.replay` with a Go test name filter. A selected Scenario must pass in its owning Go package; a same-named test elsewhere cannot satisfy it. A Scenario that becomes unbound remains a failure. Runtime failures feed the step-authoring loop; a definition still failing at `config.max_apply_attempts` ends non-zero, naming the Scenario and step. `BUILD TESTS COMPLETE` follows successful execution and generated-file verification. The registry itself is never modified. |
 | `build code` | **Working** — runs the architecture's declared replay command and walks the whole failing set as one Item. An engine-owned `D:` verdict needs no validation AI turn. With `--fix`, one plan and one writer repair the set; the writer receives Specification context, service edit roots and codex or Claude whole-suite and selected replay forms. After every completed apply the engine reruns the remaining set in one start; passing members leave and missing results stay failing. A successful writer response missing its confirmation warns once with the result path and follows the same rerun as `applied: false`, keeping files and consuming the same allowance. The terminal apply is rerun but still stops at the existing bound even if it passes. Started codex writers that exit non-zero or answer empty, and Claude writers that exit non-zero, return an error result or answer empty, follow the same recovery without a stall watch. Start failures and engine refusals before spawning remain fatal, as do other roles' failures. The writer ends its final message with the confirmation block; the engine saves the block at the heading's result path, which the writer never writes. Fresh discovery on each outer walk catches regressions. Tests and the Registry remain unchanged. |
 | `scen check [id...]` | **Working** — walks registry scenarios against the `scen-check` checklist, one cell per (scenario, prompt): each prompt reads one scenario's own fields — description, service, path, lineage, steps — and rules on that scenario alone, so no prompt can ask a cross-registry question. Exits non-zero when any scenario fails, so it can gate a change. With no argument every scenario is walked; ids narrow the walk to those scenarios, in ascending id order. |
@@ -393,13 +393,11 @@ engine's execution mode, and projected onto each CLI:
 | | `claude` | `codex` |
 |---|---|---|
 | System prompt | native flag | prepended to the prompt |
-| Write gate | `--allowedTools`; generated hook for the build-code writer | named writer profile for build code; otherwise `-s read-only` / `workspace-write` |
+| Write gate | `--allowedTools`; generated hook for the build-code writer | named profile for every apply; `-s read-only` for plan/validation |
 
 Only `build code --fix`'s writers receive whole-suite and selected replay forms. Claude's guard matches the canonical command exactly, with an optional nonempty single-quoted selector, in the resolved suite directory. An argument containing a single quote, newline or NUL withholds the grant with one warning. Claude requires foreground execution; codex polls its native process sessions. Tests execute writer code with the machine's permissions under Claude; codex commands additionally run inside its permission profile.
 
-The default writer is `codex:gpt-6.1-sol`; `default_apply_model` remains `coder`. The build-code codex writer keeps ADR-0021's confinement. Other codex apply turns retain their current sandbox pending #205; plan and validation turns stay `read-only`. Cuts B to D of the rebuild drill wait for #205 (ADR-0023).
-
-The migration currently exposes an existing codex limitation: scratch-only document appliers use `read-only`, so they cannot edit their working copies. This blocks default `us apply --fix`, `scen check --fix`, and catalogue-document fixes in `us refine --fix`. Until #205 provides the new confinement, select a Claude apply tier explicitly, for example `--model coder=claude:claude-sonnet-5-5`. This does not change the configured `coder` default.
+The default writer is `codex:gpt-6.1-sol`; `default_apply_model` remains `coder`. Every codex apply turn uses a generated home and permission profile scoped to its own roots and scratch (ADR-0024). Plan and validation turns stay `read-only`. Only build code's writer receives replay command forms and started-turn recovery.
 
 For a Claude writer, use a tier bound to `claude:claude-sonnet-5-5` (native
 1M context on Claude Code 2.1.284 or later). The confined writer requires
@@ -418,22 +416,22 @@ A started Claude writer's non-zero exit, error result (rate/usage limits include
 or empty answer preserves edits, warns once and reruns the set. Available cost
 and token counts are logged even on failure. Start failures remain fatal.
 
-Only `build code --fix`'s codex writer uses a generated `CODEX_HOME` and
-named permission profile (ADR-0021), with high reasoning and a configured
+Every codex apply turn uses a generated `CODEX_HOME` and
+named permission profile (ADR-0021 and ADR-0024), with high reasoning and a configured
 1,050,000-token window. This configuration does not verify 1M capacity.
 The home copies only sign-in credentials and is denied to writer commands;
 user config, MCP, web search, history and AGENTS.md are suppressed. Reads
 reach the host, OS runtime, Go toolchain and module cache excluding
-`github.com/ondatra-ai` (including download archives) and the entire module-cache `cache/vcs` tree. All generated homes share a denied `tmp/codex-homes` subtree; authentication is removed after each turn, including failures. Writes reach service
-edit roots and host `tmp/`; `HOME`, `TMPDIR`, `GOCACHE` and controlled Go
+`github.com/ondatra-ai` (including download archives) and the entire module-cache `cache/vcs` tree. All generated homes share a denied `tmp/codex-homes` subtree; authentication is removed after each turn, including failures. Writes reach the turn's single-file, directory or configured-glob roots and host `tmp/`; `HOME`, `TMPDIR`, `GOCACHE` and controlled Go
 flags are set there. Subprocess network is off and `GOPROXY=off`.
 The profile is calibrated on macOS with codex-cli 0.162.1 and has no weaker
 fallback. Codex's `--json` events are saved beside its transcript and read
 by drill audit as references, not proof that reads succeeded. The final
-message still comes through `-o`. Started non-zero or empty codex writer
+message still comes through `-o`. Only build-code started non-zero or empty codex writer
 turns preserve edits and rerun the set with one warning; start failures
-stay fatal. No codex stall watch is added. Other codex turns retain their
-`workspace-write` or `read-only` sandbox and recorded requests.
+stay fatal. No codex stall watch is added. Plan and validation retain their
+`read-only` sandbox and recorded requests. Other commands' applies remain fatal on failure.
+Optional installed node, npm and Docker clients have explicit runtime read grants. npm stays offline, runtime state stays in scratch, and no Docker daemon/socket is granted. Glob matches are fixed at preparation; a terminal `/**` permits new descendants. Empty matches refuse instead of granting a broader directory. ADR-0024 lists library and installation-link exceptions.
 
 The host project's documents live under `docs/`:
 

@@ -70,6 +70,7 @@ type FixApplier struct {
 	// for the `build` commands whose whole job is authoring source. Set
 	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
 	writeRoots []string
+	writeGlobs bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -113,6 +114,13 @@ func (a *FixApplier) UseEditMode() {
 // Without it, ExecutionMode (writer guard, codex sandbox) denies every write the system prompt instructs.
 func (a *FixApplier) UseWriteRoots(roots []string) {
 	a.writeRoots = roots
+	a.writeGlobs = false
+}
+
+// UseWriteGlobs preserves the host's configured patterns instead of interpreting bare paths as service directories.
+func (a *FixApplier) UseWriteGlobs(patterns []string) {
+	a.writeRoots = patterns
+	a.writeGlobs = true
 }
 
 // UseTestCommand supplies each writer its declared replay forms.
@@ -269,6 +277,10 @@ func parseApplyResult(content string) (applyResultYAML, bool) {
 // configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
 	if len(a.writeRoots) > 0 {
+		if a.writeGlobs {
+			return a.modeFactory.GetGlobEditMode(a.writeRoots)
+		}
+
 		return a.modeFactory.GetSourceEditMode(a.writeRoots)
 	}
 

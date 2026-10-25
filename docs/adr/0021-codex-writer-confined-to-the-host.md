@@ -1,5 +1,7 @@
 # Confine the codex build-code writer through its own permission profile
 
+**Amended by [ADR-0024](0024-confine-every-codex-apply.md):** every codex apply now uses this isolation; replay forms and recovery remain build-code-only. The original trial decision follows.
+
 Only `build code --fix`'s codex apply turn uses a generated per-turn `CODEX_HOME` and named `writer` permission profile. This amends ADR-0018 and ADR-0019's codex exceptions and ADR-0020's original provider restriction. Other commands and roles retain their exact sandbox arguments, inherited environment, prompts and failure handling. No outer `sandbox-exec` is used: nesting a Seatbelt profile under codex's fails.
 
 ## Boundary

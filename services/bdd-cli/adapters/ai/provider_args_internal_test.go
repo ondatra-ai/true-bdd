@@ -36,10 +36,8 @@ func readOnlyMode() ExecutionMode {
 	}
 }
 
-// TestCodexSandboxOnlyEscalatesForSourceWrites checks a tmp-only write grant
-// stays read-only: codex has no sandbox level between "nothing" and "all of
-// the working root," so escalating would open write access to unread source.
-func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
+// Plan and validation stay read-only independently of the mode's tool grants.
+func TestCodexPlansAndValidationStayReadOnly(t *testing.T) {
 	t.Parallel()
 
 	if got := codexSandbox(readOnlyMode()); got != codex.SandboxReadOnly {
@@ -51,12 +49,12 @@ func TestCodexSandboxOnlyEscalatesForSourceWrites(t *testing.T) {
 			"grant must not become workspace write access", got, codex.SandboxReadOnly)
 	}
 
-	if got := codexSandbox(sourceEditMode()); got != codex.SandboxWorkspaceWrite {
-		t.Errorf("codexSandbox(source edit mode) = %q, want %q", got, codex.SandboxWorkspaceWrite)
+	if got := codexSandbox(sourceEditMode()); got != codex.SandboxReadOnly {
+		t.Errorf("codexSandbox(source edit mode) = %q, want %q", got, codex.SandboxReadOnly)
 	}
 }
 
-// Codex has a system-prompt flag, so it has to
+// Codex has no system-prompt flag, so it has to
 // survive inside the user prompt.
 func TestComposePromptFoldsInTheSystemPrompt(t *testing.T) {
 	t.Parallel()

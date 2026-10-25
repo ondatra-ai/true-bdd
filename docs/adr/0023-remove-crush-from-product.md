@@ -10,6 +10,8 @@ ADR-0017, ADR-0018 and ADR-0020 are superseded by this ADR. They remain as histo
 
 ## Confinement and deferred guarantee
 
+**Resolved by [ADR-0024](0024-confine-every-codex-apply.md).** The migration limitation and evidence below describe this decision's original state.
+
 Removing the crush guard loses ADR-0017's guarantee that every turn of every command reads only inside the project. Build code's codex writer keeps ADR-0021's generated home, permission profile, credentials cleanup, offline toolchain, read boundary and service/scratch writes. The Claude writer keeps ADR-0022's guard. Other codex apply turns keep their current sandbox until #205 supports their document files and configured test globs. No broader confinement is claimed here. Cuts B to D of #181 wait for #205; cut A uses build code and can run.
 
 ## Recording blocker found during migration

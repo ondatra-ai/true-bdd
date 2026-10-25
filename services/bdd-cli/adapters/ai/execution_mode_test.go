@@ -190,3 +190,17 @@ func testConfig(t *testing.T) *config.ViperConfig {
 
 	return cfg
 }
+
+func TestSourceEditModePreservesSingleFile(t *testing.T) {
+	factory := ai.NewModeFactory(testConfig(t))
+
+	err := disk.Write("story.yaml", []byte("story: seed\n"), disk.Shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mode := factory.GetSourceEditMode([]string{"story.yaml"})
+	if !slices.Contains(mode.WriteGlobs(), "story.yaml") {
+		t.Fatalf("file root became subtree: %v", mode.WriteGlobs())
+	}
+}

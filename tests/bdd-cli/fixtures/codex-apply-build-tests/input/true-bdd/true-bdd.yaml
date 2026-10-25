@@ -1,0 +1,80 @@
+engine:
+  # "<cli>:<model>", split on the FIRST colon only. cli is claude |
+  # codex and must be on $PATH; model passes through verbatim to that CLI's
+  # model flag. A checklist asks for a tier by name.
+  models:
+    xhigh: "claude:claude-fable-5"
+    high: "claude:claude-opus-5"
+    coder: "codex:gpt-6.1-sol"
+    # Pinned FULL id, never an alias: the BDD harness's judge resolves
+    # its model here, and a floating alias silently migrates every
+    # future verdict out from under the recordings it is compared to.
+    quick: "claude:claude-sonnet-5"
+  # Tier per AI role, used when neither a prompt nor its checklist names
+  # one. A checklist overrides any of these in its own `engine:` block.
+  default_prompt_model: high
+  default_fix_model: high
+  # The apply turn is the one that writes files — that is exactly what
+  # the cheap, high-context `coder` tier is for.
+  default_apply_model: coder
+
+templates:
+  prompts:
+    checklist: "./templates/us-checklist.prompt.tpl"
+    checklist_system: "./templates/us-checklist.system.prompt.tpl"
+    fix_generator: "./templates/us-checklist.fix-generator.prompt.tpl"
+    fix_generator_system: "./templates/us-checklist.fix-generator.system.prompt.tpl"
+    fix_applier: "./templates/us-checklist.fix-applier.prompt.tpl"
+    fix_applier_system: "./templates/us-checklist.fix-applier.system.prompt.tpl"
+    apply_checklist: "./templates/us.apply-checklist.prompt.tpl"
+    apply_checklist_system: "./templates/us.apply-checklist.system.prompt.tpl"
+    apply_fix_generator: "./templates/us.apply-checklist.fix-generator.prompt.tpl"
+    apply_fix_generator_system: "./templates/us.apply-checklist.fix-generator.system.prompt.tpl"
+    apply_fix_applier: "./templates/us.apply-checklist.fix-applier.prompt.tpl"
+    apply_fix_applier_system: "./templates/us.apply-checklist.fix-applier.system.prompt.tpl"
+    build_tests_checklist: "./templates/build-tests.checklist.prompt.tpl"
+    build_tests_checklist_system: "./templates/build-tests.checklist.system.prompt.tpl"
+    build_tests_fix_generator: "./templates/build-tests.fix-generator.prompt.tpl"
+    build_tests_fix_generator_system: "./templates/build-tests.fix-generator.system.prompt.tpl"
+    build_tests_fix_applier: "./templates/build-tests.fix-applier.prompt.tpl"
+    build_tests_fix_applier_system: "./templates/build-tests.fix-applier.system.prompt.tpl"
+    build_code_checklist: "./templates/build-code.checklist.prompt.tpl"
+    build_code_checklist_system: "./templates/build-code.checklist.system.prompt.tpl"
+    build_code_fix_generator: "./templates/build-code.fix-generator.prompt.tpl"
+    build_code_fix_generator_system: "./templates/build-code.fix-generator.system.prompt.tpl"
+    build_code_fix_applier: "./templates/build-code.fix-applier.prompt.tpl"
+    build_code_fix_applier_system: "./templates/build-code.fix-applier.system.prompt.tpl"
+    scen_check_checklist: "./templates/scen-check.checklist.prompt.tpl"
+    scen_check_checklist_system: "./templates/scen-check.checklist.system.prompt.tpl"
+    scen_check_fix_generator: "./templates/scen-check.fix-generator.prompt.tpl"
+    scen_check_fix_generator_system: "./templates/scen-check.fix-generator.system.prompt.tpl"
+    scen_check_fix_applier: "./templates/scen-check.fix-applier.prompt.tpl"
+    scen_check_fix_applier_system: "./templates/scen-check.fix-applier.system.prompt.tpl"
+
+paths:
+  tmp_dir: "./tmp"
+  tmp_glob: "./tmp/**"
+  stories_dir: "docs/product/stories"
+  checklists_dir: "./true-bdd/checklists"
+  # Roots `build tests --fix` may author into — broad because the actual
+  # write location (a suite's `path:`) is chosen by architecture.yaml, not
+  # here; ExecutionMode enforces the boundary. build code --fix needs no equivalent key.
+  test_write_globs:
+    - "./tests/mcp/steps/**"
+
+documents:
+  product: "./docs/product/product.yaml"
+  architecture_yaml: "./docs/architecture/architecture.yaml"
+  scenarios_yaml: "./docs/scenarios.yaml"
+
+# Models for scripts/ turns, which reach `claude` directly and never the
+# engine's router. Most specific wins: command, then script, then default.
+# Plain model ids — this tooling has exactly one CLI.
+scripts:
+  models:
+    # What these turns ran before isolation cut the operator's user `model`.
+    default: "opus[1m]"
+    # Keyed by scripts/cmd/<name>: commit, pr-update, codex, ...
+    per_script: {}
+    # Keyed by the Role a call site passes: branch-name, commit-msg, ...
+    per_command: {}

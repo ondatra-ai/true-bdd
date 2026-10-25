@@ -588,13 +588,13 @@ architecture:
             binary: codex
             args:
               - exec
-              - when: The turn is not build code's codex writer.
+              - when: The turn is a plan or validation turn.
                 args: [-s, "{sandbox}"]
               - --ephemeral
               - --skip-git-repo-check
               - --color
               - never
-              - when: The turn is build code's codex writer.
+              - when: The turn is an apply turn of any command.
                 args: [--strict-config, --ignore-rules, --json]
               - -C
               - "{work_dir}"
@@ -612,9 +612,8 @@ architecture:
               without_system: "{user_prompt}"
             values:
               sandbox: >-
-                `workspace-write` when the turn may write a project tree outside
-                the run directory (ordinary source-edit turns such as `build tests --fix`, which hold write roots); `read-only` for
-                every other turn, including scratch-only document EditMode applies. Those applies currently cannot edit their scratch working copies under the default codex coder; #205 must resolve this migration blocker without widening planning/validation permissions. Build code's writer instead selects the generated named writer permission profile, with no -s flag.
+                `read-only` for every plan and validation turn, independently of scratch tool permissions.
+                Every apply turn instead selects its generated named writer permission profile, with no -s flag.
               model: >-
                 The model half of the `<cli>:<model>` reference the turn's tier
                 resolves to under `engine.models`, split on the first colon:
@@ -645,14 +644,14 @@ architecture:
             dir: "{work_dir}"
             notes:
               - >-
-                Ordinary turns select -s explicitly. The build-code writer selects default_permissions=writer and approval_policy=never in its generated configuration.
+                Plan and validation turns select -s read-only explicitly. Every apply turn selects default_permissions=writer and approval_policy=never in its generated configuration.
               - The trailing `-` makes codex read the prompt from stdin.
               - >-
                 `--skip-git-repo-check`: a BDD fixture's run directory is no git
                 repository, and codex refuses to run outside one without it.
               - >-
                 Ordinary turns inherit the environment and merge stdout/stderr as before.
-                Only build code's writer sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
+                Every apply turn sets CODEX_HOME to {host}/tmp/codex-homes/{run_basename}/{label}-codex-home,
                 copying only auth.json with private permissions, never user config,
                 sessions, AGENTS.md, history or MCP definitions. The provider removes auth.json
                 after preparation or turn completion, on success and failure, reporting cleanup errors. --ephemeral remains.
@@ -661,24 +660,23 @@ architecture:
                 project_doc_max_bytes=0 suppresses AGENTS.md and --ignore-rules
                 suppresses execpolicy files. No outer sandbox-exec wraps codex.
               - >-
-                The writer profile grants host-root reads, service edit-root writes
-                and host tmp writes. :minimal supplies OS runtime exceptions listed
+                The apply profile grants host-root reads, that execution mode's exact file or directory roots, and host tmp writes. :minimal supplies OS runtime exceptions listed
                 in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
                 Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
                 GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
                 sibling cuts, user work, codex sessions and claude transcripts.
-                Before spawning, the engine creates each absent service edit root and its missing parents inside the host,
+                Before spawning, the engine creates missing directory roots and literal parents of file roots inside the host,
                 using rooted filesystem operations that cannot follow a symlink outside it, and logs each created root once at INFO.
                 Edit roots resolving outside the host are refused. The profile grants remain limited to the edit roots and host tmp;
-                creating their parents does not grant the writer any other host-root writes.
+                creating their parents does not grant the writer any other host-root writes. Existing files stay files; missing files are not made into directories. Configured globs expand existing wildcard anchors into exact grants, with terminal /** granting a subtree and literal directory suffixes safely created. Other wildcard matches are frozen at preparation; unmatched or escaping patterns refuse rather than grant their fixed prefix (ADR-0024).
               - >-
                 Writer subprocesses inherit no environment: the profile sets PATH to
-                GOROOT/bin and system bin directories, HOME, TMPDIR and GOCACHE inside
+                GOROOT/bin, system bin directories and a generated runtime-bin with installed node, npm and docker links; HOME, TMPDIR and GOCACHE inside
                 host tmp, GOROOT/GOMODCACHE, GOPROXY=off, GOSUMDB=off,
                 GOTOOLCHAIN=local, GOFLAGS='-trimpath -buildvcs=false', GOTELEMETRY=off
-                and CGO_ENABLED=0. Network is disabled for commands and their children.
+                and CGO_ENABLED=0. Optional node/npm/docker executables, npm's package, Mach-O dependency libraries and their installation links are listed as read grants. Homebrew opt link directories supply symlink metadata, while unrelated canonical installation targets remain denied. npm uses offline mode and scratch cache/config; Docker uses scratch config without a daemon/socket grant; OPENSSL_CONF=/dev/null suppresses outside configuration. Network is disabled for commands and their children.
                 Codex's own model connection remains available. This is calibrated
                 for codex-cli 0.162.1 on macOS; no weaker fallback is supplied.
               - >-
@@ -698,8 +696,7 @@ architecture:
                 Build code keeps its edits, counts the attempt, warns once and runs
                 PostNotApplied. Start failures and refusals before spawning stay fatal.
                 There is no codex stall watch or engine turn bound; codex's own request
-                timeouts apply. Ordinary codex turns retain their prior arguments,
-                environment, sandbox and failure handling. Process group and wait bound
+                timeouts apply. Plan and validation turns retain their inherited environment and read-only sandbox. Other commands' confined applies retain fatal failure handling; build code alone requests recovery and replay forms. Process group and wait bound
                 remain as for the other writers.
               - >-
                 Before the spawn the engine logs the turn's sandbox level as

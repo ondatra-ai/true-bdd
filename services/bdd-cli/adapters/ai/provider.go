@@ -4,6 +4,8 @@ import "context"
 
 // Request is one single-turn prompt handed to a provider.
 type Request struct {
+	// CodexApply confines every codex apply independently of build-code recovery.
+	CodexApply bool
 	// ClaudeWriter enables build code's hooked, unbounded claude writer.
 	ClaudeWriter bool
 	// SystemPrompt is passed natively where the CLI supports it and
@@ -28,7 +30,7 @@ type Request struct {
 	TmpDir string
 	// Label distinguishes concurrent artifacts within TmpDir.
 	Label string
-	// CodexWriter requests the confined build-code writer profile.
+	// CodexWriter selects build-code started-turn recovery; CodexApply selects confinement.
 	CodexWriter bool
 }
 

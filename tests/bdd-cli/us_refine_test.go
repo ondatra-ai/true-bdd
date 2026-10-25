@@ -22,6 +22,30 @@ import (
 	"github.com/ondatra-ai/true-bdd/tests/bdd-cli/scenarios"
 )
 
+// codex-apply-001-us-refine-writes-scratch: A codex apply turn of us refine writes its scratch product document through the confined profile and the engine commits the converged change
+func TestCodexApply001UsRefineWritesScratch(t *testing.T) {
+	s := scenarios.New(t, "codex-apply-001-us-refine-writes-scratch")
+	s.Given(`the "codex-apply-us-refine" project tree`)
+	s.And(`the Product Owner answers "1" to every question`)
+	s.When(`the Product Owner runs "us refine doc-outline --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches msg="Codex turn sandboxed" label=codex-turn[0-9]+ sandbox=writer`)
+	s.But(`stdout does not match sandbox=workspace-write`)
+	s.And(`stdout matches msg="Check answered" check=step-phrases subjectID=doc-outline promptIndex=1 answer=fail`)
+	s.And(`stdout matches AC-2: then step \\"Claude offers to summarise the document instead\\" matches no template`)
+	s.And(`stdout matches FIX PROMPT GENERATED`)
+	s.And(`stdout matches msg="Fix recorded in the document" document=product`)
+	s.And(`stdout matches check=step-phrases subjectID=doc-outline promptIndex=1 answer=pass`)
+	s.And(`stdout matches ALL CHECKS PASSED!`)
+	s.And(`stdout matches msg="Story saved"`)
+	s.And(`no file outside "tmp" and "docs/product" changed`)
+	s.And(`the file "docs/product/product.yaml" is modified`)
+	s.And(`the file "docs/product/product.yaml" matches Claude offers to`)
+	s.And(`the story "docs/product/stories/doc-outline-catalogued.yaml" has 3 acceptance criteria`)
+	s.And(`the file "docs/product/stories/doc-outline-catalogued.yaml" matches Claude offers to summarise the document instead`)
+	s.Done()
+}
+
 // engine-005-prompt-without-fix-refused: A `us refine --fix` run must be refused at startup when a prompt it would walk carries no `F:`, naming that prompt, rather than spending a fix turn that has nothing to say
 func TestEngine005PromptWithoutFixRefused(t *testing.T) {
 	s := scenarios.New(t, "engine-005-prompt-without-fix-refused")
