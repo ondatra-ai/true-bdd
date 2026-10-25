@@ -51,11 +51,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `engine-documents-006-directory-document-refused` | `build-code-directory-architecture` | recorded | recorded in fix-203-record-a | 0.00 |
 | `fix-loop-choices-001-refine-reshapes-fix` | `fix-loop-refine-feedback` | recorded | recorded in fix-203-record-a | 2.27 |
 | `fix-loop-choices-002-own-words-answer-kept` | `fix-loop-own-words` | recorded | recorded in fix-203-record-a | 1.80 |
-| `fix-loop-bounds-004-walks-exhausted-keep-term-documents` | `fix-loop-walks-exhausted-terms` | remaining | unchanged / deferred | 0.00 |
-| `fix-loop-bounds-001-one-walk-keeps-story` | `fix-loop-attempts-exhausted` | remaining | unchanged / deferred | 0.00 |
-| `fix-loop-bounds-002-refixed-prompt-stops-walk` | `fix-loop-refix-stops` | remaining | unchanged / deferred | 0.00 |
-| `engine-routes-003-prompt-tiers-win` | `scen-check-prompt-names-its-tiers` | remaining | unchanged / deferred | 0.00 |
-| `engine-routes-004-failed-claude-turn-stops-run` | `scen-check-claude-turn-fails` | remaining | unchanged / deferred | 0.00 |
+| `fix-loop-bounds-004-walks-exhausted-keep-term-documents` | `fix-loop-walks-exhausted-terms` | recorded | recorded in fix-203-record-a | 1.34 |
+| `fix-loop-bounds-001-one-walk-keeps-story` | `fix-loop-attempts-exhausted` | recorded | recorded in fix-203-record-a | 1.39 |
+| `fix-loop-bounds-002-refixed-prompt-stops-walk` | `fix-loop-refix-stops` | recorded | recorded in fix-203-record-a | 2.47 |
+| `engine-routes-003-prompt-tiers-win` | `scen-check-prompt-names-its-tiers` | recorded | recorded in fix-203-record-a | 0.86 |
+| `engine-routes-004-failed-claude-turn-stops-run` | `scen-check-claude-turn-fails` | recorded | recorded in fix-203-record-a | 0.03 |
 | `engine-routes-005-failed-codex-turn-stops-run` | `scen-check-codex-turn-fails` | remaining | unchanged / deferred | 0.00 |
 | `engine-config-002-malformed-model-entries-refused` | `build-tests-malformed-model-entries` | remaining | unchanged / deferred | 0.00 |
 | `engine-config-004-prompt-tier-unconfigured-refused` | `scen-check-prompt-tier-unconfigured` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 41 of 108; pending migration fixtures: 67. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 46 of 108; pending migration fixtures: 62. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `fix-loop-bounds-004-walks-exhausted-keep-term-documents` — `fix-loop-walks-exhausted-terms`
-- `fix-loop-bounds-001-one-walk-keeps-story` — `fix-loop-attempts-exhausted`
-- `fix-loop-bounds-002-refixed-prompt-stops-walk` — `fix-loop-refix-stops`
-- `engine-routes-003-prompt-tiers-win` — `scen-check-prompt-names-its-tiers`
-- `engine-routes-004-failed-claude-turn-stops-run` — `scen-check-claude-turn-fails`
 - `engine-routes-005-failed-codex-turn-stops-run` — `scen-check-codex-turn-fails`
 - `engine-config-002-malformed-model-entries-refused` — `build-tests-malformed-model-entries`
 - `engine-config-004-prompt-tier-unconfigured-refused` — `scen-check-prompt-tier-unconfigured`
