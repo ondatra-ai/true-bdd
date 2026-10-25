@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/claude"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
@@ -30,7 +29,7 @@ func (c *ClaudeProvider) Name() string {
 	return "claude"
 }
 
-// Execute runs one single-turn prompt. The router owns the timeout.
+// Execute runs one single-turn prompt with caller cancellation.
 func (c *ClaudeProvider) Execute(ctx context.Context, req Request) (string, error) {
 	c.logPromptExecution(req.SystemPrompt, req.UserPrompt)
 
@@ -73,7 +72,7 @@ func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 // options projects one Request onto the wrapper's argv. No empty-model
 // fallback: the registry validated the ref at startup, so an empty model here
 // is a bug worth surfacing rather than a silent downgrade to some default.
-func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Options {
+func (c *ClaudeProvider) options(req Request) claude.Options {
 	opts := claude.Options{
 		Minimal:        true,
 		SystemPrompt:   req.SystemPrompt,
@@ -81,7 +80,6 @@ func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Option
 		PermissionMode: permissionAcceptEdits,
 		Schema:         req.ResultSchema,
 		Dir:            req.WorkDir,
-		Timeout:        remaining(ctx),
 	}
 
 	if len(req.Mode.AllowedTools) > 0 {
@@ -103,18 +101,6 @@ func (c *ClaudeProvider) options(ctx context.Context, req Request) claude.Option
 // writes are already fenced by the engine's tool allowlist,
 // so a prompt would only stall a run nobody is watching.
 const permissionAcceptEdits = "acceptEdits"
-
-// remaining is the router's own budget, read back off the context. The
-// wrapper bounds a turn by duration rather than by cancellation, so the
-// deadline has to be handed over as one.
-func remaining(ctx context.Context) time.Duration {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return 0
-	}
-
-	return time.Until(deadline)
-}
 
 // answerText reads the envelope's payload. A schema turn's answer IS the
 // object and rides back as its own JSON; a prose turn's is a JSON string, and
@@ -214,9 +200,9 @@ func claudeWriterFailure(err error) error {
 }
 
 func (c *ClaudeProvider) executeTurn(ctx context.Context, req Request) (claude.Answer, error) {
-	opts := c.options(ctx, req)
+	opts := c.options(req)
 	if !req.ClaudeWriter {
-		return claude.RunStream(req.UserPrompt, opts, logEvent)
+		return claude.RunStreamContext(ctx, req.UserPrompt, opts, logEvent)
 	}
 
 	writer, err := claudeWriterOptions(ctx, req)

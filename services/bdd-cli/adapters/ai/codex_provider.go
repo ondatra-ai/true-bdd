@@ -100,7 +100,7 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 		Writer:     req.CodexApply || req.CodexWriter,
 	}
 
-	result, runErr := turn.Run()
+	result, runErr := turn.Run(ctx)
 
 	return finishCodexTurn(req, answerPath, result, runErr, guard)
 }

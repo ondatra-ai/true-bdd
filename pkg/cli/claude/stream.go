@@ -41,14 +41,14 @@ func RunStream(prompt string, opts Options, on func(Event)) (Answer, error) {
 	return RunStreamContext(context.Background(), prompt, opts, on)
 }
 
-// RunStreamContext preserves caller cancellation, including an unbounded writer's children.
+// RunStreamContext preserves caller cancellation for the turn and its descendants.
 func RunStreamContext(ctx context.Context, prompt string, opts Options, on func(Event)) (Answer, error) {
 	opts.Stream = true
 	sink := &streamSink{on: on}
 	stderr := &bytes.Buffer{}
 
 	result, err := shell.Run(ctx, append([]string{Bin}, opts.Args(prompt)...), shell.Options{
-		Dir: opts.Dir, Env: opts.Env(), Output: shell.Streams(sink, stderr), Timeout: opts.Timeout, Group: opts.Writer != nil,
+		Dir: opts.Dir, Env: opts.Env(), Output: shell.Streams(sink, stderr), Timeout: opts.Timeout, Group: true,
 	})
 	answer, parseErr := streamAnswer(sink, opts.Role)
 

@@ -695,8 +695,8 @@ architecture:
                 missing its answer file or returning whitespace carries CodexTurnError.
                 Build code keeps its edits, counts the attempt, warns once and runs
                 PostNotApplied. Start failures and refusals before spawning stay fatal.
-                There is no codex stall watch or engine turn bound; codex's own request
-                timeouts apply. Plan and validation turns retain their inherited environment and read-only sandbox. Other commands' confined applies retain fatal failure handling; build code alone requests recovery and replay forms. Process group and wait bound
+                No role or CLI receives a router deadline (ADR-0025); every turn runs until it ends or the caller cancels.
+                Cancellation stops the turn's process group and descendants and remains fatal. There is no codex stall watch; codex's own request timeouts apply. Plan and validation turns retain their inherited environment and read-only sandbox. Other commands' confined applies retain fatal failure handling; build code alone requests recovery and replay forms. Process group and wait bound
                 remain as for the other writers.
               - >-
                 Before the spawn the engine logs the turn's sandbox level as
@@ -849,10 +849,11 @@ architecture:
                 The answer is the stream's `result` record: its
                 `structured_output` object when the turn carried a schema,
                 else its text. A schema turn whose result holds no object, or
-                a non-zero exit, fails the turn, and the turn is bounded by
-                the router's 20 minutes, except the explicit build-code writer.
-                That writer runs with the caller's context and its own process
-                group without a router deadline. Non-zero exits, is_error or
+                a non-zero exit, fails the turn. Every role and CLI runs with the caller's context
+                and its own process group without a router deadline (ADR-0025); cancellation
+                stops the turn and its descendants and remains fatal. No request, prompt,
+                checklist or template adds a time, turn, token or cost budget.
+                For the explicit build-code writer, non-zero exits, is_error or
                 api_error_status >=400 results, assistant error records, absent
                 envelopes and empty answers are started outcomes; available cost
                 and usage survive errors. Start failures and pre-spawn refusals

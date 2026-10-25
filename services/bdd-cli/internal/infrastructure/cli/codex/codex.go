@@ -97,13 +97,13 @@ func (t Turn) Args() []string {
 
 // Run runs the turn and returns codex's TRACE — the answer is in AnswerPath.
 // The trace comes back even when the turn failed: it is what a caller archives.
-func (t Turn) Run() (Result, error) {
+func (t Turn) Run(ctx context.Context) (Result, error) {
 	output := shell.Combined()
 	if t.Writer {
 		output = shell.Capture()
 	}
 
-	result, err := shell.Run(context.Background(), t.Args(), shell.Options{
+	result, err := shell.Run(ctx, t.Args(), shell.Options{
 		Dir:       t.WorkDir,
 		Env:       shell.Env{}.Exact(t.Env),
 		Stdin:     strings.NewReader(t.Prompt),
@@ -115,6 +115,10 @@ func (t Turn) Run() (Result, error) {
 	answer := Result{Transcript: result.Stdout + result.Stderr, Started: err == nil}
 	if t.Writer {
 		answer.Events = result.Stdout
+	}
+
+	if ctx.Err() != nil {
+		return answer, fmt.Errorf("%s: %w", Bin, ctx.Err())
 	}
 
 	if err != nil {

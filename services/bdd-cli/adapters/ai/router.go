@@ -12,9 +12,6 @@ import (
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
-// aiPromptTimeout bounds one turn regardless of which CLI runs it.
-const aiPromptTimeout = 20 * time.Minute
-
 // Router dispatches each turn to the provider named by the ModelRef's CLI.
 // It is the sole implementation of the domain's AIPort, so changing which
 // CLI runs a checklist role is a config edit, not a code change.
@@ -72,17 +69,9 @@ func (r *Router) ExecutePromptWithSystem(
 
 	turnOptions := writerOptions(role, model.CLI, options)
 
-	turnCtx := ctx
-	if !turnOptions.ClaudeWriter {
-		bounded, cancel := context.WithTimeout(ctx, aiPromptTimeout)
-		defer cancel()
-
-		turnCtx = bounded
-	}
-
 	started := time.Now()
 
-	response, err := target.Execute(turnCtx, Request{
+	response, err := target.Execute(ctx, Request{
 		CodexApply:   role == provider.RoleApply && model.CLI == provider.CLICodex,
 		ClaudeWriter: turnOptions.ClaudeWriter,
 		SystemPrompt: systemPrompt,
@@ -96,8 +85,7 @@ func (r *Router) ExecutePromptWithSystem(
 		CodexWriter:  turnOptions.CodexWriter,
 	})
 
-	// Logged on both paths: a turn that burned twenty minutes and then
-	// failed is exactly the one worth seeing in a timing report.
+	// Failed turns retain timing evidence alongside successful turns.
 	elapsed := time.Since(started)
 
 	if err != nil {

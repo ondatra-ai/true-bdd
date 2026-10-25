@@ -1,6 +1,6 @@
 # A confined Claude build-code writer with a guarded replay
 
-Only `build code --fix`'s Claude applier requests a generated writer configuration and an unbounded turn. Claude Code 2.1.285's `--restricted` mode, explicit `--tools` and working roots enforce file confinement independently of prompting. A `PreToolUse` hook invokes this engine's `claude-guard --policy <file>` for every exposed tool. Its Bash decision reuses ADR-0018's exact canonical matcher, with payload `cwd` and `tool_input.command`; `run_in_background` is denied. From the host root or the suite directory it also accepts exactly `cd '<suite dir>' && <canonical form>` (with shell-quoted directory), so Claude's Bash can reach a nested suite without a working-directory input. The writer's command forms include this prefix; Claude retains the suite directory after a successful Bash `cd`. No Bash permission pattern grants execution. Both Bash timeouts are 600000 ms.
+Only `build code --fix`'s Claude applier requests a generated writer configuration. [ADR-0025](0025-unbounded-ai-turns.md) extends its unbounded, cancellable lifetime to every role and CLI. Claude Code 2.1.285's `--restricted` mode, explicit `--tools` and working roots enforce file confinement independently of prompting. A `PreToolUse` hook invokes this engine's `claude-guard --policy <file>` for every exposed tool. Its Bash decision reuses ADR-0018's exact canonical matcher, with payload `cwd` and `tool_input.command`; `run_in_background` is denied. From the host root or the suite directory it also accepts exactly `cd '<suite dir>' && <canonical form>` (with shell-quoted directory), so Claude's Bash can reach a nested suite without a working-directory input. The writer's command forms include this prefix; Claude retains the suite directory after a successful Bash `cd`. No Bash permission pattern grants execution. Both Bash timeouts are 600000 ms.
 
 ## Isolation
 
@@ -12,7 +12,7 @@ Restricted mode and the hook govern file tools and commands, not the writer's co
 
 ## Lifetime and outcomes
 
-The router omits its 20-minute deadline only for an explicitly requested Claude apply writer. The wrapper uses the caller's context and a process group; cancellation stops the writer and its descendants. Other Claude turns keep their arguments and 20 minutes. There is no Claude response watch, token budget or prompt budget.
+The router adds no deadline to any turn. Every role and CLI uses the caller's context and a process group; cancellation stops the turn and its descendants and stays fatal. Other Claude turns keep their arguments. There is no Claude response watch, time, turn, token or cost budget in any request, prompt, checklist or template.
 
 A started Claude writer's non-zero exit, error result (including assistant rate-limit records and result API errors), missing envelope or empty answer preserves its files. Available stream cost and usage are logged even on failure. Only build code's applier recovers the typed outcome, warning once and running `PostNotApplied`; the existing allowance and terminal rerun behavior remain. Start failures, engine refusals and cancellation stay fatal. Writer templates select foreground completion for Claude and native process polling for codex.
 
