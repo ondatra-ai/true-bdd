@@ -66,7 +66,6 @@ Out of scope: the other #203 recordings, #197, #198 and the drill. Non-macOS run
 | `services/bdd-cli/adapters/ai/provider_args_internal_test.go` | Regression/behavior coverage for apply confinement, exact roots, runtime grants or retained read-only/writer behavior. |
 | `services/bdd-cli/adapters/ai/router.go` | Select codex confinement by apply role and CLI, independently of build-code options. |
 | `services/bdd-cli/adapters/ai/router_writer_internal_test.go` | Regression/behavior coverage for apply confinement, exact roots, runtime grants or retained read-only/writer behavior. |
-| `services/bdd-cli/adapters/ai/tmp/true-bdd.log.json` | Align engine implementation and permission contract. |
 | `services/bdd-cli/internal/domain/models/provider/execution_mode.go` | Document shared write patterns and independent codex role confinement. |
 | `services/bdd-cli/internal/domain/models/provider/turn_options.go` | Document that the explicit writer option remains build-code-only. |
 | `services/bdd-cli/internal/infrastructure/cli/codex/codex.go` | Document all-apply profile selection; retain existing profile argv and polling behavior. |
@@ -167,7 +166,7 @@ Out of scope: the other #203 recordings, #197, #198 and the drill. Non-macOS run
 
 ## Completed validation
 
-- Alint passed over all 121 existing changed files; the final probe-test edit also passed scoped alint.
+- Alint passed over every existing changed file; the final probe-test edit also passed scoped alint.
 - `go build ./...` and `go build -o ./bin/true-bdd ./services/bdd-cli` passed on the final source.
 - `go test ./...` passed on the final source.
 - Recorded-subset replay passed 155/155, with 97 pending migration Scenarios explicitly excluded and listed.
