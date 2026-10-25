@@ -41,9 +41,7 @@ catalogue:
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
     terms: [mcp service, reply]
-  - template: 'the service answers within {limit:number} milliseconds'
+  - template: 'the service answers within {budget:number} milliseconds'
     block: then
-    means: >-
-      The round trip from sending the message to receiving its reply takes
-      at most {limit} milliseconds.
-    terms: [mcp service, reply]
+    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
+    terms: [reply]

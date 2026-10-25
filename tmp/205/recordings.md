@@ -46,11 +46,11 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `build-tests-steps-006-steps-authored-from-spec` | `build-tests-fix-from-spec` | recorded | recorded in fix-203-record-a | 6.08 |
 | `scen-check-fix-007-whole-checklist-fixes-description` | `scen-check-fix-rewrites-description` | recorded | recorded in fix-203-record-a | 5.90 |
 | `engine-documents-003-undeclared-architecture-refused` | `build-tests-undeclared-architecture` | recorded | recorded in fix-203-record-a | 0.00 |
-| `engine-documents-004-undeclared-registry-refused-by-us-apply` | `us-apply-undeclared-registry` | remaining | unchanged / deferred | 0.00 |
-| `engine-documents-005-undeclared-registry-refused-by-scen-check` | `scen-check-undeclared-registry` | remaining | unchanged / deferred | 0.00 |
-| `engine-documents-006-directory-document-refused` | `build-code-directory-architecture` | remaining | unchanged / deferred | 0.00 |
-| `fix-loop-choices-001-refine-reshapes-fix` | `fix-loop-refine-feedback` | remaining | unchanged / deferred | 0.00 |
-| `fix-loop-choices-002-own-words-answer-kept` | `fix-loop-own-words` | remaining | unchanged / deferred | 0.00 |
+| `engine-documents-004-undeclared-registry-refused-by-us-apply` | `us-apply-undeclared-registry` | recorded | recorded in fix-203-record-a | 0.00 |
+| `engine-documents-005-undeclared-registry-refused-by-scen-check` | `scen-check-undeclared-registry` | recorded | recorded in fix-203-record-a | 0.00 |
+| `engine-documents-006-directory-document-refused` | `build-code-directory-architecture` | recorded | recorded in fix-203-record-a | 0.00 |
+| `fix-loop-choices-001-refine-reshapes-fix` | `fix-loop-refine-feedback` | recorded | recorded in fix-203-record-a | 2.27 |
+| `fix-loop-choices-002-own-words-answer-kept` | `fix-loop-own-words` | recorded | recorded in fix-203-record-a | 1.80 |
 | `fix-loop-bounds-004-walks-exhausted-keep-term-documents` | `fix-loop-walks-exhausted-terms` | remaining | unchanged / deferred | 0.00 |
 | `fix-loop-bounds-001-one-walk-keeps-story` | `fix-loop-attempts-exhausted` | remaining | unchanged / deferred | 0.00 |
 | `fix-loop-bounds-002-refixed-prompt-stops-walk` | `fix-loop-refix-stops` | remaining | unchanged / deferred | 0.00 |
@@ -121,15 +121,10 @@ Issue #205 recorded, in order: `us-apply-duplicate-collapse`, `codex-apply-us-re
 | `codex-apply-001-us-refine-writes-scratch` | `codex-apply-us-refine` | recorded | recorded on #205 | 1.85 |
 | `codex-apply-002-build-tests-writes-configured-root` | `codex-apply-build-tests` | recorded | recorded on #205 | 5.81 |
 
-Recorded migration/new fixtures: 36 of 108; pending migration fixtures: 72. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
+Recorded migration/new fixtures: 41 of 108; pending migration fixtures: 67. #205 recorded 4 fixtures, 16.88 service CLI minutes, excluding judge time.
 
 ## Pending Scenarios
 
-- `engine-documents-004-undeclared-registry-refused-by-us-apply` — `us-apply-undeclared-registry`
-- `engine-documents-005-undeclared-registry-refused-by-scen-check` — `scen-check-undeclared-registry`
-- `engine-documents-006-directory-document-refused` — `build-code-directory-architecture`
-- `fix-loop-choices-001-refine-reshapes-fix` — `fix-loop-refine-feedback`
-- `fix-loop-choices-002-own-words-answer-kept` — `fix-loop-own-words`
 - `fix-loop-bounds-004-walks-exhausted-keep-term-documents` — `fix-loop-walks-exhausted-terms`
 - `fix-loop-bounds-001-one-walk-keeps-story` — `fix-loop-attempts-exhausted`
 - `fix-loop-bounds-002-refixed-prompt-stops-walk` — `fix-loop-refix-stops`

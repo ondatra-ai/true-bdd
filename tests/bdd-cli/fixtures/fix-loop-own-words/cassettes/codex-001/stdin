@@ -54,68 +54,88 @@ Then:
 ## Target
 The `product` document: `docs/product/product.yaml` — its `catalogue:` list only.
 
-Do NOT touch the Scenario `E2E-001`, the user story `docs/product/stories/ping-answers.yaml`, the generated test `tests/mcp/ping_test.go`, any step definition, or any other file. No glossary change is needed: the existing `reply` term already states that a reply is "what the MCP service sends back for one message, and how long it took to arrive", and `mcp service` is already defined.
+Do NOT touch anything else. Specifically: do not edit the Scenario
+(registry entry E2E-001), the generated test `tests/mcp/ping_test.go`, any
+step definition, the story `docs/product/stories/ping-answers.yaml`, the
+`glossary:` list, the `roles:` list, or the three catalogue entries that
+already exist. The step text stays exactly as the Scenario writes it.
 
 ## Why
-The scen-check `term_closure` finding (D: step-phrases) is:
+scen-check/term_closure (D: step-phrases) reported:
+- E2E-001: then step "the service answers within 200 milliseconds" matches no template
 
-- `E2E-001: then step "the service answers within 200 milliseconds" matches no template`
+The three existing entries phrase every other step of E2E-001
+(`the mcp service is running`, `the {actor:role} sends "{message}"`,
+`the service answers "{reply}"`). Only the timing step has no template, so
+exactly one new entry is needed.
 
-The catalogue phrases every other step of E2E-001 (`the mcp service is running`, `the {actor:role} sends "{message}"`, `the service answers "{reply}"`), but nothing phrases the timing step. One new catalogue entry closes the gap, with the number slot named `budget`.
+The meaning is the one the person gave in their own words:
+
+> It means the round trip from sending the message to receiving its reply takes at most that many milliseconds
+
+It is copied into `means` verbatim, with only the introductory "It means"
+removed and "that many" replaced by the template's number slot `{budget}`.
+Their wording and pronouns are preserved — "its reply" stays "its reply".
 
 ## Required Changes
 
-### Change #1: Add the catalogue entry phrasing the timing step
+### Change #1: Add the catalogue entry that phrases the timing step
+
 **Document:** `docs/product/product.yaml`
-**Action:** Append this entry to the end of the `catalogue:` list (after the `the service answers "{reply}"` entry, at the same two-space list indentation). Copy the YAML verbatim — the `template` value stays single-quoted exactly as written.
+**Action:** Append this entry to the end of the `catalogue:` list (after the
+`the service answers "{reply}"` entry, which is currently the last one).
+Copy the YAML exactly as written below — do not re-wrap `means`, it must
+stay on one YAML scalar line.
+
 **YAML:**
 ```yaml
   - template: 'the service answers within {budget:number} milliseconds'
     block: then
-    means: >-
-      The MCP service's reply to the message arrives no later than
-      {budget} milliseconds after the message was sent.
-    terms: [mcp service, reply]
+    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
+    terms: [reply]
 ```
 
-**Equivalent edit, if the applier prefers an exact replacement:**
+**Exact edit** — replace:
 
-old_string:
-```yaml
+```
   - template: 'the service answers "{reply}"'
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
     terms: [mcp service, reply]
 ```
 
-new_string:
-```yaml
+with:
+
+```
   - template: 'the service answers "{reply}"'
     block: then
     means: The MCP service's reply to the message is exactly the quoted text.
     terms: [mcp service, reply]
   - template: 'the service answers within {budget:number} milliseconds'
     block: then
-    means: >-
-      The MCP service's reply to the message arrives no later than
-      {budget} milliseconds after the message was sent.
-    terms: [mcp service, reply]
+    means: the round trip from sending the message to receiving its reply takes at most {budget} milliseconds
+    terms: [reply]
 ```
 
-## Notes on the entry
-- **Slot name:** the number slot is named `budget`, as requested. `{budget:number}` matches `200` in this Scenario and any other digit run (or the word `no`), so a later Scenario saying "the service answers within 50 milliseconds" reuses this entry without a new one.
-- **Literal words:** `the service answers within` and `milliseconds` stay literal, so the entry carries the timing meaning rather than a generic shape.
-- **No ambiguity:** a step matching this template can never also match `the service answers "{reply}"`, because that template requires a literal double quote immediately after `answers ` and this one requires the literal word `within`. Every other catalogue entry opens with different literal text (`the mcp service is running`, `the {actor:role} sends`). Each step of E2E-001 therefore still matches exactly one template, in its own block:
-  - given `the mcp service is running` → entry 1 (given)
-  - when `the Operator sends "ping"` → entry 2 (when), `Operator` being a declared `roles[].name`
-  - then `the service answers "pong"` → entry 3 (then)
-  - then `the service answers within 200 milliseconds` → the new entry 4 (then)
-- **Terms:** both named terms are spelled exactly as the glossary spells them (`mcp service`, `reply`), so term closure holds with no glossary edit.
+(The file currently ends after the `terms: [mcp service, reply]` line; keep
+the trailing newline.)
 
-## Acceptance
-- `docs/product/product.yaml` has exactly one new `catalogue:` entry, with template `'the service answers within {budget:number} milliseconds'` and block `then`.
-- No other line of `product.yaml` changes; no other file changes at all.
-- Re-running scen-check on E2E-001 reports `scen-check/term_closure` (D: step-phrases) as pass, and no step becomes ambiguous.
+## Notes for the applier
+- `template` is single-quoted so `{budget:number}` is copied literally.
+- `block: then` matches the step's block in E2E-001.
+- The step as the Scenario writes it is `and the service answers within 200
+  milliseconds`; the leading `and ` is the block's continuation marker, not
+  part of the step text, so the template must NOT include it.
+- No ambiguity is introduced: `the service answers "{reply}"` requires a
+  double-quoted run immediately after `answers`, while the new template
+  requires the literal word `within`, so no step matches both. The two
+  `given`/`when` entries are untouched and keep matching their steps.
+- `{budget:number}` accepts digits (or the word `no`), so `200` matches and
+  future Scenarios can reuse the entry with any budget.
+- `terms: [reply]` lists the one glossary term the meaning leans on ("its
+  reply", whose content and delay the glossary already calls behaviour).
+  Spell it exactly `reply`, as the glossary spells it. Do not add a new
+  glossary term and do not edit the existing ones.
 
 ---
 
