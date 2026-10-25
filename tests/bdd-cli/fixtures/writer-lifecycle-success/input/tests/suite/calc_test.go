@@ -1,7 +1,7 @@
 package suite_test
 
 import (
-	"fixture/buildcodefix/services/calc"
+	"fixture.test/buildcodefix/services/calc"
 	"testing"
 )
 

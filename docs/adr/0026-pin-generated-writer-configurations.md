@@ -24,10 +24,10 @@ Two more Scenarios observe the external CLI spawn before cassette effects, using
 
 | Architecture statement | Pin |
 | --- | --- |
-| Copy exactly auth.json, with 0600 permissions; generated home 0700; inherit no other home files | `writer-lifecycle-001-success` and `writer-lifecycle-002-failure`: shim inspects actual files at spawn, compares dummy bytes, checks types and modes and the home census |
+| Copy exactly auth.json; config.toml and auth.json regular, non-symlink 0600 files; generated home 0700; inherit no other home files | `writer-lifecycle-001-success` and `writer-lifecycle-002-failure`: shim inspects actual files at spawn, compares dummy bytes, checks types and modes and the home census |
 | Remove authentication on success and on failed turns | Same two Scenarios: Then requires one observed spawn and no remaining auth.json; failure explicitly requires exit-7 recovery |
 | Create absent edit roots before spawning | Same two Scenarios start without services/calc; shim requires it empty before effects and the stand-in cannot create it; `build-code-codex-003-missing-root` also pins the creation log and resulting service |
-| Archive --json stdout separately from stderr, retaining both in the transcript | Same two Scenarios assert the complete JSONL sentinel and the independent stderr sentinel; argv hash pins --json and -o |
+| Archive --json stdout separately from stderr, retaining both in the transcript | Same two Scenarios assert the complete stdout-only JSONL sentinel and both the stdout event sentinel and independent stderr sentinel in the transcript; argv hash pins --json and -o |
 | Shell environment inherits nothing, with all stated PATH/Go/npm/Docker/OpenSSL values | `writer-config-001-codex` compares the complete shell policy; both lifecycle Scenarios additionally require private shell HOME, TMPDIR and GOCACHE directories before spawn |
 | Protected generated home under the shared denied subtree | Lifecycle shim checks the resolved location and shared deny entry; `writer-config-001-codex` pins the full ordered permission profile |
 | Disabled configuration discovery, network policy, high reasoning, context window, history and ephemeral CLI flags | `writer-config-001-codex` pins configuration; lifecycle cassette hashes pin CLI arguments |

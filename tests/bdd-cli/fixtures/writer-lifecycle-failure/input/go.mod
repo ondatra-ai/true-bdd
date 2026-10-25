@@ -4,6 +4,6 @@
 // this boundary the repo's own `go test ./...` and golangci-lint would
 // compile the deliberately-broken production file below and go red for
 // a reason nobody wrote.
-module fixture/buildcodefix
+module fixture.test/buildcodefix
 
 go 1.25.0

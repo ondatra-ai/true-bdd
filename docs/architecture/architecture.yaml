@@ -772,16 +772,16 @@ architecture:
                 auth.json and deterministic external CLI stand-ins, not model credentials.
                 At the codex spawn boundary, before either recording or replaying file effects,
                 the harness shim resolves CODEX_HOME beneath host tmp/codex-homes, requires
-                a private 0700 home containing only config.toml and a regular 0600 auth.json
-                byte-identical to the declared dummy fixture, an already-created empty
-                services/calc edit root, private HOME/TMPDIR/GOCACHE scratch directories,
+                a private 0700 home containing only regular, non-symlink 0600 files:
+                config.toml and auth.json, the latter byte-identical to the declared dummy fixture;
+                an already-created empty services/calc edit root; private HOME/TMPDIR/GOCACHE scratch directories;
                 and the shared generated-home deny entry. It writes a non-secret receipt
                 outside cassette file effects. The Then step requires that receipt, exactly
                 one generated home, and no auth.json after the turn. The failure fixture's
                 CLI exits 7 after editing; its Scenario requires the non-zero-exit warning.
-                Both Scenarios compare stdout-only JSONL events exactly and require the
-                separate stderr sentinel in the combined transcript. The stand-in never
-                creates the edit root, and replay validates before applying its recorded edit.
+                Both Scenarios compare stdout-only JSONL events exactly and require both
+                the stdout event sentinel and separate stderr sentinel in the combined transcript.
+                The stand-in never creates the edit root, and replay validates before applying its recorded edit.
                 The existing writer-config-001-codex pins every shell environment setting,
                 inherited-environment suppression, ordered permissions and generated config
                 content. A configured shell policy is the engine's contract; enforcement
