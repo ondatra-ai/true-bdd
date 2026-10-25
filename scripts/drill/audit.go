@@ -6,14 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/ondatra-ai/true-bdd/pkg/cli/sqlite"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/enginelog"
 )
@@ -38,8 +36,8 @@ type Access struct {
 	Raw      string `json:"raw"`
 }
 
-// Audit reads the engine log and every crush database under the cut's tmp tree.
-func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error) {
+// Audit reads the engine JSON log and Codex event streams under the cut's tmp tree.
+func (r Runner) Audit(_ context.Context, directory, name string) (Audit, error) {
 	record, err := Read(directory)
 	if err != nil {
 		return Audit{}, err
@@ -60,7 +58,6 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 			"Engine denial summaries name tools, not individual calls; " +
 				"they cannot be assigned to a target without an explicit decision."}}
 	audit.engineLog(filepath.Join(cut.Directory, "tmp/true-bdd.log.json"), cut.Directory, record.AllowedRoots)
-	audit.databases(ctx, cut.Directory, record.AllowedRoots)
 	audit.codexEvents(cut.Directory, record.AllowedRoots)
 	audit.oracleLimitations(record.Runs, name)
 	err = change(directory, func(record *Record) error {
@@ -68,6 +65,10 @@ func (r Runner) Audit(ctx context.Context, directory, name string) (Audit, error
 
 		return nil
 	})
+
+	for _, path := range audit.Files {
+		slog.Info("Drill audit evidence", "path", path)
+	}
 
 	for _, entry := range audit.Entries {
 		slog.Info("Drill access reference",
@@ -158,45 +159,6 @@ func (a *Audit) engineLog(path, tree string, roots []string) {
 	}
 }
 
-func (a *Audit) databases(ctx context.Context, tree string, roots []string) {
-	temporary := filepath.Join(tree, "tmp")
-
-	err := filepath.WalkDir(temporary, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return fmt.Errorf("walking audit databases: %w", walkErr)
-		}
-
-		if entry.IsDir() || filepath.Base(filepath.Dir(path)) != "crush-data" || !strings.HasPrefix(entry.Name(),
-			"crush.db") {
-			return nil
-		}
-
-		a.Files = append(a.Files, path)
-		if sqliteSidecar(entry.Name()) {
-			a.Unknown = append(a.Unknown, path+": sidecar requires its readable base database; "+
-				"stale/deleted records are not recovered")
-
-			return nil
-		}
-
-		values, err := sqlite.Text(ctx, path)
-		if err != nil {
-			a.Unknown = append(a.Unknown, err.Error())
-
-			return nil
-		}
-
-		for _, value := range values {
-			a.references(value, path, tree, roots, unknownValue)
-		}
-
-		return nil
-	})
-	if err != nil {
-		a.Unknown = append(a.Unknown, err.Error())
-	}
-}
-
 func decision(record map[string]any) string {
 	if allowed, ok := record["allowed"].(bool); ok {
 		if allowed {
@@ -227,13 +189,4 @@ func (a *Audit) engineCall(record map[string]any, path, tree string, roots []str
 	}
 
 	a.references(content, path, tree, roots, decision(record))
-}
-
-func sqliteSidecar(name string) bool {
-	switch name {
-	case "crush.db-wal", "crush.db-shm", "crush.db-journal":
-		return true
-	default:
-		return false
-	}
 }

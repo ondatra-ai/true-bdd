@@ -31,7 +31,7 @@ them.
 config by walking up from each linted file and merging what it passes, so a
 committed `.markdownlint.yaml` or `.markdownlint-cli2.yaml` in any
 subdirectory changes that subtree's rules with nothing to announce it — the
-same trap as a root `crush.json`. One config, at the root.
+same trap as an implicit CLI configuration file. One config, at the root.
 
 **Out of scope, and not yours to fix.** The `.claude/skills/mpc_*` directories
 are MIT copies of `mattpocock/skills` (manifest:

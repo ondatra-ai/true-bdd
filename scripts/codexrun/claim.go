@@ -103,8 +103,8 @@ func canResume(record Record) error {
 		return refuse("run is already done")
 	}
 
-	if record.Status == "unavailable" && !record.writer() {
-		return refuse("Claude does unavailable readings itself")
+	if record.Status == "unavailable" {
+		return refuse("run is unavailable; Claude takes the work")
 	}
 
 	if record.Attempt >= maxAttempts {

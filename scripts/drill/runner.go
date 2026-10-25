@@ -106,17 +106,12 @@ func privateDirectory(checkout string) (string, error) {
 func configurationRoots() []string {
 	home, _ := os.UserHomeDir()
 
-	config := os.Getenv("XDG_CONFIG_HOME")
-	if config == "" {
-		config = filepath.Join(home, ".config")
-	}
-
 	codex := os.Getenv("CODEX_HOME")
 	if codex == "" {
 		codex = filepath.Join(home, ".codex")
 	}
 
-	return []string{filepath.Join(home, ".claude"), codex, filepath.Join(config, "crush")}
+	return []string{filepath.Join(home, ".claude"), codex}
 }
 
 func within(path, root string) bool {

@@ -15,7 +15,7 @@ Codex takes the code work and readings Claude would otherwise spend its subscrip
 - **review**: a diff along one axis. `mpc_code-review`'s standards and spec reviewers are two review runs, started together.
 - **research**: one precise question about the code or public sources; use `--search` when it needs the web.
 
-Readers (plan-read, review, research) run read-only without network. Writers (code, fix) have full access at high reasoning effort in worktrees the command owns. There is no complexity exception: Claude takes a code task itself only after two failed attempts. An edit or question Claude settles in two or three calls on files already held stays with Claude; a handover costs more.
+Readers (plan-read, review, research) run read-only without network. Writers (code, fix) have full access at high reasoning effort in worktrees the command owns. There is no complexity exception: Claude takes a code task itself when Codex is unavailable or after two failed attempts. An edit or question Claude settles in two or three calls on files already held stays with Claude; a handover costs more.
 
 Claude keeps the conversation with the Owner, decisions, specs and tickets, briefs, reading reports and diffs, the Owner's texts, and research through the Owner's connectors, which Codex lacks. Findings are evidence to check: sort each as valid, invalid or needs a test, and explain which you took and why.
 
@@ -42,26 +42,26 @@ Wait for the task notification; runs started together are waited for together. R
 
 - `done`: weigh the report. For a writer, also read `git diff <base>...<branch>` and its check evidence; Git completion alone cannot prove it meets the brief.
 - `incomplete`: an agent left a report, but Git could not prove a clean checkout on the recorded branch, retaining the starting commit with at least one new commit. Treat it as failure.
-- `failed`, `stalled` (no log growth for 12 minutes), `timed-out` (115 minutes total across Codex and takeover): read the reason and log tail.
-- `unavailable` for a reader: Claude does the reading itself and tells the Owner. Do not resume it or hand it to crush, which has no enforced read-only mode.
+- `failed`, `stalled` (no log growth for 12 minutes), `timed-out` (115 minutes total): read the reason and log tail.
+- `unavailable`: Claude does the writing or reading itself and tells the Owner. This result is not resumable, including after partial edits.
 
-After any other result than `done` or a reader's `unavailable`, resume once as the same kind of background task:
+After any other result than `done` or `unavailable`, resume once as the same kind of background task:
 
 ```bash
 go run ./scripts/cmd/codex resume --name <run> --note '<what went wrong>'
 ```
 
-Resume names the recorded session id, never the last session, and keeps workspace, sandbox, search and original commit baseline. With no session id it starts fresh using the saved brief and note, fetching issues preparation did not save. A refusal consumes no attempt: exit 2 means invalid input, an unknown/done/exhausted run, a live command, four busy writers, a held worktree, or a branch moved from its recorded checkout. A dead command recorded as running may be retried. Exit 0 means `done`; exit 1 means an attempted run ended otherwise. After the second failure Claude takes the work and tells the Owner, naming both logs.
+Resume names the recorded session id, never the last session, and keeps workspace, sandbox, search and original commit baseline. With no session id it starts fresh using the saved brief and note, fetching issues preparation did not save. A refusal consumes no attempt: exit 2 means invalid input, an unknown/done/unavailable/exhausted run, a live command, four busy writers, a held worktree, or a branch moved from its recorded checkout. A dead command recorded as running may be retried. Exit 0 means `done`; exit 1 means an attempted run ended otherwise. After the second failure Claude takes the work and tells the Owner, naming both logs.
 
-When Codex is signed out, its sign-in check is missing, broken or stalled, its access token expires, or it hits its usage limit, crush takes code and fix work in the same workspace and attempt. Other execution failures use the normal retry path. The takeover brief says to read `git status` and the diff before continuing partial work. The command invokes `CRUSH_CLIENT_SERVER=false crush --cwd <worktree> run --quiet --reasoning-effort high`, keeping crush's configured model; `run` auto-approves, and no `--yolo` flag is used. A crush retry stays on crush in a fresh session with the whole brief and retry note.
+When Codex is signed out, its sign-in check is missing, broken or stalled, its access token expires, or it hits its usage limit, a writer or reader ends `unavailable` with the reason in its closing summary. Claude takes the work itself and says so. Other execution failures use the normal retry path.
 
 ## Files and shutdown
 
-`tmp/codex/<run>/` retains `brief.md` with the command's `## This run`, `issues/<n>.md`, `run.json`, `run.log` and `final.md`. Attempt two keeps `resume.md`, `run-2.log` and `final-2.md`. Takeover also keeps `crush.md` or `crush-2.md`; both agents' streams remain in that attempt's log, and crush's stdout becomes the report. Records are published atomically under an allocation hold.
+`tmp/codex/<run>/` retains `brief.md` with the command's `## This run`, `issues/<n>.md`, `run.json`, `run.log` and `final.md`. Attempt two keeps `resume.md`, `run-2.log` and `final-2.md`. Records are published atomically under an allocation hold.
 
 Every agent and preparation subprocess has its own process group. Cancellation sends SIGTERM, waits up to 10 seconds, then sends SIGKILL; descendants are stopped even after a successful agent exit. Output draining is bounded, including when an escaped descendant retains a pipe. `CODEX_RUN_STALL_MINUTES`, `CODEX_RUN_LIMIT_MINUTES` and `CODEX_RUN_GRACE_SECONDS` can shorten the windows for testing. Offline tests use fake CLIs: `go test ./scripts/codexrun ./pkg/cli/codex ./pkg/shell`.
 
-Writers pass `TRUE_BDD_CODEX_RUN=<name>:<attempt>:<sha256-of-checkout-root>` to the agent (Codex or crush), inherited by detached descendants. Before the closing summary, typed `pkg/cli/ps` discovery finds exact environment markers with `ps eww` and stops only that attempt's marked processes, with SIGTERM, grace and SIGKILL. Command-line arguments are excluded from marker matching. Before a resume or a new writer on the same worktree, marked holders from every recorded writer attempt cause a refusal naming their commands, PIDs and markers; the refusal consumes no attempt. Discovery or cleanup failure prevents the closing summary. Readers neither scan nor stop processes by working directory; they keep their existing read-only sandbox and process-group shutdown. An unmarked process is never a cleanup target, even inside a writer's worktree.
+Writers pass `TRUE_BDD_CODEX_RUN=<name>:<attempt>:<sha256-of-checkout-root>` to Codex, inherited by detached descendants. Before the closing summary, typed `pkg/cli/ps` discovery finds exact environment markers with `ps eww` and stops only that attempt's marked processes, with SIGTERM, grace and SIGKILL. Command-line arguments are excluded from marker matching. Before a resume or a new writer on the same worktree, marked holders from every recorded writer attempt cause a refusal naming their commands, PIDs and markers; the refusal consumes no attempt. Discovery or cleanup failure prevents the closing summary. Readers neither scan nor stop processes by working directory; they keep their existing read-only sandbox and process-group shutdown. An unmarked process is never a cleanup target, even inside a writer's worktree.
 
 ## Implementing a spec
 

@@ -52,15 +52,14 @@ func TestFreshRetryKeepsBriefAndHandsBack(t *testing.T) {
 	}
 }
 
-func TestCrushRetryStaysOnCrush(t *testing.T) {
+func TestWriterRetryKeepsCodexSession(t *testing.T) {
 	root, opts := fixture(t)
 	runner := codexrun.New(root)
 	opts.Kind = codeKind
-	opts.Name = "crush-retry"
+	opts.Name = "writer-retry"
 	opts.Base = mainBranch
-	opts.Branch = "impl/crush-retry"
+	opts.Branch = "impl/writer-retry"
 
-	t.Setenv("LOGIN", "out")
 	t.Setenv("MODE", "fail")
 	record, err := runner.Start(t.Context(), opts)
 	assertStatus(t, record, err, "failed")
@@ -70,12 +69,14 @@ func TestCrushRetryStaysOnCrush(t *testing.T) {
 	record, err = runner.Resume(t.Context(), opts.Name, "finish the commit")
 	assertStatus(t, record, err, doneStatus)
 
-	if record.Agent != crushAgent || record.Attempt != 2 {
+	if record.Agent != codexCommand || record.Attempt != 2 {
 		t.Fatalf("%+v", record)
 	}
 
 	prompt := read(t, filepath.Join(root, "capture.stdin"))
-	if !strings.Contains(prompt, "finish the commit") || !strings.Contains(prompt, "git status") {
+
+	args := read(t, filepath.Join(root, "capture.args"))
+	if !strings.Contains(prompt, "finish the commit") || !strings.Contains(args, "resume\nsession-175") {
 		t.Fatal(prompt)
 	}
 }
