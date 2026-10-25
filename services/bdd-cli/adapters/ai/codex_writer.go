@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -134,7 +133,7 @@ inherit = "none"
 }
 
 func codexInsideRoot(root, path string) (string, error) {
-	resolved, err := resolveCodexPath(path)
+	resolved, err := resolveWriterPath(path)
 	if err != nil {
 		return "", err
 	}
@@ -145,29 +144,6 @@ func codexInsideRoot(root, path string) (string, error) {
 	}
 
 	return resolved, nil
-}
-
-func resolveCodexPath(path string) (string, error) {
-	resolved, err := filepath.EvalSymlinks(path)
-	if err == nil {
-		return resolved, nil
-	}
-
-	if !errors.Is(err, os.ErrNotExist) || filepath.Dir(path) == path {
-		return "", fmt.Errorf("resolve codex path: %w", err)
-	}
-
-	info, statErr := os.Lstat(path)
-	if statErr == nil && info.Mode()&os.ModeSymlink != 0 {
-		return resolveCodexLink(path)
-	}
-
-	parent, err := resolveCodexPath(filepath.Dir(path))
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(parent, filepath.Base(path)), nil
 }
 
 func codexCommandEnvironment(temporary string, paths map[string]string) map[string]string {
@@ -242,17 +218,4 @@ func codexScratchEnvironment(root, temporary string, paths map[string]string) (m
 	}
 
 	return env, nil
-}
-
-func resolveCodexLink(path string) (string, error) {
-	target, err := os.Readlink(path)
-	if err != nil {
-		return "", fmt.Errorf("read codex root link: %w", err)
-	}
-
-	if !filepath.IsAbs(target) {
-		target = filepath.Join(filepath.Dir(path), target)
-	}
-
-	return resolveCodexPath(target)
 }

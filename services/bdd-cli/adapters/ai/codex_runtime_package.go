@@ -46,7 +46,7 @@ func codexRuntimePackage(host, executable string) (string, error) {
 	}
 
 	for _, path := range protected {
-		resolved, err := resolveCodexPath(path)
+		resolved, err := resolveWriterPath(path)
 		if err != nil {
 			return "", err
 		}

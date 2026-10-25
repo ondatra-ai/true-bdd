@@ -20,6 +20,55 @@ const claudeEdit = "Edit"
 const claudeJest = "npx jest --config jest.config.js"
 const claudeReplay = "go test ./tests/ -mode=replay"
 
+func TestClaudeWritesResolveDanglingSymlinks(t *testing.T) {
+	t.Parallel()
+
+	const (
+		escape = "escape"
+		inside = "inside"
+		cycle  = "cycle"
+	)
+
+	host, outside := t.TempDir(), t.TempDir()
+
+	services := filepath.Join(host, "services")
+
+	err := os.Mkdir(services, 0o700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, link := range []struct{ name, target string }{
+		{escape, filepath.Join(outside, "new.go")},
+		{"chain", escape},
+		{inside, "new.go"},
+		{"inside-chain", inside},
+		{cycle, cycle},
+	} {
+		err := os.Symlink(link.target, filepath.Join(services, link.name))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	policy := ai.ClaudeGuardPolicy{Replay: ai.ReplayPolicy{ReadRoot: host, WriteRoots: []string{services}}}
+
+	for _, tool := range []string{claudeWrite, claudeEdit, claudeMultiEdit} {
+		for _, testCase := range []struct {
+			name  string
+			allow bool
+		}{
+			{escape, false}, {"chain", false}, {inside, true}, {"inside-chain", true}, {cycle, false},
+		} {
+			payload := fmt.Sprintf(`{"tool_name":%q,"cwd":%q,"tool_input":{"file_path":%q}}`,
+				tool, host, filepath.Join(services, testCase.name))
+			if allowed, reason := policy.DecidePayload([]byte(payload)); allowed != testCase.allow {
+				t.Errorf("%s %s: allowed=%v, want %v (%s)", tool, testCase.name, allowed, testCase.allow, reason)
+			}
+		}
+	}
+}
+
 func TestClaudeReplayInNestedSuite(t *testing.T) {
 	t.Parallel()
 

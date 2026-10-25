@@ -11,8 +11,16 @@ import (
 // nearest existing ancestors. Resolve links before interpreting parent paths.
 func claudeSamePath(left, right string) bool {
 	left = resolveThroughSymlinks(left)
-	right = resolveThroughSymlinks(right)
 
+	right = resolveThroughSymlinks(right)
+	if left == "" || right == "" {
+		return false
+	}
+
+	return claudeSameResolvedPath(left, right)
+}
+
+func claudeSameResolvedPath(left, right string) bool {
 	for {
 		leftInfo, leftErr := os.Stat(left)
 
@@ -37,6 +45,10 @@ func claudePathWithinRoot(target, root string) bool {
 	target = resolveThroughSymlinks(target)
 
 	root = resolveThroughSymlinks(root)
+	if target == "" || root == "" {
+		return false
+	}
+
 	for {
 		if claudeSamePath(target, root) {
 			return true

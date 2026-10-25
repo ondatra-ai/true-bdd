@@ -49,7 +49,12 @@ func main() {
 }
 
 func run(cfg config, name string, argv []string) (int, error) {
-	err := verifyWriterSpawn(cfg, name)
+	_, err := installedGoRoot()
+	if err != nil {
+		return 0, fmt.Errorf("resolve recording toolchain: %w", err)
+	}
+
+	err = verifyWriterSpawn(cfg, name)
 	if err != nil {
 		return 0, err
 	}

@@ -1,4 +1,4 @@
-Implemented `calc.A()` returning `1` and `calc.B()` returning `2`. The required test selection passed.
+Implemented `A() int` returning `1` and `B() int` returning `2` in `services/calc/calc.go`. The requested test selection passed.
 
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-build--iter1-result.yaml ===
 applied: true

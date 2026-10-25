@@ -266,7 +266,13 @@ glossary:
       Every codex apply turn, including document and test-definition edits, uses a generated home and permission profile:
       reads stay inside the Host project plus explicit runtime and toolchain exceptions, writes stay in that turn's own
       file, directory or configured-glob roots and scratch, and escaping roots are refused. Plan and validation turns
-      remain read-only. Glob matches are fixed at preparation, except a terminal recursive subtree grants new descendants.
+      remain read-only. Configured globs allow creating matching files even when no matches exist before the turn.
+      Literal files and terminal recursive subtrees keep exact grants; other globs temporarily grant their narrowest
+      literal directory, then enforce the original patterns after every turn. New non-matching files are removed;
+      changes, deletions, renames or permission changes to pre-existing non-matching files fail the turn with one
+      warning naming the file, preserving changed contents for diagnosis. Overlapping grants authorize their union.
+      Non-matching files in that directory can be changed during the turn; this is a post-turn boundary.
+      Malformed patterns and grants of the host root, protected generated homes or escaping paths are refused.
       The build-code codex writer receives whole-suite and selected replay
       forms, polling its own process for completion. It reads the host
       project and runtime/toolchain exceptions only, writes declared service
@@ -412,9 +418,9 @@ glossary:
       Searches outside the host cannot start above an excluded module-copy
       directory, and Glob checks its pattern's fixed root and denies parent
       traversal. A dependency search chooses a narrower directory instead.
-      Both Bash timeouts are 600000 milliseconds. This turn has no engine deadline;
-      cancellation stops its process group. Other Claude turns retain safe mode
-      and their 20-minute bound. A started writer's non-zero exit, error result
+      Both Bash timeouts are 600000 milliseconds. No Claude turn gets a router deadline;
+      every turn uses the caller's context, and cancellation stops its process group and descendants.
+      Other Claude turns retain safe mode. A started writer's non-zero exit, error result
       (including rate or usage limits) or empty answer warns once, preserves files
       and reruns the set, consuming the same attempt. Start failures stay fatal.
 

@@ -6,35 +6,14 @@ import (
 	"strings"
 )
 
-// resolveThroughSymlinks resolves the deepest existing ancestor and
-// re-appends what does not exist, preserving .. until links resolve.
-// A target need not exist yet, so EvalSymlinks on the full path can fail.
+// resolveThroughSymlinks fails closed when a path cannot be resolved.
 func resolveThroughSymlinks(path string) string {
-	remainder := ""
-	current := path
-
-	for {
-		resolved, err := filepath.EvalSymlinks(current)
-		if err == nil {
-			return filepath.Join(resolved, remainder)
-		}
-
-		parent, leaf := filepath.Split(current)
-
-		parent = strings.TrimSuffix(parent, string(os.PathSeparator))
-		if parent == "" {
-			parent = string(os.PathSeparator)
-		}
-
-		if parent == current {
-			// Reached the root without finding anything that exists;
-			// the lexical form is all there is.
-			return filepath.Clean(path)
-		}
-
-		remainder = filepath.Join(leaf, remainder)
-		current = parent
+	resolved, err := resolveWriterPath(path)
+	if err != nil {
+		return ""
 	}
+
+	return resolved
 }
 
 // absoluteGlobRoot reduces a glob to the absolute directory prefix it can

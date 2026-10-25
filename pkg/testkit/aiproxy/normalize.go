@@ -1,18 +1,23 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
+
+	"github.com/ondatra-ai/true-bdd/pkg/cli/gotool"
 )
 
 const (
 	cwdPlaceholder    = "{{CWD}}"
 	runDirPlaceholder = "{{RUN_DIR}}"
 	homePlaceholder   = "{{HOME}}"
+	goRootPlaceholder = "{{GOROOT}}"
 
 	// runDirPattern matches the engine's run-directory basename — timestamp-pid
 	// (fs/run_directory.go), which differs every run and would otherwise
@@ -25,10 +30,21 @@ const (
 // stdout line goes through it.
 var runDirRe = regexp.MustCompile(runDirPattern)
 
+//nolint:gochecknoglobals // immutable lazy discovery, shared by all normalized streams in one shim process.
+var installedGoRoot = sync.OnceValues(func() (string, error) {
+	paths, err := gotool.Environment(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	return paths["GOROOT"], nil
+})
+
 // normalizeText replaces the run-volatile substrings a call can embed — cwd,
-// the engine's per-run tmp dir, and the recording machine's home (see
-// TestNormalizeReplacesHome for why home matters) — with stable placeholders.
+// the engine's per-run tmp dir, home and Go installation — with stable
+// placeholders, including toolchain paths embedded in compiler diagnostics.
 func normalizeText(text, cwd string) string {
+	text = replacePath(text, goRoot(), goRootPlaceholder)
 	text = strings.ReplaceAll(text, cwd, cwdPlaceholder)
 
 	text = replaceHome(text)
@@ -36,25 +52,42 @@ func normalizeText(text, cwd string) string {
 	return runDirRe.ReplaceAllString(text, runDirPlaceholder)
 }
 
+func goRoot() string {
+	if root := os.Getenv("GOROOT"); root != "" {
+		return root
+	}
+
+	root, _ := installedGoRoot()
+
+	return root
+}
+
 // replaceHome substitutes the home directory only where it is a whole path
 // component (exact, or followed by a separator) — a bare substring replace
 // would also mangle a sibling like /Users/peterson (TestNormalizeLeavesSiblingPathsAlone).
 func replaceHome(text string) string {
 	home, err := os.UserHomeDir()
-	if err != nil || home == "" || home == string(os.PathSeparator) {
+	if err != nil {
 		return text
 	}
 
-	home = strings.TrimSuffix(home, string(os.PathSeparator))
+	return replacePath(text, home, homePlaceholder)
+}
 
-	text = strings.ReplaceAll(text, home+string(os.PathSeparator),
-		homePlaceholder+string(os.PathSeparator))
+func replacePath(text, path, placeholder string) string {
+	path = strings.TrimSuffix(path, string(os.PathSeparator))
+	if path == "" {
+		return text
+	}
+
+	text = strings.ReplaceAll(text, path+string(os.PathSeparator),
+		placeholder+string(os.PathSeparator))
 
 	// The bare path, only where nothing path-like follows it: a trailing
 	// occurrence, or one before a character that cannot continue a
 	// component.
-	return regexp.MustCompile(regexp.QuoteMeta(home)+`(?:$|(?P<after>[^\w./-]))`).
-		ReplaceAllString(text, homePlaceholder+"${after}")
+	return regexp.MustCompile(regexp.QuoteMeta(path)+`(?:$|(?P<after>[^\w./-]))`).
+		ReplaceAllString(text, placeholder+"${after}")
 }
 
 // normalizeArgv normalizes every argument for storage in meta.json.

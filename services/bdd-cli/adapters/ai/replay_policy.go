@@ -50,7 +50,7 @@ func (p ReplayPolicy) allowsTestCommand(command, workingDir string) (bool, strin
 		dir = p.ReadRoot + string(filepath.Separator) + dir
 	}
 
-	if !filepath.IsAbs(p.TestDir) || resolveThroughSymlinks(dir) != resolveThroughSymlinks(p.TestDir) {
+	if !filepath.IsAbs(p.TestDir) || !sameReplayDirectory(dir, p.TestDir) {
 		return false, reason
 	}
 
@@ -69,4 +69,10 @@ func (p ReplayPolicy) allowsTestCommand(command, workingDir string) (bool, strin
 	}
 
 	return true, ""
+}
+
+func sameReplayDirectory(left, right string) bool {
+	resolved := resolveThroughSymlinks(left)
+
+	return resolved != "" && resolved == resolveThroughSymlinks(right)
 }

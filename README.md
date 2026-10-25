@@ -431,7 +431,7 @@ message still comes through `-o`. Only build-code started non-zero or empty code
 turns preserve edits and rerun the set with one warning; start failures
 stay fatal. No codex stall watch is added. Plan and validation retain their
 `read-only` sandbox and recorded requests. Other commands' applies remain fatal on failure.
-Optional installed node, npm (including npx) and Docker clients have explicit runtime read grants. npm stays offline, runtime state stays in scratch, and no Docker daemon/socket is granted. Glob matches are fixed at preparation; a terminal `/**` permits new descendants. Empty matches refuse instead of granting a broader directory. ADR-0024 lists library and installation-link exceptions.
+Optional installed node, npm (including npx) and Docker clients have explicit runtime read grants. npm stays offline, runtime state stays in scratch, and no Docker daemon/socket is granted. Configured globs allow creating matching files even when no matches exist before the turn. Literal files and terminal `/**` subtrees keep exact grants; other globs temporarily grant their narrowest literal directory and enforce the original patterns after every turn, including failures. Newly created non-matching files are removed. Changes, deletions, renames or permission changes to pre-existing non-matching files fail the turn with one warning naming the file; changed contents remain for diagnosis. Overlapping grants authorize their union. This is a post-turn boundary: non-matching files under the granted directory can be changed during the turn. Malformed patterns and grants of the host root, protected generated homes or escaping paths are refused. ADR-0024 lists library and installation-link exceptions.
 
 The host project's documents live under `docs/`:
 

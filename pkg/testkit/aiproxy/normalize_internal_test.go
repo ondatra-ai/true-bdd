@@ -10,6 +10,42 @@ const claudeRestricted = "--restricted"
 const claudeSessionID = "--session-id"
 const claudeAddDir = "--add-dir"
 
+func TestRepairRequestStableAcrossGoInstallations(t *testing.T) {
+	var recorded string
+
+	for _, root := range []string{"/opt/homebrew/Cellar/go/1.27.1/libexec", "/usr/local/go", "/custom/toolchain"} {
+		t.Setenv("GOROOT", root)
+		prompt := "package missing is not in std (" + root + "/src/missing)"
+		argv := []string{"-p", prompt}
+
+		hash := requestHash(argv, []byte(prompt), "/host")
+		if recorded != "" && hash != recorded {
+			t.Errorf("repair request changed with GOROOT: %s != %s", hash, recorded)
+		}
+
+		recorded = hash
+
+		if got := normalizeArgv(argv, "/host")[1]; got != "package missing is not in std ({{GOROOT}}/src/missing)" {
+			t.Errorf("stored prompt retains toolchain: %s", got)
+		}
+
+		back, err := denormalize(normalizeText(prompt, "/host"), "/host", "")
+		if err != nil || back != prompt {
+			t.Errorf("toolchain round trip: %q, %v", back, err)
+		}
+
+		if requestHash(argv, []byte(prompt+"changed"), "/host") == hash {
+			t.Fatal("changed repair request was ignored")
+		}
+
+		for _, sibling := range []string{root + "-other/src", root + ".backup/src"} {
+			if got := normalizeText(sibling, "/host"); got != sibling {
+				t.Errorf("unrelated path changed: %s -> %s", sibling, got)
+			}
+		}
+	}
+}
+
 func TestNormalizeTextReplacesCwdAndRunDir(t *testing.T) {
 	t.Parallel()
 
