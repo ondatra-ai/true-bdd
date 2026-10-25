@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
 )
@@ -71,7 +72,7 @@ func scopeEntries(manifest string) []string {
 func run(verb, manifest string) (Report, error) {
 	result, err := shell.Run(context.Background(), []string{Bin, verb, "--format", "json"},
 		shell.Options{
-			Env:    shell.Inherit().Set(scopeEntries(manifest)...),
+			Env:    git.Environment().Set(scopeEntries(manifest)...),
 			Output: shell.Capture(),
 		})
 	if err != nil {

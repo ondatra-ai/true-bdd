@@ -111,7 +111,9 @@ func (r Repository) output(ctx context.Context, args ...string) (string, error) 
 		watch.Limit = time.Minute
 	}
 
-	result, err := shell.Watch(ctx, append([]string{Bin}, args...), shell.Options{Dir: r.Dir}, watch)
+	opt := shell.Options{Dir: r.Dir, Env: Environment()}
+
+	result, err := shell.Watch(ctx, append([]string{Bin}, args...), opt, watch)
 	if err != nil {
 		return "", err
 	}

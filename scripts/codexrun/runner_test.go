@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
+
 	"github.com/ondatra-ai/true-bdd/scripts/codexrun"
 )
 
@@ -42,6 +44,7 @@ func fixture(t *testing.T) (string, codexrun.Options) {
 		"git": `#!/bin/sh
 printf '%s\n' "$@" >> "$CAPTURE.git"
 if [ "$GIT_FAIL_ADD" = yes ] && [ "$1" = worktree ] && [ "$2" = add ]; then exit 1; fi
+for name in $("$CODEX_TEST_GIT" rev-parse --local-env-vars); do unset "$name"; done
 exec "$CODEX_TEST_GIT" "$@"
 `,
 		"codex": `#!/bin/sh
@@ -131,6 +134,7 @@ func git(t *testing.T, root string, args ...string) string {
 	t.Helper()
 	cmd := exec.CommandContext(t.Context(), "git", args...)
 	cmd.Dir = root
+	cmd.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	data, err := cmd.CombinedOutput()
 	if err != nil {

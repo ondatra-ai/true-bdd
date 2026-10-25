@@ -24,6 +24,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli"
+	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/cli/spec"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/pkg/testkit/fstree"
@@ -463,7 +464,7 @@ func phase(name, tmpDir string, budget time.Duration) spec.Phase {
 	return spec.Phase{
 		Name:   name,
 		Dir:    tmpDir,
-		Env:    cli.Inherit().Strip("CLAUDECODE"),
+		Env:    git.Environment().Strip("CLAUDECODE"),
 		Budget: budget,
 		Output: func(index int) (cli.Sink, func()) {
 			stdout, stderr, flush := spawn.Tee(spawnLogName(name, index))

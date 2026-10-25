@@ -79,7 +79,7 @@ func execute(gate Gate) error {
 		return gate.Run()
 	}
 
-	result, err := spec.Run(gate.Command, cli.Options{Output: cli.Console()})
+	result, err := spec.Run(gate.Command, cli.Options{Env: git.Environment(), Output: cli.Console()})
 	if err != nil {
 		return err
 	}

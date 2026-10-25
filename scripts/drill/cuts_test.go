@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	gitcli "github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/scripts/drill"
 )
 
@@ -34,6 +35,7 @@ func git(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	command := exec.CommandContext(t.Context(), "git", args...)
 	command.Dir = dir
+	command.Env = gitcli.ScrubEnvironment(os.Environ())
 
 	output, err := command.CombinedOutput()
 	if err != nil {
