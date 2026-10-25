@@ -1,5 +1,0 @@
-=== FILE_START: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
-applied: true
-target: "tmp/{{RUN_DIR}}/scenarios_yaml.yaml"
-summary: "Replaced E2E-001 then step 'the greeter handles the name \"Ada\" and prints \"Hello Ada\"' with 'the greeter prints \"Hello Ada\"'"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-E2E-001-iter1-result.yaml ===
