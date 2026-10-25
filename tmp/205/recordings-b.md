@@ -34,11 +34,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `build-code-codex-003-missing-root` | `build-code-codex-missing-root` | recorded | recorded on #203-b; replay passed | 1.62 |
 | `claude-guard-001-read-only-tool-allowed` | `claude-guard-read-only-tool` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-002-shell-denied-without-grant` | `claude-guard-shell-denied` | recorded | recorded on #203-b; replay passed | 0.00 |
-| `claude-guard-004-unknown-tool-denied` | `claude-guard-unknown-tool` | remaining | pending | — |
-| `claude-guard-005-missing-policy-denied` | `claude-guard-missing-policy` | remaining | pending | — |
-| `claude-guard-006-unreadable-policy-denied` | `claude-guard-unreadable-policy` | remaining | pending | — |
-| `claude-guard-007-payload-names-the-call` | `claude-guard-hook-payload` | remaining | pending | — |
-| `claude-guard-writes-001-write-inside-root-allowed` | `claude-guard-write-inside-root` | remaining | pending | — |
+| `claude-guard-004-unknown-tool-denied` | `claude-guard-unknown-tool` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-005-missing-policy-denied` | `claude-guard-missing-policy` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-006-unreadable-policy-denied` | `claude-guard-unreadable-policy` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-007-payload-names-the-call` | `claude-guard-hook-payload` | recorded | recorded on #203-b; replay passed | 0.00 |
+| `claude-guard-writes-001-write-inside-root-allowed` | `claude-guard-write-inside-root` | recorded | recorded on #203-b; replay passed | 0.00 |
 | `claude-guard-writes-002-write-outside-roots-denied` | `claude-guard-write-outside-roots` | remaining | pending | — |
 | `claude-guard-writes-003-symlink-escape-denied` | `claude-guard-symlink-escape` | remaining | pending | — |
 | `claude-guard-writes-004-shared-prefix-denied` | `claude-guard-shared-prefix` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 30 of 55; remaining: 25; service CLI minutes: 84.57.
+Recorded and replayed: 35 of 55; remaining: 20; service CLI minutes: 84.57.
