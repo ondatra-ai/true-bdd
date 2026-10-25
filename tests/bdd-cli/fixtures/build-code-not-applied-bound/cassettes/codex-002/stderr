@@ -1,0 +1,5 @@
+2026-10-25T11:24:27.500622Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.2 seconds
+Output:
+Failed to write file {{CWD}}/services/calc/prepared-second.txt
+

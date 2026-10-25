@@ -9,11 +9,11 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `build-code-run-006-shared-fix-skips-green-peer` | `build-code-shared-fix` | recorded | recorded on #203-b; replay passed | 1.23 |
 | `build-code-run-007-next-walk-finds-regression` | `build-code-cross-walk` | recorded | recorded on #203-b; replay passed | 3.59 |
 | `build-code-frameworks-005-not-applied-revalidated` | `build-code-not-applied` | recorded | recorded on #203-b; replay passed | 3.18 |
-| `build-code-frameworks-006-not-applied-hits-fix-bound` | `build-code-not-applied-bound` | remaining | pending | — |
-| `build-tests-run-005-prebuilt-engine-without-source` | `build-tests-run-prebuilt` | remaining | pending | — |
-| `build-code-spec-005-matched-scenario-embedded` | `build-code-spec-scenario` | remaining | pending | — |
-| `build-code-spec-006-unreadable-product-warned` | `build-code-spec-missing-product` | remaining | pending | — |
-| `build-code-spec-007-unreadable-registry-warned` | `build-code-spec-missing-registry` | remaining | pending | — |
+| `build-code-frameworks-006-not-applied-hits-fix-bound` | `build-code-not-applied-bound` | recorded | recorded on #203-b; replay passed | 4.94 |
+| `build-tests-run-005-prebuilt-engine-without-source` | `build-tests-run-prebuilt` | recorded | recorded on #203-b; replay passed | 4.93 |
+| `build-code-spec-005-matched-scenario-embedded` | `build-code-spec-scenario` | recorded | recorded on #203-b; replay passed | 1.82 |
+| `build-code-spec-006-unreadable-product-warned` | `build-code-spec-missing-product` | recorded | recorded on #203-b; replay passed | 1.83 |
+| `build-code-spec-007-unreadable-registry-warned` | `build-code-spec-missing-registry` | recorded | recorded on #203-b; replay passed | 1.89 |
 | `build-tests-run-006-identical-failures-grouped` | `build-tests-run-grouped` | remaining | pending | — |
 | `build-tests-run-007-distinct-failures-whole` | `build-tests-run-distinct` | remaining | pending | — |
 | `build-code-set-001-partial-repair` | `build-code-partial` | remaining | pending | — |
@@ -60,4 +60,4 @@ Baseline: `d707d7aeaea835e9a1c709f09505d75ee3d79904`. These are the last 55 rema
 | `claude-replay-009-no-command` | `claude-replay-no-command` | remaining | pending | — |
 | `build-code-claude-007-unrepresentable` | `build-code-unrepresentable-replay` | remaining | pending | — |
 
-Recorded and replayed: 5 of 55; remaining: 50; service CLI minutes: 20.69.
+Recorded and replayed: 10 of 55; remaining: 45; service CLI minutes: 36.11.

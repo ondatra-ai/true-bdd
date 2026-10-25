@@ -1,7 +1,0 @@
-Both preparation files are absent, so this turn performs only the first preparation: create `services/calc/prepared-first.txt` and leave `calc.go` untouched.Created `services/calc/prepared-first.txt` (`prepared` + newline); `calc.go` left unchanged. `TestAdd` still fails (`Add(2, 3) = -1, want 5`) as expected — second preparation is still missing.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===
-applied: false
-target: "services/calc/calc.go"
-summary: "first preparation only; test still fails"
-=== FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAdd-iter1-result.yaml ===

@@ -1,7 +1,0 @@
-File state matches the fix prompt. Applying the three edits.Shell is blocked by a guard hook; verifying by reading the file instead.All three changes applied exactly as specified (`fmt`/`strings` imports, registration in existing `Register`, `helpLists` after `help`). Build verification via shell was blocked by a guard hook; the file was verified by inspection instead.
-
-=== FILE_START: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
-applied: true
-target: "tests/calc/steps/steps.go"
-summary: "Registered and implemented parameterized Then step ^the help lists \"?([^\"]+)\"?$ asserting the captured command name appears in state.Help"
-=== FILE_END: tmp/{{RUN_DIR}}/apply-calc-001-help-iter1-result.yaml ===
