@@ -56,7 +56,7 @@ func probeCodexApply(t *testing.T, command string, paths map[string]string) {
 	putCodexFile(t, filepath.Join(root, "user-home.txt"), userHome)
 	putCodexFile(t, filepath.Join(root, "go.mod"), "module probe\n\ngo 1.25\n")
 	putCodexFile(t, filepath.Join(root, "package.json"), `{"scripts":{"test":"node tests/runtime.cjs"}}`)
-    putCodexFile(t,filepath.Join(root,"node_modules/.bin/probe-runtime"),"#!/bin/sh\nnode tests/runtime.cjs\n")
+	putCodexFile(t, filepath.Join(root, "node_modules/.bin/probe-runtime"), "#!/bin/sh\nnode tests/runtime.cjs\n")
 	putCodexFile(t, filepath.Join(root, "tests/runtime.cjs"),
 		`require('node:assert/strict').equal(2+2,4);console.log("node suite passed");`)
 	putCodexFile(t, filepath.Join(root, "tests/suite/probe_test.go"),
@@ -85,7 +85,18 @@ func probeCodexApply(t *testing.T, command string, paths map[string]string) {
 		t.Fatal(err)
 	}
 
+	assertCodexBuildTestsFiles(t, command, root)
+}
+
+func assertCodexBuildTestsFiles(t *testing.T, command, root string) {
+	t.Helper()
+
 	if command == probeBuildTests {
+		_, err := os.Stat(filepath.Join(root, "tests/alpha/sibling.go"))
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("unmatched file survived: %v", err)
+		}
+
 		info, statErr := os.Stat(filepath.Join(root, "tests/missing/single.txt"))
 		if statErr == nil && info.IsDir() {
 			t.Fatal("literal configured file became a directory")
@@ -116,7 +127,9 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
  deny /bin/cat "$cache/cache/vcs/marker"
  deny /bin/sh -c 'printf forbidden > readonly.txt'
  deny /bin/sh -c 'printf forbidden > docs/sibling.yaml'
- deny /bin/sh -c 'printf forbidden > tests/alpha/sibling.go'
+ if [ "$TRUE_BDD_TEST_COMMAND" != 'build tests' ]; then
+  deny /bin/sh -c 'printf forbidden > tests/alpha/sibling.go'
+ fi
  deny node -e '
  const net=require("net");const s=net.connect(80,"192.0.2.1");
  s.on("error",e=>{console.error(e.code === "EPERM" ? "Operation not permitted" : e.code);process.exit(1)});
@@ -126,6 +139,7 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
    "build code") printf written > services/new/created.txt ;;
    "build tests")
     printf written > tests/alpha/steps/new.go
+    printf forbidden > tests/alpha/sibling.go
     printf written > tests/single.txt
     printf written > tests/missing/single.txt
     printf written > tests/new/created.txt ;;
@@ -203,14 +217,15 @@ templates:
   prompts:
 `
 
-	var configSb168 strings.Builder
+	var applierTemplates strings.Builder
 	for _, prefix := range []string{"", "apply_", "scen_check_", "build_tests_", "build_code_"} {
-		configSb168.WriteString("    " + prefix + "fix_applier: user.tpl\n    " + prefix + "fix_applier_system: system.tpl\n")
+		applierTemplates.WriteString("    " + prefix + "fix_applier: user.tpl\n" +
+			"    " + prefix + "fix_applier_system: system.tpl\n")
 	}
 
-	config += configSb168.String()
+	config += applierTemplates.String()
 
-    config=strings.Replace(config,"  tmp_dir: ./tmp","  tmp_dir: "+strconv.Quote(filepath.Join(root,"tmp")),1)
+	config = strings.Replace(config, "  tmp_dir: ./tmp", "  tmp_dir: "+strconv.Quote(filepath.Join(root, "tmp")), 1)
 	putCodexFile(t, filepath.Join(root, "true-bdd/true-bdd.yaml"), config)
 	t.Chdir(root)
 

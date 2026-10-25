@@ -69,10 +69,17 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 	sandbox := codexSandbox(req.Mode)
 	env := os.Environ()
 
+	var guard *codexGlobGuard
+
 	if req.CodexApply || req.CodexWriter {
 		var err error
 
 		env, err = prepareCodexWriter(ctx, req, home)
+		if err != nil {
+			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
+		}
+
+		guard, err = newCodexGlobGuard(req)
 		if err != nil {
 			return "", pkgerrors.ErrProviderExecutionFailed(p.Name(), err)
 		}
@@ -94,12 +101,24 @@ func (p *CodexProvider) execute(ctx context.Context, req Request, home string) (
 	}
 
 	result, runErr := turn.Run()
+
+	return finishCodexTurn(req, answerPath, result, runErr, guard)
+}
+
+func finishCodexTurn(
+	req Request, answerPath string, result codex.Result, runErr error, guard *codexGlobGuard,
+) (string, error) {
 	trace := result.Transcript
 
 	saveTranscript(artifactPath(req, "codex.log"), trace)
 
-	if req.CodexApply || req.CodexWriter {
+	if guard != nil {
 		saveTranscript(artifactPath(req, "codex-events.jsonl"), result.Events)
+
+		globErr := guard.enforce()
+		if globErr != nil {
+			return trace, pkgerrors.ErrProviderExecutionFailed("codex", globErr)
+		}
 	}
 
 	return codexAnswer(req, answerPath, result, runErr)

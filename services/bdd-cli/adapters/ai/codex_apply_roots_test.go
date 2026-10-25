@@ -24,7 +24,7 @@ func TestCodexApplyGrantsFilesGlobsAndScratchExactly(t *testing.T) {
 	_, err := ai.NewCodexProvider().Execute(t.Context(), ai.Request{
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), Label: "apply", CodexApply: true,
 		Mode: ai.ExecutionMode{AllowedTools: []string{"Write(docs/story.yaml)", "Write(docs/new.yaml)",
- "Write(docs/fresh/new.yaml)",
+			"Write(docs/fresh/new.yaml)",
 			"Edit(tests/*/steps/**)", "Write(tmp/**)"}},
 	})
 	if err != nil {
@@ -34,13 +34,13 @@ func TestCodexApplyGrantsFilesGlobsAndScratchExactly(t *testing.T) {
 	home := filepath.Join(root, "tmp/codex-homes/run/apply-codex-home")
 
 	config := readCodexFile(t, filepath.Join(home, "config.toml"))
-	for _, path := range []string{codexStoryFile, "docs/new.yaml", "docs/fresh/new.yaml", "tests/alpha/steps", "tmp"} {
+	for _, path := range []string{codexStoryFile, "docs/new.yaml", "docs/fresh/new.yaml", "tests", "tmp"} {
 		if !strings.Contains(config, filepath.Join(root, path)+`" = "write"`) {
 			t.Errorf("missing exact grant %s: %s", path, config)
 		}
 	}
 
-	for _, path := range []string{"docs", "docs/fresh", "tests", "tests/alpha"} {
+	for _, path := range []string{"docs", "docs/fresh", "tests/alpha"} {
 		if strings.Contains(config, filepath.Join(root, path)+`" = "write"`) {
 			t.Errorf("broadened grant: %s", path)
 		}
@@ -58,16 +58,24 @@ func TestCodexApplyProvidesOnlyInstalledRuntimeExceptions(t *testing.T) {
 	root := t.TempDir()
 	tools := t.TempDir()
 	putCodexFile(t, filepath.Join(tools, "auth.json"), "{}")
-	putCodexFile(t, filepath.Join(tools, "codex"), captureCodexRequest)
+	putCodexFile(t, filepath.Join(tools, "codex"), runtimeBoundaryProbeScript)
 
-	for _, name := range []string{"node", "npm", "npx", "docker"} {
+	for _, name := range []string{"node", "npx", "docker"} {
 		putCodexFile(t, filepath.Join(tools, name), "#!/bin/sh\nexit 0\n")
 	}
 
+	putCodexFile(t, filepath.Join(tools, "bin/npm-cli.js"), "#!/usr/bin/env node\n")
+
+	err := os.Symlink("bin/npm-cli.js", filepath.Join(tools, "npm"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("TRUE_BDD_RUNTIME_MARKERS", tools)
 	t.Setenv("CODEX_HOME", tools)
 	t.Setenv("PATH", tools+":"+os.Getenv("PATH"))
 
-	_, err := ai.NewCodexProvider().Execute(t.Context(), ai.Request{
+	_, err = ai.NewCodexProvider().Execute(t.Context(), ai.Request{
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), Label: "apply", CodexApply: true,
 	})
 	if err != nil {
@@ -75,7 +83,7 @@ func TestCodexApplyProvidesOnlyInstalledRuntimeExceptions(t *testing.T) {
 	}
 
 	config := readCodexFile(t, filepath.Join(root, "tmp/codex-homes/run/apply-codex-home/config.toml"))
-	for _, name := range []string{"node", "npm", "npx", "docker"} {
+	for _, name := range []string{"node", "npx", "docker"} {
 		if !strings.Contains(config, filepath.Join(tools, name)+`" = "read"`) {
 			t.Errorf("runtime %s unavailable", name)
 		}
@@ -99,11 +107,20 @@ func TestCodexApplySingleFileAndFileGlobLive(t *testing.T) {
 	_, err := ai.NewCodexProvider().Execute(t.Context(), ai.Request{
 		WorkDir: root, TmpDir: filepath.Join(root, "tmp/run"), Label: "files", CodexApply: true,
 		Mode: ai.ExecutionMode{AllowedTools: []string{"Write(docs/story.yaml)", "Write(docs/new.yaml)",
- "Write(docs/fresh/new.yaml)",
- "Write(tests/**/*.go)"}},
+			"Write(docs/fresh/new.yaml)",
+			"Write(tests/**/*.go)"}},
 	})
 	if os.Getenv("TRUE_BDD_CODEX_SANDBOX_PROBE") != "" {
 		t.Log(readCodexFile(t, filepath.Join(root, "tmp/probe.log")))
+
+		if readCodexFile(t, filepath.Join(root, "tests/a/new.go")) != "created" {
+			t.Fatal("matching file not created")
+		}
+
+		_, statErr := os.Stat(filepath.Join(root, "tests/a/beta.txt"))
+		if !os.IsNotExist(statErr) {
+			t.Fatalf("unmatched new file survived: %v", statErr)
+		}
 	}
 
 	if err != nil {
@@ -120,6 +137,8 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
   printf created > docs/new.yaml
   printf created > docs/fresh/new.yaml
   printf changed > tests/a/alpha.go
+  printf created > tests/a/new.go
+  printf forbidden > tests/a/beta.txt
  ' > tmp/probe.log 2>&1
  deny() {
   printf 'DENY: %s\n' "$*" >> tmp/probe.log
@@ -128,11 +147,9 @@ if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
  }
  deny /bin/sh -c 'printf forbidden > docs/sibling.yaml'
  deny /bin/sh -c 'printf forbidden > docs/fresh/sibling.yaml'
- deny /bin/sh -c 'printf forbidden > tests/a/beta.txt'
- deny /bin/sh -c 'printf forbidden > tests/a/new.go'
  deny /bin/sh -ec 'rm docs/story.yaml; mkdir docs/story.yaml; printf forbidden > docs/story.yaml/child'
  deny /bin/sh -ec 'rm docs/new.yaml; mkdir docs/new.yaml; printf forbidden > docs/new.yaml/child'
- printf 'GRANTED: existing file, absent file, existing recursive file-glob match\n' >> tmp/probe.log
+ printf 'GRANTED: existing file, absent file, existing and new recursive file-glob matches\n' >> tmp/probe.log
 fi
 while [ "$1" != '-o' ]; do shift; done
 printf done > "$2"
@@ -148,8 +165,21 @@ func TestCodexApplyRefusesOutsideScratchBeforeCreatingIt(t *testing.T) {
 		t.Fatal("outside scratch accepted")
 	}
 
-    _,statErr:=os.Stat(scratch)
-    if !os.IsNotExist(statErr) {
+	_, statErr := os.Stat(scratch)
+	if !os.IsNotExist(statErr) {
 		t.Fatalf("outside scratch created: %v", statErr)
 	}
 }
+
+const runtimeBoundaryProbeScript = `#!/bin/sh
+set -eu
+if [ -n "${TRUE_BDD_CODEX_SANDBOX_PROBE:-}" ]; then
+ "$TRUE_BDD_CODEX_SANDBOX_PROBE" sandbox -C "$PWD" -P writer /bin/sh -ec '
+  if cat "$1/auth.json"; then exit 81; fi
+  if cat "$1/bin/npm-cli.js"; then exit 82; fi
+  if command -v npm; then exit 83; fi
+ ' sh "$TRUE_BDD_RUNTIME_MARKERS" > tmp/runtime-probe.log 2>&1
+fi
+while [ "$1" != '-o' ]; do shift; done
+printf done > "$2"
+`

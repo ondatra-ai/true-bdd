@@ -3,6 +3,7 @@ package ai
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
@@ -14,12 +15,12 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/codex"
 )
 
-func codexRuntimeGrants(config *strings.Builder, env map[string]string) error {
+func codexRuntimeGrants(config *strings.Builder, env map[string]string, root string) error {
 	runtimes := codex.RuntimeExecutables()
 	granted := make(map[string]bool)
 
 	for _, name := range slices.Sorted(maps.Keys(runtimes)) {
-		paths, err := codexRuntimePaths(env, name, runtimes[name])
+		paths, err := codexRuntimePaths(env, root, name, runtimes[name])
 		if err != nil {
 			return err
 		}
@@ -85,10 +86,20 @@ func codexRuntimeSymlinks(path string) []string {
 	return links
 }
 
-func codexRuntimePaths(env map[string]string, name, executable string) ([]string, error) {
+func codexRuntimePaths(env map[string]string, root, name, executable string) ([]string, error) {
 	resolved, err := filepath.EvalSymlinks(executable)
 	if err != nil {
 		return nil, fmt.Errorf("resolve codex runtime %s: %w", name, err)
+	}
+
+	packageRoot := ""
+	if codexNPMPackage(name, resolved) {
+		packageRoot, err = codexRuntimePackage(root, resolved)
+		if err != nil {
+			slog.Warn("Codex runtime refused", "runtime", name, "path", resolved, "error", err)
+
+			return nil, nil
+		}
 	}
 
 	paths, err := codexRuntimeLibraries(resolved)
@@ -101,10 +112,14 @@ func codexRuntimePaths(env map[string]string, name, executable string) ([]string
 		return nil, err
 	}
 
-	if codexNPMPackage(name,resolved) {
-		paths = append(paths, filepath.Dir(filepath.Dir(resolved)))
+	if packageRoot != "" {
+		paths = append(paths, packageRoot)
 	}
 
+	return codexRuntimeInstallationPaths(paths), nil
+}
+
+func codexRuntimeInstallationPaths(paths []string) []string {
 	for _, path := range slices.Clone(paths) {
 		paths = append(paths, codexRuntimeSymlinks(path)...)
 		if strings.HasPrefix(path, "/opt/homebrew/opt/") {
@@ -120,9 +135,9 @@ func codexRuntimePaths(env map[string]string, name, executable string) ([]string
 		}
 	}
 
-	return paths, nil
+	return paths
 }
 
-func codexNPMPackage(name,path string) bool {
- return slices.Contains([]string{"npm","npx"},name) && filepath.Base(path)==name+"-cli.js"
+func codexNPMPackage(name, path string) bool {
+	return slices.Contains([]string{"npm", "npx"}, name) && filepath.Base(path) == name+"-cli.js"
 }

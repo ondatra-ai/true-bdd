@@ -2,7 +2,6 @@ package ai
 
 import (
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -103,26 +102,21 @@ func codexExpandWritePattern(root, pattern string) ([]string, bool, error) {
 		return []string{pattern}, directory, err
 	}
 
-	base, matchPattern, suffix := codexGlobAnchor(pattern, directory)
-	if base != root {
-		_, err := codexInsideRoot(root, base)
+	base := codexGlobBase(pattern)
+
+	_, err := codexWriteRoot(root, base)
+	if err != nil {
+		return nil, false, err
+	}
+
+	for _, part := range strings.Split(pattern, "/") {
+		_, err := filepath.Match(part, "")
 		if err != nil {
-			return nil, false, err
+			return nil, false, fmt.Errorf("invalid codex write glob: %w", err)
 		}
 	}
 
-	paths, err := codexWalkWritePattern(root, base, matchPattern, suffix, directory)
-	if err != nil {
-		return nil, false, fmt.Errorf("expand codex write glob %q: %w", pattern, err)
-	}
-
-	if len(paths) == 0 {
-		return nil, false, fmt.Errorf("codex write glob %q has no existing matches: %w", pattern, os.ErrNotExist)
-	}
-
-	slices.Sort(paths)
-
-	return paths, directory, nil
+	return []string{base}, true, nil
 }
 
 func codexMatchGlob(pattern, path []string) (bool, error) {
@@ -157,86 +151,13 @@ func codexMatchGlob(pattern, path []string) (bool, error) {
 	return codexMatchGlob(pattern[1:], path[1:])
 }
 
-func codexGlobAnchor(pattern string, directory bool) (string, string, string) {
+func codexGlobBase(pattern string) string {
 	fixed := pattern[:strings.IndexAny(pattern, "*?[")]
-
-	base := filepath.Dir(fixed)
 	if strings.HasSuffix(fixed, "/") {
-		base = filepath.Clean(fixed)
+		return filepath.Clean(fixed)
 	}
 
-	if !directory {
-		return base, pattern, ""
-	}
-
-	parts := strings.Split(pattern, "/")
-
-	last := len(parts) - 1
-	for !strings.ContainsAny(parts[last], "*?[") {
-		last--
-	}
-
-	return base, strings.Join(parts[:last+1], "/"), filepath.Join(parts[last+1:]...)
-}
-
-func codexWalkWritePattern(root, base, pattern, suffix string, directory bool) ([]string, error) {
-	var paths []string
-
-	err := filepath.WalkDir(base, func(path string, _ fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-
-		matched, err := codexMatchGlob(strings.Split(pattern, "/"), strings.Split(path, "/"))
-		if err != nil {
-			return err
-		}
-
-		if matched {
-			target, err := codexMatchedWriteRoot(root, path, suffix, directory)
-			if err != nil {
-				return err
-			}
-
-			if target != "" {
-				paths = append(paths, target)
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("scan codex write roots: %w", err)
-	}
-
-	return paths, nil
-}
-
-func codexMatchedWriteRoot(root, path, suffix string, directory bool) (string, error) {
-	resolved := root
-
-	var err error
-	if path != root || suffix == "" {
-		resolved, err = codexInsideRoot(root, path)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	info, err := os.Stat(resolved)
-	if err != nil {
-		return "", fmt.Errorf("inspect codex glob match: %w", err)
-	}
-
-	if directory && !info.IsDir() {
-		return "", nil
-	}
-
-	if !directory && info.IsDir() {
-		return "", fmt.Errorf("codex file glob matches directory %q: %w", path, os.ErrPermission)
-	}
-
-	return filepath.Join(resolved, suffix), nil
+	return filepath.Dir(fixed)
 }
 
 func codexWriteRoot(root, path string) (string, error) {

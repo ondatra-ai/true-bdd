@@ -101,7 +101,7 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 		fmt.Fprintf(&config, "%s = \"read\"\n", strconv.Quote(path))
 	}
 
-	err = codexRuntimeGrants(&config, env)
+	err = codexRuntimeGrants(&config, env, root)
 	if err != nil {
 		return "", err
 	}
