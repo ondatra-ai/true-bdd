@@ -83,6 +83,7 @@ func (r Runner) execute(
 	ctx context.Context, record *Record, prompt string, began time.Time,
 ) (codex.Result, error) {
 	opts := codex.Options{Dir: record.Workdir, Final: record.Final, Writer: record.writer(), Search: record.Search,
+		Model: record.Model, Effort: record.Effort,
 		Output: logWriter{path: record.Log}, Watchdog: r.remaining(began)}
 
 	if record.writer() {

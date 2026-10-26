@@ -102,6 +102,13 @@ func (r Record) Summary() string {
 	}
 
 	text := fmt.Sprintf("status: %s\nreason: %s\nagent: %s\nweekly limit: %s\n", r.Status, r.Reason, r.Agent, weekly)
+
+	model := r.Model
+	if model == "" {
+		model = "configured default"
+	}
+
+	text += fmt.Sprintf("model: %s\neffort: %s\n", model, r.reasoningEffort())
 	if r.CodexStatus != "" {
 		text += "codex status: " + r.CodexStatus + "\n"
 	}
