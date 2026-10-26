@@ -151,6 +151,11 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 
 	builder.RenderAll(spec.Renderer, spec.Fix)
 
+	err = spec.Finalize(result)
+	if err != nil {
+		return err
+	}
+
 	// Trailing banner has no em-dash so fixture regexes like
 	// "APPLY COMPLETE" / "REFINE COMPLETE" match as a contiguous
 	// substring of the upper-cased command name.
@@ -158,7 +163,7 @@ func Run[I any](ctx context.Context, spec Spec[I]) error {
 		slog.Info(strings.ToUpper(spec.Name) + " COMPLETE")
 	}
 
-	return spec.Finalize(result)
+	return nil
 }
 
 // validateSpec runs the whole validation phase: everything here must
