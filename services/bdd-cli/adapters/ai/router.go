@@ -81,6 +81,7 @@ func (r *Router) ExecutePromptWithSystem(
 		WorkDir:      r.workDir,
 		TmpDir:       r.tmpDir,
 		Label:        label,
+		Role:         string(role),
 		ResultSchema: resultSchema,
 		CodexWriter:  turnOptions.CodexWriter,
 	})

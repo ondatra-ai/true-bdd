@@ -1,0 +1,145 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are a Registry Merge Editor applying fixes to the requirements
+registry (the scratch copy of `docs/scenarios.yaml` for this run).
+
+**Your Task:**
+1. Read the current state of the scratch registry file.
+2. Read the fix prompt instructions.
+3. Apply the changes EXACTLY as described — using the Edit tool on the
+   scratch registry file path. Do NOT touch the canonical
+   `docs/scenarios.yaml`.
+4. Emit a short YAML confirmation block.
+
+**Tool Usage:**
+- Use Read to inspect the scratch file before editing.
+- Use Edit to mutate the scratch file in place.
+- Do not write to any other path.
+
+**Output Requirements:**
+- After your Edit calls succeed, output a YAML confirmation inside
+  FILE_START/FILE_END markers:
+  - `applied: true` (or `false` on failure)
+  - `target: "<scratch path>"` (QUOTED)
+  - `summary: "<one short line describing what changed>"`
+- Preserve all other registry entries — only mutate what the fix prompt
+  specifies.
+
+**Output Format:**
+```
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===
+applied: true
+target: "<scratch path>"
+summary: "<one-line summary>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===
+```
+
+**CRITICAL:**
+- Apply changes EXACTLY as described in the fix prompt.
+- Do NOT add, remove, or modify entries beyond what the fix prompt
+  specifies.
+- Edit the scratch file directly during this turn — the confirmation
+  block is informational only.
+
+
+### TASK
+
+## Subject — Acceptance Criterion
+
+**Story ID:** 99.3
+**Story Path:** docs/product/stories/99.3-rewalk-fixture.yaml
+**AC ID:** 002-mcp-get-refused
+**Lineage Scenario ID:** 99.3-002-mcp-get-refused
+**Description:** The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
+**Scratch Registry Path:** tmp/{{RUN_DIR}}/scenarios.yaml
+
+### Steps
+Given:
+  - the MCP server is running on its configured port
+When:
+  - the Claude User sends an HTTP GET request to /mcp
+Then:
+  - the server returns HTTP 405 Method Not Allowed
+  - and the response indicates the method is not allowed for this endpoint
+
+
+---
+
+## Fix Prompt to Apply
+
+=== FILE_START: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
+# Fix Prompt for AC 99.3-002-mcp-get-refused: The MCP server must respond with HTTP 405 Method Not Allowed when a Claude User sends a GET request to the /mcp endpoint.
+
+## Target
+Apply the change to: `tmp/{{RUN_DIR}}/scenarios.yaml`
+
+## Context (verified by reading the target file)
+The `scenarios:` block currently contains exactly ONE entry, `"99.3-001-mcp-initialize"`, whose `user_stories[]` references story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: "99.3-001-mcp-initialize"`. No entry anywhere in the file references lineage id `99.3-002-mcp-get-refused`, so the `us-apply/merge` "present?" check fails for AC `002-mcp-get-refused`. The fix is to ADD one new scenario entry keyed by the lineage id. Do not modify, reorder, or re-indent the existing `99.3-001-mcp-initialize` entry, and do not touch `metadata:` (leave `metadata.last_updated` as `"2026-05-14"`).
+
+`path:` REUSES the existing generated-test file `tests/mcp/mcp_test.go` from sibling scenario `99.3-001-mcp-initialize` — both ACs come from the same story and the same `/mcp` HTTP-endpoint feature family, so their Go tests belong in one file. Do not invent a new path.
+
+`service:` is `""` to match the sibling entry in this registry.
+
+## Required Changes
+
+### Change #1: Add scenario `99.3-002-mcp-get-refused` under `scenarios:`
+
+**Issue:** AC `002-mcp-get-refused` (lineage `99.3-002-mcp-get-refused`) is not present in the registry — no `scenarios:` entry has a `user_stories[]` element pairing story `docs/product/stories/99.3-rewalk-fixture.yaml` with `scenario_id: 99.3-002-mcp-get-refused`.
+
+**Action:** Use the Edit tool on `tmp/{{RUN_DIR}}/scenarios.yaml` with the exact `old_string` and `new_string` below. This anchors on the tail of the existing entry (the last lines of the file) and appends the new entry immediately after it, preserving existing ordering and 2-space indentation.
+
+**old_string:**
+```
+      then:
+        - the server returns HTTP 200
+        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+```
+
+**new_string:**
+```
+      then:
+        - the server returns HTTP 200
+        - and: the response body is a well-formed JSON-RPC envelope referencing the request id
+  "99.3-002-mcp-get-refused":
+    description: "The MCP server returns HTTP 405 Method Not Allowed for a GET request to /mcp."
+    service: ""
+    path: "tests/mcp/mcp_test.go"
+    last_updated: "2026-10-25"
+    user_stories:
+      - story: "docs/product/stories/99.3-rewalk-fixture.yaml"
+        scenario_id: "99.3-002-mcp-get-refused"
+        merge_date: "2026-10-25"
+    merged_steps:
+      given:
+        - the MCP server is running on its configured port
+      when:
+        - the Claude User sends an HTTP GET request to /mcp
+      then:
+        - the server returns HTTP 405 Method Not Allowed
+        - and the response indicates the method is not allowed for this endpoint
+```
+
+## Verification after applying
+1. The file parses as valid YAML.
+2. `scenarios:` now has exactly two keys, in order: `"99.3-001-mcp-initialize"` then `"99.3-002-mcp-get-refused"`.
+3. The new entry's `user_stories[0]` is `{story: docs/product/stories/99.3-rewalk-fixture.yaml, scenario_id: 99.3-002-mcp-get-refused, merge_date: 2026-10-25}` — this is what makes the `us-apply/merge` check emit `AC 002-mcp-get-refused (lineage 99.3-002-mcp-get-refused): present in 99.3-002-mcp-get-refused`.
+4. `merged_steps.given` / `.when` / `.then` match the AC's steps verbatim (1 given, 1 when, 2 then).
+5. The `99.3-001-mcp-initialize` entry is byte-for-byte unchanged.
+=== FILE_END: tmp/{{RUN_DIR}}/01-99.3-002-mcp-get-refused-fix-prompts.md ===
+
+---
+
+## Instructions
+
+1. Use the Read tool to load `tmp/{{RUN_DIR}}/scenarios.yaml` and
+   inspect its current state.
+2. Apply the changes described in the "Fix Prompt to Apply" section
+   above by invoking the Edit tool on
+   `tmp/{{RUN_DIR}}/scenarios.yaml`. Do NOT touch any other path.
+3. After the edits succeed, output the confirmation block below.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "<one-line summary of what changed>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===

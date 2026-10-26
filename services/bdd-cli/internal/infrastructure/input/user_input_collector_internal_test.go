@@ -1,6 +1,8 @@
 package input
 
 import (
+	"errors"
+	"io"
 	"strings"
 	"testing"
 
@@ -33,7 +35,11 @@ func TestAskApplyRefineOrExitMapping(t *testing.T) {
 
 			collector := newUserInputCollector(strings.NewReader(testCase.input + "\n"))
 
-			got := collector.AskApplyRefineOrExit()
+			got, err := collector.AskApplyRefineOrExit()
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			if got != testCase.want {
 				t.Fatalf("input %q → %q, want %q", testCase.input, got, testCase.want)
 			}
@@ -64,9 +70,13 @@ func TestAskQuestionsMapsNumberToOptionText(t *testing.T) {
 			t.Parallel()
 
 			collector := newUserInputCollector(strings.NewReader(testCase.input + "\n"))
-			answers := collector.AskQuestions([]checklist.ClarifyQuestion{
+
+			answers, err := collector.AskQuestions([]checklist.ClarifyQuestion{
 				{ID: "q1", Question: "Which duplicate wins?", Options: options},
 			})
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if answers["q1"] != testCase.want {
 				t.Fatalf("input %q → %q, want %q", testCase.input, answers["q1"], testCase.want)
@@ -83,8 +93,36 @@ func TestAskRefinementFeedbackMultiline(t *testing.T) {
 
 	collector := newUserInputCollector(strings.NewReader("first line\nsecond line\n\nignored trailing line\n"))
 
-	feedback := collector.AskRefinementFeedback()
+	feedback, err := collector.AskRefinementFeedback()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if feedback != "first line\nsecond line" {
 		t.Fatalf("feedback = %q, want %q", feedback, "first line\nsecond line")
+	}
+}
+
+func TestReadUserInputDistinguishesEndOfInput(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name, input, want string
+		err               error
+	}{
+		{"end of input", "", "", io.EOF},
+		{"unterminated answer", "answer", "answer", nil},
+		{"blank line", "\n", "", nil},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			collector := newUserInputCollector(strings.NewReader(testCase.input))
+
+			got, err := collector.readUserInput()
+			if got != testCase.want || !errors.Is(err, testCase.err) {
+				t.Fatalf("read = %q, %v; want %q, %v", got, err, testCase.want, testCase.err)
+			}
+		})
 	}
 }

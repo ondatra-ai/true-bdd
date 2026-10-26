@@ -14,7 +14,10 @@ import (
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/docs"
 )
 
-const fixFlagDescription = "Enable interactive fix mode to resolve failed checks"
+const (
+	fixFlagDescription = "Enable interactive fix mode to resolve failed checks"
+	yesFlagDescription = "Apply fixes without stdin (requires --fix); clarifications require a person"
+)
 
 // storyRunE is the run shape every `us` subcommand uses after sourcing
 // its lazily-built container, Story id arg, and fix flag.
@@ -71,6 +74,7 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 	}
 
 	cmd.Flags().Bool("fix", false, fixFlagDescription)
+	cmd.Flags().Bool("yes", false, yesFlagDescription)
 	cmd.Flags().StringArray("model", nil,
 		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 
