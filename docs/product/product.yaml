@@ -246,6 +246,17 @@ glossary:
 
   - term: fix loop
     means: >-
+      Every command that accepts `--fix` (build code, build tests, us refine,
+      us apply and scen check) also accepts `--yes`. With both flags, every
+      proposed fix is applied without reading stdin; `--yes` without `--fix`
+      is a usage error before startup. A clarifying question under `--yes`,
+      or at end of stdin, prints the question and suggested answers and
+      stops with a distinct error saying a person must answer; no answer is
+      guessed. End of stdin at the fix menu without `--yes` stops with a
+      message naming `--yes`, rather than reporting tests still failing.
+      These stops exit non-zero and print no command COMPLETE banner.
+      Without `--yes`, a final non-empty answer without a newline is accepted,
+      and a blank line retains its interactive meaning.
       What a command run with `--fix` does for each check that fails: it
       may first ask clarifying questions, each with numbered suggested
       answers, then shows the fix it proposes and asks whether to apply it,

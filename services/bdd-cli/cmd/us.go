@@ -71,6 +71,7 @@ func buildStoryCmd(use, short, long string, provide containerProvider, run story
 	}
 
 	cmd.Flags().Bool("fix", false, fixFlagDescription)
+ cmd.Flags().Bool("yes", false, "Apply fixes without stdin (requires --fix); clarifications require a person")
 	cmd.Flags().StringArray("model", nil,
 		"Override a configured model tier for this run: <tier>=<cli>:<model> (repeatable)")
 

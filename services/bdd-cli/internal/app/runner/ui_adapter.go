@@ -20,7 +20,7 @@ func NewFixLoopUI(collector *input.UserInputCollector) engine.FixLoopUI {
 
 // AskQuestions converts engine ClarifyQuestions into the checklist
 // type the collector understands, then converts the answer map back.
-func (u *fixLoopUI) AskQuestions(questions []engine.ClarifyQuestion) map[string]string {
+func (u *fixLoopUI) AskQuestions(questions []engine.ClarifyQuestion) (map[string]string, error) {
 	converted := make([]checklistmodels.ClarifyQuestion, 0, len(questions))
 
 	for _, q := range questions {
@@ -37,21 +37,26 @@ func (u *fixLoopUI) AskQuestions(questions []engine.ClarifyQuestion) map[string]
 
 // AskApplyRefineOrExit translates the collector's string-typed
 // ActionChoice into the engine's UserAction enum.
-func (u *fixLoopUI) AskApplyRefineOrExit() engine.UserAction {
-	switch u.collector.AskApplyRefineOrExit() {
-	case input.ActionApply:
-		return engine.UserActionApply
-	case input.ActionRefine:
-		return engine.UserActionRefine
-	case input.ActionExit:
-		return engine.UserActionExit
+func (u *fixLoopUI) AskApplyRefineOrExit() (engine.UserAction, error) {
+	action, err := u.collector.AskApplyRefineOrExit()
+	if err != nil {
+		return engine.UserActionExit, err
 	}
 
-	return engine.UserActionExit
+	switch action {
+	case input.ActionApply:
+		return engine.UserActionApply, nil
+	case input.ActionRefine:
+		return engine.UserActionRefine, nil
+	case input.ActionExit:
+		return engine.UserActionExit, nil
+	}
+
+	return engine.UserActionExit, nil
 }
 
 // AskRefinementFeedback is a straight pass-through.
-func (u *fixLoopUI) AskRefinementFeedback() string {
+func (u *fixLoopUI) AskRefinementFeedback() (string, error) {
 	return u.collector.AskRefinementFeedback()
 }
 

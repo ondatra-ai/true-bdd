@@ -1,0 +1,5 @@
+=== FILE_START: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===
+applied: true
+target: "tmp/{{RUN_DIR}}/scenarios.yaml"
+summary: "Added 99.3-002-mcp-get-refused exactly as specified; preserved all existing content."
+=== FILE_END: tmp/{{RUN_DIR}}/apply-99.3-002-mcp-get-refused-iter2-result.yaml ===

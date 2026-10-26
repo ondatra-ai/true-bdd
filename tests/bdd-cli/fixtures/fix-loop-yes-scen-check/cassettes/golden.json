@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "scen-check-fix-rewrites-phrase-use",
+  "files": [
+    {
+      "path": "docs/scenarios.yaml",
+      "kind": "modified",
+      "size": 1121,
+      "sha256": "242a8869e639779922430a6281e505df3856dadec71fab85ad52c6c451952ecf",
+      "text": "# Registry seed for `scen-check-fix-rewrites-phrase-use`.\n#\n# The happy path's claimed Scenario, its last step borrowing the stdout\n# phrase for a function the greeter calls: the pattern matches no line\n# the greeter prints for its user and no log record. The fix rewrites\n# that step in this entry, as the output the description pins.\n\nmetadata:\n  title: \"Test Requirements Registry (BDD fixture seed)\"\n  version: \"2.0\"\n  last_updated: \"2026-10-21\"\n  description: \"One claimed scenario using the stdout phrase for a code identifier\"\n\nscenarios:\n  E2E-001:\n    description: The greeter must print the configured greeting followed by the name it is given, and exit with code 0\n    service: greeter\n    path: tests/greeter/greet_test.go\n    user_stories:\n      - story: docs/product/stories/greet-by-name.yaml\n        scenario_id: greet-by-name-001-prints-greeting\n        merge_date: \"2026-10-21\"\n    merged_steps:\n      given:\n        - the greeting is configured as \"Hello\"\n      when:\n        - the Operator runs \"greet Ada\"\n      then:\n        - the command exits with code 0\n        - and: stdout matches ^Hello Ada$\n"
+    }
+  ]
+}

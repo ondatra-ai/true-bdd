@@ -594,3 +594,9 @@ Lint with `golangci-lint run` against `.golangci.yaml`.
 ## License
 
 TBD. Not yet released for external use.
+
+## Unattended fixes
+
+Run `true-bdd build code --fix --yes` to apply every proposed fix without reading stdin. `build tests`, `us refine`, `us apply` and `scen check` accept the same pair of flags. `--yes` requires `--fix`.
+
+A clarifying question under `--yes`, or when stdin has ended, prints its question and suggested answers and stops with an error saying a person must answer. End of stdin at a fix menu without `--yes` stops with guidance to use it. These stops exit non-zero without a COMPLETE banner. Interactive answers and the drill's pipe continue to work as before.
