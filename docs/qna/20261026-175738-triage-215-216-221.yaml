@@ -1,0 +1,378 @@
+intent: |
+  Triage the three needs-triage tickets of spec #213 (the release emulation of 26 October 2026):
+  #215 (build code --fix keeps retrying a repair outside its writer's roots), #216 (the writers
+  cannot read the TrueBDD harness a host requires) and #221 (how TrueBDD is packaged), and grill
+  each into a decided, buildable ticket.
+  The Owner's positions before Q1, in their words: on #215, «это задача плана еще до вызова
+  райтера определить, что это невозможно сделать и остановиться», and also «кто конкретно должен
+  об этом сообщить, то да, это должен сделать райтер»; first understand «почему это вообще
+  происходит», whether the writer should get access to those files, and where access is defined:
+  «это должен быть сервис архитектура … те папочки, которые определяются сервисами, они должны
+  позволять давать это менять». On #221: «пусть будет команда init … она должна создавать
+  какие-то базовые файлы».
+
+log:
+  - decision_trace:
+      research:
+        - services/bdd-cli/internal/app/commands/build_code.go:104-107 sets the build-code writer's write roots from the architecture's services, servicePaths(arch.Services), with the comment that write roots come from the architecture spec, so the document that defines where production source lives also bounds the writer.
+        - Each service declares one path (docs/architecture/architecture.yaml, services[].path). The writer may also write the host's tmp. Nothing else, so a root go.mod or go.sum belongs to no service.
+      recommendation: |
+        Fact, no question.
+      settled: |
+        Today the build-code writer may change only the folders of the services the architecture declares (services[].path), plus tmp. This already matches the Owner's view that the architecture's services define the writer's access.
+    question: |
+      Where is the build-code writer's write access defined today?
+    answer: |
+      Claude, no question asked: in the architecture document, by each service's path (build_code.go:104-107); go.mod and go.sum at the host root belong to no service.
+
+  - decision_trace:
+      research:
+        - The release emulation's run 2 failed with "missing go.sum entry for module providing package gopkg.in/yaml.v3"; its install step ran `go get github.com/ondatra-ai/true-bdd@954797a0` (the root module) instead of the harness package, so go.sum lacked the harness's own dependencies (tmp/release-spec/evidence/live-run-2.summary).
+        - Run 3, with `go get .../pkg/testkit/bddgo@954797a0`, had no go.sum failure.
+      recommendation: |
+        Fact, no question.
+      settled: |
+        The run-2 failure was a host setup error, made by the install step, not by the code the writer wrote. A writer would legitimately need go.mod/go.sum when a service needs a new dependency, which today it cannot add.
+    question: |
+      Why did the writer need go.mod/go.sum in the emulation?
+    answer: |
+      Claude, no question asked: the install step left go.sum incomplete; separately, adding a dependency for a service is a legitimate case the writer cannot do today.
+
+  - decision_trace:
+      research:
+        - The build-code writer's write roots come only from the architecture, each service's path (services/bdd-cli/internal/app/commands/build_code.go:104-107).
+        - The codex writer runs with network disabled and GOPROXY off (services/bdd-cli/adapters/ai/codex_writer.go:154), so even with go.mod/go.sum writable it can add only a module already in the local module cache.
+      recommendation: |
+        (a): each service may list, in the architecture, extra files the writer may change, such as go.mod and go.sum; without a list the writer changes only the service's folder. It keeps the rule that the writer changes only what the architecture records, visible in the Specification.
+      settled: |
+        A service in the architecture may declare extra files or folders its writer may change (for example go.mod and go.sum); without that list the writer changes only the service's folder. Nothing outside what the architecture records is writable. Downloading a new module stays a person's step, since the writer has no network.
+    question: |
+      Q1 - Может ли сервис в архитектуре разрешить райтеру менять файлы вне своей папки: (а) каждый сервис перечисляет дополнительные файлы, например go.mod и go.sum; (б) движок сам разрешает файлы зависимостей языка сервиса, без записи в архитектуре; (в) только папка сервиса, файлы зависимостей всегда меняет человек?
+    answer: |
+      Я би пошел путем чтобы были как-то записаны пока что файлы, которые еще можно
+      Что ты записываешь? Я бы пошел путем A. Чтобы можно было менять только то, что записано в архитектуре.
+
+  - decision_trace:
+      research:
+        - The plan returns only its plan text, one field fix_prompt (services/bdd-cli/internal/app/generators/validate/checklist_evaluator.go:53).
+        - The writer ends with a confirmation block of applied, target and summary (fix_applier.go:207). Neither has a field to say that the work needs a file the architecture does not allow.
+        - The engine itself cannot judge that a repair is impossible; only the plan or the writer, reading the test failure, can see it (in run 2 the writer named go.mod/go.sum from the "missing go.sum entry" failure).
+      recommendation: |
+        The plan and the writer each get a field listing the files the work needs but the architecture does not allow, with a reason. On the first such report the engine stops: no writer after a plan's report, no new plan or attempt after a writer's report; it keeps the files already changed, reruns the tests once, prints the files and reasons, and exits with an error distinct from a non-converging loop.
+      settled: |
+        The architecture must be enough to build the system: a writer finds a way within the files the architecture allows. If the work is truly impossible without changing a file the architecture does not allow, the run fails with an error at once, with no further attempt. The plan or the writer is what notices it, and the error names the file and why. Also opened by this answer: TrueBDD's own architecture.yaml must be rewritten and checked, so that every solution can be made by changing only the files it lists.
+    question: |
+      Q2 - Что делает движок, когда план или райтер сообщают, что нужно менять неразрешённый файл: оба получают поле со списком таких файлов и причин; после списка от плана райтер не вызывается, после списка от райтера новых попыток нет; движок оставляет изменённые файлы, один раз прогоняет тесты, выводит файлы с причинами и завершается отдельной ошибкой?
+    answer: |
+      Я вот тут не понял, что делает движок, когда план или райтер сообщает, что нужно менять неразрешенный файл. Так нужно не давать райтеру, да, список файлов. Планы райтер получают в своем ответе отдельное поле список файлов, которые нужно поменять. Почему, откуда он берет эти файлы, но которые архитектура не разрешает, с причиной для каждого. Если так, короче, если честно, я вообще не понял, потому что по идее райтер, ну как бы, смотри, по идее эту ситуацию допускать нельзя. То есть оно как бы план, то есть подразумевается, что то, что прописано в архитектуре, в architecture YAML, с его помощью на 100% можно было бы создать эту систему с нуля. То есть нам нужно, как бы, я не очень хорошо понимаю, где, на каком этапе это все должно остановиться, но если эту систему совершенно невозможно создать, не исправляя файлы, которые не лежат в architecture, да, вот, и, то есть если вот совсем невозможно это сделать, то надо просто, чтобы оно упало с ошибкой. Но в целом оно должно найти способ сделать это без того, что сделать в архитекторе. И, соответственно, нам сам и архитектор, architecture YAML нужно переписать и убедиться, что мы сейчас можем менять код, да, там, без вот этой вот... Мы можем менять код, ну, то есть, как бы, у нас все... Мы можем создавать решения, меняя те файлы, которые прописаны в architecture YAML.
+
+  - decision_trace:
+      research:
+        - TrueBDD's architecture declares one service, bdd-cli, at services/bdd-cli (docs/architecture/architecture.yaml:565-568).
+        - Both generations of the 25 October rebuild changed only services/bdd-cli (the writer sandbox refused other writes) and passed 256/256.
+        - The root go.mod/go.sum are shared by the engine, tests, pkg/ and scripts/; the writer has no network, so it can add only an already-cached module.
+      recommendation: |
+        (b): keep only services/bdd-cli; two rebuilds showed it is enough, and changing the shared go.mod/go.sum risks the tests and tooling for a library the writer cannot download.
+      settled: |
+        For now (a): TrueBDD's architecture lists go.mod and go.sum as files the bdd-cli writer may change, and the writer tidies them. Opened by this answer: (1) a cut should delete go.mod/go.sum before the build so the writer restores them from scratch; (2) separate the service from the tooling, each with its own go.mod, which may make the architecture entry unnecessary because the service's go.mod would live in its own folder; (3) whatever is chosen must work for any host, not only TrueBDD. The Owner asked Claude to think, consult and experiment before deciding (2).
+    question: |
+      Q3 - Записать ли в архитектуру TrueBDD файлы go.mod и go.sum как разрешённые для сервиса bdd-cli: (а) да, райтер сможет подключить уже скачанную библиотеку и навести порядок в go.sum; (б) нет, только папка services/bdd-cli, два восстановления показали, что её хватает, а правка общих go.mod/go.sum может сломать тесты и скрипты?
+    answer: |
+      Подожди. Я думаю, что да, нужно ставить эти go. Короче, я думаю так. Должен быть какой-то модуль для каких-то там вещей. Короче, какая-то там идея. Я пока не знаю, как к этому подойти. В общем, давай так. Все, что здесь скорее I. Эй, то есть я бы записал архитектуру файлов GoMod и GoSum, да, как разрешенные. И пусть он тогда наводит порядок. И, например, по идее, нам нужно вообще, смотри, нам нужно их даже как будто бы удалять. Вот это тоже такая штука, да, то есть я бы их удалял бы, эти файлы, перед билдом. И чтобы он их полностью восстанавливал с нуля при восстановлении. А вот что делать со скриптами, это со служебными скриптами, то есть такое впечатление, как будто бы хотелось бы им отдельные. Короче, наверное, где-то хотелось бы разделить эти две вещи. Вот, и вообще, ну, то есть сервис там со своим идет, а служебный со своим Go-модом. Вот, то есть я бы куда-то в сторону разделения бы все это дело смотрел. И, может быть, если мы их разделим, то нам и не надо будет хранить эти Go-мод в, ну, то есть в сервис YAML, да, то есть, может быть, нам, потому что они уже там где-то будут лежать в той папке. В общем, я вот тут не знаю, и попробуй подумать, может быть, с кем-то посоветоваться или даже поэкспериментировать, как бы это лучше всего сделать. держи во внимании, что вообще-то нам потом нужно сделать так, чтобы это работало не только для нашего, но и для любых других возможных решений.
+
+  - decision_trace:
+      research:
+        - Nothing in tests/, pkg/ or scripts/ imports services/bdd-cli (go list over ./pkg/... ./tests/... ./scripts/...), so the engine can become its own module without import rewrites.
+        - Experiment at 954797a0 (scratchpad modsplit/run.sh): services/bdd-cli/go.mod plus go.work builds from the root and inside the engine module, and 21 engine unit-test packages pass. Full offline replay then passed 213 of 256, the rest stale cassettes, because recorded requests embed module identities (tmp/codex/research-module-split/final.md cites build-code-codex-selection/cassettes/codex-001/stdin:51).
+        - Restoring a deleted go.mod/go.sum offline is not reliable: tidy cannot pick versions with GOPROXY=off, and the second restore failed on github.com/kr/text missing from the cache. It needs a dependency version catalogue and a pre-filled cache (research-module-split, citing go.dev/ref/mod and cmd/go docs).
+        - The split alone does not fix #216: both writers deny all of github.com/ondatra-ai (codex_writer.go:113, claude_writer_config.go:66).
+        - Service-local manifests are one supported layout, not a universal host rule (npm workspaces, root go.mod hosts), so Q1's extra writable files stay needed for shared-root hosts.
+        - Prior art: Kubernetes staging and OpenTelemetry need release and crosslink tooling, and go.dev/ref/mod#workspaces warns that a workspace can hide wrong published dependencies.
+      recommendation: |
+        (C): three modules, the engine (services/bdd-cli), pkg/ (shared libraries and the test library), and the root (tests and scripts). Costs: re-recording at least 43 Scenarios, gate/CI and harness-build changes, per-module version tags.
+      settled: |
+        Split the repository into modules along (C): the engine, pkg/, and the root with tests and scripts. Opened by the answer: the engine should not depend on pkg/ at all; it should be regenerated whole, including what it now takes from pkg/; pkg/ stays a separate library; the architecture should list which modules the engine may use; how the engine is distributed.
+    question: |
+      Q4 - Разделить ли TrueBDD на несколько модулей Go, и как: (A) у движка свой модуль, остальное остаётся одним; (B) четыре модуля: движок, pkg/, тесты, служебные скрипты; (C) три модуля: движок, pkg/ (общие библиотеки и библиотека тестов), корень с тестами и служебными скриптами; (D) пока не делить?
+    answer: |
+      Ох, тут есть интересная зацепка. То есть их, конечно, нужно разделить. Я, наверное, за Си. То есть за опцию Си, как ты предложил. Но а как потом дистрибьютить? То есть что мы будем дистрибьютить? Как будет дистрибьютиться engine? Он же будет загружать модули, а модули он должен загружать не только лишь... То есть смотри, какие модули ему бы загружать, хорошо бы тоже указать в самой архитектуре. То есть какие модули для него доступны. Потому что вообще-то, по-хорошему, ему бы самому написать все эти модули вот, и ничего не загружать. То есть, понимаешь, идея-то в том, что как будто этот engine, ну то есть... Да, то есть он должен быть полностью регенерирован, включая все функции, связанные там с написаниями тестов. А если он будет регенерироваться вместе с функциями, которые связаны вот с этими написаниями тестов, то есть с тем функционалом, который он тянется из пакеджей, то пакеджи ему как будто бы и не нужны. Вот, поэтому... Поэтому я не знаю, что с этим делать. Я бы, скорее всего, пошел бы и попытался бы экспериментировать так, чтобы вообще отвязать engine от пакеджей. Ну, то есть, чтобы пакеджи были каким-то пока что отдельной фигней, да, а engine их даже не использовал, а при генерации просто генерил их с нуля. Ну, в смысле, прямо у себя внутри кода.
+
+  - decision_trace:
+      research:
+        - The engine imports 10 pkg/ packages, about 3,200 non-test lines (shell 859, cli/claude 555, disk 543, cli/git 350, gotool 271, logging 180, cli/spec 143, console 121, cli 81, enginelog 75), against about 19,000 lines of its own.
+        - pkg/enginelog is shared with the harness, which decodes the engine's log by those constants (pkg/testkit/reporter/engine_log.go); without it the wire contract rests on the Specification and the Scenarios.
+        - #181's Q3 accepted pkg/ as a leak: in a cut the writer calls the existing IO layer instead of writing it.
+      recommendation: |
+        Yes, after an experiment: copy the 10 packages into the engine, drop its dependency on pkg/, run all 256 Scenarios, then one cut-A rebuild to see whether the writer stays within three hours when it must also write that code (about an hour, $20-35).
+      settled: |
+        The engine uses no code of this repository outside its own folder: only third-party libraries, each listed in the architecture. What it takes from pkg/ today moves inside it, and a rebuild writes that too. pkg/ stays a separate library for the tests and the tooling. Verified first by the experiment above.
+    question: |
+      Q5 - Запретить ли движку использовать код из этого репозитория вне его папки: движок использует только сторонние библиотеки, перечисленные в архитектуре; всё, что он берёт из pkg/, он содержит у себя; при восстановлении райтер пишет и это; pkg/ остаётся отдельной библиотекой для тестов и служебных скриптов?
+    answer: |
+      Okay. Да я согласен
+
+  - decision_trace:
+      research:
+        - Q4 puts the engine's go.mod and go.sum inside services/bdd-cli, the service's own folder, which Q1 already makes writable.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        Once the split lands, TrueBDD's architecture needs no extra writable go.mod/go.sum for bdd-cli: Q3's entry becomes unnecessary, forced by Q4 and Q1. Q1's extra-files list stays for hosts with one shared root manifest.
+    question: |
+      Does TrueBDD still need Q3's extra writable go.mod/go.sum after the split?
+    answer: |
+      Claude, no question asked: no; after Q4 the engine's manifest lives in its own folder, which Q1 already lets the writer change.
+
+  - decision_trace:
+      research:
+        - The engine imports four third-party libraries directly (github.com/spf13/cobra, github.com/spf13/viper, github.com/Masterminds/sprig/v3, gopkg.in/yaml.v3; go list over services/bdd-cli), and about twenty transitively.
+        - The architecture's service already has frameworks (free strings the engine never reads) and dependencies, which means runtime CLIs and services such as codex (true-bdd/architecture_yaml-schema.yaml), so libraries need a new field and word.
+        - Offline go.mod creation needs exact versions and a pre-filled module cache (Q4's research).
+      recommendation: |
+        (a): each service gets a new field, libraries, listing module paths with exact versions; before a rebuild the run pre-fills the module cache with them and their dependencies; the writer works offline and writes go.mod from the list.
+      settled: |
+        Q6 is not answered yet. The answer adds a requirement on Q5's branch: before the engine stops using pkg/, Scenarios must cover the behaviour it takes from pkg/ today, so a rebuild that writes that code cannot drop it.
+    question: |
+      Q6 - Как архитектура указывает, какие библиотеки можно использовать сервису: (а) новое поле libraries с точными версиями, прогон заранее скачивает их, райтер без сети пишет go.mod по списку; (б) только названия, райтеру открыт сервер модулей Go и он выбирает версии сам; (в) названия с версиями и доступ к серверу модулей?
+    answer: |
+      Я думаю что надо будет еще доделать сценариев чтоб покрыть то что в pkg.
+
+  - decision_trace:
+      research:
+        - Same as the previous entry for Q6; the Owner answered it in a second message.
+      recommendation: |
+        (a): a new field, libraries, with exact versions; the run pre-fills the module cache; the writer writes go.mod offline from the list.
+      settled: |
+        Each service in the architecture names the third-party libraries it may use, with exact versions, in a new field (libraries), distinct from its runtime dependencies. Before a rebuild the run pre-fills the module cache with them and everything they need; the writer works offline and writes the service's go.mod from the list. GLOSSARY.md gains the term Library.
+    question: |
+      Q6 - Как архитектура указывает, какие библиотеки можно использовать сервису: (а) новое поле libraries с точными версиями, прогон заранее скачивает их, райтер без сети пишет go.mod по списку; (б) только названия, райтеру открыт сервер модулей Go и он выбирает версии сам; (в) названия с версиями и доступ к серверу модулей?
+    answer: |
+      A)
+
+  - decision_trace:
+      research:
+        - After the split the module cache holds root-module versions (github.com/ondatra-ai/true-bdd@<v>, with services/ in old ones), engine-module versions (.../true-bdd/services/bdd-cli@<v>) and test-library versions (.../true-bdd/pkg@<v>, pkg/ only).
+        - Both writers deny all of github.com/ondatra-ai today (codex_writer.go:113, claude_writer_config.go:66), and the codex writer grants the whole GOMODCACHE read before those denies (codex_writer.go:99).
+        - Whether a codex profile can allow a narrower path inside a denied one is unverified.
+      recommendation: |
+        Writers may read the test-library module (.../true-bdd/pkg@<v>) and its version metadata; every root-module and engine-module version stays denied, each folder listed and denied by the engine before every turn; the same for both writers.
+      settled: |
+        Rejected Q7's proposal. The rule is the architecture's: a writer may read from the module cache exactly the libraries the architecture names (with what they need), nothing else, and no special list of TrueBDD folders. The person controls access by editing that file. Consequence for the drill: TrueBDD's architecture names only third-party libraries, so no copy of the engine is reachable by construction.
+    question: |
+      Q7 - Что райтерам можно читать из модулей TrueBDD в общей папке модулей: можно библиотеку тестов (.../true-bdd/pkg@<версия>) с её служебными файлами; нельзя любые версии всего репозитория и модуля движка, движок перед каждым ходом находит эти папки и запрещает каждую; одинаково для обоих райтеров?
+    answer: |
+      Стой. Мы ж определили что это опреляется в файле architecture.yaml. Зачем тебе еще что-то? Вот что в файле то и разрешено, это уже человек контролирует,
+
+  - decision_trace:
+      research:
+        - A writer runs the host's tests, so it must compile them, and tests need libraries the service does not, such as TrueBDD's test library github.com/ondatra-ai/true-bdd/pkg for the calculator host, or Jest and Playwright for JavaScript hosts.
+        - The architecture's testing section has framework, config and commands, and no field for libraries (true-bdd/architecture_yaml-schema.yaml:47-55).
+      recommendation: |
+        (a): the testing section gets its own libraries field; writers may read those libraries to build and run the tests, and the service's code may not import them.
+      settled: |
+        The architecture's testing section names the test libraries with exact versions in its own libraries field. Writers may read them to build and run the tests; the service's code may not use them. TrueBDD's test library can never become a service dependency. GLOSSARY.md's Library now covers a service or its tests.
+    question: |
+      Q8 - Где в архитектуре названы библиотеки, которые нужны тестам: (а) в разделе testing своё поле libraries, райтеру можно их читать, чтобы собирать и запускать тесты, но в код сервиса их подключать нельзя; (б) в том же поле libraries сервиса общим списком; (в) не перечислять, райтеру можно читать всё, что требует go.mod тестов?
+    answer: |
+      Да,  a)
+
+  - decision_trace:
+      research:
+        - The build-code writer gets only its service's folder today (services[].path).
+        - Codex already has a glob mechanism (#205, ADR-0024): it grants a pattern's literal directory and checks the patterns after the turn, which is complex.
+      recommendation: |
+        (a): a service field writable listing exact paths from the project root, files or folders, without patterns, for example writable: [go.mod, go.sum].
+      settled: |
+        A service's extra writable files are an exact list, writable, of paths from the project root (files or folders), with no patterns. This closes #215's design: Q1 (what is writable), Q2 (fail at once otherwise), Q9 (the list's shape).
+    question: |
+      Q9 - Как выглядит список дополнительных файлов для записи у сервиса: (а) поле writable у сервиса, точные пути от корня проекта, файлы или папки, без шаблонов, например writable: [go.mod, go.sum]; (б) то же поле, но с шаблонами вроде *.lock или configs/**?
+    answer: |
+      A
+
+  - decision_trace:
+      research:
+        - Only the Go test-generation template is embedded today (services/bdd-cli/internal/app/generators/scenariogen/template.go:10); the configuration, the checklists and the 30 prompt templates are read from the project, together under 200 KB against a 15 MB binary.
+        - "Behaviour today, checked with the release binary on 26 October: a missing true-bdd/true-bdd.yaml refuses at start (READ_CONFIG_FAILED); a missing checklist refuses at start (failed to read checklist true-bdd/checklists/build-code.yaml); neither message says how to fix it."
+        - A missing prompt template is noticed only after the whole test suite has run, when the first fix prompt is built (LOAD_CHECKLIST_SYSTEM_PROMPT_FAILED), although runner.go's validation phase is meant to fail a misconfigured run before any work.
+      recommendation: |
+        (a): defaults embedded in the binary, a project file overriding its embedded one, an invalid project file an error; init writes the configuration, and copies of checklists and templates on request.
+      settled: |
+        (b): the configuration, the checklists and the templates live only in the project, in the files init creates; nothing is embedded, and the engine does not run without them.
+    question: |
+      Q10 - Где хранятся настройки, чек-листы и шаблоны по умолчанию: (а) внутри бинаря, свой файл в проекте важнее встроенного, испорченный файл — ошибка, init создаёт файл настроек и копии по просьбе; (б) только в файлах, которые создаёт init, без них движок не работает; (в) в отдельном архиве рядом с бинарём?
+    answer: |
+      Б. Блин посмотри как это сейчас работает если файла нет
+
+  - decision_trace:
+      research:
+        - runner.go's validation phase is documented to fail everything before the header, any item load or the first AI turn, so a misconfigured run costs nothing.
+        - Today a missing template escapes that phase and is found only after the suite run.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        Forced by Q10 and the existing validation rule: the engine checks every file it needs from init (configuration, each checklist, each template its command uses) at start, before running any test, and a missing one stops it with an error that names the file and says to run `true-bdd init`. Today's late template failure is a defect to fix in the same ticket.
+    question: |
+      When and how does the engine report a missing configuration, checklist or template?
+    answer: |
+      Claude, no question asked: at start, before any test runs, naming the file and `true-bdd init`; forced by Q10 and runner.go's validation phase.
+
+  - decision_trace:
+      research:
+        - The Owner agreed before Q1 that init exists and creates base files, and handed what it creates to Claude («Я думаю, что здесь ты можешь сам решить»).
+        - Q10 makes init the only source of the configuration, the checklists and the templates.
+      recommendation: |
+        init writes the configuration, every checklist and every template, and nothing else.
+      settled: |
+        `true-bdd init` creates, in the current folder: true-bdd/true-bdd.yaml (the host default configuration), true-bdd/checklists/ (every checklist) and templates/ (every prompt template). It never overwrites an existing file: it lists what it created and what it left. It creates no Specification documents and detects no test framework; those stay with the Owner's Stories and with #212.
+    question: |
+      What does `true-bdd init` create?
+    answer: |
+      Claude, delegated in the Owner's message before Q1 («Я думаю, что здесь ты можешь сам решить»): the configuration, every checklist and every template; nothing it would overwrite; no Specification skeleton, no framework detection.
+
+  - decision_trace:
+      research:
+        - true-bdd/true-bdd.yaml's scripts section sets models for this repository's own tooling (commit, the Codex runner); the engine never reads it.
+      recommendation: |
+        (a): init writes a host configuration without scripts; that section stays only in TrueBDD's own configuration.
+      settled: |
+        init's configuration has no scripts section; it stays in this repository's own true-bdd/true-bdd.yaml. The Owner also asked Claude to check every question against TrueBDD's goals and how it works before asking, and to settle without asking whatever they answer unambiguously.
+    question: |
+      Q11 - Какие настройки создаёт init: (а) настройки для обычного проекта, без раздела scripts:, он остаётся только в настройках репозитория TrueBDD; (б) те же настройки, что у TrueBDD, вместе с scripts:?
+    answer: |
+      a) Слушай, ты уже начинаешь задавать вопросы, которые, в принципе, ясны из контекста. Если ты посмотришь, что делает TrueBDD, какие у него цели, как он должен работать, да, ну, то есть, как работает этот инструмент, то ответ там очевиден. Ты можешь, перед тем, как задавать вопросы, проверять их на нет ли на них однозначного ответа?
+
+  - decision_trace:
+      research:
+        - The Owner's goal for distribution is a release with instructions to download the binary (26 October, «сделать релиз в GitHub … с инструкцией, как скачать бинарь»); the release archives name the binary true-bdd.
+        - go install of the engine module installs bdd-cli, after its directory (services/bdd-cli/main.go); Q4's split does not change that (tmp/codex/research-module-split/final.md).
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        The install channel is the release archive, whose binary is true-bdd; the install guide documents only that. go install is not a supported channel, so no directory moves for it. Forced by the Owner's distribution goal.
+    question: |
+      How is the binary named and installed?
+    answer: |
+      Claude, no question asked: from the release archive, as true-bdd; go install is not a channel.
+
+  - decision_trace:
+      research:
+        - Go versions a nested module by tags prefixed with its directory, e.g. pkg/vX.Y.Z (go.dev/doc/modules/managing-source#multiple-modules); a host requires the test library by such a version.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        A release tags the repository vX.Y.Z for the GitHub release and pkg/vX.Y.Z for the test library at the same commit, so a host requires github.com/ondatra-ai/true-bdd/pkg at the release's version. Forced by Go's nested-module rule and Q4.
+    question: |
+      How are releases tagged after the split?
+    answer: |
+      Claude, no question asked: vX.Y.Z for the release and pkg/vX.Y.Z for the test library, at the same commit.
+
+  - decision_trace:
+      research:
+        - The writer has no network (codex_writer.go:154), so a library missing from the module cache cannot be fetched in a writer turn; Q2 requires a run that cannot succeed to fail at once with an error naming the cause.
+      recommendation: |
+        Forced consequence, no question.
+      settled: |
+        Before a writer turn the engine checks that every library the architecture names, for the service and for the tests, is in the module cache with what it needs; if not, it stops at once and names the missing libraries and the command that downloads them. Forced by Q2 and Q6.
+    question: |
+      What if a named library is not in the module cache?
+    answer: |
+      Claude, no question asked: the engine stops before the writer turn, naming the missing libraries and how to download them.
+
+  - decision_trace:
+      research:
+        - All 10 pkg/ packages the engine imports are also dependencies of the test library (go list -deps ./pkg/testkit/... intersected with ./services/bdd-cli/...), so in any rebuild the writer must be able to read them for the tests to compile.
+      recommendation: |
+        (a): accept that the writer can read the test library; the engine may not import it, checked by a gate; copying is not a violation, because the Scenarios, not hiding the code, make the rebuild depend on the Specification alone.
+      settled: |
+        Not answered. The question lost the Owner: it concerns build code rebuilding TrueBDD's own engine (cut A), not build tests. The Owner asks to go back to the earlier answer it rests on, Q5.
+    question: |
+      Q12 - Как быть с тем, что при восстановлении райтер видит в библиотеке тестов код, который движок теперь должен написать сам: (а) допустимо, подключать нельзя, копирование не нарушение; (б) разделить код, у библиотеки тестов свой; (в) запретить копирование и искать совпадения?
+    answer: |
+      Подожди, слушай, смотри, мы сейчас говорим про build tests, правильно? Я вообще не понимаю, о чем ты То есть, вот как ты сейчас задаешь вопрос, да, на который ты задавал перед этим? Надо тогда возвращаться к предыдущему ответу.
+
+  - decision_trace:
+      research:
+        - All 10 pkg/ packages the engine imports are also dependencies of the test library, so a writer that runs the tests can read them.
+        - Go builds every imported package from source; there are no prebuilt library packages. The writer's sandbox limits paths, not programs, so any file `go test` may read inside the sandbox, the writer may read too.
+        - The engine already reruns the failing set outside the writer's sandbox after every apply (Failing set, GLOSSARY.md).
+      recommendation: |
+        (a): keep Q5; the writer may see the same code in the test library; the Scenarios, not hiding the code, make the rebuild depend on the Specification alone.
+      settled: |
+        (в): keep Q5, and the engine and the test library each have their own code for processes, files, git and the CLIs, written separately; when the engine is regenerated it generates its own packages too. Claude's framing was faulty: after Q5 options (a) and (в) give the same layout, two separate copies, so (в) only confirms Q5. Still open: whether the writer may read the test library at all, which depends on whether it runs the tests itself.
+    question: |
+      Q13 - Оставляем решение Q5 с учётом того, что райтер видит такой же код в библиотеке тестов: (а) оставить Q5, движок пишет свой код, может списать с библиотеки тестов, защита — сценарии; (б) отменить Q5, движок подключает общие пакеты из pkg/ как библиотеки; (в) оставить Q5 и разделить код, у библиотеки тестов свои пакеты, отдельные от движка?
+    answer: |
+      Почему код, на котором работают тесты, спрячешь от райтера? То есть можешь детальнее мне объяснить эти выкладки? То есть меня так мы не уйдем от варианта В. Я же тебе говорил, что самая основная проблема в том, что вот он, когда будет регенерить код, он будет их должен их генерить вместе с пакеджами. Которые у него там, которые он подключает. Так что как раз-таки В это самая нормальная ситуация.
+
+  - decision_trace:
+      research:
+        - Go builds tests from source inside the writer's sandbox, which limits paths, not programs, so a writer that runs the tests can read everything they compile, the test library included.
+        - In the two-generation test the writer ran the tests itself (248 of 256 in its sandbox) and finished in one to three turns.
+      recommendation: |
+        (a): the writer runs the tests itself, as today, and so sees the test library; it cannot import it into the engine, which a check enforces.
+      settled: |
+        (a): the writer runs the tests and may read them. Tests and step definitions are generated content (build tests writes them): build tests may read and write them; build code may only read and run them, never write. The test library may be read too. Claude's Q14 duplicated Q13 and should not have been a separate question.
+    question: |
+      Q14 - Запускает ли райтер тесты сам: (а) да, как сейчас, тогда он видит библиотеку тестов, но подключить её в движок не может; (б) нет, тесты запускает только движок вне песочницы, библиотека тестов от райтера закрыта, ценой большего числа циклов?
+    answer: |
+      Так если они дублируют друг друга, зачем ты мне задаешь два вопроса? То есть... То есть, смотри, райтер должен уметь запускать тесты. Он же не должен видеть их код. Вот это вот интересная штука. Да и пусть себе видит этот код. Вообще, короче, в чем проблема видеть код тестов, если это тесты этой всей штуки? Тесты и степы, смотри, тесты и степы являются частью сгенерированного контента. Все, что было сгенерено, build tests, ну, то есть через build tests, да, там, все, что было сгенерировано через это, ну, видеть можно и нужно, в чем проблема. Вот, то есть он может их видеть на read, но не может, ну, как бы, build test может их читать и писать, это логично, да, а build code может их только читать и запускать. Писать он туда ничего, типа, не может. Хотя, опять же, если он сильно захочет, то запишет через какой-нибудь баш скрипт.
+
+  - decision_trace:
+      research:
+        - The codex writer's writes are bounded by its generated permission profile at the operating-system level, and every command it starts, a bash script included, runs inside that sandbox (ADR-0021, ADR-0024; docs/architecture/architecture.yaml:663-673).
+        - The Claude writer's Bash runs only the canonical replay command through its PreToolUse guard, and its file tools are confined by file identity (ADR-0022).
+      recommendation: |
+        Fact, no question.
+      settled: |
+        A writer cannot write outside its roots through a bash script: the sandbox bounds every process it starts. The Owner's worry is covered today; the rule stays enforced by the sandbox, not by the prompt.
+    question: |
+      Can a build-code writer still write into the tests through a bash script?
+    answer: |
+      Claude, no question asked: no; the codex sandbox bounds every process it starts, and the Claude writer's Bash runs only the replay command.
+
+  - decision_trace:
+      research:
+        - A fidelity check by Codex (gpt-6-astra, xhigh, read-only; tmp/codex/fidelity-213-triage/final.md) compared the drafts with the Owner's answers in this log.
+        - ADR-0022:11 says the Claude writer's hook governs file tools and commands, not the code the granted replay executes, and that no network or subprocess sandbox is claimed. claude_guard_policy.go checks the Bash command and the file tools only.
+      recommendation: |
+        Correction of Claude's earlier entries, no question.
+      settled: |
+        Corrections to entries Claude settled without asking:
+        (1) The bash-script fact after Q14 holds for the codex writer only. The Claude writer's permitted replay command runs the service's and the tests' code unconfined, so that code can write or read anywhere, and the Claude writer has no network sandbox.
+        (2) "go install is not a channel" after Q11 was not forced. The Owner asked how the engine is distributed (Q4) and never ruled go install out, so it is a proposal.
+        (3) Tagging vX.Y.Z and pkg/vX.Y.Z at the same commit after Q11 was not forced. Go requires only the pkg/ prefix on the nested module's tags, so releasing both together is a proposal.
+        (4) The missing-library entry after Q11 dropped Q6's choice that the run itself downloads the named libraries in advance. The run (the engine, which has network) downloads them before the writer turn, and stops only if that download fails.
+        (5) Q3's interim grant stays until the module split lands: TrueBDD's architecture lists go.mod and go.sum as writable for bdd-cli.
+        (6) Q2 decided the outcome, which is to fail at once when the work is truly impossible within the architecture, and the obligation that the architecture suffices to build the system. The detailed reporting fields are Claude's proposal for how.
+        (7) Q14's prohibition takes precedence: build code never writes the tests or step definitions, even where a service path or a writable entry would reach them.
+    question: |
+      Which of Claude's own settlements does the fidelity check overturn?
+    answer: |
+      Claude, no question asked: the seven corrections above, from tmp/codex/fidelity-213-triage/final.md.
+
+  - decision_trace:
+      research:
+        - The default coder is codex:gpt-6.1-sol (true-bdd/true-bdd.yaml), whose sandbox bounds every process it starts. The Claude writer is selected only through --model, for model trials.
+        - ADR-0022 claims no network or subprocess sandbox for the Claude writer; #181's research found a nested macOS sandbox-exec fails.
+      recommendation: |
+        (a): keep the Claude writer as it is and record the limit: only the codex writer fully enforces the rules, and it is the default; the Claude writer stays for trials.
+      settled: |
+        The Claude build-code writer stays as it is, with a recorded known limit: its file tools follow the architecture's rules, but the replay command and the code it runs are unconfined and have network. Only the codex writer, the default, fully enforces Q1, Q7, Q8 and Q14. The Claude writer remains for model trials.
+    question: |
+      Q15 - Что делаем с Claude-райтером, у которого тесты запускаются без песочницы: (а) оставить как есть и записать как известное ограничение, правила полностью соблюдает только Codex-райтер, он по умолчанию, Claude-райтер для пробных запусков; (б) запретить Claude-райтера для build code; (в) сначала исследовать песочницу для его тестов?
+    answer: |
+      (а) Оставить его как есть и записать как известное ограничение. Правила полностью соблюдает только Codex-райтер, а он и стоит по умолчанию. Claude-райтер остаётся для пробных запусков.
+
+  - decision_trace:
+      research:
+        - nothing new
+      recommendation: |
+        Claude listed the decisions of Q1-Q14 and asked whether the shared understanding was right.
+      settled: |
+        The Owner closed the session: the information is complete, and Claude proceeds to tickets and ADRs, with Codex checking them against these answers first (done, tmp/codex/fidelity-213-triage/final.md). Q15 was asked after that check, because it surfaced a real decision.
+    question: |
+      Всё верно? (Claude's summary of Q1-Q14, and the proposed tickets and ADRs.)
+    answer: |
+      В общем, давай уже выходить из этого цикла, еще раз пересмотри мои ответы, посмотри, что реально не хватает, какой информации реально не хватает, потому что, по-моему, у тебя уже есть вся информация, ты можешь с ней в принципе двигаться дальше.
+      Проверь, у кодекса передай ему мои ответы, проверь, верно ли ты исходя из моих ответов записал тикеты.
+      Используй самую большую модель кодекса.
