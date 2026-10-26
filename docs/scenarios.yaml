@@ -6044,3 +6044,30 @@ scenarios:
         - and: the engine spawned no test runners
         - and: the engine dispatched 0 AI turns
         - and: no file outside "tmp" changed
+
+  build-code-set-006-no-test-files:
+    description: A missing service is repaired once for a test package and a helper package without tests
+    service: bdd-cli
+    path: tests/bdd-cli/build_code_set_test.go
+    user_stories:
+    - story: docs/product/stories/build-code-failing-set.yaml
+      scenario_id: build-code-set-006-no-test-files
+      merge_date: '2026-10-26'
+    timeout: 15m
+    merged_steps:
+      given:
+      - the "build-code-no-test-files" project tree
+      - the System Architect answers "1" to every question
+      when:
+      - the System Architect runs "build code --fix"
+      then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - stdout matches msg="Suite failures" failures=2 framework=go-test
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 3 test runners
+      - stdout does not match Spawning test runner.*-run
+      - the file "services/calc/calc.go" is created
+      - the shell command "go test -json -count=1 ./tests/..." run in "." exits with code 0
