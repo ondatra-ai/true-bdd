@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"sort"
 
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/app/engine"
@@ -110,7 +111,17 @@ func loadFailingTests(
 			return nil, rootsErr
 		}
 
+		host, importErr := checkCodeLibraries(arch)
+		if importErr != nil {
+			return nil, importErr
+		}
+
 		if fix && !configured {
+			err = configureCodeLibraries(ctx, deps, arch, host)
+			if err != nil {
+				return nil, err
+			}
+
 			configureReplayGrant(deps.BuildCodeFixApplier, arch.Testing)
 
 			configured = true
@@ -229,4 +240,26 @@ func finalizeBuildCode(result *engine.Result[*BuildCodeItem]) error {
 	}
 
 	return ErrBuildCodeNotConverged
+}
+
+func configureCodeLibraries(
+	ctx context.Context, deps BuildCodeDeps, arch *architecture.Architecture, host string,
+) error {
+	roots, err := arch.DownloadLibraries(ctx, host)
+	if err != nil {
+		return err
+	}
+
+	deps.BuildCodeFixApplier.UseLibraryReadRoots(roots)
+
+	return nil
+}
+
+func checkCodeLibraries(arch *architecture.Architecture) (string, error) {
+	host, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("locate library host: %w", err)
+	}
+
+	return host, arch.CheckLibraryImports(host)
 }

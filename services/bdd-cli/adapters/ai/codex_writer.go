@@ -96,7 +96,13 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 	config.WriteString(codexWriterDefaults)
 	config.WriteString(codexRuntimeProfile)
 
-	for _, path := range []string{root, paths["GOROOT"], paths["GOMODCACHE"]} {
+	for _, path := range []string{root, paths["GOROOT"]} {
+		fmt.Fprintf(&config, "%s = \"read\"\n", strconv.Quote(path))
+	}
+
+	fmt.Fprintf(&config, "%s = \"deny\"\n", strconv.Quote(paths["GOMODCACHE"]))
+
+	for _, path := range req.Mode.LibraryReadRoots {
 		fmt.Fprintf(&config, "%s = \"read\"\n", strconv.Quote(path))
 	}
 
@@ -110,10 +116,9 @@ func codexWriterConfig(req Request, paths map[string]string) (string, error) {
 		return "", err
 	}
 
-	for _, path := range []string{filepath.Join(temporary, "codex-homes"), "/private/tmp", "/private/var/tmp",
-		filepath.Join(paths["GOMODCACHE"], "cache/vcs"),
-		filepath.Join(paths["GOMODCACHE"], "github.com/ondatra-ai"),
-		filepath.Join(paths["GOMODCACHE"], "cache/download/github.com/ondatra-ai")} {
+	for _, path := range []string{filepath.Join(temporary, "library-download"), filepath.Join(temporary, "codex-homes"),
+		"/private/tmp", "/private/var/tmp",
+		filepath.Join(paths["GOMODCACHE"], "cache/vcs")} {
 		fmt.Fprintf(&config, "%s = \"deny\"\n", strconv.Quote(path))
 	}
 

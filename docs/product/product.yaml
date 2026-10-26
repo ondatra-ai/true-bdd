@@ -441,13 +441,9 @@ glossary:
     means: >-
       The Claude Code CLI selected by a model tier. Only build code's apply turn
       has a generated, restricted writer configuration with the engine's hook.
-      Its file tools read the host root, the installed Go toolchain and module
-      cache (excluding ondatra-ai copies outside the host), and its own spill
-      files. Writes stay in scratch and declared service roots, with generated guard configuration protected from modification. The hook grants
+      Its file tools read the host root, the installed Go toolchain, the declared Library graph and its own spill files. Writes stay in scratch and declared service roots, with generated guard configuration protected from modification. The hook grants
       only the canonical foreground replay command; background commands are denied.
-      Searches outside the host cannot start above an excluded module-copy
-      directory, and Glob checks its pattern's fixed root and denies parent
-      traversal. A dependency search chooses a narrower directory instead.
+      Searches outside the host start only inside a granted read root, and Glob checks its pattern's fixed root and denies parent traversal.
       Both Bash timeouts are 600000 milliseconds. No Claude turn gets a router deadline;
       every turn uses the caller's context, and cancellation stops its process group and descendants.
       Other Claude turns retain safe mode. A started writer's non-zero exit, error result
@@ -489,6 +485,10 @@ glossary:
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
+  - term: Library
+    means: >-
+      Code supplied apart from a service's own source, declared by exact module and version in the service's optional libraries list or testing.libraries. Before build-code or build-tests writers run, the engine uses its network to download every named Go module and its complete build graph. A failed download stops the run before any writer turn, naming the library and the error. Writers may read only those module sources and exact version metadata in the module cache, with no organization-specific grant or deny. A service importing a library named only for its tests is refused before discovery and on rerun. Tests and step definitions remain read-only. Only the default codex writer enforces these rules for every subprocess; Claude's file tools obey them, but its replay and executed code remain unconfined and have network, a known limit retained for model trials. For non-Go hosts these lists are omitted or empty; the existing Jest and Playwright paths use host-local node_modules without a new package-manager download or import check.
+
   - term: writable paths
     means: >-
       A service's optional writable list names exact project-relative files or folders, without patterns, in addition to its path. A writer changes those and host tmp only. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Build code refuses outside paths or grants overlapping tests/ or Registry suite directories and their step definitions at start, before any runner or AI turn. Unknown-service failures use all declared services. Tests and step definitions are read and run only. Codex enforces this fully; Claude's replay command remains unconfined for model trials.
@@ -498,6 +498,10 @@ glossary:
       The plan or writer concludes no solution exists within the declared files, after seeking one there. A preferred undeclared change alone is insufficient. Both report impossible as a list of path and reason objects. The first nonempty list keeps edits, reruns the remaining failing set once, then fails with a distinct error naming files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including applied false.
 
 catalogue:
+  - template: 'library downloads use an empty offline proxy'
+    block: given
+    means: The engine downloads through an absent local Go module proxy, with no network fallback or checksum server; an uncached version fails deterministically.
+    terms: []
   - template: 'the "{tree}" project tree'
     block: given
     means: >-

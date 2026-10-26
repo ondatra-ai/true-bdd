@@ -56,7 +56,7 @@ printf '{"type":"turn.completed"}\n'
 		`model_context_window = 1050000`, `web_search = "disabled"`, `project_doc_max_bytes = 0`,
 		`enabled = false`, `GOPROXY = "off"`, `GOFLAGS = "-trimpath -buildvcs=false"`,
 		`"/private/tmp" = "deny"`, `"/private/var/tmp" = "deny"`,
-		`/github.com/ondatra-ai" = "deny"`, `/cache/download/github.com/ondatra-ai" = "deny"`,
+		`/cache/vcs" = "deny"`,
 		filepath.Join(root, "services/demo") + `" = "write"`, filepath.Join(root, "tmp") + `" = "write"`,
 		filepath.Join(root, "tmp/codex-homes") + `" = "deny"`} {
 		if !strings.Contains(config, want) {

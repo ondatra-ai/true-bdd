@@ -55,14 +55,15 @@ type ApplyParams struct {
 
 // FixApplier applies fix prompts to stories using AI.
 type FixApplier struct {
-	testCommand  *provider.TestCommand
-	aiClient     ports.AIPort
-	config       *config.ViperConfig
-	models       *provider.Registry
-	modeFactory  *ai.ModeFactory
-	systemLoader *template.TemplateLoader[FixApplierData]
-	userLoader   *template.TemplateLoader[FixApplierData]
-	tmpDir       string
+	libraryReadRoots []string
+	testCommand      *provider.TestCommand
+	aiClient         ports.AIPort
+	config           *config.ViperConfig
+	models           *provider.Registry
+	modeFactory      *ai.ModeFactory
+	systemLoader     *template.TemplateLoader[FixApplierData]
+	userLoader       *template.TemplateLoader[FixApplierData]
+	tmpDir           string
 	// useEditMode toggles Apply's tool-permission set: false (default) is
 	// ThinkMode for FILE_START/FILE_END handlers; true, set via
 	// UseEditMode(), is EditMode for handlers that mutate the scratch file directly (us apply's F: prompts).
@@ -134,6 +135,9 @@ func (a *FixApplier) UseWriteGlobs(patterns []string) {
 func (a *FixApplier) UseTestCommand(command *provider.TestCommand) {
 	a.testCommand = command
 }
+
+// UseLibraryReadRoots grants only the downloaded architecture library graph.
+func (a *FixApplier) UseLibraryReadRoots(roots []string) { a.libraryReadRoots = roots }
 
 // Apply applies a fix prompt to the subject and returns the extracted content as a string.
 // The caller is responsible for parsing the returned content into the appropriate type.
@@ -331,6 +335,7 @@ func (a *FixApplier) savePromptFile(storyID string, iteration int, suffix, conte
 func (a *FixApplier) execute(ctx context.Context, model provider.ModelRef, systemPrompt, userPrompt string,
 	options provider.TurnOptions) (string, error) {
 	mode := a.selectMode()
+	mode.LibraryReadRoots = a.libraryReadRoots
 	options.CodexWriter = model.CLI == provider.CLICodex && options.CodexWriter
 
 	options.ClaudeWriter = options.ClaudeWriter && model.CLI == provider.CLIClaude

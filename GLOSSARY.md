@@ -93,7 +93,7 @@ A repeatable `--model <tier>=<cli>:<model>` command-line flag that replaces one 
 _Avoid_: model environment variable, model config overlay
 
 **Library**:
-Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. A rebuild may use nothing else, and a service may not use a library named only for its tests.
+Code supplied apart from a service's own source that the service or its tests build with, named in the architecture document with its exact version; what a named library itself needs to build comes with it. The service entry and `testing` declare `libraries` as lists of `{module, version}`. Before a writer turn, the run downloads every named Go module and its build graph; a download failure stops the run, naming the library and error. Writers read only that graph and its exact version metadata from the module cache. A rebuild may use nothing else, and a service may not use a library named only for its tests. For non-Go hosts the lists remain empty; existing Jest and Playwright paths are unchanged. Only codex enforces the access and network boundary for subprocesses; Claude's file tools obey it, but its replay remains unconfined with network for model trials.
 _Avoid_: dependency (a service's dependencies are the processes and CLIs it talks to while it runs), package, framework
 
 ## Repository vocabulary

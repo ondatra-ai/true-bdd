@@ -556,6 +556,11 @@ architecture:
   # How this repository runs its tests, stated once. No suites: a test's
   # service and file are the scenario's own.
   testing:
+    libraries:
+      - module: gopkg.in/yaml.v3
+        version: v3.0.1
+      - module: znkr.io/diff
+        version: v1.0.1
     framework: go-test
     # build tests verifies authored definitions against its running binary;
     # the harness consumes this argument and skips building service source.
@@ -574,6 +579,55 @@ architecture:
       path: services/bdd-cli
       writable: [go.mod, go.sum]
       language: go
+      libraries:
+        - module: github.com/Masterminds/goutils
+          version: v1.1.1
+        - module: github.com/Masterminds/semver/v3
+          version: v3.2.0
+        - module: github.com/Masterminds/sprig/v3
+          version: v3.2.3
+        - module: github.com/fsnotify/fsnotify
+          version: v1.8.0
+        - module: github.com/go-viper/mapstructure/v2
+          version: v2.4.0
+        - module: github.com/google/uuid
+          version: v1.6.0
+        - module: github.com/huandu/xstrings
+          version: v1.3.3
+        - module: github.com/imdario/mergo
+          version: v0.3.11
+        - module: github.com/mitchellh/copystructure
+          version: v1.0.0
+        - module: github.com/mitchellh/reflectwalk
+          version: v1.0.0
+        - module: github.com/pelletier/go-toml/v2
+          version: v2.2.3
+        - module: github.com/sagikazarmark/locafero
+          version: v0.7.0
+        - module: github.com/shopspring/decimal
+          version: v1.2.0
+        - module: github.com/sourcegraph/conc
+          version: v0.3.0
+        - module: github.com/spf13/afero
+          version: v1.12.0
+        - module: github.com/spf13/cast
+          version: v1.7.1
+        - module: github.com/spf13/cobra
+          version: v1.9.1
+        - module: github.com/spf13/pflag
+          version: v1.0.6
+        - module: github.com/spf13/viper
+          version: v1.20.1
+        - module: github.com/subosito/gotenv
+          version: v1.6.0
+        - module: golang.org/x/crypto
+          version: v0.52.0
+        - module: golang.org/x/sys
+          version: v0.46.0
+        - module: golang.org/x/text
+          version: v0.37.0
+        - module: gopkg.in/yaml.v3
+          version: v3.0.1
       frameworks:
         - cobra
       patterns:
@@ -710,8 +764,8 @@ architecture:
                 suppresses execpolicy files. No outer sandbox-exec wraps codex.
               - >-
                 The apply profile grants host-root reads, that execution mode's exact file or directory roots, and host tmp writes. :minimal supplies OS runtime exceptions listed
-                in ADR-0021; go env resolves GOROOT and GOMODCACHE as read-only.
-                Both GOMODCACHE/github.com/ondatra-ai and its cache/download mirror,
+                in ADR-0021; go env resolves GOROOT as read-only and GOMODCACHE as denied by default.
+                Only the downloaded libraries and their version metadata receive narrower read entries.
                 GOMODCACHE/cache/vcs, the shared host tmp/codex-homes subtree, /private/tmp and /private/var/tmp are denied.
                 The narrower host and tmp grants still work when nested under a denied root.
                 Every other filesystem path is restricted by default, including
@@ -776,15 +830,15 @@ architecture:
                 ":minimal" = "read"
                 "{host}" = "read"
                 "{GOROOT}" = "read"
-                "{GOMODCACHE}" = "read"
+                "{GOMODCACHE}" = "deny"
+                {library_read_entries}
                 {runtime_read_entries}
                 {write_entries}
+                "{host}/tmp/library-download" = "deny"
                 "{host}/tmp/codex-homes" = "deny"
                 "/private/tmp" = "deny"
                 "/private/var/tmp" = "deny"
                 "{GOMODCACHE}/cache/vcs" = "deny"
-                "{GOMODCACHE}/github.com/ondatra-ai" = "deny"
-                "{GOMODCACHE}/cache/download/github.com/ondatra-ai" = "deny"
 
                 [permissions.writer.network]
                 enabled = false
@@ -809,7 +863,7 @@ architecture:
                 npm_config_offline = "true"
                 npm_config_userconfig = "{host}/tmp/codex-shell-home/.npmrc"
 
-                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
+                {host} is the symlink-resolved Host project root; go env -json GOROOT GOMODCACHE supplies the two Go roots. The library_read_entries are sorted, deduplicated quoted read paths: each resolved module source directory and its exact .info, .mod, .zip and .ziphash files, with no organization-specific rule. Scratch paths resolve within the host before emission. Shell set keys are sorted lexically. The runtime PATH suffix and Docker/npm/OpenSSL environment entries are always emitted, even when no optional executable is installed. Runtime discovery visits installed docker, node, npm, npx in lexical name order. For each it emits the executable, recursively enumerated non-system Mach-O libraries (installation alias then canonical path), validated npm package when applicable, then installation symlink ancestors, necessary Homebrew opt metadata directories and dylib parent directories, preserving discovery order and deduplicating paths by first occurrence. Each is a quoted path = "read" assignment; no installed runtime means no such entries. The acceptance and refusal rules above govern these paths.
 
                 {write_entries} emits each accepted execution-mode write root as a quoted resolved path = "write" assignment, in Write/Edit/MultiEdit pattern order, then any additional SourceWriteRoots, then host tmp. Overlapping roots are deduplicated by first occurrence. Literal files stay exact; terminal /** strips the suffix; other globs grant their narrowest literal directory and retain the post-turn enforcement described above. For writer-config-001-codex this is exactly "{host}/tmp" = "write", then "{host}/services/calc" = "write" (scratch already occurs in the mode patterns). The six deny entries follow all write grants in the stated order. The network value must be enabled = false within [permissions.writer.network]; network = false directly under [permissions.writer] is refused by the real CLI.
 
@@ -904,9 +958,7 @@ architecture:
               read_root: >-
                 go env GOROOT, GOMODCACHE, then this session's tool-results
                 directory under CLAUDE_CONFIG_DIR/projects (default ~/.claude).
-                The host cwd is always a working root. The hook denies
-                github.com/ondatra-ai and cache/download/github.com/ondatra-ai
-                outside the host even though the module cache is a working root.
+                The host cwd is always a working root. The hook narrows module-cache file tools to the architecture library graph, even for a cache inside the host; add-dir on the cache is only the CLI outer boundary. The policy carries library_cache and read_roots containing GOROOT, the sorted graph roots and the spill directory; excluded_roots is empty.
               allowed_tools: >-
                 The turn's allowed tools joined by commas. A validation or fix
                 turn: `Read(**),Write({tmp_glob}),Glob(**),Grep(**)`. An apply
@@ -1055,6 +1107,12 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: Library
+      technical: >-
+        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Existing test files and step definitions remain read-only under #215's rules. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
+      observed_by: >-
+        writer-config-001-codex pins the full profile with an exact named module; writer-config-002-claude pins settings and the policy read roots with a transitive module. libraries-003-test-only-import-refused and libraries-004-download-fails-before-writer assert the refusal, its cause and zero runner/model turns. Live codex sandbox probes use a fresh build cache to compile and run the calculator host and refuse an undeclared module.
+
     - term: writable paths
       technical: >-
         Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with tests/ or any Registry suite directory, symlinks included. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
@@ -1609,11 +1667,10 @@ architecture:
         --policy pointing to generated JSON. It emits an explicit allow decision
         or exits 2 with a reason; Bash is never permission-pattern granted.
         --restricted confines file tools to cwd and --add-dir roots, resolving
-        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and excludes module-cache
-        ondatra-ai copies, with the host taking precedence. Search roots outside
+        symlinks. The hook protects its generated configuration directory from writes, further restricts writes and limits module-cache reads to declared libraries, their build graph and exact version metadata. Search roots outside
         the host must not contain any excluded directory; Glob checks its
         pattern's fixed root too and denies parent traversal. Read roots are the
-        host, go env GOROOT/GOMODCACHE, and only this session's tool-results
+        host, go env GOROOT, the declared library graph, and only this session's tool-results
         directory. The generated session UUID makes historical transcripts
         inaccessible. The default sign-in is retained: an empty CLAUDE_CONFIG_DIR
         was signed out in the live probe. No credentials are copied.
