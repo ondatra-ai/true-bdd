@@ -225,7 +225,7 @@ func validateSpec[I any](spec Spec[I]) (
 		return nil, nil, RefuseStartup(spec.Name, err)
 	}
 
-	return doc, prompts, nil
+	return doc, prompts, validateCommandTemplates(spec)
 }
 
 // loadAndPrepare sources the items and lets the command narrow or

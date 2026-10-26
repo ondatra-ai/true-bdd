@@ -1,0 +1,268 @@
+# Checklist for `true-bdd scen check [scenario-id...]`.
+#
+# One cell per (scenario, prompt): each prompt reads ONE registry entry
+# and rules on it alone. scen check is the verifier: a bare run exits 1
+# when any scenario fails a prompt, so it gates a change, and every
+# prompt carries an `F:`, so `--fix` walks the whole checklist.
+#
+# term_closure holds a scenario's words to the documents that define
+# them. Its four `D:` prompts are answered by the engine's own checks,
+# with no AI turn, before any `Q:`; a scenario failing one skips its
+# `Q:` prompts until it is fixed. Their fixes write the product or the
+# architecture document, never the scenario. Its two `Q:` prompts ask a
+# model what no check can settle: whether a phrase's meaning says
+# something, and whether the scenario uses the phrase in that meaning.
+# Every closure prompt passes a scenario no Story claims, or a host
+# whose product document declares no catalogue, as "not checked".
+#
+# scenario_quality holds the eight questions of the `us-refine`
+# acceptance-criteria checklist that still mean something applied to a
+# single scenario; its fixes rewrite the scenario's own registry entry.
+# The four it dropped threshold over a set (AC count 3-7, at least one
+# happy path, at least two error scenarios, at least 80% convertible).
+
+version: "1.0"
+last_updated: "2026-10-21"
+
+sections:
+  - id: term_closure
+    name: "Term Closure"
+    description: "Every step of a Scenario a Story claims must match one catalogue phrase whose words are defined, mapped and observed by one step definition, and mean what the Scenario uses them for."
+    validation_prompts:
+      - D: step-phrases
+        rationale: "A step outside the catalogue has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one catalogue entry (template, block, means, terms) for the failing step, asking what it means first. Write it to the product document, never to the Scenario."
+
+      - D: declared-terms
+        rationale: "A phrase whose meaning relies on an undefined word still has no stated meaning, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Propose one glossary entry (term, means) for each undefined term, asking what it means first. Write it to the product document's glossary, never to the Scenario."
+
+      - D: term-mappings
+        rationale: "A product word the architecture never maps says nothing of how a step definition builds or observes it, so the definition cannot follow from the spec."
+        docs:
+          - product
+          - architecture_yaml
+        F: "Propose one architecture.terms entry (term, technical, observed_by) for each unmapped term, asking how it is built and observed first. Write it to the architecture document, never to the Scenario."
+
+      - D: step-definitions
+        rationale: "A template bound to two step definitions, or a definition two templates reach, means the catalogue and the steps disagree on what a phrase is, so no step definition follows from the spec."
+        docs:
+          - product
+        F: "Split or merge catalogue entries so each template binds to one step definition and each definition is reached by one template, asking what the phrases mean first. Write it to the product document's catalogue, never to the Scenario or a step definition."
+
+      - Q: |
+          Decide whether each catalogue phrase this scenario's steps use
+          states an adequate meaning. Read the product document's
+          `catalogue:`, `glossary:` and `roles:`, and the architecture
+          document's `architecture.terms:`. For every step that does not
+          open with `llm:` or `judge:`, find the one catalogue entry
+          whose template matches it (a leading "and" or "but" is the
+          step's keyword, not its text), and judge that entry's `means`.
+          A meaning is inadequate when any of:
+          - it only restates the template's words, so a reader learns
+            nothing the step's own text did not already say
+          - it names nothing a person could set up or observe from
+            outside the product
+          - it relies on a word the glossary does not define, or uses a
+            term the entry declares against that term's glossary meaning
+            or its architecture mapping
+          - the template ends in a pattern slot and the meaning does not
+            say which product output the pattern is held against: a line
+            the program prints as its answer, or a log record's message
+            or fields
+
+          When the product document declares no `catalogue:`, or no
+          Story claims this scenario (its lineage is empty), pass
+          without judging.
+
+          Pass when every entry the steps use states an adequate meaning.
+          Fail when any entry does not.
+
+          Context: emit one line per entry the steps use, or the one
+          "not checked" line.
+            - "<scenario id>: not checked: <the product document declares no catalogue | no Story claims this scenario yet>"
+            - "<scenario id>: '<template>' — ok"
+            - "<scenario id>: '<template>' — <what its meaning lacks>"
+        rationale: "A phrase whose meaning names nothing observable leaves its step definition to guesswork, so the spec does not determine the test."
+        docs:
+          - product
+          - architecture_yaml
+        F: "Rewrite the means of each catalogue entry the findings name, in the product document, so it says what a step of that shape sets up or observes from outside the product, in the glossary's words, asking what the phrase is meant to observe first when the documents do not say. Change only those entries' means, never a template, and never the Scenario."
+
+      - Q: |
+          Decide whether this scenario uses each catalogue phrase in the
+          meaning its entry states. Read the product document's
+          `catalogue:` and `glossary:`, and the architecture document's
+          `architecture.terms:`. For every step that does not open with
+          `llm:` or `judge:`, find the one catalogue entry whose template
+          matches it (a leading "and" or "but" is the step's keyword, not
+          its text), read its `means` with the step's own slot values in
+          place, and judge the step as this scenario uses it. A violation
+          is any of:
+          - the step, read through its entry's meaning, sets up or
+            asserts something other than what this scenario's
+            description needs from it
+          - a pattern slot's value names no observable product output:
+            it is held against neither a line the program prints as its
+            answer nor a log record's message or fields, but an internal
+            name, a code identifier or a file the user never sees
+          - a quoted or number slot carries a value the entry's meaning
+            rules out
+
+          When the product document declares no `catalogue:`, or no
+          Story claims this scenario (its lineage is empty), pass
+          without judging.
+
+          Pass when every step uses its phrase in the phrase's meaning.
+          Fail when any step does not.
+
+          Context: emit one line per violating step, or one line when
+          there is none.
+            - "<scenario id>: not checked: <the product document declares no catalogue | no Story claims this scenario yet>"
+            - "<scenario id>: ok"
+            - "<scenario id>: <given|when|then> step '<step text>' — <how it departs from '<template>'>"
+        rationale: "A step that borrows a phrase for another meaning passes every structural check while its step definition tests something the scenario never meant."
+        docs:
+          - product
+          - architecture_yaml
+        F: "Rewrite each step the findings name, in this Scenario's registry entry, so it uses a catalogue phrase in that phrase's meaning and still matches exactly one template: change its slot value, or reword it into the shape of the entry whose meaning fits. Keep what the Scenario specifies; change nothing else."
+
+  - id: scenario_quality
+    name: "Scenario Quality"
+    description: "Every registry scenario must read as one testable behaviour, in the product's vocabulary."
+    validation_prompts:
+      - Q: |
+          Decide whether this scenario's description follows the
+          rule-based format. A violation is any of:
+          - missing the keyword "must" or "should"
+          - exceeds one sentence
+          - contains Gherkin Given/When/Then text (Gherkin belongs in the
+            steps, not the description)
+
+          Pass when the description follows the rule-based format.
+          Fail when it violates any of the above.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: <violation> — <quoted offending phrase>"
+        rationale: "A description is the one sentence a reader sees first; a rule states what must hold, where prose only gestures at it."
+        F: "Rewrite this Scenario's description, in its registry entry, as one sentence stating the rule it pins, with must or should and no Given/When/Then text. Keep what it specifies; change no step."
+
+      - Q: |
+          Decide whether this scenario's steps carry all three
+          Given/When/Then kinds. A violation is any of:
+          - no given step
+          - no when step
+          - no then step
+
+          Pass when the scenario has at least one step of each kind.
+          Fail when any kind is missing.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: missing <given|when|then> step"
+        rationale: "A scenario missing a kind cannot be executed as written: no precondition, no action, or nothing asserted."
+        F: "Add the missing given, when or then step to this Scenario's registry entry, saying what its description already pins, and asking what the step should set up, do or observe first when the description does not say. Change no other step and not the description."
+
+      - Q: |
+          Decide whether this scenario's description contains a vague word
+          from the forbidden_qualifiers list in the product document
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+
+          Pass when the description contains no forbidden qualifier.
+          Fail when it contains one or more.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: contains '<word>'[, '<word2>'...]"
+        rationale: "A vague qualifier cannot be tested objectively, so a scenario carrying one asserts nothing a run can settle."
+        docs:
+          - product
+        F: "Replace each forbidden qualifier in this Scenario's description, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's steps, asking for that criterion first when the steps do not state it. Change no step."
+
+      - Q: |
+          Decide whether any of this scenario's steps contains a vague
+          word from the forbidden_qualifiers list in the product document
+          (properly, correctly, appropriate, user-friendly, fast, etc.).
+          Check the given, when and then steps.
+
+          Pass when no step contains a forbidden qualifier.
+          Fail when one or more steps contain them.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: contains '<word>'[, '<word2>'...] in <given|when|then>"
+        rationale: "A step definition binds to wording; a vague qualifier in it makes the binding a matter of taste."
+        docs:
+          - product
+        F: "Replace each forbidden qualifier in this Scenario's steps, in its registry entry, with the measurable criterion it stands for, taken from the Scenario's description, asking for that criterion first when the description does not state it. Change nothing else."
+
+      - Q: |
+          Decide whether any of this scenario's steps uses an action verb
+          from the forbidden_actions list in the product document.
+
+          Pass when no step uses a forbidden action verb.
+          Fail when one or more do.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: forbidden verb '<verb>' in <given|when|then>"
+        rationale: "A verb from that list names an intent rather than an interaction, and no step definition can be written against an intent."
+        docs:
+          - product
+        F: "Rewrite each step using a forbidden action verb, in this Scenario's registry entry, with the observable action the product document gives as that verb's replacement, keeping what the step asserts. Change nothing else."
+
+      - Q: |
+          Decide whether this scenario describes observable behaviour
+          rather than implementation (endpoint created, database updated,
+          schema migrated, function called, struct added).
+
+          A command-line program's observable behaviour INCLUDES its exit
+          code, what it writes to stdout, the files it creates or changes,
+          and the subprocesses it spawns. "The engine spawned exactly 1
+          test runner" is behaviour, not implementation, because a person
+          can watch it happen from outside the program.
+
+          Pass when the scenario describes observable behaviour.
+          Fail when it describes implementation.
+
+          Context: emit one line.
+            - "<scenario id>: ok"
+            - "<scenario id>: implementation — '<quoted phrase>'"
+        rationale: "A scenario naming an internal detail is rewritten every time that detail is, and stops being a specification of anything."
+        docs:
+          - product
+        F: "Rewrite the description and the steps that name implementation, in this Scenario's registry entry, as what a person observes from outside the product, dropping a step whose only content is an internal detail the other steps already observe, and asking what is observed first when the Scenario does not say. Keep the behaviour."
+
+      - Q: |
+          Decide whether this scenario includes at least one specific
+          measurable criterion — a status code, an exact message, a
+          timeout, an error code, a named field, a count.
+
+          Pass when at least one such criterion appears in the description
+          or in a step.
+          Fail when none does.
+
+          Context: emit one line.
+            - "<scenario id>: measurable — '<criterion>'"
+            - "<scenario id>: not measurable"
+        rationale: "A measurable criterion is what a step definition asserts on; without one the test can only re-state the prose."
+        F: "Add one measurable criterion (an exact message, a count, a code or a threshold) to the step of this Scenario's registry entry that asserts its outcome, asking which criterion first. Keep the behaviour, and change no other step."
+
+      - Q: |
+          Decide whether this scenario has a binary pass/fail outcome —
+          whether a reviewer can decide pass or fail without subjective
+          judgement, with no ambiguity about what counts as correct.
+
+          Pass when the outcome is binary.
+          Fail when it is subjective.
+
+          Context: emit one line.
+            - "<scenario id>: binary"
+            - "<scenario id>: subjective — '<reason>'"
+        rationale: "A scenario a reviewer must interpret is a scenario two runs can disagree about while both being right."
+        F: "Rewrite the subjective outcome in this Scenario's registry entry, in its description and the step that asserts it, as one a reviewer decides without judgement, asking what counts as correct first. Keep the behaviour."

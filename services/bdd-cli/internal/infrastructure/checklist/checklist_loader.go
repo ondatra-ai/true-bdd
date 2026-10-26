@@ -10,6 +10,7 @@ import (
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/domain/models/checklist"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/config"
+	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
 )
 
 // ChecklistLoader loads per-command checklist YAMLs from a common directory.
@@ -34,14 +35,14 @@ func (l *ChecklistLoader) LoadFull(commandName string) (*checklist.Checklist, er
 
 	data, err := disk.Read(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read checklist %s: %w", path, err)
+		return nil, fmt.Errorf("failed to read checklist %s: %w", path, pkgerrors.ProjectFile(path, err))
 	}
 
 	var parsed checklist.Checklist
 
 	err = yaml.Unmarshal(data, &parsed)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse checklist %s: %w", path, err)
+		return nil, fmt.Errorf("failed to parse checklist %s: %w", path, pkgerrors.ProjectFile(path, err))
 	}
 
 	return &parsed, nil
