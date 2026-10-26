@@ -1,47 +1,35 @@
 package validate
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/template"
+)
 
 // ValidateTemplates parses both templates used by this role before execution.
 func (e *ChecklistEvaluator) ValidateTemplates() error {
-	err := e.systemLoader.Validate()
-	if err != nil {
-		return fmt.Errorf("system template: %w", err)
-	}
-
-	err = e.userLoader.Validate()
-	if err != nil {
-		return fmt.Errorf("user template: %w", err)
-	}
-
-	return nil
+	return validateTemplates(e.systemLoader, e.userLoader)
 }
 
 // ValidateTemplates parses both templates used by this role before execution.
 func (g *FixPromptGenerator) ValidateTemplates() error {
-	err := g.systemLoader.Validate()
-	if err != nil {
-		return fmt.Errorf("system template: %w", err)
-	}
-
-	err = g.userLoader.Validate()
-	if err != nil {
-		return fmt.Errorf("user template: %w", err)
-	}
-
-	return nil
+	return validateTemplates(g.systemLoader, g.userLoader)
 }
 
 // ValidateTemplates parses both templates used by this role before execution.
 func (a *FixApplier) ValidateTemplates() error {
-	err := a.systemLoader.Validate()
+	return validateTemplates(a.systemLoader, a.userLoader)
+}
+
+func validateTemplates[T any](system, user *template.TemplateLoader[T]) error {
+	err := system.Validate()
 	if err != nil {
 		return fmt.Errorf("system template: %w", err)
 	}
 
-	err = a.userLoader.Validate()
-	if err != nil {
-		return fmt.Errorf("user template: %w", err)
+	userErr := user.Validate()
+	if userErr != nil {
+		return fmt.Errorf("user template: %w", userErr)
 	}
 
 	return nil

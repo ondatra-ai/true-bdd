@@ -18,6 +18,18 @@
 # Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
 # rehearses init and sample hosts outside the checkout; scripts/gates runs its
 # zero-cost pass in CI. This is tooling, not an engine command or a published release.
+# That gate covers the init-host-first-AI-turn criterion: an installed binary
+# initializes a fresh host with its own Specification and tests and reaches fake CLIs.
+# The default harness uses a local file module proxy from the artifact export at
+# its commit-time pseudo-version. Both go get and the engine use that proxy, with
+# the public Go proxy for transitive modules. The copied testing.libraries is pinned
+# to go get's resolved version. --harness-revision uses the real proxy and records
+# its resolved exact version instead. No source replace is installed.
+# Install and engine module caches are separate fresh private directories. The
+# calculator must log Libraries downloaded before its first AI turn; the report
+# retains declared module versions and exact cache read roots. A second fresh host
+# naming example.invalid/true-bdd-missing@v0.0.0 must stop with that library's name
+# before any AI turn. An empty file proxy makes this refusal deterministic.
 
 architecture:
   # Template inputs are a byte contract beside the CLI invocation contract.
@@ -310,7 +322,7 @@ architecture:
       rendering: *prompt-rendering
       fields:
         WriteRoots: >-
-          The remaining failing set's declared service paths and exact writable entries; unknown-service failures use all service declarations. Services are sorted by name, each path precedes its writable list, and equal grants are deduplicated. Host tmp is operational scratch. No tests or step definitions may overlap a grant.
+          The remaining failing set's declared service paths and exact writable entries; unknown-service failures use all service declarations. Services are sorted by name, each path precedes its writable list, and equal grants are deduplicated. Host tmp is operational scratch. No protected tests or step definitions (as defined by writable paths) may overlap a grant.
         DocPaths: >-
           Resolved configured Specification paths, keyed by document key.
         FailedCheck.ActualAnswer: >-
@@ -568,6 +580,10 @@ architecture:
     # Gated behind //go:build bdd with a -mode flag naming a mode per
     # CALLER (`services:` the engine, `tests:` the judge) — not guessable,
     # hence commands:. build code runs replay, which reaches no model.
+
+    # Cold-cache replay downloads github.com/ondatra-ai/true-bdd@v0.0.0-20261026072958-954797a04424
+    # and its build graph for build-code-spec-005-matched-scenario-embedded.
+    # Warm that graph first for a fully disconnected replay.
     commands:
       record: "go test -tags bdd -json -count=1 -timeout=180m ./tests/bdd-cli/ -mode=services:record,tests:record"
       replay: "go test -tags bdd -json -count=1 -timeout=40m ./tests/bdd-cli/ -mode=services:replay,tests:replay"
@@ -646,8 +662,9 @@ architecture:
               and all templates/ prompt templates in the current folder. The host
               configuration has no scripts; this repository keeps scripts in its own
               true-bdd/true-bdd.yaml. Existing files, including empty, invalid and symbolic
-              link entries, are left untouched. Each path is reported as Created or
-              Left existing. Creation rechecks existence under the disk channel's
+              link entries, are left untouched. Each path is reported through an INFO log record with msg Created or
+              Left existing and a path attribute. Init binds stdout text logging and
+              tmp/true-bdd.log.json without loading configuration. Creation rechecks existence under the disk channel's
               exclusive directory Hold. Init writes no Specification or schema and
               performs no framework detection. Version and init need none of these files.
             - >-
@@ -1109,13 +1126,13 @@ architecture:
   terms:
     - term: Library
       technical: >-
-        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Existing test files and step definitions remain read-only under #215's rules. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
+        Optional libraries lists on each service and on testing contain {module, version}, exact Go module versions including pseudo-versions. Omitted lists grant no external module reads. Before a build-code fix walk's first runner and before each build-code writer preparation, or before a build-tests fix walk with unbound steps, the engine downloads all declarations and their complete module build graph through an isolated Go manifest under tmp/library-download, using the engine's network and the normal GOMODCACHE. No host go.mod or go.sum is modified. Each download has a private temporary manifest directory, removed afterward; writers cannot modify the library-download subtree. The manifest scratch is excluded from run snapshots and per-call fs-diffs; downloaded cache contents are never recorded. Conflicting declarations, versions selected away from a declared pin and incomplete downloads fail before the writer. Downloads name the declared libraries and the underlying error on failure. The writer reads exactly the resolved source directories and their .info, .mod, .zip and .ziphash files; other versions, cached modules and VCS repositories remain inaccessible. No rule names the engine's own module. Build code resolves service roots and follows linked source directories with cycle detection, then parses production Go imports (including platform-tagged files, excluding _test.go) before discovery and every rerun and refuses an import named only in testing.libraries for that service. Protected tests and step definitions remain read-only under the writable paths definition. Only codex enforces subprocess and network confinement; Claude's replay and the code it runs remain unconfined, with network, for model trials. For non-Go hosts libraries must be omitted or empty: npm/Jest/Playwright dependencies keep their existing host-local node_modules paths, with no new package-manager downloading or import check.
       observed_by: >-
         writer-config-001-codex pins the full profile with an exact named module; writer-config-002-claude pins settings and the policy read roots with a transitive module. libraries-003-test-only-import-refused and libraries-004-download-fails-before-writer assert the refusal, its cause and zero runner/model turns. Live codex sandbox probes use a fresh build cache to compile and run the calculator host and refuse an undeclared module.
 
     - term: writable paths
       technical: >-
-        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with tests/ or any Registry suite directory, symlinks included. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
+        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with protected test directories, symlinks included. Protected tests are tests/, Registry suite directories, the in-host directory holding testing.config, and in-host Go package directories named by every testing.commands entry (./dir or ./dir/..., resolved relative to the configuration directory or host root). Broad ./... names no separate test directory. Command package directories within a service path remain service code, with _test.go files writable by build code; a filename suffix alone grants no protection. Reserved tests/, Registry and configuration directories take precedence. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Protected tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
       observed_by: Scenarios supply architecture entries, assert a successful go.sum repair and inspect exact generated file grants; refused test overlap produces no runner or AI turn.
 
     - term: impossible repair

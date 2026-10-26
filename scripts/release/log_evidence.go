@@ -53,6 +53,8 @@ func (e *logEvidence) record(record map[string]any, line []byte, outcome *HostRe
 		e.stage = "Specification"
 	case "Running tests", "Cannot run test suite", "Suite failures":
 		e.stage = "suite discovery"
+	case "Libraries downloaded":
+		recordLibraryDownload(line, outcome)
 	case enginelog.MsgDispatch:
 		e.stage = "AI boundary"
 
@@ -94,4 +96,10 @@ func refusalStage(record map[string]any) string {
 	}
 
 	return "Specification"
+}
+
+func recordLibraryDownload(line []byte, outcome *HostResult) {
+	if len(outcome.Turns) == 0 {
+		outcome.LibraryDownloads = append(outcome.LibraryDownloads, json.RawMessage(bytes.Clone(line)))
+	}
 }

@@ -16,6 +16,14 @@ func sourceRepository(t *testing.T) string {
 	fixture := filepath.Join(root, "tests/bdd-cli/fixtures/build-code-spec-scenario/input")
 	write(t, filepath.Join(fixture, "go.mod"), "module fixture/stepsrun\n\ngo 1.25.0\n")
 	write(t, filepath.Join(fixture, "services/calc/calc.go"), "package calc\n")
+	write(t, filepath.Join(fixture, "docs/architecture/architecture.yaml"), `architecture:
+  testing:
+    framework: go-test
+    libraries:
+      - module: github.com/ondatra-ai/true-bdd
+        version: v0.0.0
+`)
+
 	write(t, filepath.Join(fixture, "true-bdd/true-bdd.yaml"), "poison\n")
 	write(t, filepath.Join(fixture, "templates/poison"), "poison\n")
 

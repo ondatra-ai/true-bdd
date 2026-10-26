@@ -25,29 +25,33 @@ type Turn struct {
 
 // HostResult is a host's verdict and evidence from its engine log.
 type HostResult struct {
-	Name          string `json:"name"`
-	Stage         string `json:"stage"`
-	Passed        bool   `json:"passed"`
-	Skipped       string `json:"skipped,omitempty"`
-	ExitCode      int    `json:"exit_code"`
-	WallTime      string `json:"wall_time"`
-	ClaudeSpend   string `json:"claude_spend"`
-	CodexSpend    string `json:"codex_spend"`
-	Turns         []Turn `json:"turns"`
-	DenialTargets string `json:"denial_targets"`
-	Log           string `json:"log,omitempty"`
-	Transcript    string `json:"transcript,omitempty"`
+	LibraryDownloads []json.RawMessage `json:"library_downloads,omitempty"`
+	Name             string            `json:"name"`
+	Stage            string            `json:"stage"`
+	Passed           bool              `json:"passed"`
+	Skipped          string            `json:"skipped,omitempty"`
+	ExitCode         int               `json:"exit_code"`
+	WallTime         string            `json:"wall_time"`
+	ClaudeSpend      string            `json:"claude_spend"`
+	CodexSpend       string            `json:"codex_spend"`
+	Turns            []Turn            `json:"turns"`
+	DenialTargets    string            `json:"denial_targets"`
+	Log              string            `json:"log,omitempty"`
+	Transcript       string            `json:"transcript,omitempty"`
 }
 
 // Report describes the install and every sample host's result.
 type Report struct {
-	Root    string       `json:"root"`
-	Commit  string       `json:"commit"`
-	Harness string       `json:"harness"`
-	Live    bool         `json:"live"`
-	Passed  bool         `json:"passed"`
-	Steps   []Step       `json:"steps"`
-	Hosts   []HostResult `json:"hosts"`
+	Root           string       `json:"root"`
+	Commit         string       `json:"commit"`
+	HarnessVersion string       `json:"harness_version"`
+	ModuleCache    string       `json:"module_cache"`
+	LibraryFailure *HostResult  `json:"library_failure,omitempty"`
+	Harness        string       `json:"harness"`
+	Live           bool         `json:"live"`
+	Passed         bool         `json:"passed"`
+	Steps          []Step       `json:"steps"`
+	Hosts          []HostResult `json:"hosts"`
 }
 
 func newHostResult(name string) HostResult {

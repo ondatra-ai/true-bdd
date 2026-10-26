@@ -25,7 +25,7 @@ func codeWritableRoots(deps BuildCodeDeps, arch *architecture.Architecture) ([]a
 		}
 	}
 
-	return architecture.WritableRoots(host, arch.Services, tests)
+	return arch.CodeWritableRoots(host, tests)
 }
 
 func configureCodeRoots(deps BuildCodeDeps, roots []architecture.WritableRoot) {

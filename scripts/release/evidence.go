@@ -44,6 +44,12 @@ func evaluateHost(host, name string, result cli.Result, live bool) (HostResult, 
 		outcome.Passed = len(outcome.Turns) > 0 && sentinel && result.Code > 0
 	}
 
+	if missingCalculatorDownload(name, outcome) {
+		outcome.Passed = false
+
+		return outcome, fmt.Errorf("%w: no engine library download before first AI turn; see %s", errRefused, outcome.Log)
+	}
+
 	if !outcome.Passed {
 		return outcome, fmt.Errorf("%s: %w: engine exit %d; see %s", evidence.stage,
 			errRefused, result.Code, outcome.Transcript)
@@ -90,4 +96,8 @@ func runHostTests(host, name string, opt cli.Options) error {
 	}
 
 	return nil
+}
+
+func missingCalculatorDownload(name string, outcome HostResult) bool {
+	return name == "calculator" && len(outcome.LibraryDownloads) == 0
 }

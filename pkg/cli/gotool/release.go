@@ -3,6 +3,7 @@ package gotool
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ondatra-ai/true-bdd/pkg/cli/git"
 	"github.com/ondatra-ai/true-bdd/pkg/shell"
@@ -28,45 +29,30 @@ func BuildRelease(ctx context.Context, dir, binary, targetOS, targetArch string)
 
 const harnessModule = "github.com/ondatra-ai/true-bdd"
 
-// RequireHarness installs the package and its transitive dependencies, locally or from the proxy.
-func RequireHarness(ctx context.Context, opt shell.Options, source, revision string) error {
-	err := prepareHarnessModule(ctx, opt, source)
-	if err != nil {
-		return err
+// RequireHarness installs the proxy-served package and returns its resolved exact version.
+func RequireHarness(ctx context.Context, opt shell.Options, revision string) (string, error) {
+	for _, args := range [][]string{
+		{Bin, "mod", "edit", "-droprequire=" + harnessModule, "-dropreplace=" + harnessModule},
+		{Bin, "get", harnessModule + "/pkg/testkit/bddgo@" + revision},
+	} {
+		result, err := shell.Run(ctx, args, opt)
+		if err == nil {
+			err = result.Err()
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("requiring harness: %s %s: %w", result.Stdout, result.Stderr, err)
+		}
 	}
 
-	if source != "" {
-		revision = "v0.0.0"
-	}
-
-	result, err := shell.Run(ctx, []string{Bin, "get", harnessModule + "/pkg/testkit/bddgo@" + revision}, opt)
+	result, err := shell.Run(ctx, []string{Bin, "list", "-m", "-f={{.Version}}", harnessModule}, opt)
 	if err == nil {
 		err = result.Err()
 	}
 
 	if err != nil {
-		return fmt.Errorf("requiring harness: %w", err)
+		return "", fmt.Errorf("resolving harness: %w", err)
 	}
 
-	return nil
-}
-
-func prepareHarnessModule(ctx context.Context, opt shell.Options, source string) error {
-	args := []string{Bin, "mod", "edit"}
-	if source != "" {
-		args = append(args, "-replace="+harnessModule+"="+source)
-	} else {
-		args = append(args, "-droprequire="+harnessModule, "-dropreplace="+harnessModule)
-	}
-
-	result, err := shell.Run(ctx, args, opt)
-	if err == nil {
-		err = result.Err()
-	}
-
-	if err != nil {
-		return fmt.Errorf("preparing harness module: %w", err)
-	}
-
-	return nil
+	return strings.TrimSpace(result.Stdout), nil
 }

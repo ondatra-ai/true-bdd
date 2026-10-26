@@ -1,0 +1,104 @@
+story:
+  id: start
+  feature: host-setup
+  title: Refuse missing or invalid host files before work
+  as_a: System Architect
+  i_want: learn which configuration, checklist or template prevents the command from starting
+  so_that: I can repair the host before any tests or AI turns run
+  status: IMPLEMENTED
+  acceptance_criteria:
+  - id: 001-missing-template
+    description: Build code with fix refuses a missing fix template before running any tests or AI turns and names the file
+      and init
+    steps:
+    - given:
+      - the "start-missing-template" project tree
+      - and: the project tree has no "templates/build-code.fix-applier.prompt.tpl"
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stdout matches templates/build-code.fix-applier.prompt.tpl
+      - and: stdout matches true-bdd init
+      - and: the engine spawned no test runners
+      - and: the engine dispatched 0 AI turns
+      - and: no file outside "tmp" changed
+  - id: 002-missing-checklist
+    description: Build code refuses a missing checklist before work and names the file with init advice
+    steps:
+    - given:
+      - the "start-missing-checklist" project tree
+      - and: the project tree has no "true-bdd/checklists/build-code.yaml"
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stderr matches true-bdd/checklists/build-code.yaml
+      - and: stderr matches true-bdd init
+      - and: the engine spawned no test runners
+      - and: the engine dispatched 0 AI turns
+      - and: no file outside "tmp" changed
+  - id: 003-missing-config
+    description: Build code refuses a missing config before work and names the file with init advice
+    steps:
+    - given:
+      - the "start-missing-config" project tree
+      - and: the project tree has no "true-bdd/true-bdd.yaml"
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stderr matches true-bdd/true-bdd.yaml
+      - and: stderr matches true-bdd init
+      - but: stdout does not match Walk starting|AI turn|Spawning test runner
+      - and: no file outside "tmp" changed
+  - id: 004-invalid-config
+    description: Build code refuses a invalid config before work and names the file with its parse error and repair advice
+      without init advice
+    steps:
+    - given:
+      - the "start-invalid-config" project tree
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stderr matches true-bdd/true-bdd.yaml
+      - and: 'stderr matches yaml:'
+      - but: stderr does not match true-bdd init
+      - and: stderr matches fix file
+      - but: stdout does not match Walk starting|AI turn|Spawning test runner
+      - and: no file outside "tmp" changed
+  - id: 005-invalid-checklist
+    description: Build code refuses a invalid checklist before work and names the file with its parse error and repair advice
+      without init advice
+    steps:
+    - given:
+      - the "start-invalid-checklist" project tree
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stderr matches true-bdd/checklists/build-code.yaml
+      - and: 'stderr matches yaml:'
+      - but: stderr does not match true-bdd init
+      - and: stderr matches fix file
+      - and: the engine spawned no test runners
+      - and: the engine dispatched 0 AI turns
+      - and: no file outside "tmp" changed
+  - id: 006-invalid-template
+    description: Build code refuses a invalid template before work and names the file with its parse error and repair advice
+      without init advice
+    steps:
+    - given:
+      - the "start-invalid-template" project tree
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 1
+      - stderr matches templates/build-code.fix-generator.prompt.tpl
+      - and: stderr matches missing value for if
+      - but: stderr does not match true-bdd init
+      - and: stderr matches fix file
+      - and: the engine spawned no test runners
+      - and: the engine dispatched 0 AI turns
+      - and: no file outside "tmp" changed

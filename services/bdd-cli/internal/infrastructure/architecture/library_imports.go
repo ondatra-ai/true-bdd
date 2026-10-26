@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -33,23 +34,52 @@ func (a *Architecture) CheckLibraryImports(host string) error {
 }
 
 func (a *Architecture) checkServiceImports(host string, service Service) error {
-	err := filepath.WalkDir(filepath.Join(host, service.Path), func(path string, entry fs.DirEntry, walkErr error) error {
-		if errors.Is(walkErr, fs.ErrNotExist) {
-			return nil
-		}
+	err := a.walkServiceImports(host, service, filepath.Join(host, service.Path), make(map[string]bool))
+	if err != nil {
+		return fmt.Errorf("check service libraries: %w", err)
+	}
 
+	return nil
+}
+
+func (a *Architecture) walkServiceImports(host string, service Service, root string, visited map[string]bool) error {
+	root, err := filepath.EvalSymlinks(root)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("resolve service source: %w", err)
+	}
+
+	if visited[root] {
+		return nil
+	}
+
+	visited[root] = true
+
+	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return fmt.Errorf("read service imports: %w", walkErr)
 		}
 
-		if entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+		linked, err := linkedSourceDirectory(path, entry)
+		if err != nil {
+			return err
+		}
+
+		if linked {
+			return a.walkServiceImports(host, service, path, visited)
+		}
+
+		if !productionGoSource(path, entry) {
 			return nil
 		}
 
 		return a.checkFileImports(host, service, path)
 	})
 	if err != nil {
-		return fmt.Errorf("check service libraries: %w", err)
+		return fmt.Errorf("inspect service source: %w", err)
 	}
 
 	return nil
@@ -102,4 +132,21 @@ func (a *Architecture) testOnlyImport(service Service, imported string) string {
 	}
 
 	return module
+}
+
+func linkedSourceDirectory(path string, entry fs.DirEntry) (bool, error) {
+	if entry.Type()&os.ModeSymlink == 0 {
+		return false, nil
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("read linked service source: %w", err)
+	}
+
+	return info.IsDir(), nil
+}
+
+func productionGoSource(path string, entry fs.DirEntry) bool {
+ return !entry.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -62,7 +63,14 @@ func (a *Architecture) DownloadLibraries(ctx context.Context, host string) ([]st
 		return nil, fmt.Errorf("%w (%s): %w", ErrLibraryDownload, strings.Join(names, ", "), err)
 	}
 
-	return libraryReadRoots(modules, libraries)
+	roots, err := libraryReadRoots(modules, libraries)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("Libraries downloaded", "libraries", names, "read_roots", roots)
+
+	return roots, nil
 }
 
 func libraryReadRoots(modules []gotool.Module, libraries []Library) ([]string, error) {

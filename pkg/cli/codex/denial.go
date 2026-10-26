@@ -91,12 +91,12 @@ func permissionError(message string) bool {
 	return false
 }
 
+var commandTargetPattern = regexp.MustCompile(`["'](?:/|\.{1,2}/|~/)[^"']+["']|` +
+	`(?:/|\.{1,2}/|~/|[[:alnum:]_*?.-]+/)[^\s"'<>;|&]+`)
+
 // commandTarget keeps path-like command arguments, excluding the shell launcher.
 func commandTarget(command string) string {
-	const pattern = `["'](?:/|\.{1,2}/|~/)[^"']+["']|` +
-		`(?:/|\.{1,2}/|~/|[[:alnum:]_*?.-]+/)[^\s"'<>;|&]+`
-
-	matches := regexp.MustCompile(pattern).FindAllString(command, -1)
+	matches := commandTargetPattern.FindAllString(command, -1)
 	targets := make([]string, 0, len(matches))
 
 	for _, match := range matches {
