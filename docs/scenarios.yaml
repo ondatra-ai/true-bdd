@@ -5886,6 +5886,165 @@ scenarios:
       - the file "services/calc/calc.go" is created
       - the file "tests/suite/calc_test.go" is unchanged
       - the shell command "go test -json -count=1 ./tests/suite/..." run in "." exits with code 0
+
+  init-001-empty-folder:
+    description: Init creates the host configuration without scripts, every checklist and every prompt template without needing configuration or Specification documents
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "init-empty" project tree
+        - and: the project tree has no "true-bdd"
+        - and: the project tree has no "templates"
+      when:
+        - the System Architect runs "init"
+      then:
+        - the command exits with code 0
+        - stdout matches Created true-bdd/true-bdd.yaml
+        - and: exactly 1 file matching "true-bdd/true-bdd.yaml" is created
+        - and: exactly 5 files matching "true-bdd/checklists/*.yaml" are created
+        - and: exactly 30 files matching "templates/*.tpl" are created
+        - and: 'every file matching "true-bdd/true-bdd.yaml" does not match (?m)^scripts:'
+        - and: no file matching "docs/**" is created
+
+  init-002-existing-files:
+    description: Init preserves and reports existing configuration, checklist and template files even when empty or invalid, while creating missing files
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "init-existing" project tree
+        - and: the project tree has no "templates/build-code.fix-applier.prompt.tpl"
+      when:
+        - the System Architect runs "init"
+      then:
+        - the command exits with code 0
+        - stdout matches Left existing true-bdd/true-bdd.yaml
+        - and: stdout matches Left existing true-bdd/checklists/build-code.yaml
+        - and: stdout matches Left existing templates/build-code.fix-generator.prompt.tpl
+        - and: stdout matches Created templates/build-code.fix-applier.prompt.tpl
+        - and: the file "true-bdd/true-bdd.yaml" is unchanged
+        - and: the file "true-bdd/checklists/build-code.yaml" is unchanged
+        - and: the file "templates/build-code.fix-generator.prompt.tpl" is unchanged
+        - and: the file "templates/build-code.fix-applier.prompt.tpl" is created
+
+  start-001-missing-template:
+    description: Build code with fix refuses a missing fix template before running any tests or AI turns and names the file and init
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-missing-template" project tree
+        - and: the project tree has no "templates/build-code.fix-applier.prompt.tpl"
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stdout matches templates/build-code.fix-applier.prompt.tpl
+        - and: stdout matches true-bdd init
+        - and: the engine spawned no test runners
+        - and: the engine dispatched 0 AI turns
+        - and: no file outside "tmp" changed
+
+  start-002-missing-checklist:
+    description: Build code refuses a missing checklist before work and names the file with init advice
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-missing-checklist" project tree
+        - and: the project tree has no "true-bdd/checklists/build-code.yaml"
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stderr matches true-bdd/checklists/build-code.yaml
+        - and: 'stderr matches true-bdd init'
+        - and: the engine spawned no test runners
+        - and: the engine dispatched 0 AI turns
+        - and: no file outside "tmp" changed
+
+  start-003-missing-config:
+    description: Build code refuses a missing config before work and names the file with init advice
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-missing-config" project tree
+        - and: the project tree has no "true-bdd/true-bdd.yaml"
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stderr matches true-bdd/true-bdd.yaml
+        - and: 'stderr matches true-bdd init'
+        - but: stdout does not match Walk starting|AI turn|Spawning test runner
+        - and: no file outside "tmp" changed
+
+  start-004-invalid-config:
+    description: Build code refuses a invalid config before work and names the file with its parse error and repair advice without init advice
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-invalid-config" project tree
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stderr matches true-bdd/true-bdd.yaml
+        - and: 'stderr matches yaml:'
+        - but: stderr does not match true-bdd init
+        - and: stderr matches fix file
+        - but: stdout does not match Walk starting|AI turn|Spawning test runner
+        - and: no file outside "tmp" changed
+
+  start-005-invalid-checklist:
+    description: Build code refuses a invalid checklist before work and names the file with its parse error and repair advice without init advice
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-invalid-checklist" project tree
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stderr matches true-bdd/checklists/build-code.yaml
+        - and: 'stderr matches yaml:'
+        - but: stderr does not match true-bdd init
+        - and: stderr matches fix file
+        - and: the engine spawned no test runners
+        - and: the engine dispatched 0 AI turns
+        - and: no file outside "tmp" changed
+
+  start-006-invalid-template:
+    description: Build code refuses a invalid template before work and names the file with its parse error and repair advice without init advice
+    service: bdd-cli
+    path: tests/bdd-cli/init_test.go
+    user_stories: []
+    merged_steps:
+      given:
+        - the "start-invalid-template" project tree
+      when:
+        - the System Architect runs "build code --fix"
+      then:
+        - the command exits with code 1
+        - stderr matches templates/build-code.fix-generator.prompt.tpl
+        - and: 'stderr matches missing value for if'
+        - but: stderr does not match true-bdd init
+        - and: stderr matches fix file
+        - and: the engine spawned no test runners
+        - and: the engine dispatched 0 AI turns
+        - and: no file outside "tmp" changed
+
   build-code-set-006-no-test-files:
     description: A missing service is repaired once for a test package and a helper package without tests
     service: bdd-cli

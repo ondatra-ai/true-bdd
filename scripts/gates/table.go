@@ -77,6 +77,14 @@ var (
 			Globs: lintInputs,
 		},
 		{
+			Name:    "Init defaults drift",
+			Command: []string{goBin, testVerb, countOnce, "-run", "^TestInitDefaultsMatchProjectFiles$", "./scripts/gates/"},
+			Globs: []string{
+				"services/bdd-cli/internal/infrastructure/initialization/**",
+				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", "templates/**", "scripts/gates/**",
+			},
+		},
+		{
 			Name:    "Build",
 			Command: []string{goBin, "build", "-o", "./bin/true-bdd", "./services/bdd-cli"},
 			Globs:   []string{"services/bdd-cli/**", "pkg/**", "go.mod", "go.sum"},
