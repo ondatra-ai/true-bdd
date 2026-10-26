@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "fixture": "build-code-fix-named-test",
+  "fixture": "fix-loop-yes-build-code",
   "files": [
     {
       "path": "services/calc/calc.go",

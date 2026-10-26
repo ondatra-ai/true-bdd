@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc/calc.go"
-summary: "Applied migration stage 1: changed only Version() from 1 to 2; Compatible() remains false. TestAVersion passed using the granted selection command. The anticipated compatibility regression remains for the next stage. Tests and documents were unchanged."
+summary: "Applied migration stage 1: changed only Version() from 1 to 2; Compatible() remains false. TestAVersion passed using the granted selection command."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAVersion-iter1-result.yaml ===

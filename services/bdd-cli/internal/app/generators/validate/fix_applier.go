@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -69,8 +70,9 @@ type FixApplier struct {
 	// writeRoots are project trees outside tmp this applier may write,
 	// for the `build` commands whose whole job is authoring source. Set
 	// via UseWriteRoots(); empty keeps the tmp-only behaviour.
-	writeRoots []string
-	writeGlobs bool
+	writeRoots    []string
+	writePatterns []string
+	writeGlobs    bool
 }
 
 // NewFixApplier creates a new fix applier with config-based template paths.
@@ -107,6 +109,11 @@ func NewFixApplierWithPaths(
 // F: handlers, whose prompts instruct Claude to edit the scratch registry directly.
 func (a *FixApplier) UseEditMode() {
 	a.useEditMode = true
+}
+
+// UseDeclaredWriteRoots retains exact file grants, including absent files.
+func (a *FixApplier) UseDeclaredWriteRoots(roots, patterns []string) {
+	a.writeRoots, a.writePatterns = roots, patterns
 }
 
 // UseWriteRoots grants this applier write access to project trees outside
@@ -186,7 +193,12 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 	// impossible — treating that as success let a blocked applier spin until an external timeout.
 	appliedErr := checkFixApplied(content)
 	if appliedErr != nil {
-		slog.Warn("Fix was NOT applied",
+		message := "Fix was NOT applied"
+		if errors.Is(appliedErr, pkgerrors.ErrImpossibleWork) {
+			message = "Writer reported impossible repair"
+		}
+
+		slog.Warn(message,
 			"subjectID", params.SubjectID,
 			"iteration", params.Iteration,
 			"error", appliedErr,
@@ -204,9 +216,10 @@ func (a *FixApplier) Apply(ctx context.Context, params ApplyParams) (string, err
 // for. Applied is a POINTER: nil (no `applied:` key, as us refine's
 // story body emits) must stay distinguishable from explicit false, or every such turn misreports as a failed fix.
 type applyResultYAML struct {
-	Applied *bool  `yaml:"applied"`
-	Target  string `yaml:"target"`
-	Summary string `yaml:"summary"`
+	Applied    *bool                      `yaml:"applied"`
+	Target     string                     `yaml:"target"`
+	Summary    string                     `yaml:"summary"`
+	Impossible []pkgerrors.RequiredChange `yaml:"impossible"`
 }
 
 // checkFixApplied returns an error when the applier explicitly reported
@@ -219,6 +232,10 @@ func checkFixApplied(content string) error {
 		// scan for a literal `applied:` line: an unquoted `": "` in `target:` makes
 		// invalid YAML, and reading that as pass-through would turn a refusal into "Fix applied successfully".
 		return checkFixAppliedFallback(content)
+	}
+
+	if len(result.Impossible) > 0 {
+		return pkgerrors.ImpossibleWork(result.Impossible)
 	}
 
 	// Three ways to have no objection: the content is not a
@@ -276,6 +293,10 @@ func parseApplyResult(content string) (applyResultYAML, bool) {
 // when write roots were declared, EditMode (Edit/MultiEdit on scratch) when
 // configured via UseEditMode(), ThinkMode (Edit disallowed) otherwise.
 func (a *FixApplier) selectMode() ai.ExecutionMode {
+	if a.writePatterns != nil {
+		return a.modeFactory.GetHostEditMode(a.writePatterns)
+	}
+
 	if len(a.writeRoots) > 0 {
 		if a.writeGlobs {
 			return a.modeFactory.GetGlobEditMode(a.writeRoots)

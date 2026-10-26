@@ -1,5 +1,6 @@
 === FILE_START: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc"
-summary: "Changed calc.go so Add returns a + b and removed the stale defect comment. TestAddSumsItsArguments passed using go test -count=1 ./tests/suite/... -run '^TestAddSumsItsArguments$'."
+summary: "Fixed Add to return a + b and removed the obsolete defect comment. TestAddSumsItsArguments passed using the granted selection command."
 === FILE_END: tmp/{{RUN_DIR}}/apply--go-test-go-test-fixture.buildcodefix.tests.suite-TestAddSumsItsArguments-iter1-result.yaml ===

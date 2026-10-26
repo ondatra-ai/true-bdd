@@ -11,3 +11,7 @@ This fixture deliberately exercises a completed writer response without a confir
 
 ## Proposed repair plan
 {{.FixPrompt}}
+
+## Fixture cache policy
+
+Use the engine-provided GOCACHE, HOME and TMPDIR unchanged. Do not override cache or scratch environment variables, copy build caches, or create alternative cache directories such as tmp/go-cache or tmp/go-build. Run the granted test command with its supplied environment. This policy changes no repair stage or confirmation protocol.

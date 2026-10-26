@@ -1,0 +1,11 @@
+architecture:
+  services:
+    - name: calc
+      path: services/calc
+      language: go
+  testing:
+    framework: go-test
+    commands:
+      record: go test -mod=readonly -json -count=1 ./tests/suite/...
+      replay: go test -mod=readonly -json -count=1 ./tests/suite/...
+      live: go test -mod=readonly -json -count=1 ./tests/suite/...

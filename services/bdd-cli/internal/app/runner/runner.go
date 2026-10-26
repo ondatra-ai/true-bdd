@@ -43,6 +43,8 @@ type Spec[I any] struct {
 	DeferCompletion bool
 	// RecoverWriterFailures lets build code rerun files left by a failed writer.
 	RecoverWriterFailures bool
+	// StopImpossible reruns the remaining set before returning an architectural obstruction.
+	StopImpossible func(context.Context, I, error) error
 
 	// LoadItems is the per-command source: us refine loads from
 	// docs/product/stories/, us apply parses the refined story into one
@@ -401,7 +403,7 @@ func buildGenFixClosure[I any](
 
 		subjectID, _ := spec.GetSubject(item)
 
-		return runFixPromptGeneration(ctx, fixPromptGenInput{
+		result, err := runFixPromptGeneration(ctx, fixPromptGenInput{
 			generator:   spec.FixGenerator,
 			subject:     item,
 			subjectID:   subjectID,
@@ -410,6 +412,11 @@ func buildGenFixClosure[I any](
 			userAnswers: userAnswers,
 			iteration:   iteration,
 		})
+		if errors.Is(err, pkgerrors.ErrImpossibleWork) && spec.StopImpossible != nil {
+			return result, spec.StopImpossible(ctx, item, err)
+		}
+
+		return result, err
 	}
 }
 
@@ -442,6 +449,10 @@ func buildFixClosure[I any](
 			CodexWriter:  spec.RecoverWriterFailures,
 		})
 		if err != nil {
+			if errors.Is(err, pkgerrors.ErrImpossibleWork) && spec.StopImpossible != nil {
+				return item, spec.StopImpossible(ctx, item, err)
+			}
+
 			if spec.PostNotApplied != nil && recoverWriterFailure(spec.RecoverWriterFailures, err) {
 				return spec.PostNotApplied(ctx, item)
 			}

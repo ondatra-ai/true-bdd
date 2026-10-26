@@ -62,13 +62,12 @@ type Testing struct {
 // Label names the testing block in progress lines and refusals.
 func (t Testing) Label() string { return t.Framework }
 
-// Service is one entry in `architecture.services[]`. Only the three
-// fields the build pipeline reads are decoded — `path` above all, since
-// it is the one root a fix applier is granted.
+// Service declares a production folder and any additional exact writable paths.
 type Service struct {
-	Name     string `yaml:"name"`
-	Path     string `yaml:"path"`
-	Language string `yaml:"language"`
+	Name     string   `yaml:"name"`
+	Path     string   `yaml:"path"`
+	Language string   `yaml:"language"`
+	Writable []string `yaml:"writable,omitempty"`
 }
 
 // Architecture is the loaded view of architecture.yaml — only the

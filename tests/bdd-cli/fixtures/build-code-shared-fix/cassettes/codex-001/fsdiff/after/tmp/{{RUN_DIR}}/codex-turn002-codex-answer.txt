@@ -1,7 +1,6 @@
-Changed only `services/calc/calc.go` to return `a + b`. Both tests passed with `go test -count=1 ./tests/suite/...`. Git diff verification was unavailable because the directory has no Git metadata.
-
 === FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
 applied: true
+impossible: []
 target: "services/calc"
-summary: "Changed Add from subtraction to addition. TestAAdd and TestBAdd passed with go test -count=1 ./tests/suite/...."
+summary: "Changed Add to return a + b. Both TestAAdd and TestBAdd passed via go test -count=1 ./tests/suite/.... No tests or documents were modified."
 === FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===

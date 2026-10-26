@@ -5,9 +5,9 @@
     {
       "path": "services/calc/calc.go",
       "kind": "modified",
-      "size": 66,
-      "sha256": "35741799a500f4e7e82e5598c5fc3d9258d4c1718c7660247e9d67bfbf97ce07",
-      "text": "package calc\n\nfunc Double(value int) int { return value + value }\n"
+      "size": 62,
+      "sha256": "084ccf2790b18d4df3d0d34bb746d50292a24a6e2e490ed0588c21a2eab964fc",
+      "text": "package calc\n\nfunc Double(value int) int { return value * 2 }\n"
     }
   ]
 }

@@ -1,1 +1,1 @@
-Changed only A in services/calc/calc.go to return 1. B still returns 0, and prepared.txt remains absent.
+Changed only A in services/calc/calc.go to return 1; B still returns 0. TestA passes, while TestB remains failing as expected for this stage.

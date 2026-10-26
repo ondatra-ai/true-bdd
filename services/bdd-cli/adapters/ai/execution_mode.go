@@ -101,8 +101,10 @@ func (f *ModeFactory) GetSourceEditMode(roots []string) ExecutionMode {
 
 // GetGlobEditMode preserves configured patterns, including an absent literal file.
 func (f *ModeFactory) GetGlobEditMode(patterns []string) ExecutionMode {
-	mode := f.GetEditMode()
+	return appendWritePatterns(f.GetEditMode(), patterns)
+}
 
+func appendWritePatterns(mode ExecutionMode, patterns []string) ExecutionMode {
 	for _, pattern := range patterns {
 		glob := strings.TrimSpace(pattern)
 		if glob == "" {
@@ -136,4 +138,20 @@ func sourceRootGlob(root string) string {
 	}
 
 	return strings.TrimSuffix(root, "/") + "/**"
+}
+
+// GetHostEditMode grants build-code scratch only in the host's tmp directory.
+func (f *ModeFactory) GetHostEditMode(patterns []string) ExecutionMode {
+	mode := f.GetEditMode()
+	configured := f.config.GetString("paths.tmp_glob")
+
+	for index, spec := range mode.AllowedTools {
+		for _, tool := range []string{"Write", "Edit", "MultiEdit"} {
+			if spec == tool+"("+configured+")" {
+				mode.AllowedTools[index] = tool + "(./tmp/**)"
+			}
+		}
+	}
+
+	return appendWritePatterns(mode, patterns)
 }

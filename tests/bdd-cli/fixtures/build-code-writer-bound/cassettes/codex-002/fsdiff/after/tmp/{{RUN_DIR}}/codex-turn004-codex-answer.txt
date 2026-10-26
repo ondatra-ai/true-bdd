@@ -1,1 +1,1 @@
-Created `services/calc/prepared.txt` containing `prepared` followed by a newline. Left `calc.go` unchanged, with A returning 1 and B returning 0, completing only the required lifecycle stage.
+Created services/calc/prepared.txt containing `prepared` followed by a newline. Left calc.go unchanged: A returns 1 and B returns 0, completing only the required preparation stage.

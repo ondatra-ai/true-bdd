@@ -5,7 +5,7 @@
 #               into. One section for the whole repository, because how
 #               a project runs its tests is a property of the project,
 #               not of any one service.
-#   services: — the production source roots `build code --fix` may edit.
+#   services: — source paths and exact additional writable paths for build code.
 #   terms:    — the word mapping: how each product glossary word is built
 #               and how a step definition observes it (`D: term-mappings`).
 #
@@ -309,6 +309,8 @@ architecture:
     build_code_fix_generator:
       rendering: *prompt-rendering
       fields:
+        WriteRoots: >-
+          The remaining failing set's declared service paths and exact writable entries; unknown-service failures use all service declarations. Services are sorted by name, each path precedes its writable list, and equal grants are deduplicated. Host tmp is operational scratch. No tests or step definitions may overlap a grant.
         DocPaths: >-
           Resolved configured Specification paths, keyed by document key.
         FailedCheck.ActualAnswer: >-
@@ -465,7 +467,7 @@ architecture:
         Subject.Specification.Terms[].Mappings[].ObservedBy: >-
           Mapping observed_by text, unchanged.
         WriteRoots: >-
-          Every architecture service path, in declaration order.
+          The remaining failing set's service paths and exact writable entries, in the same order as the planner's roots. Unknown-service failures use every service. Grants are revalidated as passing members leave.
         CodexWriter: >-
           True only for an explicitly requested build-code codex writer; selects native process polling; the Claude branch requires foreground completion.
         TestCommand: >-
@@ -570,6 +572,7 @@ architecture:
     - name: bdd-cli
       type: "cli"
       path: services/bdd-cli
+      writable: [go.mod, go.sum]
       language: go
       frameworks:
         - cobra
@@ -910,11 +913,7 @@ architecture:
                 turn: `Read(**),Write({tmp_glob}),Edit({tmp_glob}),MultiEdit({tmp_glob}),Glob(**),Grep(**)`,
                 followed, for each write root the command grants its applier
                 in order, by `Write(<glob>),Edit(<glob>),MultiEdit(<glob>)`.
-                `build code` grants every declared service's `path:`, `build
-                tests` `paths.test_write_globs` (else `./tests/**` and
-                `./services/**`), the other commands none. A root holding `*`,
-                `?` or `[` is its own glob; any other has a trailing `/` dropped
-                and `/**` added; a blank one is skipped.
+                `build code` replaces its scratch glob with host `./tmp/**` and grants the remaining failing set's services' `path:` and exact `writable:` paths. Existing folders and explicitly declared absent folders receive recursive subtrees; exact files, including absent files, stay literal. `build tests` preserves `paths.test_write_globs` (else `./tests/**` and `./services/**`) as configured patterns and literal files. Other commands retain their existing scratch/document grants.
               disallowed_tools: >-
                 A validation or fix turn: `Bash,Edit(**),MultiEdit(**),Agent,Task`.
                 An apply turn: `Bash,Agent,Task`.
@@ -1056,6 +1055,16 @@ architecture:
   # words naming no code identifier, so the steps can be rebuilt from it.
   # It maps every word the catalogue declares, one entry per word.
   terms:
+    - term: writable paths
+      technical: >-
+        Each service's optional writable is a list of exact project-relative files or folders, without patterns. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Together with the service's path and host tmp these bound the build-code writer. Before any runner, build code refuses absolute or escaping paths, patterns, parent traversal, host-root grants and overlap in either direction with tests/ or any Registry suite directory, symlinks included. Host tmp is checked too, and arbitrary configured scratch globs cannot expand these writer grants. Tests and step definitions stay read-only. The failing set's services receive grants; unknown-service failures use all declared services. Only codex fully enforces the subprocess boundary; Claude's replay remains unconfined for model trials (ADR-0028 and spec #213).
+      observed_by: Scenarios supply architecture entries, assert a successful go.sum repair and inspect exact generated file grants; refused test overlap produces no runner or AI turn.
+
+    - term: impossible repair
+      technical: >-
+        The plan first searches for a solution within the declaration; a preferred undeclared file is insufficient to declare impossible work. A build-code plan's structured response carries impossible: [{path, reason}] alongside fix_prompt and questions, exactly one branch carrying content. The writer's YAML confirmation carries the same impossible list independently of applied. An empty list preserves retries, including applied false. The first nonempty report keeps edits, reruns the remaining failing set once, and returns a distinct impossible-repair error naming every required file, reason and remaining member. Its remedy is to change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. This returns through the walk's error path before Finalize, independently of #218's banner-order change.
+      observed_by: Scenarios assert exit 1, files and reasons, remedy, no COMPLETE, exact plan, writer and runner counts, and retained files. Ordinary applied false without a report still retries.
+
     - term: engine
       technical: >-
         The `true-bdd` binary, built from `services/bdd-cli` once per test

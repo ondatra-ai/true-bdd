@@ -2,9 +2,12 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
+	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/architecture"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/testrunner"
 )
 
@@ -58,8 +61,11 @@ func (e *buildCodeExecution) discover(ctx context.Context) ([]*BuildCodeItem, er
 
 func (e *buildCodeExecution) beforeEvaluate(ctx context.Context, item *BuildCodeItem) (bool, error) {
 	_, err := e.refresh(ctx, item)
+	if err != nil {
+		return false, err
+	}
 
-	return false, err
+	return false, e.configureWriter(item)
 }
 
 func (e *buildCodeExecution) refresh(ctx context.Context, item *BuildCodeItem) (*BuildCodeItem, error) {
@@ -106,4 +112,45 @@ func (e *buildCodeExecution) postNotApplied(ctx context.Context, item *BuildCode
 	e.generation++
 
 	return e.refresh(ctx, item)
+}
+
+func (e *buildCodeExecution) stopImpossible(ctx context.Context, item *BuildCodeItem, obstruction error) error {
+	_, err := e.postNotApplied(ctx, item)
+	if err != nil {
+		return errors.Join(obstruction, err)
+	}
+
+	remaining := make([]string, 0, len(item.Tests))
+	for _, test := range item.Tests {
+		remaining = append(remaining, test.ID)
+	}
+
+	slog.Error("Repair impossible", "error", obstruction, "still_failing", remaining)
+
+	remainingText := strings.Join(remaining, ", ")
+	if len(remaining) == 0 {
+		remainingText = "none"
+	}
+
+	return fmt.Errorf("%w; still failing after rerun: %s", obstruction, remainingText)
+}
+
+func (e *buildCodeExecution) configureWriter(item *BuildCodeItem) error {
+	if len(item.Tests) == 0 {
+		return nil
+	}
+
+	arch, err := architecture.Load(e.architectureFile)
+	if err != nil {
+		return fmt.Errorf("reload writer architecture: %w", err)
+	}
+
+	roots, err := codeWritableRoots(e.deps, arch)
+	if err != nil {
+		return err
+	}
+
+	configureCodeRoots(e.deps, codeRootsForSet(roots, arch.Services, item.Tests))
+
+	return nil
 }

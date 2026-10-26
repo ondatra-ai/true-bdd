@@ -1,6 +1,7 @@
+// Package calc provides integer calculations.
 package calc
 
-// Double returns the sum of value with itself.
+// Double returns value added to itself.
 func Double(value int) int {
 	return value + value
 }

@@ -1,6 +1,11 @@
 # Plan a production repair for the failing set
 
-Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the architecture's declared service roots, never tests, *_test.go, __tests__, or documents. Tests outside this set are not the repair's subject.
+Read the Specification, the harness and the production source to propose one repair for the whole set. The writer may edit only the relevant services' path and exact writable paths, plus host tmp. Never edit tests or step definitions. First investigate a solution inside those declarations. A preferred undeclared file is not an impossibility; report impossible only if no permitted solution exists, naming the required files and reasons. Tests outside this set are not the repair's subject.
+
+## Declared edit roots
+{{ range .WriteRoots }}
+- `{{ . }}`
+{{ end }}
 
 ## Reference Documentation
 {{ range $key, $path := .DocPaths }}
@@ -117,12 +122,13 @@ If clarification is required, output one QUESTIONS_START/QUESTIONS_END block wit
 {{ if .Structured }}
 **ANSWER CONTRACT FOR THIS RUN — this supersedes the FILE_START/FILE_END
 and QUESTIONS_START/QUESTIONS_END instructions above.** Your final message
-must be a single JSON object with both keys present:
+must be a single JSON object with all three keys present:
 
+- `impossible`: an array of `{path, reason}` objects naming required undeclared files only when no permitted solution exists, otherwise `[]`.
 - `fix_prompt`: the fix instructions, or `""` when you need clarification.
 - `questions`: an array of `{id, question, context, options}` objects, or
   `[]` when you are returning a fix prompt.
 
-Exactly one of the two carries content. Do not emit any markers, and do not
+Exactly one of the three carries content. For impossible work, fix_prompt is empty and questions is []. Do not emit any markers, and do not
 wrap the object in markdown fences. Reasoning before the object is ignored.
 {{ end }}

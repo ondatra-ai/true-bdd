@@ -304,8 +304,8 @@ glossary:
       Malformed patterns and grants of the host root, protected generated homes or escaping paths are refused.
       The build-code codex writer receives whole-suite and selected replay
       forms, polling its own process for completion. It reads the host
-      project and runtime/toolchain exceptions only, writes declared service
-      roots and host tmp only, and cannot read its generated credential home.
+      project and runtime/toolchain exceptions only, writes the failing set's declared service
+      paths, their exact writable entries and host tmp only, and cannot read its generated credential home.
       Its commands have no network. User config, MCP servers, web search,
       history and AGENTS.md are not loaded for this writer. Its JSON events
       are saved for audit; its final message still supplies the confirmation.
@@ -489,6 +489,14 @@ glossary:
 # The step-phrase catalogue: the shape each Given, When and Then step may
 # take, and what it means. `D: step-phrases` holds every step of a Scenario
 # a Story claims to exactly one entry; the Scenarios no Story claims wait.
+  - term: writable paths
+    means: >-
+      A service's optional writable list names exact project-relative files or folders, without patterns, in addition to its path. A writer changes those and host tmp only. Existing folders grant their subtree; an absent entry remains exact unless a trailing slash declares a folder. Build code refuses outside paths or grants overlapping tests/ or Registry suite directories and their step definitions at start, before any runner or AI turn. Unknown-service failures use all declared services. Tests and step definitions are read and run only. Codex enforces this fully; Claude's replay command remains unconfined for model trials.
+
+  - term: impossible repair
+    means: >-
+      The plan or writer concludes no solution exists within the declared files, after seeking one there. A preferred undeclared change alone is insufficient. Both report impossible as a list of path and reason objects. The first nonempty list keeps edits, reruns the remaining failing set once, then fails with a distinct error naming files, reasons, remaining failures and the remedy: change the files by hand or add them to the service's writable. No further plan, writer, attempt or COMPLETE banner follows. An empty list preserves ordinary retries, including applied false.
+
 catalogue:
   - template: 'the "{tree}" project tree'
     block: given

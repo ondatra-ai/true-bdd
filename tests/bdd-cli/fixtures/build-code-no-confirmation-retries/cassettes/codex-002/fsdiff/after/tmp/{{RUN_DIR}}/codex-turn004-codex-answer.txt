@@ -1,1 +1,3 @@
-Changed only B in services/calc/calc.go to return 2, preserving A returning 1. Both TestA and TestB pass.
+Both tests pass with `go test -json -count=1 ./tests/suite/...`. Git status was unavailable because this directory is not a Git repository.
+
+Changed only B in services/calc/calc.go to return 2, preserving A returning 1.
