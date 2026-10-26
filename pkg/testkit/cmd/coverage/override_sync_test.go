@@ -43,6 +43,9 @@ type declaredSelection struct {
 // via checklist_prompts, with the shipped prompt it must select.
 func declaredSelections() map[string]declaredSelection {
 	return map[string]declaredSelection{
+		"fix-loop-yes-us-refine":                 {Stem: usRefineStem, QShort: vagueDescriptionQ, RequireF: true},
+		"fix-loop-yes-us-apply":                  {Stem: usApplyStem, QShort: presenceQ, RequireF: true},
+		"fix-loop-yes-scen-check":                {Stem: scenCheckStem, QShort: "5dfd2b61", RequireF: true},
 		"engine-claude-minimal":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"engine-model-dispatch":                  {Stem: scenCheckStem, QShort: "30469152", RequireF: false},
 		"us-refine-fix-descriptions":             {Stem: usRefineStem, QShort: "800eb66b", RequireF: true},
@@ -220,10 +223,12 @@ func allowedOverrideFixtures() map[string]overridePurpose {
 		"scen-check-fix-merges-phrases":           overrideChecks,
 		"scen-check-skipped-prompt":               overrideChecks,
 		"us-refine-fix-records-phrase":            overrideChecks,
- "codex-apply-us-refine": overrideChecks,
+		"codex-apply-us-refine":                   overrideChecks,
 		"scen-check-prompt-names-its-tiers":       overrideTiers,
 		"fix-loop-refine-feedback":                overrideFixLoop,
 		"fix-loop-own-words":                      overrideFixLoop,
+		"fix-loop-unanswered":                     overrideFixLoop,
+		"fix-loop-unanswered-eof":                 overrideFixLoop,
 		"fix-loop-exit-terms":                     overrideFixLoop,
 		"fix-loop-walks-exhausted-terms":          overrideFixLoop,
 		"fix-loop-attempts-exhausted":             overrideFixLoop,

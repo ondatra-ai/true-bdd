@@ -81,7 +81,10 @@ func (h *CellHandler[I, Q]) runClarificationLoop(
 			return "", userAnswers, nil
 		}
 
-		answers := h.UI.AskQuestions(result.Questions)
+		answers, err := h.UI.AskQuestions(result.Questions)
+		if err != nil {
+			return "", userAnswers, err
+		}
 
 		for id, answer := range answers {
 			userAnswers[id] = answer
@@ -106,7 +109,12 @@ func (h *CellHandler[I, Q]) runApplyRefineExitLoop(
 	for {
 		h.UI.DisplayFixPrompt(fixPrompt)
 
-		switch h.UI.AskApplyRefineOrExit() {
+		action, err := h.UI.AskApplyRefineOrExit()
+		if err != nil {
+			return CellResult[I]{}, err
+		}
+
+		switch action {
 		case UserActionApply:
 			return h.applyFix(ctx, item, fixPrompt)
 
@@ -160,7 +168,11 @@ func (h *CellHandler[I, Q]) tryRefine(
 
 	*refinementCount++
 
-	feedback := h.UI.AskRefinementFeedback()
+	feedback, err := h.UI.AskRefinementFeedback()
+	if err != nil {
+		return "", err
+	}
+
 	if feedback == "" {
 		return "", nil
 	}

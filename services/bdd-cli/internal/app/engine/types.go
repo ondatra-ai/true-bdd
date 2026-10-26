@@ -93,9 +93,9 @@ const (
 // implementation is acceptable; the true-bdd's UserInputCollector +
 // console.Display* helpers satisfy this in production.
 type FixLoopUI interface {
-	AskQuestions(questions []ClarifyQuestion) map[string]string
-	AskApplyRefineOrExit() UserAction
-	AskRefinementFeedback() string
+	AskQuestions(questions []ClarifyQuestion) (map[string]string, error)
+	AskApplyRefineOrExit() (UserAction, error)
+	AskRefinementFeedback() (string, error)
 	DisplayFixPrompt(prompt string)
 }
 
