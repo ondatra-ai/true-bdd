@@ -20,7 +20,7 @@ type OracleOptions struct {
 
 // BuildOracle compiles the engine a cut produced.
 func BuildOracle(ctx context.Context, binary string, opt OracleOptions) (int, error) {
-	return oracleCommand(ctx, []string{buildVerb, "-trimpath", "-o", binary, "./services/bdd-cli"}, opt)
+	return oracleCommand(ctx, []string{buildVerb, trimPathFlag, "-o", binary, enginePackage}, opt)
 }
 
 // ReplayOracle exercises the original suite against the rebuilt binary.

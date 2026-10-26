@@ -30,10 +30,11 @@ func (g Gate) Always() bool { return len(g.Globs) == 0 }
 
 // The argv fragments and the one path that repeat across the table.
 const (
-	goBin    = "go"
-	testVerb = "test"
-	tagsFlag = "-tags"
-	bddTag   = "bdd"
+	goBin         = "go"
+	testVerb      = "test"
+	tagsFlag      = "-tags"
+	bddTag        = "bdd"
+	templatesGlob = "templates/**"
 	// testkitGlob is the harness tree every BDD gate depends on.
 	testkitGlob = "pkg/testkit/**"
 	// countOnce defeats the test cache, so a gate re-runs what it claims to.
@@ -77,11 +78,17 @@ var (
 			Globs: lintInputs,
 		},
 		{
+			Name:    "Release rehearsal",
+			Command: []string{goBin, runVerb, "./scripts/cmd/gates", "release-rehearsal"},
+			Run:     ReleaseRehearsal,
+			Globs:   []string{"services/**", "pkg/**", "scripts/**", "tests/**", "true-bdd/**", templatesGlob, goMod, goSum},
+		},
+		{
 			Name:    "Init defaults drift",
 			Command: []string{goBin, testVerb, countOnce, "-run", "^TestInitDefaultsMatchProjectFiles$", "./scripts/gates/"},
 			Globs: []string{
 				"services/bdd-cli/internal/infrastructure/initialization/**",
-				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", "templates/**", "scripts/gates/**",
+				"true-bdd/true-bdd.yaml", "true-bdd/checklists/**", templatesGlob, "scripts/gates/**",
 			},
 		},
 		{
@@ -110,7 +117,7 @@ var (
 				"^Test(ScenarioCoverage|FixtureTreesArePaired|FixtureTemplateOverlays)$",
 				"./tests/bdd-cli/",
 			},
-			Globs: []string{registry, "tests/bdd-cli/**", "templates/**", testkitGlob},
+			Globs: []string{registry, "tests/bdd-cli/**", templatesGlob, testkitGlob},
 		},
 		{
 			// Committed recordings must not carry the recording machine's identity.
