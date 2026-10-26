@@ -42,6 +42,7 @@ func Execute() {
 	}
 
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newInitCmd())
 
 	rootCmd.AddCommand(newClaudeGuardCmd())
 	rootCmd.AddCommand(NewUSCommand(provide))

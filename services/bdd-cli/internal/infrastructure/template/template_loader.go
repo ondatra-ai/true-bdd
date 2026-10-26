@@ -96,3 +96,18 @@ func (l *TemplateLoader[T]) executeTemplate(templateContent string, data T) (str
 
 	return buf.String(), nil
 }
+
+// Validate loads and parses the project template before any command work.
+func (l *TemplateLoader[T]) Validate() error {
+	content, err := l.loadTemplateFile()
+	if err != nil {
+		return errors.ProjectFile(l.templateFilePath, err)
+	}
+
+	_, err = template.New("prompt").Funcs(l.funcMap).Parse(content)
+	if err != nil {
+		return errors.ProjectFile(l.templateFilePath, err)
+	}
+
+	return nil
+}

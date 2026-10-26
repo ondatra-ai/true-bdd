@@ -136,7 +136,21 @@ env -u CLAUDECODE ./bin/true-bdd scen check scen-check-003-unknown-id-refused
 
 ## Configuration
 
-The host project supplies a `true-bdd/` directory at its root:
+Run `true-bdd init` in the host project's root to create its configuration,
+all checklists and all prompt templates in `templates/`. It needs no configuration,
+reports every created or existing file, and never overwrites an existing file,
+even an empty or invalid one. Run it again to add missing files. It creates no
+Specification documents or schemas and detects no test framework.
+
+The binary carries copies only for `init`. Commands read the project's files
+exclusively, with no embedded runtime fallback. Before any test run, Item or AI
+turn, a command loads its configuration and checklist and parses its system and
+user validation templates; `--fix` also checks its fix-generator and fix-applier
+templates. A missing file stops startup, naming the file and `true-bdd init`.
+An invalid file stops startup with its name, parse error and advice to fix the
+file; `init` preserves existing files. `version` and `init` need none of these files.
+
+`true-bdd/` holds the initialized files and optional host-authored schemas:
 
 - `true-bdd.yaml` — the model tiers (below), filesystem paths under
   `paths:` (`stories_dir`, `checklists_dir`, `tmp_dir`,
@@ -153,7 +167,12 @@ The host project supplies a `true-bdd/` directory at its root:
 - `*-schema.yaml` — Yamale schemas pinning the shape of the spec
   documents (`product.yaml`, the scenario registry, `architecture.yaml`);
   the host project validates them in its lint step, outside the engine
-  itself.
+  itself. These schemas are optional host-authored files; `init` does not create them.
+
+The host default configuration omits `scripts:`. This repository keeps that section
+in its own `true-bdd/true-bdd.yaml` for its tooling. The `Init defaults drift` gate
+holds the init copies to the repository checklists and prompt templates byte for
+byte and to the configuration values after removing `scripts`.
 
 ### Deterministic prompts
 
