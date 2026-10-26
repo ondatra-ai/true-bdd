@@ -1466,7 +1466,11 @@ architecture:
         Playwright <startup> member makes the rerun unfiltered. Every
         ordinary member needs its own passing result; missing or skipped
         members remain failing with a did-not-run finding. Synthetic members
-        require their package or startup success. A new outer walk discovers
+        require their package or startup success. A Go <build> member passes
+        in both a single-member rerun and a set rerun only when its own package
+        reports a package-level pass or skip (no test files), with no package,
+        build or test failure. A package missing from the output stays failing.
+        A new outer walk discovers
         the full suite afresh, catching regressions outside the previous set. Before each start it writes one log record, msg="Spawning
         test runner", with the program in `binary` and its arguments in
         `args`. Optional `testing.prebuilt_engine_arg` is one argument
