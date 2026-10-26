@@ -610,6 +610,23 @@ drifting.
 Pre-1.0 and direction-finding. Open an issue before non-trivial work.
 Lint with `golangci-lint run` against `.golangci.yaml`.
 
+## Release rehearsal (repository tooling)
+
+This repository's `scripts/cmd/release` repeats the installation path against local artifacts; it does not publish a release or a tag. Run from a checkout:
+
+```sh
+go run ./scripts/cmd/release build --version 0.0.0-rehearsal --out ./tmp/release-artifacts
+go run ./scripts/cmd/release rehearse --artifacts ./tmp/release-artifacts
+```
+
+`build` exports HEAD with `git archive`, cross-compiles with `-trimpath` for Darwin/Linux on amd64/arm64, and writes four binary archives, `checksums.txt` and `release.json` (the source commit and archive version). Version stamping waits for #220. There is no resources archive: `true-bdd init` supplies the host configuration, checklists and templates.
+
+`rehearse` checks every archive, installs the native binary on a private PATH, copies the calculator and (when Node and npm are installed) Jest fixture inputs into a fresh private folder outside the checkout, deletes their service and resource copies, runs `init`, installs test requirements and runs `git init`. By default its fake Claude and Codex CLIs exit 3; success requires the engine's dispatch log, their sentinel and a non-zero engine exit. Earlier failures name the install, configuration, Specification or suite-discovery step. The copied Jest host also gets a service-load test so a missing module is a failing test member rather than only a suite-load error; the fixture tests stay intact. It retains that folder for inspection and writes the step results and evidence paths to `<artifacts>/rehearsal.json`.
+
+The default harness requirement uses a Go `replace` to an export of the artifact's source commit. CI uses this path so an unpushed commit needs no module-proxy publication. To exercise a user's proxy install, add `--harness-revision <proxy-served-release-commit>`; this runs `go get github.com/ondatra-ai/true-bdd/pkg/testkit/bddgo@<revision>` without the replacement. No release or install guide is published by this tool.
+
+After the live-pass dependencies (#214–#217 and #221) land, `rehearse --artifacts ./tmp/release-artifacts --live` runs real AI CLIs with `build code --fix --yes`, requires exit 0 and `BUILD CODE COMPLETE`, then runs each host's declared test command. This costs money. The report includes wall time, Claude spend and per-turn denied-call log records; values the engine does not report, including Codex spend and (until #219) denial targets, are `unavailable`. Library-download checks wait for #216. The gate runner builds and runs the default zero-cost rehearsal on every pull request; CI keeps no separate gate list.
+
 ## License
 
 TBD. Not yet released for external use.

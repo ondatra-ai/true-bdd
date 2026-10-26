@@ -15,6 +15,10 @@
 # engine still supports `jest` and `playwright` for host projects that
 # want them; this repo declares neither.
 
+# Repository tooling: scripts/cmd/release builds git-archive binary artifacts and
+# rehearses init and sample hosts outside the checkout; scripts/gates runs its
+# zero-cost pass in CI. This is tooling, not an engine command or a published release.
+
 architecture:
   # Template inputs are a byte contract beside the CLI invocation contract.
   # fields keys are Go template access paths; [] means a range element.
