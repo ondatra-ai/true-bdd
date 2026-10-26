@@ -75,6 +75,8 @@ func (c *ClaudeProvider) logPromptExecution(systemPrompt, userPrompt string) {
 func (c *ClaudeProvider) options(req Request) claude.Options {
 	opts := claude.Options{
 		Minimal:        true,
+		Label:          req.Label,
+		Role:           req.Role,
 		SystemPrompt:   req.SystemPrompt,
 		Model:          req.Model,
 		PermissionMode: permissionAcceptEdits,

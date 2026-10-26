@@ -30,6 +30,8 @@ type Request struct {
 	TmpDir string
 	// Label distinguishes concurrent artifacts within TmpDir.
 	Label string
+	// Role identifies the checklist stage in denial logs.
+	Role string
 	// CodexWriter selects build-code started-turn recovery; CodexApply selects confinement.
 	CodexWriter bool
 }
