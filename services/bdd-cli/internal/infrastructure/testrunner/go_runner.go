@@ -114,6 +114,9 @@ func (r *GoTestRunner) RunOne(
 	events := parseGoTestEvents(stdout.Bytes())
 
 	passed := !events.hasFailureFor(pkg, test)
+	if test == goBuildFailureMarker {
+		passed = events.buildPassed(pkg)
+	}
 
 	// A package that now compiles and passes has no failure to show, as a
 	// Jest or Playwright pass has none; its `ok` line's elapsed time varies.
@@ -188,7 +191,7 @@ type goEventStream struct {
 	testPassed    map[string]bool
 	testFailed    map[string]bool
 	packageFailed map[string]bool
-	packagePassed map[string]bool
+	packageBuilt  map[string]bool
 	testOutput    map[string]*strings.Builder
 	packageOutput map[string]*strings.Builder
 	buildOutput   map[string]*strings.Builder
@@ -200,7 +203,7 @@ func newGoEventStream() *goEventStream {
 		testPassed:    make(map[string]bool),
 		testFailed:    make(map[string]bool),
 		packageFailed: make(map[string]bool),
-		packagePassed: make(map[string]bool),
+		packageBuilt:  make(map[string]bool),
 		testOutput:    make(map[string]*strings.Builder),
 		packageOutput: make(map[string]*strings.Builder),
 		buildOutput:   make(map[string]*strings.Builder),
@@ -248,12 +251,23 @@ func (s *goEventStream) absorb(event dto.GoTestEvent) {
 		}
 	}
 
+	s.absorbResult(event)
+}
+
+func (s *goEventStream) absorbResult(event dto.GoTestEvent) {
+	key := event.Package + "\x00" + event.Test
+
 	if event.Action == "pass" {
 		if event.Test == "" {
-			s.packagePassed[event.Package] = true
+			s.packageBuilt[event.Package] = true
 		} else {
 			s.testPassed[key] = true
 		}
+	}
+
+	// Go emits package-level skip for packages with no test files.
+	if event.Action == "skip" && event.Test == "" {
+		s.packageBuilt[event.Package] = true
 	}
 
 	if event.Action == "fail" {
@@ -285,6 +299,12 @@ func (s *goEventStream) hasFailureFor(pkg, test string) bool {
 	}
 
 	return s.testFailed[pkg+"\x00"+test]
+}
+
+// buildPassed requires the package's own successful result, without any failure.
+func (s *goEventStream) buildPassed(pkg string) bool {
+	return s.packageBuilt[pkg] && !s.packageFailed[pkg] && s.failedBuild[pkg] == "" &&
+		!s.packageHasExplainedFailure(pkg)
 }
 
 // outputFor returns the complete output captured for a

@@ -1,0 +1,3 @@
+product:
+  name: Calculator
+  description: The calculator doubles an integer by adding it to itself.

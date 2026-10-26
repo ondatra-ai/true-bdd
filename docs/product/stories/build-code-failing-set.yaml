@@ -89,3 +89,22 @@ story:
       - the file "services/calc/attempted.txt" matches attempted
       - every file matching "tmp/*/*fix-iter1-user.txt" matches TestB
       - every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA
+  - id: 006-no-test-files
+    description: A missing service is repaired once for a test package and a helper package without tests
+    steps:
+    - given:
+      - the "build-code-no-test-files" project tree
+      - the System Architect answers "1" to every question
+    - when:
+      - the System Architect runs "build code --fix"
+    - then:
+      - the command exits with code 0
+      - stdout matches BUILD CODE COMPLETE
+      - stdout matches msg="Suite failures" failures=2 framework=go-test
+      - the engine dispatched no validation AI turns to "claude"
+      - the engine dispatched 1 fix AI turn to "claude"
+      - the engine dispatched 1 apply AI turn to "codex"
+      - the engine spawned exactly 3 test runners
+      - stdout does not match Spawning test runner.*-run
+      - the file "services/calc/calc.go" is created
+      - the shell command "go test -json -count=1 ./tests/..." run in "." exits with code 0

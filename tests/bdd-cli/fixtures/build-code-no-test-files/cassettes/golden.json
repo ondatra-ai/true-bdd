@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fixture": "build-code-no-test-files",
+  "files": [
+    {
+      "path": "services/calc/calc.go",
+      "kind": "created",
+      "size": 115,
+      "sha256": "eb2358ec841f3875013bef8044d347836a30c0ff9f43c75d8fa7946b1b21c040",
+      "text": "package calc\n\n// Double returns the sum of value with itself.\nfunc Double(value int) int {\n\treturn value + value\n}\n"
+    }
+  ]
+}

@@ -103,3 +103,22 @@ func TestBuildCodeSet005ShrinkingCounter(t *testing.T) {
 	s.And(`every file matching "tmp/*/*fix-iter1-user.txt" does not match TestA`)
 	s.Done()
 }
+
+// build-code-set-006-no-test-files: A missing service is repaired once for a test package and a helper package without tests
+func TestBuildCodeSet006NoTestFiles(t *testing.T) {
+	s := scenarios.New(t, "build-code-set-006-no-test-files")
+	s.Given(`the "build-code-no-test-files" project tree`)
+	s.And(`the System Architect answers "1" to every question`)
+	s.When(`the System Architect runs "build code --fix"`)
+	s.Then(`the command exits with code 0`)
+	s.And(`stdout matches BUILD CODE COMPLETE`)
+	s.And(`stdout matches msg="Suite failures" failures=2 framework=go-test`)
+	s.And(`the engine dispatched no validation AI turns to "claude"`)
+	s.And(`the engine dispatched 1 fix AI turn to "claude"`)
+	s.And(`the engine dispatched 1 apply AI turn to "codex"`)
+	s.And(`the engine spawned exactly 3 test runners`)
+	s.And(`stdout does not match Spawning test runner.*-run`)
+	s.And(`the file "services/calc/calc.go" is created`)
+	s.And(`the shell command "go test -json -count=1 ./tests/..." run in "." exits with code 0`)
+	s.Done()
+}
