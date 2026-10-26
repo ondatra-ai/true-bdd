@@ -150,6 +150,11 @@ glossary:
       after `true-bdd`, such as `scen check --fix`. It is what a role runs,
       and the unit whose exit code, stdout and file changes a Scenario
       observes. Commands that run AI turns accept model overrides.
+      Checklist commands print their existing upper-case command name followed
+      by ` COMPLETE` on stdout only when they succeed, after finalization and
+      any post-run validation. A command returning an error prints no COMPLETE
+      banner. Success means exit 0, including the reported failing-check
+      verdicts of `us refine` and `us apply` described under exit code.
 
   - term: model override
     means: >-
