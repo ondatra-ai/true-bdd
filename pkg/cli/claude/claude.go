@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -66,6 +65,8 @@ type Options struct {
 	DisallowedTools []string
 	// Role labels the turn in the conversation history via CLAUDE_HISTORY_ROLE.
 	Role string
+	// Label identifies the turn in denial logs.
+	Label string
 	// Dir is the turn's working directory; empty inherits the parent's. A
 	// turn that reads a host workspace is spawned in it, so the relative
 	// paths its prompt names resolve the way the prompt means them.
@@ -211,12 +212,12 @@ func RunJSON(prompt string, opts Options) (Answer, error) {
 		return Answer{}, err
 	}
 
-	return parseEnvelope([]byte(stdout), opts.Role)
+	return parseEnvelope([]byte(stdout), opts)
 }
 
 // parseEnvelope reads the CLI's result object, whether it arrived alone under
 // --output-format json or as the last line of a stream.
-func parseEnvelope(stdout []byte, role string) (Answer, error) {
+func parseEnvelope(stdout []byte, opts Options) (Answer, error) {
 	var envelope struct {
 		IsError          bool            `json:"is_error"`
 		Errors           []string        `json:"errors"`
@@ -232,9 +233,7 @@ func parseEnvelope(stdout []byte, role string) (Answer, error) {
 		// A denial is not a failure: in -p anything that would have prompted
 		// is refused silently and the run still reports success, so a turn
 		// that could not read looks exactly like one that read everything.
-		PermissionDenials []struct {
-			ToolName string `json:"tool_name"`
-		} `json:"permission_denials"`
+		PermissionDenials []permissionDenial `json:"permission_denials"`
 	}
 
 	if json.Unmarshal(stdout, &envelope) != nil {
@@ -243,7 +242,7 @@ func parseEnvelope(stdout []byte, role string) (Answer, error) {
 		return Answer{}, fmt.Errorf("%w: %s", ErrUnparseable, truncate(string(stdout), envelopeLimit))
 	}
 
-	warnDenials(envelope.PermissionDenials, role)
+	warnDenials(envelope.PermissionDenials, opts)
 
 	answer := Answer{Data: envelope.StructuredOutput, CostUSD: envelope.CostUSD, Tokens: counts(envelope.Usage)}
 	if isEmptyJSON(envelope.StructuredOutput) {
@@ -269,23 +268,6 @@ func counts(usage map[string]any) map[string]int {
 	}
 
 	return tokens
-}
-
-func warnDenials(denials []struct {
-	ToolName string `json:"tool_name"`
-}, role string,
-) {
-	if len(denials) == 0 {
-		return
-	}
-
-	denied := make([]string, 0, len(denials))
-	for _, denial := range denials {
-		denied = append(denied, denial.ToolName)
-	}
-
-	slog.Warn("Tool calls were denied; this turn did less than it was asked to",
-		"role", role, "denied", strings.Join(denied, " "))
 }
 
 // isEmptyJSON reports whether raw is one of the values Python's `or` would

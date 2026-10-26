@@ -1135,6 +1135,27 @@ architecture:
         One record of the engine's structured log: a level, a message and
         named fields. Message strings and field names are a wire contract the
         BDD report also reads, so a step may pin them.
+        A turn reporting refused tool calls emits one WARN with
+        msg="Tool calls were denied; this turn did less than it was asked to"
+        and keys label (the dispatch label), role (prompt, fix or apply), and
+        denied (calls in reported order, separated by "; "). Each call is
+        its tool name followed by a space and its target, or the tool alone
+        when no target is reported. Claude permission_denials supply tool_name
+        and tool_input: file_path, otherwise path; Glob uses its pattern,
+        joined to path when relative. Grep's query is never a target.
+        Each target is limited to its first 200 Unicode characters plus an
+        ellipsis when longer; unrelated input is omitted.
+        Codex JSONL item.completed events supply refused command_execution,
+        file_change or mcp_tool_call calls: status declined, or status failed
+        with an explicit permission/refusal error (permission denied,
+        operation not permitted, rejected by user/policy, exec command
+        rejected, outside of the project or outside the allowed roots).
+        Their targets are respectively path-like command arguments (absolute,
+        dot-relative, home-relative or containing a slash, omitting shell
+        launchers), each changes.path,
+        or arguments.file_path/arguments.path; MCP uses its tool name.
+        Other failures and non-event narration do not establish a refusal.
+        Refusal warnings do not change the turn's existing outcome.
       observed_by: >-
         Through stdout, by a pattern naming its text form, such as
         `level=ERROR msg="Refusing to start" command="scen check"`; in the

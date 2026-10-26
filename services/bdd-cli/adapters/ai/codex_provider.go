@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 
+	codexcli "github.com/ondatra-ai/true-bdd/pkg/cli/codex"
 	"github.com/ondatra-ai/true-bdd/pkg/disk"
 	"github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/infrastructure/cli/codex"
 	pkgerrors "github.com/ondatra-ai/true-bdd/services/bdd-cli/internal/pkg/errors"
@@ -109,6 +110,7 @@ func finishCodexTurn(
 	req Request, answerPath string, result codex.Result, runErr error, guard *codexGlobGuard,
 ) (string, error) {
 	trace := result.Transcript
+	codexcli.WarnDenials(result.Events, req.Label, req.Role)
 
 	saveTranscript(artifactPath(req, "codex.log"), trace)
 
