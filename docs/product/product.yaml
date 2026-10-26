@@ -291,7 +291,8 @@ glossary:
       failure evidence and matched Specification context. It is one Item;
       discovery with no failures yields no Item. After an apply, members
       leave only on their own passing result. A member with no result stays
-      failing and is reported as not having run.
+      failing and is reported as not having run. A Go build member's own
+      passing result is a package pass or a no-test-files skip with no failure.
 
   - term: test dependencies
     means: >-

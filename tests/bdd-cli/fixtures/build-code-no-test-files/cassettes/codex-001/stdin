@@ -1,0 +1,152 @@
+### SYSTEM INSTRUCTIONS (authoritative — follow exactly)
+
+You are the production writer repairing a whole failing set. Read the Specification, harness and service source, then implement the proposed plan using your own investigation. Change the service as a whole. After each part, run the tests it serves and fix what fails; run every test of the failing set before reporting. Tests outside the set are not your subject.
+
+Write only inside the edit roots in the request. Never modify tests, *_test.go, __tests__, or documents; never weaken, skip or remove assertions. Use only the granted test command forms when available. If a repair cannot be completed, report applied: false and describe what changed and what remains.
+
+Make changes during this turn. Return the requested FILE_START/FILE_END confirmation with applied, quoted target, and quoted summary reporting what changed and which tests of the set you saw pass. End your final message with this block in the message itself. Its result path names where the engine saves it; never write that path yourself.
+
+
+### TASK
+
+## Subject — Failing Set
+
+
+**Test ID:** /go-test/go-test:fixture.buildmember.tests.calc.helper::<build>
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildmember/tests/calc/helper::<build>
+**Source File:** fixture/buildmember/tests/calc/helper
+
+**Test ID:** /go-test/go-test:fixture.buildmember.tests.calc::<build>
+**Service:** calc
+**Suite:** go-test
+**Framework:** go-test
+**Test Name:** fixture/buildmember/tests/calc::<build>
+**Source File:** fixture/buildmember/tests/calc
+
+
+### Failure groups
+
+Tests: /go-test/go-test:fixture.buildmember.tests.calc.helper::<build>
+```
+# fixture/buildmember/tests/calc
+tests/calc/helper/helper.go:3:8: package fixture/buildmember/services/calc is not in std ({{GOROOT}}/src/fixture/buildmember/services/calc)
+# fixture/buildmember/tests/calc/helper
+tests/calc/helper/helper.go:3:8: package fixture/buildmember/services/calc is not in std ({{GOROOT}}/src/fixture/buildmember/services/calc)
+FAIL	fixture/buildmember/tests/calc/helper [setup failed]
+
+```
+
+Tests: /go-test/go-test:fixture.buildmember.tests.calc::<build>
+```
+# fixture/buildmember/tests/calc
+tests/calc/helper/helper.go:3:8: package fixture/buildmember/services/calc is not in std ({{GOROOT}}/src/fixture/buildmember/services/calc)
+# fixture/buildmember/tests/calc/helper
+tests/calc/helper/helper.go:3:8: package fixture/buildmember/services/calc is not in std ({{GOROOT}}/src/fixture/buildmember/services/calc)
+FAIL	fixture/buildmember/tests/calc [setup failed]
+
+```
+
+
+### Specification documents
+
+- Read(`./docs/architecture/architecture.yaml`) — architecture_yaml
+
+- Read(`./docs/product/product.yaml`) — product
+
+- Read(`./docs/scenarios.yaml`) — scenarios_yaml
+
+
+
+
+
+
+
+
+## Proposed repair plan
+# Repair plan for failing-set
+
+## Diagnosis
+
+Both failing entries are Go *build* targets, not assertion failures:
+
+- `/go-test/go-test:fixture.buildmember.tests.calc::<build>`
+- `/go-test/go-test:fixture.buildmember.tests.calc.helper::<build>`
+
+The single root cause is in the compiler output of both groups:
+
+```
+tests/calc/helper/helper.go:3:8: package fixture/buildmember/services/calc is not in std
+```
+
+`tests/calc/helper/helper.go` (read-only) does `import "fixture/buildmember/services/calc"` and calls `calc.Double(value)`. The module is `fixture/buildmember` (`go.mod`), so that import path resolves to the in-module directory `services/calc/`. That directory does not exist in the worktree at all — the repository contains only `go.mod`, `docs/`, `tests/calc/calc_test.go` and `tests/calc/helper/helper.go`. Because the import cannot be resolved, Go reports it as "not in std" and both the `tests/calc` and `tests/calc/helper` packages fail with `[setup failed]`, which is why both build targets in the set fail. There is no bug in existing code to correct and nothing to change in the tests or the helper; the production service is simply absent and must be created.
+
+`docs/architecture/architecture.yaml` declares exactly one service root: `calc` at `services/calc` (language `go`). That is the only directory the writer may create or edit. Do not touch `tests/**`, `*_test.go`, `go.mod`, `docs/**`, `true-bdd/**`, `templates/**`, or `CLAUDE.md`.
+
+## Part 1 — Create the `calc` service package (the whole repair)
+
+**File to create:** `services/calc/calc.go` (new file; create the `services/calc/` directory).
+
+**Contract the file must satisfy, derived from the read-only consumer and the Specification:**
+
+1. **Package clause must be `package calc`.** The helper imports the path `fixture/buildmember/services/calc` and references the identifier `calc`, so the package name must match the final path element. Do not use `package main`, a `_test` suffix, or any other name — the module path prefix in `go.mod` (`fixture/buildmember`) plus the on-disk location `services/calc` is what makes the import path resolve, so the file must physically live in `services/calc/`, not in a nested subdirectory.
+2. **Exported function `Double`** with signature exactly `func Double(value int) int`. The helper calls `calc.Double(value)` where `value` is an `int` and assigns the single result straight into an `int` return. So: one `int` parameter, one `int` result, no error return, no variadic, no pointer or generic parameters, and the name must be capitalised `Double` so it is exported across the package boundary.
+3. **Behaviour: double the argument by adding it to itself.** `docs/product/product.yaml` states "The calculator doubles an integer by adding it to itself." Implement the body as `return value + value` — i.e. addition, matching the product wording, rather than `value * 2` or a bit shift. The function must be pure: no state, no I/O, no logging, no panics, no clamping or validation that would reject ordinary inputs. Negative inputs and zero must behave the same way (`Double(0) == 0`, `Double(-4) == -8`); do not special-case them. Do not add overflow guards — plain Go `int` addition semantics are correct here.
+
+**Suggested shape (the writer should write the real file and confirm it compiles):** a single small file containing the package clause, no imports, an optional short doc comment describing that `Double` returns the sum of `value` with itself, and the one-line body `return value + value`.
+
+**Scope discipline:**
+
+- Add nothing else to the service: no extra exported helpers, no `init()`, no `main` entrypoint, no constructors, interfaces, or config plumbing. The only consumer is `helper.Double`, and the Specification describes only doubling.
+- Do not add dependencies. The implementation needs no imports, so `go.mod` must stay dependency-free; leave `go.mod` and its `module`/`go` directives exactly as they are (the sentinel comment at the top of `go.mod` is part of the fixture — keep it). Do not create a `go.sum`, a nested `go.mod` under `services/`, or a vendor directory.
+- Do not create any `services/calc/*_test.go` file. Verification is owned by the existing read-only suite.
+
+## Tests each part serves
+
+Part 1 is the entire repair and serves both members of the failing set:
+
+- `/go-test/go-test:fixture.buildmember.tests.calc.helper::<build>` — once `services/calc/calc.go` exists with `package calc` and an exported `Double(int) int`, `tests/calc/helper/helper.go` line 3 resolves its import and the `tests/calc/helper` package compiles, clearing the `[setup failed]` build error for this target.
+- `/go-test/go-test:fixture.buildmember.tests.calc::<build>` — `tests/calc` (package `calc_test`) imports the helper package, so it fails to build transitively today. With the helper compiling, this target builds too, and `TestDouble` in `tests/calc/calc_test.go` then runs and passes because `Double(3)` returns `3 + 3 == 6`, satisfying the assertion `got != 6`.
+
+No assertion is weakened, skipped or removed; nothing under `tests/`, no `*_test.go`, and no Specification or TrueBDD configuration file is modified.
+
+## Verification the writer should run
+
+From the worktree root, using the commands declared in `docs/architecture/architecture.yaml` under `architecture.testing.commands`:
+
+- `go build ./...` to confirm the new package and both test packages compile (this is what the two `::<build>` targets check).
+- `go vet ./...` to confirm the new file is clean.
+- `go test -json -count=1 ./tests/...` — the declared record/replay/live command — and confirm `TestDouble` passes with no `setup failed` entries.
+
+Expected end state: `services/calc/calc.go` is the only added file, and both build targets plus `TestDouble` pass.
+
+## Edit roots
+
+- `services/calc`
+
+Never modify tests, *_test.go, __tests__, or documents. Never weaken, skip or remove assertions.
+
+
+## Test commands
+Run in `{{CWD}}` using exactly one of these forms:
+- Whole suite: `go test -count=1 ./tests/...`
+- Selection: `go test -count=1 ./tests/... -run '<selection>'`
+The selection is a nonempty framework regular expression. Keep the command in the foreground; if the tool returns a process/session id, poll that process with your native process tool until it completes.
+
+
+## How to work
+1. Read the Specification and the harness first to understand the service's contract.
+2. Change the service as a whole, using the plan and your investigation.
+3. After each part, run the tests that part serves and fix what fails.
+4. Run every test of the failing set before reporting. Tests outside the failing set are not your subject.
+5. Make all changes during this turn, then report what changed and which tests of the set you saw pass.
+
+End your final message with the confirmation block below, written in the message itself. The result path in its heading names where the engine saves it; never write that path yourself.
+
+=== FILE_START: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
+applied: true
+target: "<repo-relative service path>"
+summary: "<what changed and which tests of the set you saw pass>"
+=== FILE_END: tmp/{{RUN_DIR}}/apply-failing-set-iter1-result.yaml ===
